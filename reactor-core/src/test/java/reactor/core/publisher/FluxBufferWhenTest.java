@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +36,6 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -45,8 +45,47 @@ public class FluxBufferWhenTest {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxBufferWhenTest.class);
 
+	//see https://github.com/reactor/reactor-core/issues/969
 	@Test
-	public void gh969_timedOutBuffersDontLeak() throws InterruptedException {
+	public void bufferedCanCompleteIfOpenNeverCompletesDropping() {
+		//this test ensures that dropping buffers will complete if the source is exhausted before the open publisher finishes
+		Mono<Integer> buffered = Flux.range(1, 200)
+		                             .zipWith(Flux.interval(Duration.ofMillis(5)),
+				                             (integer, aLong) -> integer)
+		                             .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(200)),
+				                             open -> Mono.delay(Duration.ofMillis(100)))
+		                             .log()
+		                             .reduce(new HashSet<Integer>(), (set, buffer) -> { set.addAll(buffer); return set;})
+		                             .map(HashSet::size);
+
+		StepVerifier.create(buffered)
+		            .assertNext(size -> assertThat(size).as("approximate size with drops").isBetween(80, 110))
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(3));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/969
+	@Test
+	public void bufferedCanCompleteIfOpenNeverCompletesOverlapping() {
+		//this test ensures that overlapping buffers will complete if the source is exhausted before the open publisher finishes
+		Mono<Integer> buffered = Flux.range(1, 200)
+		                             .zipWith(Flux.interval(Duration.ofMillis(5)),
+				                             (integer, aLong) -> integer)
+		                             .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)),
+				                             open -> Mono.delay(Duration.ofMillis(200)))
+		                             .log()
+		                             .reduce(new HashSet<Integer>(), (set, buffer) -> { set.addAll(buffer); return set;})
+		                             .map(HashSet::size);
+
+		StepVerifier.create(buffered)
+		            .expectNext(200)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(3));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/969
+	@Test
+	public void timedOutBuffersDontLeak() throws InterruptedException {
 		LongAdder created = new LongAdder();
 		LongAdder finalized = new LongAdder();
 		class Wrapper {
@@ -73,13 +112,13 @@ public class FluxBufferWhenTest {
 		final UnicastProcessor<Wrapper> processor = UnicastProcessor.create();
 
 		Flux<Integer> emitter = Flux.range(1, 400)
-		                            .delayElements(Duration.ofMillis(10))
+		                            .delayElements(Duration.ofMillis(5))
 		                            .doOnNext(i -> processor.onNext(new Wrapper(i)))
 		                            .doOnError(processor::onError)
 		                            .doOnComplete(processor::onComplete);
 
 		Mono<List<Tuple3<Long, String, Long>>> buffers =
-				processor.buffer(Duration.ofMillis(1000), Duration.ofMillis(500))
+				processor.buffer(Duration.ofMillis(500), Duration.ofMillis(250))
 				         .filter(b -> b.size() > 0)
 				         .index()
 				         .doOnNext(it -> System.gc())
