@@ -82,8 +82,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 
 		actual.onSubscribe(main);
 
-		BufferWhenOpenSubscriber<OPEN> bos =
-				new BufferWhenOpenSubscriber<>(main);
+		BufferWhenOpenSubscriber<OPEN> bos = new BufferWhenOpenSubscriber<>(main);
 		if (main.subscribers.add(bos)) {
 			source.subscribe(main);
 			start.subscribe(bos);
@@ -269,8 +268,8 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 							Throwable ex = Exceptions.terminate(ERRORS, this);
 							a.onError(ex);
 							return;
-						} else
-						if (q.isEmpty()) {
+						}
+						else if (q.isEmpty()) {
 							a.onComplete();
 							return;
 						}
@@ -291,7 +290,8 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			try {
 				buf = Objects.requireNonNull(bufferSupplier.get(), "The bufferSupplier returned a null Collection");
 				p = Objects.requireNonNull(bufferClose.apply(token), "The bufferClose returned a null Publisher");
-			} catch (Throwable ex) {
+			}
+			catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);
 				Operators.terminate(S, this);
 				if (Exceptions.addThrowable(ERRORS, this, ex)) {
@@ -301,7 +301,8 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 					}
 					done = true;
 					drain();
-				} else {
+				}
+				else {
 					Operators.onErrorDropped(ex, actual.currentContext());
 				}
 				return;
@@ -361,7 +362,8 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 				}
 				done = true;
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(ex, actual.currentContext());
 			}
 		}
@@ -435,9 +437,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.ACTUAL) {
-				return parent;
-			}
+			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Long.MAX_VALUE;
 			if (key == Attr.CANCELLED) return isDisposed();
@@ -511,9 +511,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.ACTUAL) {
-				return parent;
-			}
+			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Long.MAX_VALUE;
 			if (key == Attr.CANCELLED) return isDisposed();
