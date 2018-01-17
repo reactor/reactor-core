@@ -291,7 +291,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test
 	public void distinctUntilChangedDefaultDoesntRetainObjects() throws InterruptedException {
-		FluxDistinctTest.Foo.finalized.reset();
+		FluxDistinctTest.Foo.finalized.set(0);
 		Flux<FluxDistinctTest.Foo> test = Flux.range(1, 100)
 		                                      .map(FluxDistinctTest.Foo::new)
 		                                      .distinctUntilChanged();
@@ -310,7 +310,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test
 	public void distinctUntilChangedDefaultErrorDoesntRetainObjects() throws InterruptedException {
-		FluxDistinctTest.Foo.finalized.reset();
+		FluxDistinctTest.Foo.finalized.set(0);
 		Flux<FluxDistinctTest.Foo> test = Flux.range(1, 100)
 		                                      .map(FluxDistinctTest.Foo::new)
 		                                      .concatWith(Mono.error(new IllegalStateException("boom")))
@@ -330,7 +330,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test
 	public void distinctUntilChangedDefaultCancelDoesntRetainObjects() throws InterruptedException {
-		FluxDistinctTest.Foo.finalized.reset();
+		FluxDistinctTest.Foo.finalized.set(0);
 		Flux<FluxDistinctTest.Foo> test = Flux.range(1, 100)
 		                                      .map(FluxDistinctTest.Foo::new)
 		                                      .concatWith(Mono.error(new IllegalStateException("boom")))

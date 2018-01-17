@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -499,7 +499,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	static class Foo {
 
-		static final LongAdder finalized = new LongAdder();
+		static final AtomicLong finalized = new AtomicLong();
 		private final int i;
 
 		public Foo(int i) {
@@ -518,13 +518,13 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 		@Override
 		protected void finalize() throws Throwable {
-			finalized.increment();
+			finalized.incrementAndGet();
 		}
 	}
 
 	@Test
 	public void distinctDefaultDoesntRetainObjects() throws InterruptedException {
-		Foo.finalized.reset();
+		Foo.finalized.set(0);
 		Flux<Foo> test = Flux.range(1, 100)
 		                     .map(i -> new Foo(i))
 		                     .distinct();
@@ -543,7 +543,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void distinctDefaultErrorDoesntRetainObjects() throws InterruptedException {
-		Foo.finalized.reset();
+		Foo.finalized.set(0);
 		Flux<Foo> test = Flux.range(1, 100)
 		                     .map(i -> new Foo(i))
 		                     .concatWith(Mono.error(new IllegalStateException("boom")))
@@ -563,7 +563,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void distinctDefaultCancelDoesntRetainObjects() throws InterruptedException {
-		Foo.finalized.reset();
+		Foo.finalized.set(0);
 		Flux<Foo> test = Flux.range(1, 100)
 		                     .map(i -> new Foo(i))
 		                     .concatWith(Mono.error(new IllegalStateException("boom")))
