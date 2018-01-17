@@ -534,7 +534,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		            .verifyComplete();
 
 		System.gc();
-		Thread.sleep(100);
+		Thread.sleep(500);
 
 		assertThat(Foo.finalized.longValue())
 				.as("none retained")
@@ -554,7 +554,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		            .verifyErrorMessage("boom");
 
 		System.gc();
-		Thread.sleep(100);
+		Thread.sleep(500);
 
 		assertThat(Foo.finalized.longValue())
 				.as("none retained after error")
@@ -575,7 +575,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		            .verifyComplete();
 
 		System.gc();
-		Thread.sleep(100);
+		Thread.sleep(500);
 
 		assertThat(Foo.finalized.longValue())
 				.as("none retained after cancel")

@@ -301,7 +301,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		            .verifyComplete();
 
 		System.gc();
-		Thread.sleep(100);
+		Thread.sleep(500);
 
 		assertThat(FluxDistinctTest.Foo.finalized.longValue())
 				.as("none retained")
@@ -321,7 +321,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		            .verifyErrorMessage("boom");
 
 		System.gc();
-		Thread.sleep(100);
+		Thread.sleep(500);
 
 		assertThat(FluxDistinctTest.Foo.finalized.longValue())
 				.as("none retained after error")
@@ -342,7 +342,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		            .verifyComplete();
 
 		System.gc();
-		Thread.sleep(100);
+		Thread.sleep(500);
 
 		assertThat(FluxDistinctTest.Foo.finalized.longValue())
 				.as("none retained after cancel")
