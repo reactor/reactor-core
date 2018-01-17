@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,17 +30,23 @@ import java.util.concurrent.atomic.LongAdder;
 import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class FluxBufferWhenTest {
 
@@ -353,7 +360,7 @@ public class FluxBufferWhenTest {
 
 		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
 				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
-						actual, ArrayList::new, u -> Mono.just(1L));
+						actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.request(100L);
@@ -376,7 +383,7 @@ public class FluxBufferWhenTest {
 
 		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
 				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
-				actual, ArrayList::new, u -> Mono.just(1L));
+				actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.cancel();
@@ -389,12 +396,12 @@ public class FluxBufferWhenTest {
 
 		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
 				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
-				actual, ArrayList::new, u -> Mono.just(1L));
+				actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
-		test.complete();
+		test.onComplete();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
@@ -404,10 +411,10 @@ public class FluxBufferWhenTest {
 		//noinspection ConstantConditions
 		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> main =
 				new FluxBufferWhen.BufferWhenMainSubscriber<>(null,
-						ArrayList::new,
+						ArrayList::new, Queues.small(), Mono.just(1),
 						u -> Mono.just(1L));
 
-		FluxBufferWhen.BufferWhenCloseSubscriber test = new FluxBufferWhen.BufferWhenCloseSubscriber<>(Arrays.asList("foo", "bar"), main);
+		FluxBufferWhen.BufferWhenCloseSubscriber test = new FluxBufferWhen.BufferWhenCloseSubscriber<>(main, 5);
 
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
 
@@ -427,7 +434,7 @@ public class FluxBufferWhenTest {
 	public void scanWhenOpenSubscriber() {
 		//noinspection ConstantConditions
 		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferWhenMainSubscriber<>(
-				null, ArrayList::new, u -> Mono.just(1L));
+				null, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 
 		FluxBufferWhen.BufferWhenOpenSubscriber test = new FluxBufferWhen.BufferWhenOpenSubscriber<>(main);
 
@@ -443,5 +450,225 @@ public class FluxBufferWhenTest {
 		test.dispose();
 		assertThat(test.isDisposed()).isTrue();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void openCloseDisposedOnComplete() {
+		TestPublisher<Integer> source = TestPublisher.create();
+		TestPublisher<Integer> open = TestPublisher.create();
+		TestPublisher<Integer> close = TestPublisher.create();
+
+		StepVerifier.create(source
+				.flux()
+				.bufferWhen(open, o -> close))
+		            .then(() -> {
+		            	source.assertSubscribers();
+		            	open.assertSubscribers();
+		            	close.assertSubscribers();
+		            	open.next(1);
+		            })
+		            .then(() -> {
+						open.assertSubscribers();
+						close.assertSubscribers();
+						source.complete();
+		            })
+		            .expectNextMatches(List::isEmpty)
+		            .expectComplete();
+
+		open.assertNoSubscribers();
+		close.assertNoSubscribers();
+	}
+
+	@Test
+	public void openCloseMainError() {
+		StepVerifier.create(Flux.error(new IllegalStateException("boom"))
+				.bufferWhen(Flux.never(), a -> Flux.never())
+		)
+		            .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void openCloseBadSource() {
+		TestPublisher<Object> badSource =
+				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+		StepVerifier.create(badSource.flux()
+				.bufferWhen(Flux.never(), a -> Flux.never()))
+		            .then(() -> {
+		            	badSource.error(new IOException("ioboom"));
+		            	badSource.complete();
+		            	badSource.next(1);
+		            	badSource.error(new IllegalStateException("boom"));
+		            })
+		            .expectErrorMessage("ioboom")
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void openCloseOpenCompletes() {
+		TestPublisher<Integer> source = TestPublisher.create();
+		TestPublisher<Integer> open = TestPublisher.create();
+		TestPublisher<Integer> close = TestPublisher.create();
+
+		StepVerifier.create(source.flux()
+		                          .bufferWhen(open, o -> close)
+		)
+		            .then(() -> {
+		            	open.next(1);
+		            	close.assertSubscribers();
+		            })
+		            .then(() -> {
+		            	open.complete();
+		            	source.assertSubscribers();
+		            	close.assertSubscribers();
+		            })
+		            .then(() -> {
+		            	close.complete();
+		            	source.assertNoSubscribers();
+		            })
+		            .expectNextMatches(List::isEmpty)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void openCloseOpenCompletesNoBuffers() {
+		TestPublisher<Integer> source = TestPublisher.create();
+		TestPublisher<Integer> open = TestPublisher.create();
+		TestPublisher<Integer> close = TestPublisher.create();
+
+		StepVerifier.create(source.flux()
+		                          .bufferWhen(open, o -> close))
+		            .then(() -> {
+			            open.next(1);
+			            close.assertSubscribers();
+		            })
+		            .then(() -> {
+			            close.complete();
+			            source.assertSubscribers();
+			            open.assertSubscribers();
+		            })
+		            .then(() -> {
+			            open.complete();
+			            source.assertNoSubscribers();
+		            })
+		            .expectNextMatches(List::isEmpty)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void openCloseTake() {
+		TestPublisher<Integer> source = TestPublisher.create();
+		TestPublisher<Integer> open = TestPublisher.create();
+		TestPublisher<Integer> close = TestPublisher.create();
+
+		StepVerifier.create(source.flux()
+		                          .bufferWhen(open, o -> close)
+		                          .take(1), 2)
+		            .then(() -> {
+			            open.next(1);
+			            close.complete();
+		            })
+		            .then(() -> {
+			            source.assertNoSubscribers();
+			            open.assertNoSubscribers();
+			            close.assertNoSubscribers();
+		            })
+		            .expectNextMatches(List::isEmpty)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void openCloseLimit() {
+		TestPublisher<Integer> source = TestPublisher.create();
+		TestPublisher<Integer> open = TestPublisher.create();
+		TestPublisher<Integer> close = TestPublisher.create();
+
+		StepVerifier.create(source.flux()
+		                          .bufferWhen(open, o -> close)
+		                          .limitRequest(1))
+		            .then(() -> {
+			            open.next(1);
+			            close.complete();
+		            })
+		            .then(() -> {
+			            source.assertNoSubscribers();
+			            open.assertNoSubscribers();
+			            close.assertNoSubscribers();
+		            })
+		            .expectNextMatches(List::isEmpty)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void openCloseEmptyBackpressure() {
+		TestPublisher<Integer> source = TestPublisher.create();
+		TestPublisher<Integer> open = TestPublisher.create();
+		TestPublisher<Integer> close = TestPublisher.create();
+
+		StepVerifier.create(source.flux()
+				.bufferWhen(open, o -> close), 0)
+		            .then(() -> {
+		            	source.complete();
+		            	open.assertNoSubscribers();
+		            	close.assertNoSubscribers();
+		            })
+		            .verifyComplete();
+//		ts.assertResult();
+	}
+
+	@Test
+	public void openCloseErrorBackpressure() {
+		TestPublisher<Integer> source = TestPublisher.create();
+		TestPublisher<Integer> open = TestPublisher.create();
+		TestPublisher<Integer> close = TestPublisher.create();
+
+		StepVerifier.create(source.flux()
+		                          .bufferWhen(open, o -> close), 0)
+		            .then(() -> {
+			            source.error(new IllegalStateException("boom"));
+
+			            open.assertNoSubscribers();
+			            close.assertNoSubscribers();
+		            })
+		            .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void openCloseBadOpen() {
+		TestPublisher<Object> badOpen = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+
+		StepVerifier.create(Flux.never()
+		                        .bufferWhen(badOpen, o -> Flux.never()))
+		            .then(() -> {
+			            badOpen.error(new IOException("ioboom"));
+			            badOpen.complete();
+			            badOpen.next(1);
+			            badOpen.error(new IllegalStateException("boom"));
+		            })
+
+		            .expectErrorMessage("ioboom")
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void openCloseBadClose() {
+		TestPublisher<Object> badClose = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+
+		StepVerifier.create(Flux.never()
+		                        .bufferWhen(Flux.just(1).concatWith(Flux.never()), o -> badClose)
+		)
+		            .then(() -> {
+		            	badClose.error(new IOException("ioboom"));
+		            	badClose.complete();
+		            	badClose.next(1);
+		            	badClose.error(new IllegalStateException("boom"));
+		            })
+		            .expectErrorMessage("ioboom")
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasDroppedErrorWithMessage("boom");
 	}
 }
