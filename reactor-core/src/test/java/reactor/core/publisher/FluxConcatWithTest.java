@@ -101,9 +101,9 @@ public class FluxConcatWithTest {
 	}
 
 	@Test
-    public void concatValues() {
+    public void endWith() {
 	  AssertSubscriber<Integer> ts = AssertSubscriber.create();
-	  Flux.just(1, 2).concatWith(4, 5, 6)
+	  Flux.just(1, 2).endWith(4, 5, 6)
       .subscribe(ts);
 
 	  ts.assertValues(1, 2, 4, 5, 6)
