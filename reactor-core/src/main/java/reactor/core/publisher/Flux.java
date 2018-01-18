@@ -379,14 +379,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Concatenate all values provided as a vararg.
 	 *
 	 * @param values The values to concatenate
-	 * @param <T> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} concatenating all source sequences
 	 * @since 3.1.2
 	 */
 	@SafeVarargs
-	public static <T> Flux<T> concat(T... values) {
-	    return concat(Flux.fromArray(values));
+	public final Flux<T> concatWith(T... values) {
+	    return concatWith(Flux.fromArray(values));
 	}
 
 	/**

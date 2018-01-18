@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,4 +99,15 @@ public class FluxConcatWithTest {
 		.assertNoError()
 		.assertComplete();
 	}
+
+	@Test
+    public void concatValues() {
+	  AssertSubscriber<Integer> ts = AssertSubscriber.create();
+	  Flux.just(1, 2).concatWith(4, 5, 6)
+      .subscribe(ts);
+
+	  ts.assertValues(1, 2, 4, 5, 6)
+      .assertNoError()
+      .assertComplete();
+    }
 }
