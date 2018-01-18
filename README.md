@@ -25,10 +25,10 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.1.3.BUILD-SNAPSHOT"
-      //testCompile("io.projectreactor:reactor-test:3.1.3.BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.1.2.RELEASE"
-      testCompile("io.projectreactor:reactor-test:3.1.2.RELEASE")
+      //compile "io.projectreactor:reactor-core:3.1.4.BUILD-SNAPSHOT"
+      //testCompile("io.projectreactor:reactor-test:3.1.4.BUILD-SNAPSHOT")
+      compile "io.projectreactor:reactor-core:3.1.3.RELEASE"
+      testCompile("io.projectreactor:reactor-test:3.1.3.RELEASE")
     }
 ```
 
@@ -54,7 +54,7 @@ A Reactive Streams Publisher with basic flow operators.
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#subscribe()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/flux.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flux.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
 
 Flux in action :
 ```java
@@ -73,7 +73,7 @@ A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropr
 - Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Mono#subscribe()_ or _Mono#get()_ eventually called.
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/mono.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mono.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
 
 Mono in action :
 ```java

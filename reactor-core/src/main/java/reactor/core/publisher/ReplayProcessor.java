@@ -39,7 +39,7 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
 /**
  * Replays all or the last N items to Subscribers.
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/emitterreplay.png"
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/emitterreplay.png"
  * alt="">
  * <p>
  *
@@ -53,7 +53,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * replaying it to late subscribers. This is a buffer-based ReplayProcessor with
 	 * a history size of 1.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/replaylast.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/replaylast.png"
 	 * alt="">
 	 *
 	 * @param <T> the type of the pushed elements
@@ -71,7 +71,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * any value has been pushed, then the {@code defaultValue} is emitted instead. 
 	 * This is a buffer-based ReplayProcessor with a history size of 1.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/replaylastd.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/replaylastd.png"
 	 * alt="">
 	 *
 	 * @param value a default value to start the sequence with in case nothing has been

@@ -39,7 +39,7 @@ import reactor.util.context.Context;
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
  *
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/monoprocessor.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/monoprocessor.png" alt="">
  * <p>
  *
  * Once a {@link MonoProcessor} has been resolved, newer subscribers will benefit from the cached result.

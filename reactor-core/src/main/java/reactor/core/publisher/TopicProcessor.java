@@ -37,12 +37,12 @@ import reactor.util.concurrent.WaitStrategy;
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with async event
  * loops.
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/topic.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/topic.png" alt="">
  * <p>
  *  Created from {@link #share}, the {@link TopicProcessor} will authorize concurrent publishing (multi-producer)
  *  from its receiving side {@link Subscriber#onNext(Object)}.
  *  Additionally, any of the {@link TopicProcessor} will stop the event loop thread if an error occurs.
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/topics.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/topics.png" alt="">
  * <p>
  * The processor
  * respects the Reactive Streams contract and must not be signalled concurrently on any
