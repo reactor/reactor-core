@@ -20,7 +20,9 @@ import java.util.Collection;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -220,6 +222,36 @@ public class SignalLoggerTests {
 		verify(mockLogger, times(1)).isTraceEnabled();
 		verify(mockLogger, times(1)).trace(Mockito.anyString(), (Object[]) Mockito.any());
 		verify(mockLogger, times(1)).trace(Mockito.anyString(), (Throwable) Mockito.any());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void fluxLogWithGivenLogger() {
+		Level level = Level.WARNING;
+
+		Flux<String> source = Flux.just("foo");
+		Logger mockLogger = Mockito.mock(Logger.class);
+
+		source.log(mockLogger, level, false, SignalType.ON_NEXT)
+		      .subscribe();
+
+		verify(mockLogger, only()).warn(anyString(), eq(SignalType.ON_NEXT),
+				eq("foo"), any());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void monoLogWithGivenLogger() {
+		Level level = Level.WARNING;
+
+		Mono<String> source = Mono.just("foo");
+		Logger mockLogger = Mockito.mock(Logger.class);
+
+		source.log(mockLogger, level, false, SignalType.ON_NEXT)
+		      .subscribe();
+
+		verify(mockLogger, only()).warn(anyString(), eq(SignalType.ON_NEXT),
+				eq("foo"), any());
 		verifyNoMoreInteractions(mockLogger);
 	}
 

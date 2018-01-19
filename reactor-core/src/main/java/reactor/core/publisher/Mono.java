@@ -2295,6 +2295,60 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoLog<>(this, log));
 	}
 
+
+	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and
+	 * trace them using a specific user-provided {@link Logger}. Default will use
+	 * {@link Level#INFO} and {@code java.util.logging}. If SLF4J is available, it will be
+	 * used instead.
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png" alt="">
+	 *
+	 * @param logger the {@link Logger} to use, instead of resolving one through a category.
+	 *
+	 * @return a new {@link Mono} that logs signals
+	 */
+	public final Mono<T> log(Logger logger) {
+		return log(logger, Level.INFO, false);
+	}
+
+	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and
+	 * trace them using a specific user-provided {@link Logger}, at the given {@link Level}.
+	 * Default will use {@code java.util.logging}. If SLF4J is available, it will be used
+	 * instead.
+	 * <p>
+	 * Options allow fine grained filtering of the traced signal, for instance to only
+	 * capture onNext and onError:
+	 * <pre>
+	 *     flux.log(myCustomLogger, Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
+	 * alt="">
+	 *
+	 * @param logger the {@link Logger} to use, instead of resolving one through a category.
+	 * @param level the {@link Level} to enforce for this tracing Flux (only FINEST, FINE,
+	 * INFO, WARNING and SEVERE are taken into account)
+	 * @param showOperatorLine capture the current stack to display operator class/line number.
+	 * @param options a vararg {@link SignalType} option to filter log messages
+	 *
+	 * @return a new {@link Mono} that logs signals
+	 */
+	public final Mono<T> log(Logger logger,
+			Level level,
+			boolean showOperatorLine,
+			SignalType... options) {
+		SignalLogger<T> log = new SignalLogger<>(this, "IGNORED", level,
+				showOperatorLine,
+				s -> logger,
+				options);
+
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoLogFuseable<>(this, log));
+		}
+		return onAssembly(new MonoLog<>(this, log));
+	}
+
 	/**
 	 * Transform the item emitted by this {@link Mono} by applying a synchronous function to it.
 	 *
