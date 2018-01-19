@@ -249,7 +249,7 @@ With that knowledge, we can have a closer look at the `publishOn` and `subscribe
 operators:
 
 * `publishOn` applies in the same way as any other operator, in the middle of the
-subscriber chain. It takes signals from downstream and replays them upstream while
+subscriber chain. It takes signals from upstream and replays them downstream while
 executing the callback on a worker from the associated `Scheduler`. Consequently, it
 *affects where the subsequent operators will execute* (until another `publishOn` is
 chained in).
