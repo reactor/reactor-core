@@ -734,6 +734,37 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Merges the values from each 'rail', but choose which one to merge by way of a
+	 * provided {@link Comparator}, picking the smallest of all rails. The result is
+	 * exposed back as a {@link Flux}.
+	 * <p>
+	 * This version uses a default prefetch of {@link Queues#SMALL_BUFFER_SIZE}.
+	 *
+	 * @param comparator the comparator to choose the smallest value available from all rails
+	 * @return the new Flux instance
+	 *
+	 * @see ParallelFlux#ordered(Comparator, int)
+	 */
+	public final Flux<T> ordered(Comparator<? super T> comparator) {
+		return ordered(comparator, Queues.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Merges the values from each 'rail', but choose which one to merge by way of a
+	 * provided {@link Comparator}, picking the smallest of all rails. The result is
+	 * exposed back as a {@link Flux}.
+	 *
+	 * @param comparator the comparator to choose the smallest value available from all rails
+	 * @param prefetch the prefetch to use
+	 * @return the new Flux instance
+	 *
+	 * @see ParallelFlux#ordered(Comparator)
+	 */
+	public final Flux<T> ordered(Comparator<? super T> comparator, int prefetch) {
+		return new ParallelMergeOrdered<>(this, prefetch, Queues.get(prefetch), comparator);
+	}
+
+	/**
 	 * Returns the number of expected parallel Subscribers.
 	 *
 	 * @return the number of expected parallel Subscribers

@@ -1234,6 +1234,33 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 *
+	 * @param sources
+	 * @param <I>
+	 * @return
+	 */
+	@SafeVarargs
+	public static <I extends Comparable<? super I>> Flux<I> mergeOrdered(Publisher<? extends I>... sources) {
+		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, Comparator.naturalOrder(), sources);
+	}
+
+	@SafeVarargs
+	public static <I> Flux<I> mergeOrdered(Comparator<? super I> comparator, Publisher<? extends I>... sources) {
+		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, comparator, sources);
+	}
+
+	@SafeVarargs
+	public static <I> Flux<I> mergeOrdered(int prefetch, Comparator<? super I> comparator, Publisher<? extends I>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return from(sources[0]);
+		}
+		return onAssembly(new FluxMergeOrdered<>(prefetch, Queues.get(prefetch), comparator, sources));
+	}
+
+	/**
 	 * Merge data from {@link Publisher} sequences emitted by the passed {@link Publisher}
 	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
