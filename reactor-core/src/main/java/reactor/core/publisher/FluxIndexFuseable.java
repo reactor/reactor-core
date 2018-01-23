@@ -51,7 +51,7 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
-public class FluxIndexFuseable<T, I> extends FluxOperator<T, I>
+final class FluxIndexFuseable<T, I> extends FluxOperator<T, I>
 		implements Fuseable {
 
 	private final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
