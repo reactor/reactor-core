@@ -4,9 +4,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MpscLinkedQueueTest {
+
+	@Test
+	public void mpscQueuesAPI() {
+		assertThat(Queues.unboundedMultiproducer().get()).isInstanceOf(MpscLinkedQueue.class);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void shouldRejectNullableValues() {
@@ -25,9 +30,9 @@ public class MpscLinkedQueueTest {
 		MpscLinkedQueue<Object> q = new MpscLinkedQueue<Object>();
 		q.test(1, 2);
 
-		assertEquals(1, q.poll());
-		assertEquals(2, q.poll());
-		assertNull(q.poll());
+		assertThat(q.poll()).isEqualTo(1);
+		assertThat(q.poll()).isEqualTo(2);
+		assertThat(q.poll()).isNull();
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
@@ -50,13 +55,13 @@ public class MpscLinkedQueueTest {
 		MpscLinkedQueue<Object> q = new MpscLinkedQueue<>();
 		q.test(1, 2);
 
-		assertFalse(q.isEmpty());
-		assertEquals(2, q.size());
+		assertThat(q.isEmpty()).as("isEmpty() false").isFalse();
+		assertThat(q).hasSize(2);
 
 		q.clear();
 
-		assertTrue(q.isEmpty());
-		assertEquals(0, q.size());
+		assertThat(q.isEmpty()).as("isEmpty() true").isTrue();
+		assertThat(q).hasSize(0);
 	}
 
 	@Test
@@ -65,8 +70,8 @@ public class MpscLinkedQueueTest {
 		q.test(1, 2);
 
 		for (int i = 0; i < 100; i++) {
-			assertEquals(1, q.peek());
-			assertEquals(2, q.size());
+			assertThat(q.peek()).isEqualTo(1);
+			assertThat(q).hasSize(2);
 		}
 	}
 
