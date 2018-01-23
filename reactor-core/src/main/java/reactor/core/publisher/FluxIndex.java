@@ -34,7 +34,7 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
-public class FluxIndex<T, I> extends FluxOperator<T, I> {
+final class FluxIndex<T, I> extends FluxOperator<T, I> {
 
 	private final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
