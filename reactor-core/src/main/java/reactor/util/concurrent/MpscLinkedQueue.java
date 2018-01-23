@@ -32,7 +32,7 @@ import reactor.util.annotation.Nullable;
  * A multi-producer single consumer unbounded queue.
  * @param <E> the contained value type
  */
-public class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E, E> {
+final class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E, E> {
 	private volatile LinkedQueueNode<E> producerNode;
 
 	private final static AtomicReferenceFieldUpdater<MpscLinkedQueue, LinkedQueueNode> PRODUCER_NODE_UPDATER
