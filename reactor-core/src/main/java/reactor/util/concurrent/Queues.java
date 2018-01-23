@@ -188,6 +188,17 @@ public final class Queues {
 		return XS_SUPPLIER;
 	}
 
+	/**
+	 * Returns an unbounded queue suitable for multi-producer/single-consumer (MPSC)
+	 * scenarios.
+	 *
+	 * @param <T> the reified {@link Queue} generic type
+	 * @return an unbounded MPSC {@link Queue} {@link Supplier}
+	 */
+	public static <T> Supplier<Queue<T>> unboundedMultiproducer() {
+		return MpscLinkedQueue::new;
+	}
+
 	private Queues() {
 		//prevent construction
 	}

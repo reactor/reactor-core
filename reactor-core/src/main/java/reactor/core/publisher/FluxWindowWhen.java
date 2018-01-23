@@ -33,7 +33,7 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
-import reactor.util.concurrent.MpscLinkedQueue;
+import reactor.util.concurrent.Queues;
 
 /**
  * Splits the source sequence into potentially overlapping windowEnds controlled by items
@@ -110,7 +110,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 		WindowWhenMainSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				Publisher<U> open, Function<? super U, ? extends Publisher<V>> close,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
-			super(actual, new MpscLinkedQueue<>());
+			super(actual, Queues.unboundedMultiproducer().get());
 			this.open = open;
 			this.close = close;
 			this.processorQueueSupplier = processorQueueSupplier;
