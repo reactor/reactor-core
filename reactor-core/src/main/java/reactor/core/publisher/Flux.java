@@ -1234,23 +1234,59 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
+	 * by picking the smallest values from each source (as defined by their natural order).
+	 * This is not a {@link #sort()}, as it doesn't consider the whole of each sequences.
+	 * <p>
+	 * Instead, this operator considers only one value from each source and picks the
+	 * smallest of all these values, then replenishes the slot for that picked source.
 	 *
-	 * @param sources
-	 * @param <I>
-	 * @return
+	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
+	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
+	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
 	 */
 	@SafeVarargs
 	public static <I extends Comparable<? super I>> Flux<I> mergeOrdered(Publisher<? extends I>... sources) {
 		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, Comparator.naturalOrder(), sources);
 	}
 
+	/**
+	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
+	 * by picking the smallest values from each source (as defined by the provided
+	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
+	 * the whole of each sequences.
+	 * <p>
+	 * Instead, this operator considers only one value from each source and picks the
+	 * smallest of all these values, then replenishes the slot for that picked source.
+	 *
+	 * @param comparator the {@link Comparator} to use to find the smallest value
+	 * @param sources {@link Publisher} sources to merge
+	 * @param <T> the merged type
+	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 */
 	@SafeVarargs
-	public static <I> Flux<I> mergeOrdered(Comparator<? super I> comparator, Publisher<? extends I>... sources) {
+	public static <T> Flux<T> mergeOrdered(Comparator<? super T> comparator, Publisher<? extends T>... sources) {
 		return mergeOrdered(Queues.SMALL_BUFFER_SIZE, comparator, sources);
 	}
 
+	/**
+	 * Merge data from provided {@link Publisher} sequences into an ordered merged sequence,
+	 * by picking the smallest values from each source (as defined by the provided
+	 * {@link Comparator}). This is not a {@link #sort(Comparator)}, as it doesn't consider
+	 * the whole of each sequences.
+	 * <p>
+	 * Instead, this operator considers only one value from each source and picks the
+	 * smallest of all these values, then replenishes the slot for that picked source.
+	 *
+	 * @param prefetch the number of elements to prefetch from each source (avoiding too
+	 * many small requests to the source when picking)
+	 * @param comparator the {@link Comparator} to use to find the smallest value
+	 * @param sources {@link Publisher} sources to merge
+	 * @param <T> the merged type
+	 * @return a merged {@link Flux} that , subscribing early but keeping the original ordering
+	 */
 	@SafeVarargs
-	public static <I> Flux<I> mergeOrdered(int prefetch, Comparator<? super I> comparator, Publisher<? extends I>... sources) {
+	public static <T> Flux<T> mergeOrdered(int prefetch, Comparator<? super T> comparator, Publisher<? extends T>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -4958,6 +4994,35 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<Signal<T>> materialize() {
 		return onAssembly(new FluxMaterialize<>(this));
+	}
+
+	/**
+	 * Merge data from this {@link Flux} and a {@link Publisher} into a reordered merge
+	 * sequence, by picking the smallest value from each sequence as defined by a provided
+	 * {@link Comparator}. Note that subsequent calls are combined, and their comparators are
+	 * in lexicographic order as defined by {@link Comparator#thenComparing(Comparator)}.
+	 * <p>
+	 * The combination step is avoided if the two {@link Comparator Comparators} are
+	 * {@link Comparator#equals(Object) equal} (which can easily be achieved by using the
+	 * same reference, and is also always true of {@link Comparator#naturalOrder()}).
+	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
+	 * @param other the {@link Publisher} to merge with
+	 * @param otherComparator the {@link Comparator} to use for merging
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public final Flux<T> mergeOrderedWith(Publisher<? extends T> other,
+			Comparator<? super T> otherComparator) {
+		if (this instanceof FluxMergeOrdered) {
+			FluxMergeOrdered<T> fluxMerge = (FluxMergeOrdered<T>) this;
+			return fluxMerge.mergeAdditionalSource(other, otherComparator);
+		}
+		return mergeOrdered(otherComparator, this, other);
 	}
 
 	/**

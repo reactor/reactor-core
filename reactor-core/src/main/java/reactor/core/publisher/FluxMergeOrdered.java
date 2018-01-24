@@ -67,19 +67,28 @@ final class FluxMergeOrdered<T> extends Flux<T> implements Scannable {
 
 	/**
 	 * Returns a new instance which has the additional source to be merged together with
-	 * the current array of sources.
+	 * the current array of sources. The provided {@link Comparator} is tested for equality
+	 * with the current comparator, and if different is combined by {@link Comparator#thenComparing(Comparator)}.
 	 * <p>
 	 * This operation doesn't change the current {@link FluxMergeOrdered} instance.
 	 *
 	 * @param source the new source to merge with the others
 	 * @return the new {@link FluxMergeOrdered} instance
 	 */
-	FluxMergeOrdered<T> mergeAdditionalSource(Publisher<? extends T> source) {
+	FluxMergeOrdered<T> mergeAdditionalSource(Publisher<? extends T> source,
+			Comparator<? super T> otherComparator) {
 		int n = sources.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];
 		System.arraycopy(sources, 0, newArray, 0, n);
 		newArray[n] = source;
+
+		if (!valueComparator.equals(otherComparator)) {
+			@SuppressWarnings("unchecked")
+			Comparator<T> currentComparator = (Comparator<T>) this.valueComparator;
+			final Comparator<T> newComparator = currentComparator.thenComparing(otherComparator);
+			return new FluxMergeOrdered<>(prefetch, queueSupplier, newComparator, newArray);
+		}
 		return new FluxMergeOrdered<>(prefetch, queueSupplier, valueComparator, newArray);
 	}
 

@@ -99,6 +99,89 @@ public class FluxMergeOrderedTest {
 		assertThat(testOne).isSameAs(expectedOne);
 	}
 
+	static class Person {
+		private final String name;
+
+		Person(String name) {
+			this.name = name;
+		}
+
+		public String getName() {
+			return name;
+		}
+	}
+
+	static class User extends Person {
+
+		private final String login;
+
+		User(String name, String login) {
+			super(name);
+			this.login = login;
+		}
+
+		public String getLogin() {
+			return login;
+		}
+	}
+
+	@Test
+	public void mergeOrderedWithCombinesComparators() {
+		Comparator<Person> nameComparator = Comparator.comparing(Person::getName);
+		Comparator<User> loginComparator = Comparator.comparing(User::getLogin).reversed();
+
+		Flux<User> a = Flux.just(new User("foo", "A"), new User("bob", "JustBob"));
+		Flux<User> b = Flux.just(new User("foo", "B"));
+		Flux<User> c = Flux.just(new User("foo", "C"));
+
+		StepVerifier.create(a.mergeOrderedWith(b, nameComparator)
+		                     .mergeOrderedWith(c, loginComparator)
+		                     .map(User::getLogin))
+		            .expectNext("C", "B", "A", "JustBob")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void mergeOrderedWithDetectsSameReference() {
+		Comparator<String> comparator = Comparator.comparingInt(String::length);
+
+		final Flux<String> flux = Flux.just("AAAAA", "BBBB")
+		                              .mergeOrderedWith(Flux.just("DD", "CCC"), comparator)
+		                              .mergeOrderedWith(Flux.just("E"), comparator);
+
+		assertThat(flux).isInstanceOf(FluxMergeOrdered.class);
+		assertThat(((FluxMergeOrdered) flux).valueComparator)
+				.as("didn't combine comparator")
+				.isSameAs(comparator);
+	}
+
+	@Test
+	public void mergeOrderedWithDoesntCombineNaturalOrder() {
+		final Flux<String> flux = Flux.just("AAAAA", "BBBB")
+		                              .mergeOrderedWith(Flux.just("DD", "CCC"), Comparator.naturalOrder())
+		                              .mergeOrderedWith(Flux.just("E"), Comparator.naturalOrder());
+
+		assertThat(flux).isInstanceOf(FluxMergeOrdered.class);
+		assertThat(((FluxMergeOrdered) flux).valueComparator)
+				.as("didn't combine naturalOrder()")
+				.isSameAs(Comparator.naturalOrder());
+	}
+
+	@Test
+	public void considersOnlyLatestElementInEachSource() {
+		final Flux<String> flux = Flux.mergeOrdered(Comparator.comparingInt(String::length),
+				Flux.just("AAAAA", "BBBB"),
+				Flux.just("DD", "CCC"),
+				Flux.just("E"));
+
+		StepVerifier.create(flux)
+		            .expectNext("E") // between E, DD and AAAAA => E, 3rd slot done
+		            .expectNext("DD") // between DD and AAAAA => DD, replenish 2nd slot to CCC
+		            .expectNext("CCC") // between CCC and AAAAA => CCC, 2nd slot done
+		            .expectNext("AAAAA", "BBBB") // rest of first flux in 1st slot => AAAAA then BBBB
+		            .verifyComplete();
+	}
+
 	@Test
 	public void reorderingByIndex() {
 		final List<Integer> disordered = Collections.synchronizedList(new ArrayList<>());
@@ -160,18 +243,22 @@ public class FluxMergeOrderedTest {
 
 	@Test
 	public void mergeAdditionalSource() {
+		Comparator<Integer> originalComparator = Comparator.naturalOrder();
 		FluxMergeOrdered<Integer> fmo = new FluxMergeOrdered<>(2,
 				Queues.small(),
-				Comparator.naturalOrder(),
+				originalComparator,
 				Flux.just(1, 2),
 				Flux.just(3, 4));
 
-		FluxMergeOrdered<Integer> fmo2 = fmo.mergeAdditionalSource(Flux.just(5, 6));
+		FluxMergeOrdered<Integer> fmo2 = fmo.mergeAdditionalSource(Flux.just(5, 6), Comparator.naturalOrder());
 
 		assertThat(fmo2).isNotSameAs(fmo);
 		assertThat(fmo2.sources).startsWith(fmo.sources)
 		                        .hasSize(3);
 		assertThat(fmo.sources).hasSize(2);
+		assertThat(fmo2.valueComparator)
+				.as("same comparator detected and used")
+				.isSameAs(originalComparator);
 
 		StepVerifier.create(fmo2)
 		            .expectNext(1, 2, 3, 4, 5, 6)
