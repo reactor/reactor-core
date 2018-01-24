@@ -59,8 +59,8 @@ public class MonoThenIgnoreTest {
 
 
 	@Test
-    public void values() {
-	    StepVerifier.create(Mono.just(0).then(2))
+    public void thenReturn() {
+	    StepVerifier.create(Mono.just(0).thenReturn(2))
                     .expectNext(2)
                     .expectComplete();
     }

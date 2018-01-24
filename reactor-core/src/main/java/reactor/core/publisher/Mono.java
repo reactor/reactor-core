@@ -3234,9 +3234,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <V> the element type of the supplied value
 	 *
 	 * @return a new {@link Mono} that emits the supplied value
-	 * @since 3.1.2
 	 */
-	public final <V> Mono<V> then(V value) {
+	public final <V> Mono<V> thenReturn(V value) {
 	    return then(Mono.just(value));
 	}
 
