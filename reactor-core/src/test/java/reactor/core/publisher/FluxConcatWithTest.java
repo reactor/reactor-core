@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxConcatWithTest {
@@ -101,13 +102,9 @@ public class FluxConcatWithTest {
 	}
 
 	@Test
-    public void endWith() {
-	  AssertSubscriber<Integer> ts = AssertSubscriber.create();
-	  Flux.just(1, 2).concatWithValues(4, 5, 6)
-      .subscribe(ts);
-
-	  ts.assertValues(1, 2, 4, 5, 6)
-      .assertNoError()
-      .assertComplete();
+    public void concatWithValues() {
+      StepVerifier.create(Flux.just(1, 2).concatWithValues(4, 5, 6))
+          .expectNext(1, 2, 3, 4, 5, 6)
+          .expectComplete();
     }
 }
