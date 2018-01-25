@@ -4899,6 +4899,55 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and
+	 * trace them using a specific user-provided {@link Logger}, at {@link Level#INFO} level.
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png" alt="">
+	 *
+	 * @param logger the {@link Logger} to use, instead of resolving one through a category.
+	 *
+	 * @return a new {@link Flux} that logs signals
+	 */
+	public final Flux<T> log(Logger logger) {
+		return log(logger, Level.INFO, false);
+	}
+
+	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and
+	 * trace them using a specific user-provided {@link Logger}, at the given {@link Level}.
+	 * <p>
+	 * Options allow fine grained filtering of the traced signal, for instance to only
+	 * capture onNext and onError:
+	 * <pre>
+	 *     flux.log(myCustomLogger, Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
+	 * alt="">
+	 *
+	 * @param logger the {@link Logger} to use, instead of resolving one through a category.
+	 * @param level the {@link Level} to enforce for this tracing Flux (only FINEST, FINE,
+	 * INFO, WARNING and SEVERE are taken into account)
+	 * @param showOperatorLine capture the current stack to display operator class/line number.
+	 * @param options a vararg {@link SignalType} option to filter log messages
+	 *
+	 * @return a new {@link Flux} that logs signals
+	 */
+	public final Flux<T> log(Logger logger,
+			Level level,
+			boolean showOperatorLine,
+			SignalType... options) {
+		SignalLogger<T> log = new SignalLogger<>(this, "IGNORED", level,
+				showOperatorLine,
+				s -> logger,
+				options);
+
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxLogFuseable<>(this, log));
+		}
+		return onAssembly(new FluxLog<>(this, log));
+	}
+
+	/**
 	 * Transform the items emitted by this {@link Flux} by applying a synchronous function
 	 * to each item.
 	 * <p>
