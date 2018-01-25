@@ -2298,9 +2298,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Observe Reactive Streams signals matching the passed filter {@code options} and
-	 * trace them using a specific user-provided {@link Logger}. Default will use
-	 * {@link Level#INFO} and {@code java.util.logging}. If SLF4J is available, it will be
-	 * used instead.
+	 * trace them using a specific user-provided {@link Logger}, at {@link Level#INFO} level.
 	 *
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png" alt="">
 	 *
@@ -2315,8 +2313,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Observe Reactive Streams signals matching the passed filter {@code options} and
 	 * trace them using a specific user-provided {@link Logger}, at the given {@link Level}.
-	 * Default will use {@code java.util.logging}. If SLF4J is available, it will be used
-	 * instead.
 	 * <p>
 	 * Options allow fine grained filtering of the traced signal, for instance to only
 	 * capture onNext and onError:
