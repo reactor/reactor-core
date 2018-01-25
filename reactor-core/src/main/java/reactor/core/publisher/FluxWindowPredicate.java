@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,11 @@ import reactor.util.annotation.Nullable;
  * a {@link Predicate} on the values. The predicate can be used in several modes:
  * <ul>
  * <li>{@code Until}: A new window starts when the predicate returns true. The
- * element that just matched the predicate is the last in the previous window.</li>
+ * element that just matched the predicate is the last in the previous window, and the
+ * windows are not emitted before an inner element is pushed.</li>
  * <li>{@code UntilOther}: A new window starts when the predicate returns true. The
- * element that just matched the predicate is the first in the new window.</li>
+ * element that just matched the predicate is the first in the new window, which is
+ * emitted immediately.</li>
  * <li>{@code While}: A new window starts when the predicate stops matching. The
  * non-matching elements that delimit each window are simply discarded, and the
  * windows are not emitted before an inner element is pushed</li>
@@ -181,28 +183,18 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 					groupQueueSupplier.get(),
 					this);
 			window = g;
-			queue.offer(g);
 		}
 
-		void offerNewWindow(@Nullable T emitInNewWindow) {
+		@Nullable WindowFlux<T> newWindowDeferred() {
 			// if the main is cancelled, don't create new groups
 			if (cancelled == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				WindowFlux<T> g = new WindowFlux<>(
-						groupQueueSupplier.get(), this);
-				if (emitInNewWindow != null) {
-					g.onNext(emitInNewWindow);
-				}
+				WindowFlux<T> g = new WindowFlux<>(groupQueueSupplier.get(), this);
 				window = g;
-
-				if (!queue.offer(g)) {
-					onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), emitInNewWindow,
-							actual.currentContext()));
-					return;
-				}
-				drain();
+				return g;
 			}
+			return null;
 		}
 
 		@Override
@@ -222,24 +214,49 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				return;
 			}
 
+
+			if (!handleDeferredWindow(g, t)) {
+				return;
+			}
+			drain();
+
 			if (mode == Mode.UNTIL && match) {
 				g.onNext(t);
 				g.onComplete();
-				offerNewWindow(null);
+				newWindowDeferred();
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
 				g.onComplete();
-				offerNewWindow(t);
+				g = newWindowDeferred();
+				if (g != null) {
+					g.onNext(t);
+					handleDeferredWindow(g, t);
+					drain();
+				}
 			}
 			else if (mode == Mode.WHILE && !match) {
 				g.onComplete();
-				offerNewWindow(null);
+				newWindowDeferred();
 				//compensate for the dropped delimiter
 				s.request(1);
 			}
 			else {
 				g.onNext(t);
 			}
+		}
+
+		boolean handleDeferredWindow(@Nullable WindowFlux<T> window, T signal) {
+			if (window != null && window.deferred) {
+				window.deferred = false;
+				if (!queue.offer(window)) {
+					onError(Operators.onOperatorError(this,
+							Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
+							signal,
+							actual.currentContext()));
+					return false;
+				}
+			}
+			return true;
 		}
 
 		@Override
@@ -255,7 +272,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 
 		@Override
 		public void onComplete() {
-			if(done){
+			if(done) {
 				return;
 			}
 
@@ -545,11 +562,14 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 
 		int produced;
 
+		boolean deferred;
+
 		WindowFlux(
 				Queue<T> queue,
 				WindowPredicateMain<T> parent) {
 			this.queue = queue;
 			this.parent = parent;
+			this.deferred = true;
 		}
 
 		@Override

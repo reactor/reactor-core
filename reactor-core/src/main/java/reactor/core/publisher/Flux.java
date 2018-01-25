@@ -8128,6 +8128,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the
 	 * given predicate. A new window is opened each time the predicate returns true, at which
 	 * point the previous window will receive the triggering element then onComplete.
+	 * <p>
+	 * Windows are lazily made available downstream at the point where they receive their
+	 * first event (an element is pushed, the window errors). This variant shouldn't
+	 * expose empty windows, as the separators are emitted into
+	 * the windows they close.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntil.png" alt="">
@@ -8144,15 +8149,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the
 	 * given predicate. A new window is opened each time the predicate returns true.
 	 * <p>
+	 * Windows are lazily made available downstream at the point where they receive their
+	 * first event (an element is pushed, the window completes or errors).
+	 * <p>
 	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
-	 * element will be emitted in the new window. Note it can mean that an empty window is
-	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
-	 * predicate.
+	 * element will be emitted in the new window, which becomes immediately available.
+	 * This variant can emit an empty window if the sequence starts with a separator.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntilcutbefore.png" alt="">
 	 * <p>
 	 * Otherwise, the triggering element will be emitted in the old window before it does
-	 * onComplete, similar to {@link #windowUntil(Predicate)}.
+	 * onComplete, similar to {@link #windowUntil(Predicate)}. This variant shouldn't
+	 * expose empty windows, as the separators are emitted into the windows they close.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
@@ -8170,15 +8178,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * predicate and using a prefetch. A new window is opened each time the predicate
 	 * returns true.
 	 * <p>
+	 * Windows are lazily made available downstream at the point where they receive their
+	 * first event (an element is pushed, the window completes or errors).
+	 * <p>
 	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
-	 * element will be emitted in the new window. Note it can mean that an empty window is
-	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
-	 * predicate.
+	 * element will be emitted in the new window. This variant can emit an empty window
+	 * if the sequence starts with a separator.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntilcutbefore.png" alt="">
 	 * <p>
 	 * Otherwise, the triggering element will be emitted in the old window before it does
-	 * onComplete, similar to {@link #windowUntil(Predicate)}.
+	 * onComplete, similar to {@link #windowUntil(Predicate)}. This variant shouldn't
+	 * expose empty windows, as the separators are emitted into the windows they close.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
@@ -8202,9 +8213,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * while a given predicate matches the source elements. Once the predicate returns
 	 * false, the window closes with an onComplete and the triggering element is discarded.
 	 * <p>
-	 * Note that for a sequence starting with a separator, or having several subsequent
-	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
-	 *
+	 * Windows are lazily made available downstream at the point where they receive their
+	 * first event (an element is pushed, the window completes or errors). Empty windows
+	 * can happen when a sequence starts with a separator or contains multiple separators,
+	 * but a sequence that finishes with a separator won't cause a remainder empty window
+	 * to be emitted.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowwhile.png" alt="">
 	 *
@@ -8221,9 +8234,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * while a given predicate matches the source elements. Once the predicate returns
 	 * false, the window closes with an onComplete and the triggering element is discarded.
 	 * <p>
-	 * Note that for a sequence starting with a separator, or having several subsequent
-	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
-	 *
+	 * Windows are lazily made available downstream at the point where they receive their
+	 * first event (an element is pushed, the window completes or errors). Empty windows
+	 * can happen when a sequence starts with a separator or contains multiple separators,
+	 * but a sequence that finishes with a separator won't cause a remainder empty window
+	 * to be emitted.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowwhile.png" alt="">
 	 *
