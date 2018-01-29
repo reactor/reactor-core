@@ -104,7 +104,7 @@ public class FluxConcatWithTest {
 	@Test
     public void concatWithValues() {
       StepVerifier.create(Flux.just(1, 2).concatWithValues(4, 5, 6))
-          .expectNext(1, 2, 3, 4, 5, 6)
-          .expectComplete();
+          .expectNext(1, 2, 4, 5, 6)
+          .verifyComplete();
     }
 }

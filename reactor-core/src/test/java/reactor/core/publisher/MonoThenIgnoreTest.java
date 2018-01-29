@@ -62,7 +62,7 @@ public class MonoThenIgnoreTest {
     public void thenReturn() {
 	    StepVerifier.create(Mono.just(0).thenReturn(2))
                     .expectNext(2)
-                    .expectComplete();
+                    .verifyComplete();
     }
 
 	@Test
