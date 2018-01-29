@@ -4990,7 +4990,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param logger the {@link Logger} to use, instead of resolving one through a category.
 	 * @param level the {@link Level} to enforce for this tracing Flux (only FINEST, FINE,
 	 * INFO, WARNING and SEVERE are taken into account)
-	 * @param showOperatorLine capture the current stack to display operator class/line number.
+	 * @param showOperatorLine capture the current stack to display operator class/line number (default in overload is false).
 	 * @param options a vararg {@link SignalType} option to filter log messages
 	 *
 	 * @return a new {@link Flux} that logs signals

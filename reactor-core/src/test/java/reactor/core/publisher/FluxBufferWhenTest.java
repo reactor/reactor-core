@@ -26,12 +26,11 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.logging.Level;
 
 import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -45,8 +44,6 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class FluxBufferWhenTest {
 
@@ -57,18 +54,17 @@ public class FluxBufferWhenTest {
 	public void bufferedCanCompleteIfOpenNeverCompletesDropping() {
 		//this test ensures that dropping buffers will complete if the source is exhausted before the open publisher finishes
 		Mono<Integer> buffered = Flux.range(1, 200)
-		                             .zipWith(Flux.interval(Duration.ofMillis(5)),
-				                             (integer, aLong) -> integer)
+		                             .delayElements(Duration.ofMillis(25))
 		                             .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(200)),
 				                             open -> Mono.delay(Duration.ofMillis(100)))
-		                             .log()
+		                             .log(LOGGER, Level.FINE, false)
 		                             .reduce(new HashSet<Integer>(), (set, buffer) -> { set.addAll(buffer); return set;})
 		                             .map(HashSet::size);
 
 		StepVerifier.create(buffered)
 		            .assertNext(size -> assertThat(size).as("approximate size with drops").isBetween(80, 110))
 		            .expectComplete()
-		            .verify(Duration.ofSeconds(3));
+		            .verify(Duration.ofSeconds(10));
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/969
@@ -76,18 +72,17 @@ public class FluxBufferWhenTest {
 	public void bufferedCanCompleteIfOpenNeverCompletesOverlapping() {
 		//this test ensures that overlapping buffers will complete if the source is exhausted before the open publisher finishes
 		Mono<Integer> buffered = Flux.range(1, 200)
-		                             .zipWith(Flux.interval(Duration.ofMillis(5)),
-				                             (integer, aLong) -> integer)
+		                             .delayElements(Duration.ofMillis(25))
 		                             .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)),
 				                             open -> Mono.delay(Duration.ofMillis(200)))
-		                             .log()
+		                             .log(LOGGER, Level.FINE, false)
 		                             .reduce(new HashSet<Integer>(), (set, buffer) -> { set.addAll(buffer); return set;})
 		                             .map(HashSet::size);
 
 		StepVerifier.create(buffered)
 		            .expectNext(200)
 		            .expectComplete()
-		            .verify(Duration.ofSeconds(3));
+		            .verify(Duration.ofSeconds(10));
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/969
@@ -118,8 +113,8 @@ public class FluxBufferWhenTest {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final UnicastProcessor<Wrapper> processor = UnicastProcessor.create();
 
-		Flux<Integer> emitter = Flux.range(1, 400)
-		                            .delayElements(Duration.ofMillis(5))
+		Flux<Integer> emitter = Flux.range(1, 200)
+		                            .delayElements(Duration.ofMillis(25))
 		                            .doOnNext(i -> processor.onNext(new Wrapper(i)))
 		                            .doOnError(processor::onError)
 		                            .doOnComplete(processor::onComplete);
@@ -134,12 +129,12 @@ public class FluxBufferWhenTest {
 						         String.format("from %s to %s", t2.getT2().get(0),
 								         t2.getT2().get(t2.getT2().size() - 1)),
 						         finalized.longValue()))
-				         .doOnNext(v -> LOGGER.info(v.toString()))
+				         .doOnNext(v -> LOGGER.debug(v.toString()))
 				         .doOnComplete(latch::countDown)
 				         .collectList();
 
 		emitter.subscribe();
-		List<Tuple3<Long, String, Long>> finalizeStats = buffers.block(Duration.ofSeconds(10));
+		List<Tuple3<Long, String, Long>> finalizeStats = buffers.block(Duration.ofSeconds(30));
 
 		Condition<? super Tuple3<Long, String, Long>> hasFinalized = new Condition<>(
 				t3 -> t3.getT3() > 0, "has finalized");
@@ -147,7 +142,7 @@ public class FluxBufferWhenTest {
 		//at least 5 intermediate finalize
 		assertThat(finalizeStats).areAtLeast(5, hasFinalized);
 
-		latch.await(10, TimeUnit.SECONDS);
+		assertThat(latch.await(1, TimeUnit.SECONDS)).as("buffers already blocked").isTrue();
 		LOGGER.debug("final GC");
 		System.gc();
 		Thread.sleep(500);
