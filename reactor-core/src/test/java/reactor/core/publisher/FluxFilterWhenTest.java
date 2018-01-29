@@ -153,7 +153,7 @@ public class FluxFilterWhenTest {
 	public void predicateThrows() {
 		StepVerifier.create(Flux.just(1)
 		                        .filterWhen(v -> { throw new IllegalStateException(); }))
-		            .expectError(IllegalStateException.class);
+		            .verifyError(IllegalStateException.class);
 	}
 
 	@Test

@@ -473,7 +473,7 @@ public class FluxBufferWhenTest {
 						source.complete();
 		            })
 		            .expectNextMatches(List::isEmpty)
-		            .expectComplete();
+		            .verifyComplete();
 
 		open.assertNoSubscribers();
 		close.assertNoSubscribers();

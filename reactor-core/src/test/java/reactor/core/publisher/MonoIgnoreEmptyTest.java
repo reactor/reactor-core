@@ -30,14 +30,14 @@ public class MonoIgnoreEmptyTest {
 	public void normal() {
 		StepVerifier.create(Flux.just(1)
 		                        .thenEmpty(Flux.empty()))
-		            .expectComplete();
+		            .verifyComplete();
 	}
 
 	@Test
 	public void normal3() {
 		StepVerifier.create(Flux.just(1)
 		                        .then())
-		            .expectComplete();
+		            .verifyComplete();
 	}
 
 	@Test
