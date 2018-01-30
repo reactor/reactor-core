@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
@@ -476,8 +477,8 @@ public class StepVerifierTests {
 		                            })
 		                            .then(() -> Schedulers.elastic().schedule(() ->
 				                            publisher.next(1L)))
-		                              .then(() -> Schedulers.elastic().schedule(() ->
-				                            publisher.next(2L)))
+		                            .then(() -> Schedulers.elastic().schedule(() ->
+				                            publisher.next(2L), 50, TimeUnit.MILLISECONDS))
 		                            .expectNoEvent(Duration.ofMillis(100))
 		                            .thenRequest(1)
 		                            .thenRequest(1)
