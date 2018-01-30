@@ -65,6 +65,10 @@ I want to deal with:
 *** ...retaining the original sequence order: `Flux#flatMapSequential` (this triggers the async processes immediately but reorders the results)
 *** ...where the async task can return multiple values, from a `Mono` source: `Mono#flatMapMany`
 
+* I want to add pre-set elements to an existing sequence:
+** at the start: `Flux#startWith(T...)`
+** at the end: `Flux#concatWith(T...)`
+
 * I want to aggregate a `Flux`: (the `Flux#` prefix is assumed below)
 ** into a List: `collectList`, `collectSortedList`
 ** into a Map: `collectMap`, `collectMultiMap`
@@ -110,6 +114,7 @@ I want to deal with:
 ** ...and I want the completion represented as a `Mono`: `then`
 ** ...and I want to wait for another task to complete at the end: `thenEmpty`
 ** ...and I want to switch to another `Mono` at the end: `Mono#then(mono)`
+** ...and I want to emit a single value at the end: `Mono#thenReturn(T)`
 ** ...and I want to switch to a `Flux` at the end: `thenMany`
 
 * I have a Mono for which I want to defer completion...
