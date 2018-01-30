@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3276,6 +3276,17 @@ public abstract class Mono<T> implements Publisher<T> {
             return a.shift(other);
 		}
 		return onAssembly(new MonoIgnoreThen<>(new Publisher[] { this }, other));
+	}
+
+	/**
+	 * Let this {@link Mono} complete then emit the provided value.
+	 * @param value a value to emit after termination
+	 * @param <V> the element type of the supplied value
+	 *
+	 * @return a new {@link Mono} that emits the supplied value
+	 */
+	public final <V> Mono<V> thenReturn(V value) {
+	    return then(Mono.just(value));
 	}
 
 	/**

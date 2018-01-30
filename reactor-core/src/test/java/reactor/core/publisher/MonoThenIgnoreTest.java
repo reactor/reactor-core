@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,14 @@ public class MonoThenIgnoreTest {
 		            .expectNext(2)
 		            .expectComplete();
 	}
+
+
+	@Test
+    public void thenReturn() {
+	    StepVerifier.create(Mono.just(0).thenReturn(2))
+                    .expectNext(2)
+                    .verifyComplete();
+    }
 
 	@Test
 	public void normalTime() {

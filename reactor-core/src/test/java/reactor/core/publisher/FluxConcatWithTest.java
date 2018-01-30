@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxConcatWithTest {
@@ -99,4 +100,11 @@ public class FluxConcatWithTest {
 		.assertNoError()
 		.assertComplete();
 	}
+
+	@Test
+    public void concatWithValues() {
+      StepVerifier.create(Flux.just(1, 2).concatWithValues(4, 5, 6))
+          .expectNext(1, 2, 4, 5, 6)
+          .verifyComplete();
+    }
 }

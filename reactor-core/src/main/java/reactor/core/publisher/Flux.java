@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -373,6 +373,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public static <T> Flux<T> concat(Iterable<? extends Publisher<? extends T>> sources) {
 		return onAssembly(new FluxConcatIterable<>(sources));
+	}
+
+	/**
+	 * Concatenates the values to the end of the {@link Flux}
+	 *
+	 * @param values The values to concatenate
+	 *
+	 * @return a new {@link Flux} concatenating all source sequences
+	 */
+	@SafeVarargs
+	public final Flux<T> concatWithValues(T... values) {
+	    return concatWith(Flux.fromArray(values));
 	}
 
 	/**
