@@ -462,10 +462,10 @@ public class FluxBufferWhenTest {
 				.flux()
 				.bufferWhen(open, o -> close))
 		            .then(() -> {
-		            	source.assertSubscribers();
-		            	open.assertSubscribers();
-		            	close.assertSubscribers();
-		            	open.next(1);
+			            source.assertSubscribers();
+			            open.assertSubscribers();
+			            close.assertNoSubscribers();
+			            open.next(1);
 		            })
 		            .then(() -> {
 						open.assertSubscribers();
