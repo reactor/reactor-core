@@ -258,11 +258,10 @@ public class FluxJoinTest {
 	public void scanSubscription() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxJoin.JoinSubscription<String, String, String, String, String> test =
-				new FluxJoin.JoinSubscription<String, String, String, String, String>(actual,
+				new FluxJoin.JoinSubscription<>(actual,
 						s -> Mono.just(s),
 						s -> Mono.just(s),
-						(l, r) -> l,
-						Queues.unbounded().get());
+						(l, r) -> l);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);

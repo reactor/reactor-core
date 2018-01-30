@@ -120,13 +120,13 @@ final class FluxCreate<T> extends Flux<T> {
 		static final AtomicIntegerFieldUpdater<SerializedSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(SerializedSink.class, "wip");
 
-		final Queue<T> queue;
+		final Queue<T> mpscQueue;
 
 		volatile boolean done;
 
 		SerializedSink(BaseSink<T> sink) {
 			this.sink = sink;
-			this.queue = Queues.<T>unbounded(16).get();
+			this.mpscQueue = Queues.<T>unboundedMultiproducer().get();
 		}
 
 		@Override
@@ -153,10 +153,7 @@ final class FluxCreate<T> extends Flux<T> {
 				}
 			}
 			else {
-				Queue<T> q = queue;
-				synchronized (this) {
-					q.offer(t);
-				}
+				this.mpscQueue.offer(t);
 				if (WIP.getAndIncrement(this) != 0) {
 					return this;
 				}
@@ -198,7 +195,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		void drainLoop() {
 			BaseSink<T> e = sink;
-			Queue<T> q = queue;
+			Queue<T> q = mpscQueue;
 			int missed = 1;
 			for (; ; ) {
 
@@ -276,7 +273,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.BUFFERED) {
-				return queue.size();
+				return mpscQueue.size();
 			}
 			if (key == Attr.ERROR) {
 				return error;

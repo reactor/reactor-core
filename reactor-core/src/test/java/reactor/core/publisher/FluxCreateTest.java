@@ -1193,7 +1193,7 @@ public class FluxCreateTest {
 		FluxCreate.BaseSink<String> decorated = new FluxCreate.LatestAsyncSink<>(actual);
 		SerializedSink<String> test = new SerializedSink<>(decorated);
 
-		test.queue.offer("foo");
+		test.mpscQueue.offer("foo");
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 		assertThat(decorated.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 
