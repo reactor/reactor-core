@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -94,8 +95,11 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		final Publisher<? extends T> source;
 
+		volatile Context context;
+		static final AtomicReferenceFieldUpdater<RepeatWhenMainSubscriber, Context> CONTEXT =
+				AtomicReferenceFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class, Context.class, "context");
+
 		volatile int wip;
-		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<RepeatWhenMainSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class,
 						"wip");
@@ -109,6 +113,12 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
+			this.context = actual.currentContext();
+		}
+
+		@Override
+		public Context currentContext() {
+			return CONTEXT.get(this);
 		}
 
 		@Override
@@ -154,11 +164,23 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 			otherArbiter.set(w);
 		}
 
-		void resubscribe() {
+		void resubscribe(Object trigger) {
 			if (WIP.getAndIncrement(this) == 0) {
 				do {
 					if (cancelled) {
 						return;
+					}
+
+					//flow that emit a Context as a trigger for the re-subscription are
+					//used to update the currentContext()
+					if (trigger instanceof Context) {
+						Context oldContext = this.context;
+						Context newContext = oldContext.putAll((Context) trigger);
+						for(;;) {
+							if (CONTEXT.compareAndSet(this, oldContext, newContext)) {
+								break;
+							}
+						}
 					}
 
 					source.subscribe(this);
@@ -209,7 +231,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onNext(Object t) {
-			main.resubscribe();
+			main.resubscribe(t);
 		}
 
 		@Override

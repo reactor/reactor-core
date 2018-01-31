@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +30,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -406,5 +409,40 @@ public class FluxRepeatWhenTest {
 		List<Scannable> inners = main.inners().collect(Collectors.toList());
 
 		assertThat(inners).containsExactly((Scannable) signaller, main.otherArbiter);
+	}
+
+	@Test
+	public void repeatWhenContextTrigger() {
+		AtomicInteger repeatCount = new AtomicInteger(3);
+		List<String> repeats = Collections.synchronizedList(new ArrayList<>(4));
+
+		Flux<String> retryWithContext =
+				Flux.just("A", "B")
+				    .doOnEach(sig -> {
+				    	if (sig.isOnComplete()) {
+						    Context ctx = sig.getContext();
+						    repeats.add("emitted " + ctx.get("emitted") + " elements this attempt, " + ctx.get("repeatsLeft") + " repeats left");
+					    }
+				    })
+				    .repeatWhen(emittedEachAttempt -> emittedEachAttempt.take(repeatCount.get())
+				                                     .map(lastEmitted -> Context.of(
+						                                     "repeatsLeft", repeatCount.decrementAndGet(),
+						                                     "emitted", lastEmitted))
+				                                     .concatWith(Mono.error(new IllegalStateException("repeats exhausted"))))
+				    .subscriberContext(Context.of("repeatsLeft", repeatCount.get(), "emitted", 0));
+
+		StepVerifier.create(retryWithContext)
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectErrorMessage("repeats exhausted")
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(repeats).containsExactly(
+				"emitted 0 elements this attempt, 3 repeats left",
+				"emitted 2 elements this attempt, 2 repeats left",
+				"emitted 2 elements this attempt, 1 repeats left",
+				"emitted 2 elements this attempt, 0 repeats left");
 	}
 }

@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -358,5 +361,25 @@ public class FluxRetryWhenTest {
 		List<Scannable> inners = main.inners().collect(Collectors.toList());
 
 		assertThat(inners).containsExactly((Scannable) signaller, main.otherArbiter);
+	}
+
+	@Test
+	public void retryWhenContextTrigger() {
+		AtomicInteger retryCount = new AtomicInteger(3);
+		List<Integer> retriesLeft = Collections.synchronizedList(new ArrayList<>(4));
+
+		Flux<Object> retryWithContext =
+				Flux.error(new IllegalStateException("boom"))
+				    .doOnEach(sig -> retriesLeft.add(sig.getContext().get("retriesLeft")))
+				    .retryWhen(errorFlux -> errorFlux.take(retryCount.get())
+				                                     .map(e -> Context.of("retriesLeft", retryCount.decrementAndGet()))
+				                                     .concatWith(Mono.error(new IllegalStateException("retries exhausted"))))
+				    .subscriberContext(Context.of("retriesLeft", retryCount.get()));
+
+		StepVerifier.create(retryWithContext)
+		            .expectErrorMessage("retries exhausted")
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(retriesLeft).containsExactly(3, 2, 1, 0);
 	}
 }

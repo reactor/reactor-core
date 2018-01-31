@@ -5918,6 +5918,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * attempt is suppressed.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatwhen.png" alt="">
+	 * <p>
+	 * Note that if the companion {@link Publisher} created by the {@code repeatFactory}
+	 * emits {@link Context} as trigger objects, the content of these Context will be added
+	 * to the operator's own {@link Context}.
 	 *
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onComplete as a {@link Long}
@@ -6118,6 +6122,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/retrywhen.png" alt="">
+	 * <p>
+	 * Note that if the companion {@link Publisher} created by the {@code whenFactory}
+	 * emits {@link Context} as trigger objects, the content of these Context will be added
+	 * to the operator's own {@link Context}.
 	 *
 	 * @param whenFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onError as a {@link Throwable}.
