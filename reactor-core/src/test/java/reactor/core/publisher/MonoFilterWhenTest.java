@@ -156,7 +156,7 @@ public class MonoFilterWhenTest {
 	public void predicateThrows() {
 		StepVerifier.create(Mono.just(1)
 		                        .filterWhen(v -> { throw new IllegalStateException(); }))
-		            .expectError(IllegalStateException.class);
+		            .verifyError(IllegalStateException.class);
 	}
 
 	@Test
