@@ -31,6 +31,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 /**
@@ -47,15 +48,11 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	final Supplier<? extends Queue<Object>> drainQueueSupplier;
-
 	FluxWindowBoundary(Flux<? extends T> source, Publisher<U> other,
-			Supplier<? extends Queue<T>> processorQueueSupplier,
-			Supplier<? extends Queue<Object>> drainQueueSupplier) {
+			Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 		this.processorQueueSupplier = Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
-		this.drainQueueSupplier = Objects.requireNonNull(drainQueueSupplier, "drainQueueSupplier");
 	}
 
 	@Override
@@ -66,7 +63,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 	@Override
 	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
 		WindowBoundaryMain<T, U> main = new WindowBoundaryMain<>(actual,
-				processorQueueSupplier, processorQueueSupplier.get(), drainQueueSupplier.get());
+				processorQueueSupplier, processorQueueSupplier.get());
 
 		actual.onSubscribe(main);
 
@@ -128,14 +125,13 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 		WindowBoundaryMain(CoreSubscriber<? super Flux<T>> actual,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
-				Queue<T> processorQueue,
-				Queue<Object> queue) {
+				Queue<T> processorQueue) {
 			this.actual = actual;
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.window = new UnicastProcessor<>(processorQueue, this);
 			WINDOW_COUNT.lazySet(this, 2);
 			this.boundary = new WindowBoundaryOther<>(this);
-			this.queue = queue;
+			this.queue = Queues.unboundedMultiproducer().get();
 		}
 
 		@Override

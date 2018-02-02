@@ -4746,8 +4746,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			BiFunction<? super T, ? super TRight, ? extends R> resultSelector
 	) {
 		return onAssembly(new FluxJoin<T, TRight, TLeftEnd, TRightEnd, R>(
-				this, other, leftEnd, rightEnd, resultSelector, Queues
-				.unbounded(Queues.XS_BUFFER_SIZE)));
+				this, other, leftEnd, rightEnd, resultSelector));
 	}
 
 	/**
@@ -7586,9 +7585,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<Flux<T>> window(Publisher<?> boundary) {
 		return onAssembly(new FluxWindowBoundary<>(this,
-				boundary,
-				Queues.unbounded(Queues.XS_BUFFER_SIZE),
-				Queues.unbounded(Queues.XS_BUFFER_SIZE)));
+				boundary, Queues.unbounded(Queues.XS_BUFFER_SIZE)));
 	}
 
 	/**

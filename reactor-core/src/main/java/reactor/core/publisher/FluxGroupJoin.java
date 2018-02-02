@@ -38,6 +38,7 @@ import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 /**
@@ -69,7 +70,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 	final BiFunction<? super TLeft, ? super Flux<TRight>, ? extends R> resultSelector;
 
-	final Supplier<? extends Queue<Object>> queueSupplier;
 	final Supplier<? extends Queue<TRight>> processorQueueSupplier;
 
 	FluxGroupJoin(Flux<TLeft> source,
@@ -83,9 +83,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		this.other = Objects.requireNonNull(other, "other");
 		this.leftEnd = Objects.requireNonNull(leftEnd, "leftEnd");
 		this.rightEnd = Objects.requireNonNull(rightEnd, "rightEnd");
-		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
-		this.processorQueueSupplier =
-				Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
+		this.processorQueueSupplier = Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
 		this.resultSelector = Objects.requireNonNull(resultSelector, "resultSelector");
 	}
 
@@ -97,7 +95,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						leftEnd,
 						rightEnd,
 						resultSelector,
-						queueSupplier.get(),
 						processorQueueSupplier);
 
 		actual.onSubscribe(parent);
@@ -187,16 +184,11 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 				Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 				BiFunction<? super TLeft, ? super Flux<TRight>, ? extends R> resultSelector,
-				Queue<Object> queue,
-				Supplier<? extends
-						Queue<TRight>> processorQueueSupplier) {
+				Supplier<? extends Queue<TRight>> processorQueueSupplier) {
 			this.actual = actual;
 			this.cancellations = Disposables.composite();
-			this.queue = queue;
 			this.processorQueueSupplier = processorQueueSupplier;
-			if (!(queue instanceof BiPredicate)) {
-				throw new IllegalArgumentException("The provided queue must implement " + "BiPredicate to expose atomic dual insert");
-			}
+			this.queue = Queues.unboundedMultiproducer().get();
 			this.queueBiOffer = (BiPredicate) queue;
 			this.lefts = new LinkedHashMap<>();
 			this.rights = new LinkedHashMap<>();
@@ -464,17 +456,13 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public void innerValue(boolean isLeft, Object o) {
-			synchronized (this) {
-				queueBiOffer.test(isLeft ? LEFT_VALUE : RIGHT_VALUE, o);
-			}
+			queueBiOffer.test(isLeft ? LEFT_VALUE : RIGHT_VALUE, o);
 			drain();
 		}
 
 		@Override
 		public void innerClose(boolean isLeft, LeftRightEndSubscriber index) {
-			synchronized (this) {
-				queueBiOffer.test(isLeft ? LEFT_CLOSE : RIGHT_CLOSE, index);
-			}
+			queueBiOffer.test(isLeft ? LEFT_CLOSE : RIGHT_CLOSE, index);
 			drain();
 		}
 

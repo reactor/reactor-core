@@ -40,6 +40,7 @@ import reactor.core.publisher.FluxGroupJoin.JoinSupport;
 import reactor.core.publisher.FluxGroupJoin.LeftRightEndSubscriber;
 import reactor.core.publisher.FluxGroupJoin.LeftRightSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
@@ -56,19 +57,15 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 	final BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector;
 
-	final Supplier<? extends Queue<Object>> queueSupplier;
-
 	FluxJoin(Flux<TLeft> source,
 			Publisher<? extends TRight> other,
 			Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
-			BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector,
-			Supplier<? extends Queue<Object>> queueSupplier) {
+			BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 		this.leftEnd = Objects.requireNonNull(leftEnd, "leftEnd");
 		this.rightEnd = Objects.requireNonNull(rightEnd, "rightEnd");
-		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.resultSelector = Objects.requireNonNull(resultSelector, "resultSelector");
 	}
 
@@ -79,8 +76,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 				new JoinSubscription<>(actual,
 						leftEnd,
 						rightEnd,
-						resultSelector,
-						queueSupplier.get());
+						resultSelector);
 
 		actual.onSubscribe(parent);
 
@@ -152,14 +148,10 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		JoinSubscription(CoreSubscriber<? super R> actual,
 				Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 				Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
-				BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector,
-				Queue<Object> queue) {
+				BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector) {
 			this.actual = actual;
 			this.cancellations = Disposables.composite();
-			this.queue = queue;
-			if (!(queue instanceof BiPredicate)) {
-				throw new IllegalArgumentException("The provided queue must implement " + "BiPredicate to expose atomic dual insert");
-			}
+			this.queue = Queues.unboundedMultiproducer().get();
 			this.queueBiOffer = (BiPredicate) queue;
 			this.lefts = new LinkedHashMap<>();
 			this.rights = new LinkedHashMap<>();
@@ -458,17 +450,13 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 		@Override
 		public void innerValue(boolean isLeft, Object o) {
-			synchronized (this) {
-				queueBiOffer.test(isLeft ? LEFT_VALUE : RIGHT_VALUE, o);
-			}
+			queueBiOffer.test(isLeft ? LEFT_VALUE : RIGHT_VALUE, o);
 			drain();
 		}
 
 		@Override
 		public void innerClose(boolean isLeft, LeftRightEndSubscriber index) {
-			synchronized (this) {
-				queueBiOffer.test(isLeft ? LEFT_CLOSE : RIGHT_CLOSE, index);
-			}
+			queueBiOffer.test(isLeft ? LEFT_CLOSE : RIGHT_CLOSE, index);
 			drain();
 		}
 

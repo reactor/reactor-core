@@ -278,11 +278,10 @@ public class FluxGroupJoinTest {
 	public void scanGroupJoinSubscription() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> test =
-				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
+				new FluxGroupJoin.GroupJoinSubscription<>(actual,
 						s -> Mono.just(s),
 						s -> Mono.just(s),
 						(l, r) -> l,
-						Queues.unbounded().get(),
 						Queues.one());
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
@@ -309,11 +308,10 @@ public class FluxGroupJoinTest {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> parent =
-				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
+				new FluxGroupJoin.GroupJoinSubscription<>(actual,
 						s -> Mono.just(s),
 						s -> Mono.just(s),
 						(l, r) -> l,
-						Queues.unbounded().get(),
 						Queues.one());
 		FluxGroupJoin.LeftRightSubscriber test = new FluxGroupJoin.LeftRightSubscriber(parent, true);
 		Subscription sub = Operators.emptySubscription();
@@ -331,11 +329,10 @@ public class FluxGroupJoinTest {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> parent =
-				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
+				new FluxGroupJoin.GroupJoinSubscription<>(actual,
 						s -> Mono.just(s),
 						s -> Mono.just(s),
 						(l, r) -> l,
-						Queues.unbounded().get(),
 						Queues.one());
 		FluxGroupJoin.LeftRightEndSubscriber test = new FluxGroupJoin.LeftRightEndSubscriber(parent, false, 1);
 		Subscription sub = Operators.emptySubscription();

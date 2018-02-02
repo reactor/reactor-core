@@ -107,8 +107,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 				long timespan,
 				Scheduler scheduler) {
 			this.actual = actual;
-			this.queue = Queues.unbounded()
-			                   .get();
+			this.queue = Queues.unboundedMultiproducer().get();
 			this.timespan = timespan;
 			this.scheduler = scheduler;
 			this.maxSize = maxSize;
@@ -239,9 +238,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 				}
 			}
 			else {
-				synchronized (queue) {
-					queue.offer(t);
-				}
+				queue.offer(t);
 				if (!enter()) {
 					return;
 				}
@@ -424,9 +421,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 				WindowTimeoutSubscriber<?> p = parent;
 
 				if (!p.cancelled) {
-					synchronized (p.queue) {
-						p.queue.offer(this);
-					}
+					p.queue.offer(this);
 				}
 				else {
 					p.terminated = true;

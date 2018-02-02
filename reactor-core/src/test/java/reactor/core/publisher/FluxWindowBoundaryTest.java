@@ -251,7 +251,7 @@ public class FluxWindowBoundaryTest {
     public void scanMainSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowBoundary.WindowBoundaryMain<Integer, Integer> test = new FluxWindowBoundary.WindowBoundaryMain<>(actual,
-        		Queues.unbounded(), Queues.<Integer>unbounded().get(), Queues.unbounded().get());
+        		Queues.unbounded(), Queues.<Integer>unbounded().get());
         Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -280,7 +280,7 @@ public class FluxWindowBoundaryTest {
     public void scanOtherSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowBoundary.WindowBoundaryMain<Integer, Integer> main = new FluxWindowBoundary.WindowBoundaryMain<>(actual,
-        		Queues.unbounded(), Queues.<Integer>unbounded().get(), Queues.unbounded().get());
+        		Queues.unbounded(), Queues.<Integer>unbounded().get());
         FluxWindowBoundary.WindowBoundaryOther<Integer> test =
         		new FluxWindowBoundary.WindowBoundaryOther<>(main);
         Subscription parent = Operators.emptySubscription();
