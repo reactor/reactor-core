@@ -80,7 +80,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			this.s = s;
-			actual.onSubscribe(s);
+			actual.onSubscribe(this);
 		}
 
 		@Override
