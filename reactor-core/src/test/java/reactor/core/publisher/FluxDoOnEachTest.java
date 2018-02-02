@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -29,6 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.subscriber.AssertSubscriber;
@@ -74,6 +76,26 @@ public class FluxDoOnEachTest {
 		Assert.assertTrue(onComplete.get());
 
 		Assert.assertEquals(2, state.intValue());
+	}
+
+
+	//see https://github.com/reactor/reactor-core/issues/1056
+	@Test
+	public void fusion() {
+		AtomicInteger invocationCount = new AtomicInteger();
+
+		Flux<String> sourceWithFusionAsync = Flux.just("foo")
+		                                         .publishOn(Schedulers.elastic())
+		                                         .flatMap(v -> Flux.just("flatMap_" + v)
+		                                                           .doOnEach(sig -> invocationCount.incrementAndGet())
+		                                         );
+
+		StepVerifier.create(sourceWithFusionAsync)
+		            .expectNoFusionSupport()
+		            .expectNext("flatMap_foo")
+		            .verifyComplete();
+
+		assertThat(invocationCount).as("doOnEach invoked").hasValue(2);
 	}
 
 	@Test
