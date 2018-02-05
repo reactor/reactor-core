@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -95,16 +94,13 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		final Publisher<? extends T> source;
 
-		volatile Context context;
-		static final AtomicReferenceFieldUpdater<RepeatWhenMainSubscriber, Context> CONTEXT =
-				AtomicReferenceFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class, Context.class, "context");
-
 		volatile int wip;
 		static final AtomicIntegerFieldUpdater<RepeatWhenMainSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class,
 						"wip");
 
-		long produced;
+		Context context;
+		long    produced;
 
 		RepeatWhenMainSubscriber(CoreSubscriber<? super T> actual,
 				Subscriber<Long> signaller,
@@ -118,7 +114,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return CONTEXT.get(this);
+			return this.context;
 		}
 
 		@Override
@@ -172,14 +168,14 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 					}
 
 					//flow that emit a Context as a trigger for the re-subscription are
-					//used to update the currentContext()
+					//used to update or replace the currentContext()
 					if (trigger instanceof Context) {
-						Context oldContext = this.context;
-						Context newContext = oldContext.putAll((Context) trigger);
-						for(;;) {
-							if (CONTEXT.compareAndSet(this, oldContext, newContext)) {
-								break;
-							}
+						Context cTrigger = (Context) trigger;
+						if (cTrigger.hasKey(Context.CONTEXT_REPLACE)) {
+							this.context = cTrigger;
+						}
+						else {
+							this.context = context.putAll(cTrigger);
 						}
 					}
 
@@ -201,6 +197,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 			actual.onComplete();
 		}
+
 	}
 
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>

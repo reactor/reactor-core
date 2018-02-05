@@ -97,9 +97,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 
 		final Publisher<? extends T> source;
 
-		volatile Context context;
-		static final AtomicReferenceFieldUpdater<RetryWhenMainSubscriber, Context> CONTEXT =
-				AtomicReferenceFieldUpdater.newUpdater(RetryWhenMainSubscriber.class, Context.class, "context");
+		Context context;
 
 		volatile int wip;
 		static final AtomicIntegerFieldUpdater<RetryWhenMainSubscriber> WIP =
@@ -118,7 +116,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return CONTEXT.get(this);
+			return this.context;
 		}
 
 		@Override
@@ -174,14 +172,14 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 					}
 
 					//flow that emit a Context as a trigger for the re-subscription are
-					//used to update the currentContext()
+					//used to update or replace the currentContext()
 					if (trigger instanceof Context) {
-						Context oldContext = this.context;
-						Context newContext = oldContext.putAll((Context) trigger);
-						for(;;) {
-							if (CONTEXT.compareAndSet(this, oldContext, newContext)) {
-								break;
-							}
+						Context cTrigger = (Context) trigger;
+						if (cTrigger.hasKey(Context.CONTEXT_REPLACE)) {
+							this.context = cTrigger;
+						}
+						else {
+							this.context = context.putAll(cTrigger);
 						}
 					}
 

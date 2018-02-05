@@ -42,6 +42,18 @@ import reactor.util.annotation.Nullable;
 public interface Context {
 
 	/**
+	 * Some operators react to the presence of this key in a {@link Context} they receive
+	 * (eg. via a companion Flux) and then trigger a replacement of their original Context
+	 * rather than eg. a {@link Context#putAll(Context)}.
+	 */
+	Object CONTEXT_REPLACE = new Object() {
+		@Override
+		public String toString() {
+			return "CONTEXT_REPLACE";
+		}
+	};
+
+	/**
 	 * Return an empty {@link Context}
 	 *
 	 * @return an empty {@link Context}
