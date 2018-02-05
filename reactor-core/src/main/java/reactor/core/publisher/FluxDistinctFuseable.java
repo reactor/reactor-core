@@ -16,8 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.Collection;
 import java.util.Objects;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -31,24 +32,26 @@ import reactor.core.publisher.FluxDistinct.DistinctFuseableSubscriber;
  *
  * @param <T> the source value type
  * @param <K> the key extracted from the source value to be used for duplicate testing
- * @param <C> the collection type whose add() method is used for testing for duplicates
+ * @param <C> the backing store type used together with the keys when testing for duplicates with {@link BiPredicate}
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
+final class FluxDistinctFuseable<T, K, C>
 		extends FluxOperator<T, T> implements Fuseable {
 
 	final Function<? super T, ? extends K> keyExtractor;
-
-	final Supplier<C> collectionSupplier;
+	final Supplier<C>                      collectionSupplier;
+	final BiPredicate<C, K>                distinctPredicate;
+	final Consumer<C>                      cleanupCallback;
 
 	FluxDistinctFuseable(Flux<? extends T> source,
-			Function<? super T, ? extends K> keyExtractor,
-			Supplier<C> collectionSupplier) {
+			Function<? super T, ? extends K> keyExtractor, Supplier<C> collectionSupplier,
+			BiPredicate<C, K> distinctPredicate, Consumer<C> cleanupCallback) {
 		super(source);
 		this.keyExtractor = Objects.requireNonNull(keyExtractor, "keyExtractor");
-		this.collectionSupplier =
-				Objects.requireNonNull(collectionSupplier, "collectionSupplier");
+		this.collectionSupplier = Objects.requireNonNull(collectionSupplier, "collectionSupplier");
+		this.distinctPredicate = Objects.requireNonNull(distinctPredicate, "distinctPredicate");
+		this.cleanupCallback = Objects.requireNonNull(cleanupCallback, "cleanupCallback");
 	}
 
 	@Override
@@ -64,6 +67,7 @@ final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
 			return;
 		}
 
-		source.subscribe(new DistinctFuseableSubscriber<>(actual, collection, keyExtractor));
+		source.subscribe(new DistinctFuseableSubscriber<>(actual, collection, keyExtractor,
+				distinctPredicate, cleanupCallback));
 	}
 }

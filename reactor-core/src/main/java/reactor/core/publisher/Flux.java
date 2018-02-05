@@ -3497,11 +3497,43 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <V, C extends Collection<? super V>> Flux<T> distinct(
 			Function<? super T, ? extends V> keySelector,
 			Supplier<C> distinctCollectionSupplier) {
+		return this.distinct(keySelector, distinctCollectionSupplier, Collection::add, Collection::clear);
+	}
+
+	/**
+	 * For each {@link Subscriber}, track elements from this {@link Flux} that have been
+	 * seen and filter out duplicates, as compared by applying a {@link BiPredicate} on
+	 * an arbitrary user-supplied {@code <C>} store and a key extracted through the user
+	 * provided {@link Function}. The BiPredicate should typically add the key to the
+	 * arbitrary store for further comparison. A cleanup callback is also invoked on the
+	 * store upon termination of the sequence.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/distinctk.png" alt="">
+	 *
+	 * @param keySelector function to compute comparison key for each element
+	 * @param distinctStoreSupplier supplier of the arbitrary store object used in distinct
+	 * checks along the extracted key.
+	 * @param distinctPredicate the {@link BiPredicate} to apply to the arbitrary store +
+	 * extracted key to perform a distinct check. Since nothing is assumed of the store,
+	 * this predicate should also add the key to the store as necessary.
+	 * @param cleanup the cleanup callback to invoke on the store upon termination.
+	 *
+	 * @param <V> the type of the key extracted from each value in this sequence
+	 * @param <C> the type of store backing the {@link BiPredicate}
+	 *
+	 * @return a filtering {@link Flux} only emitting values with distinct keys
+	 */
+	public final <V, C> Flux<T> distinct(
+			Function<? super T, ? extends V> keySelector,
+			Supplier<C> distinctStoreSupplier,
+			BiPredicate<C, V> distinctPredicate,
+			Consumer<C> cleanup) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxDistinctFuseable<>(this, keySelector,
-					distinctCollectionSupplier));
+					distinctStoreSupplier, distinctPredicate, cleanup));
 		}
-		return onAssembly(new FluxDistinct<>(this, keySelector, distinctCollectionSupplier));
+		return onAssembly(new FluxDistinct<>(this, keySelector, distinctStoreSupplier, distinctPredicate, cleanup));
 	}
 
 	/**
