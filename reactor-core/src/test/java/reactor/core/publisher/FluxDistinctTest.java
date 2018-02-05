@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -36,8 +38,11 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
 
 public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
@@ -78,7 +83,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
-		new FluxDistinct<>(null, k -> k, HashSet::new);
+		new FluxDistinct<>(null, k -> k, HashSet::new, HashSet::add, HashSet::clear);
 	}
 
 	@Test(expected = NullPointerException.class)
@@ -88,7 +93,47 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Test(expected = NullPointerException.class)
 	public void collectionSupplierNull() {
-		new FluxDistinct<>(Flux.never(), k -> k, null);
+		new FluxDistinct<>(Flux.never(), k -> k, null, (c, k) -> true, c -> {});
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void collectionSupplierNullFuseable() {
+		new FluxDistinctFuseable<>(Flux.never(), k -> k, null, (c,k) -> true, c -> {});
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void distinctPredicateNull() {
+		new FluxDistinct<>(Flux.never(), k -> k, HashSet::new, null, HashSet::clear);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void cleanupNull() {
+		new FluxDistinct<>(Flux.never(), k -> k, HashSet::new, HashSet::add, null);
+	}
+
+	@Test
+	public void distinctCustomCollectionCustomPredicate() {
+		Flux.just(1, 3, 5, 4, 5, 2, 4, 5)
+		    .distinct(Function.identity(), () -> new AtomicReference<>(Context.empty()),
+				    (ctxRef, k) -> {
+					    Context ctx = ctxRef.get();
+					    if (k % 2 == 0) {
+						    if (ctx.hasKey("hasEvens")) {
+							    return false;
+						    }
+						    ctxRef.set(ctx.put("hasEvens", true));
+						    return true;
+					    }
+					    if (ctx.hasKey("hasOdds")) {
+						    return false;
+					    }
+					    ctxRef.set(ctx.put("hasOdds", true));
+					    return true;
+				    },
+				    ctx -> {})
+		    .as(StepVerifier::create)
+		    .expectNext(1, 4)
+		    .verifyComplete();
 	}
 
 	@Test
@@ -342,7 +387,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 		new FluxDistinct<>(Flux.range(1, 10), k -> k, () -> {
 			throw new RuntimeException("forced failure");
-		}).subscribe(ts);
+		}, (c, k) -> true, c -> {}).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -351,10 +396,68 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	public void distinctPredicateThrows() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		new FluxDistinct<>(Flux.range(1, 10), k -> k, HashSet::new,
+				(c, k) -> { throw new RuntimeException("forced failure"); },
+				HashSet::clear)
+				.subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+	}
+
+
+	@Test
+	public void distinctPredicateThrowsConditional() {
+		IllegalStateException error = new IllegalStateException("forced failure");
+
+		Fuseable.ConditionalSubscriber<Integer> actualConditional = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		when(actualConditional.currentContext()).thenReturn(Context.empty());
+		when(actualConditional.tryOnNext(anyInt())).thenReturn(false);
+
+		FluxDistinct.DistinctConditionalSubscriber<Integer, Integer, Set<Integer>> conditionalSubscriber =
+				new FluxDistinct.DistinctConditionalSubscriber<>(
+						actualConditional,
+						new HashSet<>(),
+						k -> k,
+						(c, k) -> { throw error; },
+						Set::clear);
+
+		conditionalSubscriber.tryOnNext(1);
+
+		verify(actualConditional, times(1)).onError(error);
+	}
+
+	@Test
+	public void distinctPredicateThrowsConditionalOnNext() {
+		IllegalStateException error = new IllegalStateException("forced failure");
+
+		Fuseable.ConditionalSubscriber<Integer> actualConditional = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		when(actualConditional.currentContext()).thenReturn(Context.empty());
+
+		FluxDistinct.DistinctConditionalSubscriber<Integer, Integer, Set<Integer>> conditionalSubscriber =
+				new FluxDistinct.DistinctConditionalSubscriber<>(
+						actualConditional,
+						new HashSet<>(),
+						k -> k,
+						(c, k) -> { throw error; },
+						Set::clear);
+
+		conditionalSubscriber.onNext(1);
+
+		verify(actualConditional, times(1)).onError(error);
+	}
+
+
+	@Test
 	public void collectionSupplierReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		new FluxDistinct<>(Flux.range(1, 10), k -> k, () -> null).subscribe(ts);
+		new FluxDistinct<>(Flux.range(1, 10), k -> k, () -> null, (c,k) -> true, c -> {}).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -429,7 +532,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDistinct.DistinctSubscriber<String, Integer, Set<Integer>> test =
-				new FluxDistinct.DistinctSubscriber<>(actual, new HashSet<>(), String::hashCode);
+				new FluxDistinct.DistinctSubscriber<>(actual, new HashSet<>(), String::hashCode, Set::add, Set::clear);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -446,7 +549,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 		FluxDistinct.DistinctConditionalSubscriber<String, Integer, Set<Integer>> test =
-				new FluxDistinct.DistinctConditionalSubscriber<>(actual, new HashSet<>(), String::hashCode);
+				new FluxDistinct.DistinctConditionalSubscriber<>(actual, new HashSet<>(), String::hashCode, Set::add, Set::clear);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -462,7 +565,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 	public void scanFuseableSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDistinct.DistinctFuseableSubscriber<String, Integer, Set<Integer>> test =
-				new FluxDistinct.DistinctFuseableSubscriber<>(actual, new HashSet<>(), String::hashCode);
+				new FluxDistinct.DistinctFuseableSubscriber<>(actual, new HashSet<>(), String::hashCode, Set::add, Set::clear);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

@@ -16,8 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.Collection;
 import java.util.Objects;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -34,24 +35,27 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the source value type
  * @param <K> the key extracted from the source value to be used for duplicate testing
- * @param <C> the collection type whose add() method is used for testing for duplicates
+ * @param <C> the backing store type used together with the keys when testing for duplicates with {@link BiPredicate}
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDistinct<T, K, C extends Collection<? super K>> extends
-                                                                FluxOperator<T, T> {
+final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 
 	final Function<? super T, ? extends K> keyExtractor;
-
-	final Supplier<C> collectionSupplier;
+	final Supplier<C>                      collectionSupplier;
+	final BiPredicate<C, K>                distinctPredicate;
+	final Consumer<C>                      cleanupCallback;
 
 	FluxDistinct(Flux<? extends T> source,
 			Function<? super T, ? extends K> keyExtractor,
-			Supplier<C> collectionSupplier) {
+			Supplier<C> collectionSupplier,
+			BiPredicate<C, K> distinctPredicate,
+			Consumer<C> cleanupCallback) {
 		super(source);
 		this.keyExtractor = Objects.requireNonNull(keyExtractor, "keyExtractor");
-		this.collectionSupplier =
-				Objects.requireNonNull(collectionSupplier, "collectionSupplier");
+		this.collectionSupplier = Objects.requireNonNull(collectionSupplier, "collectionSupplier");
+		this.distinctPredicate = Objects.requireNonNull(distinctPredicate, "distinctPredicate");
+		this.cleanupCallback = Objects.requireNonNull(cleanupCallback, "cleanupCallback");
 	}
 
 	@Override
@@ -71,14 +75,16 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		if (actual instanceof ConditionalSubscriber) {
 			source.subscribe(new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					collection,
-					keyExtractor));
+					keyExtractor,
+					distinctPredicate, cleanupCallback));
 		}
 		else {
-			source.subscribe(new DistinctSubscriber<>(actual, collection, keyExtractor));
+			source.subscribe(new DistinctSubscriber<>(actual, collection, keyExtractor, distinctPredicate,
+					cleanupCallback));
 		}
 	}
 
-	static final class DistinctSubscriber<T, K, C extends Collection<? super K>>
+	static final class DistinctSubscriber<T, K, C>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -87,16 +93,24 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 		final Function<? super T, ? extends K> keyExtractor;
 
+		final BiPredicate<C, K> distinctPredicate;
+
+		final Consumer<C> cleanupCallback;
+
 		Subscription s;
 
 		boolean done;
 
 		DistinctSubscriber(CoreSubscriber<? super T> actual,
 				C collection,
-				Function<? super T, ? extends K> keyExtractor) {
+				Function<? super T, ? extends K> keyExtractor,
+				BiPredicate<C, K> distinctPredicate,
+				Consumer<C> cleanupCallback) {
 			this.actual = actual;
 			this.collection = collection;
 			this.keyExtractor = keyExtractor;
+			this.distinctPredicate = distinctPredicate;
+			this.cleanupCallback = cleanupCallback;
 		}
 
 		@Override
@@ -136,7 +150,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 			boolean b;
 
 			try {
-				b = collection.add(k);
+				b = distinctPredicate.test(collection, k);
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
@@ -157,7 +171,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				return;
 			}
 			done = true;
-			collection.clear();
+			cleanupCallback.accept(collection);
 
 			actual.onError(t);
 		}
@@ -168,7 +182,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				return;
 			}
 			done = true;
-			collection.clear();
+			cleanupCallback.accept(collection);
 
 			actual.onComplete();
 		}
@@ -197,7 +211,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 	}
 
-	static final class DistinctConditionalSubscriber<T, K, C extends Collection<? super K>>
+	static final class DistinctConditionalSubscriber<T, K, C>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actual;
@@ -206,16 +220,23 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 		final Function<? super T, ? extends K> keyExtractor;
 
+		final BiPredicate<C, K> distinctPredicate;
+		final Consumer<C>       cleanupCallback;
+
 		Subscription s;
 
 		boolean done;
 
 		DistinctConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				C collection,
-				Function<? super T, ? extends K> keyExtractor) {
+				Function<? super T, ? extends K> keyExtractor,
+				BiPredicate<C, K> distinctPredicate,
+				Consumer<C> cleanupCallback) {
 			this.actual = actual;
 			this.collection = collection;
 			this.keyExtractor = keyExtractor;
+			this.distinctPredicate = distinctPredicate;
+			this.cleanupCallback = cleanupCallback;
 		}
 
 		@Override
@@ -248,7 +269,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 			boolean b;
 
 			try {
-				b = collection.add(k);
+				b = distinctPredicate.test(collection, k);
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
@@ -284,7 +305,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 			boolean b;
 
 			try {
-				b = collection.add(k);
+				b = distinctPredicate.test(collection, k);
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
@@ -301,7 +322,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				return;
 			}
 			done = true;
-			collection.clear();
+			cleanupCallback.accept(collection);
 
 			actual.onError(t);
 		}
@@ -312,7 +333,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				return;
 			}
 			done = true;
-			collection.clear();
+			cleanupCallback.accept(collection);
 
 			actual.onComplete();
 		}
@@ -342,7 +363,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 	}
 
-	static final class DistinctFuseableSubscriber<T, K, C extends Collection<? super K>>
+	static final class DistinctFuseableSubscriber<T, K, C>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           QueueSubscription<T> {
 
@@ -351,6 +372,8 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		final C collection;
 
 		final Function<? super T, ? extends K> keyExtractor;
+		final BiPredicate<C, K>                distinctPredicate;
+		final Consumer<C>                      cleanupCallback;
 
 		QueueSubscription<T> qs;
 
@@ -358,12 +381,15 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 		int sourceMode;
 
-		DistinctFuseableSubscriber(CoreSubscriber<? super T> actual,
-				C collection,
-				Function<? super T, ? extends K> keyExtractor) {
+		DistinctFuseableSubscriber(CoreSubscriber<? super T> actual, C collection,
+				Function<? super T, ? extends K> keyExtractor,
+				BiPredicate<C, K> predicate,
+				Consumer<C> callback) {
 			this.actual = actual;
 			this.collection = collection;
 			this.keyExtractor = keyExtractor;
+			this.distinctPredicate = predicate;
+			this.cleanupCallback = callback;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -409,7 +435,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 			boolean b;
 
 			try {
-				b = collection.add(k);
+				b = distinctPredicate.test(collection, k);
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(qs, e, t, actual.currentContext()));
@@ -430,7 +456,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				return;
 			}
 			done = true;
-			collection.clear();
+			cleanupCallback.accept(collection);
 
 			actual.onError(t);
 		}
@@ -441,7 +467,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				return;
 			}
 			done = true;
-			collection.clear();
+			cleanupCallback.accept(collection);
 
 			actual.onComplete();
 		}
@@ -489,7 +515,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 					K r = Objects.requireNonNull(keyExtractor.apply(v),
 							"The keyExtractor returned a null collection");
 
-					if (collection.add(r)) {
+					if (distinctPredicate.test(collection, r)) {
 						if (dropped != 0) {
 							request(dropped);
 						}
@@ -507,7 +533,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 					K r = Objects.requireNonNull(keyExtractor.apply(v),
 							"The keyExtractor returned a null collection");
 
-					if (collection.add(r)) {
+					if (distinctPredicate.test(collection, r)) {
 						return v;
 					}
 				}
@@ -522,7 +548,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		@Override
 		public void clear() {
 			qs.clear();
-			collection.clear();
+			cleanupCallback.accept(collection);
 		}
 
 		@Override
