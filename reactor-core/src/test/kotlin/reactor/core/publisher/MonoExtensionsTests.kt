@@ -94,11 +94,54 @@ class MonoExtensionsTests {
     }
 
     @Test
+    fun nullableCompletableFutureToMonoWithMap() {
+        val future = CompletableFuture<String?>()
+
+        val verifier = StepVerifier.create(future.toMono().map { it.toUpperCase() })
+            .expectComplete()
+        future.complete(null)
+        verifier.verify()
+    }
+
+    @Test
     fun callableToMono() {
         val callable = Callable { "foo" }
         val verifier = StepVerifier.create(callable.toMono())
                 .expectNext("foo")
                 .expectComplete()
+        verifier.verify()
+    }
+
+    @Test
+    fun nullableCallableToMonoWithMap() {
+        val callable = Callable<String?> { "foo" }
+        val verifier = StepVerifier.create(callable.toMono().map { it.toUpperCase() })
+            .expectNext("FOO")
+            .expectComplete()
+        verifier.verify()
+    }
+
+    @Test
+    fun nullableCallableToEmptyMonoWitMap() {
+        val callable = Callable<String?> { null }
+        val verifier = StepVerifier.create(callable.toMono().map { it.toUpperCase() })
+            .expectComplete()
+        verifier.verify()
+    }
+
+    @Test
+    fun nullableLambdaToEmptyMono() {
+        val callable = { null }
+        val verifier = StepVerifier.create(callable.toMono())
+            .expectComplete()
+        verifier.verify()
+    }
+
+    @Test
+    fun nullableLambdaToEmptyMonoWithMap() {
+        val callable = { null as String? }
+        val verifier = StepVerifier.create(callable.toMono().map { it.toUpperCase() })
+            .expectComplete()
         verifier.verify()
     }
 

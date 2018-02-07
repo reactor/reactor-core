@@ -39,7 +39,7 @@ fun <T> Publisher<T>.toMono(): Mono<T> = Mono.from(this)
  *
  * @author Sergio Dos Santos
  */
-fun <T> (() -> T).toMono(): Mono<T> = Mono.fromSupplier(this)
+fun <T> (() -> T?).toMono(): Mono<T> = Mono.fromSupplier(this)
 
 /**
  * Extension for transforming an object to a [Mono].
@@ -47,7 +47,7 @@ fun <T> (() -> T).toMono(): Mono<T> = Mono.fromSupplier(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
-fun <T> T.toMono(): Mono<T> = Mono.just(this)
+fun <T : Any> T.toMono(): Mono<T> = Mono.just(this)
 
 /**
  * Extension for transforming an [CompletableFuture] to a [Mono].
@@ -55,7 +55,7 @@ fun <T> T.toMono(): Mono<T> = Mono.just(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
-fun <T> CompletableFuture<T>.toMono(): Mono<T> = Mono.fromFuture(this)
+fun <T> CompletableFuture<out T?>.toMono(): Mono<T> = Mono.fromFuture(this)
 
 /**
  * Extension for transforming an [Callable] to a [Mono].
@@ -63,7 +63,7 @@ fun <T> CompletableFuture<T>.toMono(): Mono<T> = Mono.fromFuture(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
-fun <T> Callable<T>.toMono(): Mono<T> = Mono.fromCallable(this::call)
+fun <T> Callable<T?>.toMono(): Mono<T> = Mono.fromCallable(this::call)
 
 /**
  * Extension for transforming an exception to a [Mono] that completes with the specified error.
