@@ -30,7 +30,7 @@ import kotlin.reflect.KClass
  * @author Simon Baslé
  * @since 3.1.1
  */
-fun <T> Publisher<T>.toFlux(): Flux<T> = Flux.from(this)
+fun <T : Any> Publisher<T>.toFlux(): Flux<T> = Flux.from(this)
 
 /**
  * Extension for transforming an [Iterator] to a [Flux].
@@ -38,7 +38,7 @@ fun <T> Publisher<T>.toFlux(): Flux<T> = Flux.from(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
-fun <T> Iterator<T>.toFlux(): Flux<T> = toIterable().toFlux()
+fun <T : Any> Iterator<T>.toFlux(): Flux<T> = toIterable().toFlux()
 
 /**
  * Extension for transforming an [Iterable] to a [Flux].
@@ -46,7 +46,7 @@ fun <T> Iterator<T>.toFlux(): Flux<T> = toIterable().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
-fun <T> Iterable<T>.toFlux(): Flux<T> = Flux.fromIterable(this)
+fun <T : Any> Iterable<T>.toFlux(): Flux<T> = Flux.fromIterable(this)
 
 /**
  * Extension for transforming a [Sequence] to a [Flux].
@@ -54,7 +54,7 @@ fun <T> Iterable<T>.toFlux(): Flux<T> = Flux.fromIterable(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
-fun <T> Sequence<T>.toFlux(): Flux<T> = Flux.fromIterable(object : Iterable<T> {
+fun <T : Any> Sequence<T>.toFlux(): Flux<T> = Flux.fromIterable(object : Iterable<T> {
     override fun iterator(): Iterator<T> = this@toFlux.iterator()
 })
 
@@ -64,7 +64,7 @@ fun <T> Sequence<T>.toFlux(): Flux<T> = Flux.fromIterable(object : Iterable<T> {
  * @author Sebastien Deleuze
  * @since 3.1
  */
-fun <T> Stream<T>.toFlux(): Flux<T> = Flux.fromStream(this)
+fun <T : Any> Stream<T>.toFlux(): Flux<T> = Flux.fromStream(this)
 
 /**
  * Extension for transforming a [BooleanArray] to a [Flux].
