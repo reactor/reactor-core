@@ -3972,7 +3972,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *  A
 	 *  B
 	 *  AA
-	 *  AB
+	 *  BB
 	 *  aa1
 	 *  bb1
 	 * </pre>
@@ -4012,7 +4012,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *  A
 	 *  B
 	 *  AA
-	 *  AB
+	 *  BB
 	 *  aa1
 	 *  bb1
 	 * </pre>
