@@ -76,6 +76,16 @@ public class FluxSubscribeOnValueTest {
 	}
 
 	@Test
+    public void scanOperator() {
+		final Flux<Integer> test = Flux.just(1).subscribeOn(Schedulers.immediate());
+
+		assertThat(test).isInstanceOf(Scannable.class)
+		                .isInstanceOf(FluxSubscribeOnValue.class);
+
+		assertThat(((Scannable) test).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSubscribeOnValue.ScheduledScalar<Integer> test =
@@ -91,5 +101,7 @@ public class FluxSubscribeOnValueTest {
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.future = OperatorDisposables.DISPOSED;
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+
+        assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
     }
 }

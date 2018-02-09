@@ -178,12 +178,20 @@ public class FluxSubscribeOnCallableTest {
 	}
 
 	@Test
+	public void scanOperator() {
+		FluxSubscribeOnCallable test = new FluxSubscribeOnCallable<>(() -> "foo", Schedulers.immediate());
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSubscribeOnCallable.CallableSubscribeOnSubscription<Integer> test =
         		new FluxSubscribeOnCallable.CallableSubscribeOnSubscription<Integer>(actual, () -> 1, Schedulers.single());
 
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
         test.value = 1;
         Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 

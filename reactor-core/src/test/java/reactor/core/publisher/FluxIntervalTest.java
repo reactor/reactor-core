@@ -144,13 +144,30 @@ public class FluxIntervalTest {
 
 	@Test
     public void scanIntervalRunnable() {
-        CoreSubscriber<Long> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxInterval.IntervalRunnable test = new FluxInterval.IntervalRunnable(actual, Schedulers.single().createWorker());
+		Scheduler.Worker worker = Schedulers.single().createWorker();
 
+		try {
+        CoreSubscriber<Long> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxInterval.IntervalRunnable test = new FluxInterval.IntervalRunnable(actual, worker);
+
+        assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(worker);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		}
+		finally {
+			worker.dispose();
+		}
+    }
+
+    @Test
+    public void scanOperator() {
+	    final Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
+
+	    assertThat(interval).isInstanceOf(Scannable.class);
+	    assertThat(((Scannable) interval).scan(Scannable.Attr.RUN_ON))
+			    .isSameAs(Schedulers.parallel());
     }
 
     @Test

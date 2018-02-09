@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
@@ -32,7 +33,7 @@ import reactor.util.annotation.Nullable;
  * or a custom async callback function
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxInterval extends Flux<Long> {
+final class FluxInterval extends Flux<Long> implements Scannable {
 
 	final Scheduler timedScheduler;
 	
@@ -75,18 +76,25 @@ final class FluxInterval extends Flux<Long> {
 		}
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return timedScheduler;
+
+		return null;
+	}
+
 	static final class IntervalRunnable implements Runnable, Subscription,
 	                                               InnerProducer<Long> {
 		final CoreSubscriber<? super Long> actual;
-		
+
 		final Worker worker;
-		
+
 		volatile long requested;
 		static final AtomicLongFieldUpdater<IntervalRunnable> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(IntervalRunnable.class, "requested");
-		
+
 		long count;
-		
+
 		volatile boolean cancelled;
 
 		IntervalRunnable(CoreSubscriber<? super Long> actual, Worker worker) {
@@ -103,6 +111,7 @@ final class FluxInterval extends Flux<Long> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.RUN_ON) return worker;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

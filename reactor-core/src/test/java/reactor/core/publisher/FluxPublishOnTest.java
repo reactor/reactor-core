@@ -1459,4 +1459,21 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			throw exception();
 		}
 	}
+
+	@Test
+	public void scanRunOn() {
+		Scannable publishOnScannable = Scannable.from(
+				Flux.just(1).hide()
+				    .publishOn(Schedulers.elastic())
+		);
+		Scannable runOnScannable = publishOnScannable.scan(Scannable.Attr.RUN_ON);
+
+		Assertions.assertThat(runOnScannable).isNotNull()
+		                          .matches(Scannable::isScanAvailable, "isScanAvailable");
+
+		System.out.println(runOnScannable + " isScannable " + runOnScannable.isScanAvailable());
+		System.out.println(runOnScannable.scan(Scannable.Attr.NAME));
+		runOnScannable.parents().forEach(System.out::println);
+		System.out.println(runOnScannable.scan(Scannable.Attr.BUFFERED));
+	}
 }

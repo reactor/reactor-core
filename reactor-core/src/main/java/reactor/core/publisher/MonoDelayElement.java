@@ -55,6 +55,13 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 		source.subscribe(new DelayElementSubscriber<>(actual, timedScheduler, delay, unit));
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return timedScheduler;
+
+		return super.scanUnsafe(key);
+	}
+
 	static final class DelayElementSubscriber<T> extends Operators.MonoSubscriber<T,T> {
 
 		final long delay;
@@ -79,6 +86,7 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_ON) return scheduler;
 
 			return super.scanUnsafe(key);
 		}

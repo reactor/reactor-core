@@ -53,6 +53,13 @@ public class FluxCancelOnTest {
 		Assert.assertNull(threadHash.get());
 	}
 
+	@Test
+	public void scanOperator() {
+		final Flux<Integer> flux = Flux.just(1).cancelOn(Schedulers.elastic());
+
+		assertThat(flux).isInstanceOf(Scannable.class);
+		assertThat(((Scannable) flux).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.elastic());
+	}
 
 	@Test
 	public void scanSubscriber() {
@@ -61,6 +68,7 @@ public class FluxCancelOnTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();

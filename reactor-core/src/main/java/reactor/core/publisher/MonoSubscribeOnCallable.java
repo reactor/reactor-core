@@ -22,6 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 
 /**
@@ -30,7 +31,7 @@ import reactor.core.scheduler.Scheduler;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
+final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable, Scannable{
 
 	final Callable<? extends T> callable;
 
@@ -55,5 +56,12 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 				actual.onError(Operators.onRejectedExecution(ree, actual.currentContext()));
 			}
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Scannable.Attr key) {
+		if (key == Scannable.Attr.RUN_ON) return scheduler;
+
+		return null;
 	}
 }

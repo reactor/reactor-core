@@ -63,6 +63,13 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 				timer));
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return timer;
+
+		return super.scanUnsafe(key);
+	}
+
 	static final class WindowTimeoutSubscriber<T> implements InnerOperator<T, Flux<T>> {
 
 		final CoreSubscriber<? super Flux<T>> actual;
@@ -133,6 +140,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.CAPACITY) return maxSize;
 			if (key == Attr.BUFFERED) return queue.size();
+			if (key == Attr.RUN_ON) return worker;
 			return InnerOperator.super.scanUnsafe(key);
 		}
 

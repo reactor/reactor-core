@@ -69,6 +69,13 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public int getPrefetch() {
 		return prefetch;
 	}
@@ -520,6 +527,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.DELAY_ERROR) return delayError;
 			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.RUN_ON) return worker;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -941,6 +949,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.DELAY_ERROR) return delayError;
 			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.RUN_ON) return worker;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
