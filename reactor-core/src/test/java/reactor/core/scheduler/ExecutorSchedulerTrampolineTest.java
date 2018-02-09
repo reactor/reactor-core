@@ -15,6 +15,13 @@
  */
 package reactor.core.scheduler;
 
+import java.util.concurrent.Executor;
+
+import org.junit.Test;
+import reactor.core.Scannable;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author Stephane Maldini
  */
@@ -38,5 +45,57 @@ public class ExecutorSchedulerTrampolineTest extends AbstractSchedulerTest {
 	@Override
 	protected boolean shouldCheckWorkerTimeScheduling() {
 		return false;
+	}
+
+	@Test
+	public void scanParent() {
+		Executor plainExecutor = new ExecutorSchedulerTest.PlainExecutor();
+		Executor scannableExecutor = new ExecutorSchedulerTest.ScannableExecutor();
+
+		Scheduler.Worker workerScannableParent =
+				new ExecutorScheduler.ExecutorSchedulerWorker(scannableExecutor);
+		Scheduler.Worker workerPlainParent =
+				new ExecutorScheduler.ExecutorSchedulerWorker(plainExecutor);
+
+		try {
+			assertThat(Scannable.from(workerScannableParent).scan(Scannable.Attr.PARENT))
+					.as("workerScannableParent")
+					.isSameAs(scannableExecutor);
+
+			assertThat(Scannable.from(workerPlainParent).scan(Scannable.Attr.PARENT))
+					.as("workerPlainParent")
+					.isNull();
+		}
+		finally {
+			workerPlainParent.dispose();
+			workerScannableParent.dispose();
+		}
+	}
+
+	@Test
+	public void scanBuffered() {
+		ExecutorScheduler.ExecutorSchedulerTrampolineWorker worker =
+				new ExecutorScheduler.ExecutorSchedulerTrampolineWorker(task -> new Thread(task, "scanBuffered_Trampolining").start());
+
+		Runnable task = () -> {
+			System.out.println(Thread.currentThread().getName());
+			try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
+		};
+		try {
+			//all tasks are actually executed on a single thread, starting immediately with 1st task
+			worker.schedule(task);
+			worker.schedule(task);
+			worker.schedule(task);
+
+			//the queue has the two remaining tasks
+			assertThat(worker.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
+
+			worker.dispose();
+
+			assertThat(worker.scan(Scannable.Attr.BUFFERED)).isZero();
+		}
+		finally {
+			worker.dispose();
+		}
 	}
 }

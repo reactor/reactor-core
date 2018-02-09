@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Wraps a java.util.concurrent.Executor and provides the Scheduler API over it.
@@ -36,7 +38,7 @@ import reactor.core.Exceptions;
  *
  * @author Stephane Maldini
  */
-final class ExecutorScheduler implements Scheduler {
+final class ExecutorScheduler implements Scheduler, Scannable {
 
 	final Executor executor;
 	final boolean  trampoline;
@@ -82,6 +84,24 @@ final class ExecutorScheduler implements Scheduler {
 	public Worker createWorker() {
 		return trampoline ? new ExecutorSchedulerTrampolineWorker(executor) :
 				new ExecutorSchedulerWorker(executor);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder ts = new StringBuilder(Schedulers.FROM_EXECUTOR)
+				.append('(').append(executor);
+		if (trampoline) ts.append(",trampolining");
+		ts.append(')');
+
+		return ts.toString();
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+		if (key == Attr.NAME) return toString();
+
+		return null;
 	}
 
 	/**
@@ -195,7 +215,7 @@ final class ExecutorScheduler implements Scheduler {
 	/**
 	 * A non-trampolining worker that tracks tasks.
 	 */
-	static final class ExecutorSchedulerWorker implements Scheduler.Worker, WorkerDelete {
+	static final class ExecutorSchedulerWorker implements Scheduler.Worker, WorkerDelete, Scannable {
 
 		final Executor executor;
 
@@ -242,13 +262,26 @@ final class ExecutorScheduler implements Scheduler {
 			tasks.remove(r);
 		}
 
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+			if (key == Attr.BUFFERED) return tasks.size();
+			if (key == Attr.PARENT) return (executor instanceof Scannable) ? executor : null;
+			if (key == Attr.NAME) {
+				//hack to recognize the SingleWorker
+				if (executor instanceof SingleWorkerScheduler) return executor + ".worker";
+				return Schedulers.FROM_EXECUTOR + "("  + executor + ").worker";
+			}
+
+			return Schedulers.scanExecutor(executor, key);
+		}
 	}
 
 	/**
 	 * A trampolining worker that tracks tasks.
 	 */
 	static final class ExecutorSchedulerTrampolineWorker
-			implements Scheduler.Worker, WorkerDelete, Runnable {
+			implements Scheduler.Worker, WorkerDelete, Runnable, Scannable {
 
 		final Executor executor;
 
@@ -356,6 +389,16 @@ final class ExecutorScheduler implements Scheduler {
 					break;
 				}
 			}
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+			if (key == Attr.PARENT) return (executor instanceof Scannable) ? executor : null;
+			if (key == Attr.NAME) return Schedulers.FROM_EXECUTOR + "("  + executor + ",trampolining).worker";
+			if (key == Attr.BUFFERED || key == Attr.LARGE_BUFFERED) return queue.size();
+
+			return Schedulers.scanExecutor(executor, key);
 		}
 	}
 

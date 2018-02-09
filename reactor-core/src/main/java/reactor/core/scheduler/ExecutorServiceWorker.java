@@ -21,15 +21,17 @@ import java.util.concurrent.TimeUnit;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
+import reactor.core.Scannable;
 
 /**
  * @author Stephane Maldini
  */
-final class ExecutorServiceWorker implements Scheduler.Worker, Disposable {
+final class ExecutorServiceWorker implements Scheduler.Worker, Disposable, Scannable {
 
 	final ScheduledExecutorService exec;
 
 	final Composite tasks;
+
 
 	ExecutorServiceWorker(ScheduledExecutorService exec) {
 		this.exec = exec;
@@ -67,5 +69,14 @@ final class ExecutorServiceWorker implements Scheduler.Worker, Disposable {
 	@Override
 	public boolean isDisposed() {
 		return tasks.isDisposed();
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.BUFFERED) return tasks.size();
+		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+		if (key == Attr.NAME) return "ExecutorServiceWorker"; //could be parallel, single or fromExecutorService
+
+		return Schedulers.scanExecutor(exec, key);
 	}
 }

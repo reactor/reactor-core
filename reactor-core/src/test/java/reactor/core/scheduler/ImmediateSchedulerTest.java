@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler.Worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,5 +78,27 @@ public class ImmediateSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			worker.dispose();
 		}
+	}
+
+	@Test
+	public void scanScheduler() {
+		ImmediateScheduler s = (ImmediateScheduler) Schedulers.immediate();
+
+		assertThat(s.scan(Scannable.Attr.NAME)).isEqualTo(Schedulers.IMMEDIATE);
+		//don't test TERMINATED as this would shutdown the only instance
+	}
+
+	@Test
+	public void scanWorker() {
+		Worker worker = Schedulers.immediate().createWorker();
+		Scannable s = (Scannable) worker;
+
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.NAME)).isEqualTo(Schedulers.IMMEDIATE + ".worker");
+
+		worker.dispose();
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(s.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.*;
 
+import reactor.core.Scannable;
 import reactor.core.publisher.*;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.test.StepVerifier;
@@ -125,5 +126,61 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 	    } finally {
 	        s.dispose();
 	    }
+	}
+
+
+	@Test
+	public void scanName() {
+		Scheduler withNamedFactory = Schedulers.newSingle("scanName");
+		Scheduler withBasicFactory = Schedulers.newSingle(Thread::new);
+		Scheduler cached = Schedulers.single();
+
+		Scheduler.Worker workerWithNamedFactory = withNamedFactory.createWorker();
+		Scheduler.Worker workerWithBasicFactory = withBasicFactory.createWorker();
+
+		try {
+			assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
+					.as("withNamedFactory")
+					.isEqualTo("single(\"scanName\")");
+
+			assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
+					.as("withBasicFactory")
+					.isEqualTo("single()");
+
+			assertThat(cached)
+					.as("single() is cached")
+					.is(SchedulersTest.CACHED_SCHEDULER);
+			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
+					.as("default single()")
+					.isEqualTo("single(\"single\")");
+
+			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithNamedFactory")
+					.isEqualTo("ExecutorServiceWorker");
+
+			assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithBasicFactory")
+					.isEqualTo("ExecutorServiceWorker");
+		}
+		finally {
+			withNamedFactory.dispose();
+			withBasicFactory.dispose();
+			workerWithNamedFactory.dispose();
+			workerWithBasicFactory.dispose();
+		}
+	}
+
+	@Test
+	public void scanCapacity() {
+		Scheduler scheduler = Schedulers.newSingle(Thread::new);
+
+		try {
+			assertThat(scheduler)
+					.matches(s -> Scannable.from(s).isScanAvailable(), "isScanAvailable")
+					.satisfies(s -> assertThat(Scannable.from(s).scan(Scannable.Attr.CAPACITY)).isEqualTo(1));
+		}
+		finally {
+			scheduler.dispose();
+		}
 	}
 }

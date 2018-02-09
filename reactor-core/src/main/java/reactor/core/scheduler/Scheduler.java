@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 
 /**
  * Provides an abstract asynchronous boundary to operators.
@@ -195,11 +196,6 @@ public interface Scheduler extends Disposable {
 		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
+
 	}
-	
-	/**
-	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down,
-	 * or is incapable of scheduling tasks with a delay/periodically (not "time capable").
-	 */
-//	Disposable REJECTED = new RejectedDisposable();
 }
