@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -153,6 +154,61 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		}
 		finally {
 			s.dispose();
+		}
+	}
+
+	@Test
+	public void scanName() {
+		Scheduler withNamedFactory = Schedulers.newElastic("scanName", 1);
+		Scheduler withBasicFactory = Schedulers.newElastic(1, Thread::new);
+		Scheduler cached = Schedulers.elastic();
+
+		Scheduler.Worker workerWithNamedFactory = withNamedFactory.createWorker();
+		Scheduler.Worker workerWithBasicFactory = withBasicFactory.createWorker();
+
+		try {
+			assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
+					.as("withNamedFactory")
+					.isEqualTo("elastic(\"scanName\")");
+
+			assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
+					.as("withBasicFactory")
+					.isEqualTo("elastic()");
+
+			assertThat(cached)
+					.as("elastic() is cached")
+					.is(SchedulersTest.CACHED_SCHEDULER);
+			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
+					.as("default elastic()")
+					.isEqualTo("elastic(\"elastic\")");
+
+			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithNamedFactory")
+					.isEqualTo("elastic(\"scanName\").worker");
+
+			assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithBasicFactory")
+					.isEqualTo("elastic().worker");
+		}
+		finally {
+			withNamedFactory.dispose();
+			withBasicFactory.dispose();
+			workerWithNamedFactory.dispose();
+			workerWithBasicFactory.dispose();
+		}
+	}
+
+	@Test
+	public void scanCapacity() {
+		Scheduler scheduler = Schedulers.newElastic(2, Thread::new);
+		Scheduler.Worker worker = scheduler.createWorker();
+		try {
+			assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler unbounded").isEqualTo(Integer.MAX_VALUE);
+			assertThat(Scannable.from(worker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(1);
+		}
+		finally {
+			worker.dispose();
+			scheduler.dispose();
 		}
 	}
 }

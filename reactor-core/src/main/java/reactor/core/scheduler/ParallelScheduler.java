@@ -17,13 +17,16 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ScheduledExecutorService-based workers
@@ -33,7 +36,8 @@ import reactor.core.Disposable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorService> {
+final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorService>,
+                                         Scannable {
 
     static final AtomicLong COUNTER = new AtomicLong();
 
@@ -66,11 +70,13 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     /**
      * Instantiates the default {@link ScheduledExecutorService} for the ParallelScheduler
-     * ({@code Executors.newSingleThreadScheduledExecutor}).
+     * ({@code Executors.newScheduledThreadPoolExecutor} with core and max pool size of 1).
      */
     @Override
     public ScheduledExecutorService get() {
-        return Executors.newSingleThreadScheduledExecutor(factory);
+        ScheduledThreadPoolExecutor poolExecutor = new ScheduledThreadPoolExecutor(1, factory);
+        poolExecutor.setMaximumPoolSize(1);
+        return poolExecutor;
     }
     
     void init(int n) {
@@ -162,6 +168,32 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 			    initialDelay,
 			    period,
 			    unit);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder ts = new StringBuilder(Schedulers.PARALLEL)
+                .append('(').append(n);
+        if (factory instanceof Schedulers.SchedulerThreadFactory) {
+            ts.append(",\"").append(((Schedulers.SchedulerThreadFactory) factory).get()).append('\"');
+        }
+        ts.append(')');
+        return ts.toString();
+    }
+
+    @Override
+    public Object scanUnsafe(Attr key) {
+        if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+        if (key == Attr.CAPACITY || key == Attr.BUFFERED) return n; //BUFFERED: number of workers doesn't vary
+        if (key == Attr.NAME) return this.toString();
+
+        return null;
+    }
+
+    @Override
+    public Stream<? extends Scannable> inners() {
+        return Stream.of(executors)
+                .map(exec -> key -> Schedulers.scanExecutor(exec, key));
     }
 
     @Override

@@ -18,6 +18,7 @@ package reactor.core.scheduler;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 
 /**
  * Executes tasks on the caller's thread immediately.
@@ -27,7 +28,7 @@ import reactor.core.Exceptions;
  *
  * @author Stephane Maldini
  */
-final class ImmediateScheduler implements Scheduler {
+final class ImmediateScheduler implements Scheduler, Scannable {
 
     private static final ImmediateScheduler INSTANCE = new ImmediateScheduler();
     
@@ -52,12 +53,21 @@ final class ImmediateScheduler implements Scheduler {
         //NO-OP
     }
 
+
+    @Override
+    public Object scanUnsafe(Attr key) {
+        if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+        if (key == Attr.NAME) return Schedulers.IMMEDIATE;
+
+        return null;
+    }
+
     @Override
     public Worker createWorker() {
         return new ImmediateSchedulerWorker();
     }
-    
-    static final class ImmediateSchedulerWorker implements Scheduler.Worker {
+
+    static final class ImmediateSchedulerWorker implements Scheduler.Worker, Scannable {
         
         volatile boolean shutdown;
 
@@ -78,6 +88,14 @@ final class ImmediateScheduler implements Scheduler {
         @Override
         public boolean isDisposed() {
             return shutdown;
+        }
+
+        @Override
+        public Object scanUnsafe(Attr key) {
+            if (key == Attr.TERMINATED || key == Attr.CANCELLED) return shutdown;
+            if (key == Attr.NAME) return Schedulers.IMMEDIATE + ".worker";
+
+            return null;
         }
     }
 

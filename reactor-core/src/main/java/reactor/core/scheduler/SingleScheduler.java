@@ -26,13 +26,15 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 
 /**
  * Scheduler that works with a single-threaded ScheduledExecutorService and is suited for
  * same-thread work (like an event dispatch thread). This scheduler is time-capable (can
  * schedule with delay / periodically).
  */
-final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorService> {
+final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorService>,
+                                       Scannable {
 
 	static final AtomicLong COUNTER       = new AtomicLong();
 
@@ -58,12 +60,13 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	/**
 	 * Instantiates the default {@link ScheduledExecutorService} for the SingleScheduler
-	 * ({@code Executors.newSingleThreadExecutor}).
+	 * ({@code Executors.newScheduledThreadPoolExecutor} with core and max pool size of 1).
 	 */
 	@Override
 	public ScheduledExecutorService get() {
-		ScheduledExecutorService e = Executors.newScheduledThreadPool(1, this.factory);
-		((ScheduledThreadPoolExecutor) e).setRemoveOnCancelPolicy(true);
+		ScheduledThreadPoolExecutor e = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1, this.factory);
+		e.setRemoveOnCancelPolicy(true);
+		e.setMaximumPoolSize(1);
 		return e;
 	}
 
@@ -131,6 +134,25 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				initialDelay,
 				period,
 				unit);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder ts = new StringBuilder(Schedulers.SINGLE)
+				.append('(');
+		if (factory instanceof Schedulers.SchedulerThreadFactory) {
+			ts.append('\"').append(((Schedulers.SchedulerThreadFactory) factory).get()).append('\"');
+		}
+		return ts.append(')').toString();
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+		if (key == Attr.NAME) return this.toString();
+		if (key == Attr.CAPACITY || key == Attr.BUFFERED) return 1; //BUFFERED: number of workers doesn't vary
+
+		return Schedulers.scanExecutor(executor, key);
 	}
 
 	@Override

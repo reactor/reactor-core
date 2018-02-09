@@ -21,10 +21,12 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RunnableScheduledFuture;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -34,12 +36,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -79,6 +83,9 @@ public class SchedulersTest {
 			return single;
 		}
 	}
+
+	final static Condition<Scheduler> CACHED_SCHEDULER = new Condition<>(
+			s -> s instanceof Schedulers.CachedScheduler, "a cached scheduler");
 
 	@After
 	public void resetSchedulers() {
@@ -813,6 +820,84 @@ public class SchedulersTest {
 
 		//noop
 		Schedulers.elastic().dispose();
+	}
+
+	@Test
+	public void scanExecutorCapacity() {
+		Executor plain = Runnable::run;
+		ExecutorService plainService = Executors.newSingleThreadExecutor();
+
+		ExecutorService threadPool = Executors.newFixedThreadPool(3);
+		ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(4);
+
+		DelegateServiceScheduler.UnsupportedScheduledExecutorService unsupportedScheduledExecutorService =
+				new DelegateServiceScheduler.UnsupportedScheduledExecutorService(threadPool);
+
+		try {
+			assertThat(Schedulers.scanExecutor(plain, Scannable.Attr.CAPACITY))
+					.as("plain").isEqualTo(null);
+			assertThat(Schedulers.scanExecutor(plainService, Scannable.Attr.CAPACITY))
+					.as("plainService").isEqualTo(null);
+			assertThat(Schedulers.scanExecutor(threadPool, Scannable.Attr.CAPACITY))
+					.as("threadPool").isEqualTo(3);
+			assertThat(Schedulers.scanExecutor(scheduledThreadPool, Scannable.Attr.CAPACITY))
+					.as("scheduledThreadPool").isEqualTo(Integer.MAX_VALUE);
+
+			assertThat(Schedulers.scanExecutor(unsupportedScheduledExecutorService, Scannable.Attr.CAPACITY))
+					.as("unwrapped").isEqualTo(3);
+		}
+		finally {
+			plainService.shutdownNow();
+			unsupportedScheduledExecutorService.shutdownNow();
+			threadPool.shutdownNow();
+			scheduledThreadPool.shutdownNow();
+		}
+	}
+
+	@Test
+	public void scanSupportBuffered() throws InterruptedException {
+		Executor plain = Runnable::run;
+		ExecutorService plainService = Executors.newSingleThreadExecutor();
+
+		ExecutorService threadPool = Executors.newFixedThreadPool(3);
+		ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(4);
+
+		DelegateServiceScheduler.UnsupportedScheduledExecutorService unsupportedScheduledExecutorService =
+				new DelegateServiceScheduler.UnsupportedScheduledExecutorService(threadPool);
+
+		try {
+			assertThat(Schedulers.scanExecutor(plain, Scannable.Attr.BUFFERED))
+					.as("plain").isEqualTo(null);
+			assertThat(Schedulers.scanExecutor(plainService, Scannable.Attr.BUFFERED))
+					.as("plainService").isEqualTo(null);
+
+			scheduledThreadPool.schedule(() -> {}, 500, TimeUnit.MILLISECONDS);
+			scheduledThreadPool.schedule(() -> {}, 500, TimeUnit.MILLISECONDS);
+			Thread.sleep(50); //give some leeway for the pool to have consistent accounting
+
+			assertThat(Schedulers.scanExecutor(scheduledThreadPool, Scannable.Attr.BUFFERED))
+					.as("scheduledThreadPool").isEqualTo(2);
+
+			threadPool.submit(() -> {
+				try { Thread.sleep(200); } catch (InterruptedException e) { e.printStackTrace(); }
+			});
+
+			assertThat(Schedulers.scanExecutor(threadPool, Scannable.Attr.BUFFERED))
+					.as("threadPool").isEqualTo(1);
+			assertThat(Schedulers.scanExecutor(unsupportedScheduledExecutorService, Scannable.Attr.BUFFERED))
+					.as("unwrapped").isEqualTo(1);
+
+			Thread.sleep(400);
+
+			assertThat(Schedulers.scanExecutor(unsupportedScheduledExecutorService, Scannable.Attr.BUFFERED))
+					.as("unwrapped after task").isEqualTo(0);
+		}
+		finally {
+			plainService.shutdownNow();
+			unsupportedScheduledExecutorService.shutdownNow();
+			threadPool.shutdownNow();
+			scheduledThreadPool.shutdownNow();
+		}
 	}
 
 	final static class EmptyScheduler implements Scheduler {

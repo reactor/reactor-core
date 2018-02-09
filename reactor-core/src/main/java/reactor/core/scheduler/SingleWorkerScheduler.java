@@ -19,6 +19,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 
 /**
  * Wraps one of the workers of some other Scheduler and
@@ -28,7 +29,7 @@ import reactor.core.Disposable;
  * This scheduler is time-capable if the worker itself is time-capable (can schedule with
  * a delay and/or periodically).
  */
-final class SingleWorkerScheduler implements Scheduler, Executor {
+final class SingleWorkerScheduler implements Scheduler, Executor, Scannable {
 
     final Worker main;
     
@@ -70,5 +71,23 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     @Override
     public boolean isDisposed() {
         return main.isDisposed();
+    }
+
+    @Override
+    public String toString() {
+        Scannable mainScannable = Scannable.from(main);
+        if (mainScannable.isScanAvailable()) {
+            return Schedulers.SINGLE + "Worker(" + mainScannable.scanUnsafe(Attr.NAME) + ")";
+        }
+        return Schedulers.SINGLE + "Worker(" + main.toString() + ")";
+    }
+
+    @Override
+    public Object scanUnsafe(Attr key) {
+        if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+        if (key == Attr.PARENT) return main;
+        if (key == Attr.NAME) return this.toString();
+
+        return Scannable.from(main).scanUnsafe(key);
     }
 }

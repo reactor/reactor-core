@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -140,5 +141,60 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 
 		latch.await();
 		assertThat(map.values()).containsOnly(m);
+	}
+
+	@Test
+	public void scanName() {
+		Scheduler withNamedFactory = Schedulers.newParallel("scanName", 12);
+		Scheduler withBasicFactory = Schedulers.newParallel(12, Thread::new);
+		Scheduler cached = Schedulers.parallel();
+
+		Scheduler.Worker workerWithNamedFactory = withNamedFactory.createWorker();
+		Scheduler.Worker workerWithBasicFactory = withBasicFactory.createWorker();
+
+		try {
+			assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
+					.as("withNamedFactory")
+					.isEqualTo("parallel(12,\"scanName\")");
+
+			assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
+					.as("withBasicFactory")
+					.isEqualTo("parallel(12)");
+
+			assertThat(cached)
+					.as("parallel() is cached")
+					.is(SchedulersTest.CACHED_SCHEDULER);
+			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
+					.as("default parallel()")
+					.isEqualTo("parallel(" + Runtime.getRuntime().availableProcessors() + ",\"parallel\")");
+
+			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithNamedFactory")
+					.isEqualTo("ExecutorServiceWorker");
+
+			assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithBasicFactory")
+					.isEqualTo("ExecutorServiceWorker");
+		}
+		finally {
+			withNamedFactory.dispose();
+			withBasicFactory.dispose();
+			workerWithNamedFactory.dispose();
+			workerWithBasicFactory.dispose();
+		}
+	}
+
+	@Test
+	public void scanCapacity() {
+		Scheduler scheduler = Schedulers.newParallel(12, Thread::new);
+
+		try {
+			assertThat(scheduler)
+					.matches(s -> Scannable.from(s).isScanAvailable(), "isScanAvailable")
+					.satisfies(s -> assertThat(Scannable.from(s).scan(Scannable.Attr.CAPACITY)).isEqualTo(12));
+		}
+		finally {
+			scheduler.dispose();
+		}
 	}
 }

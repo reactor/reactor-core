@@ -15,6 +15,11 @@
  */
 package reactor.core.scheduler;
 
+import org.junit.Test;
+import reactor.core.Scannable;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author Stephane Maldini
  */
@@ -38,5 +43,38 @@ public class SingleWorkerSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected boolean shouldCheckWorkerTimeScheduling() {
 		return false;
+	}
+
+	@Test
+	public void scanName() {
+		Scheduler withNamedFactory = Schedulers.single(Schedulers.newSingle("scanName"));
+		Scheduler withBasicFactory = Schedulers.single(Schedulers.newParallel(9, Thread::new));
+
+		Scheduler.Worker workerWithNamedFactory = withNamedFactory.createWorker();
+		Scheduler.Worker workerWithBasicFactory = withBasicFactory.createWorker();
+
+		try {
+			assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
+					.as("withNamedFactory")
+					.isEqualTo("singleWorker(ExecutorServiceWorker)");
+
+			assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
+					.as("withBasicFactory")
+					.isEqualTo("singleWorker(ExecutorServiceWorker)");
+
+			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithNamedFactory")
+					.isEqualTo("singleWorker(ExecutorServiceWorker).worker");
+
+			assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithBasicFactory")
+					.isEqualTo("singleWorker(ExecutorServiceWorker).worker");
+		}
+		finally {
+			withNamedFactory.dispose();
+			withBasicFactory.dispose();
+			workerWithNamedFactory.dispose();
+			workerWithBasicFactory.dispose();
+		}
 	}
 }

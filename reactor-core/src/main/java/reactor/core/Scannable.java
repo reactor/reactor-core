@@ -248,6 +248,11 @@ public interface Scannable {
 			public boolean isScanAvailable() {
 				return false;
 			}
+
+			@Override
+			public String toString() {
+				return "UNAVAILABLE_SCAN";
+			}
 		};
 
 		/**
@@ -263,6 +268,11 @@ public interface Scannable {
 			@Override
 			public boolean isScanAvailable() {
 				return false;
+			}
+
+			@Override
+			public String toString() {
+				return "NULL_SCAN";
 			}
 		};
 
