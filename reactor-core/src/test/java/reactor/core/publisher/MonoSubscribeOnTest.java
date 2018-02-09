@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -193,24 +194,39 @@ public class MonoSubscribeOnTest {
 	}
 
 	@Test
+	public void scanOperator() {
+		MonoSubscribeOn<String> test = new MonoSubscribeOn<>(Mono.empty(), Schedulers.immediate());
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+	}
+
+	@Test
 	public void scanSubscribeOnSubscriber() {
-		final Flux<String> source = Flux.just("foo");
-		CoreSubscriber<String>
-				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoSubscribeOn.SubscribeOnSubscriber<String> test = new MonoSubscribeOn.SubscribeOnSubscriber<>(
-				source, actual, Schedulers.single().createWorker());
-		Subscription parent = Operators.emptySubscription();
-		test.onSubscribe(parent);
+		Scheduler.Worker worker = Schedulers.single().createWorker();
 
-		test.requested = 3L;
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
+		try {
+			final Flux<String> source = Flux.just("foo");
+			CoreSubscriber<String>
+					actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+			MonoSubscribeOn.SubscribeOnSubscriber<String> test = new MonoSubscribeOn.SubscribeOnSubscriber<>(
+					source, actual, worker);
+			Subscription parent = Operators.emptySubscription();
+			test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+			test.requested = 3L;
+			assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
 
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		test.cancel();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+			assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(worker);
+			assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+			assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+
+			assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+			test.cancel();
+			assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		}
+		finally {
+			worker.dispose();
+		}
 	}
 
 	@Test

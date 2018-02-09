@@ -27,6 +27,9 @@ import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
+import reactor.core.publisher.FluxOnBackpressureBufferTimeout.BackpressureBufferTimeoutSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -296,5 +299,38 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 		            .thenRequest(10)
 		            .expectNext(8, 9, 10)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanOperator() {
+		Scannable test  = (Scannable) Flux.never().onBackpressureBuffer(Duration.ofSeconds(1), 123, v -> {}, Schedulers.single());
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
+	}
+
+	@Test
+	public void scanSubscriber() {
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
+		BackpressureBufferTimeoutSubscriber test = new BackpressureBufferTimeoutSubscriber<>(actual, Duration.ofSeconds(1), Schedulers.immediate(), 123, v -> {});
+		Subscription s = Operators.emptySubscription();
+		test.onSubscribe(s);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(s);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+
+		test.offer("foo");
+		test.offer("bar");
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
+
+		test.error = new RuntimeException("boom");
+		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
+
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isFalse();
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}
 }

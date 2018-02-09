@@ -78,6 +78,13 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 		return Integer.MAX_VALUE;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return ttlScheduler;
+
+		return super.scanUnsafe(key);
+	}
+
 	static final class BackpressureBufferTimeoutSubscriber<T> extends ArrayDeque<Object>
 			implements InnerOperator<T, T>, Runnable {
 
@@ -148,6 +155,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 			if (key == Attr.DELAY_ERROR) {
 				return false;
 			}
+			if (key == Attr.RUN_ON) return ttlScheduler;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

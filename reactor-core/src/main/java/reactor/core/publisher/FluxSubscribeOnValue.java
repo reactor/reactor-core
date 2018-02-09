@@ -37,7 +37,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
+final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannable {
 
 	final T value;
 
@@ -67,6 +67,13 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		else {
 			actual.onSubscribe(new ScheduledScalar<>(actual, v, scheduler));
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return null;
 	}
 
 	static final class ScheduledScalar<T>
@@ -121,6 +128,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			if (key == Attr.BUFFERED) {
 				return 1;
 			}
+			if (key == Attr.RUN_ON) return scheduler;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

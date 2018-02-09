@@ -18,10 +18,11 @@ package reactor.core.publisher;
 import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoSubscribeOnValueTest {
 
@@ -45,5 +46,12 @@ public class MonoSubscribeOnValueTest {
 		catch (InterruptedException e) {
 			throw Exceptions.bubble(e);
 		}
+	}
+
+	@Test
+	public void scanOperator() {
+		MonoSubscribeOnValue<String> test = new MonoSubscribeOnValue<>("foo", Schedulers.immediate());
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}
 }

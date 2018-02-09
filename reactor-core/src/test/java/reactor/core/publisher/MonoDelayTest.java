@@ -16,12 +16,14 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,6 +69,13 @@ public class MonoDelayTest {
 
 		Thread.sleep(110);
 		assertThat(counter.intValue()).isEqualTo(4);
+	}
+
+	@Test
+	public void scanOperator() {
+		MonoDelay test = new MonoDelay(1, TimeUnit.SECONDS, Schedulers.immediate());
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}
 
 	@Test

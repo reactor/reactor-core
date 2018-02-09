@@ -23,6 +23,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
@@ -143,6 +145,15 @@ public interface Scannable {
 		 */
 		public static final Attr<Scannable> PARENT = new Attr<>(null,
 				Scannable::from);
+
+		/**
+		 * A key that links a {@link Scannable} to another {@link Scannable} it runs on.
+		 * Usually exposes a link between an operator/subscriber and its {@link Worker} or
+		 * {@link Scheduler}, provided these are {@link Scannable}. Will return
+		 * {@link Attr#UNAVAILABLE_SCAN} if the supporting execution is not Scannable or
+		 * {@link Attr#NULL_SCAN} if the operator doesn't define a specific runtime.
+		 */
+		public static final Attr<Scannable> RUN_ON = new Attr<>(null, Scannable::from);
 
 		/**
 		 * Prefetch is an {@link Integer} attribute defining the rate of processing in a

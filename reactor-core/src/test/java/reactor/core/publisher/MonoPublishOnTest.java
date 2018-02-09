@@ -346,6 +346,13 @@ public class MonoPublishOnTest {
 	}
 
 	@Test
+	public void scanOperator() {
+		MonoPublishOn<String> test = new MonoPublishOn<>(Mono.empty(), Schedulers.immediate());
+
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoPublishOn.PublishOnSubscriber<String> test = new MonoPublishOn.PublishOnSubscriber<>(
@@ -353,6 +360,7 @@ public class MonoPublishOnTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
@@ -371,8 +379,6 @@ public class MonoPublishOnTest {
 		test.onError(new IllegalStateException("boom"));
 		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 	}
-
-
 
 	@Test
 	public void error() {

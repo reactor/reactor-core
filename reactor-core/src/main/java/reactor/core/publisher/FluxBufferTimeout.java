@@ -70,7 +70,12 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 				bufferSupplier));
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return timer;
 
+		return super.scanUnsafe(key);
+	}
 
 	final static class BufferTimeoutSubscriber<T, C extends Collection<? super T>>
 			implements InnerOperator<T, C> {
@@ -206,6 +211,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.CAPACITY) return batchSize;
 			if (key == Attr.BUFFERED) return batchSize - index;
+			if (key == Attr.RUN_ON) return timer;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

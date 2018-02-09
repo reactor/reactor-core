@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -219,13 +220,55 @@ public class FluxWindowTimeoutTest {
 	}
 
 	@Test
-    public void scanMainSubscriber() {
-        CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxWindowTimeout.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeout.WindowTimeoutSubscriber<>(actual,
-        		123, Long.MAX_VALUE, Schedulers.single());
-        Subscription parent = Operators.emptySubscription();
-        test.onSubscribe(parent);
+	public void scanOperator() {
+		FluxWindowTimeout<Integer> test = new FluxWindowTimeout<>(Flux.just(1), 123, 100, Schedulers.immediate());
 
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+	}
+
+	private static final class MyWorker implements Scheduler.Worker, Scannable {
+
+		@Override
+		public void dispose() { }
+
+		@Override
+		public Object scanUnsafe(Attr key) { return null; }
+
+		@Override
+		public Disposable schedule(Runnable task) { return null; }
+	}
+
+	private static final class MyScheduler implements Scheduler, Scannable {
+
+		static final Worker WORKER = new MyWorker();
+
+		@Override
+		public Disposable schedule(Runnable task) {
+			task.run();
+			return Disposables.disposed();
+		}
+
+		@Override
+		public Worker createWorker() {
+			return WORKER;
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			return null;
+		}
+	}
+
+	@Test
+    public void scanMainSubscriber() {
+		Scheduler scheduler = new MyScheduler();
+		CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxWindowTimeout.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeout.WindowTimeoutSubscriber<>(actual,
+				123, Long.MAX_VALUE, scheduler);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(scheduler.createWorker());
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);

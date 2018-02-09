@@ -20,8 +20,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoCancelOnTest {
 
@@ -46,5 +49,12 @@ public class MonoCancelOnTest {
 
 		latch.await();
 		Assert.assertNull(threadHash.get());
+	}
+
+	@Test
+	public void scanOperator() {
+		MonoCancelOn<String> test = new MonoCancelOn<>(Mono.empty(), Schedulers.immediate());
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}
 }

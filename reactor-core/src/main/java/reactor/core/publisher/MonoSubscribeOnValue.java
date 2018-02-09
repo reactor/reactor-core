@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledEmpty;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
@@ -30,7 +31,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T>
  */
-final class MonoSubscribeOnValue<T> extends Mono<T> {
+final class MonoSubscribeOnValue<T> extends Mono<T> implements Scannable {
 
 	final T value;
 
@@ -60,5 +61,12 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 		else {
 			actual.onSubscribe(new ScheduledScalar<>(actual, v, scheduler));
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return null;
 	}
 }

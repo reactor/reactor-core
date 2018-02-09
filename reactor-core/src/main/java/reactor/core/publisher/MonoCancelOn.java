@@ -32,4 +32,11 @@ final class MonoCancelOn<T> extends MonoOperator<T, T> {
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		source.subscribe(new FluxCancelOn.CancelSubscriber<T>(actual, scheduler));
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return super.scanUnsafe(key);
+	}
 }

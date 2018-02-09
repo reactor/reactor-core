@@ -21,10 +21,14 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.assertj.core.data.Offset;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxDelaySequence.DelaySubscriber;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.function.Tuple2;
@@ -256,6 +260,43 @@ public class FluxDelaySequenceTest {
 		            .verifyThenAssertThat()
 		            .hasNotDroppedElements()
 		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void scanOperator() {
+		FluxDelaySequence<String> test = new FluxDelaySequence<>(Flux.empty(), Duration.ofSeconds(1), Schedulers.immediate());
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Scheduler.Worker worker = Schedulers.immediate().createWorker();
+
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
+		Subscription s = Operators.emptySubscription();
+
+		FluxDelaySequence.DelaySubscriber test = new DelaySubscriber<>(actual, Duration.ofSeconds(1), worker);
+
+		test.onSubscribe(s);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(s);
+		SerializedSubscriber serializedSubscriber = (SerializedSubscriber) test.scan(Scannable.Attr.ACTUAL);
+		assertThat(serializedSubscriber)
+				.isNotNull()
+				.satisfies(ser -> assertThat(ser.actual).isSameAs(actual));
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isEqualTo(worker);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+
+		test.done = true;
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 }

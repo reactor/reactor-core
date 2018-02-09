@@ -43,6 +43,13 @@ final class FluxElapsed<T> extends FluxOperator<T, Tuple2<Long, T>> implements F
 		source.subscribe(new ElapsedSubscriber<>(actual, scheduler));
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return super.scanUnsafe(key);
+	}
+
 	static final class ElapsedSubscriber<T>
 			implements InnerOperator<T, Tuple2<Long, T>>,
 			           QueueSubscription<Tuple2<Long, T>> {
@@ -65,6 +72,7 @@ final class FluxElapsed<T> extends FluxOperator<T, Tuple2<Long, T>> implements F
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_ON) return scheduler;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

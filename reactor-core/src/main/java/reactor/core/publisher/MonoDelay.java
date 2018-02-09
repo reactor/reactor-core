@@ -24,6 +24,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 
@@ -33,7 +34,7 @@ import reactor.util.annotation.Nullable;
  * wraps other form of async-delayed execution of tasks.
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDelay extends Mono<Long> {
+final class MonoDelay extends Mono<Long> implements Scannable {
 
 	final Scheduler timedScheduler;
 
@@ -62,6 +63,13 @@ final class MonoDelay extends Mono<Long> {
 						actual.currentContext()));
 			}
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return timedScheduler;
+
+		return null;
 	}
 
 	static final class MonoDelayRunnable implements Runnable, InnerProducer<Long> {

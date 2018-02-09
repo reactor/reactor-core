@@ -20,7 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 
@@ -44,6 +44,13 @@ final class FluxDelaySequence<T> extends FluxOperator<T, T> {
 		Scheduler.Worker w = scheduler.createWorker();
 
 		source.subscribe(new DelaySubscriber<T>(actual, delay, w));
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return super.scanUnsafe(key);
 	}
 
 	static final class DelaySubscriber<T> implements InnerOperator<T, T> {
@@ -150,6 +157,16 @@ final class FluxDelaySequence<T> extends FluxOperator<T, T> {
 		public void cancel() {
 			s.cancel();
 			w.dispose();
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_ON) return w;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return w.isDisposed() && !done;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		final class OnError implements Runnable {

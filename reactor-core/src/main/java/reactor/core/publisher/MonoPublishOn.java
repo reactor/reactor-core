@@ -45,6 +45,13 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		source.subscribe(new PublishOnSubscriber<T>(actual, scheduler));
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return super.scanUnsafe(key);
+	}
+
 	static final class PublishOnSubscriber<T>
 			implements InnerOperator<T, T>, Runnable {
 
@@ -85,6 +92,7 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 			if (key == Attr.CANCELLED) return future == OperatorDisposables.DISPOSED;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ERROR) return error;
+			if (key == Attr.RUN_ON) return scheduler;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

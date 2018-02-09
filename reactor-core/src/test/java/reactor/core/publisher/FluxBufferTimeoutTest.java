@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -89,28 +90,45 @@ public class FluxBufferTimeoutTest {
 	public void scanSubscriber() {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
+		final Scheduler.Worker worker = Schedulers.elastic()
+		                                          .createWorker();
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+						actual, 123, 1000,
+				worker, ArrayList::new);
 
-		Subscription subscription = Operators.emptySubscription();
-		test.onSubscribe(subscription);
+		try {
+			Subscription subscription = Operators.emptySubscription();
+			test.onSubscribe(subscription);
 
-		test.requested = 3L;
-		test.index = 100;
+			test.requested = 3L;
+			test.index = 100;
 
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+			assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(worker);
+			assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
+			assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
-		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
-		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(23);
+			assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
+			assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
+			assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(23);
 
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+			assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+			assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
-		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+			test.onError(new IllegalStateException("boom"));
+			assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+			assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		}
+		finally {
+			worker.dispose();
+		}
+	}
+
+	@Test
+	public void scanOperator() {
+		final Flux<List<Integer>> flux = Flux.just(1).bufferTimeout(3, Duration.ofSeconds(1));
+
+		assertThat(flux).isInstanceOf(Scannable.class);
+		assertThat(((Scannable) flux).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.parallel());
 	}
 
 	@Test

@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 
@@ -34,7 +35,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
+final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scannable {
 
 	final Callable<? extends T> callable;
 
@@ -60,6 +61,13 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				actual.onError(Operators.onRejectedExecution(ree, actual.currentContext()));
 			}
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return null;
 	}
 
 	static final class CallableSubscribeOnSubscription<T>
@@ -123,6 +131,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return state == HAS_CANCELLED;
 			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
+			if (key == Attr.RUN_ON) return scheduler;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

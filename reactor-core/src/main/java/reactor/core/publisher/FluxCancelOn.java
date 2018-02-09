@@ -39,6 +39,13 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 		source.subscribe(new CancelSubscriber<T>(actual, scheduler));
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_ON) return scheduler;
+
+		return super.scanUnsafe(key);
+	}
+
 	static final class CancelSubscriber<T>
 			implements InnerOperator<T, T>, Runnable {
 
@@ -69,6 +76,7 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return cancelled == 1;
+			if (key == Attr.RUN_ON) return scheduler;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

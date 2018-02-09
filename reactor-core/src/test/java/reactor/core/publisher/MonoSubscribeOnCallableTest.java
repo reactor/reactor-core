@@ -19,8 +19,11 @@ import java.io.IOException;
 import java.time.Duration;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoSubscribeOnCallableTest {
 
@@ -69,5 +72,12 @@ public class MonoSubscribeOnCallableTest {
 		            .expectSubscription()
 		            .expectComplete()
 		            .verify();
+	}
+
+	@Test
+	public void scanOperator() {
+		MonoSubscribeOnCallable<String> test = new MonoSubscribeOnCallable<>(() -> "foo", Schedulers.immediate());
+
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}
 }
