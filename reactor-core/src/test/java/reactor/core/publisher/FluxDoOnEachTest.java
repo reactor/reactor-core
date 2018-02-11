@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,14 @@
 package reactor.core.publisher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -312,4 +313,19 @@ public class FluxDoOnEachTest {
         test.onError(new IllegalStateException("boom"));
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
+
+    //https://github.com/reactor/reactor-core/issues/1067
+	@Test
+	public void shallExecuteSideEffectsCallback() {
+
+		Flux<Integer> result = Mono.just(Arrays.asList(1, 2))
+		                           //.doOnEach(sig -> System.out.println("SIGNAL beforeMap " + sig))// <- if enabled than everything is fine
+		                           .map(x -> x)
+		                           .doOnEach(sig -> {throw new RuntimeException("expected");})
+		                           .flatMapIterable(Function.identity());
+
+
+		StepVerifier.create(result).expectError().verify();
+	}
+
 }
