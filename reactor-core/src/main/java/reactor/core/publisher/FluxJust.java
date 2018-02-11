@@ -36,7 +36,7 @@ import reactor.util.annotation.Nullable;
  * Flux.just(1).subscribe(
  *    log::info,
  *    log::error,
- *    (-> log.info("complete"))
+ *    ()-> log.info("complete")
  * )
  * }
  * </pre>
