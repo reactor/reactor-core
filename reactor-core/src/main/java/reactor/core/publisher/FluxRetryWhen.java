@@ -172,15 +172,9 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 					}
 
 					//flow that emit a Context as a trigger for the re-subscription are
-					//used to update or replace the currentContext()
+					//used to REPLACE the currentContext()
 					if (trigger instanceof Context) {
-						Context cTrigger = (Context) trigger;
-						if (cTrigger.hasKey(Context.CONTEXT_REPLACE)) {
-							this.context = cTrigger;
-						}
-						else {
-							this.context = context.putAll(cTrigger);
-						}
+						this.context = (Context) trigger;
 					}
 
 					source.subscribe(this);

@@ -365,7 +365,7 @@ public class FluxRetryWhenTest {
 	}
 
 	@Test
-	public void retryWhenContextTriggerWithSpecialKeyReplacesOriginalContext() {
+	public void retryWhenContextTrigger_ReplacesOriginalContext() {
 		final int RETRY_COUNT = 3;
 		List<Integer> retriesLeft = Collections.synchronizedList(new ArrayList<>(4));
 		List<Context> contextPerRetry = Collections.synchronizedList(new ArrayList<>(4));
@@ -384,7 +384,7 @@ public class FluxRetryWhenTest {
 					                                     Context ctx = t2.getT2();
 					                                     int rl = ctx.getOrDefault("retriesLeft", 0);
 					                                     if (rl > 0) {
-						                                     return Mono.just(Context.of("retriesLeft", rl - 1, Context.CONTEXT_REPLACE, "any key"));
+						                                     return Mono.just(Context.of("retriesLeft", rl - 1));
 					                                     } else {
 						                                     return Mono.<Context>error(new IllegalStateException("retries exhausted", e));
 					                                     }
@@ -408,7 +408,7 @@ public class FluxRetryWhenTest {
 	}
 
 	@Test
-	public void retryWhenContextTriggerUpdatesOriginalContext() {
+	public void retryWhenContextTrigger_OriginalContextManuallyUpdated() {
 		final int RETRY_COUNT = 3;
 		List<Integer> retriesLeft = Collections.synchronizedList(new ArrayList<>(4));
 		List<Context> contextPerRetry = Collections.synchronizedList(new ArrayList<>(4));
@@ -427,7 +427,7 @@ public class FluxRetryWhenTest {
 					                                     Context ctx = t2.getT2();
 					                                     int rl = ctx.getOrDefault("retriesLeft", 0);
 					                                     if (rl > 0) {
-						                                     return Mono.just(Context.of("retriesLeft", rl - 1));
+						                                     return Mono.just(ctx.put("retriesLeft", rl - 1));
 					                                     } else {
 						                                     return Mono.<Context>error(new IllegalStateException("retries exhausted", e));
 					                                     }

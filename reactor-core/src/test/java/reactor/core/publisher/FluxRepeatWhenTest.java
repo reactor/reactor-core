@@ -413,7 +413,7 @@ public class FluxRepeatWhenTest {
 	}
 
 	@Test
-	public void repeatWhenContextTrigger_WithSpecialKeyReplacesOriginalContext() {
+	public void repeatWhenContextTrigger_ReplacesOriginalContext() {
 		final int REPEAT_COUNT = 3;
 		List<String> repeats = Collections.synchronizedList(new ArrayList<>(4));
 		List<Context> contexts = Collections.synchronizedList(new ArrayList<>(4));
@@ -436,8 +436,7 @@ public class FluxRepeatWhenTest {
 							    if (rl > 0) {
 								    return Mono.just(Context.of(
 										    "repeatsLeft", rl - 1,
-										    "emitted", lastEmitted,
-										    Context.CONTEXT_REPLACE, "any key"));
+										    "emitted", lastEmitted));
 							    } else {
 								    return Mono.<Context>error(new IllegalStateException("repeats exhausted"));
 							    }
@@ -467,7 +466,7 @@ public class FluxRepeatWhenTest {
 	}
 
 	@Test
-	public void repeatWhenContextTrigger_UpdatesOriginalContext() {
+	public void repeatWhenContextTrigger_OriginalContextManuallyUpdated() {
 		final int REPEAT_COUNT = 3;
 		List<String> repeats = Collections.synchronizedList(new ArrayList<>(4));
 		List<Context> contexts = Collections.synchronizedList(new ArrayList<>(4));
