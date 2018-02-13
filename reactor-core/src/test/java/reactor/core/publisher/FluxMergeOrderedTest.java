@@ -184,16 +184,13 @@ public class FluxMergeOrderedTest {
 
 	@Test
 	public void reorderingByIndex() {
-		final List<Integer> disordered = Collections.synchronizedList(new ArrayList<>());
-		List<Flux<Tuple2<Long, Integer>>> sourceList = Flux.range(1, 10)
+		List<Mono<Tuple2<Long, Integer>>> sourceList = Flux.range(1, 10)
 		                                                   .index()
-		                                                   .groupBy(t2 -> t2.getT2() % 2)
-		                                                   .map(g -> g.delaySequence(Duration.ofMillis(500 - 250 * g.key()))
-		                                                              .doOnNext(t2 -> disordered.add(t2.getT2()))
-		                                                   )
+		                                                   .map(Mono::just)
 		                                                   .collectList()
 		                                                   .block();
 		assertThat(sourceList).isNotNull();
+		Collections.shuffle(sourceList);
 
 		@SuppressWarnings("unchecked")
 		Publisher<Tuple2<Long, Integer>>[] sources = sourceList.toArray(new Publisher[sourceList.size()]);
@@ -205,10 +202,33 @@ public class FluxMergeOrderedTest {
 		StepVerifier.create(test)
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		            .verifyComplete();
+	}
 
-		assertThat(disordered)
-				.as("source was shuffled")
-				.containsExactly(1, 3, 5, 7, 9, 2, 4, 6, 8, 10);
+	@Test
+	public void reorderingByIndexWithDelays() {
+		List<Mono<Tuple2<Long, Integer>>> sourceList = Flux.range(1, 10)
+		                                                   .index()
+		                                                   .map(t2 -> {
+			                                                   if (t2.getT1() < 4) {
+				                                                   return Mono.just(t2).delayElement(Duration.ofMillis(500 - t2.getT2() * 100));
+			                                                   }
+			                                                   return Mono.just(t2);
+		                                                   })
+		                                                   .collectList()
+		                                                   .block();
+		assertThat(sourceList).isNotNull();
+		Collections.shuffle(sourceList);
+
+		@SuppressWarnings("unchecked")
+		Publisher<Tuple2<Long, Integer>>[] sources = sourceList.toArray(new Publisher[sourceList.size()]);
+
+		Flux<Integer> test = new FluxMergeOrdered<>(16,
+				Queues.small(), Comparator.comparing(Tuple2::getT1), sources)
+				.map(Tuple2::getT2);
+
+		StepVerifier.create(test)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
 	}
 
 	@Test
