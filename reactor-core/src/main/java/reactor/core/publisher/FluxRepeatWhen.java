@@ -95,12 +95,12 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 		final Publisher<? extends T> source;
 
 		volatile int wip;
-		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<RepeatWhenMainSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class,
 						"wip");
 
-		long produced;
+		Context context;
+		long    produced;
 
 		RepeatWhenMainSubscriber(CoreSubscriber<? super T> actual,
 				Subscriber<Long> signaller,
@@ -109,6 +109,12 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
+			this.context = actual.currentContext();
+		}
+
+		@Override
+		public Context currentContext() {
+			return this.context;
 		}
 
 		@Override
@@ -154,11 +160,17 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 			otherArbiter.set(w);
 		}
 
-		void resubscribe() {
+		void resubscribe(Object trigger) {
 			if (WIP.getAndIncrement(this) == 0) {
 				do {
 					if (cancelled) {
 						return;
+					}
+
+					//flow that emit a Context as a trigger for the re-subscription are
+					//used to REPLACE the currentContext()
+					if (trigger instanceof Context) {
+						this.context = (Context) trigger;
 					}
 
 					source.subscribe(this);
@@ -179,6 +191,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 			actual.onComplete();
 		}
+
 	}
 
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
@@ -209,7 +222,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onNext(Object t) {
-			main.resubscribe();
+			main.resubscribe(t);
 		}
 
 		@Override

@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +30,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -406,5 +410,107 @@ public class FluxRepeatWhenTest {
 		List<Scannable> inners = main.inners().collect(Collectors.toList());
 
 		assertThat(inners).containsExactly((Scannable) signaller, main.otherArbiter);
+	}
+
+	@Test
+	public void repeatWhenContextTrigger_ReplacesOriginalContext() {
+		final int REPEAT_COUNT = 3;
+		List<String> repeats = Collections.synchronizedList(new ArrayList<>(4));
+		List<Context> contexts = Collections.synchronizedList(new ArrayList<>(4));
+
+		Flux<String> retryWithContext =
+				Flux.just("A", "B")
+				    .doOnEach(sig -> {
+				    	if (sig.isOnComplete()) {
+						    Context ctx = sig.getContext();
+						    contexts.add(ctx);
+						    repeats.add("emitted " + ctx.get("emitted") + " elements this attempt, " + ctx.get("repeatsLeft") + " repeats left");
+					    }
+				    })
+				    .repeatWhen(emittedEachAttempt -> emittedEachAttempt
+						    .flatMap(e -> Mono.subscriberContext().map(ctx -> Tuples.of(e, ctx)))
+						    .flatMap(t2 -> {
+							    long lastEmitted = t2.getT1();
+							    Context ctx = t2.getT2();
+							    int rl = ctx.getOrDefault("repeatsLeft", 0);
+							    if (rl > 0) {
+								    return Mono.just(Context.of(
+										    "repeatsLeft", rl - 1,
+										    "emitted", lastEmitted));
+							    } else {
+								    return Mono.<Context>error(new IllegalStateException("repeats exhausted"));
+							    }
+						    })
+				    )
+				    .subscriberContext(Context.of("repeatsLeft", REPEAT_COUNT, "emitted", 0))
+				    .subscriberContext(Context.of("thirdPartyContext", "present"));
+
+		StepVerifier.create(retryWithContext)
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectErrorMessage("repeats exhausted")
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(repeats).containsExactly(
+				"emitted 0 elements this attempt, 3 repeats left",
+				"emitted 2 elements this attempt, 2 repeats left",
+				"emitted 2 elements this attempt, 1 repeats left",
+				"emitted 2 elements this attempt, 0 repeats left");
+
+		assertThat(contexts).first().matches(ctx -> ctx.hasKey("thirdPartyContext"));
+		assertThat(contexts).noneMatch(ctx -> ctx.getOrDefault("repeatsLeft", -1) != 3 && ctx.hasKey("thirdPartyContext"));
+
+		System.out.println(contexts);
+	}
+
+	@Test
+	public void repeatWhenContextTrigger_OriginalContextManuallyUpdated() {
+		final int REPEAT_COUNT = 3;
+		List<String> repeats = Collections.synchronizedList(new ArrayList<>(4));
+		List<Context> contexts = Collections.synchronizedList(new ArrayList<>(4));
+
+		Flux<String> retryWithContext =
+				Flux.just("A", "B")
+				    .doOnEach(sig -> {
+					    if (sig.isOnComplete()) {
+						    Context ctx = sig.getContext();
+						    contexts.add(ctx);
+						    repeats.add("emitted " + ctx.get("emitted") + " elements this attempt, " + ctx.get("repeatsLeft") + " repeats left");
+					    }
+				    })
+				    .repeatWhen(emittedEachAttempt -> emittedEachAttempt
+						    .flatMap(e -> Mono.subscriberContext().map(ctx -> Tuples.of(e, ctx)))
+						    .flatMap(t2 -> {
+							    long lastEmitted = t2.getT1();
+							    Context ctx = t2.getT2();
+							    int rl = ctx.getOrDefault("repeatsLeft", 0);
+							    if (rl > 0) {
+								    return Mono.just(ctx.put("repeatsLeft", rl - 1)
+										    .put("emitted", lastEmitted));
+							    } else {
+								    return Mono.<Context>error(new IllegalStateException("repeats exhausted"));
+							    }
+						    })
+				    )
+				    .subscriberContext(Context.of("repeatsLeft", REPEAT_COUNT, "emitted", 0))
+				    .subscriberContext(Context.of("thirdPartyContext", "present"));
+
+		StepVerifier.create(retryWithContext)
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectNext("A", "B")
+		            .expectErrorMessage("repeats exhausted")
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(repeats).containsExactly(
+				"emitted 0 elements this attempt, 3 repeats left",
+				"emitted 2 elements this attempt, 2 repeats left",
+				"emitted 2 elements this attempt, 1 repeats left",
+				"emitted 2 elements this attempt, 0 repeats left");
+
+		assertThat(contexts).allMatch(ctx -> ctx.hasKey("thirdPartyContext"));
 	}
 }

@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +31,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -358,5 +362,88 @@ public class FluxRetryWhenTest {
 		List<Scannable> inners = main.inners().collect(Collectors.toList());
 
 		assertThat(inners).containsExactly((Scannable) signaller, main.otherArbiter);
+	}
+
+	@Test
+	public void retryWhenContextTrigger_ReplacesOriginalContext() {
+		final int RETRY_COUNT = 3;
+		List<Integer> retriesLeft = Collections.synchronizedList(new ArrayList<>(4));
+		List<Context> contextPerRetry = Collections.synchronizedList(new ArrayList<>(4));
+
+		Flux<Object> retryWithContext =
+				Flux.error(new IllegalStateException("boom"))
+				    .doOnEach(sig -> {
+					    retriesLeft.add(sig.getContext().get("retriesLeft"));
+					    if (!sig.isOnNext()) {
+						    contextPerRetry.add(sig.getContext());
+					    }
+				    })
+				    .retryWhen(errorFlux -> errorFlux.flatMap(e -> Mono.subscriberContext().map(ctx -> Tuples.of(e, ctx)))
+				                                     .flatMap(t2 -> {
+					                                     Throwable e = t2.getT1();
+					                                     Context ctx = t2.getT2();
+					                                     int rl = ctx.getOrDefault("retriesLeft", 0);
+					                                     if (rl > 0) {
+						                                     return Mono.just(Context.of("retriesLeft", rl - 1));
+					                                     } else {
+						                                     return Mono.<Context>error(new IllegalStateException("retries exhausted", e));
+					                                     }
+				                                     })
+				    )
+				    .subscriberContext(Context.of("retriesLeft", RETRY_COUNT))
+					.subscriberContext(Context.of("thirdPartyContext", "present"));
+
+		StepVerifier.create(retryWithContext)
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("retries exhausted")
+		                                                    .hasCause(new IllegalStateException("boom")))
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(retriesLeft).containsExactly(3, 2, 1, 0);
+		assertThat(contextPerRetry)
+				.first()
+				.matches(ctx  -> ctx.hasKey("thirdPartyContext"));
+		assertThat(contextPerRetry.subList(1, contextPerRetry.size() - 1))
+				.noneMatch(ctx  -> ctx.hasKey("thirdPartyContext"));
+	}
+
+	@Test
+	public void retryWhenContextTrigger_OriginalContextManuallyUpdated() {
+		final int RETRY_COUNT = 3;
+		List<Integer> retriesLeft = Collections.synchronizedList(new ArrayList<>(4));
+		List<Context> contextPerRetry = Collections.synchronizedList(new ArrayList<>(4));
+
+		Flux<Object> retryWithContext =
+				Flux.error(new IllegalStateException("boom"))
+				    .doOnEach(sig -> {
+					    retriesLeft.add(sig.getContext().get("retriesLeft"));
+					    if (!sig.isOnNext()) {
+						    contextPerRetry.add(sig.getContext());
+					    }
+				    })
+				    .retryWhen(errorFlux -> errorFlux.flatMap(e -> Mono.subscriberContext().map(ctx -> Tuples.of(e, ctx)))
+				                                     .flatMap(t2 -> {
+					                                     Throwable e = t2.getT1();
+					                                     Context ctx = t2.getT2();
+					                                     int rl = ctx.getOrDefault("retriesLeft", 0);
+					                                     if (rl > 0) {
+						                                     return Mono.just(ctx.put("retriesLeft", rl - 1));
+					                                     } else {
+						                                     return Mono.<Context>error(new IllegalStateException("retries exhausted", e));
+					                                     }
+				                                     })
+				    )
+				    .subscriberContext(Context.of("retriesLeft", RETRY_COUNT))
+				    .subscriberContext(Context.of("thirdPartyContext", "present"));
+
+		StepVerifier.create(retryWithContext)
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("retries exhausted")
+		                                                    .hasCause(new IllegalStateException("boom")))
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(retriesLeft).containsExactly(3, 2, 1, 0);
+		assertThat(contextPerRetry)
+				.allMatch(ctx  -> ctx.hasKey("thirdPartyContext"));
 	}
 }

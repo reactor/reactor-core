@@ -5949,6 +5949,32 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * attempt is suppressed.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatwhen.png" alt="">
+	 * <p>
+	 * Note that if the companion {@link Publisher} created by the {@code repeatFactory}
+	 * emits {@link Context} as trigger objects, these {@link Context} will REPLACE the
+	 * operator's own Context. <strong>Please be careful there</strong>: replacing the
+	 * Context means that some keys you don't own could be removed, breaking libraries
+	 * that depend on them. As a result, the recommended approach is to always create such
+	 * a {@link Context} trigger by starting from the original Context (ensuring the trigger
+	 * contains all the keys from the original, unless you absolutely know you want to
+	 * remove one of these keys):
+	 * <pre><code>
+	 * .repeatWhen(emittedEachAttempt -> emittedEachAttempt
+	 *     .flatMap(e -> Mono.subscriberContext().map(ctx -> Tuples.of(e, ctx)))
+	 *     .flatMap(t2 -> {
+	 * 	    long lastEmitted = t2.getT1();
+	 * 	    Context ctx = t2.getT2();
+	 * 	    int rl = ctx.getOrDefault("repeatsLeft", 0);
+	 * 	    if (rl > 0) {
+	 *		    // /!\ THE ctx.put HERE IS THE ESSENTIAL PART /!\
+	 * 		    return Mono.just(ctx.put("repeatsLeft", rl - 1)
+	 * 				    .put("emitted", lastEmitted));
+	 * 	    } else {
+	 * 		    return Mono.<Context>error(new IllegalStateException("repeats exhausted"));
+	 * 	    }
+	 *     })
+	 * )
+	 * </code></pre>
 	 *
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onComplete as a {@link Long}
@@ -6149,6 +6175,32 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/retrywhen.png" alt="">
+	 * <p>
+	 * Note that if the companion {@link Publisher} created by the {@code whenFactory}
+	 * emits {@link Context} as trigger objects, these {@link Context} will REPLACE the
+	 * operator's own Context. <strong>Please be careful there</strong>: replacing the
+	 * Context means that some keys you don't own could be removed, breaking libraries
+	 * that depend on them. As a result, the recommended approach is to always create such
+	 * a {@link Context} trigger by starting from the original Context (ensuring the trigger
+	 * contains all the keys from the original, unless you absolutely know you want to
+	 * remove one of these keys):
+	 * <pre><code>
+	 * .retryWhen(errorCurrentAttempt -> errorCurrentAttempt
+	 *     .flatMap(e -> Mono.subscriberContext().map(ctx -> Tuples.of(e, ctx)))
+	 *     .flatMap(t2 -> {
+	 * 	    Throwable lastError = t2.getT1();
+	 * 	    Context ctx = t2.getT2();
+	 * 	    int rl = ctx.getOrDefault("retriesLeft", 0);
+	 * 	    if (rl > 0) {
+	 *		    // /!\ THE ctx.put HERE IS THE ESSENTIAL PART /!\
+	 * 		    return Mono.just(ctx.put("retriesLeft", rl - 1)
+	 * 				    .put("lastError", lastError));
+	 * 	    } else {
+	 * 		    return Mono.<Context>error(new IllegalStateException("retries exhausted", lastError));
+	 * 	    }
+	 *     })
+	 * )
+	 * </code></pre>
 	 *
 	 * @param whenFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onError as a {@link Throwable}.
