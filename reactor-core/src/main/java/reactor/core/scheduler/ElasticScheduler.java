@@ -222,7 +222,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 			if (e.expireMillis < now) {
 				if (cache.remove(e)) {
 					e.cached.exec.shutdownNow();
-					//TODO shouldn't we remove from all at some point?
+					all.remove(e.cached);
 				}
 			}
 		}
