@@ -371,6 +371,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		int t = terminated;
 		if (t != FORCED_SHUTDOWN && TERMINATED.compareAndSet(this, t, FORCED_SHUTDOWN)) {
 			executor.shutdownNow();
+			requestTaskExecutor.shutdownNow();
 		}
 		return drain();
 	}
