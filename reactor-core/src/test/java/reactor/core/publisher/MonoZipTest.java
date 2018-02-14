@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,12 +96,6 @@ public class MonoZipTest {
 		mono.subscribe(System.out::println);
 	}
 
-	@Test(timeout = 5000)
-	public void someEmpty() {
-		Assert.assertNull(Mono.zip(Mono.empty(), Mono.delay(Duration.ofMillis(250)))
-		                      .block());
-	}
-
 	@Test//(timeout = 5000)
 	public void all2NonEmpty() {
 		Assert.assertEquals(Tuples.of(0L, 0L),
@@ -115,6 +109,15 @@ public class MonoZipTest {
 				Mono.just(1),
 				Mono.just(2))
 		               .block()).isEqualTo(3);
+	}
+
+	@Test
+	public void someEmpty() {
+		StepVerifier.withVirtualTime(() ->
+				Mono.zip(Mono.delay(Duration.ofMillis(150)).then(), Mono.delay(Duration
+						.ofMillis(250))))
+		            .thenAwait(Duration.ofMillis(150))
+		            .verifyComplete();
 	}
 
 	@Test//(timeout = 5000)
@@ -405,10 +408,6 @@ public class MonoZipTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		test.signalError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse(); //done == 1
-		test.signalError(new IllegalStateException("boom2")); // done == 2
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
@@ -430,7 +429,8 @@ public class MonoZipTest {
 
 	@Test
 	public void scanWhenInner() {
-		CoreSubscriber<? super String> actual = new LambdaMonoSubscriber<>(null, null, null, null);
+		CoreSubscriber<? super String> actual = new LambdaMonoSubscriber<>(null, e ->
+		{}, null, null);
 		MonoZip.ZipCoordinator<String>
 				coordinator = new MonoZip.ZipCoordinator<>(actual, 2, false, a -> null);
 		MonoZip.ZipInner<String> test = new MonoZip.ZipInner<>(coordinator);
@@ -439,11 +439,12 @@ public class MonoZipTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(innerSub);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(coordinator);
-
+		assertThat(coordinator.scan(Scannable.Attr.TERMINATED)).isFalse(); //done == 1
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		assertThat(coordinator.scan(Scannable.Attr.TERMINATED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
-		test.error = new IllegalStateException("boom");
-		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 	}
 
 	@Test

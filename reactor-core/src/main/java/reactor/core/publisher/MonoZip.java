@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,10 @@ final class MonoZip<T, R> extends Mono<R> {
 
 		ZipCoordinator<R> parent = new ZipCoordinator<>(actual, n, delayError, zipper);
 		actual.onSubscribe(parent);
-		parent.subscribe(a);
+		ZipInner<R>[] subs = parent.subscribers;
+		for (int i = 0; i < n; i++) {
+			a[i].subscribe(subs[i]);
+		}
 	}
 
 	static final class ZipCoordinator<R> extends Operators.MonoSubscriber<Object, R> {
@@ -174,26 +177,18 @@ final class MonoZip<T, R> extends Mono<R> {
 			return Stream.of(subscribers);
 		}
 
-		void subscribe(Publisher<?>[] sources) {
-			ZipInner<R>[] a = subscribers;
-			for (int i = 0; i < a.length; i++) {
-				sources[i].subscribe(a[i]);
-			}
-		}
-
-		void signalError(Throwable t) {
+		void signalError(ZipInner<R> source, Throwable t) {
 			if (delayError) {
 				signal();
 			}
 			else {
 				int n = subscribers.length;
 				if (DONE.getAndSet(this, n) != n) {
-					cancel();
+					cancel(source);
 					actual.onError(t);
 				}
 			}
 		}
-
 		@SuppressWarnings("unchecked")
 		void signal() {
 			ZipInner<R>[] a = subscribers;
@@ -268,6 +263,17 @@ final class MonoZip<T, R> extends Mono<R> {
 				}
 			}
 		}
+
+		void cancel(ZipInner<R> source) {
+			if (!isCancelled()) {
+				super.cancel();
+				for (ZipInner<R> ms : subscribers) {
+					if(ms != source) {
+						ms.cancel();
+					}
+				}
+			}
+		}
 	}
 
 	static final class ZipInner<R> implements InnerConsumer<Object> {
@@ -333,13 +339,26 @@ final class MonoZip<T, R> extends Mono<R> {
 		@Override
 		public void onError(Throwable t) {
 			error = t;
-			parent.signalError(t);
+			if (parent.delayError) {
+				parent.signal();
+			}
+			else {
+				int n = parent.subscribers.length;
+				if (ZipCoordinator.DONE.getAndSet(parent, n) != n) {
+					parent.cancel(this);
+					parent.actual.onError(t);
+				}
+			}
 		}
 
 		@Override
 		public void onComplete() {
 			if (value == null) {
-				parent.signal();
+				int n = parent.subscribers.length;
+				if (ZipCoordinator.DONE.getAndSet(parent, n) != n) {
+					parent.cancel(this);
+					parent.actual.onComplete();
+				}
 			}
 		}
 
