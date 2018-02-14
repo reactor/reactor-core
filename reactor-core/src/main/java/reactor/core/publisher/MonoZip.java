@@ -354,10 +354,15 @@ final class MonoZip<T, R> extends Mono<R> {
 		@Override
 		public void onComplete() {
 			if (value == null) {
-				int n = parent.subscribers.length;
-				if (ZipCoordinator.DONE.getAndSet(parent, n) != n) {
-					parent.cancel(this);
-					parent.actual.onComplete();
+				if (parent.delayError) {
+					parent.signal();
+				}
+				else {
+					int n = parent.subscribers.length;
+					if (ZipCoordinator.DONE.getAndSet(parent, n) != n) {
+						parent.cancel(this);
+						parent.actual.onComplete();
+					}
 				}
 			}
 		}

@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -396,6 +397,32 @@ public class MonoZipTest {
 	}
 
 	@Test
+	public void delayErrorEmptySourceErrorSource() {
+		Mono<String> error = Mono.error(new IllegalStateException("boom"));
+		Mono<String> empty = Mono.empty();
+
+		StepVerifier.create(Mono.zipDelayError(error,empty))
+		            .expectErrorMessage("boom")
+		            .verify();
+	}
+
+	@Test
+	public void delayErrorEmptySourceErrorTwoSource() {
+		final IllegalStateException e1 = new IllegalStateException("boom1");
+		final IllegalStateException e2 = new IllegalStateException("boom2");
+		Mono<String> error1 = Mono.error(e1);
+		Mono<String> error2 = Mono.error(e2);
+		Mono<String> empty = Mono.empty();
+
+		StepVerifier.create(Mono.zipDelayError(error1, empty, error2))
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .matches(Exceptions::isMultiple)
+				            .hasSuppressedException(e1)
+				            .hasSuppressedException(e2))
+		            .verify();
+	}
+
+	@Test
 	public void scanCoordinator() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(
@@ -408,6 +435,11 @@ public class MonoZipTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		//it is delaying, so source is ignored
+		test.signalError(null, new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse(); //done == 1
+		test.signalError(null, new IllegalStateException("boom2")); // done == 2
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
