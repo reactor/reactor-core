@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -96,12 +98,6 @@ public class MonoZipTest {
 		mono.subscribe(System.out::println);
 	}
 
-	@Test(timeout = 5000)
-	public void someEmpty() {
-		Assert.assertNull(Mono.zip(Mono.empty(), Mono.delay(Duration.ofMillis(250)))
-		                      .block());
-	}
-
 	@Test//(timeout = 5000)
 	public void all2NonEmpty() {
 		Assert.assertEquals(Tuples.of(0L, 0L),
@@ -115,6 +111,15 @@ public class MonoZipTest {
 				Mono.just(1),
 				Mono.just(2))
 		               .block()).isEqualTo(3);
+	}
+
+	@Test
+	public void someEmpty() {
+		StepVerifier.withVirtualTime(() ->
+				Mono.zip(Mono.delay(Duration.ofMillis(150)).then(), Mono.delay(Duration
+						.ofMillis(250))))
+		            .thenAwait(Duration.ofMillis(150))
+		            .verifyComplete();
 	}
 
 	@Test//(timeout = 5000)
@@ -393,6 +398,63 @@ public class MonoZipTest {
 	}
 
 	@Test
+	public void delayErrorEmptySourceErrorSource() {
+		Mono<String> error = Mono.error(new IllegalStateException("boom"));
+		Mono<String> empty = Mono.empty();
+
+		StepVerifier.create(Mono.zipDelayError(error,empty))
+		            .expectErrorMessage("boom")
+		            .verify();
+	}
+
+	@Test
+	public void delayErrorEmptySourceErrorTwoSource() {
+		final IllegalStateException e1 = new IllegalStateException("boom1");
+		final IllegalStateException e2 = new IllegalStateException("boom2");
+		Mono<String> error1 = Mono.error(e1);
+		Mono<String> error2 = Mono.error(e2);
+		Mono<String> empty = Mono.empty();
+
+		StepVerifier.create(Mono.zipDelayError(error1, empty, error2))
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .matches(Exceptions::isMultiple)
+				            .hasSuppressedException(e1)
+				            .hasSuppressedException(e2))
+		            .verify();
+	}
+
+	@Test
+	public void delayErrorEmptySources() {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Mono<String> empty1 = Mono.empty();
+		Mono<String> empty2 = Mono.empty();
+		Mono<String> empty3 = Mono.<String>empty().delaySubscription(Duration.ofMillis(500))
+				.doOnCancel(() -> cancelled.set(true));
+
+		StepVerifier.create(Mono.zipDelayError(empty1, empty2, empty3))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(400))
+		            .verifyComplete();
+
+		assertThat(cancelled).isFalse();
+	}
+
+	@Test
+	public void emptySources() {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Mono<String> empty1 = Mono.empty();
+		Mono<String> empty2 = Mono.empty();
+		Mono<String> empty3 = Mono.<String>empty().delaySubscription(Duration.ofMillis(500))
+				.doOnCancel(() -> cancelled.set(true));
+
+		Duration d = StepVerifier.create(Mono.zip(empty1, empty2, empty3))
+		            .verifyComplete();
+
+		assertThat(cancelled).isTrue();
+		assertThat(d).isLessThan(Duration.ofMillis(500));
+	}
+
+	@Test
 	public void scanCoordinator() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(
@@ -405,14 +467,24 @@ public class MonoZipTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		test.signalError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse(); //done == 1
-		test.signalError(new IllegalStateException("boom2")); // done == 2
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void innerErrorIncrementsParentDone() {
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoZip.ZipCoordinator<String> parent = new MonoZip.ZipCoordinator<>(
+				actual, 2, false, a -> String.valueOf(a[0]));
+		MonoZip.ZipInner<String> test = new MonoZip.ZipInner<>(parent);
+
+		assertThat(parent.done).isZero();
+
+		test.onError(new IllegalStateException("boom"));
+
+		assertThat(parent.done).isEqualTo(2);
+		assertThat(parent.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -430,7 +502,8 @@ public class MonoZipTest {
 
 	@Test
 	public void scanWhenInner() {
-		CoreSubscriber<? super String> actual = new LambdaMonoSubscriber<>(null, null, null, null);
+		CoreSubscriber<? super String> actual = new LambdaMonoSubscriber<>(null, e ->
+		{}, null, null);
 		MonoZip.ZipCoordinator<String>
 				coordinator = new MonoZip.ZipCoordinator<>(actual, 2, false, a -> null);
 		MonoZip.ZipInner<String> test = new MonoZip.ZipInner<>(coordinator);
@@ -439,11 +512,12 @@ public class MonoZipTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(innerSub);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(coordinator);
-
+		assertThat(coordinator.scan(Scannable.Attr.TERMINATED)).isFalse(); //done == 1
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		assertThat(coordinator.scan(Scannable.Attr.TERMINATED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
-		test.error = new IllegalStateException("boom");
-		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 	}
 
 	@Test

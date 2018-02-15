@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,6 @@ import reactor.util.context.Context;
 /**
  * Waits for all Mono sources to produce a value or terminate, and if all of them produced
  * a value, emit a Tuples of those values; otherwise terminate.
- *
- * @param <R> the source value types
  */
 final class MonoWhen extends Mono<Void> {
 
