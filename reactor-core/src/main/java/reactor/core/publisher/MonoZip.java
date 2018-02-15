@@ -252,7 +252,7 @@ final class MonoZip<T, R> extends Mono<R> {
 			}
 		}
 
-		void cancel(ZipInner<R> source) {
+		void cancelExcept(ZipInner<R> source) {
 			if (!isCancelled()) {
 				super.cancel();
 				for (ZipInner<R> ms : subscribers) {
@@ -333,7 +333,7 @@ final class MonoZip<T, R> extends Mono<R> {
 			else {
 				int n = parent.subscribers.length;
 				if (ZipCoordinator.DONE.getAndSet(parent, n) != n) {
-					parent.cancel(this);
+					parent.cancelExcept(this);
 					parent.actual.onError(t);
 				}
 			}
@@ -348,7 +348,7 @@ final class MonoZip<T, R> extends Mono<R> {
 				else {
 					int n = parent.subscribers.length;
 					if (ZipCoordinator.DONE.getAndSet(parent, n) != n) {
-						parent.cancel(this);
+						parent.cancelExcept(this);
 						parent.actual.onComplete();
 					}
 				}
