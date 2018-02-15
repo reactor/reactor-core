@@ -273,8 +273,7 @@ project('reactor-core') {
 
 	//TODO after a release, bump the gradle.properties baseline
 	//TODO after a release, remove the reactor-core exclusions below if any
-	//gh-1036
-	classExcludes = ['reactor.core.publisher.FluxIndex', 'reactor.core.publisher.FluxIndexFuseable', 'reactor.core.publisher.FluxDelaySequence', 'reactor.util.concurrent.MpscLinkedQueue']
+//	classExcludes = []
   }
 
   javadoc {
