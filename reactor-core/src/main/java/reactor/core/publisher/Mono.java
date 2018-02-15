@@ -714,10 +714,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple2}.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Mono}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -736,10 +734,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values as defined by the combinator function.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Mono}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -762,10 +758,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple3}.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Mono}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -787,10 +781,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple4}.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Mono}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -817,10 +809,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple5}.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Mono}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -850,10 +840,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple6}.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Mono}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -886,7 +874,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
 	 * Monos} have produced an item, aggregating their values according to the provided combinator function.
-	 * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -906,8 +895,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
 	 * Monos} have produced an item, aggregating their values according to the provided combinator function.
-	 * An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Mono}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
 	 * <p>
@@ -931,8 +920,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple2} and delaying errors.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
+	 * If a Mono source completes without value, the other source is run to completion then the
+	 * resulting {@link Mono} completes empty.
 	 * If both Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
@@ -953,9 +942,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple3} and delaying errors.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * If several Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
+	 * If a Mono source completes without value, all other sources are run to completion then
+	 * the resulting {@link Mono} completes empty.
+	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -977,9 +966,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple4} and delaying errors.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *  If a Mono source completes without value, all other sources are run to completion then
+	 *  the resulting {@link Mono} completes empty.
+	 * 	If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -1006,9 +995,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple5} and delaying errors.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 * If a Mono source completes without value, all other sources are run to completion then
+	 * the resulting {@link Mono} completes empty.
+	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
 	 * <p>
@@ -1037,9 +1026,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have produced an item, aggregating their values into a {@link Tuple6} and delaying errors.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 * If a Mono source completes without value, all other sources are run to completion then
+	 * the resulting {@link Mono} completes empty.
+	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -1071,10 +1060,10 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
-	 * Monos} have produced an item. If any Mono terminates without value, the returned sequence will be terminated
-	 * immediately and pending results cancelled. Errors from the sources are delayed.
-	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
-	 *
+	 * Monos} have produced an item. Errors from the sources are delayed.
+	 * If a Mono source completes without value, all other sources are run to completion then
+	 * the resulting {@link Mono} completes empty.
+	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
 	 * <p>
@@ -1094,9 +1083,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the
 	 * given {@literal Monos} have produced an item, aggregating their values according to
 	 * the provided combinator function and delaying errors.
-	 * If a Mono source completes without value, all other sources are cancelled and an
-	 * immediate onComplete signal will be emitted.
-	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 * If a Mono source completes without value, all other sources are run to completion then
+	 * the resulting {@link Mono} completes empty.
+	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
@@ -3601,6 +3590,9 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Combine the result from this mono and another into a {@link Tuple2}.
+	 * <p>
+	 * An error or <strong>empty</strong> completion of any source will cause the other source
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/and.png" alt="">
@@ -3617,6 +3609,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Combine the result from this mono and another into an arbitrary {@code O} object,
 	 * as defined by the provided {@code combinator} function.
+	 * <p>
+	 * An error or <strong>empty</strong> completion of any source will cause the other source
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/and.png" alt="">

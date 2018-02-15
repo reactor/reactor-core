@@ -177,18 +177,6 @@ final class MonoZip<T, R> extends Mono<R> {
 			return Stream.of(subscribers);
 		}
 
-		void signalError(ZipInner<R> source, Throwable t) {
-			if (delayError) {
-				signal();
-			}
-			else {
-				int n = subscribers.length;
-				if (DONE.getAndSet(this, n) != n) {
-					cancel(source);
-					actual.onError(t);
-				}
-			}
-		}
 		@SuppressWarnings("unchecked")
 		void signal() {
 			ZipInner<R>[] a = subscribers;

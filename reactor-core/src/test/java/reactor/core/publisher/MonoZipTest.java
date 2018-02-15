@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -423,6 +424,37 @@ public class MonoZipTest {
 	}
 
 	@Test
+	public void delayErrorEmptySources() {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Mono<String> empty1 = Mono.empty();
+		Mono<String> empty2 = Mono.empty();
+		Mono<String> empty3 = Mono.<String>empty().delaySubscription(Duration.ofMillis(500))
+				.doOnCancel(() -> cancelled.set(true));
+
+		StepVerifier.create(Mono.zipDelayError(empty1, empty2, empty3))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(400))
+		            .verifyComplete();
+
+		assertThat(cancelled).isFalse();
+	}
+
+	@Test
+	public void emptySources() {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Mono<String> empty1 = Mono.empty();
+		Mono<String> empty2 = Mono.empty();
+		Mono<String> empty3 = Mono.<String>empty().delaySubscription(Duration.ofMillis(500))
+				.doOnCancel(() -> cancelled.set(true));
+
+		Duration d = StepVerifier.create(Mono.zip(empty1, empty2, empty3))
+		            .verifyComplete();
+
+		assertThat(cancelled).isTrue();
+		assertThat(d).isLessThan(Duration.ofMillis(500));
+	}
+
+	@Test
 	public void scanCoordinator() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(
@@ -435,15 +467,24 @@ public class MonoZipTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		//it is delaying, so source is ignored
-		test.signalError(null, new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse(); //done == 1
-		test.signalError(null, new IllegalStateException("boom2")); // done == 2
-		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void innerErrorIncrementsParentDone() {
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoZip.ZipCoordinator<String> parent = new MonoZip.ZipCoordinator<>(
+				actual, 2, false, a -> String.valueOf(a[0]));
+		MonoZip.ZipInner<String> test = new MonoZip.ZipInner<>(parent);
+
+		assertThat(parent.done).isZero();
+
+		test.onError(new IllegalStateException("boom"));
+
+		assertThat(parent.done).isEqualTo(2);
+		assertThat(parent.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
