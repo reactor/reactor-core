@@ -107,6 +107,7 @@ final class DefaultStepVerifierBuilder<T>
 	final Supplier<? extends VirtualTimeScheduler>   vtsLookup;
 	final Supplier<? extends Publisher<? extends T>> sourceSupplier;
 	private final StepVerifierOptions options;
+	String scenarioErrorMessage;
 
 	long hangCheckRequested;
 	int  requestedFusionMode = -1;
@@ -126,7 +127,14 @@ final class DefaultStepVerifierBuilder<T>
 
 	@Override
 	public DefaultStepVerifierBuilder<T> as(String description) {
-		this.script.add(new DescriptionEvent<>(description));
+		if (scenarioErrorMessage == null &&
+				script.size() == 1 &&
+				script.get(0) == DEFAULT_ONSUBSCRIBE_STEP) {
+			scenarioErrorMessage = description;
+		} else {
+			DescriptionEvent<T> ev = new DescriptionEvent<>(description);
+			this.script.add(ev);
+		}
 		return this;
 	}
 
@@ -712,6 +720,7 @@ final class DefaultStepVerifierBuilder<T>
 
 					DefaultVerifySubscriber<T> newVerifier = new DefaultVerifySubscriber<>(
 							this.parent.script,
+							this.parent.scenarioErrorMessage,
 							this.parent.initialRequest,
 							this.requestedFusionMode,
 							this.expectedFusionMode,
@@ -758,6 +767,7 @@ final class DefaultStepVerifierBuilder<T>
 			}
 			return new DefaultVerifySubscriber<>(
 					this.parent.script,
+					this.parent.scenarioErrorMessage,
 					this.parent.initialRequest,
 					this.requestedFusionMode,
 					this.expectedFusionMode,
@@ -774,6 +784,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		final CountDownLatch                completeLatch;
 		final Queue<Event<T>>               script;
+		final String                        scenarioErrorMsg;
 		final Queue<TaskEvent<T>>           taskEvents;
 		final int                           requestedFusionMode;
 		final int                           expectedFusionMode;
@@ -806,6 +817,7 @@ final class DefaultStepVerifierBuilder<T>
 		 * passed */
 		@SuppressWarnings("unchecked")
 		DefaultVerifySubscriber(List<Event<T>> script,
+				String scenarioErrorMsg,
 				long initialRequest,
 				int requestedFusionMode,
 				int expectedFusionMode,
@@ -818,6 +830,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.initialRequest = initialRequest;
 			this.logger = debugEnabled ? Loggers.getLogger(StepVerifier.class) : null;
 			this.script = conflateScript(script, this.logger);
+			this.scenarioErrorMsg = scenarioErrorMsg;
 			this.taskEvents = new ConcurrentLinkedQueue<>();
 			Event<T> event;
 			for (; ; ) {
@@ -1511,7 +1524,11 @@ final class DefaultStepVerifierBuilder<T>
 								"VerifySubscriber has not been subscribed");
 					}
 					else {
-						throw new AssertionError("VerifySubscriber timed out on " + get());
+						String errMsg = scenarioErrorMsg;
+						String msg = errMsg == null || errMsg.isEmpty()
+								? ""
+								: String.format("[%s] ",scenarioErrorMsg);
+						throw new AssertionError(msg + "VerifySubscriber timed out on " + get());
 					}
 				}
 			}

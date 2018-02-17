@@ -1235,6 +1235,37 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void testScenarioWithDescription() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.never())
+                        .as("foo")
+						.expectComplete()
+						.verify(Duration.ofMillis(10)))
+				.withMessageStartingWith("[foo] VerifySubscriber timed out");
+	}
+
+	@Test
+	public void testScenarioWithMultipleDescriptions() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.never())
+                        .as("foo")
+                        .as("bar")
+						.expectComplete()
+						.verify(Duration.ofMillis(10)))
+				.withMessageStartingWith("[foo] VerifySubscriber timed out");
+	}
+
+	@Test
+	public void testScenarioWithEmptyDescription() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.never())
+                        .as("")
+						.expectComplete()
+						.verify(Duration.ofMillis(10)))
+				.withMessageStartingWith("VerifySubscriber timed out");
+	}
+
+	@Test
 	public void noCancelOnUnexpectedErrorSignal() {
 		LongAdder cancelled = new LongAdder();
 		assertThatExceptionOfType(AssertionError.class)
