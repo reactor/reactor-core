@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,7 +166,7 @@ final class FluxCreate<T> extends Flux<T> {
 		public void error(Throwable t) {
 			Objects.requireNonNull(t, "t is null in sink.error(t)");
 			if (sink.isCancelled() || done) {
-				Operators.onErrorDropped(t, sink.currentContext());
+				Operators.onOperatorError(t, sink.currentContext());
 				return;
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -174,7 +174,7 @@ final class FluxCreate<T> extends Flux<T> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t, sink.currentContext());
+				Operators.onOperatorError(t, sink.currentContext());
 			}
 		}
 
@@ -411,7 +411,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		public void error(Throwable e) {
 			if (isCancelled()) {
-				Operators.onErrorDropped(e, actual.currentContext());
+				Operators.onOperatorError(e, actual.currentContext());
 				return;
 			}
 			try {
