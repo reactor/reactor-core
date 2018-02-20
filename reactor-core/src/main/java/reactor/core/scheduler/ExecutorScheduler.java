@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -63,7 +64,9 @@ final class ExecutorScheduler implements Scheduler, Scannable {
 			executor.execute(r);
 		}
 		catch (Throwable ex) {
-			terminated = true;
+			if (executor instanceof ExecutorService && ((ExecutorService) executor).isShutdown()) {
+				terminated = true;
+			}
 			Schedulers.handleError(ex);
 			throw Exceptions.failWithRejected(ex);
 		}
