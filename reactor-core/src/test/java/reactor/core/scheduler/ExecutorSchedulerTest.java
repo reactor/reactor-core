@@ -15,7 +15,11 @@
  */
 package reactor.core.scheduler;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +31,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
@@ -96,27 +101,147 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void failingExecutorIsTerminated() {
+	public void failingPlainExecutorIsNotTerminated() {
 		AtomicInteger count = new AtomicInteger();
 		final IllegalStateException boom = new IllegalStateException("boom");
 		ExecutorScheduler scheduler = new ExecutorScheduler(
 				task -> {
-					if (count.incrementAndGet() == 1)
+					if (count.incrementAndGet() % 2 == 0)
 						throw boom;
 					},
 				false
 		);
+		assertThatCode(() -> scheduler.schedule(() -> {}))
+				.as("initial-no rejection")
+				.doesNotThrowAnyException();
 
 		assertThatExceptionOfType(RejectedExecutionException.class)
+				.as("second-transient rejection")
+				.isThrownBy(() -> scheduler.schedule(() -> {}))
+				.withCause(boom);
+
+		assertThatCode(() -> scheduler.schedule(() -> {}))
+				.as("third-no rejection")
+				.doesNotThrowAnyException();
+
+		assertThat(count.get()).isEqualTo(3);
+	}
+
+	@Test
+	public void failingExecutorServiceIsNotTerminated() {
+		AtomicInteger count = new AtomicInteger();
+		final IllegalStateException boom = new IllegalStateException("boom");
+		ExecutorService service = new AbstractExecutorService() {
+
+			boolean shutdown;
+
+			@Override
+			public void shutdown() {
+				shutdown = true;
+			}
+
+			@NotNull
+			@Override
+			public List<Runnable> shutdownNow() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public boolean isShutdown() {
+				return shutdown;
+			}
+
+			@Override
+			public boolean isTerminated() {
+				return shutdown;
+			}
+
+			@Override
+			public boolean awaitTermination(long timeout, @NotNull TimeUnit unit)
+					throws InterruptedException {
+				return false;
+			}
+
+			@Override
+			public void execute(@NotNull Runnable command) {
+				if (count.incrementAndGet() % 2 == 0)
+					throw boom;
+			}
+		};
+		ExecutorScheduler scheduler = new ExecutorScheduler(service, false);
+
+		assertThatCode(() -> scheduler.schedule(() -> {}))
+				.as("initial-no rejection")
+				.doesNotThrowAnyException();
+
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.as("second-transient rejection")
+				.isThrownBy(() -> scheduler.schedule(() -> {}))
+				.withCause(boom);
+
+		assertThatCode(() -> scheduler.schedule(() -> {}))
+				.as("third-no rejection")
+				.doesNotThrowAnyException();
+
+		assertThat(count.get()).isEqualTo(3);
+	}
+
+	@Test
+	public void failingAndShutDownExecutorServiceIsTerminated() {
+		final IllegalStateException boom = new IllegalStateException("boom");
+		ExecutorService service = new AbstractExecutorService() {
+
+			boolean shutdown;
+
+			@Override
+			public void shutdown() {
+				shutdown = true;
+			}
+
+			@NotNull
+			@Override
+			public List<Runnable> shutdownNow() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public boolean isShutdown() {
+				return shutdown;
+			}
+
+			@Override
+			public boolean isTerminated() {
+				return shutdown;
+			}
+
+			@Override
+			public boolean awaitTermination(long timeout, @NotNull TimeUnit unit)
+					throws InterruptedException {
+				return false;
+			}
+
+			@Override
+			public void execute(@NotNull Runnable command) {
+				if (shutdown) throw boom;
+				shutdown = true;
+			}
+		};
+		ExecutorScheduler scheduler = new ExecutorScheduler(service, false);
+
+		assertThatCode(() -> scheduler.schedule(() -> {}))
+				.as("initial-no rejection")
+				.doesNotThrowAnyException();
+
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.as("second-transient rejection")
 				.isThrownBy(() -> scheduler.schedule(() -> {}))
 				.withCause(boom);
 
 		assertThatExceptionOfType(RejectedExecutionException.class)
+				.as("third scheduler terminated rejection")
 				.isThrownBy(() -> scheduler.schedule(() -> {}))
-				.withNoCause()
-				.isSameAs(Exceptions.failWithRejected());
-
-		assertThat(count.get()).isEqualTo(1);
+				.isSameAs(Exceptions.failWithRejected())
+				.withNoCause();
 	}
 
 	static final class ScannableExecutor implements Executor, Scannable {
