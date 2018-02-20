@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,6 +131,7 @@ final class MonoCreate<T> extends Mono<T> {
 			for (; ; ) {
 				int s = state;
 				if (s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
+					Operators.onNextDropped(value, actual.currentContext());
 					return;
 				}
 				if (s == HAS_REQUEST_NO_VALUE) {
@@ -163,7 +164,7 @@ final class MonoCreate<T> extends Mono<T> {
 				}
 			}
 			else {
-				Operators.onErrorDropped(e, actual.currentContext());
+				Operators.onOperatorError(e, actual.currentContext());
 			}
 		}
 

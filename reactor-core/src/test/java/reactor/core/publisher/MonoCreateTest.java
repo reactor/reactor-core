@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,15 +194,10 @@ public class MonoCreateTest {
 			sink.error(new IllegalArgumentException("boom"));
 		});
 
-		Assertions.assertThatExceptionOfType(RuntimeException.class)
-		          .isThrownBy(secondIsError::subscribe)
-		          .matches(Exceptions::isBubbling)
-		          .satisfies(e -> assertThat(Exceptions.unwrap(e)).hasMessage("boom"));
-
 		StepVerifier.create(secondIsError)
 		            .expectComplete()
 		            .verifyThenAssertThat()
-		            .hasDroppedErrorWithMessage("boom");
+		            .hasOperatorErrorWithMessage("boom");
 	}
 
 	@Test
@@ -236,16 +231,11 @@ public class MonoCreateTest {
 			sink.error(new IllegalArgumentException("boom"));
 		});
 
-		Assertions.assertThatExceptionOfType(RuntimeException.class)
-		          .isThrownBy(secondIsError::subscribe)
-		          .matches(Exceptions::isBubbling)
-		          .satisfies(e -> assertThat(Exceptions.unwrap(e)).hasMessage("boom"));
-
 		StepVerifier.create(secondIsError)
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verifyThenAssertThat()
-		            .hasDroppedErrorWithMessage("boom");
+		            .hasOperatorErrorWithMessage("boom");
 	}
 
 	@Test
@@ -277,15 +267,10 @@ public class MonoCreateTest {
 			sink.error(new IllegalArgumentException("boom2"));
 		});
 
-		Assertions.assertThatExceptionOfType(RuntimeException.class)
-		          .isThrownBy(() -> secondIsError.subscribe(v -> {}, e -> {}))
-		          .matches(Exceptions::isBubbling, "exception is bubbling")
-		          .satisfies(e -> assertThat(Exceptions.unwrap(e)).hasMessage("boom2"));
-
-		StepVerifier.create(secondIsError)
+	StepVerifier.create(secondIsError)
 		            .expectErrorMessage("boom1")
 		            .verifyThenAssertThat()
-		            .hasDroppedErrorWithMessage("boom2");
+		            .hasOperatorErrorWithMessage("boom2");
 	}
 
 	@Test
