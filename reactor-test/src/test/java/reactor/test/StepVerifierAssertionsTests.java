@@ -24,6 +24,7 @@ import reactor.core.publisher.Operators;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 
 public class StepVerifierAssertionsTests {
@@ -515,9 +516,23 @@ public class StepVerifierAssertionsTests {
 
 	@Test
 	public void assertDurationConsidersEqualsASuccess() {
-		new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null, null, null, Duration.ofSeconds(3))
+		new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null, null, null,
+				Duration.ofSeconds(3),
+				new ErrorFormatter(null))
 				.tookLessThan(Duration.ofMillis(3000L))
 				.tookMoreThan(Duration.ofSeconds(3));
+	}
+
+	@Test
+	public void assertDurationFailureWithScenarioName() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() ->
+						new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null, null, null
+								, Duration.ofSeconds(3),
+								new ErrorFormatter("fooScenario"))
+								.tookLessThan(Duration.ofMillis(200))
+				)
+				.withMessage("[fooScenario] Expected scenario to be verified in less than 200ms, took 3000ms.");
 	}
 
 	@Test

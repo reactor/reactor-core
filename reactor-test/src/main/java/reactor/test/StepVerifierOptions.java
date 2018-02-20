@@ -29,6 +29,9 @@ import reactor.util.context.Context;
  */
 public class StepVerifierOptions {
 
+	@Nullable
+	private String scenarioName = null;
+
 	private boolean checkUnderRequesting = true;
 	private long initialRequest = Long.MAX_VALUE;
 	private Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
@@ -124,5 +127,14 @@ public class StepVerifierOptions {
 	@Nullable
 	public Context getInitialContext() {
 		return this.initialContext;
+	}
+
+	public StepVerifierOptions scenarioName(@Nullable String scenarioName) {
+		this.scenarioName = scenarioName;
+		return this;
+	}
+
+	public String getScenarioName() {
+		return this.scenarioName;
 	}
 }
