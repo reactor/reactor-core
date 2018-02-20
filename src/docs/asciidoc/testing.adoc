@@ -27,7 +27,7 @@ To use it in your tests, add it as a test dependency:
 [source,groovy]
 ----
 dependencies {
-   testcompile 'io.projectreactor:reactor-test'
+   testCompile 'io.projectreactor:reactor-test'
 }
 ----
 
