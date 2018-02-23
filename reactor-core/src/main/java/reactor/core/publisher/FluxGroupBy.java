@@ -370,7 +370,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 					GroupedFlux<K, V> v = q.poll();
 					boolean empty = v == null;
 
-					if (checkTerminated(d, empty, a, q)) {
+					if (checkTerminated(d, empty, a)) {
 						return;
 					}
 
@@ -384,7 +384,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 				}
 
 				if (e == r) {
-					if (checkTerminated(done, q.isEmpty(), a, q)) {
+					if (checkTerminated(done, q.isEmpty(), a)) {
 						return;
 					}
 				}
@@ -407,8 +407,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 
 		boolean checkTerminated(boolean d,
 				boolean empty,
-				Subscriber<?> a,
-				Queue<GroupedFlux<K, V>> q) {
+				Subscriber<?> a) {
 			if (d) {
 				Throwable e = error;
 				if (e != null && e != Exceptions.TERMINATED) {
