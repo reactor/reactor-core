@@ -3757,6 +3757,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Add behavior (side-effect) triggered when the {@link Flux} is subscribed.
 	 * <p>
+	 * This method is <strong>not</strong> intended for capturing the subscription and calling {@link Subscription#cancel()}.
+	 * The correct way to cancel a subscription is to call {@link Disposable#dispose()}
+	 * on the Disposable returned by {@link Flux#subscribe()}.
+	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/doonsubscribe.png" alt="">
 	 * <p>
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe}
