@@ -412,7 +412,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 			if (d) {
 				Throwable e = error;
 				if (e != null && e != Exceptions.TERMINATED) {
-					queue.clear();
+					q.clear();
 					signalAsyncError();
 					return true;
 				}
