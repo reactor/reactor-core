@@ -226,7 +226,6 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 				g.onComplete();
 			}
 			groupMap.clear();
-			GROUP_COUNT.decrementAndGet(this);
 			done = true;
 			drain();
 		}
