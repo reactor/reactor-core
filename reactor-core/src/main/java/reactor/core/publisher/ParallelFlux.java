@@ -429,6 +429,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	/**
 	 * Call the specified callback when a 'rail' receives a Subscription from its
 	 * upstream.
+	 * <p>
+	 * This method is <strong>not</strong> intended for capturing the subscription and calling its methods,
+	 * but for side effects like monitoring. For instance, the correct way to cancel a subscription is
+	 * to call {@link Disposable#dispose()} on the Disposable returned by {@link ParallelFlux#subscribe()}.
 	 *
 	 * @param onSubscribe the callback
 	 *
