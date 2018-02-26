@@ -2043,7 +2043,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Note that each blockLast() will trigger a new subscription: in other words,
 	 * the result might miss signal from hot publishers.
 	 *
-	 * @return the first value or null
+	 * @return the last value or null
 	 */
 	@Nullable
 	public final T blockLast() {
@@ -2064,7 +2064,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * the result might miss signal from hot publishers.
 	 *
 	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
-	 * @return the first value or null
+	 * @return the last value or null
 	 */
 	@Nullable
 	public final T blockLast(Duration timeout) {
