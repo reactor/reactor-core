@@ -113,9 +113,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			// FIXME think about what happens when subscribers come and go below the connection threshold concurrently
 
 			RefCountInner<T> inner = new RefCountInner<>(s, this);
+
+			int subCount = SUBSCRIBERS.incrementAndGet(this);
 			parent.source.subscribe(inner);
-			
-			if (SUBSCRIBERS.incrementAndGet(this) == n) {
+
+			if (subCount == n) {
 				parent.source.connect(this);
 			}
 		}
