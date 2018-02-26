@@ -73,7 +73,7 @@ public class ExecutorSchedulerTrampolineTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void scanBuffered() {
+	public void scanBuffered() throws InterruptedException {
 		ExecutorScheduler.ExecutorSchedulerTrampolineWorker worker =
 				new ExecutorScheduler.ExecutorSchedulerTrampolineWorker(task -> new Thread(task, "scanBuffered_Trampolining").start());
 
@@ -87,8 +87,9 @@ public class ExecutorSchedulerTrampolineTest extends AbstractSchedulerTest {
 			worker.schedule(task);
 			worker.schedule(task);
 
-			//the queue has the two remaining tasks
-			assertThat(worker.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
+			Thread.sleep(200);
+			//buffered peeks into the queue of pending tasks, 1 executing and 2 pending
+			assertThat(worker.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
 
 			worker.dispose();
 
