@@ -45,6 +45,41 @@ public class FluxRefCountTest {
 	}*/
 
 	@Test
+	public void cancelDoesntTriggerDisconnectErrorOnFirstSubscribeNoComplete() {
+		AtomicInteger nextCount = new AtomicInteger();
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		Flux<String> flux = Flux.<String>create(sink -> {
+			sink.next("test");
+		})
+				.replay(1)
+				.refCount(1);
+
+		flux.subscribe(v -> nextCount.incrementAndGet(), errorRef::set);
+		flux.next().subscribe(v -> nextCount.incrementAndGet(), errorRef::set);
+
+		assertThat(nextCount).hasValue(2);
+		assertThat(errorRef).hasValue(null);
+	}
+
+	@Test
+	public void cancelDoesntTriggerDisconnectErrorOnFirstSubscribeDoComplete() {
+		AtomicInteger nextCount = new AtomicInteger();
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		Flux<String> flux = Flux.<String>create(sink -> {
+			sink.next("test");
+			sink.complete();
+		})
+				.replay(1)
+				.refCount(1);
+
+		flux.subscribe(v -> nextCount.incrementAndGet(), errorRef::set);
+		flux.next().subscribe(v -> nextCount.incrementAndGet(), errorRef::set);
+
+		assertThat(nextCount).hasValue(2);
+		assertThat(errorRef).hasValue(null);
+	}
+
+	@Test
 	public void normal() {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 
