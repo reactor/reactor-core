@@ -27,19 +27,21 @@ import reactor.core.Scannable;
  */
 final class MonoLift<I, O> extends MonoOperator<I, O> {
 
-	final BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
+	final BiFunction<? super Publisher<I>, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;
 
 	MonoLift(Publisher<I> p,
-			BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+			BiFunction<? super Publisher<I>, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
 		super(Mono.from(p));
 		this.lifter = lifter;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
+		//noinspection unchecked
+		Publisher<I> monoSource = (Publisher<I>) source;
 		CoreSubscriber<? super I> input =
-				lifter.apply(Scannable.from(source), actual);
+				lifter.apply(monoSource, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

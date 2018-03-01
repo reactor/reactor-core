@@ -246,7 +246,7 @@ public class HooksTraceTest {
 
 	@Test
 	public void lastOperatorTest() {
-		Hooks.onLastOperator(Operators.lift((sc, sub) ->
+		Hooks.onLastOperator(Operators.lift((pub, sub)->
 				new CoreSubscriber<Object>(){
 					@Override
 					public void onSubscribe(Subscription s) {
@@ -291,11 +291,11 @@ public class HooksTraceTest {
 	}
 
 	@Test
-	public void lastOperatorFilterTest() {
-		Hooks.onLastOperator(Operators.lift(sc -> sc.tags()
+	public void lastOperatorFilterTestLiftScannable() {
+		Hooks.onLastOperator(Operators.liftScannable(sc -> sc.tags()
 		                                            .anyMatch(t -> t.getT1()
 		                                                            .contains("metric")),
-				(sc, sub) -> new CoreSubscriber<Object>() {
+				(pub, sub) -> new CoreSubscriber<Object>() {
 					@Override
 					public void onSubscribe(Subscription s) {
 						sub.onSubscribe(s);
@@ -361,7 +361,7 @@ public class HooksTraceTest {
 
 	@Test
 	public void eachOperatorTest() {
-		Hooks.onEachOperator(Operators.lift((sc, sub) ->
+		Hooks.onEachOperator(Operators.lift((pub, sub)->
 				new CoreSubscriber<Object>(){
 					@Override
 					public void onSubscribe(Subscription s) {
