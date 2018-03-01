@@ -21,6 +21,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1892,5 +1895,39 @@ public class StepVerifierTests {
 						            .assertNext(v -> assertThat(v).isNull())
 						            .thenCancel()
 								::verify);
+	}
+
+	@Test
+	public void parallelVerifyWithVtsMutuallyExclusive() {
+		ExecutorService executorService = Executors.newFixedThreadPool(2);
+		for (int i = 0; i < 10; i++) {
+			Future<Duration> ex1 = executorService.submit(() -> StepVerifier
+					.withVirtualTime(() -> Flux.just("A", "B", "C")
+					                           .delaySequence(Duration.ofMillis(100))
+					)
+					.then(() -> {
+						try {
+							Thread.sleep(100);
+						}
+						catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					})
+					.thenAwait(Duration.ofMillis(100))
+					.expectNextCount(3)
+					.verifyComplete());
+
+			Future<Duration> ex2 = executorService.submit(() -> StepVerifier
+					.withVirtualTime(() -> Flux.just(1, 2, 3)
+					                           .delaySequence(Duration.ofMillis(100))
+					)
+					.thenAwait(Duration.ofMillis(100))
+					.expectNextCount(3)
+					.expectComplete()
+					.verify());
+
+			assertThatCode(ex1::get).as("execution 1 in iteration #" + i).doesNotThrowAnyException();
+			assertThatCode(ex2::get).as("execution 2 in iteration #" + i).doesNotThrowAnyException();
+		}
 	}
 }
