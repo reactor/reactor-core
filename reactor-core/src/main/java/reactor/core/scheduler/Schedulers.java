@@ -542,37 +542,35 @@ public abstract class Schedulers {
 
 	static final Logger log = Loggers.getLogger(Schedulers.class);
 
-	static final class SchedulerThreadFactory
-			implements ThreadFactory, Supplier<String>, Thread.UncaughtExceptionHandler {
+	static final class SchedulerThreadFactory extends AbstractReactorThreadFactory
+			implements Thread.UncaughtExceptionHandler {
 
-		final String     name;
 		final boolean    daemon;
 		final AtomicLong COUNTER;
 
 		SchedulerThreadFactory(String name, boolean daemon, AtomicLong counter) {
-			this.name = name;
+			super(name);
 			this.daemon = daemon;
 			this.COUNTER = counter;
 		}
 
 		@Override
-		public Thread newThread(Runnable r) {
-			Thread t = new Thread(r, name + "-" + COUNTER.incrementAndGet());
+		protected String newThreadName() {
+			return name + "-" + COUNTER.incrementAndGet();
+		}
+
+		@Override
+		protected void configureThread(Thread t) {
 			t.setDaemon(daemon);
 			t.setUncaughtExceptionHandler(this);
-			return t;
 		}
 
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
-			log.error("Scheduler worker in group " + t.getThreadGroup().getName() +
-					" failed with an uncaught exception", e);
+			Schedulers.log.error("Scheduler worker in group " + t.getThreadGroup().getName()
+							+ " failed with an uncaught exception", e);
 		}
 
-		@Override
-		public String get() {
-			return name;
-		}
 	}
 
 	static void handleError(Throwable ex) {

@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.AbstractReactorThreadFactory;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
@@ -617,30 +618,24 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 
-	final static class EventLoopFactory
-			implements ThreadFactory, Supplier<String> {
-		/** */
+	final static class EventLoopFactory extends AbstractReactorThreadFactory {
 
 		static final AtomicInteger COUNT = new AtomicInteger();
-
-		final String  name;
 		final boolean daemon;
 
 		EventLoopFactory(String name, boolean daemon) {
-			this.name = name;
+			super(name);
 			this.daemon = daemon;
 		}
 
 		@Override
-		public Thread newThread(Runnable r) {
-			Thread t = new Thread(r, name + "-" + COUNT.incrementAndGet());
-			t.setDaemon(daemon);
-			return t;
+		protected String newThreadName() {
+			return name + "-" + COUNT.incrementAndGet();
 		}
 
 		@Override
-		public String get() {
-			return name;
+		protected void configureThread(Thread t) {
+			t.setDaemon(daemon);
 		}
 	}
 }

@@ -69,17 +69,17 @@ public class SchedulersTest {
 		}
 
 		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
-			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
+			assertThat(((AbstractReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return elastic;
 		}
 
 		public final Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
-			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
+			assertThat(((AbstractReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return parallel;
 		}
 
 		public final Scheduler newSingle(ThreadFactory threadFactory) {
-			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
+			assertThat(((AbstractReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return single;
 		}
 	}
