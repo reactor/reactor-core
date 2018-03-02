@@ -29,29 +29,56 @@ import org.jetbrains.annotations.NotNull;
 public abstract class AbstractReactorThreadFactory
 		implements ThreadFactory, Supplier<String> {
 
-	final protected String     name;
+	final protected String  name;
+	final private   boolean rejectBlocking;
 
 	public AbstractReactorThreadFactory(String name) {
 		this.name = name;
+		this.rejectBlocking = false;
+	}
+
+	public AbstractReactorThreadFactory(String name, boolean rejectBlocking) {
+		this.name = name;
+		this.rejectBlocking = rejectBlocking;
 	}
 
 	@Override
 	public final Thread newThread(@NotNull Runnable runnable) {
-		Thread t = new Thread(runnable, newThreadName());
+		Thread t = rejectBlocking
+				? new NonBlockingThread(runnable, newThreadName())
+				: new Thread(runnable, newThreadName());
 		configureThread(t);
 		return t;
 	}
 
-	protected String newThreadName() {
-		return name;
-	}
+	protected abstract String newThreadName();
 
 	protected void configureThread(Thread t) {
 		//NO-OP by default
 	}
 
+	/**
+	 * Get the prefix used for new {@link Thread Threads} created by this {@link ThreadFactory}.
+	 * The factory can also be seen as a {@link Supplier Supplier&lt;String&gt;}.
+	 *
+	 * @return the thread name prefix
+	 */
 	@Override
 	public String get() {
 		return name;
+	}
+
+	/**
+	 * @return true if produced {@link Thread} are marked as {@link NonBlocking}-only.
+	 */
+	public boolean isBlockingRejected() {
+		return rejectBlocking;
+	}
+
+	static final class NonBlockingThread extends Thread implements NonBlocking {
+
+		public NonBlockingThread(Runnable target, String name) {
+			super(target, name);
+		}
 	}
 }

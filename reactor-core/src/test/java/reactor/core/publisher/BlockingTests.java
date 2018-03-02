@@ -17,11 +17,15 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
+import org.assertj.core.api.Assertions;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -29,21 +33,25 @@ import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class BlockingTests {
 
 	static Scheduler scheduler;
+	static Scheduler nonBlockingScheduler;
 
 	@BeforeClass
 	public static void before() {
 		scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor());
+		nonBlockingScheduler = Schedulers.newSingle("nonBlockingScheduler");
 	}
 
 	@AfterClass
 	public static void after() {
 		scheduler.dispose();
+		nonBlockingScheduler.dispose();
 	}
 
 	@Test
@@ -223,5 +231,149 @@ public class BlockingTests {
 	        .blockOptional();
 
 		assertThat(cancelCount.get()).isEqualTo(0);
+	}
+
+	@Test
+	public void fluxBlockFirstForbidden() {
+		Function<String, String> badMapper = v -> Flux.just(v).hide()
+		                                              .blockFirst();
+		Function<String, String> badMapperTimeout = v -> Flux.just(v).hide()
+		                                                     .blockFirst(Duration.ofMillis(100));
+
+		Mono<String> forbiddenSequence1 = Mono.just("data")
+		                                     .publishOn(nonBlockingScheduler)
+		                                     .map(badMapper);
+
+		StepVerifier.create(forbiddenSequence1)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+
+		Mono<String> forbiddenSequence2 = Mono.just("data")
+		                                     .publishOn(nonBlockingScheduler)
+		                                     .map(badMapperTimeout);
+
+		StepVerifier.create(forbiddenSequence2)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+	}
+
+	@Test
+	public void fluxBlockLastForbidden() {
+		Function<String, String> badMapper = v -> Flux.just(v).hide()
+		                                              .blockLast();
+		Function<String, String> badMapperTimeout = v -> Flux.just(v).hide()
+		                                                     .blockLast(Duration.ofMillis(100));
+
+		Mono<String> forbiddenSequence1 = Mono.just("data")
+		                                     .publishOn(nonBlockingScheduler)
+		                                     .map(badMapper);
+
+		StepVerifier.create(forbiddenSequence1)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+
+		Mono<String> forbiddenSequence2 = Mono.just("data")
+		                                     .publishOn(nonBlockingScheduler)
+		                                     .map(badMapperTimeout);
+
+		StepVerifier.create(forbiddenSequence2)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+	}
+
+	@Test
+	public void monoBlockForbidden() {
+		Function<String, String> badMapper = v -> Mono.just(v).hide()
+		                                              .block();
+		Function<String, String> badMapperTimeout = v -> Mono.just(v).hide()
+		                                                     .block(Duration.ofMillis(100));
+
+		Mono<String> forbiddenSequence1 = Mono.just("data")
+		                                     .publishOn(nonBlockingScheduler)
+		                                     .map(badMapper);
+
+		StepVerifier.create(forbiddenSequence1)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+
+		Mono<String> forbiddenSequence2 = Mono.just("data")
+		                                     .publishOn(nonBlockingScheduler)
+		                                     .map(badMapperTimeout);
+
+		StepVerifier.create(forbiddenSequence2)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+	}
+
+	@Test
+	public void monoBlockOptionalForbidden() {
+		Function<String, Optional<String>> badMapper = v -> Mono.just(v).hide()
+		                                                        .blockOptional();
+		Function<String, Optional<String>> badMapperTimeout = v -> Mono.just(v).hide()
+		                                                               .blockOptional(Duration.ofMillis(100));
+
+		Mono<Optional<String>> forbiddenSequence1 = Mono.just("data")
+		                                                .publishOn(nonBlockingScheduler)
+		                                                .map(badMapper);
+
+		StepVerifier.create(forbiddenSequence1)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("blockOptional() is blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+
+		Mono<Optional<String>> forbiddenSequence2 = Mono.just("data")
+		                                                .publishOn(nonBlockingScheduler)
+		                                                .map(badMapperTimeout);
+
+		StepVerifier.create(forbiddenSequence2)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("blockOptional() is blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+	}
+
+	@Test
+	public void fluxToIterableForbidden() {
+		Function<Integer, Iterable> badMapper = v -> Flux.range(1, v)
+		                                                 .toIterable();
+
+		Mono<Iterable> forbiddenSequence = Mono.just(3)
+		                                     .publishOn(nonBlockingScheduler)
+		                                     .map(badMapper);
+
+		StepVerifier.create(forbiddenSequence)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("toIterable() is blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
+	}
+
+	@Test
+	public void fluxToStreamForbidden() {
+		Function<Integer, Stream> badMapper = v -> Flux.range(1, v)
+		                                               .toStream();
+
+		Mono<Stream> forbiddenSequence = Mono.just(3)
+		                                     .publishOn(nonBlockingScheduler)
+		                                     .map(badMapper);
+
+		StepVerifier.create(forbiddenSequence)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(UnsupportedOperationException.class)
+				            .hasMessageStartingWith("toStream() is blocking, which is not supported in thread nonBlockingScheduler-"))
+		            .verify();
 	}
 }

@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
@@ -67,6 +67,7 @@ public abstract class Schedulers {
 	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime().availableProcessors(), 4);
 
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
+	static volatile Predicate<Thread>                     isBlockingThreadOkHook;
 
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
@@ -125,6 +126,17 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler elastic() {
 		return cache(CACHED_ELASTIC, ELASTIC, ELASTIC_SUPPLIER);
+	}
+
+	/**
+	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
+	 * workers and is suited for parallel work.
+	 *
+	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
+	 * ExecutorService-based workers
+	 */
+	public static Scheduler parallel() {
+		return cache(CACHED_PARALLEL, PARALLEL, PARALLEL_SUPPLIER);
 	}
 
 	/**
@@ -192,8 +204,7 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newElastic(String name, int ttlSeconds, boolean daemon) {
 		return newElastic(ttlSeconds,
-				new SchedulerThreadFactory(name, daemon, ElasticScheduler.COUNTER));
-
+				new SchedulerThreadFactory(name, daemon, ElasticScheduler.COUNTER, false));
 	}
 
 	/**
@@ -217,7 +228,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * workers and is suited for parallel work. This type of {@link Scheduler} detects and
+	 * rejects usage of blocking Reactor APIs.
 	 *
 	 * @param name Thread prefix
 	 *
@@ -231,7 +243,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * workers and is suited for parallel work. This type of {@link Scheduler} detects and
+	 * rejects usage of blocking Reactor APIs.
 	 *
 	 * @param name Thread prefix
 	 * @param parallelism Number of pooled workers.
@@ -245,7 +258,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * workers and is suited for parallel work. This type of {@link Scheduler} detects and
+	 * rejects usage of blocking Reactor APIs.
 	 *
 	 * @param name Thread prefix
 	 * @param parallelism Number of pooled workers.
@@ -257,7 +271,7 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newParallel(String name, int parallelism, boolean daemon) {
 		return newParallel(parallelism,
-				new SchedulerThreadFactory(name, daemon, ParallelScheduler.COUNTER));
+				new SchedulerThreadFactory(name, daemon, ParallelScheduler.COUNTER, true));
 	}
 
 	/**
@@ -277,7 +291,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work.
+	 * suited for parallel work. This type of {@link Scheduler} detects and rejects usage
+	 * 	 * of blocking Reactor APIs.
 	 *
 	 * @param name Component and thread name prefix
 	 *
@@ -290,7 +305,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work.
+	 * suited for parallel work. This type of {@link Scheduler} detects and rejects usage
+	 * of blocking Reactor APIs.
 	 *
 	 * @param name Component and thread name prefix
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
@@ -300,8 +316,7 @@ public abstract class Schedulers {
 	 * worker
 	 */
 	public static Scheduler newSingle(String name, boolean daemon) {
-		return newSingle(new SchedulerThreadFactory(name, daemon,
-				SingleScheduler.COUNTER));
+		return newSingle(new SchedulerThreadFactory(name, daemon, SingleScheduler.COUNTER, true));
 	}
 
 	/**
@@ -334,14 +349,46 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * Set up a {@link Predicate} that allow to fine-check a {@link Thread} in which a
+	 * blocking Reactor API is about to be called, deciding if this is fine or not.
 	 *
-	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers
+	 * @param newCheck the {@link Predicate}, returning {@code true} if blocking is fine
+	 * in this thread, {@code false} otherwise
 	 */
-	public static Scheduler parallel() {
-		return cache(CACHED_PARALLEL, PARALLEL, PARALLEL_SUPPLIER);
+	public static void onBlockingThreadOk(Predicate<Thread> newCheck) {
+		if (log.isDebugEnabled()) {
+			log.debug("Hooking new default: onBlockingThreadOk");
+		}
+		isBlockingThreadOkHook = Objects.requireNonNull(newCheck, "onBlockingThreadOk");
+	}
+
+	/**
+	 * Check if calling a Reactor blocking API in the current {@link Thread} is ok or not,
+	 * first by checking if the thread implements {@link NonBlocking} (in which case it is
+	 * not ok), then passing it to an additional {@link Predicate} optionally registered
+	 * via {@link #onBlockingThreadOk(Predicate)}).
+	 *
+	 * @return {@code true} if blocking is fine in this thread, {@code false} otherwise
+	 */
+	public static boolean isBlockingCurrentThreadOk() {
+		Thread t = Thread.currentThread();
+		return !(t instanceof NonBlocking) && (isBlockingThreadOkHook == null
+				|| !isBlockingThreadOkHook.test(t));
+	}
+
+
+	/**
+	 * Check if calling a Reactor blocking API in the given {@link Thread} is ok or not,
+	 * first by checking if the thread implements {@link NonBlocking} (in which case it is
+	 * not ok), then passing it to an additional {@link Predicate} optionally registered
+	 * via {@link #onBlockingThreadOk(Predicate)}).
+	 *
+	 * @param t the {@link Thread} to check
+	 * @return {@code true} if blocking is fine in the given thread, {@code false} otherwise
+	 */
+	public static boolean isBlockingCurrentThreadOk(Thread t) {
+		return !(t instanceof NonBlocking) && (isBlockingThreadOkHook == null
+				|| !isBlockingThreadOkHook.test(t));
 	}
 
 	/**
@@ -359,6 +406,16 @@ public abstract class Schedulers {
 			log.debug("Reset to factory defaults: onHandleError");
 		}
 		onHandleErrorHook = null;
+	}
+
+	/**
+	 * Reset the {@link #onBlockingThreadOk(Predicate)} hook to the default no-op behavior.
+	 */
+	public static void resetOnBlockingThreadOk() {
+		if (log.isDebugEnabled()) {
+			log.debug("Reset to factory defaults: onBlockingThreadOk");
+		}
+		isBlockingThreadOkHook = null;
 	}
 
 	/**
@@ -548,8 +605,8 @@ public abstract class Schedulers {
 		final boolean    daemon;
 		final AtomicLong COUNTER;
 
-		SchedulerThreadFactory(String name, boolean daemon, AtomicLong counter) {
-			super(name);
+		SchedulerThreadFactory(String name, boolean daemon, AtomicLong counter, boolean rejectBlocking) {
+			super(name, rejectBlocking);
 			this.daemon = daemon;
 			this.COUNTER = counter;
 		}

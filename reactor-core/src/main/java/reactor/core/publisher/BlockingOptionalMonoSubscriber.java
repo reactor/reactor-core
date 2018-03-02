@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -109,6 +110,9 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 	 * @return an Optional representing the first value (or empty Optional if the source is empty)
 	 */
 	final Optional<T> blockingGet() {
+		if (!Schedulers.isBlockingCurrentThreadOk()) {
+			throw new UnsupportedOperationException("blockOptional() is blocking, which is not supported in thread " + Thread.currentThread().getName());
+		}
 		if (getCount() != 0) {
 			try {
 				await();
@@ -142,6 +146,9 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 	 * @return an Optional representing the first value (or empty Optional if the source is empty)
 	 */
 	final Optional<T> blockingGet(long timeout, TimeUnit unit) {
+		if (!Schedulers.isBlockingCurrentThreadOk()) {
+			throw new UnsupportedOperationException("blockOptional() is blocking, which is not supported in thread " + Thread.currentThread().getName());
+		}
 		if (getCount() != 0) {
 			try {
 				if (!await(timeout, unit)) {

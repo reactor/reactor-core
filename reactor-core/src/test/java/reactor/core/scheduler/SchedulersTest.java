@@ -93,6 +93,127 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void parallelSchedulerDefaultNonBlocking() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newParallel("parallelSchedulerDefaultNonBlocking");
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		try {
+			scheduler.schedule(() -> {
+				try {
+					Mono.just("foo")
+					    .hide()
+					    .block();
+				}
+				catch (Throwable t) {
+					errorRef.set(t);
+				}
+				finally {
+					latch.countDown();
+				}
+			});
+			latch.await();
+		}
+		finally {
+			scheduler.dispose();
+		}
+
+		assertThat(errorRef.get())
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread parallelSchedulerDefaultNonBlocking-");
+	}
+
+	@Test
+	public void singleSchedulerDefaultNonBlocking() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newSingle("singleSchedulerDefaultNonBlocking");
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		try {
+			scheduler.schedule(() -> {
+				try {
+					Mono.just("foo")
+					    .hide()
+					    .block();
+				}
+				catch (Throwable t) {
+					errorRef.set(t);
+				}
+				finally {
+					latch.countDown();
+				}
+			});
+			latch.await();
+		}
+		finally {
+			scheduler.dispose();
+		}
+
+		assertThat(errorRef.get())
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread singleSchedulerDefaultNonBlocking-");
+	}
+
+	@Test
+	public void elasticSchedulerDefaultBlockingOk() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newElastic("elasticSchedulerDefaultNonBlocking");
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		try {
+			scheduler.schedule(() -> {
+				try {
+					Mono.just("foo")
+					    .hide()
+					    .block();
+				}
+				catch (Throwable t) {
+					errorRef.set(t);
+				}
+				finally {
+					latch.countDown();
+				}
+			});
+			latch.await();
+		}
+		finally {
+			scheduler.dispose();
+		}
+
+		assertThat(errorRef.get()).isNull();
+	}
+
+	@Test
+	public void elasticSchedulerWithHookNonBlocking() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newElastic("elasticSchedulerWithHookNonBlocking");
+		Schedulers.onBlockingThreadOk(t -> t.getName().startsWith("elasticSchedulerWithHookNonBlocking"));
+
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		try {
+			scheduler.schedule(() -> {
+				try {
+					Mono.just("foo")
+					    .hide()
+					    .blockOptional();
+				}
+				catch (Throwable t) {
+					errorRef.set(t);
+				}
+				finally {
+					latch.countDown();
+				}
+			});
+			latch.await();
+		}
+		finally {
+			scheduler.dispose();
+			Schedulers.resetOnBlockingThreadOk();
+		}
+
+		assertThat(errorRef.get())
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessageStartingWith("blockOptional() is blocking, which is not supported in thread elasticSchedulerWithHookNonBlocking-");
+	}
+
+	@Test
 	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerFusedCallable() {
 		AtomicBoolean handlerCaught = new AtomicBoolean();
 		Scheduler scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(r -> {
