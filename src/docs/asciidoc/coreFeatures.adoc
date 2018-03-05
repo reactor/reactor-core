@@ -219,9 +219,7 @@ default single and parallel Schedulers will result in an `UnsupportedOperationEx
  +
  +
 Custom `Schedulers` can also be marked as "non blocking only" by creating instances of `Thread`
-that implement the `NonBlocking` marker interface. If Thread creation cannot be changed,
-the `Schedulers.onBlockingThreadOk(Predicate)` hook can be set up to recognize externally
-instantiated threads as "non-blocking only".
+that implement the `NonBlocking` marker interface.
 
 Additionally, you can create a `Scheduler` out of any pre-existing `ExecutorService` by
 using `Schedulers.fromExecutorService(ExecutorService)`. (You can also create one from an

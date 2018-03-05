@@ -67,7 +67,6 @@ public abstract class Schedulers {
 	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime().availableProcessors(), 4);
 
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
-	static volatile Predicate<Thread>                     isBlockingThreadOkHook;
 
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
@@ -352,46 +351,27 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Set up a {@link Predicate} that allow to fine-check a {@link Thread} in which a
-	 * blocking Reactor API is about to be called, deciding if this is fine or not.
-	 *
-	 * @param newCheck the {@link Predicate}, returning {@code true} if blocking is fine
-	 * in this thread, {@code false} otherwise
-	 */
-	public static void onBlockingThreadOk(Predicate<Thread> newCheck) {
-		if (log.isDebugEnabled()) {
-			log.debug("Hooking new default: onBlockingThreadOk");
-		}
-		isBlockingThreadOkHook = Objects.requireNonNull(newCheck, "onBlockingThreadOk");
-	}
-
-	/**
 	 * Check if calling a Reactor blocking API in the current {@link Thread} is ok or not,
-	 * first by checking if the thread implements {@link NonBlocking} (in which case it is
-	 * not ok), then passing it to an additional {@link Predicate} optionally registered
-	 * via {@link #onBlockingThreadOk(Predicate)}).
+	 * by checking if the thread implements {@link NonBlocking} (in which case it is
+	 * not ok).
 	 *
 	 * @return {@code true} if blocking is fine in this thread, {@code false} otherwise
 	 */
 	public static boolean isBlockingCurrentThreadOk() {
-		Thread t = Thread.currentThread();
-		return !(t instanceof NonBlocking) && (isBlockingThreadOkHook == null
-				|| !isBlockingThreadOkHook.test(t));
+		return !(Thread.currentThread() instanceof NonBlocking);
 	}
 
 
 	/**
 	 * Check if calling a Reactor blocking API in the given {@link Thread} is ok or not,
-	 * first by checking if the thread implements {@link NonBlocking} (in which case it is
-	 * not ok), then passing it to an additional {@link Predicate} optionally registered
-	 * via {@link #onBlockingThreadOk(Predicate)}).
+	 * by checking if the thread implements {@link NonBlocking} (in which case it is
+	 * not ok).
 	 *
 	 * @param t the {@link Thread} to check
 	 * @return {@code true} if blocking is fine in the given thread, {@code false} otherwise
 	 */
 	public static boolean isBlockingCurrentThreadOk(Thread t) {
-		return !(t instanceof NonBlocking) && (isBlockingThreadOkHook == null
-				|| !isBlockingThreadOkHook.test(t));
+		return !(t instanceof NonBlocking);
 	}
 
 	/**
@@ -409,16 +389,6 @@ public abstract class Schedulers {
 			log.debug("Reset to factory defaults: onHandleError");
 		}
 		onHandleErrorHook = null;
-	}
-
-	/**
-	 * Reset the {@link #onBlockingThreadOk(Predicate)} hook to the default no-op behavior.
-	 */
-	public static void resetOnBlockingThreadOk() {
-		if (log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults: onBlockingThreadOk");
-		}
-		isBlockingThreadOkHook = null;
 	}
 
 	/**

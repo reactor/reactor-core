@@ -181,39 +181,6 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void elasticSchedulerWithHookNonBlocking() throws InterruptedException {
-		Scheduler scheduler = Schedulers.newElastic("elasticSchedulerWithHookNonBlocking");
-		Schedulers.onBlockingThreadOk(t -> t.getName().startsWith("elasticSchedulerWithHookNonBlocking"));
-
-		CountDownLatch latch = new CountDownLatch(1);
-		AtomicReference<Throwable> errorRef = new AtomicReference<>();
-		try {
-			scheduler.schedule(() -> {
-				try {
-					Mono.just("foo")
-					    .hide()
-					    .blockOptional();
-				}
-				catch (Throwable t) {
-					errorRef.set(t);
-				}
-				finally {
-					latch.countDown();
-				}
-			});
-			latch.await();
-		}
-		finally {
-			scheduler.dispose();
-			Schedulers.resetOnBlockingThreadOk();
-		}
-
-		assertThat(errorRef.get())
-				.isInstanceOf(UnsupportedOperationException.class)
-				.hasMessageStartingWith("blockOptional() is blocking, which is not supported in thread elasticSchedulerWithHookNonBlocking-");
-	}
-
-	@Test
 	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerFusedCallable() {
 		AtomicBoolean handlerCaught = new AtomicBoolean();
 		Scheduler scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(r -> {
