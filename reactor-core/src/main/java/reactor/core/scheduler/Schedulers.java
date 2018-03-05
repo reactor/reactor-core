@@ -204,7 +204,8 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newElastic(String name, int ttlSeconds, boolean daemon) {
 		return newElastic(ttlSeconds,
-				new SchedulerThreadFactory(name, daemon, ElasticScheduler.COUNTER, false));
+				new ReactorThreadFactory(name, ElasticScheduler.COUNTER, daemon, false,
+						Schedulers::defaultUncaughtException));
 	}
 
 	/**
@@ -271,7 +272,8 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newParallel(String name, int parallelism, boolean daemon) {
 		return newParallel(parallelism,
-				new SchedulerThreadFactory(name, daemon, ParallelScheduler.COUNTER, true));
+				new ReactorThreadFactory(name, ParallelScheduler.COUNTER, daemon,
+						true, Schedulers::defaultUncaughtException));
 	}
 
 	/**
@@ -316,7 +318,8 @@ public abstract class Schedulers {
 	 * worker
 	 */
 	public static Scheduler newSingle(String name, boolean daemon) {
-		return newSingle(new SchedulerThreadFactory(name, daemon, SingleScheduler.COUNTER, true));
+		return newSingle(new ReactorThreadFactory(name, SingleScheduler.COUNTER, daemon,
+				true, Schedulers::defaultUncaughtException));
 	}
 
 	/**
@@ -599,35 +602,9 @@ public abstract class Schedulers {
 
 	static final Logger log = Loggers.getLogger(Schedulers.class);
 
-	static final class SchedulerThreadFactory extends AbstractReactorThreadFactory
-			implements Thread.UncaughtExceptionHandler {
-
-		final boolean    daemon;
-		final AtomicLong COUNTER;
-
-		SchedulerThreadFactory(String name, boolean daemon, AtomicLong counter, boolean rejectBlocking) {
-			super(name, rejectBlocking);
-			this.daemon = daemon;
-			this.COUNTER = counter;
-		}
-
-		@Override
-		protected String newThreadName() {
-			return name + "-" + COUNTER.incrementAndGet();
-		}
-
-		@Override
-		protected void configureThread(Thread t) {
-			t.setDaemon(daemon);
-			t.setUncaughtExceptionHandler(this);
-		}
-
-		@Override
-		public void uncaughtException(Thread t, Throwable e) {
-			Schedulers.log.error("Scheduler worker in group " + t.getThreadGroup().getName()
-							+ " failed with an uncaught exception", e);
-		}
-
+	static final void defaultUncaughtException(Thread t, Throwable e) {
+		Schedulers.log.error("Scheduler worker in group " + t.getThreadGroup().getName()
+				+ " failed with an uncaught exception", e);
 	}
 
 	static void handleError(Throwable ex) {

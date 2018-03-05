@@ -17,44 +17,65 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
+import reactor.util.annotation.Nullable;
 
 /**
- * A base class for {@link ThreadFactory Thread factories} to be used by {@link Scheduler},
+ * The standard Reactor {@link ThreadFactory Thread factories} to be used by {@link Scheduler},
  * creating {@link Thread} with a prefix (which can be retrieved with the {@link #get()} method).
+ *
  * @author Simon Baslé
  */
-public abstract class AbstractReactorThreadFactory
-		implements ThreadFactory, Supplier<String> {
+class ReactorThreadFactory implements ThreadFactory,
+                                      Supplier<String>,
+                                      Thread.UncaughtExceptionHandler {
 
-	final protected String  name;
-	final private   boolean rejectBlocking;
+	final private String                        name;
+	final private AtomicLong                    counterReference;
+	final private boolean                       daemon;
+	final private boolean                       rejectBlocking;
 
-	public AbstractReactorThreadFactory(String name) {
+	@Nullable
+	final private BiConsumer<Thread, Throwable> uncaughtExceptionHandler;
+
+	ReactorThreadFactory(String name,
+			AtomicLong counterReference,
+			boolean daemon,
+			boolean rejectBlocking,
+			@Nullable BiConsumer<Thread, Throwable> uncaughtExceptionHandler) {
 		this.name = name;
-		this.rejectBlocking = false;
-	}
-
-	public AbstractReactorThreadFactory(String name, boolean rejectBlocking) {
-		this.name = name;
+		this.counterReference = counterReference;
+		this.daemon = daemon;
 		this.rejectBlocking = rejectBlocking;
+		this.uncaughtExceptionHandler = uncaughtExceptionHandler;
 	}
 
 	@Override
 	public final Thread newThread(@NotNull Runnable runnable) {
+		String newThreadName = name + "-" + counterReference.incrementAndGet();
 		Thread t = rejectBlocking
-				? new NonBlockingThread(runnable, newThreadName())
-				: new Thread(runnable, newThreadName());
-		configureThread(t);
+				? new NonBlockingThread(runnable, newThreadName)
+				: new Thread(runnable, newThreadName);
+		if (daemon) {
+			t.setDaemon(true);
+		}
+		if (uncaughtExceptionHandler != null) {
+			t.setUncaughtExceptionHandler(this);
+		}
 		return t;
 	}
 
-	protected abstract String newThreadName();
+	@Override
+	public void uncaughtException(Thread t, Throwable e) {
+		if (uncaughtExceptionHandler == null) {
+			return;
+		}
 
-	protected void configureThread(Thread t) {
-		//NO-OP by default
+		uncaughtExceptionHandler.accept(t,e);
 	}
 
 	/**
@@ -64,15 +85,8 @@ public abstract class AbstractReactorThreadFactory
 	 * @return the thread name prefix
 	 */
 	@Override
-	public String get() {
+	public final String get() {
 		return name;
-	}
-
-	/**
-	 * @return true if produced {@link Thread} are marked as {@link NonBlocking}-only.
-	 */
-	public boolean isBlockingRejected() {
-		return rejectBlocking;
 	}
 
 	static final class NonBlockingThread extends Thread implements NonBlocking {

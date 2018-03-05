@@ -174,8 +174,8 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     public String toString() {
         StringBuilder ts = new StringBuilder(Schedulers.PARALLEL)
                 .append('(').append(n);
-        if (factory instanceof AbstractReactorThreadFactory) {
-            ts.append(",\"").append(((AbstractReactorThreadFactory) factory).get()).append('\"');
+        if (factory instanceof ReactorThreadFactory) {
+            ts.append(",\"").append(((ReactorThreadFactory) factory).get()).append('\"');
         }
         ts.append(')');
         return ts.toString();

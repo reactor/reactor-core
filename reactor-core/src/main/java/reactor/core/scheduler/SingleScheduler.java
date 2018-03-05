@@ -140,8 +140,8 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	public String toString() {
 		StringBuilder ts = new StringBuilder(Schedulers.SINGLE)
 				.append('(');
-		if (factory instanceof AbstractReactorThreadFactory) {
-			ts.append('\"').append(((AbstractReactorThreadFactory) factory).get()).append('\"');
+		if (factory instanceof ReactorThreadFactory) {
+			ts.append('\"').append(((ReactorThreadFactory) factory).get()).append('\"');
 		}
 		return ts.append(')').toString();
 	}
