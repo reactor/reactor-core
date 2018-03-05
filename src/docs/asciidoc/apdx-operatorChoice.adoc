@@ -46,6 +46,7 @@ I want to deal with:
 ** a `CompletableFuture<T>`: `Mono#fromFuture`
 * that completes: `empty`
 * that errors immediately: `error`
+** ...but lazily build the `Throwable`: `Mono#error(Supplier<Throwable>)`
 * that never does anything: `never`
 * that is decided at subscription: `defer`
 * that depends on a disposable resource: `using`
@@ -200,6 +201,7 @@ I want to deal with:
 ** ...to replace the completion of a successful `Flux`: `.concat(Flux.error(e))`
 ** ...to replace the *emission* of a successful `Mono`: `.then(Mono.error(e))`
 ** ...if too much time elapses between onNexts: `timeout`
+** ...lazily: `Mono#error(Supplier<Throwable>)`
 
 * I want the try/catch equivalent of:
 ** throwing: `error`

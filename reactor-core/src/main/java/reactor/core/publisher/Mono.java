@@ -246,10 +246,26 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param error the onError signal
 	 * @param <T> the reified {@link Subscriber} type
 	 *
-	 * @return a failed {@link Mono}
+	 * @return a failing {@link Mono}
 	 */
 	public static <T> Mono<T> error(Throwable error) {
 		return onAssembly(new MonoError<>(error));
+	}
+
+	/**
+	 * Create a {@link Mono} that terminates with the specified error immediately after
+	 * being subscribed to. The error however can be lazily constructed since it is provided
+	 * as a {@link Supplier}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/error.png" alt="">
+	 * <p>
+	 * @param errorSupplier the {@link Supplier} of  onError signal
+	 * @param <T> the reified {@link Subscriber} type
+	 *
+	 * @return a failing {@link Mono}
+	 */
+	public static <T> Mono<T> error(Supplier<Throwable> errorSupplier) {
+		return onAssembly(new MonoErrorSupplied<>(errorSupplier));
 	}
 
 	/**
