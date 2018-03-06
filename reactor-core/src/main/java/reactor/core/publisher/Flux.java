@@ -3090,8 +3090,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * Errors in the individual publishers will be delayed after the current concat backlog,
-	 * usually stopping the sequence at the source that triggered the error.
+	 * Errors in the individual publishers will be delayed at the end of the whole concat
+	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite}
+	 * if several sources error.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -3103,7 +3104,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a concatenated {@link Flux}
 	 *
 	 */
-	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper) {
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper) {
 		return concatMapDelayError(mapper, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -3125,8 +3126,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * Errors in the individual publishers will be delayed after the current concat backlog,
-	 * usually stopping the sequence at the source that triggered the error.
+	 * Errors in the individual publishers will be delayed at the end of the whole concat
+	 * sequence (possibly getting combined into a {@link Exceptions#isMultiple(Throwable) composite}
+	 * if several sources error.
 	 * The prefetch argument allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
@@ -3143,7 +3145,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
 			extends V>> mapper, int prefetch) {
 		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch,
-				FluxConcatMap.ErrorMode.BOUNDARY));
+				FluxConcatMap.ErrorMode.END));
 	}
 
 	/**
