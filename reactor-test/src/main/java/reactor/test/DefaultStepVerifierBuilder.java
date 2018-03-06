@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -644,6 +646,9 @@ final class DefaultStepVerifierBuilder<T>
 
 	final static class DefaultStepVerifier<T> implements StepVerifier {
 
+		/** A global lock that is used to make withVirtualTime calls mutually exclusive */
+		private static final Lock vtsLock = new ReentrantLock(true);
+
 		private final DefaultStepVerifierBuilder<T> parent;
 		private final int requestedFusionMode;
 		private final int expectedFusionMode;
@@ -701,6 +706,7 @@ final class DefaultStepVerifierBuilder<T>
 			if (parent.sourceSupplier != null) {
 				VirtualTimeScheduler vts = null;
 				if (parent.vtsLookup != null) {
+					vtsLock.lock(); //wait for other virtualtime verifies to finish
 					vts = parent.vtsLookup.get();
 					//this works even for the default case where StepVerifier has created
 					// a vts through enable(false), because the CURRENT will already be that vts
@@ -730,6 +736,7 @@ final class DefaultStepVerifierBuilder<T>
 						//explicitly reset the factory, rather than rely on vts shutdown doing so
 						// because it could have been eagerly shut down in a test.
 						VirtualTimeScheduler.reset();
+						vtsLock.unlock();
 					}
 				}
 			} else {
