@@ -466,7 +466,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2)
+		//gh-1101: default changed from BOUNDARY to END
+		source.concatMapDelayError(v -> v == 1 ? source1 : source2, false, Queues.XS_BUFFER_SIZE)
 		      .subscribe(ts);
 
 		ts.assertNoValues()
