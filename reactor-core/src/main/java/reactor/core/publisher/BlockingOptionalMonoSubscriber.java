@@ -110,7 +110,7 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 	 * @return an Optional representing the first value (or empty Optional if the source is empty)
 	 */
 	final Optional<T> blockingGet() {
-		if (!Schedulers.isBlockingCurrentThreadOk()) {
+		if (Schedulers.isInNonBlockingThread()) {
 			throw new UnsupportedOperationException("blockOptional() is blocking, which is not supported in thread " + Thread.currentThread().getName());
 		}
 		if (getCount() != 0) {
@@ -146,7 +146,7 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 	 * @return an Optional representing the first value (or empty Optional if the source is empty)
 	 */
 	final Optional<T> blockingGet(long timeout, TimeUnit unit) {
-		if (!Schedulers.isBlockingCurrentThreadOk()) {
+		if (Schedulers.isInNonBlockingThread()) {
 			throw new UnsupportedOperationException("blockOptional() is blocking, which is not supported in thread " + Thread.currentThread().getName());
 		}
 		if (getCount() != 0) {

@@ -73,7 +73,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	 */
 	@Nullable
 	final T blockingGet() {
-		if (!Schedulers.isBlockingCurrentThreadOk()) {
+		if (Schedulers.isInNonBlockingThread()) {
 			throw new UnsupportedOperationException("block()/blockFirst()/blockLast() are blocking, which is not supported in thread " + Thread.currentThread().getName());
 		}
 		if (getCount() != 0) {
@@ -107,7 +107,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	 */
 	@Nullable
 	final T blockingGet(long timeout, TimeUnit unit) {
-		if (!Schedulers.isBlockingCurrentThreadOk()) {
+		if (Schedulers.isInNonBlockingThread()) {
 			throw new UnsupportedOperationException("block()/blockFirst()/blockLast() are blocking, which is not supported in thread " + Thread.currentThread().getName());
 		}
 		if (getCount() != 0) {

@@ -351,27 +351,14 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Check if calling a Reactor blocking API in the current {@link Thread} is ok or not,
-	 * by checking if the thread implements {@link NonBlocking} (in which case it is
-	 * not ok).
+	 * Check if calling a Reactor blocking API in the current {@link Thread} is forbidden
+	 * or not, by checking if the thread implements {@link NonBlocking} (in which case it is
+	 * forbidden and this method returns {@code true}).
 	 *
-	 * @return {@code true} if blocking is fine in this thread, {@code false} otherwise
+	 * @return {@code true} if blocking is forbidden in this thread, {@code false} otherwise
 	 */
-	public static boolean isBlockingCurrentThreadOk() {
-		return !(Thread.currentThread() instanceof NonBlocking);
-	}
-
-
-	/**
-	 * Check if calling a Reactor blocking API in the given {@link Thread} is ok or not,
-	 * by checking if the thread implements {@link NonBlocking} (in which case it is
-	 * not ok).
-	 *
-	 * @param t the {@link Thread} to check
-	 * @return {@code true} if blocking is fine in the given thread, {@code false} otherwise
-	 */
-	public static boolean isBlockingCurrentThreadOk(Thread t) {
-		return !(t instanceof NonBlocking);
+	public static boolean isInNonBlockingThread() {
+		return Thread.currentThread() instanceof NonBlocking;
 	}
 
 	/**

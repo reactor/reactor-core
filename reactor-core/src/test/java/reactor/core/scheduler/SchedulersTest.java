@@ -181,6 +181,21 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void isInNonBlockingThreadFalse() {
+		assertThat(Thread.currentThread()).isNotInstanceOf(NonBlocking.class);
+
+		assertThat(Schedulers.isInNonBlockingThread()).as("isInNonBlockingThread").isFalse();
+	}
+
+	@Test
+	public void isInNonBlockingThreadTrue() {
+		new ReactorThreadFactory.NonBlockingThread(() -> assertThat(Schedulers.isInNonBlockingThread())
+				.as("isInNonBlockingThread")
+				.isFalse(),
+				"isInNonBlockingThreadTrue");
+	}
+
+	@Test
 	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerFusedCallable() {
 		AtomicBoolean handlerCaught = new AtomicBoolean();
 		Scheduler scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(r -> {
