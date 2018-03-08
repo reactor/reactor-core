@@ -186,8 +186,8 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	public String toString() {
 		StringBuilder ts = new StringBuilder(Schedulers.ELASTIC)
 				.append('(');
-		if (factory instanceof Schedulers.SchedulerThreadFactory) {
-			ts.append('\"').append(((Schedulers.SchedulerThreadFactory) factory).get()).append('\"');
+		if (factory instanceof ReactorThreadFactory) {
+			ts.append('\"').append(((ReactorThreadFactory) factory).get()).append('\"');
 		}
 		ts.append(')');
 		return ts.toString();

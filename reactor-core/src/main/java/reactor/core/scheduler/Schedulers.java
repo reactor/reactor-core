@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
@@ -128,6 +128,17 @@ public abstract class Schedulers {
 	}
 
 	/**
+	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
+	 * workers and is suited for parallel work.
+	 *
+	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
+	 * ExecutorService-based workers
+	 */
+	public static Scheduler parallel() {
+		return cache(CACHED_PARALLEL, PARALLEL, PARALLEL_SUPPLIER);
+	}
+
+	/**
 	 * Executes tasks on the caller's thread immediately.
 	 *
 	 * @return a reusable {@link Scheduler}
@@ -192,8 +203,8 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newElastic(String name, int ttlSeconds, boolean daemon) {
 		return newElastic(ttlSeconds,
-				new SchedulerThreadFactory(name, daemon, ElasticScheduler.COUNTER));
-
+				new ReactorThreadFactory(name, ElasticScheduler.COUNTER, daemon, false,
+						Schedulers::defaultUncaughtException));
 	}
 
 	/**
@@ -217,7 +228,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * workers and is suited for parallel work. This type of {@link Scheduler} detects and
+	 * rejects usage of blocking Reactor APIs.
 	 *
 	 * @param name Thread prefix
 	 *
@@ -231,7 +243,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * workers and is suited for parallel work. This type of {@link Scheduler} detects and
+	 * rejects usage of blocking Reactor APIs.
 	 *
 	 * @param name Thread prefix
 	 * @param parallelism Number of pooled workers.
@@ -245,7 +258,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * workers and is suited for parallel work. This type of {@link Scheduler} detects and
+	 * rejects usage of blocking Reactor APIs.
 	 *
 	 * @param name Thread prefix
 	 * @param parallelism Number of pooled workers.
@@ -257,7 +271,8 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler newParallel(String name, int parallelism, boolean daemon) {
 		return newParallel(parallelism,
-				new SchedulerThreadFactory(name, daemon, ParallelScheduler.COUNTER));
+				new ReactorThreadFactory(name, ParallelScheduler.COUNTER, daemon,
+						true, Schedulers::defaultUncaughtException));
 	}
 
 	/**
@@ -277,7 +292,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work.
+	 * suited for parallel work. This type of {@link Scheduler} detects and rejects usage
+	 * 	 * of blocking Reactor APIs.
 	 *
 	 * @param name Component and thread name prefix
 	 *
@@ -290,7 +306,8 @@ public abstract class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work.
+	 * suited for parallel work. This type of {@link Scheduler} detects and rejects usage
+	 * of blocking Reactor APIs.
 	 *
 	 * @param name Component and thread name prefix
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
@@ -300,8 +317,8 @@ public abstract class Schedulers {
 	 * worker
 	 */
 	public static Scheduler newSingle(String name, boolean daemon) {
-		return newSingle(new SchedulerThreadFactory(name, daemon,
-				SingleScheduler.COUNTER));
+		return newSingle(new ReactorThreadFactory(name, SingleScheduler.COUNTER, daemon,
+				true, Schedulers::defaultUncaughtException));
 	}
 
 	/**
@@ -334,14 +351,25 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
+	 * Check if calling a Reactor blocking API in the current {@link Thread} is forbidden
+	 * or not, by checking if the thread implements {@link NonBlocking} (in which case it is
+	 * forbidden and this method returns {@code true}).
 	 *
-	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers
+	 * @return {@code true} if blocking is forbidden in this thread, {@code false} otherwise
 	 */
-	public static Scheduler parallel() {
-		return cache(CACHED_PARALLEL, PARALLEL, PARALLEL_SUPPLIER);
+	public static boolean isInNonBlockingThread() {
+		return Thread.currentThread() instanceof NonBlocking;
+	}
+
+	/**
+	 * Check if calling a Reactor blocking API in the given {@link Thread} is forbidden
+	 * or not, by checking if the thread implements {@link NonBlocking} (in which case it is
+	 * forbidden and this method returns {@code true}).
+	 *
+	 * @return {@code true} if blocking is forbidden in that thread, {@code false} otherwise
+	 */
+	public static boolean isNonBlockingThread(Thread t) {
+		return t instanceof NonBlocking;
 	}
 
 	/**
@@ -542,37 +570,9 @@ public abstract class Schedulers {
 
 	static final Logger log = Loggers.getLogger(Schedulers.class);
 
-	static final class SchedulerThreadFactory
-			implements ThreadFactory, Supplier<String>, Thread.UncaughtExceptionHandler {
-
-		final String     name;
-		final boolean    daemon;
-		final AtomicLong COUNTER;
-
-		SchedulerThreadFactory(String name, boolean daemon, AtomicLong counter) {
-			this.name = name;
-			this.daemon = daemon;
-			this.COUNTER = counter;
-		}
-
-		@Override
-		public Thread newThread(Runnable r) {
-			Thread t = new Thread(r, name + "-" + COUNTER.incrementAndGet());
-			t.setDaemon(daemon);
-			t.setUncaughtExceptionHandler(this);
-			return t;
-		}
-
-		@Override
-		public void uncaughtException(Thread t, Throwable e) {
-			log.error("Scheduler worker in group " + t.getThreadGroup().getName() +
-					" failed with an uncaught exception", e);
-		}
-
-		@Override
-		public String get() {
-			return name;
-		}
+	static final void defaultUncaughtException(Thread t, Throwable e) {
+		Schedulers.log.error("Scheduler worker in group " + t.getThreadGroup().getName()
+				+ " failed with an uncaught exception", e);
 	}
 
 	static void handleError(Throwable ex) {

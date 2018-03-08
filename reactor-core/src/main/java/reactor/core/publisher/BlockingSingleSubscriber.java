@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -72,6 +73,9 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	 */
 	@Nullable
 	final T blockingGet() {
+		if (Schedulers.isInNonBlockingThread()) {
+			throw new IllegalStateException("block()/blockFirst()/blockLast() are blocking, which is not supported in thread " + Thread.currentThread().getName());
+		}
 		if (getCount() != 0) {
 			try {
 				await();
@@ -103,6 +107,9 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	 */
 	@Nullable
 	final T blockingGet(long timeout, TimeUnit unit) {
+		if (Schedulers.isInNonBlockingThread()) {
+			throw new IllegalStateException("block()/blockFirst()/blockLast() are blocking, which is not supported in thread " + Thread.currentThread().getName());
+		}
 		if (getCount() != 0) {
 			try {
 				if (!await(timeout, unit)) {

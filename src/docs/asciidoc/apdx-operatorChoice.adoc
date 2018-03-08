@@ -273,6 +273,9 @@ TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner `GroupedFlux
 
 [[which.blocking]]
 == Going Back to the Synchronous World
+Note: all of these methods except `Mono#toFuture` will throw an `UnsupportedOperatorException` if called from
+within a `Scheduler` marked as "non-blocking only" (by default `parallel()` and `single()`).
+
 * I have a `Flux<T>` and I want to:
 ** block until I can get the first element: `Flux#blockFirst`
 *** ...with a timeout: `Flux#blockFirst(Duration)`
