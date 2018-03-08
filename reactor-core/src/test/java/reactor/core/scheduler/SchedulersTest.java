@@ -118,7 +118,7 @@ public class SchedulersTest {
 		}
 
 		assertThat(errorRef.get())
-				.isInstanceOf(UnsupportedOperationException.class)
+				.isInstanceOf(IllegalStateException.class)
 				.hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread parallelSchedulerDefaultNonBlocking-");
 	}
 
@@ -148,7 +148,7 @@ public class SchedulersTest {
 		}
 
 		assertThat(errorRef.get())
-				.isInstanceOf(UnsupportedOperationException.class)
+				.isInstanceOf(IllegalStateException.class)
 				.hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread singleSchedulerDefaultNonBlocking-");
 	}
 
