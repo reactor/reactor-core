@@ -188,6 +188,15 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void isNonBlockingThreadInstanceOf() {
+		Thread nonBlocking = new ReactorThreadFactory.NonBlockingThread(() -> {}, "isNonBlockingThreadInstanceOf_nonBlocking");
+		Thread thread = new Thread(() -> {}, "isNonBlockingThreadInstanceOf_blocking");
+
+		assertThat(Schedulers.isNonBlockingThread(nonBlocking)).as("nonBlocking").isTrue();
+		assertThat(Schedulers.isNonBlockingThread(thread)).as("thread").isFalse();
+	}
+
+	@Test
 	public void isInNonBlockingThreadTrue() {
 		new ReactorThreadFactory.NonBlockingThread(() -> assertThat(Schedulers.isInNonBlockingThread())
 				.as("isInNonBlockingThread")

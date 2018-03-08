@@ -362,6 +362,17 @@ public abstract class Schedulers {
 	}
 
 	/**
+	 * Check if calling a Reactor blocking API in the given {@link Thread} is forbidden
+	 * or not, by checking if the thread implements {@link NonBlocking} (in which case it is
+	 * forbidden and this method returns {@code true}).
+	 *
+	 * @return {@code true} if blocking is forbidden in that thread, {@code false} otherwise
+	 */
+	public static boolean isNonBlockingThread(Thread t) {
+		return t instanceof NonBlocking;
+	}
+
+	/**
 	 * Re-apply default factory to {@link Schedulers}
 	 */
 	public static void resetFactory(){
