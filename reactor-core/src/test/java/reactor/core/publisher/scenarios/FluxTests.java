@@ -46,6 +46,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matcher;
@@ -65,6 +66,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.Signal;
+import reactor.core.publisher.SignalType;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -86,6 +88,79 @@ public class FluxTests extends AbstractReactorTest {
 	static final Logger LOG = Loggers.getLogger(FluxTests.class);
 
 	static final String2Integer STRING_2_INTEGER = new String2Integer();
+
+	@Test
+	public void delayErrorConcatMapVsFlatMap() {
+		Function<Integer, Flux<String>> mapFunction = i -> {
+			char c = (char) ('A' + i);
+			return Flux.range(1, i + 1)
+			           .doOnNext(v -> {
+			           	if (i == 3 && v == 3) {
+			           		throw new IllegalStateException("boom " + c + v);
+			            }
+			           })
+			    .map(v -> "" + c + "" + v);
+		};
+
+		Flux<Integer> source = Flux.range(0, 5);
+
+		Flux<String> concatMap = source.concatMapDelayError(mapFunction)
+		                               .materialize()
+				                       .map(Object::toString);
+		Flux<String> flatMap = source.flatMapDelayError(mapFunction, 2, 32)
+		                               .materialize()
+				                       .map(Object::toString);
+
+		List<String> signalsConcat = concatMap.collectList().block();
+		List<String> signalsFlat = flatMap.collectList().block();
+
+		Assertions.assertThat(signalsConcat)
+		          .containsExactlyElementsOf(signalsFlat);
+	}
+
+	@Test
+	public void delayErrorConcatMapVsFlatMapTwoErrors() {
+		Function<Integer, Flux<String>> mapFunction = i -> {
+			char c = (char) ('A' + i);
+			return Flux.range(1, i + 1)
+			           .doOnNext(v -> {
+			           	if ((i == 3 || i == 2) && v == 2) {
+			           		throw new IllegalStateException("boom " + c + v);
+			            }
+			           })
+			    .map(v -> "" + c + "" + v);
+		};
+
+		List<Throwable> concatSuppressed = new ArrayList<>();
+		List<Throwable> flatSuppressed = new ArrayList<>();
+
+		Flux<Integer> source = Flux.range(0, 5);
+
+		Flux<String> concatMap = source.concatMapDelayError(mapFunction)
+		                               .doOnError(t -> concatSuppressed.addAll(
+		                               		Arrays.asList(t.getSuppressed())))
+		                               .materialize()
+		                               .map(Object::toString);
+		Flux<String> flatMap = source.flatMapDelayError(mapFunction, 2, 32)
+		                             .doOnError(t -> flatSuppressed.addAll(
+		                             		Arrays.asList(t.getSuppressed())))
+		                             .materialize()
+		                             .map(Object::toString);
+
+		List<String> signalsConcat = concatMap.collectList().block();
+		List<String> signalsFlat = flatMap.collectList().block();
+
+		Assertions.assertThat(signalsConcat)
+		          .containsExactlyElementsOf(signalsFlat);
+
+		List<String> flatSuppressedMessages = flatSuppressed
+				.stream()
+				.map(Throwable::getMessage)
+				.collect(Collectors.toList());
+		Assertions.assertThat(concatSuppressed)
+		          .extracting(Throwable::getMessage)
+		          .containsExactlyElementsOf(flatSuppressedMessages);
+	}
 
 	@Test
 	public void testDoOnEachSignal() {
