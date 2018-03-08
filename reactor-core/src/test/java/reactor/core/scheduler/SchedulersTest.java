@@ -69,17 +69,17 @@ public class SchedulersTest {
 		}
 
 		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
-			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
+			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return elastic;
 		}
 
 		public final Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
-			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
+			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return parallel;
 		}
 
 		public final Scheduler newSingle(ThreadFactory threadFactory) {
-			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
+			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return single;
 		}
 	}
@@ -90,6 +90,118 @@ public class SchedulersTest {
 	@After
 	public void resetSchedulers() {
 		Schedulers.resetFactory();
+	}
+
+	@Test
+	public void parallelSchedulerDefaultNonBlocking() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newParallel("parallelSchedulerDefaultNonBlocking");
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		try {
+			scheduler.schedule(() -> {
+				try {
+					Mono.just("foo")
+					    .hide()
+					    .block();
+				}
+				catch (Throwable t) {
+					errorRef.set(t);
+				}
+				finally {
+					latch.countDown();
+				}
+			});
+			latch.await();
+		}
+		finally {
+			scheduler.dispose();
+		}
+
+		assertThat(errorRef.get())
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread parallelSchedulerDefaultNonBlocking-");
+	}
+
+	@Test
+	public void singleSchedulerDefaultNonBlocking() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newSingle("singleSchedulerDefaultNonBlocking");
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		try {
+			scheduler.schedule(() -> {
+				try {
+					Mono.just("foo")
+					    .hide()
+					    .block();
+				}
+				catch (Throwable t) {
+					errorRef.set(t);
+				}
+				finally {
+					latch.countDown();
+				}
+			});
+			latch.await();
+		}
+		finally {
+			scheduler.dispose();
+		}
+
+		assertThat(errorRef.get())
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread singleSchedulerDefaultNonBlocking-");
+	}
+
+	@Test
+	public void elasticSchedulerDefaultBlockingOk() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newElastic("elasticSchedulerDefaultNonBlocking");
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		try {
+			scheduler.schedule(() -> {
+				try {
+					Mono.just("foo")
+					    .hide()
+					    .block();
+				}
+				catch (Throwable t) {
+					errorRef.set(t);
+				}
+				finally {
+					latch.countDown();
+				}
+			});
+			latch.await();
+		}
+		finally {
+			scheduler.dispose();
+		}
+
+		assertThat(errorRef.get()).isNull();
+	}
+
+	@Test
+	public void isInNonBlockingThreadFalse() {
+		assertThat(Thread.currentThread()).isNotInstanceOf(NonBlocking.class);
+
+		assertThat(Schedulers.isInNonBlockingThread()).as("isInNonBlockingThread").isFalse();
+	}
+
+	@Test
+	public void isNonBlockingThreadInstanceOf() {
+		Thread nonBlocking = new ReactorThreadFactory.NonBlockingThread(() -> {}, "isNonBlockingThreadInstanceOf_nonBlocking");
+		Thread thread = new Thread(() -> {}, "isNonBlockingThreadInstanceOf_blocking");
+
+		assertThat(Schedulers.isNonBlockingThread(nonBlocking)).as("nonBlocking").isTrue();
+		assertThat(Schedulers.isNonBlockingThread(thread)).as("thread").isFalse();
+	}
+
+	@Test
+	public void isInNonBlockingThreadTrue() {
+		new ReactorThreadFactory.NonBlockingThread(() -> assertThat(Schedulers.isInNonBlockingThread())
+				.as("isInNonBlockingThread")
+				.isFalse(),
+				"isInNonBlockingThreadTrue");
 	}
 
 	@Test

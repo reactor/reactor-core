@@ -212,6 +212,15 @@ it does not tie up other resources. See <<faq.wrap-blocking>>.
 * a fixed pool of workers that is tuned for parallel work (`Schedulers.parallel()`). It
 creates as many workers as you have CPU cores.
 
+WARNING: While `elastic` is made to help with legacy blocking code if it cannot be avoided,
+`single` and `parallel` are not. As a consequence, the use of Reactor blocking APIs
+(`block()`, `blockFirst()`, `blockLast()`, `toIterable()` and `toStream()`) inside the
+default single and parallel Schedulers will result in an `IllegalStateException` being thrown.
+ +
+ +
+Custom `Schedulers` can also be marked as "non blocking only" by creating instances of `Thread`
+that implement the `NonBlocking` marker interface.
+
 Additionally, you can create a `Scheduler` out of any pre-existing `ExecutorService` by
 using `Schedulers.fromExecutorService(ExecutorService)`. (You can also create one from an
 `Executor`, although doing so is discouraged.) You can also create new instances of the

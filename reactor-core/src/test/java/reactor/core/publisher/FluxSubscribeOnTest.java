@@ -16,7 +16,10 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -265,38 +268,58 @@ public class FluxSubscribeOnTest {
 	public void gh507() {
 		Scheduler s = Schedulers.newSingle("subscribe");
 		Scheduler s2 = Schedulers.newParallel("receive");
+		AtomicBoolean interrupted = new AtomicBoolean();
+		AtomicBoolean timedOut = new AtomicBoolean();
 
-		Flux.from((Publisher<String>) subscriber -> {
-			subscriber.onSubscribe(new Subscription() {
-				private int totalCount;
+		try {
+			Flux.from((Publisher<String>) subscriber -> {
+				subscriber.onSubscribe(new Subscription() {
+					private int totalCount;
 
-				@Override
-				public void request(long n) {
-					for (int i = 0; i < n; i++) {
-						if (totalCount++ < 317) {
-							subscriber.onNext(String.valueOf(totalCount));
-						}
-						else {
-							subscriber.onComplete();
+					@Override
+					public void request(long n) {
+						for (int i = 0; i < n; i++) {
+							if (totalCount++ < 317) {
+								subscriber.onNext(String.valueOf(totalCount));
+							}
+							else {
+								subscriber.onComplete();
+							}
 						}
 					}
-				}
 
-				@Override
-				public void cancel() {
-					// do nothing
-				}
-			});
-		})
-		    .subscribeOn(s)
-		    .limitRate(10)
-		    .doOnNext(d -> {
-			    Mono.fromCallable(() -> d)
-			        .subscribeOn(s2)
-			        .block();
-		    })
-		    .blockLast();
+					@Override
+					public void cancel() {
+						// do nothing
+					}
+				});
+			})
+			    .subscribeOn(s)
+			    .limitRate(10)
+			    .doOnNext(d -> {
+				    CountDownLatch latch = new CountDownLatch(1);
+				    Mono.fromCallable(() -> d)
+				        .subscribeOn(s2)
+				        .doFinally(it -> latch.countDown())
+				        .subscribe();
 
-		s.dispose();
+				    try {
+					    if (!latch.await(5, TimeUnit.SECONDS)) {
+					    	timedOut.set(true);
+					    }
+				    }
+				    catch (InterruptedException e) {
+					    interrupted.set(true);
+				    }
+			    })
+			    .blockLast(Duration.ofSeconds(2));
+
+			assertThat(interrupted).as("interrupted").isFalse();
+			assertThat(timedOut).as("latch timeout").isFalse();
+		}
+		finally {
+			s.dispose();
+			s2.dispose();
+		}
 	}
 }
