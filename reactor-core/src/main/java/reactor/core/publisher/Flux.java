@@ -7734,7 +7734,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Iterable<T> toIterable(int batchSize, @Nullable Supplier<Queue<T>>
 			queueProvider) {
 		if (Schedulers.isInNonBlockingThread()) {
-			throw new UnsupportedOperationException("toIterable() is blocking, which is not supported in thread " + Thread.currentThread().getName());
+			throw new IllegalStateException("toIterable() is blocking, which is not supported in thread " + Thread.currentThread().getName());
 		}
 		final Supplier<Queue<T>> provider;
 		if(queueProvider == null){
@@ -7772,7 +7772,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Stream<T> toStream(int batchSize) {
 		if (Schedulers.isInNonBlockingThread()) {
-			throw new UnsupportedOperationException("toStream() is blocking, which is not supported in thread " + Thread.currentThread().getName());
+			throw new IllegalStateException("toStream() is blocking, which is not supported in thread " + Thread.currentThread().getName());
 		}
 		final Supplier<Queue<T>> provider;
 		provider = Queues.get(batchSize);

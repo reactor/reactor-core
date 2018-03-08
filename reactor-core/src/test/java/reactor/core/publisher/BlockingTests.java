@@ -246,7 +246,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence1)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 
@@ -256,7 +256,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence2)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 	}
@@ -274,7 +274,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence1)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 
@@ -284,7 +284,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence2)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 	}
@@ -302,7 +302,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence1)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 
@@ -312,7 +312,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence2)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("block()/blockFirst()/blockLast() are blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 	}
@@ -330,7 +330,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence1)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("blockOptional() is blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 
@@ -340,7 +340,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence2)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("blockOptional() is blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 	}
@@ -356,7 +356,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("toIterable() is blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 	}
@@ -372,7 +372,7 @@ public class BlockingTests {
 
 		StepVerifier.create(forbiddenSequence)
 		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(UnsupportedOperationException.class)
+				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessageStartingWith("toStream() is blocking, which is not supported in thread nonBlockingScheduler-"))
 		            .verify();
 	}
