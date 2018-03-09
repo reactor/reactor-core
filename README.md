@@ -178,8 +178,11 @@ https://github.com/reactor/lite-rx-api-hands-on
 ## Reactor By Example
 https://www.infoq.com/articles/reactor-by-example
 
+## Head-First Spring & Reactor
+https://github.com/reactor/head-first-reactive-with-spring-and-reactor/
+
 ## Beyond Reactor Core
-- Everything to jump outside the JVM with the non-blocking drivers from [Reactor IPC](http://github.com/reactor/reactor-ipc).
+- Everything to jump outside the JVM with the non-blocking drivers from [Reactor Netty](http://github.com/reactor/reactor-netty).
 - [Reactor Addons](http://github.com/reactor/reactor-addons) provide for adapters and extra operators for Reactor 3.
 
 -------------------------------------
