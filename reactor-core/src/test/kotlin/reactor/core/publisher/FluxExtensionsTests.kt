@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -211,6 +211,15 @@ class FluxExtensionsTests {
         assertThat(f).isNotSameAs(m)
         f.test()
                 .expectNext(2)
+                .verifyComplete()
+    }
+
+    @Test
+    fun splitFlux() {
+        val f = listOf(listOf(1, 2), listOf(3, 4)).toFlux()
+        StepVerifier
+                .create(f.split())
+                .expectNext(1, 2, 3, 4)
                 .verifyComplete()
     }
 

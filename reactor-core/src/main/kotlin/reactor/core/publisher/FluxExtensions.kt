@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,3 +194,11 @@ fun <T : Any, E : Throwable> Flux<T>.onErrorResume(exceptionType: KClass<E>, fal
  */
 fun <T : Any, E : Throwable> Flux<T>.onErrorReturn(exceptionType: KClass<E>, value: T): Flux<T> =
         onErrorReturn(exceptionType.java, value)
+
+/**
+ * Extension for flattening [Flux] of [Iterable]
+ *
+ * @author Igor Perikov
+ * @since 3.1
+ */
+fun <T : Any> Flux<out Iterable<T>>.split(): Flux<T> = this.flatMapIterable { it }
