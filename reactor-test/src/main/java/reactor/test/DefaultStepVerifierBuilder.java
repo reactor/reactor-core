@@ -77,6 +77,12 @@ final class DefaultStepVerifierBuilder<T>
 	 */
 	static Duration defaultVerifyTimeout = StepVerifier.DEFAULT_VERIFY_TIMEOUT;
 
+	/**
+	 * The {@link ErrorFormatter} used for cases where no scenario name has been provided
+	 * through {@link StepVerifierOptions}.
+	 */
+	static final ErrorFormatter NO_NAME_ERROR_FORMATTER = new ErrorFormatter(null);
+
 	static void checkPositive(long n) {
 		if (n < 0) {
 			throw new IllegalArgumentException("'n' should be >= 0 but was " + n);
@@ -113,7 +119,7 @@ final class DefaultStepVerifierBuilder<T>
 			@Nullable Supplier<? extends Publisher<? extends T>> sourceSupplier) {
 		this.initialRequest = options.getInitialRequest();
 		this.options = options;
-		this.errorFormatter = new ErrorFormatter(options.getScenarioName());
+		this.errorFormatter = options.getScenarioName() == null ? NO_NAME_ERROR_FORMATTER : new ErrorFormatter(options.getScenarioName());
 		this.vtsLookup = options.getVirtualTimeSchedulerSupplier();
 		this.sourceSupplier = sourceSupplier;
 		this.script = new ArrayList<>();

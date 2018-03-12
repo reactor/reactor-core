@@ -29,11 +29,13 @@ import reactor.util.annotation.Nullable;
  */
 final class ErrorFormatter {
 
+	private static final String EMPTY = "";
+
 	final String scenarioPrefix;
 
 	ErrorFormatter(@Nullable final String scenarioName) {
 		if (scenarioName == null || scenarioName.isEmpty()) {
-			scenarioPrefix = "";
+			scenarioPrefix = EMPTY;
 		}
 		else {
 			scenarioPrefix = "[" + scenarioName + "] ";

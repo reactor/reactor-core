@@ -129,11 +129,24 @@ public class StepVerifierOptions {
 		return this.initialContext;
 	}
 
+	/**
+	 * Give a name to the whole scenario tested by the configured {@link StepVerifier}. That
+	 * name would be mentioned in exceptions and assertion errors raised by the StepVerifier,
+	 * allowing to better distinguish error sources in unit tests where multiple StepVerifier
+	 * are used.
+	 *
+	 * @param scenarioName the name of the scenario, null to deactivate
+	 * @return this instance, to continue setting the options.
+	 */
 	public StepVerifierOptions scenarioName(@Nullable String scenarioName) {
 		this.scenarioName = scenarioName;
 		return this;
 	}
 
+	/**
+	 * @return the name given to the configured {@link StepVerifier}, or null if none.
+	 */
+	@Nullable
 	public String getScenarioName() {
 		return this.scenarioName;
 	}
