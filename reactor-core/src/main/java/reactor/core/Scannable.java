@@ -333,13 +333,24 @@ public interface Scannable {
 
 	/**
 	 * Return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
-	 * chain (downward).
+	 * chain (downward). The current {@link Scannable} is not included.
 	 *
 	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
-	 * chain (downward)
+	 * chain (downward, current {@link Scannable} not included).
 	 */
 	default Stream<? extends Scannable> actuals() {
 		return Attr.recurse(this, Attr.ACTUAL);
+	}
+
+	/**
+	 * Return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
+	 * chain (downward), current {@link Scannable} included.
+	 *
+	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
+	 * chain (downward, current {@link Scannable} included).
+	 */
+	default Stream<? extends Scannable> thisAndActuals() {
+		return Stream.concat(Stream.of(this), actuals());
 	}
 
 	/**
@@ -361,12 +372,24 @@ public interface Scannable {
 	}
 
 	/**
-	 * Check this {@link Scannable}e and its {@link #parents()} for a name an return the
+	 * Check this {@link Scannable} and its {@link #parents()} for a name an return the
+	 * first one that is reachable.
+	 *
+	 * @return the name of the first parent that has one defined (including this scannable)
+	 * @deprecated use {@link #sequenceName()} instead
+	 */
+	@Deprecated
+	default String name() {
+		return sequenceName();
+	}
+
+	/**
+	 * Check this {@link Scannable} and its {@link #parents()} for a name an return the
 	 * first one that is reachable.
 	 *
 	 * @return the name of the first parent that has one defined (including this scannable)
 	 */
-	default String name() {
+	default String sequenceName() {
 		String thisName = this.scan(Attr.NAME);
 		if (thisName != null) {
 			return thisName;
@@ -380,10 +403,7 @@ public interface Scannable {
 	}
 
 	/**
-	 * Check this {@link Scannable}e and its {@link #parents()} for a name an return the
-	 * first one that is reachable.
-	 *
-	 * @return the name of the first parent that has one defined (including this scannable)
+	 * @return the default operatorName of this operator
 	 */
 	default String operatorName() {
 		String stripped = toString()
@@ -398,13 +418,24 @@ public interface Scannable {
 
 	/**
 	 * Return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
-	 * chain (upward).
+	 * chain (upward). The current {@link Scannable} is not included.
 	 *
 	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
-	 * chain (upward)
+	 * chain (upward, current {@link Scannable} not included).
 	 */
 	default Stream<? extends Scannable> parents() {
 		return Attr.recurse(this, Attr.PARENT);
+	}
+
+	/**
+	 * Return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
+	 * chain (upward), current {@link Scannable} included.
+	 *
+	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
+	 * chain (upward, current {@link Scannable} included).
+	 */
+	default Stream<? extends Scannable> thisAndParents() {
+		return Stream.concat(Stream.of(this), parents());
 	}
 
 	/**

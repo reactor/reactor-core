@@ -5345,7 +5345,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
+	 * Give a name to this sequence, which can be retrieved using {@link Scannable#sequenceName()}
 	 * as long as this is the first reachable {@link Scannable#parents()}.
 	 *
 	 * @param name a name for the sequence

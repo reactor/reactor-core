@@ -91,6 +91,11 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 	}
 
 	@Override
+	public String operatorName() {
+		return stacktrace.stackFirst().trim();
+	}
+
+	@Override
 	public String toString() {
 		return stacktrace.stackFirst();
 	}

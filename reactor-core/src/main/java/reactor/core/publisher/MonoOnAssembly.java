@@ -80,6 +80,11 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
 	}
 
 	@Override
+	public String operatorName() {
+		return stacktrace.stackFirst().trim();
+	}
+
+	@Override
 	public String toString() {
 		return stacktrace.stackFirst();
 	}

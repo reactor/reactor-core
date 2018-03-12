@@ -83,6 +83,11 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@Override
+	public String operatorName() {
+		return snapshotStack.stackFirst().trim();
+	}
+
+	@Override
 	public String toString() {
 		return snapshotStack.stackFirst();
 	}
@@ -443,6 +448,11 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			if (key == Attr.PARENT) return s;
 
 			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public String operatorName() {
+			return "Subscriber to " + snapshotStack.stackFirst().trim();
 		}
 
 		@Override
