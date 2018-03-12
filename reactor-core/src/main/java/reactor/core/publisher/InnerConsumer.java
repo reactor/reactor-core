@@ -28,4 +28,9 @@ import reactor.core.Scannable;
  */
 interface InnerConsumer<I>
 		extends CoreSubscriber<I>, Scannable {
+
+	@Override
+	default String operatorName() {
+		return getClass().getSimpleName();
+	}
 }

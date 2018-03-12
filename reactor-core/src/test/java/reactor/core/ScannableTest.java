@@ -16,12 +16,13 @@
 
 package reactor.core;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.assertj.core.api.Condition;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.util.function.Tuple2;
@@ -134,8 +135,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 
@@ -150,8 +151,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -165,8 +166,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -181,8 +182,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -190,7 +191,7 @@ public class ScannableTest {
 		final Flux<Integer> flux = Flux.range(1, 10)
 		                               .map(i -> i + 10);
 
-		assertThat(Scannable.from(flux).name())
+		assertThat(Scannable.from(flux).sequenceName())
 				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}
@@ -265,8 +266,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 
@@ -281,8 +282,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -296,8 +297,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -312,8 +313,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -321,7 +322,7 @@ public class ScannableTest {
 		final Mono<Integer> flux = Mono.just(1)
 		                               .map(i -> i + 10);
 
-		assertThat(Scannable.from(flux).name())
+		assertThat(Scannable.from(flux).sequenceName())
 				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}
@@ -396,8 +397,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -411,8 +412,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -420,7 +421,7 @@ public class ScannableTest {
 		final ParallelFlux<Integer> flux = ParallelFlux.from(Mono.just(1))
 		                               .map(i -> i + 10);
 
-		assertThat(Scannable.from(flux).name())
+		assertThat(Scannable.from(flux).sequenceName())
 				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}
@@ -504,6 +505,49 @@ public class ScannableTest {
 		assertThat(Scannable.Attr.PREFETCH.isConversionSafe()).as("PREFETCH").isFalse();
 		assertThat(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM.isConversionSafe()).as("REQUESTED_FROM_DOWNSTREAM").isFalse();
 		assertThat(Scannable.Attr.TERMINATED.isConversionSafe()).as("TERMINATED").isFalse();
+	}
+
+	@Test
+	public void operatorNamesWithDebugMode() {
+		Hooks.onOperatorDebug();
+
+		List<String> downstream = new ArrayList<>();
+		List<String> upstream = new ArrayList<>();
+
+		try {
+			Mono<?> m=
+					Flux.from(s -> Scannable.from(s)
+					                        .thisAndActuals()
+					                        .forEach(sc -> downstream.add(sc.operatorName())))
+					    .map(a -> a)
+					    .filter(a -> true)
+					    .reduce((a, b) -> b);
+
+			m.subscribe();
+
+			Scannable.from(m)
+			         .thisAndParents()
+			         .forEach(sc -> upstream.add(sc.operatorName()));
+		}
+		finally {
+			Hooks.resetOnOperatorDebug();
+		}
+
+		assertThat(downstream).contains("MapConditionalSubscriber",
+				"Subscriber to Flux.map(ScannableTest.java:523)",
+				"FilterFuseableSubscriber",
+				"Subscriber to Flux.filter(ScannableTest.java:524)",
+				"ReduceSubscriber",
+				"Subscriber to Flux.reduce(ScannableTest.java:525)",
+				"LambdaMonoSubscriber");
+
+		assertThat(upstream).contains("Flux.reduce(ScannableTest.java:525)",
+				"reduce",
+				"Flux.filter(ScannableTest.java:524)",
+				"filter",
+				"Flux.map(ScannableTest.java:523)",
+				"map",
+				"source");
 	}
 
 }
