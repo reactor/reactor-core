@@ -15,17 +15,15 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoCompletionStageTest {
 
@@ -44,5 +42,23 @@ public class MonoCompletionStageTest {
 
 		assertThat(Mono.fromCompletionStage(completionStage).block())
 				.isEqualTo("helloFuture");
+	}
+
+	@Test
+	public void stackOverflowGoesToOnErrorDropped() {
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		future.complete(1);
+		Mono<Integer> simple = Mono.fromFuture(future);
+
+		StepVerifier.create(
+				simple.map(r -> {
+					throw new StackOverflowError("boom, good bye Future");
+				})
+		)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(1))
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDroppedErrorWithMessage("boom, good bye Future");
 	}
 }
