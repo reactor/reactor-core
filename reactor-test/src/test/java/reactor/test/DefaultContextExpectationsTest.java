@@ -41,7 +41,7 @@ public class DefaultContextExpectationsTest {
 			long count) {
 		Flux<Integer> source = sourceTransformer.apply(Flux.range(1, 10));
 		Step<Integer> step = StepVerifier.create(source);
-		final DefaultContextExpectations<Integer> base = new DefaultContextExpectations<>(step);
+		final DefaultContextExpectations<Integer> base = new DefaultContextExpectations<>(step, new ErrorFormatter(null));
 
 		expectations
 				.apply(base)
@@ -259,6 +259,22 @@ public class DefaultContextExpectationsTest {
 		assertContextExpectationFails(s -> s.subscriberContext(Context.of("foo", "bar")),
 				e -> e.matches(Objects::isNull, "desc"))
 				.withMessage("Context Context1{foo=bar} doesn't match predicate desc");
+	}
+
+	@Test
+	public void notMatchesWithDescriptionAndScenarioName() {
+		Flux<Integer> source = Flux.range(1, 10)
+		                           .subscriberContext(Context.of("foo", "bar"));
+
+		Step<Integer> step = StepVerifier.create(source);
+		final DefaultContextExpectations<Integer> base = new DefaultContextExpectations<>(step, new ErrorFormatter("scenario"));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(
+						base.matches(Objects::isNull, "someDescription")
+						    .then()
+						    .expectNextCount(10)::verifyComplete)
+				.withMessage("[scenario] Context Context1{foo=bar} doesn't match predicate someDescription");
 	}
 
 }

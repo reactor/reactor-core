@@ -127,6 +127,22 @@ TIP: By default, the `verify()` method and derived shortcut methods (`verifyThen
 `StepVerifier.setDefaultTimeout(Duration)` to globally set a timeout for these methods,
 or specify one on a per-call basis with `verify(Duration)`.
 
+=== Better identifying test failures
+`StepVerifier` provides two options to better identify exactly which expectation step caused
+a test to fail:
+
+ - `as(String)`: this method can be used **after** most `expect*` methods to give a description
+ to the preceding expectation. If the expectation fails, its error message will contain the
+ description. Terminal expectations and `verify` cannot be described that way.
+ - `StepVerifierOptions.create().scenarioName(String)`: Using `StepVerifierOptions` to create
+ you `StepVerifier`, you can use the `scenarioName` method to give the whole scenario a
+ name, which will also be used in assertion error messages.
+
+Note that in both cases, the use of the description/name in messages is only guaranteed for
+`StepVerifier` methods that produce their own `AssertionError` (eg. throwing an exception
+manually or through an assertion library in `assertNext` won't add the description/name to
+said error's message).
+
 == Manipulating Time
 
 `StepVerifier` can be used with time-based operators to avoid long run times for

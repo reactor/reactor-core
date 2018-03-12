@@ -1238,6 +1238,42 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void testWithDescriptionAndScenarioName() {
+		StepVerifierOptions options = StepVerifierOptions.create()
+		                                                 .initialRequest(3)
+		                                                 .scenarioName("some scenario name");
+		StepVerifier stepVerifier = StepVerifier
+				.create(Flux.just("foo", "bar", "baz"), options)
+				.expectNext("foo")
+				.as("first")
+				.expectNext("bar")
+				.as("second")
+				.expectNext("bar")
+				.as("third")
+				.as("this is ignored")
+				.expectComplete()
+				.log();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(stepVerifier::verify)
+				.withMessage("[some scenario name] expectation \"third\" failed (expected value: bar; actual value: baz)");
+	}
+
+	@Test
+	public void testDurationFailureWithScenarioName() {
+		StepVerifierOptions options = StepVerifierOptions.create()
+		                                                 .scenarioName("some scenario name");
+		StepVerifier stepVerifier = StepVerifier
+				.create(Mono.delay(Duration.ofMillis(100)), options)
+				.expectNextCount(1)
+				.expectComplete();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> stepVerifier.verify(Duration.ofMillis(10)))
+				.withMessageStartingWith("[some scenario name] VerifySubscriber timed out on reactor.core.publisher.MonoDelay$MonoDelayRunnable@");
+	}
+
+	@Test
 	public void noCancelOnUnexpectedErrorSignal() {
 		LongAdder cancelled = new LongAdder();
 		assertThatExceptionOfType(AssertionError.class)
