@@ -1307,6 +1307,32 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Turn this {@link Mono} into a hot source and cache last emitted signal for further
+	 * {@link Subscriber}, with an expiry timeout (TTL) that depends on said signal.
+	 * <p>
+	 * Empty completion and Error will also be replayed according to their respective TTL.
+	 * <p>
+	 * If the relevant TTL generator throws any {@link Exception}, that exception will be
+	 * propagated to the {@link Subscriber} that encountered the cache miss, but the cache
+	 * will be immediately cleared, so further Subscribers might re-populate the cache in
+	 * case the error was transient. In case the source was emitting an error, that error
+	 * is {@link Hooks#onErrorDropped(Consumer) dropped} and added as a suppressed exception.
+	 * In case the source was emitting a value, that value is {@link Hooks#onNextDropped(Consumer) dropped}.
+	 *
+	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
+	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
+	 * @param ttlForEmpty the TTL-generating {@link Supplier} invoked when source is empty
+	 * @return
+	 */
+	public final Mono<T> cache(Function<? super T, Duration> ttlForValue,
+			Function<Throwable, Duration> ttlForError,
+			Supplier<Duration> ttlForEmpty) {
+		return onAssembly(new MonoCacheTime<>(this,
+				ttlForValue, ttlForError, ttlForEmpty,
+				Schedulers.parallel()));
+	}
+
+	/**
 	 * Prepare this {@link Mono} so that subscribers will cancel from it on a
 	 * specified
 	 * {@link Scheduler}.
