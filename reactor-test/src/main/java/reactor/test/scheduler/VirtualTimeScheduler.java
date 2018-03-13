@@ -22,6 +22,7 @@ import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -188,6 +189,10 @@ public class VirtualTimeScheduler implements Scheduler {
 	volatile long deferredNanoTime;
 	static final AtomicLongFieldUpdater<VirtualTimeScheduler> DEFERRED_NANO_TIME = AtomicLongFieldUpdater.newUpdater(VirtualTimeScheduler.class, "deferredNanoTime");
 
+	volatile int advanceTimeWip;
+	static final AtomicIntegerFieldUpdater<VirtualTimeScheduler> ADVANCE_TIME_WIP =
+			AtomicIntegerFieldUpdater.newUpdater(VirtualTimeScheduler.class, "advanceTimeWip");
+
 	volatile boolean shutdown;
 
 	final VirtualTimeWorker directWorker;
@@ -289,21 +294,21 @@ public class VirtualTimeScheduler implements Scheduler {
 		return periodicTask;
 	}
 
-
-
 	final void advanceTime(long targetTimeInNanoseconds) {
-		//TODO WIP guard + drain loop + Operators.addCap on deferredNanoTime
-		long localDeferredNanoTime = Operators.addCap(DEFERRED_NANO_TIME, this, targetTimeInNanoseconds);
-		if (localDeferredNanoTime != 0L) {
+		if (queue.isEmpty()) {
+			Operators.addCap(DEFERRED_NANO_TIME, this, targetTimeInNanoseconds - nanoTime);
 			return;
 		}
-		for(;;) {
-			if (queue.isEmpty()) {
-				return;
-			}
 
+		int remainingWork = ADVANCE_TIME_WIP.incrementAndGet(this);
+		if (remainingWork != 1) {
+			return;
+		}
+
+		for(;;) {
 			//resetting for the first time a delayed schedule is called after a deferredNanoTime is set
-			DEFERRED_NANO_TIME.getAndSet(this, 0);
+			long deferredNanoTimeShift = DEFERRED_NANO_TIME.getAndSet(this, 0);
+
 			while (!queue.isEmpty()) {
 				TimedRunnable current = queue.peek();
 				if (current.time > targetTimeInNanoseconds) {
@@ -318,7 +323,12 @@ public class VirtualTimeScheduler implements Scheduler {
 					current.run.run();
 				}
 			}
-			nanoTime = targetTimeInNanoseconds;
+			nanoTime = targetTimeInNanoseconds + deferredNanoTimeShift;
+
+			remainingWork = ADVANCE_TIME_WIP.addAndGet(this, -remainingWork);
+			if (remainingWork == 0) {
+				break;
+			}
 		}
 	}
 
