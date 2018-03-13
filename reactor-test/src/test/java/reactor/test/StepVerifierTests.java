@@ -1966,4 +1966,50 @@ public class StepVerifierTests {
 			assertThatCode(ex2::get).as("execution 2 in iteration #" + i).doesNotThrowAnyException();
 		}
 	}
+
+	@Test
+	public void gh783() {
+		int size = 61;
+		Scheduler parallel = Schedulers.newParallel("gh-783");
+		StepVerifier.withVirtualTime(() -> Flux.range(1, 10)
+//		                                       .take(size)
+		                                       .subscribeOn(parallel)
+		                                       .flatMap(message -> {
+			                                       Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
+			                                       return interval.map( tick -> message);
+		                                       }, 30,1)
+		                                       .log()
+		                                       .take(size)
+		                                       .collectList()
+		)
+		            .thenAwait(Duration.ofHours(2))
+		            .consumeNextWith(list -> Assert.assertTrue(list.size() == size))
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(5));
+	}
+
+	@Test
+	public void gh783_broken_by_smaldini() {
+		int size = 61;
+		Scheduler parallel = Schedulers.newParallel("gh-783");
+		StepVerifier.withVirtualTime(() -> Flux.range(1, 10)
+//		                                       .take(size)
+		                                       .subscribeOn(parallel)
+		                                       .flatMap(message -> {
+			                                       Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
+			                                       return interval.flatMap( tick -> Mono.delay(Duration.ofMillis(500))
+			                                                                            .thenReturn(message)
+			                                                                            .subscribeOn(parallel))
+			                                                      .subscribeOn(parallel);
+		                                       }, 1,30)
+		                                       .log()
+		                                       .take(size)
+		                                       .collectList()
+		)
+		            .thenAwait(Duration.ofMinutes(30))
+		            .thenAwait(Duration.ofMinutes(30))
+		            .consumeNextWith(list -> Assert.assertTrue(list.size() == size))
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(5));
+	}
 }
