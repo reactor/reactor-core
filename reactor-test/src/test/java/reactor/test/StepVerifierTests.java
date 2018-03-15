@@ -1968,32 +1968,31 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void gh783() {
+	public void gh783_deferredAdvanceTime() {
 		int size = 61;
 		Scheduler parallel = Schedulers.newParallel("gh-783");
 		StepVerifier.withVirtualTime(() -> Flux.range(1, 10)
-//		                                       .take(size)
+		                                       .take(size)
 		                                       .subscribeOn(parallel)
 		                                       .flatMap(message -> {
 			                                       Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
 			                                       return interval.map( tick -> message);
 		                                       }, 30,1)
-		                                       .log()
 		                                       .take(size)
 		                                       .collectList()
 		)
 		            .thenAwait(Duration.ofHours(2))
-		            .consumeNextWith(list -> Assert.assertTrue(list.size() == size))
+		            .consumeNextWith(list -> assertThat(list).hasSize(size))
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(5));
 	}
 
 	@Test
-	public void gh783_broken_by_smaldini() {
+	public void gh783_withInnerFlatmap() {
 		int size = 61;
 		Scheduler parallel = Schedulers.newParallel("gh-783");
 		StepVerifier.withVirtualTime(() -> Flux.range(1, 10)
-//		                                       .take(size)
+		                                       .take(size)
 		                                       .subscribeOn(parallel)
 		                                       .flatMap(message -> {
 			                                       Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
@@ -2002,14 +2001,37 @@ public class StepVerifierTests {
 			                                                                            .subscribeOn(parallel))
 			                                                      .subscribeOn(parallel);
 		                                       }, 1,30)
-		                                       .log()
 		                                       .take(size)
 		                                       .collectList()
 		)
-		            .thenAwait(Duration.ofMinutes(30))
-		            .thenAwait(Duration.ofMinutes(30))
-		            .consumeNextWith(list -> Assert.assertTrue(list.size() == size))
+		            .thenAwait(Duration.ofHours(2))
+		            .consumeNextWith(list -> assertThat(list).hasSize(size))
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(5));
+	}
+
+	@Test
+	public void gh783_intervalFullyEmitted() {
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").flatMap(message -> Flux.interval(Duration.ofMinutes(5)).take(12)))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMinutes(5))
+		            .expectNext(0L)
+		            .thenAwait(Duration.ofMinutes(25))
+		            .expectNext(1L, 2L, 3L, 4L, 5L)
+		            .thenAwait(Duration.ofMinutes(30))
+		            .expectNext(6L, 7L, 8L, 9L, 10L, 11L)
+		            .expectComplete()
+		            .verify(Duration.ofMillis(500));
+	}
+
+	@Test
+	public void gh783_firstSmallAdvance() {
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").flatMap(message -> Flux.interval(Duration.ofMinutes(5)).take(12)))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMinutes(3))
+		            .thenAwait(Duration.ofHours(1))
+		            .expectNextCount(12)
+		            .expectComplete()
+		            .verify(Duration.ofMillis(500));
 	}
 }
