@@ -284,6 +284,11 @@ final class FluxCreate<T> extends Flux<T> {
 
 			return sink.scanUnsafe(key);
 		}
+
+		@Override
+		public String toString() {
+			return sink.toString();
+		}
 	}
 
 	/**
@@ -359,6 +364,11 @@ final class FluxCreate<T> extends Flux<T> {
 		public FluxSink<T> onDispose(Disposable d) {
 			sink.onDispose(d);
 			return this;
+		}
+
+		@Override
+		public String toString() {
+			return serializedSink != null ? serializedSink.toString() : baseSink.toString();
 		}
 	}
 
@@ -550,6 +560,11 @@ final class FluxCreate<T> extends Flux<T> {
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
+
+		@Override
+		public String toString() {
+			return "FluxSink";
+		}
 	}
 
 	static final class IgnoreSink<T> extends BaseSink<T> {
@@ -575,6 +590,10 @@ final class FluxCreate<T> extends Flux<T> {
 			}
 		}
 
+		@Override
+		public String toString() {
+			return "FluxSink(" + OverflowStrategy.IGNORE + ")";
+		}
 	}
 
 	static abstract class NoOverflowBaseAsyncSink<T> extends BaseSink<T> {
@@ -614,6 +633,11 @@ final class FluxCreate<T> extends Flux<T> {
 			// nothing to do
 		}
 
+		@Override
+		public String toString() {
+			return "FluxSink(" + OverflowStrategy.DROP + ")";
+		}
+
 	}
 
 	static final class ErrorAsyncSink<T> extends NoOverflowBaseAsyncSink<T> {
@@ -625,6 +649,12 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		void onOverflow() {
 			error(Exceptions.failWithOverflow());
+		}
+
+
+		@Override
+		public String toString() {
+			return "FluxSink(" + OverflowStrategy.ERROR + ")";
 		}
 
 	}
@@ -771,6 +801,11 @@ final class FluxCreate<T> extends Flux<T> {
 
 			return super.scanUnsafe(key);
 		}
+
+		@Override
+		public String toString() {
+			return "FluxSink(" + OverflowStrategy.BUFFER + ")";
+		}
 	}
 
 	static final class LatestAsyncSink<T> extends BaseSink<T> {
@@ -914,6 +949,11 @@ final class FluxCreate<T> extends Flux<T> {
 			}
 
 			return super.scanUnsafe(key);
+		}
+
+		@Override
+		public String toString() {
+			return "FluxSink(" + OverflowStrategy.LATEST + ")";
 		}
 	}
 

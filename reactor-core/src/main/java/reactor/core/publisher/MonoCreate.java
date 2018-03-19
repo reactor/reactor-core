@@ -273,5 +273,9 @@ final class MonoCreate<T> extends Mono<T> {
 			}
 		}
 
+		@Override
+		public String toString() {
+			return "MonoSink";
+		}
 	}
 }

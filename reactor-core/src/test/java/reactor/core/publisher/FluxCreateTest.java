@@ -1211,7 +1211,6 @@ public class FluxCreateTest {
 
 	}
 
-
 	@Test
 	public void contextTest() {
 		StepVerifier.create(Flux.create(s -> IntStream.range(0, 10).forEach(i -> s.next(s
@@ -1235,6 +1234,91 @@ public class FluxCreateTest {
 		                        .subscriberContext(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void bufferSinkToString() {
+		StepVerifier.create(Flux.create(sink -> {
+			sink.next(sink.toString());
+			if (sink instanceof  SerializedSink) {
+				sink.next(((SerializedSink) sink).sink.toString());
+				sink.complete();
+			}
+			else {
+				sink.error(new IllegalArgumentException("expected SerializedSink"));
+			}
+		}, OverflowStrategy.BUFFER))
+		            .expectNext("FluxSink(BUFFER)")
+		            .expectNext("FluxSink(BUFFER)")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void dropSinkToString() {
+		StepVerifier.create(Flux.create(sink -> {
+			sink.next(sink.toString());
+			if (sink instanceof  SerializedSink) {
+				sink.next(((SerializedSink) sink).sink.toString());
+				sink.complete();
+			}
+			else {
+				sink.error(new IllegalArgumentException("expected SerializedSink"));
+			}
+		}, OverflowStrategy.DROP))
+		            .expectNext("FluxSink(DROP)")
+		            .expectNext("FluxSink(DROP)")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void ignoreSinkToString() {
+		StepVerifier.create(Flux.create(sink -> {
+			sink.next(sink.toString());
+			if (sink instanceof  SerializedSink) {
+				sink.next(((SerializedSink) sink).sink.toString());
+				sink.complete();
+			}
+			else {
+				sink.error(new IllegalArgumentException("expected SerializedSink"));
+			}
+		}, OverflowStrategy.IGNORE))
+		            .expectNext("FluxSink(IGNORE)")
+		            .expectNext("FluxSink(IGNORE)")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void errorSinkToString() {
+		StepVerifier.create(Flux.create(sink -> {
+			sink.next(sink.toString());
+			if (sink instanceof  SerializedSink) {
+				sink.next(((SerializedSink) sink).sink.toString());
+				sink.complete();
+			}
+			else {
+				sink.error(new IllegalArgumentException("expected SerializedSink"));
+			}
+		}, OverflowStrategy.ERROR))
+		            .expectNext("FluxSink(ERROR)")
+		            .expectNext("FluxSink(ERROR)")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void latestSinkToString() {
+		StepVerifier.create(Flux.create(sink -> {
+			sink.next(sink.toString());
+			if (sink instanceof  SerializedSink) {
+				sink.next(((SerializedSink) sink).sink.toString());
+				sink.complete();
+			}
+			else {
+				sink.error(new IllegalArgumentException("expected SerializedSink"));
+			}
+		}, OverflowStrategy.LATEST))
+		            .expectNext("FluxSink(LATEST)")
+		            .expectNext("FluxSink(LATEST)")
 		            .verifyComplete();
 	}
 }
