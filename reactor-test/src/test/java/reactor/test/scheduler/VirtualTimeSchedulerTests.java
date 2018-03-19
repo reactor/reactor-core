@@ -128,10 +128,11 @@ public class VirtualTimeSchedulerTests {
 		List<Long> periodicExecutionTimestamps = new ArrayList<>();
 
 		try {
-			vts.advanceTimeBy(Duration.ofMillis(5));
+			vts.advanceTimeBy(Duration.ofMillis(100));
 
 			vts.schedule(() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
 					100, TimeUnit.MILLISECONDS);
+
 			vts.schedule(() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
 					456, TimeUnit.MILLISECONDS);
 
@@ -142,10 +143,10 @@ public class VirtualTimeSchedulerTests {
 
 			assertThat(singleExecutionsTimestamps)
 					.as("single executions")
-					.containsExactly(100 + 5L, 456 + 5L);
+					.containsExactly(100L, 456L + 100L);
 			assertThat(periodicExecutionTimestamps)
 					.as("periodic executions")
-					.containsExactly(5L, 100 + 5L, 205L, 305L, 405L, 505L, 605L, 705L, 805L, 905L, 1005L);
+					.containsExactly(100L, 200L, 300L, 400L, 500L, 600L, 700L, 800L, 900L, 1000L, 1100L);
 		}
 		finally {
 			vts.dispose();
@@ -201,17 +202,13 @@ public class VirtualTimeSchedulerTests {
 		AtomicInteger count = new AtomicInteger();
 		try {
 			for (int i = 1; i <= 100; i++) {
-				if (i % 10 == 0) {
-					//use a delay of 11 so that in the last iteration, the task is still
-					// in the queue for the very last advanceTimeBy
-					// ie. if the 10 is executed first then it won't remove the task for
-					// the following 3, thus allowing it to settle the nanoTime.
-					vts.schedule(count::incrementAndGet, 11, TimeUnit.SECONDS);
-				}
-
 				RaceTestUtils.race(
 						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
 						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+
+				if (i % 10 == 0) {
+					vts.schedule(count::incrementAndGet, 14, TimeUnit.SECONDS);
+				}
 
 				assertThat(vts.now(TimeUnit.MILLISECONDS))
 						.as("now() iteration " + i)

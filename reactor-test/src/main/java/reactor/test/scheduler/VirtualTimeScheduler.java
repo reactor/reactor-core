@@ -414,7 +414,7 @@ public class VirtualTimeScheduler implements Scheduler {
 				throw Exceptions.failWithRejected();
 			}
 			final TimedRunnable timedTask = new TimedRunnable(this,
-					now(TimeUnit.NANOSECONDS) + unit.toNanos(delayTime),
+					nanoTime + unit.toNanos(delayTime),
 					run,
 					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
@@ -431,7 +431,7 @@ public class VirtualTimeScheduler implements Scheduler {
 				long period,
 				TimeUnit unit) {
 			final long periodInNanoseconds = unit.toNanos(period);
-			final long firstNowNanoseconds = now(TimeUnit.NANOSECONDS);
+			final long firstNowNanoseconds = nanoTime;
 			final long firstStartInNanoseconds = firstNowNanoseconds + unit.toNanos(initialDelay);
 
 			PeriodicTask periodicTask = new PeriodicTask(firstStartInNanoseconds, task,
@@ -480,7 +480,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 					long nextTick;
 
-					long nowNanoseconds = now(TimeUnit.NANOSECONDS);
+					long nowNanoseconds = nanoTime;
 					// If the clock moved in a direction quite a bit, rebase the repetition period
 					if (nowNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS < lastNowNanoseconds || nowNanoseconds >= lastNowNanoseconds + periodInNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS) {
 						nextTick = nowNanoseconds + periodInNanoseconds;

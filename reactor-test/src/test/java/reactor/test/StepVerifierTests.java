@@ -1983,7 +1983,8 @@ public class StepVerifierTests {
 		            .thenAwait(Duration.ofHours(2))
 		            .consumeNextWith(list -> assertThat(list).hasSize(size))
 		            .expectComplete()
-		            .verify(Duration.ofSeconds(5));
+		            .verify();
+//		            .verify(Duration.ofSeconds(5));
 	}
 
 	@Test
