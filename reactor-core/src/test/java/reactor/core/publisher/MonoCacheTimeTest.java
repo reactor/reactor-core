@@ -21,19 +21,16 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import org.junit.Test;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.RaceTestUtils;
 import reactor.test.StepVerifier;
-import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.MonoOperatorTest;
 import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
@@ -244,10 +241,10 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		Mono<Integer> cached = new MonoCacheTime<>(Mono.fromCallable(count::incrementAndGet),
 				v -> {
 					if (v == 1) throw new IllegalStateException("transient");
-					return Duration.ofMillis(100 * v);
+					return Duration.ofMillis(200 * v);
 				},
-				t -> Duration.ZERO,
-				() -> Duration.ZERO,
+				t -> Duration.ofSeconds(10),
+				() -> Duration.ofSeconds(10),
 				Schedulers.parallel());
 
 		StepVerifier.create(cached)
@@ -321,7 +318,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 					if (count.incrementAndGet() == 1) throw new IllegalStateException("transient");
 					return Duration.ofMillis(100);
 				},
-				() -> Duration.ZERO,
+				() -> Duration.ofSeconds(10),
 				Schedulers.parallel());
 
 		StepVerifier.create(cached)

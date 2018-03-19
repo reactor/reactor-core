@@ -99,10 +99,10 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 				//init or expired
 				CoordinatorSubscriber<T> newState = new CoordinatorSubscriber<>(this);
 				if (STATE.compareAndSet(this, EMPTY, newState)) {
-					source.subscribe(newState);
 					CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual, newState);
 					if (newState.add(inner)) {
 						actual.onSubscribe(inner);
+						source.subscribe(newState);
 						break;
 					}
 				}
@@ -261,13 +261,15 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 		@SuppressWarnings("unchecked")
 		private void signalCached(Signal<T> signal) {
+			Signal<T> signalToPropagate = signal;
 			if (STATE.compareAndSet(main, this, signal)) {
 				Duration ttl = null;
 				try {
 					ttl = main.ttlGenerator.apply(signal);
 				}
 				catch (Throwable generatorError) {
-					STATE.set(main, Signal.error(generatorError));
+					signalToPropagate = Signal.error(generatorError);
+					STATE.set(main, signalToPropagate);
 					if (signal.isOnError()) {
 						//noinspection ThrowableNotThrown
 						Exceptions.addSuppressed(generatorError, signal.getThrowable());
@@ -285,17 +287,17 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 					else if (signal.isOnError()) {
 						Operators.onErrorDropped(signal.getThrowable(), currentContext());
 					}
-					//mark for immediate cache clear
-					main.clock.schedule(main, 0, TimeUnit.MILLISECONDS);
+					//immediate cache clear
+					main.run();
 				}
 			}
 
 			for (Operators.MonoSubscriber<T, T> inner : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
-				if (signal.isOnNext()) {
-					inner.complete(signal.get());
+				if (signalToPropagate.isOnNext()) {
+					inner.complete(signalToPropagate.get());
 				}
-				else if (signal.isOnError()) {
-					inner.onError(signal.getThrowable());
+				else if (signalToPropagate.isOnError()) {
+					inner.onError(signalToPropagate.getThrowable());
 				}
 				else {
 					inner.onComplete();
