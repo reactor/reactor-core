@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.test;
+package reactor.test.util;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,12 +32,21 @@ import reactor.core.scheduler.Schedulers;
 /**
  * @author Stephane Maldini
  * @author David Karnok
- * @deprecated use the class in Reactor-Test from 3.2.0 and forward
  */
-//TODO replace all occurrences in core with the one from test during 3.2.1
-@Deprecated
 public class RaceTestUtils {
 
+	/**
+	 * Synchronizes the execution of two concurrent state modifications as much as
+	 * possible to test race conditions. The method blocks until the given {@link Predicate}
+	 * matches. It performs a {@link BiPredicate} test at the end to validate the end
+	 * result.
+	 *
+	 * @param initial the initial state
+	 * @param race the state-modification {@link Function}
+	 * @param stopRace the stop condition for the race loop, as a {@link Predicate}
+	 * @param terminate the validation check, as a {@link BiPredicate}
+	 * @return the result of the {@code terminate} check
+	 */
 	public static <T> boolean race(T initial, Function<? super T, ? extends T> race,
 			Predicate<? super T> stopRace,
 			BiPredicate<? super T, ? super T> terminate) {
@@ -100,6 +109,13 @@ public class RaceTestUtils {
 		race(r1, r2, Schedulers.single());
 	}
 
+	/**
+	 * Synchronizes the execution of two {@link Runnable} as much as possible
+	 * to test race conditions. The method blocks until both have run to completion.
+	 * @param r1 the first runnable
+	 * @param r2 the second runnable
+	 * @param s the {@link Scheduler} on which to execute the runnables
+	 */
 	public static void race(final Runnable r1, final Runnable r2, Scheduler s) {
 		final AtomicInteger count = new AtomicInteger(2);
 		final CountDownLatch cdl = new CountDownLatch(2);

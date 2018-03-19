@@ -29,8 +29,8 @@ import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.RaceTestUtils;
 import reactor.test.StepVerifier;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -177,7 +177,7 @@ public class VirtualTimeSchedulerTests {
 		try {
 			vts.schedule(() -> {}, 10, TimeUnit.HOURS);
 			for (int i = 1; i <= 100; i++) {
-				RaceTestUtils.race(
+				reactor.test.util.RaceTestUtils.race(
 						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
 						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
 

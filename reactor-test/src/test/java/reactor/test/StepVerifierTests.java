@@ -1110,7 +1110,6 @@ public class StepVerifierTests {
 		            .expectNext(123)
 		            .expectComplete()
 		            .verify();
-
 	}
 
 	@Test(timeout = 1000)
