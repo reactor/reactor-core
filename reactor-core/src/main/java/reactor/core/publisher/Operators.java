@@ -244,6 +244,9 @@ public abstract class Operators {
 
 	/**
 	 * An unexpected exception is about to be dropped.
+	 * <p>
+	 * If no hook is registered for {@link Hooks#onErrorDropped(Consumer)}, the dropped
+	 * error is logged at ERROR level and thrown (via {@link Exceptions#bubble(Throwable)}.
 	 *
 	 * @param e the dropped exception
 	 * @param context a context that might hold a local error consumer
@@ -254,6 +257,7 @@ public abstract class Operators {
 			hook = Hooks.onErrorDroppedHook;
 		}
 		if (hook == null) {
+			log.error("Operator called default onErrorDropped", e);
 			throw Exceptions.bubble(e);
 		}
 		hook.accept(e);
