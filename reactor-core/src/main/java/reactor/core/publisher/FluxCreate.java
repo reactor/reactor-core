@@ -368,7 +368,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public String toString() {
-			return serializedSink != null ? serializedSink.toString() : baseSink.toString();
+			return baseSink.toString();
 		}
 	}
 
