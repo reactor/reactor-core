@@ -296,6 +296,10 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	final void advanceTime(long timeShiftInNanoseconds) {
 		Operators.addCap(DEFERRED_NANO_TIME, this, timeShiftInNanoseconds);
+		drain();
+	}
+
+	final void drain() {
 		int remainingWork = ADVANCE_TIME_WIP.incrementAndGet(this);
 		if (remainingWork != 1) {
 			return;
@@ -307,7 +311,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 				while (!queue.isEmpty()) {
 					TimedRunnable current = queue.peek();
-					if (current.time > targetNanoTime) {
+					if (current == null || current.time > targetNanoTime) {
 						break;
 					}
 					//for the benefit of tasks that call `now()`
@@ -397,12 +401,16 @@ public class VirtualTimeScheduler implements Scheduler {
 					run,
 					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
-			return () -> queue.remove(timedTask);
+			drain();
+			return () -> {
+				queue.remove(timedTask);
+				drain();
+			};
 		}
 
 		@Override
 		public Disposable schedule(Runnable run, long delayTime, TimeUnit unit) {
-		if (shutdown) {
+			if (shutdown) {
 				throw Exceptions.failWithRejected();
 			}
 			final TimedRunnable timedTask = new TimedRunnable(this,
@@ -410,7 +418,11 @@ public class VirtualTimeScheduler implements Scheduler {
 					run,
 					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
-			return () -> queue.remove(timedTask);
+			drain();
+			return () -> {
+				queue.remove(timedTask);
+				drain();
+			};
 		}
 
 		@Override
