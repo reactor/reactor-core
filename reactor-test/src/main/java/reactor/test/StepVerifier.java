@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -321,6 +321,23 @@ public interface StepVerifier {
 	 * @throws AssertionError in case of expectation failures
 	 */
 	Assertions verifyThenAssertThat();
+
+	/**
+	 * {@link #verify() Verifies} the signals received by this subscriber, then exposes
+	 * various {@link Assertions assertion methods} on the final state.
+	 * <p>
+	 * Note that like {@link #verify()}, this method will <strong>block</strong> until
+	 * the stream has been terminated (either through {@link Subscriber#onComplete()},
+	 * {@link Subscriber#onError(Throwable)} or {@link Subscription#cancel()}).
+	 * Depending on the declared expectations and actions, notably in case of undersized
+	 * manual requests, such a verification could also block indefinitely. As a consequence
+	 * you can use the {@link Duration} {@code duration} parameter to set a timeout.
+	 *
+	 * @param duration the maximum duration to wait for the sequence to terminate, or
+	 * {@link Duration#ZERO} for unlimited wait.
+	 * @return {@link Assertions} for chaining post-verification state assertions
+	 */
+	Assertions verifyThenAssertThat(Duration duration);
 
 	/**
 	 * Define a builder for terminal states.
