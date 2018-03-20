@@ -308,5 +308,12 @@ public class MonoCreateTest {
 		            .expectNext(1)
 		            .verifyComplete();
 	}
+
+	@Test
+	public void sinkToString() {
+		StepVerifier.create(Mono.create(sink -> sink.success(sink.toString())))
+		            .expectNext("MonoSink")
+		            .verifyComplete();
+	}
 }
 
