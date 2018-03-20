@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -29,7 +30,7 @@ import reactor.core.CoreSubscriber;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDefer<T> extends Flux<T> {
+final class FluxDefer<T> extends Flux<T> implements Scannable {
 
 	final Supplier<? extends Publisher<? extends T>> supplier;
 
@@ -52,5 +53,11 @@ final class FluxDefer<T> extends Flux<T> {
 		}
 
 		from(p).subscribe(actual);
+	}
+
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 }

@@ -33,7 +33,7 @@ import reactor.util.context.Context;
 
 import static reactor.core.publisher.Operators.cancelledSubscription;
 
-final class MonoSequenceEqual<T> extends Mono<Boolean> {
+final class MonoSequenceEqual<T> extends Mono<Boolean> implements Scannable {
 	final Publisher<? extends T>            first;
 	final Publisher<? extends T>            second;
 	final BiPredicate<? super T, ? super T> comparer;
@@ -57,6 +57,12 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 				prefetch, first, second, comparer);
 		actual.onSubscribe(ec);
 		ec.subscribe();
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PREFETCH) return prefetch;
+		return null;
 	}
 
 	static final class EqualCoordinator<T> implements InnerProducer<Boolean> {

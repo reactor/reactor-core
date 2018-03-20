@@ -25,6 +25,7 @@ import java.util.function.LongConsumer;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -35,7 +36,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
-final class MonoCreate<T> extends Mono<T> {
+final class MonoCreate<T> extends Mono<T> implements Scannable {
 
 	final Consumer<MonoSink<T>> callback;
 
@@ -55,6 +56,11 @@ final class MonoCreate<T> extends Mono<T> {
 		catch (Throwable ex) {
 			emitter.error(Operators.onOperatorError(ex, actual.currentContext()));
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 	static final class DefaultMonoSink<T> extends AtomicBoolean

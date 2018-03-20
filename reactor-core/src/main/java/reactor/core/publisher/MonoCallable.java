@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -32,9 +33,8 @@ import reactor.util.annotation.Nullable;
  * @param <T> the returned value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoCallable<T> 
-extends Mono<T>
-		implements Callable<T>, Fuseable {
+final class MonoCallable<T> extends Mono<T>
+		implements Callable<T>, Fuseable, Scannable {
 
 	final Callable<? extends T> callable;
 
@@ -90,5 +90,10 @@ extends Mono<T>
 	@Nullable
 	public T call() throws Exception {
 		return callable.call();
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 }

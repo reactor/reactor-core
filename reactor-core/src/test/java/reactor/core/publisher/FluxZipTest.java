@@ -1277,6 +1277,12 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	public void scanOperator() {
+		FluxZip s = new FluxZip<>(Flux.just(1), Flux.just(2), Tuples::of, Queues.small(), 123);
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+	}
+
+	@Test
     public void scanCoordinator() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> test = new FluxZip.ZipCoordinator<Integer, Integer>(actual,

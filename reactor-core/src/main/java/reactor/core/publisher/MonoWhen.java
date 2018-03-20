@@ -33,7 +33,7 @@ import reactor.util.context.Context;
  * Waits for all Mono sources to produce a value or terminate, and if all of them produced
  * a value, emit a Tuples of those values; otherwise terminate.
  */
-final class MonoWhen extends Mono<Void> {
+final class MonoWhen extends Mono<Void> implements Scannable {
 
 	final boolean delayError;
 
@@ -97,6 +97,12 @@ final class MonoWhen extends Mono<Void> {
 		WhenCoordinator parent = new WhenCoordinator(actual, n, delayError);
 		actual.onSubscribe(parent);
 		parent.subscribe(a);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.DELAY_ERROR) return delayError;
+		return null;
 	}
 
 	static final class WhenCoordinator extends Operators.MonoSubscriber<Object, Void> {

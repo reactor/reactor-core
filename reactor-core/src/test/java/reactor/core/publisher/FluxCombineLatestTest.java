@@ -259,6 +259,12 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	public void scanOperator() {
+		FluxCombineLatest s = new FluxCombineLatest<>(Collections.emptyList(), v -> v, Queues.small(), 123);
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+	}
+
+	@Test
 	public void scanMain() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 

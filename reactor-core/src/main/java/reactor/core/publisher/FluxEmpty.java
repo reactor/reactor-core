@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -27,9 +28,8 @@ import reactor.util.annotation.Nullable;
  * Use the {@link #instance()} method to obtain a properly type-parametrized view of it.
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxEmpty
-extends Flux<Object>
-		implements Fuseable.ScalarCallable<Object> {
+final class FluxEmpty extends Flux<Object>
+		implements Fuseable.ScalarCallable<Object>, Scannable {
 
 	private static final Flux<Object> INSTANCE = new FluxEmpty();
 
@@ -40,6 +40,11 @@ extends Flux<Object>
 	@Override
 	public void subscribe(CoreSubscriber<? super Object> actual) {
 		Operators.complete(actual);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 	/**

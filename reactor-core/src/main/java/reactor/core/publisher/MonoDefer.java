@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -28,7 +29,7 @@ import reactor.core.CoreSubscriber;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDefer<T> extends Mono<T> {
+final class MonoDefer<T> extends Mono<T> implements Scannable {
 
 	final Supplier<? extends Mono<? extends T>> supplier;
 
@@ -50,5 +51,10 @@ final class MonoDefer<T> extends Mono<T> {
 		}
 
 		p.subscribe(actual);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 }
