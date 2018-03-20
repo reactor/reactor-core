@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -516,7 +516,7 @@ public class StepVerifierAssertionsTests {
 
 	@Test
 	public void assertDurationConsidersEqualsASuccess() {
-		new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null, null, null,
+		new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null,
 				Duration.ofSeconds(3),
 				new ErrorFormatter(null))
 				.tookLessThan(Duration.ofMillis(3000L))
@@ -527,7 +527,7 @@ public class StepVerifierAssertionsTests {
 	public void assertDurationFailureWithScenarioName() {
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() ->
-						new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null, null, null
+						new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null
 								, Duration.ofSeconds(3),
 								new ErrorFormatter("fooScenario"))
 								.tookLessThan(Duration.ofMillis(200))

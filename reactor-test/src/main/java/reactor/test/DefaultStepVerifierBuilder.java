@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,6 +78,51 @@ final class DefaultStepVerifierBuilder<T>
 	 * {@link StepVerifier#setDefaultTimeout(Duration)}
 	 */
 	static Duration defaultVerifyTimeout = StepVerifier.DEFAULT_VERIFY_TIMEOUT;
+
+	private static class HookRecorder {
+		final Queue<Object>                                   droppedElements = new ConcurrentLinkedQueue<>();
+		final Queue<Throwable>                                droppedErrors   = new ConcurrentLinkedQueue<>();
+		final Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors  = new ConcurrentLinkedQueue<>();
+
+		public void plugHooks() {
+			Hooks.onErrorDropped(droppedErrors::offer);
+			Hooks.onNextDropped(droppedElements::offer);
+			Hooks.onOperatorError((t, d) -> {
+				operatorErrors.offer(Tuples.of(Optional.ofNullable(t), Optional.ofNullable(d)));
+				return t;
+			});
+		}
+
+		public void unplugHooks() {
+			Hooks.resetOnNextDropped();
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnOperatorError();
+		}
+
+		public boolean hasDroppedElements() {
+			return !droppedElements.isEmpty();
+		}
+
+		public boolean noDroppedElements() {
+			return !hasDroppedElements();
+		}
+
+		public boolean droppedAllOf(Collection<Object> elements) {
+			return droppedElements.containsAll(elements);
+		}
+
+		public boolean hasDroppedErrors() {
+			return !droppedErrors.isEmpty();
+		}
+
+		public boolean noDroppedErrors() {
+			return !hasDroppedErrors();
+		}
+
+		public boolean hasOperatorErrors() {
+			return !operatorErrors.isEmpty();
+		}
+	}
 
 	/**
 	 * The {@link ErrorFormatter} used for cases where no scenario name has been provided
@@ -674,29 +719,23 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public Assertions verifyThenAssertThat() {
-			//plug in the correct hooks
-			Queue<Object> droppedElements = new ConcurrentLinkedQueue<>();
-			Queue<Throwable> droppedErrors = new ConcurrentLinkedQueue<>();
-			Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors = new ConcurrentLinkedQueue<>();
-			Hooks.onErrorDropped(droppedErrors::offer);
-			Hooks.onNextDropped(droppedElements::offer);
-			Hooks.onOperatorError((t, d) -> {
-				operatorErrors.offer(Tuples.of(Optional.ofNullable(t), Optional.ofNullable(d)));
-				return t;
-			});
+			return verifyThenAssertThat(defaultVerifyTimeout);
+		}
+
+		@Override
+		public Assertions verifyThenAssertThat(Duration duration) {
+			HookRecorder stepRecorder = new HookRecorder();
+			stepRecorder.plugHooks();
 
 			try {
 				//trigger the verify
-				Duration time = verify();
+				Duration time = verify(duration);
 
 				//return the assertion API
-				return new DefaultStepVerifierAssertions(droppedElements, droppedErrors, operatorErrors, time, parent.errorFormatter);
+				return new DefaultStepVerifierAssertions(stepRecorder, time, parent.errorFormatter);
 			}
 			finally {
-				//unplug the hooks
-				Hooks.resetOnNextDropped();
-				Hooks.resetOnErrorDropped();
-				Hooks.resetOnOperatorError();
+				stepRecorder.unplugHooks();
 			}
 		}
 
@@ -1079,29 +1118,22 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public Assertions verifyThenAssertThat() {
-			//plug in the correct hooks
-			Queue<Object> droppedElements = new ConcurrentLinkedQueue<>();
-			Queue<Throwable> droppedErrors = new ConcurrentLinkedQueue<>();
-			Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors = new ConcurrentLinkedQueue<>();
-			Hooks.onErrorDropped(droppedErrors::offer);
-			Hooks.onNextDropped(droppedElements::offer);
-			Hooks.onOperatorError((t, d) -> {
-				operatorErrors.offer(Tuples.of(Optional.ofNullable(t), Optional.ofNullable(d)));
-				return t;
-			});
+			return verifyThenAssertThat(defaultVerifyTimeout);
+		}
 
+		@Override
+		public Assertions verifyThenAssertThat(Duration duration) {
+			HookRecorder stepRecorder = new HookRecorder();
+			stepRecorder.plugHooks();
 			try {
 				//trigger the verify
-				Duration time = verify();
+				Duration time = verify(duration);
 
 				//return the assertion API
-				return new DefaultStepVerifierAssertions(droppedElements, droppedErrors, operatorErrors, time, errorFormatter);
+				return new DefaultStepVerifierAssertions(stepRecorder, time, errorFormatter);
 			}
 			finally {
-				//unplug the hooks
-				Hooks.resetOnNextDropped();
-				Hooks.resetOnErrorDropped();
-				Hooks.resetOnOperatorError();
+				stepRecorder.unplugHooks();
 			}
 		}
 
@@ -1655,20 +1687,14 @@ final class DefaultStepVerifierBuilder<T>
 
 	static class DefaultStepVerifierAssertions implements StepVerifier.Assertions {
 
-		private final Queue<Object> droppedElements;
-		private final Queue<Throwable> droppedErrors;
-		private final Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors;
-		private final Duration duration;
+		private final Duration       duration;
 		private final ErrorFormatter errorFormatter;
+		private final HookRecorder   hookRecorder;
 
-		DefaultStepVerifierAssertions(Queue<Object> droppedElements,
-				Queue<Throwable> droppedErrors,
-				Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors,
+		DefaultStepVerifierAssertions(HookRecorder hookRecorder,
 				Duration duration,
 				ErrorFormatter errorFormatter) {
-			this.droppedElements = droppedElements;
-			this.droppedErrors = droppedErrors;
-			this.operatorErrors = operatorErrors;
+			this.hookRecorder = hookRecorder;
 			this.duration = duration;
 			this.errorFormatter = errorFormatter;
 		}
@@ -1682,12 +1708,14 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasDroppedElements() {
-			return satisfies(() -> !droppedElements.isEmpty(), () -> "Expected dropped elements, none found.");
+			return satisfies(hookRecorder::hasDroppedElements,
+					() -> "Expected dropped elements, none found.");
 		}
 
 		@Override
 		public StepVerifier.Assertions hasNotDroppedElements() {
-			return satisfies(droppedElements::isEmpty, () -> String.format("Expected no dropped elements, found <%s>.", droppedElements));
+			return satisfies(hookRecorder::noDroppedElements,
+					() -> String.format("Expected no dropped elements, found <%s>.", hookRecorder.droppedElements));
 		}
 
 		@Override
@@ -1695,8 +1723,10 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
 			List<Object> valuesList = Arrays.asList(values);
-			return satisfies(() -> droppedElements.containsAll(valuesList),
-					() -> String.format("Expected dropped elements to contain <%s>, was <%s>.", valuesList, droppedElements));
+			return satisfies(() -> hookRecorder.droppedAllOf(valuesList),
+					() -> String.format(
+							"Expected dropped elements to contain <%s>, was <%s>.",
+							valuesList, hookRecorder.droppedElements));
 		}
 
 		@Override
@@ -1704,26 +1734,32 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
 			List<Object> valuesList = Arrays.asList(values);
-			return satisfies(() -> droppedElements.containsAll(valuesList)
-							&& droppedElements.size() == valuesList.size(),
-					() -> String.format("Expected dropped elements to contain exactly <%s>, was <%s>.", valuesList, droppedElements));
+			return satisfies(
+					() -> hookRecorder.droppedAllOf(valuesList)
+							&& hookRecorder.droppedElements.size() == valuesList.size(),
+					() -> String.format(
+							"Expected dropped elements to contain exactly <%s>, was <%s>.",
+							valuesList, hookRecorder.droppedElements));
 		}
 
 		@Override
 		public StepVerifier.Assertions hasNotDroppedErrors() {
-			return satisfies(droppedErrors::isEmpty,
-					() -> String.format("Expected no dropped errors, found <%s>.", droppedErrors));
+			return satisfies(hookRecorder::noDroppedErrors,
+					() -> String.format("Expected no dropped errors, found <%s>.",
+							hookRecorder.droppedErrors));
 		}
 
 		@Override
 		public StepVerifier.Assertions hasDroppedErrors() {
-			return satisfies(() -> !droppedErrors.isEmpty(),
+			return satisfies(hookRecorder::hasDroppedErrors,
 					() -> "Expected at least 1 dropped error, none found.");
 		}
+
 		@Override
 		public StepVerifier.Assertions hasDroppedErrors(int size) {
-			return satisfies(() -> droppedErrors.size() == size,
-					() -> String.format("Expected exactly %d dropped errors, %d found.", size, droppedErrors.size()));
+			return satisfies(() -> hookRecorder.droppedErrors.size() == size,
+					() -> String.format("Expected exactly %d dropped errors, %d found.",
+							size, hookRecorder.droppedErrors.size()));
 		}
 
 		@Override
@@ -1731,8 +1767,11 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> clazz != null, () -> "Require non-null clazz");
 			hasDroppedErrors(1);
-			return satisfies(() -> clazz.isInstance(droppedErrors.peek()),
-					() -> String.format("Expected dropped error to be of type %s, was %s.", clazz.getCanonicalName(), droppedErrors.peek().getClass().getCanonicalName()));
+			return satisfies(
+					() -> clazz.isInstance(hookRecorder.droppedErrors.peek()),
+					() -> String.format("Expected dropped error to be of type %s, was %s.",
+							clazz.getCanonicalName(),
+							hookRecorder.droppedErrors.peek().getClass().getCanonicalName()));
 		}
 
 		@Override
@@ -1740,8 +1779,10 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasDroppedErrors(1);
-			return satisfies(() -> matcher.test(droppedErrors.peek()),
-					() -> String.format("Expected dropped error matching the given predicate, did not match: <%s>.", droppedErrors.peek()));
+			return satisfies(() -> matcher.test(hookRecorder.droppedErrors.peek()),
+					() -> String.format(
+							"Expected dropped error matching the given predicate, did not match: <%s>.",
+							hookRecorder.droppedErrors.peek()));
 		}
 
 		@Override
@@ -1749,7 +1790,7 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> message != null, () -> "Require non-null message");
 			hasDroppedErrors(1);
-			String actual = droppedErrors.peek().getMessage();
+			String actual = hookRecorder.droppedErrors.peek().getMessage();
 			return satisfies(() -> message.equals(actual),
 					() -> String.format("Expected dropped error with message <\"%s\">, was <\"%s\">.", message, actual));
 		}
@@ -1760,7 +1801,7 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
 			hasDroppedErrors(1);
-			String actual = droppedErrors.peek().getMessage();
+			String actual = hookRecorder.droppedErrors.peek().getMessage();
 			return satisfies(() -> actual != null && actual.contains(messagePart),
 					() -> String.format("Expected dropped error with message containing <\"%s\">, was <\"%s\">.", messagePart, actual));
 		}
@@ -1770,8 +1811,10 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasDroppedErrors();
-			return satisfies(() -> matcher.test(droppedErrors),
-					() -> String.format("Expected collection of dropped errors matching the given predicate, did not match: <%s>.", droppedErrors));
+			return satisfies(() -> matcher.test(hookRecorder.droppedErrors),
+					() -> String.format(
+							"Expected collection of dropped errors matching the given predicate, did not match: <%s>.",
+							hookRecorder.droppedErrors));
 		}
 
 		@Override
@@ -1779,25 +1822,27 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> asserter != null, () -> "Require non-null asserter");
 			hasDroppedErrors();
-			asserter.accept(droppedErrors);
+			asserter.accept(hookRecorder.droppedErrors);
 			return this;
 		}
 
 		@Override
 		public StepVerifier.Assertions hasOperatorErrors() {
-			return satisfies(() -> !operatorErrors.isEmpty(),
+			return satisfies(hookRecorder::hasOperatorErrors,
 					() -> "Expected at least 1 operator error, none found.");
 		}
 		@Override
 		public StepVerifier.Assertions hasOperatorErrors(int size) {
-			return satisfies(() -> operatorErrors.size() == size,
-					() -> String.format("Expected exactly %d operator errors, %d found.", size, operatorErrors.size()));
+			return satisfies(() -> hookRecorder.operatorErrors.size() == size,
+					() -> String.format(
+							"Expected exactly %d operator errors, %d found.",
+							size, hookRecorder.operatorErrors.size()));
 		}
 
 		StepVerifier.Assertions hasOneOperatorErrorWithError() {
-			satisfies(() -> operatorErrors.size() == 1,
-					() -> String.format("Expected exactly one operator error, %d found.", operatorErrors.size()));
-			satisfies(() -> operatorErrors.peek().getT1().isPresent(),
+			satisfies(() -> hookRecorder.operatorErrors.size() == 1,
+					() -> String.format("Expected exactly one operator error, %d found.", hookRecorder.operatorErrors.size()));
+			satisfies(() -> hookRecorder.operatorErrors.peek().getT1().isPresent(),
 					() -> "Expected exactly one operator error with an actual throwable content, no throwable found.");
 			return this;
 		}
@@ -1807,9 +1852,11 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> clazz != null, () -> "Require non-null clazz");
 			hasOneOperatorErrorWithError();
-			return satisfies(() -> clazz.isInstance(operatorErrors.peek().getT1().get()),
+			return satisfies(
+					() -> clazz.isInstance(hookRecorder.operatorErrors.peek().getT1().get()),
 					() -> String.format("Expected operator error to be of type %s, was %s.",
-							clazz.getCanonicalName(), operatorErrors.peek().getT1().get().getClass().getCanonicalName()));
+							clazz.getCanonicalName(),
+							hookRecorder.operatorErrors.peek().getT1().get().getClass().getCanonicalName()));
 		}
 
 		@Override
@@ -1817,8 +1864,11 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasOneOperatorErrorWithError();
-			return satisfies(() -> matcher.test(operatorErrors.peek().getT1().orElse(null)),
-					() -> String.format("Expected operator error matching the given predicate, did not match: <%s>.", operatorErrors.peek()));
+			return satisfies(
+					() -> matcher.test(hookRecorder.operatorErrors.peek().getT1().orElse(null)),
+					() -> String.format(
+							"Expected operator error matching the given predicate, did not match: <%s>.",
+							hookRecorder.operatorErrors.peek()));
 		}
 
 		@Override
@@ -1826,7 +1876,7 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> message != null, () -> "Require non-null message");
 			hasOneOperatorErrorWithError();
-			String actual = operatorErrors.peek().getT1().get().getMessage();
+			String actual = hookRecorder.operatorErrors.peek().getT1().get().getMessage();
 			return satisfies(() -> message.equals(actual),
 					() -> String.format("Expected operator error with message <\"%s\">, was <\"%s\">.", message, actual));
 		}
@@ -1837,7 +1887,7 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
 			hasOneOperatorErrorWithError();
-			String actual = operatorErrors.peek().getT1().get().getMessage();
+			String actual = hookRecorder.operatorErrors.peek().getT1().get().getMessage();
 			return satisfies(() -> actual != null && actual.contains(messagePart),
 					() -> String.format("Expected operator error with message containing <\"%s\">, was <\"%s\">.", messagePart, actual));
 		}
@@ -1847,8 +1897,10 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasOperatorErrors();
-			return satisfies(() -> matcher.test(operatorErrors),
-					() -> String.format("Expected collection of operator errors matching the given predicate, did not match: <%s>.", operatorErrors));
+			return satisfies(() -> matcher.test(hookRecorder.operatorErrors),
+					() -> String.format(
+							"Expected collection of operator errors matching the given predicate, did not match: <%s>.",
+							hookRecorder.operatorErrors));
 		}
 
 		@Override
@@ -1856,7 +1908,7 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> asserter != null, () -> "Require non-null asserter");
 			hasOperatorErrors();
-			asserter.accept(operatorErrors);
+			asserter.accept(hookRecorder.operatorErrors);
 			return this;
 		}
 
