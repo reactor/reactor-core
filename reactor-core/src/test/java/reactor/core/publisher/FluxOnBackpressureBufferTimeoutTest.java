@@ -311,7 +311,7 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
-		BackpressureBufferTimeoutSubscriber test = new BackpressureBufferTimeoutSubscriber<>(actual, Duration.ofSeconds(1), Schedulers.immediate(), 123, v -> {});
+		BackpressureBufferTimeoutSubscriber<String> test = new BackpressureBufferTimeoutSubscriber<>(actual, Duration.ofSeconds(1), Schedulers.immediate(), 123, v -> {});
 		Subscription s = Operators.emptySubscription();
 		test.onSubscribe(s);
 

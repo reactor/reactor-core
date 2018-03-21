@@ -36,7 +36,7 @@ public class FluxStreamTest {
 	@SuppressWarnings("ConstantConditions")
 	@Test(expected = NullPointerException.class)
 	public void nullStream() {
-		Flux.fromStream((Stream) null);
+		Flux.fromStream((Stream<?>) null);
 	}
 
 	@SuppressWarnings("ConstantConditions")

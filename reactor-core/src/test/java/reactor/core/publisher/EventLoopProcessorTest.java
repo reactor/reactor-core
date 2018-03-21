@@ -143,6 +143,7 @@ public class EventLoopProcessorTest {
 				e.printStackTrace();
 			}
 		});
+		@SuppressWarnings("deprecation")
 		boolean shutResult = test.awaitAndShutdown(1000, TimeUnit.NANOSECONDS);
 		assertThat(test.executor)
 				.isNotNull()
@@ -172,6 +173,7 @@ public class EventLoopProcessorTest {
 				.when(executor).awaitTermination(anyLong(), any());
 		EventLoopProcessor<String> interruptingProcessor = initProcessor(executor);
 
+		@SuppressWarnings("deprecation")
 		boolean result = interruptingProcessor.awaitAndShutdown(100, TimeUnit.MILLISECONDS);
 
 		assertThat(Thread.currentThread().isInterrupted()).as("interrupted").isTrue();

@@ -610,8 +610,10 @@ public class HooksTest {
 		AtomicReference<Publisher> hook = new AtomicReference<>();
 		AtomicReference<Object> hook2 = new AtomicReference<>();
 		Hooks.onEachOperator(h -> {
-			hook.set(TestPublisher.create().flux());
-			return hook.get();
+			Flux<Object> publisher = TestPublisher.create()
+			                                      .flux();
+			hook.set(publisher);
+			return publisher;
 		});
 		Hooks.onEachOperator(h -> {
 			hook2.set(h);
@@ -627,8 +629,9 @@ public class HooksTest {
 		hook2.set(null);
 
 		Hooks.onLastOperator(h -> {
-			hook.set(TestPublisher.create().flux());
-			return hook.get();
+			final Flux<Object> publisher = TestPublisher.create().flux();
+			hook.set(publisher);
+			return publisher;
 		});
 		Hooks.onLastOperator(h -> {
 			hook2.set(h);

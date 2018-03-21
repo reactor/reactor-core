@@ -72,8 +72,8 @@ public class Context1Test {
 	}
 
 	@Test
-	public void get() throws Exception {
-		assertThat((Object) c.get(1)).isEqualTo("A"); //TODO meh, necessary cast to Object
+	public void get() {
+		assertThat((String) c.get(1)).isEqualTo("A");
 	}
 
 	@Test

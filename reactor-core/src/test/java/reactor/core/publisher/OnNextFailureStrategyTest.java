@@ -771,6 +771,7 @@ public class OnNextFailureStrategyTest {
 
 	@Test
 	public void errorStrategyConfiguredInFlatMapDoesNotLeak() {
+		@SuppressWarnings("divzero")
 		Flux<Integer> test = Flux.just(0, 1, 2)
 				.map(i -> i / 0)
 				.flatMap(i -> Flux.just(i).errorStrategyContinue());

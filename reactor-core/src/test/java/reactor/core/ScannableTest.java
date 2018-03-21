@@ -18,6 +18,7 @@ package reactor.core;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -206,10 +207,12 @@ public class ScannableTest {
 		                               .tag("2", "Two")
 		                               .hide();
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
+		assertThat(scannedTags1.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
 
-		assertThat(Scannable.from(tagged2).tags())
+		final Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
+		assertThat(scannedTags2.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -225,10 +228,12 @@ public class ScannableTest {
 		                               .tag("2", "Two")
 		                               .hide();
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
+		assertThat(scannedTags1.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
 
-		assertThat(Scannable.from(tagged2).tags())
+		final Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
+		assertThat(scannedTags2.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -239,7 +244,8 @@ public class ScannableTest {
 				    .tag("1", "One")
 				    .tag("2", "Two");
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
+		assertThat(scannedTags.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -251,7 +257,8 @@ public class ScannableTest {
 				    .tag("1", "One")
 				    .tag("2", "Two");
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
+		assertThat(scannedTags.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -337,10 +344,12 @@ public class ScannableTest {
 		                               .tag("2", "Two")
 		                               .hide();
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
+		assertThat(scannedTags1.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
 
-		assertThat(Scannable.from(tagged2).tags())
+		final Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
+		assertThat(scannedTags2.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -356,10 +365,12 @@ public class ScannableTest {
 		                               .tag("2", "Two")
 		                               .hide();
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
+		assertThat(scannedTags1.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
 
-		assertThat(Scannable.from(tagged2).tags())
+		final Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
+		assertThat(scannedTags2.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -370,7 +381,8 @@ public class ScannableTest {
 				    .tag("1", "One")
 				    .tag("2", "Two");
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
+		assertThat(scannedTags.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -382,7 +394,8 @@ public class ScannableTest {
 				    .tag("1", "One")
 				    .tag("2", "Two");
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
+		assertThat(scannedTags.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -436,10 +449,11 @@ public class ScannableTest {
 		                               .tag("2", "Two")
 		                               .hide();
 
-		assertThat(Scannable.from(tagged1).tags())
-				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
+		Stream<Tuple2<String, String>> scannedTags1 = Scannable.from(tagged1).tags();
+		assertThat(scannedTags1.iterator()).containsExactlyInAnyOrder(Tuples.of("1", "One"));
 
-		assertThat(Scannable.from(tagged2).tags())
+		Stream<Tuple2<String, String>> scannedTags2 = Scannable.from(tagged2).tags();
+		assertThat(scannedTags2.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
@@ -450,7 +464,8 @@ public class ScannableTest {
 				    .tag("1", "One")
 				    .tag("2", "Two");
 
-		assertThat(Scannable.from(tagged1).tags())
+		final Stream<Tuple2<String, String>> scannedTags = Scannable.from(tagged1).tags();
+		assertThat(scannedTags.iterator())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 

@@ -261,7 +261,8 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void scanOperator() {
-		FluxConcatArray s = new FluxConcatArray<>(true);
+		@SuppressWarnings("unchecked") //vararg of Publisher<String>
+		FluxConcatArray<String> s = new FluxConcatArray<>(true, Flux.empty());
 		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).as("delayError").isTrue();
 	}
 

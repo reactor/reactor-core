@@ -259,7 +259,10 @@ public class ParallelReduceSeedTest extends ParallelOperatorTest<String, String>
 		ParallelReduceSeed.ParallelReduceSeedSubscriber<Integer, String> test = new ParallelReduceSeed.ParallelReduceSeedSubscriber<>(
 				subscriber, "", (s, i) -> s + i);
 
-		source.subscribe(new CoreSubscriber[] { test });
+		@SuppressWarnings("unchecked")
+		final CoreSubscriber<Integer>[] testSubscribers = new CoreSubscriber[1];
+		testSubscribers[0] = test;
+		source.subscribe(testSubscribers);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
