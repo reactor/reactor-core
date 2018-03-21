@@ -301,8 +301,9 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 					}
 
 					for (UnicastProcessor<T> w : ws) {
-						//noinspection unchecked
-						w.onNext((T) o);
+						@SuppressWarnings("unchecked")
+						T t = (T) o;
+						w.onNext(t);
 					}
 				}
 

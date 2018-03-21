@@ -694,6 +694,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
+		@SuppressWarnings("unchecked")
 		Step<T> expectNext(T... ts);
 
 		/**

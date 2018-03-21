@@ -226,8 +226,8 @@ public interface Scannable {
 				return null;
 			}
 			if (safeConverter == null) {
-				//noinspection unchecked
-				return (T) o;
+				@SuppressWarnings("unchecked") T t = (T) o;
+				return t;
 			}
 			return safeConverter.apply(o);
 		}

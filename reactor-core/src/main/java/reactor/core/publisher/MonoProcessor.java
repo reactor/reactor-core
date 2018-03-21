@@ -556,7 +556,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		return out;
 	}
 
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({"rawtypes", "unchecked"})
     final static class NoopProcessor extends FluxProcessor {
 
 		@Override

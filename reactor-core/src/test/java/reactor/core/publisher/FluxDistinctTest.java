@@ -415,6 +415,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 	public void distinctPredicateThrowsConditional() {
 		IllegalStateException error = new IllegalStateException("forced failure");
 
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> actualConditional = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		when(actualConditional.currentContext()).thenReturn(Context.empty());
 		when(actualConditional.tryOnNext(anyInt())).thenReturn(false);
@@ -436,6 +437,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 	public void distinctPredicateThrowsConditionalOnNext() {
 		IllegalStateException error = new IllegalStateException("forced failure");
 
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> actualConditional = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		when(actualConditional.currentContext()).thenReturn(Context.empty());
 

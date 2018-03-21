@@ -240,11 +240,11 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 		private final BiFunction<? super Throwable, Object, ? extends Throwable> delegateProcessor;
 		private final BiPredicate<? super Throwable, Object> delegatePredicate;
 
+		@SuppressWarnings("unchecked")
 		public LambdaOnNextErrorStrategy(
 				BiFunction<? super Throwable, Object, ? extends Throwable> delegateProcessor) {
 			this.delegateProcessor = delegateProcessor;
 			if (delegateProcessor instanceof BiPredicate) {
-				//noinspection unchecked
 				this.delegatePredicate = (BiPredicate<? super Throwable, Object>) delegateProcessor;
 			}
 			else {

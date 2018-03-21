@@ -51,14 +51,16 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		super(source);
 		this.ttl = ttl;
 		this.clock = clock;
-		//noinspection unchecked
-		this.state = (Signal<T>) EMPTY;
+		@SuppressWarnings("unchecked")
+		Signal<T> emptyState = (Signal<T>) EMPTY;
+		this.state = emptyState;
 	}
 
 	public void run() {
 		LOGGER.debug("expired {}", state);
-		//noinspection unchecked
-		state = (Signal<T>) EMPTY;
+		@SuppressWarnings("unchecked")
+		Signal<T> emptyState = (Signal<T>) EMPTY;
+		state = emptyState;
 	}
 
 	@Override
@@ -115,9 +117,9 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, Operators.MonoSubscriber[]> SUBSCRIBERS =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Operators.MonoSubscriber[].class, "subscribers");
 
+		@SuppressWarnings("unchecked")
 		CoordinatorSubscriber(MonoCacheTime<T> main) {
 			this.main = main;
-			//noinspection unchecked
 			this.subscribers = EMPTY;
 		}
 
@@ -173,7 +175,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 					return false;
 				}
 				int n = a.length;
-				//noinspection unchecked
+				@SuppressWarnings("unchecked")
 				Operators.MonoSubscriber<T, T>[] b = new Operators.MonoSubscriber[n + 1];
 				System.arraycopy(a, 0, b, 0, n);
 				b[n] = toAdd;
@@ -229,12 +231,12 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		private void signalCached(Signal<T> signal) {
 			if (STATE.compareAndSet(main, this, signal)) {
 				main.clock.schedule(main, main.ttl.toMillis(), TimeUnit.MILLISECONDS);
 			}
 
-			//noinspection unchecked
 			for (Operators.MonoSubscriber<T, T> inner : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
 				if (signal.isOnNext()) {
 					inner.complete(signal.get());

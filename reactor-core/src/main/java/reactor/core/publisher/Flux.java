@@ -4905,8 +4905,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an indexed {@link Flux} with each source value combined with its 0-based index.
 	 */
 	public final Flux<Tuple2<Long, T>> index() {
-		//noinspection unchecked
-		return index(TUPLE2_BIFUNCTION);
+		return index(tuple2Function());
 	}
 
 	/**

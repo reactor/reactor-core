@@ -139,6 +139,7 @@ class MonoExtensionsTests {
 
     @Test
     fun nullableLambdaToEmptyMonoWithMap() {
+        @Suppress("USELESS_CAST")
         val callable = { null as String? }
         val verifier = StepVerifier.create(callable.toMono().map { it.toUpperCase() })
             .expectComplete()

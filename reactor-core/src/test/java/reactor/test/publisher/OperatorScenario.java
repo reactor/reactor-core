@@ -48,10 +48,11 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 	int              producing                            = -1;
 	int              demand                               = -1;
 	IntFunction<? extends I> producingMapper;
-	Consumer<? super O>[]          receivers      = null;
-	O[]                            receiverValues = null;
-	String                         description    = null;
-	Consumer<StepVerifier.Step<O>> verifier       = null;
+
+	@Nullable Consumer<? super O>[]          receivers      = null;
+	@Nullable O[]                            receiverValues = null;
+	@Nullable String                         description    = null;
+	@Nullable Consumer<StepVerifier.Step<O>> verifier       = null;
 
 	OperatorScenario(@Nullable Function<PI, ? extends PO> body, @Nullable Exception stack) {
 		this.body = body;
@@ -138,6 +139,7 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		return this;
 	}
 
+	@SuppressWarnings("unchecked")
 	public OperatorScenario<I, PI, O, PO> receive(Consumer<? super O>... receivers) {
 		this.receivers = Objects.requireNonNull(receivers, "receivers");
 		if (this.demand != 0 && this.demand < receivers.length) {
@@ -162,6 +164,7 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		return receiveValues(receivers);
 	}
 
+	@SuppressWarnings("unchecked")
 	public OperatorScenario<I, PI, O, PO> receiveValues(O... receivers) {
 		this.receiverValues = Objects.requireNonNull(receivers, "receivers");
 		if (this.demand != 0 && this.demand < receivers.length) {
