@@ -94,8 +94,9 @@ final class FluxIndexFuseable<T, I> extends FluxOperator<T, I>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				//noinspection unchecked
-				this.s = (QueueSubscription<T>) s;
+				@SuppressWarnings("unchecked")
+				QueueSubscription<T> qs = (QueueSubscription<T>) s;
+				this.s = qs;
 
 				actual.onSubscribe(this);
 			}
@@ -239,8 +240,9 @@ final class FluxIndexFuseable<T, I> extends FluxOperator<T, I>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				//noinspection unchecked
-				this.s = (QueueSubscription<T>) s;
+				@SuppressWarnings("unchecked")
+				QueueSubscription<T> qs = (QueueSubscription<T>) s;
+				this.s = qs;
 				actual.onSubscribe(this);
 			}
 		}

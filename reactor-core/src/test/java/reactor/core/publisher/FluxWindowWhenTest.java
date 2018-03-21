@@ -128,9 +128,9 @@ public class FluxWindowWhenTest {
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(windows.get())
+		assertThat(windows.get().size())
 				.as("no window retained")
-				.isEmpty();
+				.isZero();
 		assertThat(finalized.longValue())
 				.as("final GC collects all")
 				.isEqualTo(created.longValue());

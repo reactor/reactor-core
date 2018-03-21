@@ -148,8 +148,12 @@ final class FluxMergeOrdered<T> extends Flux<T> implements Scannable {
 				Comparator<? super T> comparator, int prefetch, int n) {
 			this.actual = actual;
 			this.comparator = comparator;
-			//noinspection unchecked
-			this.subscribers = new MergeOrderedInnerSubscriber[n];
+
+			@SuppressWarnings("unchecked")
+			MergeOrderedInnerSubscriber<T>[] mergeOrderedInnerSub =
+					new MergeOrderedInnerSubscriber[n];
+			this.subscribers = mergeOrderedInnerSub;
+
 			for (int i = 0; i < n; i++) {
 				this.subscribers[i] = new MergeOrderedInnerSubscriber<>(this, prefetch);
 			}
@@ -276,8 +280,9 @@ final class FluxMergeOrdered<T> extends Flux<T> implements Scannable {
 						if (o != DONE) {
 							boolean smaller;
 							try {
-								//noinspection unchecked
-								smaller = min == null || comparator.compare(min, (T) o) > 0;
+								@SuppressWarnings("unchecked")
+								T t = (T) o;
+								smaller = min == null || comparator.compare(min, t) > 0;
 							} catch (Throwable ex) {
 								Exceptions.addThrowable(ERROR, this, ex);
 								cancel();
@@ -285,8 +290,9 @@ final class FluxMergeOrdered<T> extends Flux<T> implements Scannable {
 								return;
 							}
 							if (smaller) {
-								//noinspection unchecked
-								min = (T) o;
+								@SuppressWarnings("unchecked")
+								T t = (T) o;
+								min = t;
 								minIndex = i;
 							}
 						}

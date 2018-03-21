@@ -264,6 +264,7 @@ public class FluxMergeOrderedTest {
 	@Test
 	public void mergeAdditionalSource() {
 		Comparator<Integer> originalComparator = Comparator.naturalOrder();
+		@SuppressWarnings("unchecked")
 		FluxMergeOrdered<Integer> fmo = new FluxMergeOrdered<>(2,
 				Queues.small(),
 				originalComparator,
