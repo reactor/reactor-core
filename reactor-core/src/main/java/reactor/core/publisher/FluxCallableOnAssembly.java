@@ -56,4 +56,14 @@ final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 	public T call() throws Exception {
 		return ((Callable<T>) source).call();
 	}
+
+	@Override
+	public String operatorName() {
+		return stacktrace.stackFirst().trim();
+	}
+
+	@Override
+	public String toString() {
+		return stacktrace.stackFirst();
+	}
 }
