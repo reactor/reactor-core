@@ -85,23 +85,37 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	}
 
 	/**
-	 * Turn this {@literal Tuples} into a plain Object list.
+	 * Turn this {@code Tuple} into a {@link List List&lt;Object&gt;}.
+	 * The list isn't tied to this Tuple but is a <strong>copy</strong> with limited
+	 * mutability ({@code add} and {@code remove} are not supported, but {@code set} is).
 	 *
-	 * @return A new Object list.
+	 * @return A copy of the tuple as a new {@link List List&lt;Object&gt;}.
 	 */
 	public List<Object> toList() {
 		return Arrays.asList(toArray());
 	}
 
 	/**
-	 * Turn this {@literal Tuples} into a plain Object array.
+	 * Turn this {@code Tuple} into a plain {@code Object[]}.
+	 * The array isn't tied to this Tuple but is a <strong>copy</strong>.
 	 *
-	 * @return A new Object array.
+	 * @return A copy of the tuple as a new {@link Object Object[]}.
 	 */
 	public Object[] toArray() {
 		return new Object[]{t1, t2};
 	}
 
+	/**
+	 * Return an <strong>immutable</strong> {@link Iterator Iterator&lt;Object&gt;} around
+	 * the content of this {@code Tuple}.
+	 *
+	 * @implNote As an {@link Iterator} is always tied to its {@link Iterable} source by
+	 * definition, the iterator cannot be mutable without the iterable also being mutable.
+	 * Since {@link Tuples} are <strong>immutable</strong>, so is the {@link Iterator}
+	 * returned by this method.
+	 *
+	 * @return An unmodifiable {@link Iterator} over the elements in this Tuple.
+	 */
 	@Override
 	public Iterator<Object> iterator() {
 		return Collections.unmodifiableList(toList()).iterator();
