@@ -382,8 +382,6 @@ project('reactor-core') {
 	}
   }
 
-  sourceSets.test.resources.srcDirs = ["src/test/resources", "src/test/java"]
-
   if (!JavaVersion.current().isJava9Compatible()) {
 	test {
 	  jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
