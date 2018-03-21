@@ -181,9 +181,10 @@ configure(subprojects) { p ->
   // common exclusions, no scanning
   p.tasks.withType(Test).all {
 	testLogging {
-	  events "passed", "failed"
+	  events "FAILED"
 	  showExceptions true
-	  exceptionFormat "full"
+	  exceptionFormat "FULL"
+	  stackTraceFilters "ENTRY_POINT"
 	  maxGranularity 3
 	}
 	systemProperty("java.awt.headless", "true")
