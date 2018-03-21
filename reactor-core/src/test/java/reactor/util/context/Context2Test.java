@@ -93,10 +93,9 @@ public class Context2Test {
 	}
 
 	@Test
-	public void get() throws Exception {
-		//TODO meh, necessary cast to Object
-		assertThat((Object) c.get(1)).isEqualTo("A");
-		assertThat((Object) c.get(2)).isEqualTo("B");
+	public void get() {
+		assertThat((String) c.get(1)).isEqualTo("A");
+		assertThat((String) c.get(2)).isEqualTo("B");
 	}
 
 	@Test

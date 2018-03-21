@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.junit.Test;
 import reactor.core.Scannable;
@@ -44,8 +45,9 @@ public class MonoNameTest {
 
 		assertThat(test.scan(Scannable.Attr.NAME)).isEqualTo("foo");
 
-		//noinspection unchecked
-		assertThat(test.scan(Scannable.Attr.TAGS)).containsExactlyInAnyOrder(tag1, tag2);
+		final Stream<Tuple2<String, String>> scannedTags = test.scan(Scannable.Attr.TAGS);
+		assertThat(scannedTags).isNotNull();
+		assertThat(scannedTags.iterator()).containsExactlyInAnyOrder(tag1, tag2);
 	}
 
 	@Test

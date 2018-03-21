@@ -231,14 +231,13 @@ public abstract class ParallelOperatorTest<I, O>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	protected ParallelFlux<I> sourceScalar(OperatorScenario<I, ParallelFlux<I>, O, ParallelFlux<O>> scenario) {
 		if(scenario.producerCount() == 0){
-			return (ParallelFlux<I>)Flux.empty()
-			                            .parallel(4);
+			return Flux.<I>empty()
+					.parallel(4);
 		}
-		return (ParallelFlux<I>)Flux.just(scenario.producingMapper.apply(0))
-		                            .parallel(4);
+		return Flux.<I>just(scenario.producingMapper.apply(0))
+				.parallel(4);
 	}
 
 	@Override

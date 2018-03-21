@@ -45,6 +45,7 @@ public class ParallelSourceTest {
 
 	@Test
 	public void scanMainSubscriber() {
+		@SuppressWarnings("unchecked")
 		CoreSubscriber<String>[] subs = new CoreSubscriber[1];
 		subs[0] = new LambdaSubscriber<>(null, e -> {}, null, null);
 		ParallelSource.ParallelSourceMain<String> test = new ParallelSource.ParallelSourceMain<>(
@@ -75,6 +76,7 @@ public class ParallelSourceTest {
 
 	@Test
 	public void scanInnerSubscriber() {
+		@SuppressWarnings("unchecked")
 		CoreSubscriber<String>[] subs = new CoreSubscriber[2];
 		subs[0] = new LambdaSubscriber<>(null, e -> {}, null, null);
 		subs[1] = new LambdaSubscriber<>(null, e -> {}, null, null);

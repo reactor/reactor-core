@@ -141,12 +141,11 @@ public class Context4Test {
 	}
 
 	@Test
-	public void get() throws Exception {
-		//TODO meh, necessary cast to Object
-		assertThat((Object) c.get(1)).isEqualTo("A");
-		assertThat((Object) c.get(2)).isEqualTo("B");
-		assertThat((Object) c.get(3)).isEqualTo("C");
-		assertThat((Object) c.get(4)).isEqualTo("D");
+	public void get() {
+		assertThat((String) c.get(1)).isEqualTo("A");
+		assertThat((String) c.get(2)).isEqualTo("B");
+		assertThat((String) c.get(3)).isEqualTo("C");
+		assertThat((String) c.get(4)).isEqualTo("D");
 	}
 
 	@Test

@@ -289,6 +289,8 @@ public class FluxMergeOrderedTest {
 	public void scanOperator() {
 		Flux<Integer> source1 = Flux.just(1).map(Function.identity()); //scannable
 		Flux<Integer> source2 = Flux.just(2);
+
+		@SuppressWarnings("unchecked") //safe varargs
 		Scannable fmo = new FluxMergeOrdered<>(123, Queues.small(), Comparator.naturalOrder(), source1, source2);
 
 		assertThat(fmo.scan(Scannable.Attr.PARENT)).isSameAs(source1);
@@ -363,7 +365,11 @@ public class FluxMergeOrderedTest {
 				new FluxMergeOrdered.MergeOrderedMainProducer<>(actual, Comparator.naturalOrder(), 123, 4);
 
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> test.subscribe(new Publisher[3]))
+				.isThrownBy(() -> {
+					@SuppressWarnings("unchecked")
+					final Publisher<Integer>[] sources = new Publisher[3];
+					test.subscribe(sources);
+				})
 				.withMessage("must subscribe with 4 sources");
 	}
 
@@ -404,6 +410,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void normal1() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1), Flux.just(2))
@@ -413,6 +420,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void normal2() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
@@ -422,6 +430,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void normal3() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6))
@@ -431,6 +440,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void normal4() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7), Flux.just(1, 3, 5, 7))
@@ -440,6 +450,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void normal1Hidden() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1).hide(), Flux.just(2).hide())
@@ -449,6 +460,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void normal2Hidden() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7).hide(), Flux.just(2, 4, 6, 8).hide())
@@ -458,6 +470,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void normal3Hidden() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7).hide(), Flux.just(2, 4, 6).hide())
@@ -467,6 +480,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void normal4Hidden() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7).hide(), Flux.just(1, 3, 5, 7).hide())
@@ -476,6 +490,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void backpressure1() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
@@ -486,6 +501,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void backpressure2() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1), Flux.just(2))
@@ -496,6 +512,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void backpressure3() {
 		new FluxMergeOrdered<>(1, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
@@ -506,6 +523,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void take() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7), Flux.just(2, 4, 6, 8))
@@ -516,6 +534,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void firstErrorsDelayed() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.error(new IOException("boom")),
@@ -526,6 +545,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void firstErrorsBackpressuredDelayed() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.error(new IOException("boom")),
@@ -537,6 +557,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void secondErrorsDelayed() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7),
@@ -548,6 +569,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void secondErrorsBackpressuredDelayed() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1, 3, 5, 7),
@@ -583,6 +605,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void fusedThrowsInDrainLoopDelayed() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1).map(v -> { throw new IllegalArgumentException("boom"); }),
@@ -593,6 +616,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void fusedThrowsInPostEmissionCheckDelayed() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1).map(v -> { throw new IllegalArgumentException("boom"); }),
@@ -604,6 +628,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void nullSecond() {
 		FluxMergeOrdered<Integer> test = new FluxMergeOrdered<>(2, Queues.small(),
 				Comparator.naturalOrder(),
@@ -614,6 +639,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void nullFirst() {
 		FluxMergeOrdered<Integer> test = new FluxMergeOrdered<>(2, Queues.small(),
 				Comparator.naturalOrder(),
@@ -624,6 +650,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void comparatorThrows() {
 		new FluxMergeOrdered<>(2, Queues.small(),
 				(a, b) -> { throw new IllegalArgumentException("boom"); },
@@ -633,6 +660,7 @@ public class FluxMergeOrderedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked") //safe varargs
 	public void naturalOrder() {
 		new FluxMergeOrdered<>(2, Queues.small(), Comparator.naturalOrder(),
 				Flux.just(1), Flux.just(2))
