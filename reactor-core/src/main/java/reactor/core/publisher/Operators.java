@@ -179,49 +179,81 @@ public abstract class Operators {
 	/**
 	 * Create a function that can be used to support a custom operator via
 	 * {@link CoreSubscriber} decoration. The function is compatible with
-	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
-	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)}
+	 * {@link Flux#transform(Function)} and {@link Mono#transform(Function)}.
 	 *
-	 * @param lifter the bifunction taking {@link Scannable} from the enclosing
-	 * publisher and consuming {@link CoreSubscriber}. It must return a receiving
-	 * {@link CoreSubscriber} that will immediately subscribe to the applied
-	 * {@link Publisher}.
+	 * @param lifter the bifunction taking the source {@link Publisher Publisher&lt;I&gt;}
+	 * and downstream {@link CoreSubscriber CoreSubscriber&lt;O&gt;}. It must return a receiving
+	 * {@link CoreSubscriber CoreSubscriber&lt;I&gt;} that will immediately subscribe to
+	 * the source {@link Publisher}.
 	 *
 	 * @param <I> the input type
 	 * @param <O> the output type
 	 *
 	 * @return a new {@link Function}
 	 */
-	public static <I, O> Function<? super Publisher<I>, ? extends Publisher<O>> lift(BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
-		return new LiftFunction<>(null, lifter);
+	public static <I, O> Function<? super Publisher<I>, ? extends Publisher<O>> lift(BiFunction<? super Publisher<I>, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+		return new LiftFunction<>(lifter);
 	}
 
 	/**
 	 * Create a function that can be used to support a custom operator via
 	 * {@link CoreSubscriber} decoration. The function is compatible with
 	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
-	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)}
+	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
+	 * as it doesn't change the type of data.
 	 *
 	 * <p>
-	 *     The function will be invoked only if the passed {@link Predicate} matches.
-	 *     Therefore the transformed type O must be the same than the input type since
-	 *     unmatched predicate will return the applied {@link Publisher}.
+	 * The function will be invoked only if the passed {@link Predicate} matches, otherwise
+	 * the source {@link Publisher} is returned as-is.
+
 	 *
-	 * @param filter the predicate to match taking {@link Scannable} from the applied
-	 * publisher to operate on
-	 * @param lifter the bifunction taking {@link Scannable} from the enclosing
-	 * publisher and consuming {@link CoreSubscriber}. It must return a receiving
-	 * {@link CoreSubscriber} that will immediately subscribe to the applied
-	 * {@link Publisher}.
+	 * @param filter the predicate to match taking the source {@link Publisher Publisher&lt;T&gt;}
+	 * @param lifter the bifunction taking the source {@link Publisher Publisher&lt;I&gt;}
+	 * and downstream {@link CoreSubscriber CoreSubscriber&lt;O&gt;}. It must return a receiving
+	 * {@link CoreSubscriber CoreSubscriber&lt;I&gt;} that will immediately subscribe to
+	 * the source {@link Publisher}.
 	 *
 	 * @param <O> the input and output type
 	 *
 	 * @return a new {@link Function}
 	 */
 	public static <O> Function<? super Publisher<O>, ? extends Publisher<O>> lift(
+			Predicate<? super Publisher<O>> filter,
+			BiFunction<? super Publisher<O>, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super O>> lifter) {
+		return new FilteringLiftFunction<>(filter, lifter);
+	}
+
+	/**
+	 * Create a function that can be used to support a custom operator via
+	 * {@link CoreSubscriber} decoration. The function is compatible with
+	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
+	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
+	 * as it doesn't change the type of data.
+	 *
+	 * <p>
+	 * The function will be invoked only if the passed {@link Predicate} matches, otherwise
+	 * the source {@link Publisher} is returned as-is.
+	 *
+	 * <p>
+	 * However, it assumes that the source {@link Publisher} is actually {@link Scannable},
+	 * that is converting it via {@link Scannable#from(Object)} will yield {@code true}
+	 * for the {@link Scannable#isScanAvailable()}. Any {@link Publisher} that isn't will
+	 * also be returned as is, without even being validated by the {@code filter}.
+	 *
+	 * @param filter the predicate to match taking the source {@link Publisher Publisher&lt;T&gt;}
+	 * @param lifter the bifunction taking the source {@link Publisher Publisher&lt;I&gt;}
+	 * and downstream {@link CoreSubscriber CoreSubscriber&lt;O&gt;}. It must return a receiving
+	 * {@link CoreSubscriber CoreSubscriber&lt;I&gt;} that will immediately subscribe to
+	 * the source {@link Publisher}.
+	 *
+	 * @param <T> the input and output type
+	 *
+	 * @return a new {@link Function}
+	 */
+	public static <T> Function<? super Publisher<T>, ? extends Publisher<T>> liftScannable(
 			Predicate<Scannable> filter,
-			BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super O>> lifter) {
-		return new LiftFunction<>(filter, lifter);
+			BiFunction<? super Publisher<T>, ? super CoreSubscriber<? super T>, ? extends CoreSubscriber<? super T>> lifter) {
+		return new FilteringLiftFunction<>(assumeScannable(filter), lifter);
 	}
 
 	/**
@@ -1817,32 +1849,68 @@ public abstract class Operators {
 		}
 	}
 
+	static final <T> Predicate<Publisher<T>> assumeScannable(Predicate<Scannable> filter) {
+		return publisher -> {
+			Scannable scannable = Scannable.from(publisher);
+			if (scannable.isScanAvailable()) {
+				return filter.test(scannable);
+			}
+			return false;
+		};
+	}
+
 	final static class LiftFunction<I, O>
 			implements Function<Publisher<I>, Publisher<O>> {
 
-		final Predicate<Scannable> filter;
-
-		final BiFunction<Scannable, ? super CoreSubscriber<? super O>,
+		final BiFunction<? super Publisher<I>, ? super CoreSubscriber<? super O>,
 				? extends CoreSubscriber<? super I>> lifter;
 
-		LiftFunction(@Nullable Predicate<Scannable> filter,
-				BiFunction<Scannable, ? super CoreSubscriber<? super O>,
+		LiftFunction(BiFunction<? super Publisher<I>, ? super CoreSubscriber<? super O>,
 				? extends CoreSubscriber<? super I>> lifter) {
-			this.filter = filter;
 			this.lifter = Objects.requireNonNull(lifter, "lifter");
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
 		public Publisher<O> apply(Publisher<I> publisher) {
-			if (filter != null && !filter.test(Scannable.from(publisher))) {
-				return (Publisher<O>)publisher;
-			}
 			if (publisher instanceof Mono) {
 				return new MonoLift<>(publisher, lifter);
 			}
 			if (publisher instanceof ParallelFlux) {
 				return new ParallelLift<>((ParallelFlux<I>)publisher, lifter);
+			}
+
+			return new FluxLift<>(publisher, lifter);
+		}
+	}
+
+	final static class FilteringLiftFunction<T>
+			implements Function<Publisher<T>, Publisher<T>> {
+
+		final Predicate<? super Publisher<T>> filter;
+
+		final BiFunction<? super Publisher<T>, ? super CoreSubscriber<? super T>,
+				? extends CoreSubscriber<? super T>> lifter;
+
+		FilteringLiftFunction(Predicate<? super Publisher<T>> filter,
+				BiFunction<? super Publisher<T>,
+						? super CoreSubscriber<? super T>,
+						? extends CoreSubscriber<? super T>> lifter) {
+			this.filter = filter;
+			this.lifter = Objects.requireNonNull(lifter, "lifter");
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public Publisher<T> apply(Publisher<T> publisher) {
+			if (filter != null && !filter.test(publisher)) {
+				return publisher;
+			}
+			if (publisher instanceof Mono) {
+				return new MonoLift<>(publisher, lifter);
+			}
+			if (publisher instanceof ParallelFlux) {
+				return new ParallelLift<>((ParallelFlux<T>)publisher, lifter);
 			}
 
 			return new FluxLift<>(publisher, lifter);
