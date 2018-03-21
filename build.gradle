@@ -174,7 +174,6 @@ configure(subprojects) { p ->
 	include '**/*Tests.*'
 	include '**/*Test.*'
 	include '**/*Spec.*'
-
   }
 
   //all test tasks will show FAILED/PASSED for each test method,
@@ -194,6 +193,17 @@ configure(subprojects) { p ->
 	scanForTestClasses = false
 	exclude '**/*Abstract*.*'
 	exclude '**/*OperatorTest*.*'
+
+	//allow re-run of failed tests only without special test tasks failing
+	// because the filter is too restrictive
+	filter.setFailOnNoMatchingTests(false)
+
+	//display intermediate results for special test tasks
+	afterSuite { desc, result ->
+	  if (!desc.parent) { // will match the outermost suite
+		println('\n' + "${desc} Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)")
+	  }
+	}
   }
 
   // now that kotlin-gradle-plugin 1.1.60 is out with fix for https://youtrack.jetbrains.com/issue/KT-17564
