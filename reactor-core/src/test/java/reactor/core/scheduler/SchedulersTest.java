@@ -1108,7 +1108,7 @@ public class SchedulersTest {
 		}
 
 		@Override
-		public void close() throws Exception {
+		public void close() {
 			shutdown();
 		}
 	}

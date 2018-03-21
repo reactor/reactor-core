@@ -90,7 +90,7 @@ public class FluxJustTest {
 
     @Test
     public void scanOperator() {
-    	FluxJust s = new FluxJust("foo");
+    	FluxJust<String> s = new FluxJust<>("foo");
     	assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
     }
 
