@@ -136,8 +136,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 
@@ -152,8 +152,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -167,8 +167,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -183,8 +183,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -192,7 +192,7 @@ public class ScannableTest {
 		final Flux<Integer> flux = Flux.range(1, 10)
 		                               .map(i -> i + 10);
 
-		assertThat(Scannable.from(flux).sequenceName())
+		assertThat(Scannable.from(flux).name())
 				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}
@@ -273,8 +273,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 
@@ -289,8 +289,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -304,8 +304,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -320,8 +320,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -329,7 +329,7 @@ public class ScannableTest {
 		final Mono<Integer> flux = Mono.just(1)
 		                               .map(i -> i + 10);
 
-		assertThat(Scannable.from(flux).sequenceName())
+		assertThat(Scannable.from(flux).name())
 				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}
@@ -410,8 +410,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -425,8 +425,8 @@ public class ScannableTest {
 		                             .name("multiple of 3 100s")
 		                             .hide();
 
-		assertThat(Scannable.from(named1).sequenceName()).isEqualTo("100s");
-		assertThat(Scannable.from(named2).sequenceName()).isEqualTo("multiple of 3 100s");
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
 	}
 
 	@Test
@@ -434,7 +434,7 @@ public class ScannableTest {
 		final ParallelFlux<Integer> flux = ParallelFlux.from(Mono.just(1))
 		                               .map(i -> i + 10);
 
-		assertThat(Scannable.from(flux).sequenceName())
+		assertThat(Scannable.from(flux).name())
 				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}

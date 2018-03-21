@@ -376,20 +376,8 @@ public interface Scannable {
 	 * first one that is reachable.
 	 *
 	 * @return the name of the first parent that has one defined (including this scannable)
-	 * @deprecated use {@link #sequenceName()} instead
 	 */
-	@Deprecated
 	default String name() {
-		return sequenceName();
-	}
-
-	/**
-	 * Check this {@link Scannable} and its {@link #parents()} for a name an return the
-	 * first one that is reachable.
-	 *
-	 * @return the name of the first parent that has one defined (including this scannable)
-	 */
-	default String sequenceName() {
 		String thisName = this.scan(Attr.NAME);
 		if (thisName != null) {
 			return thisName;

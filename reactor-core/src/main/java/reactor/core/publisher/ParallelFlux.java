@@ -727,7 +727,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Give a name to this sequence, which can be retrieved using {@link Scannable#sequenceName()}
+	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
 	 * as long as this is the first reachable {@link Scannable#parents()}.
 	 *
 	 * @param name a name for the sequence
