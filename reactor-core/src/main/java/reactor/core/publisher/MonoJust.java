@@ -20,13 +20,13 @@ import java.util.Objects;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoJust<T> 
-extends Mono<T>
-		implements Fuseable.ScalarCallable<T>, Fuseable {
+final class MonoJust<T> extends Mono<T>
+		implements Fuseable.ScalarCallable<T>, Fuseable, Scannable {
 
 	final T value;
 
@@ -52,5 +52,11 @@ extends Mono<T>
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		actual.onSubscribe(Operators.scalarSubscription(actual, value));
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.BUFFERED) return 1;
+		return null;
 	}
 }

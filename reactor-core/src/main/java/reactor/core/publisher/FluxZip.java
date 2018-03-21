@@ -50,7 +50,7 @@ import static reactor.core.Fuseable.SYNC;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxZip<T, R> extends Flux<R> {
+final class FluxZip<T, R> extends Flux<R> implements Scannable {
 
 	final Publisher<? extends T>[] sources;
 
@@ -325,6 +325,12 @@ final class FluxZip<T, R> extends Flux<R> {
 
 			coordinator.subscribe(srcs, n);
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PREFETCH) return prefetch;
+		return null;
 	}
 
 	static final class ZipSingleCoordinator<T, R> extends Operators.MonoSubscriber<R, R> {

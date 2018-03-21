@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +30,7 @@ import reactor.core.Scannable;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -128,6 +131,21 @@ public class FluxIterableTest {
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	@Test
+	public void scanOperator() {
+		Iterable<String> collection = Arrays.asList("A", "B", "C");
+		Iterable<Object> tuple = Tuples.of("A", "B");
+		Iterable<String> other = () -> Arrays.asList("A", "B", "C", "D").iterator();
+
+		FluxIterable<String> collectionFlux = new FluxIterable<>(collection);
+		FluxIterable<Object> tupleFlux = new FluxIterable<>(tuple);
+		FluxIterable<String> otherFlux = new FluxIterable<>(other);
+
+		assertThat(collectionFlux.scan(Scannable.Attr.BUFFERED)).as("collection").isEqualTo(3);
+		assertThat(tupleFlux.scan(Scannable.Attr.BUFFERED)).as("tuple").isEqualTo(2);
+		assertThat(otherFlux.scan(Scannable.Attr.BUFFERED)).as("other").isEqualTo(0);
 	}
 
 	@Test

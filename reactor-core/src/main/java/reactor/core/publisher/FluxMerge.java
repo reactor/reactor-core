@@ -22,13 +22,14 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Merges a fixed array of Publishers.
  * @param <T> the element type of the publishers
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMerge<T> extends Flux<T> {
+final class FluxMerge<T> extends Flux<T> implements Scannable {
 
 	final Publisher<? extends T>[] sources;
 	
@@ -97,6 +98,14 @@ final class FluxMerge<T> extends Flux<T> {
 		}
 		
 		return new FluxMerge<>(newArray, delayError, mc, newMainQueue, prefetch, innerQueueSupplier);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.DELAY_ERROR) return delayError;
+		if (key == Attr.PREFETCH) return prefetch;
+
+		return null;
 	}
 
 }

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -30,7 +31,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxErrorOnRequest<T> extends Flux<T> {
+final class FluxErrorOnRequest<T> extends Flux<T> implements Scannable {
 
 	final Throwable error;
 
@@ -41,6 +42,11 @@ final class FluxErrorOnRequest<T> extends Flux<T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		actual.onSubscribe(new ErrorSubscription(actual, error));
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 	static final class ErrorSubscription implements InnerProducer {

@@ -21,7 +21,7 @@ import java.util.Objects;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-
+import reactor.core.Scannable;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -29,7 +29,8 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoError<T> extends Mono<T> implements Fuseable.ScalarCallable{
+final class MonoError<T> extends Mono<T>
+		implements Fuseable.ScalarCallable, Scannable {
 
 	final Throwable error;
 
@@ -58,5 +59,10 @@ final class MonoError<T> extends Mono<T> implements Fuseable.ScalarCallable{
 			throw ((Exception)error);
 		}
 		throw Exceptions.propagate(error);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 }

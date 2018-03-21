@@ -20,6 +20,7 @@ import java.time.Duration;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -30,9 +31,8 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoEmpty 
-extends Mono<Object>
-		implements Fuseable.ScalarCallable<Object> {
+final class MonoEmpty extends Mono<Object>
+		implements Fuseable.ScalarCallable<Object>, Scannable {
 
 	static final Publisher<Object> INSTANCE = new MonoEmpty();
 
@@ -72,5 +72,10 @@ extends Mono<Object>
 	@Nullable
 	public Object block() {
 		return null;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 }
