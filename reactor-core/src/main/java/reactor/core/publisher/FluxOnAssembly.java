@@ -451,8 +451,18 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Override
+		public String toString() {
+			return snapshotStack.stackFirst().trim();
+		}
+
+		@Override
 		public String operatorName() {
-			return "Subscriber to " + snapshotStack.stackFirst().trim();
+			return toString();
+		}
+
+		@Override
+		public boolean isMetaData() {
+			return true;
 		}
 
 		@Override
@@ -579,5 +589,12 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 }
-interface AssemblyOp {
+
+interface AssemblyOp extends Scannable {
+
+	@Override
+	default boolean isMetaData() {
+		return true;
+	}
+
 }

@@ -31,6 +31,6 @@ interface InnerConsumer<I>
 
 	@Override
 	default String operatorName() {
-		return getClass().getSimpleName();
+		return stripOperatorName(getClass().getSimpleName());
 	}
 }

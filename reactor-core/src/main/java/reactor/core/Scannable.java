@@ -16,13 +16,18 @@
 
 package reactor.core;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Spliterators;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
@@ -343,17 +348,6 @@ public interface Scannable {
 	}
 
 	/**
-	 * Return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
-	 * chain (downward), current {@link Scannable} included.
-	 *
-	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
-	 * chain (downward, current {@link Scannable} included).
-	 */
-	default Stream<? extends Scannable> thisAndActuals() {
-		return Stream.concat(Stream.of(this), actuals());
-	}
-
-	/**
 	 * Return a {@link Stream} of referenced inners (flatmap, multicast etc)
 	 *
 	 * @return a {@link Stream} of referenced inners (flatmap, multicast etc)
@@ -394,14 +388,61 @@ public interface Scannable {
 	 * @return the default operatorName of this operator
 	 */
 	default String operatorName() {
-		String stripped = toString()
-				.replaceAll("Parallel|Flux|Mono|Publisher", "")
-				.replaceAll("Fuseable|Operator", "");
+		return stripOperatorName(toString());
+	}
+
+	//TODO place in a util package?
+	default String stripOperatorName(String name) {
+		if (name.contains("@") && name.contains("$")) {
+			name = name.substring(0, name.indexOf('$'));
+			name = name.substring(name.lastIndexOf('.') + 1);
+		}
+		String stripped = name
+				.replaceAll("Parallel|Flux|Mono|Publisher|Subscriber", "")
+				.replaceAll("Fuseable|Operator|Conditional", "");
 
 		if(stripped.length() > 0) {
 			return stripped.substring(0, 1).toLowerCase() + stripped.substring(1);
 		}
 		return stripped;
+	}
+
+	/**
+	 * List the operator names in the chain of operators (including the current element),
+	 * in their assembly order:
+	 * <ol>
+	 *     <li>if the current Scannable is a {@link Subscriber}, the chain is built from
+	 *     the {@link #actuals()} (downstream of the subscriber).</li>
+	 *     <li>otherwise it is built by walking the upstream hierarchy ({@link #parents()})
+	 *     which assumes that the scannable is an operator.</li>
+	 * </ol>
+	 *
+	 * @return the list of {@link #operatorName()} for each discovered operator in the chain
+	 */
+	default List<String> operatorChain() {
+		List<Scannable> chain = new ArrayList<>();
+		chain.addAll(parents().collect(Collectors.toList()));
+		Collections.reverse(chain);
+		chain.add(this);
+		chain.addAll(actuals().collect(Collectors.toList()));
+
+		List<String> chainNames = new ArrayList<>(chain.size());
+		for (int i = 0; i < chain.size(); i++) {
+			Scannable step = chain.get(i);
+			Scannable stepAfter = null;
+			if (i < chain.size() - 1) {
+				stepAfter = chain.get(i + 1);
+			}
+			if (stepAfter != null && stepAfter.isMetaData()) {
+				chainNames.add(step.operatorName() + " ⇢ " + stepAfter.operatorName());
+				i++;
+			}
+			else {
+				chainNames.add(step.operatorName());
+			}
+		}
+
+		return chainNames;
 	}
 
 	/**
@@ -416,14 +457,15 @@ public interface Scannable {
 	}
 
 	/**
-	 * Return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
-	 * chain (upward), current {@link Scannable} included.
+	 * Indicate that for some purposes a {@link Scannable} should be used as additional
+	 * source of information about the next scannable in the chain (its {@link #actuals()}.
+	 * Notably, for operators this indicates assembly-time captured metada.
 	 *
-	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
-	 * chain (upward, current {@link Scannable} included).
+	 * @return true if this {@link Scannable} adds information to the next {@link Scannable}
+	 * in the chain, false otherwise.
 	 */
-	default Stream<? extends Scannable> thisAndParents() {
-		return Stream.concat(Stream.of(this), parents());
+	default boolean isMetaData() {
+		return false;
 	}
 
 	/**
