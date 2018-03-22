@@ -80,6 +80,13 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.ACTUAL_METADATA) return true;
+
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public String operatorName() {
 		return stacktrace.stackFirst().trim();
 	}

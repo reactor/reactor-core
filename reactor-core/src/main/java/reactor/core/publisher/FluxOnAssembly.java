@@ -88,6 +88,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.ACTUAL_METADATA) return true;
+
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public String toString() {
 		return snapshotStack.stackFirst();
 	}
@@ -446,6 +453,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL_METADATA) return true;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -458,11 +466,6 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		@Override
 		public String operatorName() {
 			return toString();
-		}
-
-		@Override
-		public boolean isMetaData() {
-			return true;
 		}
 
 		@Override
@@ -590,11 +593,4 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 }
 
-interface AssemblyOp extends Scannable {
-
-	@Override
-	default boolean isMetaData() {
-		return true;
-	}
-
-}
+interface AssemblyOp {}

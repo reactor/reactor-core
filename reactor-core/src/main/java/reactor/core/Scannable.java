@@ -78,6 +78,16 @@ public interface Scannable {
 				Scannable::from);
 
 		/**
+		 * Indicate that for some purposes a {@link Scannable} should be used as additional
+		 * source of information about a contiguous {@link Scannable} in the chain.
+		 * <p>
+		 * For example {@link Scannable#operatorChain()} uses this to collate the
+		 * {@link Scannable#operatorName() operatorName} of an assembly trace to its
+		 * wrapped operator (the one before it in the assembly chain).
+		 */
+		public static final Attr<Boolean> ACTUAL_METADATA = new Attr<>(false);
+
+		/**
 		 * A {@link Integer} attribute implemented by components with a backlog
 		 * capacity. It will expose current queue size or similar related to
 		 * user-provided held data. Note that some operators and processors CAN keep
@@ -392,30 +402,15 @@ public interface Scannable {
 		return Traces.stripOperatorName(toString());
 	}
 
-	//TODO place in a util package?
-	default String stripOperatorName(String name) {
-		if (name.contains("@") && name.contains("$")) {
-			name = name.substring(0, name.indexOf('$'));
-			name = name.substring(name.lastIndexOf('.') + 1);
-		}
-		String stripped = name
-				.replaceAll("Parallel|Flux|Mono|Publisher|Subscriber", "")
-				.replaceAll("Fuseable|Operator|Conditional", "");
-
-		if(stripped.length() > 0) {
-			return stripped.substring(0, 1).toLowerCase() + stripped.substring(1);
-		}
-		return stripped;
-	}
-
 	/**
 	 * List the operator names in the chain of operators (including the current element),
-	 * in their assembly order:
+	 * in their assembly order. This traverses the chain of operators both upstream and
+	 * downstream.
 	 * <ol>
-	 *     <li>if the current Scannable is a {@link Subscriber}, the chain is built from
-	 *     the {@link #actuals()} (downstream of the subscriber).</li>
-	 *     <li>otherwise it is built by walking the upstream hierarchy ({@link #parents()})
-	 *     which assumes that the scannable is an operator.</li>
+	 *     <li>if the current Scannable is a {@link Subscriber}, the chain can reach down to
+	 *     the final subscriber, provided it is {@link Scannable} (eg. lambda subscriber)</li>
+	 *     <li>if it is an operator the chain can reach up to the source, if it is a Reactor
+	 *     source (that is {@link Scannable}).</li>
 	 * </ol>
 	 *
 	 * @return the list of {@link #operatorName()} for each discovered operator in the chain
@@ -434,7 +429,8 @@ public interface Scannable {
 			if (i < chain.size() - 1) {
 				stepAfter = chain.get(i + 1);
 			}
-			if (stepAfter != null && stepAfter.isMetaData()) {
+			//noinspection ConstantConditions
+			if (stepAfter != null && stepAfter.scan(Attr.ACTUAL_METADATA)) {
 				chainNames.add(step.operatorName() + " ⇢ " + stepAfter.operatorName());
 				i++;
 			}
@@ -455,18 +451,6 @@ public interface Scannable {
 	 */
 	default Stream<? extends Scannable> parents() {
 		return Attr.recurse(this, Attr.PARENT);
-	}
-
-	/**
-	 * Indicate that for some purposes a {@link Scannable} should be used as additional
-	 * source of information about the next scannable in the chain (its {@link #actuals()}.
-	 * Notably, for operators this indicates assembly-time captured metada.
-	 *
-	 * @return true if this {@link Scannable} adds information to the next {@link Scannable}
-	 * in the chain, false otherwise.
-	 */
-	default boolean isMetaData() {
-		return false;
 	}
 
 	/**

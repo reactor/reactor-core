@@ -119,6 +119,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.ACTUAL_METADATA) return true;
 
 		return null;
 	}

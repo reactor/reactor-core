@@ -1,5 +1,21 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,20 +37,10 @@ import reactor.core.Scannable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ParallelFluxOnAssemblyTest {
+public class FluxCallableOnAssemblyTest {
 
 	@Test
-	public void parallelism() {
-		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source);
-
-		assertThat(test.parallelism())
-				.isEqualTo(3)
-				.isEqualTo(source.parallelism());
-	}
-
-	@Test
-	public void scanUnsafe() {
+	public void scanOperator() {
 		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty());
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
@@ -42,29 +48,14 @@ public class ParallelFluxOnAssemblyTest {
 
 	@Test
 	public void operatorNameAndToString() {
-		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, "foo");
+		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty());
 
 		//the "null" part is due to the test being in the reactor.core.publisher package
 		assertThat(test.toString())
-				.isEqualTo("\tParallelFluxOnAssemblyTest.operatorNameAndToStringnull");
+				.isEqualTo("\tFluxCallableOnAssemblyTest.operatorNameAndToStringnull");
 
 		//the "null" part is due to the test being in the reactor.core.publisher package
 		assertThat(test.operatorName())
-				.isEqualTo("ParallelFluxOnAssemblyTest.operatorNameAndToStringnull");
+				.isEqualTo("FluxCallableOnAssemblyTest.operatorNameAndToStringnull");
 	}
-
-	@Test
-	public void scanOperator() {
-		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source);
-
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
-		assertThat(test.scan(Scannable.Attr.PREFETCH))
-				.isEqualTo(256)
-				.isEqualTo(source.getPrefetch());
-
-		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
-	}
-
 }

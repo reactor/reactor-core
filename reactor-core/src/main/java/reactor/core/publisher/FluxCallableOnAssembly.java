@@ -58,6 +58,13 @@ final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.ACTUAL_METADATA) return true;
+
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public String operatorName() {
 		return stacktrace.stackFirst().trim();
 	}

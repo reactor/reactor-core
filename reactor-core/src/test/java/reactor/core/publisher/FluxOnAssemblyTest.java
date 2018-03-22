@@ -273,4 +273,27 @@ public class FluxOnAssemblyTest {
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
     }
+
+	@Test
+	public void scanOperator() {
+		Flux<?> source = Flux.empty();
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(source);
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(source);
+	}
+
+	@Test
+	public void operatorNameAndToString() {
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty());
+
+		//the "null" part is due to the test being in the reactor.core.publisher package
+		assertThat(test.toString())
+				.isEqualTo("\tFluxOnAssemblyTest.operatorNameAndToStringnull");
+
+		//the "null" part is due to the test being in the reactor.core.publisher package
+		assertThat(test.operatorName())
+				.isEqualTo("FluxOnAssemblyTest.operatorNameAndToStringnull");
+	}
 }
