@@ -31,6 +31,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
+import reactor.util.debug.Traces;
 import reactor.util.function.Tuple2;
 
 /**
@@ -388,7 +389,7 @@ public interface Scannable {
 	 * @return the default operatorName of this operator
 	 */
 	default String operatorName() {
-		return stripOperatorName(toString());
+		return Traces.stripOperatorName(toString());
 	}
 
 	//TODO place in a util package?

@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.util.debug.Traces;
 
 /**
  *
@@ -31,6 +32,6 @@ interface InnerConsumer<I>
 
 	@Override
 	default String operatorName() {
-		return stripOperatorName(getClass().getSimpleName());
+		return Traces.stripOperatorName(getClass().getSimpleName());
 	}
 }
