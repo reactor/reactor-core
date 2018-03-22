@@ -44,7 +44,7 @@ import reactor.util.concurrent.Queues;
  * @author Simon Baslé
  */
 //source: http://akarnokd.blogspot.fr/2017/09/java-9-flow-api-ordered-merge.html
-final class FluxMergeOrdered<T> extends Flux<T> implements Scannable {
+final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 
 	final int                      prefetch;
 	final Supplier<Queue<T>>       queueSupplier;

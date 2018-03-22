@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 
 /**
  * Represents an never publisher which only calls onSubscribe.
@@ -26,7 +25,8 @@ import reactor.core.Scannable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoNever extends Mono<Object> implements Scannable {
+final class MonoNever
+extends Mono<Object> implements SourceProducer<Object>  {
 
 	static final Mono<Object> INSTANCE = new MonoNever();
 

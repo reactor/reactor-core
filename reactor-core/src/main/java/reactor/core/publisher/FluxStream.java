@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 
 /**
  * Emits the contents of a Stream source.
@@ -32,7 +31,7 @@ import reactor.core.Scannable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxStream<T> extends Flux<T> implements Fuseable, Scannable {
+final class FluxStream<T> extends Flux<T> implements Fuseable, SourceProducer<T> {
 
 	final Supplier<? extends Stream<? extends T>> streamSupplier;
 

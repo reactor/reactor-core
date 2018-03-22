@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -39,7 +38,8 @@ import reactor.util.context.Context;
  * @param <S> the custom state per subscriber
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxGenerate<T, S> extends Flux<T> implements Fuseable, Scannable {
+final class FluxGenerate<T, S>
+extends Flux<T> implements Fuseable, SourceProducer<T> {
 
 
 	static final Callable EMPTY_CALLABLE = () -> null;

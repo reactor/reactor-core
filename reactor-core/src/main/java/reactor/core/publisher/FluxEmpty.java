@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -29,7 +28,7 @@ import reactor.util.annotation.Nullable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxEmpty extends Flux<Object>
-		implements Fuseable.ScalarCallable<Object>, Scannable {
+		implements Fuseable.ScalarCallable<Object>, SourceProducer<Object> {
 
 	private static final Flux<Object> INSTANCE = new FluxEmpty();
 

@@ -32,7 +32,7 @@ import reactor.util.annotation.Nullable;
  * }
  * @param <I> delegate {@link Publisher} type
  */
-final class MonoSource<I> extends Mono<I> implements Scannable {
+final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I>  {
 
 	final Publisher<? extends I> source;
 

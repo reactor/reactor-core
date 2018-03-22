@@ -20,7 +20,6 @@ import java.util.concurrent.Callable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -28,8 +27,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the value type;
  */
-final class FluxCallable<T> extends Flux<T>
-		implements Callable<T>, Fuseable, Scannable {
+final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable, SourceProducer<T> {
 
 	final Callable<T> callable;
 

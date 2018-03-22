@@ -25,7 +25,6 @@ import java.util.function.LongConsumer;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Scannable;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -36,7 +35,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
-final class MonoCreate<T> extends Mono<T> implements Scannable {
+final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 	final Consumer<MonoSink<T>> callback;
 

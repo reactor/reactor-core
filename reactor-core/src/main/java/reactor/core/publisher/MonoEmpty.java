@@ -20,7 +20,6 @@ import java.time.Duration;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -31,8 +30,9 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoEmpty extends Mono<Object>
-		implements Fuseable.ScalarCallable<Object>, Scannable {
+final class MonoEmpty 
+extends Mono<Object>
+		implements Fuseable.ScalarCallable<Object>, SourceProducer<Object>  {
 
 	static final Publisher<Object> INSTANCE = new MonoEmpty();
 

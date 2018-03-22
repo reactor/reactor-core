@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -31,7 +30,7 @@ import reactor.core.Scannable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxConcatIterable<T> extends Flux<T> implements Scannable {
+final class FluxConcatIterable<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 

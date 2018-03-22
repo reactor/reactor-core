@@ -561,7 +561,7 @@ public class ScannableTest {
 				"lambda");
 
 		assertThat(upstream).containsExactly(
-				"source",
+				"source(FluxSource)",
 				"map ⇢ Flux.map(ScannableTest.java:526)",
 				"filter ⇢ Flux.filter(ScannableTest.java:527)",
 				"reduce ⇢ Flux.reduce(ScannableTest.java:528)");
@@ -600,7 +600,8 @@ public class ScannableTest {
 		Scannable operator = Scannable.from(m);
 		assertThat(operator.isScanAvailable()).as("operator.isScanAvailable").isTrue();
 
-		assertThat(operator.operatorChain()).containsExactly("map", "filter", "reduce", "peek");
+		assertThat(operator.operatorChain())
+				.containsExactly("source(FluxConcatArray)", "map", "filter", "reduce", "peek");
 	}
 
 	@Test
@@ -636,7 +637,7 @@ public class ScannableTest {
 		assertThat(thisOperator.operatorChain())
 				.as("from upstream")
 				.containsExactly(
-				"source",
+				"source(FluxSource)",
 				"map",
 				"filter",
 				"reduce");

@@ -21,7 +21,6 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -32,7 +31,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFirst<T> extends Mono<T> implements Scannable {
+final class MonoFirst<T> extends Mono<T> implements SourceProducer<T>  {
 
 	final Mono<? extends T>[] array;
 

@@ -21,7 +21,6 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -52,7 +51,8 @@ import reactor.util.annotation.Nullable;
  * @author Stephane Maldini
  */
 final class FluxJust<T> extends Flux<T>
-		implements Fuseable.ScalarCallable<T>, Fuseable, Scannable {
+		implements Fuseable.ScalarCallable<T>, Fuseable,
+		           SourceProducer<T> {
 
 	final T value;
 

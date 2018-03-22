@@ -50,7 +50,7 @@ import static reactor.core.Fuseable.SYNC;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxZip<T, R> extends Flux<R> implements Scannable {
+final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 	final Publisher<? extends T>[] sources;
 
