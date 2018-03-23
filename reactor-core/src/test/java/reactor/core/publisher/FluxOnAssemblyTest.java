@@ -294,6 +294,6 @@ public class FluxOnAssemblyTest {
 
 		assertThat(test.toString())
 				.isEqualTo(test.operatorName())
-				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.operatorNameAndToString(FluxOnAssemblyTest.java:294)");
+				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.operatorNameAndToString(FluxOnAssemblyTest.java:293)");
 	}
 }
