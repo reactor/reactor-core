@@ -25,6 +25,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.debug.Traces;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -84,7 +85,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 	@Override
 	public String operatorName() {
-		return snapshotStack.stackFirst().trim();
+		return snapshotStack.operatorAssemblyInformation();
 	}
 
 	@Override
@@ -96,7 +97,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 	@Override
 	public String toString() {
-		return snapshotStack.stackFirst();
+		return snapshotStack.operatorAssemblyInformation();
 	}
 
 	static String getStacktrace(AssemblySnapshotException snapshotStack) {
@@ -148,6 +149,9 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					continue;
 				}
 				if (row.contains(".junit.internal")) {
+					continue;
+				}
+				if (row.contains("JUnitTestClassExecuter")) {
 					continue;
 				}
 				if (row.contains("sun.reflect")) {
@@ -225,31 +229,6 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 	}
 
-	static String extract(String source, boolean skipFirst) {
-		String usercode = null;
-		String last = null;
-		boolean first = skipFirst;
-		for (String s : source.split("\n")) {
-			if (s.isEmpty()) {
-				continue;
-			}
-			if (first) {
-				first = false;
-				continue;
-			}
-			if (!s.contains("reactor.core.publisher")) {
-				usercode = s.substring(s.indexOf('('));
-				break;
-			}
-			else {
-				last = s.replace("reactor.core.publisher.", "");
-				last = last.substring(0, last.indexOf("("));
-			}
-		}
-
-		return (last != null ? last : "") + usercode;
-	}
-
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
@@ -303,8 +282,8 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			return cached;
 		}
 
-		String stackFirst(){
-			return extract(toString(), false);
+		String operatorAssemblyInformation() {
+			return Traces.extractOperatorAssemblyInformation(toString());
 		}
 	}
 
@@ -326,7 +305,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Override
-		String stackFirst() {
+		String operatorAssemblyInformation() {
 			return toString();
 		}
 	}
@@ -345,7 +324,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			super(message);
 			//skip the "error seen by" if light (no stack)
 			if (!ase.isLight()) {
-				chainOrder.add(Tuples.of(parent.hashCode(), extract(message, true), 0));
+				chainOrder.add(Tuples.of(parent.hashCode(), Traces.extractOperatorAssemblyInformation(message, true), 0));
 			}
 		}
 
@@ -353,7 +332,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			for (int i = 0; i < indent; i++) {
 				sb.append("\t");
 			}
-			sb.append("\t|_")
+			sb.append("\t|_\t")
 			  .append(s)
 			  .append("\n");
 		}
@@ -388,7 +367,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					Tuple3<Integer, String, Integer> t =
 							Tuples.of(
 									parent.hashCode(),
-									extract(stacktrace, true), i);
+									Traces.extractOperatorAssemblyInformation(stacktrace, true), i);
 
 					if(!chainOrder.contains(t)){
 						chainOrder.add(t);
@@ -460,7 +439,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		@Override
 		public String toString() {
-			return snapshotStack.stackFirst().trim();
+			return snapshotStack.operatorAssemblyInformation();
 		}
 
 		@Override

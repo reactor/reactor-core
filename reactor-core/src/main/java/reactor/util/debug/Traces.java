@@ -16,6 +16,10 @@
 
 package reactor.util.debug;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
  * Utilities around manipulating stack traces and displaying assembly traces.
  *
@@ -41,6 +45,57 @@ public class Traces {
 			return stripped.substring(0, 1).toLowerCase() + stripped.substring(1);
 		}
 		return stripped;
+	}
+
+	public static String extractOperatorAssemblyInformation(String source) {
+		return extractOperatorAssemblyInformation(source, false);
+	}
+
+	public static String extractOperatorAssemblyInformation(String source, boolean skipFirst) {
+		String[] uncleanTraces = source.split("\n");
+		final List<String> traces = Stream.of(uncleanTraces)
+		                                  .map(String::trim)
+		                                  .filter(s -> !s.isEmpty())
+		                                  .skip(skipFirst ? 1 : 0)
+		                                  .collect(Collectors.toList());
+
+		if (traces.isEmpty()) {
+			return "[no operator assembly information]";
+		}
+
+		int i = 0;
+		while (i < traces.size() && traces.get(i).startsWith("reactor.core.publisher") && !traces.get(i).contains("Test")) {
+			i++;
+		}
+
+		String apiLine;
+		String userCodeLine;
+		if (i == 0) {
+			//no line was a reactor API line
+			apiLine = "";
+			userCodeLine = traces.get(0);
+		}
+		else if (i == traces.size()) {
+			//we skipped ALL lines, meaning they're all reactor API lines. We'll fully display the last one
+			apiLine = "";
+			userCodeLine = traces.get(i-1);
+		}
+		else {
+			//currently on user code line, previous one is API
+			apiLine = traces.get(i - 1);
+			userCodeLine = traces.get(i);
+		}
+
+		//now we want something in the form "Flux.map in user.code.Class.method(Class.java:123)"
+		if (apiLine.isEmpty()) return userCodeLine;
+
+		int linePartIndex = apiLine.indexOf('(');
+		if (linePartIndex > 0) {
+			apiLine = apiLine.substring(0, linePartIndex);
+		}
+		apiLine = apiLine.replaceFirst("reactor.core.publisher.", "");
+
+		return apiLine + " ⇢ " + userCodeLine;
 	}
 
 }

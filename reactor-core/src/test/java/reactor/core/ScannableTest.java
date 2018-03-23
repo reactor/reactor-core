@@ -16,6 +16,7 @@
 
 package reactor.core;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -539,6 +540,7 @@ public class ScannableTest {
 						downstream.addAll(thisSubscriber.operatorChain());
 					})
 					    .map(a -> a)
+					    .delayElements(Duration.ofMillis(10))
 					    .filter(a -> true)
 					    .reduce((a, b) -> b);
 
@@ -555,16 +557,18 @@ public class ScannableTest {
 		}
 
 		assertThat(downstream).containsExactly(
-				"map ⇢ Flux.map(ScannableTest.java:526)",
-				"filter ⇢ Flux.filter(ScannableTest.java:527)",
-				"reduce ⇢ Flux.reduce(ScannableTest.java:528)",
+				"Flux.map ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
+				"Flux.delayElements ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
+				"Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.reduce ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)",
 				"lambda");
 
 		assertThat(upstream).containsExactly(
 				"source(FluxSource)",
-				"map ⇢ Flux.map(ScannableTest.java:526)",
-				"filter ⇢ Flux.filter(ScannableTest.java:527)",
-				"reduce ⇢ Flux.reduce(ScannableTest.java:528)");
+				"Flux.map ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
+				"Flux.delayElements ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
+				"Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.reduce ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)");
 	}
 
 	@Test
@@ -602,6 +606,34 @@ public class ScannableTest {
 
 		assertThat(operator.operatorChain())
 				.containsExactly("source(FluxConcatArray)", "map", "filter", "reduce", "peek");
+	}
+
+	@Test
+	public void operatorChainWithCheckpoint() {
+		Flux<String> flux  = Flux.just("foo")
+		                         .checkpoint("checkpointHere", true)
+		                         .map(a -> a);
+
+		assertThat(Scannable.from(flux).operatorChain())
+				.containsExactly(
+						"source(FluxJust)",
+						"Flux.checkpoint ⇢ reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:614)",
+						"map"
+				);
+	}
+
+	@Test
+	public void operatorChainWithLightCheckpoint() {
+		Flux<String> flux  = Flux.just("foo")
+		                         .checkpoint("checkpointHere")
+		                         .map(a -> a);
+
+		assertThat(Scannable.from(flux).operatorChain())
+				.containsExactly(
+						"source(FluxJust)",
+						"checkpoint(\"checkpointHere\")",
+						"map"
+				);
 	}
 
 	@Test

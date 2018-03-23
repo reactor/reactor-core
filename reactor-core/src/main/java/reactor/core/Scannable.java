@@ -431,7 +431,7 @@ public interface Scannable {
 			}
 			//noinspection ConstantConditions
 			if (stepAfter != null && stepAfter.scan(Attr.ACTUAL_METADATA)) {
-				chainNames.add(step.operatorName() + " ⇢ " + stepAfter.operatorName());
+				chainNames.add(stepAfter.operatorName());
 				i++;
 			}
 			else {
