@@ -204,7 +204,7 @@ public class Traces {
 		else if (i == traces.size()) {
 			//we skipped ALL lines, meaning they're all reactor API lines. We'll fully display the last one
 			apiLine = "";
-			userCodeLine = traces.get(i-1);
+			userCodeLine = traces.get(i-1).replaceFirst("reactor.core.publisher.", "");
 		}
 		else {
 			//currently on user code line, previous one is API

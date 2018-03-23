@@ -20,9 +20,6 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Simon Baslé
- */
 public class TracesTest {
 
 	@Test
@@ -32,6 +29,15 @@ public class TracesTest {
 
 		assertThat(Traces.extractOperatorAssemblyInformation(stack))
 				.isEqualTo("Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)");
+	}
+
+	@Test
+	public void extractOperatorLine_reactorApiOnly() {
+		String stack = "\treactor.core.publisher.Flux.filter(Flux.java:4209)\n" +
+				"\treactor.core.publisher.Flux.map(Flux.java:4209)\n";
+
+		assertThat(Traces.extractOperatorAssemblyInformation(stack))
+				.isEqualTo("Flux.map(Flux.java:4209)");
 	}
 
 	@Test
@@ -81,7 +87,7 @@ public class TracesTest {
 		String stack = "\treactor.core.publisher.Flux.concatMap(Flux.java:3071)\n";
 
 		assertThat(Traces.extractOperatorAssemblyInformation(stack))
-				.isEqualTo("reactor.core.publisher.Flux.concatMap(Flux.java:3071)");
+				.isEqualTo("Flux.concatMap(Flux.java:3071)");
 	}
 
 	@Test
