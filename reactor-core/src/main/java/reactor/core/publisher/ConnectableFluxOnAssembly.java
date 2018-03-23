@@ -70,7 +70,7 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
-		if (key == Attr.ACTUAL_METADATA) return true;
+		if (key == Attr.ACTUAL_METADATA) return !stacktrace.checkpointed;
 
 		return null;
 	}

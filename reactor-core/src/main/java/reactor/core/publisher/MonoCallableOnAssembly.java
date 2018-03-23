@@ -92,7 +92,7 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.ACTUAL_METADATA) return true;
+		if (key == Attr.ACTUAL_METADATA) return !stacktrace.checkpointed;
 
 		return super.scanUnsafe(key);
 	}

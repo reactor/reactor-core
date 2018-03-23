@@ -89,7 +89,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.ACTUAL_METADATA) return true;
+		if (key == Attr.ACTUAL_METADATA) return !snapshotStack.checkpointed;
 
 		return super.scanUnsafe(key);
 	}
@@ -312,7 +312,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		AssemblyLightSnapshotException(@Nullable String description) {
 			super(description);
-			cached = "\"description\" : \""+description+"\"";
+			cached = "checkpoint(\""+description+"\")";
 		}
 
 		@Override
@@ -453,7 +453,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.ACTUAL_METADATA) return true;
+			if (key == Attr.ACTUAL_METADATA) return !snapshotStack.checkpointed;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

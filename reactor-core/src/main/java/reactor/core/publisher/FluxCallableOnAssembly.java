@@ -59,7 +59,7 @@ final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.ACTUAL_METADATA) return true;
+		if (key == Attr.ACTUAL_METADATA) return !stacktrace.checkpointed;
 
 		return super.scanUnsafe(key);
 	}

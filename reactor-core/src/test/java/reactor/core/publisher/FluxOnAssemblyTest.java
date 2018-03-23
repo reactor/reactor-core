@@ -255,7 +255,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void onAssemblyDescription() {
 		String fluxOnAssemblyStr = Flux.just(1).checkpoint("onAssemblyDescription").toString();
-		String expectedDescription = "\"description\" : \"onAssemblyDescription\"";
+		String expectedDescription = "checkpoint(\"onAssemblyDescription\")";
 		assertTrue("Description not included: " + fluxOnAssemblyStr, fluxOnAssemblyStr.contains(expectedDescription));
 
 		String parallelFluxOnAssemblyStr = Flux.range(1, 10).parallel(2).checkpoint("onAssemblyDescription").toString();
