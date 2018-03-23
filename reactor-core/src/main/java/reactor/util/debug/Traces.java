@@ -49,6 +49,39 @@ public class Traces {
 	}
 
 	/**
+	 * Return true for strings (usually from a stack trace element) that should be
+	 * sanitized out by {@link #stackTraceToSanitizedString(StackTraceElement[])}.
+	 *
+	 * @param stackTraceRow the row to check
+	 * @return true if it should be sanitized out, false if it should be kept
+	 */
+	public static boolean shouldSanitize(String stackTraceRow) {
+		return stackTraceRow.contains("java.util.function")
+				|| stackTraceRow.contains("reactor.core.publisher.Mono.onAssembly")
+				|| stackTraceRow.contains("reactor.core.publisher.Flux.onAssembly")
+				|| stackTraceRow.contains("reactor.core.publisher.ParallelFlux.onAssembly")
+				|| stackTraceRow.contains("reactor.core.publisher.SignalLogger")
+				|| stackTraceRow.contains("FluxOnAssembly.")
+				|| stackTraceRow.contains("MonoOnAssembly.")
+				|| stackTraceRow.contains("MonoCallableOnAssembly.")
+				|| stackTraceRow.contains("FluxCallableOnAssembly.")
+				|| stackTraceRow.contains("OnOperatorDebug")
+				|| stackTraceRow.contains("reactor.core.publisher.Hooks")
+				|| stackTraceRow.contains(".junit.runner")
+				|| stackTraceRow.contains(".junit4.runner")
+				|| stackTraceRow.contains(".junit.internal")
+				|| stackTraceRow.contains("org.gradle.api.internal")
+				|| stackTraceRow.contains("sun.reflect")
+				|| stackTraceRow.contains("useTraceAssembly")
+				|| stackTraceRow.contains("java.lang.Thread.")
+				|| stackTraceRow.contains("ThreadPoolExecutor")
+				|| stackTraceRow.contains("org.apache.catalina.")
+				|| stackTraceRow.contains("org.apache.tomcat.")
+				|| stackTraceRow.contains("com.intellij.")
+				|| stackTraceRow.contains("java.lang.reflect");
+	}
+
+	/**
 	 * Transform the {@link StackTraceElement} array from an exception into a {@link String}
 	 * representation, each element being prepended with a tabulation and appended with a
 	 * newline, unless they don't pass the {@link #shouldSanitize(String) sanitation filter}.
@@ -64,73 +97,7 @@ public class Traces {
 			if (e.getLineNumber() <= 1) {
 				continue;
 			}
-			if (row.contains("java.util.function")) {
-				continue;
-			}
-			if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
-				continue;
-			}
-			if (row.contains("reactor.core.publisher.Flux.onAssembly")) {
-				continue;
-			}
-			if (row.contains("reactor.core.publisher.ParallelFlux.onAssembly")) {
-				continue;
-			}
-			if (row.contains("reactor.core.publisher.SignalLogger")) {
-				continue;
-			}
-			if (row.contains("FluxOnAssembly.")) {
-				continue;
-			}
-			if (row.contains("MonoOnAssembly.")) {
-				continue;
-			}
-			if (row.contains("MonoCallableOnAssembly.")) {
-				continue;
-			}
-			if (row.contains("FluxCallableOnAssembly.")) {
-				continue;
-			}
-			if (row.contains("OnOperatorDebug")) {
-				continue;
-			}
-			if (row.contains("reactor.core.publisher.Hooks")) {
-				continue;
-			}
-			if (row.contains(".junit.runner")) {
-				continue;
-			}
-			if (row.contains(".junit4.runner")) {
-				continue;
-			}
-			if (row.contains(".junit.internal")) {
-				continue;
-			}
-			if (row.contains("org.gradle.api.internal")) {
-				continue;
-			}
-			if (row.contains("sun.reflect")) {
-				continue;
-			}
-			if (row.contains("useTraceAssembly")) {
-				continue;
-			}
-			if (row.contains("java.lang.Thread.")) {
-				continue;
-			}
-			if (row.contains("ThreadPoolExecutor")) {
-				continue;
-			}
-			if (row.contains("org.apache.catalina.")) {
-				continue;
-			}
-			if (row.contains("org.apache.tomcat.")) {
-				continue;
-			}
-			if (row.contains("com.intellij.")) {
-				continue;
-			}
-			if (row.contains("java.lang.reflect")) {
+			if (shouldSanitize(row)) {
 				continue;
 			}
 
