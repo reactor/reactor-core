@@ -163,6 +163,7 @@ public class TracesTest {
 		assertThat(Traces.shouldSanitize(".junit4.runner")).isTrue();
 		assertThat(Traces.shouldSanitize(".junit.internal")).isTrue();
 		assertThat(Traces.shouldSanitize("org.gradle.api.internal")).isTrue();
+		assertThat(Traces.shouldSanitize("org.gradle.internal.something")).isTrue();
 		assertThat(Traces.shouldSanitize("sun.reflect")).isTrue();
 		assertThat(Traces.shouldSanitize("useTraceAssembly")).isTrue();
 		assertThat(Traces.shouldSanitize("java.lang.Thread.")).isTrue();

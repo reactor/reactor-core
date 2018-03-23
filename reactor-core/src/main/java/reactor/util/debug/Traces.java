@@ -56,7 +56,8 @@ public class Traces {
 	 * @return true if it should be sanitized out, false if it should be kept
 	 */
 	public static boolean shouldSanitize(String stackTraceRow) {
-		return stackTraceRow.contains("java.util.function")
+		return stackTraceRow.trim().isEmpty()
+				|| stackTraceRow.contains("java.util.function")
 				|| stackTraceRow.contains("reactor.core.publisher.Mono.onAssembly")
 				|| stackTraceRow.contains("reactor.core.publisher.Flux.onAssembly")
 				|| stackTraceRow.contains("reactor.core.publisher.ParallelFlux.onAssembly")
@@ -70,7 +71,7 @@ public class Traces {
 				|| stackTraceRow.contains(".junit.runner")
 				|| stackTraceRow.contains(".junit4.runner")
 				|| stackTraceRow.contains(".junit.internal")
-				|| stackTraceRow.contains("org.gradle.api.internal")
+				|| stackTraceRow.contains("org.gradle.")
 				|| stackTraceRow.contains("sun.reflect")
 				|| stackTraceRow.contains("useTraceAssembly")
 				|| stackTraceRow.contains("java.lang.Thread.")
