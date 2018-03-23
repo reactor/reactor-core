@@ -50,12 +50,8 @@ public class FluxCallableOnAssemblyTest {
 	public void operatorNameAndToString() {
 		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty());
 
-		//the "null" part is due to the test being in the reactor.core.publisher package
 		assertThat(test.toString())
-				.isEqualTo("\tFluxCallableOnAssemblyTest.operatorNameAndToStringnull");
-
-		//the "null" part is due to the test being in the reactor.core.publisher package
-		assertThat(test.operatorName())
-				.isEqualTo("FluxCallableOnAssemblyTest.operatorNameAndToStringnull");
+				.isEqualTo(test.operatorName())
+				.isEqualTo("reactor.core.publisher.FluxCallableOnAssemblyTest.operatorNameAndToString(FluxCallableOnAssemblyTest.java:51)");
 	}
 }

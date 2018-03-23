@@ -79,8 +79,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map" +
-					"(HooksTraceTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map ⇢ reactor.HooksTraceTest.testTrace2(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -107,9 +106,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux" +
-					".share" +
-					"(HooksTraceTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux.share ⇢ reactor.HooksTraceTest.testTrace3(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -133,9 +130,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono" +
-					".flatMap" +
-					"(HooksTraceTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.flatMap ⇢ reactor.HooksTraceTest.lambda$testTraceDefer$14(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -160,7 +155,7 @@ public class HooksTraceTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage()
 			                                      .contains("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage()
-			                                      .contains("|_\tMono" + ".flatMap" + "(HooksTraceTest.java:"));
+			                                      .contains("|_\tMono.flatMap ⇢ reactor.HooksTraceTest.testTraceComposed(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -186,9 +181,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux" +
-					".flatMap" +
-					"(HooksTraceTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux.flatMap ⇢ reactor.HooksTraceTest.testTraceComposed2(HooksTraceTest.java:"));
 			return;
 		}
 		finally {

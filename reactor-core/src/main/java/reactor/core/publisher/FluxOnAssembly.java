@@ -102,89 +102,12 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 	static String getStacktrace(AssemblySnapshotException snapshotStack) {
 		StackTraceElement[] stes = snapshotStack.getStackTrace();
-		StringBuilder sb = new StringBuilder();
-		for (StackTraceElement e : stes) {
-			String row = e.toString();
-			if (!fullStackTrace) {
-				if (e.getLineNumber() <= 1) {
-					continue;
-				}
-				if (row.contains("java.util.function")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.Flux.onAssembly")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.ParallelFlux.onAssembly")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.SignalLogger")) {
-					continue;
-				}
-				if (row.contains("FluxOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("MonoOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("MonoCallableOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("FluxCallableOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("OnOperatorDebug")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.Hooks")) {
-					continue;
-				}
-				if (row.contains(".junit.runner")) {
-					continue;
-				}
-				if (row.contains(".junit4.runner")) {
-					continue;
-				}
-				if (row.contains(".junit.internal")) {
-					continue;
-				}
-				if (row.contains("JUnitTestClassExecuter")) {
-					continue;
-				}
-				if (row.contains("sun.reflect")) {
-					continue;
-				}
-				if (row.contains("useTraceAssembly")) {
-					continue;
-				}
-				if (row.contains("java.lang.Thread.")) {
-					continue;
-				}
-				if (row.contains("ThreadPoolExecutor")) {
-					continue;
-				}
-				if (row.contains("org.apache.catalina.")) {
-					continue;
-				}
-				if (row.contains("org.apache.tomcat.")) {
-					continue;
-				}
-				if (row.contains("com.intellij.")) {
-					continue;
-				}
-				if (row.contains("java.lang.reflect")) {
-					continue;
-				}
-			}
-			sb.append("\t")
-			  .append(row)
-			  .append("\n");
+		if (!fullStackTrace) {
+			return Traces.stackTraceToSanitizedString(stes);
 		}
-
-		return sb.toString();
+		else {
+			return Traces.stackTraceToString(stes);
+		}
 	}
 
 	static void fillStacktraceHeader(StringBuilder sb, Class<?> sourceClass,
@@ -207,7 +130,6 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			  .append(ase.getMessage())
 			  .append("]");
 		}
-
 		sb.append(" :\n");
 	}
 
@@ -479,19 +401,22 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			StringBuilder sb = new StringBuilder();
 			fillStacktraceHeader(sb, parent.getClass(), snapshotStack);
 			OnAssemblyException set = null;
+			if (!snapshotStack.isLight()) {
+				sb.append(snapshotStack.toString());
+			}
+
 			if (t.getSuppressed().length > 0) {
 				for (Throwable e : t.getSuppressed()) {
 					if (e instanceof OnAssemblyException) {
 						OnAssemblyException oae = ((OnAssemblyException) e);
-						oae.add(parent, sb.append(snapshotStack.toString()).toString());
+						oae.add(parent, sb.toString());
 						set = oae;
 						break;
 					}
 				}
 			}
 			if (set == null) {
-				t = Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack,
-						sb.append(snapshotStack.toString()).toString()));
+				t = Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, sb.toString()));
 			}
 			else if(snapshotStack.checkpointed) {
 				t = Exceptions.addSuppressed(t, snapshotStack);

@@ -288,12 +288,8 @@ public class FluxOnAssemblyTest {
 	public void operatorNameAndToString() {
 		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty());
 
-		//the "null" part is due to the test being in the reactor.core.publisher package
 		assertThat(test.toString())
-				.isEqualTo("\tFluxOnAssemblyTest.operatorNameAndToStringnull");
-
-		//the "null" part is due to the test being in the reactor.core.publisher package
-		assertThat(test.operatorName())
-				.isEqualTo("FluxOnAssemblyTest.operatorNameAndToStringnull");
+				.isEqualTo(test.operatorName())
+				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.operatorNameAndToString(FluxOnAssemblyTest.java:289)");
 	}
 }

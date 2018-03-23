@@ -27,6 +27,105 @@ import java.util.stream.Stream;
  */
 public class Traces {
 
+	public static String stackTraceToString(StackTraceElement[] stackTraceElements) {
+		StringBuilder sb = new StringBuilder();
+		for (StackTraceElement e : stackTraceElements) {
+			String row = e.toString();
+			sb.append("\t")
+			  .append(row)
+			  .append("\n");
+		}
+
+		return sb.toString();
+
+	}
+
+	public static String stackTraceToSanitizedString(StackTraceElement[] stackTraceElements) {
+		StringBuilder sb = new StringBuilder();
+		for (StackTraceElement e : stackTraceElements) {
+			String row = e.toString();
+
+			if (e.getLineNumber() <= 1) {
+				continue;
+			}
+			if (row.contains("java.util.function")) {
+				continue;
+			}
+			if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
+				continue;
+			}
+			if (row.contains("reactor.core.publisher.Flux.onAssembly")) {
+				continue;
+			}
+			if (row.contains("reactor.core.publisher.ParallelFlux.onAssembly")) {
+				continue;
+			}
+			if (row.contains("reactor.core.publisher.SignalLogger")) {
+				continue;
+			}
+			if (row.contains("FluxOnAssembly.")) {
+				continue;
+			}
+			if (row.contains("MonoOnAssembly.")) {
+				continue;
+			}
+			if (row.contains("MonoCallableOnAssembly.")) {
+				continue;
+			}
+			if (row.contains("FluxCallableOnAssembly.")) {
+				continue;
+			}
+			if (row.contains("OnOperatorDebug")) {
+				continue;
+			}
+			if (row.contains("reactor.core.publisher.Hooks")) {
+				continue;
+			}
+			if (row.contains(".junit.runner")) {
+				continue;
+			}
+			if (row.contains(".junit4.runner")) {
+				continue;
+			}
+			if (row.contains(".junit.internal")) {
+				continue;
+			}
+			if (row.contains("org.gradle.api.internal")) {
+				continue;
+			}
+			if (row.contains("sun.reflect")) {
+				continue;
+			}
+			if (row.contains("useTraceAssembly")) {
+				continue;
+			}
+			if (row.contains("java.lang.Thread.")) {
+				continue;
+			}
+			if (row.contains("ThreadPoolExecutor")) {
+				continue;
+			}
+			if (row.contains("org.apache.catalina.")) {
+				continue;
+			}
+			if (row.contains("org.apache.tomcat.")) {
+				continue;
+			}
+			if (row.contains("com.intellij.")) {
+				continue;
+			}
+			if (row.contains("java.lang.reflect")) {
+				continue;
+			}
+
+			sb.append("\t")
+			  .append(row)
+			  .append("\n");
+		}
+
+		return sb.toString();
+	}
+
 	/**
 	 * Strip an operator name of various prefixes and suffixes.
 	 * @param name the operator name, usually simpleClassName or fully-qualified classname.

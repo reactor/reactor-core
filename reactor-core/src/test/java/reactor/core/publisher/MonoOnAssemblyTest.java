@@ -50,13 +50,9 @@ public class MonoOnAssemblyTest {
 	public void operatorNameAndToString() {
 		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty());
 
-		//the "null" part is due to the test being in the reactor.core.publisher package
 		assertThat(test.toString())
-				.isEqualTo("\tMonoOnAssemblyTest.operatorNameAndToStringnull");
-
-		//the "null" part is due to the test being in the reactor.core.publisher package
-		assertThat(test.operatorName())
-				.isEqualTo("MonoOnAssemblyTest.operatorNameAndToStringnull");
+				.isEqualTo(test.operatorName())
+				.isEqualTo("reactor.core.publisher.MonoOnAssemblyTest.operatorNameAndToString(MonoOnAssemblyTest.java:51)");
 	}
 
 }

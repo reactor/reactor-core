@@ -50,13 +50,9 @@ public class MonoCallableOnAssemblyTest {
 	public void operatorNameAndToString() {
 		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty());
 
-		//the "null" part is due to the test being in the reactor.core.publisher package
 		assertThat(test.toString())
-				.isEqualTo("\tMonoCallableOnAssemblyTest.operatorNameAndToStringnull");
-
-		//the "null" part is due to the test being in the reactor.core.publisher package
-		assertThat(test.operatorName())
-				.isEqualTo("MonoCallableOnAssemblyTest.operatorNameAndToStringnull");
+				.isEqualTo(test.operatorName())
+				.isEqualTo("reactor.core.publisher.MonoCallableOnAssemblyTest.operatorNameAndToString(MonoCallableOnAssemblyTest.java:51)");
 	}
 
 }

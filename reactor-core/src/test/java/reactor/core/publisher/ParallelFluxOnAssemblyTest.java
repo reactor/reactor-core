@@ -45,13 +45,9 @@ public class ParallelFluxOnAssemblyTest {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
 		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, "foo");
 
-		//the "null" part is due to the test being in the reactor.core.publisher package
 		assertThat(test.toString())
-				.isEqualTo("\tParallelFluxOnAssemblyTest.operatorNameAndToStringnull");
-
-		//the "null" part is due to the test being in the reactor.core.publisher package
-		assertThat(test.operatorName())
-				.isEqualTo("ParallelFluxOnAssemblyTest.operatorNameAndToStringnull");
+				.isEqualTo(test.operatorName())
+				.isEqualTo("reactor.core.publisher.ParallelFluxOnAssemblyTest.operatorNameAndToString(ParallelFluxOnAssemblyTest.java:46)");
 	}
 
 	@Test

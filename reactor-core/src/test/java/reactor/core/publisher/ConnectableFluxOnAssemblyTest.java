@@ -46,13 +46,9 @@ public class ConnectableFluxOnAssemblyTest {
 	public void operatorNameAndToString() {
 		ConnectableFluxOnAssembly<?> test = new ConnectableFluxOnAssembly<>(Flux.empty().publish());
 
-		//the "null" part is due to the test being in the reactor.core.publisher package
 		assertThat(test.toString())
-				.isEqualTo("\tConnectableFluxOnAssemblyTest.operatorNameAndToStringnull");
-
-		//the "null" part is due to the test being in the reactor.core.publisher package
-		assertThat(test.operatorName())
-				.isEqualTo("ConnectableFluxOnAssemblyTest.operatorNameAndToStringnull");
+				.isEqualTo(test.operatorName())
+				.isEqualTo("reactor.core.publisher.ConnectableFluxOnAssemblyTest.operatorNameAndToString(ConnectableFluxOnAssemblyTest.java:47)");
 	}
 
 }
