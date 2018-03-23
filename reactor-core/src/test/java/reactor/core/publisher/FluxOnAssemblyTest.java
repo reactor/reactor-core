@@ -231,11 +231,12 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).endsWith("Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: \n"
+		assertThat(debugStack)
+				.contains("Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: \n"
 				+ "Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
 				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)\n"
-				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n"
-				+ "Error has been observed by the following operator(s):\n"
+				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n")
+				.endsWith("Error has been observed by the following operator(s):\n"
 				+ "\t|_\tParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)");
 	}
 
@@ -295,6 +296,6 @@ public class FluxOnAssemblyTest {
 
 		assertThat(test.toString())
 				.isEqualTo(test.operatorName())
-				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.operatorNameAndToString(FluxOnAssemblyTest.java:289)");
+				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.operatorNameAndToString(FluxOnAssemblyTest.java:294)");
 	}
 }
