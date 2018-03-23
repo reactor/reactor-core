@@ -251,13 +251,14 @@ to the assembly traceback. This way, the stack trace is omitted and you rely on 
 description to identify the assembly site. A `checkpoint(String)` imposes less processing
 cost than a regular `checkpoint`.
 
+//snippets are in FluxOnAssemblyTest
 `checkpoint(String)` includes "light" in its output (which can be handy when
 searching), as shown in the following example:
 
 ----
 ...
 	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
-Assembly site of producer [reactor.core.publisher.FluxElapsed] is identified by light checkpoint [light checkpoint identifier].
+Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [light checkpoint identifier].
 ----
 
 Last but not least, if you want to add a more generic description to the checkpoint but
@@ -267,12 +268,11 @@ initial message for the traceback, augmented with a `description`, as shown in t
 following example:
 
 ----
-Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
 Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] : <1>
-	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:174)
-	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescription(FluxOnAssemblyTest.java:159)
+	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)
+	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
 Error has been observed by the following operator(s):
-	|_	ParallelFlux.checkpointnull
+	|_	ParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
 ----
 <1> `descriptionCorrelation1234` is the description provided in the `checkpoint`.
 

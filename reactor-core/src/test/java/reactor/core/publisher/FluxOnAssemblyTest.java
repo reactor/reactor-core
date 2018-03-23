@@ -222,7 +222,7 @@ public class FluxOnAssemblyTest {
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .parallel(2)
 		                           .composeGroup(g -> g.map(i -> (Integer) null))
-		                           .checkpoint("foo", true)
+		                           .checkpoint("descriptionCorrelation1234", true)
 		                           .sequential()
 		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
@@ -231,7 +231,12 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [foo] :");
+		assertThat(debugStack).endsWith("Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: \n"
+				+ "Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
+				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)\n"
+				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n"
+				+ "Error has been observed by the following operator(s):\n"
+				+ "\t|_\tParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)");
 	}
 
 	@Test
@@ -240,7 +245,7 @@ public class FluxOnAssemblyTest {
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .parallel(2)
 		                           .composeGroup(g -> g.map(i -> (Integer) null))
-		                           .checkpoint("foo")
+		                           .checkpoint("light checkpoint identifier")
 		                           .sequential()
 		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
@@ -249,7 +254,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [foo].");
+		assertThat(debugStack).endsWith("Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [light checkpoint identifier].\n");
 	}
 
 	@Test
