@@ -15,7 +15,9 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -240,5 +242,65 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 		public void subscribe(CoreSubscriber<? super Throwable> actual) {
 			completionSignal.subscribe(actual);
 		}
+	}
+
+	static Function<Flux<Throwable>, Publisher<Long>> randomExponentialBackoffFunction(
+			long numRetries, Duration firstBackoff, Duration maxBackoff,
+			double jitterFactor) {
+		if (jitterFactor < 0 || jitterFactor > 1) throw new IllegalArgumentException("jitterFactor must be between 0 and 1 (default 0.5)");
+		Objects.requireNonNull(firstBackoff, "firstBackoff is required");
+		Objects.requireNonNull(maxBackoff, "maxBackoff is required");
+
+		return t -> t.index()
+		             .flatMap(t2 -> {
+			             long iteration = t2.getT1();
+
+			             if (iteration >= numRetries) {
+				             return Mono.<Long>error(new IllegalStateException("Retries exhausted: " + iteration + "/" + numRetries, t2.getT2()));
+			             }
+
+			             Duration nextBackoff;
+			             try {
+				             nextBackoff = firstBackoff.multipliedBy((long) Math.pow(2, iteration));
+				             if (nextBackoff.compareTo(maxBackoff) > 0) {
+					             nextBackoff = maxBackoff;
+				             }
+			             }
+			             catch (ArithmeticException overflow) {
+				             nextBackoff = maxBackoff;
+			             }
+
+			             //short-circuit delay == 0 case
+			             if (nextBackoff.isZero()) {
+				             return Mono.just(iteration);
+			             }
+
+			             ThreadLocalRandom random = ThreadLocalRandom.current();
+
+			             long jitterOffset;
+			             try {
+				             jitterOffset = nextBackoff.multipliedBy((long) (100 * jitterFactor))
+				                                       .dividedBy(100)
+				                                       .toMillis();
+			             }
+			             catch (ArithmeticException ae) {
+				             jitterOffset = Math.round(Long.MAX_VALUE * jitterFactor);
+			             }
+			             long lowBound = Math.max(firstBackoff.minus(nextBackoff)
+			                                                  .toMillis(), -jitterOffset);
+			             long highBound = Math.min(maxBackoff.minus(nextBackoff)
+			                                                 .toMillis(), jitterOffset);
+
+			             long jitter;
+			             if (highBound == lowBound) {
+				             if (highBound == 0) jitter = 0;
+				             else jitter = random.nextLong(highBound);
+			             }
+			             else {
+				             jitter = random.nextLong(lowBound, highBound);
+			             }
+			             Duration effectiveBackoff = nextBackoff.plusMillis(jitter);
+			             return Mono.delay(effectiveBackoff);
+		             });
 	}
 }
