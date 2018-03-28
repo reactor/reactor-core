@@ -537,7 +537,7 @@ public class ScannableTest {
 					Flux.from(s -> {
 						Scannable thisSubscriber = Scannable.from(s);
 						assertThat(thisSubscriber.isScanAvailable()).as("thisSubscriber.isScanAvailable").isTrue();
-						downstream.addAll(thisSubscriber.operatorChain());
+						thisSubscriber.operatorChain().forEach(downstream::add);
 					})
 					    .map(a -> a)
 					    .delayElements(Duration.ofMillis(10))
@@ -549,7 +549,7 @@ public class ScannableTest {
 			Scannable thisOperator = Scannable.from(m);
 			assertThat(thisOperator.isScanAvailable()).as("thisOperator.isScanAvailable").isTrue();
 
-			upstream.addAll(thisOperator.operatorChain());
+			thisOperator.operatorChain().forEach(upstream::add);
 
 		}
 		finally {
@@ -587,7 +587,7 @@ public class ScannableTest {
 		Scannable lastSubscriber = Scannable.from(subRef.get());
 		assertThat(lastSubscriber.isScanAvailable()).as("lastSubscriber.isScanAvailable").isTrue();
 
-		List<String> chain = lastSubscriber.operatorChain();
+		Stream<String> chain = lastSubscriber.operatorChain();
 
 		assertThat(chain).containsExactly("just", "map", "filter", "reduce", "peek", "lambda");
 	}
@@ -644,7 +644,7 @@ public class ScannableTest {
 				Flux.from(s -> {
 					Scannable thisSubscriber = Scannable.from(s);
 					assertThat(thisSubscriber.isScanAvailable()).as("thisSubscriber.isScanAvailable").isTrue();
-					downstream.addAll(thisSubscriber.operatorChain());
+					thisSubscriber.operatorChain().forEach(downstream::add);
 				})
 				    .map(a -> a)
 				    .filter(a -> true)

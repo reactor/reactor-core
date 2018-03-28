@@ -31,7 +31,6 @@ import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
-import reactor.util.debug.Traces;
 import reactor.util.function.Tuple2;
 
 /**
@@ -399,7 +398,26 @@ public interface Scannable {
 	 * @return the default operatorName of this operator
 	 */
 	default String operatorName() {
-		return Traces.stripOperatorName(toString());
+		// /!\ this code is duplicated in `InnerConsumer#operatorName` in order to use simple class name instead of toString
+
+		/*
+		 * Strip an operator name of various prefixes and suffixes.
+		 * @param name the operator name, usually simpleClassName or fully-qualified classname.
+		 * @return the stripped operator name
+		 */
+		String name = toString();
+		if (name.contains("@") && name.contains("$")) {
+			name = name.substring(0, name.indexOf('$'));
+			name = name.substring(name.lastIndexOf('.') + 1);
+		}
+		String stripped = name
+				.replaceAll("Parallel|Flux|Mono|Publisher|Subscriber", "")
+				.replaceAll("Fuseable|Operator|Conditional", "");
+
+		if(stripped.length() > 0) {
+			return stripped.substring(0, 1).toLowerCase() + stripped.substring(1);
+		}
+		return stripped;
 	}
 
 	/**
@@ -413,9 +431,9 @@ public interface Scannable {
 	 *     source (that is {@link Scannable}).</li>
 	 * </ol>
 	 *
-	 * @return the list of {@link #operatorName()} for each discovered operator in the chain
+	 * @return a {@link Stream} of {@link #operatorName()} for each discovered operator in the chain
 	 */
-	default List<String> operatorChain() {
+	default Stream<String> operatorChain() {
 		List<Scannable> chain = new ArrayList<>();
 		chain.addAll(parents().collect(Collectors.toList()));
 		Collections.reverse(chain);
@@ -439,7 +457,7 @@ public interface Scannable {
 			}
 		}
 
-		return chainNames;
+		return chainNames.stream();
 	}
 
 	/**

@@ -31,7 +31,6 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
-import reactor.util.debug.Traces;
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them.
