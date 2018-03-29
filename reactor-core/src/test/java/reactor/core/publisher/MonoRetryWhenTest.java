@@ -21,14 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.assertj.core.api.LongAssert;
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,7 +66,7 @@ public class MonoRetryWhenTest {
 				    	errorCount.incrementAndGet();
 				    	elapsedList.add(Schedulers.parallel().now(TimeUnit.MILLISECONDS));
 				    })
-				    .retryWithBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0.1)
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0.1)
 		)
 		            .thenAwait(Duration.ofSeconds(2))
 		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
@@ -102,7 +99,7 @@ public class MonoRetryWhenTest {
 				    	errorCount.incrementAndGet();
 				    	elapsedList.add(Schedulers.parallel().now(TimeUnit.MILLISECONDS));
 				    })
-				    .retryWithBackoff(4, Duration.ofMillis(100), Duration.ofMillis(220), 0.9)
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(220), 0.9)
 		)
 		            .thenAwait(Duration.ofSeconds(2))
 		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
@@ -141,7 +138,7 @@ public class MonoRetryWhenTest {
 						    errorCount.incrementAndGet();
 						    elapsedList.add(Schedulers.parallel().now(TimeUnit.MILLISECONDS));
 					    })
-					    .retryWithBackoff(1, Duration.ofMillis(100), Duration.ofMillis(2000), 0.9)
+					    .retryBackoff(1, Duration.ofMillis(100), Duration.ofMillis(2000), 0.9)
 			)
 			            .thenAwait(Duration.ofSeconds(2))
 			            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
@@ -169,7 +166,7 @@ public class MonoRetryWhenTest {
 					    errorCount.incrementAndGet();
 					    elapsedList.add(Schedulers.parallel().now(TimeUnit.MILLISECONDS));
 				    })
-				    .retryWithBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0d)
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0d)
 		)
 		            .thenAwait(Duration.ofSeconds(2))
 		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)

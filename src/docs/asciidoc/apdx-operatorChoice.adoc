@@ -218,7 +218,7 @@ I want to deal with:
 *** to a `Publisher` or `Mono`, possibly different ones depending on the error: `Flux#onErrorResume` and `Mono#onErrorResume`
 ** by retrying: `retry`
 *** ...triggered by a companion control Flux: `retryWhen`
-*** ... using a standard backoff strategy (exponential backoff with jitter): `retryWithBackoff`
+*** ... using a standard backoff strategy (exponential backoff with jitter): `retryBackoff`
 
 * I want to deal with backpressure "errors"footnote:[request max from upstream and apply the strategy when downstream does not produce enough request]...
 ** by throwing a special `IllegalStateException`: `Flux#onBackpressureError`

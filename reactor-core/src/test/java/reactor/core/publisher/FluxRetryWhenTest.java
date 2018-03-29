@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -33,7 +32,6 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
@@ -460,7 +458,7 @@ public class FluxRetryWhenTest {
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.concat(Flux.range(0, 2), Flux.error(exception))
-				    .retryWithBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0.1)
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0.1)
 				    .elapsed()
 				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 				    .map(Tuple2::getT2)
@@ -492,7 +490,7 @@ public class FluxRetryWhenTest {
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.concat(Flux.range(0, 2), Flux.error(exception))
-				    .retryWithBackoff(4, Duration.ofMillis(100), Duration.ofMillis(220), 0.9)
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(220), 0.9)
 				    .elapsed()
 				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 				    .map(Tuple2::getT2)
@@ -535,7 +533,7 @@ public class FluxRetryWhenTest {
 
 			StepVerifier.withVirtualTime(() ->
 					Flux.concat(Flux.range(0, 2), Flux.error(exception))
-					    .retryWithBackoff(1, Duration.ofMillis(100), Duration.ofMillis(2000), 0.9)
+					    .retryBackoff(1, Duration.ofMillis(100), Duration.ofMillis(2000), 0.9)
 					    .elapsed()
 					    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 					    .map(Tuple2::getT2)
@@ -565,7 +563,7 @@ public class FluxRetryWhenTest {
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.concat(Flux.range(0, 2), Flux.error(exception))
-				    .retryWithBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0)
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0)
 				    .elapsed()
 				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 				    .map(Tuple2::getT2)

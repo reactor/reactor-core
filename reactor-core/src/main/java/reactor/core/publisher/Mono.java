@@ -2950,8 +2950,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * minimum delay even taking jitter into account.
 	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
 	 */
-	public final Mono<T> retryWithBackoff(long numRetries, Duration firstBackoff) {
-		return retryWithBackoff(numRetries, firstBackoff, Duration.ofMillis(Long.MAX_VALUE), 0.5d);
+	public final Mono<T> retryBackoff(long numRetries, Duration firstBackoff) {
+		return retryBackoff(numRetries, firstBackoff, Duration.ofMillis(Long.MAX_VALUE), 0.5d);
 	}
 
 	/**
@@ -2983,8 +2983,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param maxBackoff the maximum delay to apply despite exponential growth and jitter.
 	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
 	 */
-	public final Mono<T> retryWithBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff) {
-		return retryWithBackoff(numRetries, firstBackoff, maxBackoff, 0.5d);
+	public final Mono<T> retryBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff) {
+		return retryBackoff(numRetries, firstBackoff, maxBackoff, 0.5d);
 	}
 
 	/**
@@ -3018,7 +3018,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param jitterFactor the jitter percentage (as a double between 0.0 and 1.0).
 	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
 	 */
-	public final Mono<T> retryWithBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff, double jitterFactor) {
+	public final Mono<T> retryBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff, double jitterFactor) {
 		return retryWhen(FluxRetryWhen.randomExponentialBackoffFunction(numRetries, firstBackoff, maxBackoff, jitterFactor));
 	}
 
