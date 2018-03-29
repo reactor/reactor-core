@@ -28,13 +28,15 @@ public class WorkQueueProcessorVerification extends AbstractProcessorVerificatio
 
 	@Override
 	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
-		return  WorkQueueProcessor.<Long>builder().name("rb-work").bufferSize(bufferSize).build();
+		return  WorkQueueProcessor.<Long>builder()
+				.name("workQueueProcessorVerification")
+				.bufferSize(bufferSize)
+				.build();
 	}
 
 	@Override
 	public void required_mustRequestFromUpstreamForElementsThatHaveBeenRequestedLongAgo()
 			throws Throwable {
-		throw new SkipException("WorkQueueProcessor cannot do that given its " +
-				"distributing nature");
+		throw new SkipException("WorkQueueProcessor cannot do that given its distributing nature");
 	}
 }

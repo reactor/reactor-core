@@ -447,7 +447,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					processor.ringBuffer.getAsLong() > sequence.getAsLong());
 		}
 
-
 		/**
 		 * It is ok to have another thread rerun this method after a halt().
 		 */
@@ -474,12 +473,17 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					if(!running.get()){
 						return;
 					}
-					if(processor.terminated == 1 && processor.ringBuffer.getAsLong() == -1L) {
-						if (processor.error != null) {
-							subscriber.onError(processor.error);
+					if(processor.terminated == SHUTDOWN) {
+						if (processor.ringBuffer.getAsLong() == -1L) {
+							if (processor.error != null) {
+								subscriber.onError(processor.error);
+								return;
+							}
+							subscriber.onComplete();
 							return;
 						}
-						subscriber.onComplete();
+					}
+					else if (processor.terminated == FORCED_SHUTDOWN) {
 						return;
 					}
 				}
@@ -499,7 +503,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							do {
 								nextSequence = processor.workSequence.getAsLong() + 1L;
 								while ((!unbounded && pendingRequest.getAsLong() == 0L)) {
-									if (!isRunning()) {
+									if (!isRunning() || processor.isTerminated()) {
 										WaitStrategy.alert();
 									}
 									LockSupport.parkNanos(1L);
@@ -536,6 +540,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 					}
 					catch (InterruptedException | RuntimeException ce) {
+						if (ce instanceof InterruptedException) {
+							Thread.currentThread().interrupt();
+						}
 						if (Exceptions.isCancel(ce)){
 							reschedule(event);
 							break;
@@ -548,7 +555,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						if (!running.get()) {
 							break;
 						}
-						if(processor.terminated == 1) {
+						if(processor.terminated == SHUTDOWN) {
 							if (processor.error != null) {
 								processedSequence = true;
 								subscriber.onError(processor.error);
@@ -559,6 +566,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								subscriber.onComplete();
 								break;
 							}
+						}
+						else if (processor.terminated == FORCED_SHUTDOWN) {
+							break;
 						}
 						//processedSequence = true;
 						//continue event-loop
@@ -639,6 +649,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				}
 				catch (InterruptedException e) {
 					running.set(false);
+					Thread.currentThread().interrupt();
 					return true;
 				}
 				finally {
@@ -664,7 +675,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		void readNextEvent(final boolean unbounded) {
 				//pause until request
 			while ((!unbounded && getAndSub(pendingRequest, 1L) == 0L)) {
-				if (!isRunning()) {
+				if (!isRunning() || processor.isTerminated()) {
 					WaitStrategy.alert();
 				}
 				//Todo Use WaitStrategy?
