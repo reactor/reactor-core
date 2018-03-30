@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  *
  * @author Simon Baslé
  */
-class Traces {
+final class Traces {
 
 	/**
 	 * Transform the {@link StackTraceElement} array from an exception into a {@link String}
@@ -51,7 +51,7 @@ class Traces {
 	 * @param stackTraceElements the array of {@link StackTraceElement} to convert to {@link String}
 	 * @return the string version of the stacktrace.
 	 */
-	public static String stackTraceToString(StackTraceElement[] stackTraceElements) {
+	static String stackTraceToString(StackTraceElement[] stackTraceElements) {
 		StringBuilder sb = new StringBuilder();
 		for (StackTraceElement e : stackTraceElements) {
 			String row = e.toString();
@@ -71,7 +71,7 @@ class Traces {
 	 * @param stackTraceRow the row to check
 	 * @return true if it should be sanitized out, false if it should be kept
 	 */
-	public static boolean shouldSanitize(String stackTraceRow) {
+	static boolean shouldSanitize(String stackTraceRow) {
 		return stackTraceRow.trim().isEmpty()
 				|| stackTraceRow.contains("java.util.function")
 				|| stackTraceRow.contains("reactor.core.publisher.Mono.onAssembly")
@@ -106,7 +106,7 @@ class Traces {
 	 * @param stackTraceElements the array of {@link StackTraceElement} to convert to {@link String}
 	 * @return the string version of the stacktrace.
 	 */
-	public static String stackTraceToSanitizedString(StackTraceElement[] stackTraceElements) {
+	static String stackTraceToSanitizedString(StackTraceElement[] stackTraceElements) {
 		StringBuilder sb = new StringBuilder();
 		for (StackTraceElement e : stackTraceElements) {
 			String row = e.toString();
@@ -147,7 +147,7 @@ class Traces {
 	 * @return a {@link String} representing operator and operator assembly site extracted
 	 * from the assembly stack trace.
 	 */
-	public static String extractOperatorAssemblyInformation(String source) {
+	static String extractOperatorAssemblyInformation(String source) {
 		return extractOperatorAssemblyInformation(source, false);
 	}
 
@@ -173,7 +173,7 @@ class Traces {
 	 * @return a {@link String} representing operator and operator assembly site extracted
 	 * from the assembly stack trace.
 	 */
-	public static String extractOperatorAssemblyInformation(String source, boolean skipFirst) {
+	static String extractOperatorAssemblyInformation(String source, boolean skipFirst) {
 		String[] uncleanTraces = source.split("\n");
 		final List<String> traces = Stream.of(uncleanTraces)
 		                                  .map(String::trim)
