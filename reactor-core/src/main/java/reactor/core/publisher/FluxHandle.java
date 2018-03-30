@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import org.reactivestreams.Subscription;
@@ -33,11 +34,26 @@ import reactor.util.context.Context;
  */
 final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
-	final BiConsumer<? super T, SynchronousSink<R>> handler;
+	static final byte STOP_NOT_STOPPED = 0;
+	static final byte STOP_WILL_TERMINATE = 1;
+	static final byte STOP_INTERMEDIATE = 2;
+	static final byte STOP_TERMINATE = 3;
 
-	FluxHandle(Flux<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
+	final BiConsumer<? super T, SynchronousSink<R>>           handler;
+	@Nullable
+	final BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler;
+
+	/**
+	 * @param source the source
+	 * @param handler the handler function
+	 * @param terminateHandler the optional terminate function that can optionally change
+	 * 	 * the terminate signal)
+	 */
+	FluxHandle(Flux<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler,
+			@Nullable BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
+		this.terminateHandler = terminateHandler;
 	}
 
 	@Override
@@ -45,10 +61,10 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 	public void subscribe(CoreSubscriber<? super R> actual) {
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) actual;
-			source.subscribe(new HandleConditionalSubscriber<>(cs, handler));
+			source.subscribe(new HandleConditionalSubscriber<>(cs, handler, terminateHandler));
 			return;
 		}
-		source.subscribe(new HandleSubscriber<>(actual, handler));
+		source.subscribe(new HandleSubscriber<>(actual, handler, terminateHandler));
 	}
 
 	static final class HandleSubscriber<T, R>
@@ -58,18 +74,22 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 		final CoreSubscriber<? super R>                 actual;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
+		@Nullable
+		final BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler;
 
 		boolean done;
-		boolean stop;
-		Throwable error;
-		R data;
+		byte stop;
+		@Nullable Throwable error;
+		@Nullable R data;
 
 		Subscription s;
 
 		HandleSubscriber(CoreSubscriber<? super R> actual,
-				BiConsumer<? super T, SynchronousSink<R>> handler) {
+				BiConsumer<? super T, SynchronousSink<R>> handler,
+				@Nullable BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
 			this.actual = actual;
 			this.handler = handler;
+			this.terminateHandler = terminateHandler;
 		}
 
 		@Override
@@ -112,7 +132,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if (v != null) {
 				actual.onNext(v);
 			}
-			if(stop){
+			if(stop == STOP_INTERMEDIATE){
 				if(error != null){
 					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 					if (e_ != null) {
@@ -135,7 +155,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 		private void reset() {
 			done = false;
-			stop = false;
+			stop = STOP_NOT_STOPPED;
 			error = null;
 		}
 
@@ -165,7 +185,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if (v != null) {
 				actual.onNext(v);
 			}
-			if(stop){
+			if(stop == STOP_INTERMEDIATE){
 				if(error != null){
 					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 					if (e_ != null) {
@@ -191,8 +211,20 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
-
 			done = true;
+
+			if (stop == STOP_NOT_STOPPED) {
+				if (terminateHandler != null) {
+					stop = STOP_WILL_TERMINATE;
+					terminateHandler.accept(Optional.of(t), this); //might do complete or error
+					if (stop == STOP_TERMINATE) {
+						return;
+					}
+				}
+				//we have either a null or no-op terminateHandler
+				//we'll default to the original signal
+				stop = STOP_TERMINATE; //for scanUnsafe's benefit
+			}
 
 			actual.onError(t);
 		}
@@ -204,25 +236,51 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			}
 			done = true;
 
+			if (stop == STOP_NOT_STOPPED) {
+				if (terminateHandler != null) {
+					stop = STOP_WILL_TERMINATE;
+					terminateHandler.accept(Optional.empty(), this); //might do complete or error
+					if (stop == STOP_TERMINATE) {
+						return;
+					}
+				}
+				//we have either a null or no-op terminateHandler
+				//we'll default to the original signal
+				stop = STOP_TERMINATE; //for scanUnsafe's benefit
+			}
+
 			actual.onComplete();
 		}
 
 		@Override
 		public SynchronousSink<R> complete() {
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot complete after a complete or error");
 			}
-			stop = true;
+			else if (stop == STOP_WILL_TERMINATE) {
+				stop = STOP_TERMINATE;
+				actual.onComplete();
+			}
+			else {
+				stop = STOP_INTERMEDIATE;
+			}
 			return this;
 		}
 
 		@Override
 		public SynchronousSink<R> error(Throwable e) {
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot error after a complete or error");
 			}
-			error = Objects.requireNonNull(e, "error");
-			stop = true;
+			else if (stop == STOP_WILL_TERMINATE) {
+				stop = STOP_TERMINATE;
+				// store error for scanUnsafe's benefit
+				error = Objects.requireNonNull(e, "error in terminateHandler");
+				actual.onError(error);			}
+			else {
+				stop = STOP_INTERMEDIATE;
+				error = Objects.requireNonNull(e, "error");
+			}
 			return this;
 		}
 
@@ -231,8 +289,11 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if(data != null){
 				throw new IllegalStateException("Cannot emit more than one data");
 			}
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot emit after a complete or error");
+			}
+			if (stop == STOP_WILL_TERMINATE) {
+				throw new IllegalStateException("Cannot emit in terminateHandler");
 			}
 			data = Objects.requireNonNull(o, "data");
 			return this;
@@ -242,7 +303,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.TERMINATED) return done && (stop > STOP_WILL_TERMINATE);
 			if (key == Attr.ERROR) return error;
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -269,17 +330,21 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			           SynchronousSink<R> {
 		final Fuseable.ConditionalSubscriber<? super R> actual;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
+		@Nullable
+		final BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler;
 
 		boolean done;
-		boolean stop;
-		Throwable error;
-		R data;
+		byte stop;
+		@Nullable Throwable error;
+		@Nullable R data;
 
 		Subscription s;
 
-		HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
+		HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler,
+				@Nullable BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
 			this.actual = actual;
 			this.handler = handler;
+			this.terminateHandler = terminateHandler;
 		}
 
 		@Override
@@ -322,7 +387,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if (v != null) {
 				actual.onNext(v);
 			}
-			if(stop){
+			if(stop > STOP_NOT_STOPPED){
 				done = true; //set done because we go through `actual` directly
 				if(error != null){
 					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
@@ -346,7 +411,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 		private void reset() {
 			done = false;
-			stop = false;
+			stop = STOP_NOT_STOPPED;
 			error = null;
 		}
 
@@ -377,7 +442,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if (v != null) {
 				emit = actual.tryOnNext(v);
 			}
-			if(stop){
+			if(stop > STOP_NOT_STOPPED){
 				done = true; //set done because we go through `actual` directly
 				if(error != null){
 					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
@@ -404,8 +469,20 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
-
 			done = true;
+
+			if (stop == STOP_NOT_STOPPED) {
+				if (terminateHandler != null) {
+					stop = STOP_WILL_TERMINATE;
+					terminateHandler.accept(Optional.of(t), this); //might do complete or error
+					if (stop == STOP_TERMINATE) {
+						return;
+					}
+				}
+				//we have either a null or no-op terminateHandler
+				//we'll default to the original signal
+				stop = STOP_TERMINATE; //for scanUnsafe's benefit
+			}
 
 			actual.onError(t);
 		}
@@ -417,6 +494,19 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			}
 			done = true;
 
+			if (stop == STOP_NOT_STOPPED) {
+				if (terminateHandler != null) {
+					stop = STOP_WILL_TERMINATE;
+					terminateHandler.accept(Optional.empty(), this); //might do complete or error
+					if (stop == STOP_TERMINATE) {
+						return;
+					}
+				}
+				//we have either a null or no-op terminateHandler
+				//we'll default to the original signal
+				stop = STOP_TERMINATE; //for scanUnsafe's benefit
+			}
+
 			actual.onComplete();
 		}
 
@@ -427,20 +517,34 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 		@Override
 		public SynchronousSink<R> complete() {
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot complete after a complete or error");
 			}
-			stop = true;
+			else if (stop == STOP_WILL_TERMINATE) {
+				stop = STOP_TERMINATE;
+				actual.onComplete();
+			}
+			else {
+				stop = STOP_INTERMEDIATE;
+			}
 			return this;
 		}
 
 		@Override
 		public SynchronousSink<R> error(Throwable e) {
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot error after a complete or error");
 			}
-			error = Objects.requireNonNull(e, "error");
-			stop = true;
+			else if (stop == STOP_WILL_TERMINATE) {
+				stop = STOP_TERMINATE;
+				// store error for scanUnsafe's benefit
+				error = Objects.requireNonNull(e, "error in terminateHandler");
+				actual.onError(error);
+			}
+			else {
+				stop = STOP_INTERMEDIATE;
+				error = Objects.requireNonNull(e, "error");
+			}
 			return this;
 		}
 
@@ -449,8 +553,11 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if(data != null){
 				throw new IllegalStateException("Cannot emit more than one data");
 			}
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot emit after a complete or error");
+			}
+			if (stop == STOP_WILL_TERMINATE) {
+				throw new IllegalStateException("Cannot emit in terminateHandler");
 			}
 			data = Objects.requireNonNull(o, "data");
 			return this;
@@ -470,7 +577,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.TERMINATED) return done && (stop > STOP_WILL_TERMINATE);
 			if (key == Attr.ERROR) return error;
 
 			return InnerOperator.super.scanUnsafe(key);

@@ -24,8 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -39,9 +42,12 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static reactor.core.Fuseable.ASYNC;
 import static reactor.core.Fuseable.SYNC;
 
+@RunWith(JUnitParamsRunner.class)
 public class FluxHandleTest extends FluxOperatorTest<String, String> {
 
 	@Override
@@ -389,7 +395,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
     @Test
     public void scanSubscriber() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxHandle.HandleSubscriber<String, String> test = new FluxHandle.HandleSubscriber<>(actual, (a, b) -> {});
+        FluxHandle.HandleSubscriber<String, String> test = new FluxHandle.HandleSubscriber<>(actual, (a, b) -> {}, (opt, sink) -> {});
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -408,7 +414,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	    @SuppressWarnings("unchecked")
 	    Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxHandle.HandleConditionalSubscriber<String, String> test =
-        		new FluxHandle.HandleConditionalSubscriber<>(subscriber, (a, b) -> {});
+        		new FluxHandle.HandleConditionalSubscriber<>(subscriber, (a, b) -> {}, (opt, sink) -> {});
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -426,7 +432,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
     public void scanFuseableSubscriber() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxHandleFuseable.HandleFuseableSubscriber<String, String> test =
-        		new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, (a, b) -> {});
+        		new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, (a, b) -> {}, (opt, sink) -> {});
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -445,7 +451,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	    @SuppressWarnings("unchecked")
 	    Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 	    FluxHandleFuseable.HandleFuseableConditionalSubscriber<String, String> test =
-        		new FluxHandleFuseable.HandleFuseableConditionalSubscriber<>(subscriber, (a, b) -> {});
+        		new FluxHandleFuseable.HandleFuseableConditionalSubscriber<>(subscriber, (a, b) -> {}, (opt, sink) -> {});
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -1053,5 +1059,184 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		finally {
 			Hooks.resetOnNextError();
 		}
+	}
+
+	private static final String sourceErrorMessage = "boomSource";
+	private static final String sourceData = "foo";
+
+	private Object[] sourcesError() {
+		return new Object[] {
+				new Object[] { Flux.just(sourceData).concatWith(Mono.error(new IllegalStateException(sourceErrorMessage)))
+						.hide()
+				},
+				new Object[] { Flux.just(sourceData).concatWith(Mono.error(new IllegalStateException(sourceErrorMessage)))
+				                   .hide().filter(i -> true)
+				},
+				new Object[] { Flux.just(sourceData).concatWith(Mono.error(new IllegalStateException(sourceErrorMessage)))
+				},
+				new Object[] { Flux.just(sourceData).concatWith(Mono.error(new IllegalStateException(sourceErrorMessage)))
+						.filter(i -> true)
+				}
+		};
+	}
+
+	private Object[] sourcesComplete() {
+		return new Object[] {
+				new Object[] { Flux.just(sourceData).hide() },
+				new Object[] { Flux.just(sourceData).hide().filter(i -> true) },
+				new Object[] { Flux.just(sourceData) },
+				new Object[] { Flux.just(sourceData).filter(i -> true) }
+		};
+	}
+
+	@Test
+	@Parameters(method = "sourcesError")
+	public void sourceErrorHandleError(Flux<String> source) {
+		//the source errors but handle calls sink.error during data event
+		RuntimeException sinkException = new IllegalStateException("boom2");
+		Flux<String> test = source.handle((t, sink) -> {
+		                        	sink.next(t);
+		                        	sink.error(sinkException);
+		                        });
+
+		StepVerifier.create(test)
+		            .expectNext(sourceData)
+		            .expectErrorMessage("boom2")
+		            .verify();
+	}
+
+
+	@Test
+	@Parameters(method = "sourcesError")
+	public void sourceErrorHandleComplete(Flux<String> source) {
+		//the source errors but handle calls sink.complete during data event
+		Flux<String> test = source.handle((t, sink) -> {
+			                        sink.next(t);
+			                        sink.complete();
+		                        });
+
+		StepVerifier.create(test)
+		            .expectNext(sourceData)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	@Parameters(method = "sourcesComplete")
+	public void sourceCompleteHandleError(Flux<String> source) {
+		//the source completes but handle calls sink.error during data event
+		RuntimeException sinkException = new IllegalStateException("boom2");
+		Flux<String> test = source.handle((t, sink) -> {
+			                        sink.next(t);
+			                        sink.error(sinkException);
+		                        });
+
+		StepVerifier.create(test)
+		            .expectNext(sourceData)
+		            .expectErrorMessage("boom2")
+		            .verify();
+	}
+
+	@Test
+	@Parameters(method = "sourcesComplete")
+	public void sourceCompleteHandleComplete(Flux<String> source) {
+		//the source completes but handle calls sink.error during data event
+		Flux<String> test = source.handle((t, sink) -> {
+			                        sink.next(t);
+			                        sink.complete();
+		                        });
+
+		StepVerifier.create(test)
+		            .expectNext(sourceData)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	@Parameters(method = "sourcesError")
+	public void sourceErrorHandleTerminateComplete(Flux<String> source) {
+		//the source errors and no terminal sink method is called during data event, terminate callback calls sink.complete
+		Flux<String> test = source.handle((t, sink) -> sink.next(t),
+				                        (opt, sink) -> sink.complete());
+
+		StepVerifier.create(test)
+		            .expectNext(sourceData)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	@Parameters(method = "sourcesError")
+	public void sourceErrorHandleTerminateError(Flux<String> source) {
+		//the source errors and no terminal sink method is called during data event, terminate callback calls sink.error
+		RuntimeException sinkException = new IllegalStateException("boom2");
+		Flux<String> test = source.handle((t, sink) -> sink.next(t),
+				                        (opt, sink) -> sink.error(sinkException));
+
+		StepVerifier.create(test)
+		            .expectNext(sourceData)
+		            .expectErrorMessage("boom2")
+		            .verify();
+	}
+
+	@Test
+	@Parameters(method = "sourcesComplete")
+	public void sourceCompleteHandleTerminateComplete(Flux<String> source) {
+		//the source completes and no terminal sink method is called during data event, terminate callback calls sink.complete
+		Flux<String> test = source.handle((t, sink) -> sink.next(t),
+				(opt, sink) -> sink.complete());
+
+		StepVerifier.create(test)
+		            .expectNext(sourceData)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	@Parameters(method = "sourcesComplete")
+	public void sourceCompleteHandleTerminateError(Flux<String> source) {
+		//the source completes and no terminal sink method is called during data event, terminate callback calls sink.error
+		RuntimeException sinkException = new IllegalStateException("boom2");
+		Flux<String> test = source.handle((t, sink) -> sink.next(t),
+				(opt, sink) -> sink.error(sinkException));
+
+		StepVerifier.create(test)
+		            .expectNext(sourceData)
+		            .expectErrorMessage("boom2")
+		            .verify();
+	}
+
+	@Test
+	@Parameters(method = "sourcesComplete")
+	public void sourceCompleteHandleTerminateNoOp(Flux<String> source) {
+		StepVerifier.create(source.handle((t, sink) -> sink.next(t),
+				(opt, sink) -> {}))
+		            .expectNext(sourceData)
+		            .verifyComplete();
+	}
+
+	@Test
+	@Parameters(method = "sourcesError")
+	public void sourceErrorHandleTerminateNoOp(Flux<String> source) {
+		StepVerifier.create(source.handle((t, sink) -> sink.next(t),
+				(opt, sink) -> {}))
+		            .expectNext(sourceData)
+		            .verifyErrorMessage(sourceErrorMessage);
+	}
+
+	@Test
+	@Parameters(method = "sourcesComplete")
+	public void sourceCompleteHandleTerminateNextRejected(Flux<String> source) {
+		Flux<Object> test = source.handle((t, sink) -> sink.next(t), (opt, sink) -> sink.next("last"));
+		assertThatIllegalStateException().isThrownBy(test::subscribe)
+		                                .withMessage("Cannot emit in terminateHandler");
+	}
+
+	@Test
+	@Parameters(method = "sourcesError")
+	public void sourceErrorHandleTerminateNextRejected(Flux<String> source) {
+		Flux<Object> test = source.handle((t, sink) -> sink.next(t), (opt, sink) -> sink.next("last"));
+		assertThatIllegalStateException().isThrownBy(test::subscribe)
+		                                .withMessage("Cannot emit in terminateHandler");
 	}
 }

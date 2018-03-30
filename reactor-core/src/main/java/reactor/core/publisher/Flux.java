@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -4829,7 +4830,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Handle the items emitted by this {@link Flux} by calling a biconsumer with the
+	 * Handle the items emitted by this {@link Flux} by calling a {@link BiConsumer} with the
 	 * output sink for each onNext. At most one {@link SynchronousSink#next(Object)}
 	 * call must be performed and/or 0 or 1 {@link SynchronousSink#error(Throwable)} or
 	 * {@link SynchronousSink#complete()}.
@@ -4845,9 +4846,41 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <R> Flux<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
 		if (this instanceof Fuseable) {
-			return onAssembly(new FluxHandleFuseable<>(this, handler));
+			return onAssembly(new FluxHandleFuseable<>(this, handler, null));
 		}
-		return onAssembly(new FluxHandle<>(this, handler));
+		return onAssembly(new FluxHandle<>(this, handler, null));
+	}
+
+	/**
+	 * Handle the items emitted by this {@link Flux} by calling a {@link BiConsumer} with the
+	 * output sink for each onNext. At most one {@link SynchronousSink#next(Object)}
+	 * call must be performed and/or 0 or 1 {@link SynchronousSink#error(Throwable)} or
+	 * {@link SynchronousSink#complete()}.
+	 * <p>
+	 * Additionally, a second {@link BiConsumer} is provided to react to the terminal
+	 * signal. An {@link Optional} is exposed that represents which terminal signal (valued
+	 * with a {@link Throwable} for {@code onError} or empty for {@code onComplete}). The
+	 * {@link SynchronousSink sink} can then be used to optionally change the completion
+	 * signal (the {@link SynchronousSink#next(Object) sink's next()} method is disallowed).
+	 * A {@code terminateHandler} that doesn't use the sink at all will result in the
+	 * original terminal signal to be propagated.
+	 *
+	 * @param handler the handling {@link BiConsumer}
+	 * @param terminateHandler the additional terminalHandler
+	 * @param <R> the transformed type
+	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors} (including when
+	 * fusion is enabled) when the {@link BiConsumer} throws an exception or if an error is signaled explicitly via
+	 * {@link SynchronousSink#error(Throwable)}.
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final <R> Flux<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler,
+			BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxHandleFuseable<>(this, handler, terminateHandler));
+		}
+		return onAssembly(new FluxHandle<>(this, handler, terminateHandler));
 	}
 
 	/**

@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import org.reactivestreams.Subscription;
@@ -25,6 +26,8 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+
+import static reactor.core.publisher.FluxHandle.*;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function.
@@ -38,20 +41,26 @@ import reactor.util.context.Context;
  */
 final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fuseable {
 
-	final BiConsumer<? super T, SynchronousSink<R>> handler;
+	final BiConsumer<? super T, SynchronousSink<R>>           handler;
+	@Nullable
+	final BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler;
 
 	/**
 	 * Constructs a FluxMap instance with the given source and handler.
 	 *
 	 * @param source the source Publisher instance
 	 * @param handler the handler function
+	 * @param terminateHandler the optional terminate function that can optionally change
+	 * the terminate signal)
 	 *
 	 * @throws NullPointerException if either {@code source} or {@code handler} is null.
 	 */
 	FluxHandleFuseable(Flux<? extends T> source,
-			BiConsumer<? super T, SynchronousSink<R>> handler) {
+			BiConsumer<? super T, SynchronousSink<R>> handler,
+			@Nullable BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
+		this.terminateHandler = terminateHandler;
 	}
 
 	@Override
@@ -60,10 +69,10 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		if (actual instanceof ConditionalSubscriber) {
 
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) actual;
-			source.subscribe(new HandleFuseableConditionalSubscriber<>(cs, handler));
+			source.subscribe(new HandleFuseableConditionalSubscriber<>(cs, handler, terminateHandler));
 			return;
 		}
-		source.subscribe(new HandleFuseableSubscriber<>(actual, handler));
+		source.subscribe(new HandleFuseableSubscriber<>(actual, handler, terminateHandler));
 	}
 
 	static final class HandleFuseableSubscriber<T, R>
@@ -71,22 +80,26 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			           ConditionalSubscriber<T>, QueueSubscription<R>,
 			           SynchronousSink<R> {
 
-		final CoreSubscriber<? super R>                 actual;
-		final BiConsumer<? super T, SynchronousSink<R>> handler;
+		final CoreSubscriber<? super R>                           actual;
+		final BiConsumer<? super T, SynchronousSink<R>>           handler;
+		@Nullable
+		final BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler;
 
-		boolean   done;
-		boolean   stop;
-		Throwable error;
-		R         data;
+		boolean done;
+		byte    stop;
+		@Nullable Throwable error;
+		@Nullable R         data;
 
 		QueueSubscription<T> s;
 
 		int sourceMode;
 
 		HandleFuseableSubscriber(CoreSubscriber<? super R> actual,
-				BiConsumer<? super T, SynchronousSink<R>> handler) {
+				BiConsumer<? super T, SynchronousSink<R>> handler,
+				@Nullable BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
 			this.actual = actual;
 			this.handler = handler;
+			this.terminateHandler = terminateHandler;
 		}
 
 		@Override
@@ -105,7 +118,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
 					return true;
@@ -120,7 +133,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			if (v != null) {
 				actual.onNext(v);
 			}
-			if (stop) {
+			if (stop == STOP_INTERMEDIATE) {
 				if (error != null) {
 					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 					if (e_ != null) {
@@ -179,7 +192,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				if (v != null) {
 					actual.onNext(v);
 				}
-				if (stop) {
+				if (stop == STOP_INTERMEDIATE) {
 					if (error != null) {
 						Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 						if (e_ != null) {
@@ -209,8 +222,20 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
-
 			done = true;
+
+			if (stop == STOP_NOT_STOPPED) {
+				if (terminateHandler != null) {
+					stop = STOP_WILL_TERMINATE;
+					terminateHandler.accept(Optional.of(t), this); //might do complete or error
+					if (stop == STOP_TERMINATE) {
+						return;
+					}
+				}
+				//we have either a null or no-op terminateHandler
+				//we'll default to the original signal
+				stop = STOP_TERMINATE; //for scanUnsafe's benefit
+			}
 
 			actual.onError(t);
 		}
@@ -222,6 +247,19 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			}
 			done = true;
 
+			if (stop == STOP_NOT_STOPPED) {
+				if (terminateHandler != null) {
+					stop = STOP_WILL_TERMINATE;
+					terminateHandler.accept(Optional.empty(), this); //might do complete or error
+					if (stop == STOP_TERMINATE) {
+						return;
+					}
+				}
+				//we have either a null or no-op terminateHandler
+				//we'll default to the original signal
+				stop = STOP_TERMINATE; //for scanUnsafe's benefit
+			}
+
 			actual.onComplete();
 		}
 
@@ -229,7 +267,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.TERMINATED) return done && (stop > STOP_WILL_TERMINATE);
 			if (key == Attr.ERROR) return error;
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -277,7 +315,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						}
 						u = data;
 						data = null;
-						if (stop) {
+						if (stop == STOP_INTERMEDIATE) {
 							if (error != null) {
 								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
 								if (e_ != null) {
@@ -326,7 +364,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						}
 						R u = data;
 						data = null;
-						if (stop) {
+						if (stop == STOP_INTERMEDIATE) {
 							if (error != null) {
 								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
 								if (e_ != null) {
@@ -356,7 +394,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 		private void reset() {
 			done = false;
-			stop = false;
+			stop = STOP_NOT_STOPPED;
 			error = null;
 		}
 
@@ -390,30 +428,47 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 		@Override
 		public SynchronousSink<R> complete() {
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot complete after a complete or error");
 			}
-			stop = true;
+			else if (stop == STOP_WILL_TERMINATE) {
+				stop = STOP_TERMINATE;
+				actual.onComplete();
+			}
+			else {
+				stop = STOP_INTERMEDIATE;
+			}
 			return this;
 		}
 
 		@Override
 		public SynchronousSink<R> error(Throwable e) {
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot error after a complete or error");
 			}
-			error = Objects.requireNonNull(e, "error");
-			stop = true;
+			else if (stop == STOP_WILL_TERMINATE) {
+				stop = STOP_TERMINATE;
+				// store error for scanUnsafe's benefit
+				error = Objects.requireNonNull(e, "error in terminateHandler");
+				actual.onError(error);
+			}
+			else {
+				stop = STOP_INTERMEDIATE;
+				error = Objects.requireNonNull(e, "error");
+			}
 			return this;
 		}
 
 		@Override
 		public SynchronousSink<R> next(R o) {
-			if (data != null) {
+			if(data != null){
 				throw new IllegalStateException("Cannot emit more than one data");
 			}
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot emit after a complete or error");
+			}
+			if (stop == STOP_WILL_TERMINATE) {
+				throw new IllegalStateException("Cannot emit in terminateHandler");
 			}
 			data = Objects.requireNonNull(o, "data");
 			return this;
@@ -426,20 +481,24 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 		final ConditionalSubscriber<? super R>          actual;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
+		@Nullable
+		final BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler;
 
-		boolean   done;
-		boolean   stop;
-		Throwable error;
-		R         data;
+		boolean done;
+		byte    stop;
+		@Nullable Throwable error;
+		@Nullable R         data;
 
 		QueueSubscription<T> s;
 
 		int sourceMode;
 
 		HandleFuseableConditionalSubscriber(ConditionalSubscriber<? super R> actual,
-				BiConsumer<? super T, SynchronousSink<R>> handler) {
+				BiConsumer<? super T, SynchronousSink<R>> handler,
+				BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
 			this.actual = actual;
 			this.handler = handler;
+			this.terminateHandler = terminateHandler;
 		}
 
 		@Override
@@ -458,7 +517,6 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 		@Override
 		public void onNext(T t) {
-
 			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
@@ -486,7 +544,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				if (v != null) {
 					actual.onNext(v);
 				}
-				if (stop) {
+				if (stop == STOP_INTERMEDIATE) {
 					if (error != null) {
 						Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 						if (e_ != null) {
@@ -512,7 +570,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 		private void reset() {
 			done = false;
-			stop = false;
+			stop = STOP_NOT_STOPPED;
 			error = null;
 		}
 
@@ -527,7 +585,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
 					return true;
@@ -543,7 +601,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			if (v != null) {
 				emit = actual.tryOnNext(v);
 			}
-			if (stop) {
+			if (stop == STOP_INTERMEDIATE) {
 				if (error != null) {
 					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 					if (e_ != null) {
@@ -571,8 +629,20 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
-
 			done = true;
+
+			if (stop == STOP_NOT_STOPPED) {
+				if (terminateHandler != null) {
+					stop = STOP_WILL_TERMINATE;
+					terminateHandler.accept(Optional.of(t), this); //might do complete or error
+					if (stop == STOP_TERMINATE) {
+						return;
+					}
+				}
+				//we have either a null or no-op terminateHandler
+				//we'll default to the original signal
+				stop = STOP_TERMINATE; //for scanUnsafe's benefit
+			}
 
 			actual.onError(t);
 		}
@@ -584,35 +654,65 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			}
 			done = true;
 
+			if (stop == STOP_NOT_STOPPED) {
+				if (terminateHandler != null) {
+					stop = STOP_WILL_TERMINATE;
+					terminateHandler.accept(Optional.empty(), this); //might do complete or error
+					if (stop == STOP_TERMINATE) {
+						return;
+					}
+				}
+				//we have either a null or no-op terminateHandler
+				//we'll default to the original signal
+				stop = STOP_TERMINATE; //for scanUnsafe's benefit
+			}
+
 			actual.onComplete();
 		}
 
 		@Override
 		public SynchronousSink<R> complete() {
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot complete after a complete or error");
 			}
-			stop = true;
+			else if (stop == STOP_WILL_TERMINATE) {
+				stop = STOP_TERMINATE;
+				actual.onComplete();
+			}
+			else {
+				stop = STOP_INTERMEDIATE;
+			}
 			return this;
 		}
 
 		@Override
 		public SynchronousSink<R> error(Throwable e) {
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot error after a complete or error");
 			}
-			error = Objects.requireNonNull(e, "error");
-			stop = true;
+			else if (stop == STOP_WILL_TERMINATE) {
+				stop = STOP_TERMINATE;
+				// store error for scanUnsafe's benefit
+				error = Objects.requireNonNull(e, "error in terminateHandler");
+				actual.onError(error);
+			}
+			else {
+				stop = STOP_INTERMEDIATE;
+				error = Objects.requireNonNull(e, "error");
+			}
 			return this;
 		}
 
 		@Override
 		public SynchronousSink<R> next(R o) {
-			if (data != null) {
+			if(data != null){
 				throw new IllegalStateException("Cannot emit more than one data");
 			}
-			if (stop) {
+			if (stop > STOP_WILL_TERMINATE) {
 				throw new IllegalStateException("Cannot emit after a complete or error");
+			}
+			if (stop == STOP_WILL_TERMINATE) {
+				throw new IllegalStateException("Cannot emit in terminateHandler");
 			}
 			data = Objects.requireNonNull(o, "data");
 			return this;
@@ -622,7 +722,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.TERMINATED) return done && (stop > STOP_WILL_TERMINATE);
 			if (key == Attr.ERROR) return error;
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -670,7 +770,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						}
 						u = data;
 						data = null;
-						if (stop) {
+						if (stop == STOP_INTERMEDIATE) {
 							if (error != null) {
 								Throwable e_ = Operators.onNextError(v, error, actual.currentContext(), s);
 								if (e_ != null) {
@@ -722,7 +822,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						}
 						R u = data;
 						data = null;
-						if (stop) {
+						if (stop == STOP_INTERMEDIATE) {
 							done = true; //set done because we throw or go through `actual` directly
 							if (error != null) {
 								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());

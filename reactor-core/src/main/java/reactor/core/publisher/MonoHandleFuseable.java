@@ -16,10 +16,12 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -33,17 +35,28 @@ import reactor.core.Fuseable;
 final class MonoHandleFuseable<T, R> extends MonoOperator<T, R>
 		implements Fuseable {
 
-	final BiConsumer<? super T, SynchronousSink<R>> handler;
+	final BiConsumer<? super T, SynchronousSink<R>>           handler;
+	@Nullable
+	final BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler;
 
-	MonoHandleFuseable(Mono<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
+	/**
+	 * @param source the source
+	 * @param handler the handler function
+	 * @param terminateHandler the optional terminate function that can optionally change
+	 * 	 * the terminate signal)
+	 */
+	MonoHandleFuseable(Mono<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler,
+			@Nullable BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
+		this.terminateHandler = terminateHandler;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super R> actual) {
-		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler));
+		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler,
+				terminateHandler));
 	}
 
 }
