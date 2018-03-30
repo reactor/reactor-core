@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.LongAssert;
+import org.assertj.core.data.Percentage;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -32,6 +35,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -445,5 +449,132 @@ public class FluxRetryWhenTest {
 		assertThat(retriesLeft).containsExactly(3, 2, 1, 0);
 		assertThat(contextPerRetry)
 				.allMatch(ctx  -> ctx.hasKey("thirdPartyContext"));
+	}
+
+	@Test
+	public void fluxRetryRandomBackoff() {
+		Exception exception = new IOException("boom retry");
+		List<Long> elapsedList = new ArrayList<>();
+
+		StepVerifier.withVirtualTime(() ->
+				Flux.concat(Flux.range(0, 2), Flux.error(exception))
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0.1)
+				    .elapsed()
+				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
+				    .map(Tuple2::getT2)
+		)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext(0, 1) //normal output
+		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Retries exhausted: 4/4")
+		                                                    .hasCause(exception));
+
+		assertThat(elapsedList).hasSize(5);
+		assertThat(elapsedList, LongAssert.class).first()
+				.isEqualTo(0L);
+		assertThat(elapsedList, LongAssert.class).element(1)
+				.isCloseTo(100, Percentage.withPercentage(10));
+		assertThat(elapsedList, LongAssert.class).element(2)
+				.isCloseTo(200, Percentage.withPercentage(10));
+		assertThat(elapsedList, LongAssert.class).element(3)
+				.isCloseTo(400, Percentage.withPercentage(10));
+		assertThat(elapsedList, LongAssert.class).element(4)
+				.isCloseTo(800, Percentage.withPercentage(10));
+	}
+
+	@Test
+	public void fluxRetryRandomBackoff_maxBackoffShaves() {
+		Exception exception = new IOException("boom retry");
+		List<Long> elapsedList = new ArrayList<>();
+
+		StepVerifier.withVirtualTime(() ->
+				Flux.concat(Flux.range(0, 2), Flux.error(exception))
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(220), 0.9)
+				    .elapsed()
+				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
+				    .map(Tuple2::getT2)
+		)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext(0, 1) //normal output
+		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Retries exhausted: 4/4")
+		                                                    .hasCause(exception));
+
+		assertThat(elapsedList).hasSize(5);
+		assertThat(elapsedList, LongAssert.class)
+				.first()
+				.isEqualTo(0L);
+		assertThat(elapsedList, LongAssert.class)
+				.element(1)
+				.isGreaterThanOrEqualTo(100) //min backoff
+				.isCloseTo(100, Percentage.withPercentage(90));
+		assertThat(elapsedList, LongAssert.class)
+				.element(2)
+				.isCloseTo(200, Percentage.withPercentage(90))
+				.isGreaterThanOrEqualTo(100)
+				.isLessThanOrEqualTo(220);
+		assertThat(elapsedList, LongAssert.class)
+				.element(3)
+				.isGreaterThanOrEqualTo(100)
+				.isLessThanOrEqualTo(220);
+		assertThat(elapsedList, LongAssert.class)
+				.element(4)
+				.isGreaterThanOrEqualTo(100)
+				.isLessThanOrEqualTo(220);
+	}
+
+	@Test
+	public void fluxRetryRandomBackoff_minBackoffFloor() {
+		for (int i = 0; i < 50; i++) {
+			Exception exception = new IOException("boom retry loop #" + i);
+			List<Long> elapsedList = new ArrayList<>();
+
+			StepVerifier.withVirtualTime(() ->
+					Flux.concat(Flux.range(0, 2), Flux.error(exception))
+					    .retryBackoff(1, Duration.ofMillis(100), Duration.ofMillis(2000), 0.9)
+					    .elapsed()
+					    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
+					    .map(Tuple2::getT2)
+			)
+			            .thenAwait(Duration.ofSeconds(2))
+			            .expectNext(0, 1) //normal output
+			            .expectNext(0, 1) //1 retry attempts
+			            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+			                                                    .hasMessage("Retries exhausted: 1/1")
+			                                                    .hasCause(exception));
+
+			assertThat(elapsedList).hasSize(2);
+			assertThat(elapsedList, LongAssert.class)
+					.first()
+					.isEqualTo(0L);
+			assertThat(elapsedList, LongAssert.class)
+					.element(1)
+					.isGreaterThanOrEqualTo(100) //min backoff
+					.isCloseTo(100, Percentage.withPercentage(90));
+		}
+	}
+
+	@Test
+	public void fluxRetryRandomBackoff_noRandomness() {
+		Exception exception = new IOException("boom retry");
+		List<Long> elapsedList = new ArrayList<>();
+
+		StepVerifier.withVirtualTime(() ->
+				Flux.concat(Flux.range(0, 2), Flux.error(exception))
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000), 0)
+				    .elapsed()
+				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
+				    .map(Tuple2::getT2)
+		)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext(0, 1) //normal output
+		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Retries exhausted: 4/4")
+		                                                    .hasCause(exception));
+
+		assertThat(elapsedList).containsExactly(0L, 100L, 200L, 400L, 800L);
 	}
 }
