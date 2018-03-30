@@ -389,24 +389,26 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		}
 
 		@Override
-		public void complete() {
+		public SynchronousSink<R> complete() {
 			if (stop) {
 				throw new IllegalStateException("Cannot complete after a complete or error");
 			}
 			stop = true;
+			return this;
 		}
 
 		@Override
-		public void error(Throwable e) {
+		public SynchronousSink<R> error(Throwable e) {
 			if (stop) {
 				throw new IllegalStateException("Cannot error after a complete or error");
 			}
 			error = Objects.requireNonNull(e, "error");
 			stop = true;
+			return this;
 		}
 
 		@Override
-		public void next(R o) {
+		public SynchronousSink<R> next(R o) {
 			if (data != null) {
 				throw new IllegalStateException("Cannot emit more than one data");
 			}
@@ -414,6 +416,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				throw new IllegalStateException("Cannot emit after a complete or error");
 			}
 			data = Objects.requireNonNull(o, "data");
+			return this;
 		}
 	}
 
@@ -585,24 +588,26 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		}
 
 		@Override
-		public void complete() {
+		public SynchronousSink<R> complete() {
 			if (stop) {
 				throw new IllegalStateException("Cannot complete after a complete or error");
 			}
 			stop = true;
+			return this;
 		}
 
 		@Override
-		public void error(Throwable e) {
+		public SynchronousSink<R> error(Throwable e) {
 			if (stop) {
 				throw new IllegalStateException("Cannot error after a complete or error");
 			}
 			error = Objects.requireNonNull(e, "error");
 			stop = true;
+			return this;
 		}
 
 		@Override
-		public void next(R o) {
+		public SynchronousSink<R> next(R o) {
 			if (data != null) {
 				throw new IllegalStateException("Cannot emit more than one data");
 			}
@@ -610,6 +615,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				throw new IllegalStateException("Cannot emit after a complete or error");
 			}
 			data = Objects.requireNonNull(o, "data");
+			return this;
 		}
 
 		@Override
