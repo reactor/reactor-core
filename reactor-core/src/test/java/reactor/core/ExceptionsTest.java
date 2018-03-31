@@ -24,8 +24,6 @@ import org.junit.Test;
 import reactor.test.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static reactor.core.Exceptions.NOT_TIME_CAPABLE_REJECTED_EXECUTION;
