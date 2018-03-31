@@ -24,6 +24,8 @@ import org.junit.Test;
 import reactor.test.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static reactor.core.Exceptions.NOT_TIME_CAPABLE_REJECTED_EXECUTION;
@@ -319,5 +321,30 @@ public class ExceptionsTest {
 		assertThat(Exceptions.failWithRejected(test))
 				.isSameAs(test)
 				.hasCause(REJECTED_EXECUTION);
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void handleMethodsWithReturnThrowCheckException() throws Exception {
+		Exceptions.handle(this::throwExceptionWithReturn);
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void handleMethodWithoutReturnThrowCheckException() throws Exception {
+		Exceptions.handle(this::throwExceptionWithoutReturn);
+	}
+
+	@Test
+	public void returnValueWhenDoNotThrowException() throws Exception {
+		String value = Exceptions.handle(() -> "foo");
+		assertThat(value).isEqualTo("foo");
+	}
+
+	private String throwExceptionWithReturn() {
+		throw new IllegalStateException();
+	}
+
+	private void throwExceptionWithoutReturn() {
+		throw new IllegalStateException();
+
 	}
 }
