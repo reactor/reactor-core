@@ -16,6 +16,7 @@
 package reactor.core;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -319,5 +320,30 @@ public class ExceptionsTest {
 		assertThat(Exceptions.failWithRejected(test))
 				.isSameAs(test)
 				.hasCause(REJECTED_EXECUTION);
+	}
+
+	@Test(expected = Exceptions.ReactiveException.class)
+	public void handleMethodsWithReturnThrowCheckException() throws Exception {
+		Exceptions.handle(this::throwExceptionWithReturn);
+	}
+
+	@Test(expected = Exceptions.ReactiveException.class)
+	public void handleMethodWithoutReturnThrowCheckException() throws Exception {
+		Exceptions.handle(this::throwExceptionWithoutReturn);
+	}
+
+	@Test
+	public void returnValueWhenDoNotThrowException() throws Exception {
+		String value = Exceptions.handle(() -> "foo");
+		assertThat(value).isEqualTo("foo");
+	}
+
+	private String throwExceptionWithReturn() throws IOException {
+		throw new IOException();
+	}
+
+	private void throwExceptionWithoutReturn() throws IOException {
+		throw new IOException();
+
 	}
 }

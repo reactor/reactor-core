@@ -24,6 +24,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.util.annotation.Nullable;
+import reactor.util.function.ThrowingConsumer;
+import reactor.util.function.ThrowingSupplier;
 
 /**
  * Global Reactor Core Exception handling and utils to operate on.
@@ -495,6 +497,22 @@ public abstract class Exceptions {
 			return original;
 		}
 	}
+
+	public static final <T> T handle(ThrowingSupplier<T, ? extends Exception> throwingSupplier) {
+	    try {
+	        return throwingSupplier.supplier();
+        } catch (Exception ex) {
+	        throw propagate(ex);
+        }
+    }
+
+    public static final void handle(ThrowingConsumer<? extends Exception> throwingConsumer) {
+        try {
+            throwingConsumer.consumer();
+        } catch (Exception ex) {
+            throw propagate(ex);
+        }
+    }
 
 	Exceptions() {
 	}
