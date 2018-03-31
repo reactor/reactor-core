@@ -16,6 +16,7 @@
 package reactor.core;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -321,12 +322,12 @@ public class ExceptionsTest {
 				.hasCause(REJECTED_EXECUTION);
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = Exceptions.ReactiveException.class)
 	public void handleMethodsWithReturnThrowCheckException() throws Exception {
 		Exceptions.handle(this::throwExceptionWithReturn);
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = Exceptions.ReactiveException.class)
 	public void handleMethodWithoutReturnThrowCheckException() throws Exception {
 		Exceptions.handle(this::throwExceptionWithoutReturn);
 	}
@@ -337,12 +338,12 @@ public class ExceptionsTest {
 		assertThat(value).isEqualTo("foo");
 	}
 
-	private String throwExceptionWithReturn() {
-		throw new IllegalStateException();
+	private String throwExceptionWithReturn() throws IOException {
+		throw new IOException();
 	}
 
-	private void throwExceptionWithoutReturn() {
-		throw new IllegalStateException();
+	private void throwExceptionWithoutReturn() throws IOException {
+		throw new IOException();
 
 	}
 }
