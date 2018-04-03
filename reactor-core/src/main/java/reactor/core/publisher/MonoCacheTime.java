@@ -19,9 +19,12 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -38,8 +41,8 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 	private static final Logger LOGGER = Loggers.getLogger(MonoCacheTime.class);
 
-	final Duration ttl;
-	final Scheduler clock;
+	final Function<? super Signal<T>, Duration> ttlGenerator;
+	final Scheduler                             clock;
 
 	volatile Signal<T> state;
 	static final AtomicReferenceFieldUpdater<MonoCacheTime, Signal> STATE =
@@ -49,7 +52,32 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 	MonoCacheTime(Mono<? extends T> source, Duration ttl, Scheduler clock) {
 		super(source);
-		this.ttl = ttl;
+		this.ttlGenerator = ignoredSignal -> ttl;
+		this.clock = clock;
+		//noinspection unchecked
+		this.state = (Signal<T>) EMPTY;
+	}
+
+	MonoCacheTime(Mono<? extends T> source, Function<? super Signal<T>, Duration> ttlGenerator,
+			Scheduler clock) {
+		super(source);
+		this.ttlGenerator = ttlGenerator;
+		this.clock = clock;
+		//noinspection unchecked
+		this.state = (Signal<T>) EMPTY;
+	}
+
+	MonoCacheTime(Mono<? extends T> source,
+			Function<? super T, Duration> valueTtlGenerator,
+			Function<Throwable, Duration> errorTtlGenerator,
+			Supplier<Duration> emptyTtlGenerator,
+			Scheduler clock) {
+		super(source);
+		this.ttlGenerator = sig -> {
+			if (sig.isOnNext()) return valueTtlGenerator.apply(sig.get());
+			if (sig.isOnError()) return errorTtlGenerator.apply(sig.getThrowable());
+			return emptyTtlGenerator.get();
+		};
 		this.clock = clock;
 		@SuppressWarnings("unchecked")
 		Signal<T> emptyState = (Signal<T>) EMPTY;
@@ -71,10 +99,10 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 				//init or expired
 				CoordinatorSubscriber<T> newState = new CoordinatorSubscriber<>(this);
 				if (STATE.compareAndSet(this, EMPTY, newState)) {
-					source.subscribe(newState);
 					CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual, newState);
 					if (newState.add(inner)) {
 						actual.onSubscribe(inner);
+						source.subscribe(newState);
 						break;
 					}
 				}
@@ -233,16 +261,43 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 		@SuppressWarnings("unchecked")
 		private void signalCached(Signal<T> signal) {
+			Signal<T> signalToPropagate = signal;
 			if (STATE.compareAndSet(main, this, signal)) {
-				main.clock.schedule(main, main.ttl.toMillis(), TimeUnit.MILLISECONDS);
+				Duration ttl = null;
+				try {
+					ttl = main.ttlGenerator.apply(signal);
+				}
+				catch (Throwable generatorError) {
+					signalToPropagate = Signal.error(generatorError);
+					STATE.set(main, signalToPropagate);
+					if (signal.isOnError()) {
+						//noinspection ThrowableNotThrown
+						Exceptions.addSuppressed(generatorError, signal.getThrowable());
+					}
+				}
+
+				if (ttl != null) {
+					main.clock.schedule(main, ttl.toMillis(), TimeUnit.MILLISECONDS);
+				}
+				else {
+					//error during TTL generation, signal != updatedSignal, aka dropped
+					if (signal.isOnNext()) {
+						Operators.onNextDropped(signal.get(), currentContext());
+					}
+					else if (signal.isOnError()) {
+						Operators.onErrorDropped(signal.getThrowable(), currentContext());
+					}
+					//immediate cache clear
+					main.run();
+				}
 			}
 
 			for (Operators.MonoSubscriber<T, T> inner : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
-				if (signal.isOnNext()) {
-					inner.complete(signal.get());
+				if (signalToPropagate.isOnNext()) {
+					inner.complete(signalToPropagate.get());
 				}
-				else if (signal.isOnError()) {
-					inner.onError(signal.getThrowable());
+				else if (signalToPropagate.isOnError()) {
+					inner.onError(signalToPropagate.getThrowable());
 				}
 				else {
 					inner.onComplete();
