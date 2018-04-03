@@ -43,12 +43,12 @@ public class ConnectableFluxOnAssemblyTest {
 	}
 
 	@Test
-	public void operatorNameAndToString() {
+	public void stepNameAndToString() {
 		ConnectableFluxOnAssembly<?> test = new ConnectableFluxOnAssembly<>(Flux.empty().publish());
 
 		assertThat(test.toString())
-				.isEqualTo(test.operatorName())
-				.isEqualTo("reactor.core.publisher.ConnectableFluxOnAssemblyTest.operatorNameAndToString(ConnectableFluxOnAssemblyTest.java:47)");
+				.isEqualTo(test.stepName())
+				.isEqualTo("reactor.core.publisher.ConnectableFluxOnAssemblyTest.stepNameAndToString(ConnectableFluxOnAssemblyTest.java:47)");
 	}
 
 }

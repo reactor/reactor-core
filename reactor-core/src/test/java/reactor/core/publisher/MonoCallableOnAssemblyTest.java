@@ -47,12 +47,12 @@ public class MonoCallableOnAssemblyTest {
 	}
 
 	@Test
-	public void operatorNameAndToString() {
+	public void stepNameAndToString() {
 		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty());
 
 		assertThat(test.toString())
-				.isEqualTo(test.operatorName())
-				.isEqualTo("reactor.core.publisher.MonoCallableOnAssemblyTest.operatorNameAndToString(MonoCallableOnAssemblyTest.java:51)");
+				.isEqualTo(test.stepName())
+				.isEqualTo("reactor.core.publisher.MonoCallableOnAssemblyTest.stepNameAndToString(MonoCallableOnAssemblyTest.java:51)");
 	}
 
 }

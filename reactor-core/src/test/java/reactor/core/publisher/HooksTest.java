@@ -649,7 +649,7 @@ public class HooksTest {
 		Hooks.onOperatorDebug();
 
 		Hooks.onEachOperator(p -> {
-			System.out.println(Scannable.from(p).operatorName());
+			System.out.println(Scannable.from(p).stepName());
 			return p;
 		});
 
@@ -740,7 +740,7 @@ public class HooksTest {
 		List<Publisher> l = new ArrayList<>();
 		Hooks.onLastOperator(p -> {
 			System.out.println(Scannable.from(p).parents().count());
-			System.out.println(Scannable.from(p).operatorName());
+			System.out.println(Scannable.from(p).stepName());
 			l.add(p);
 			return p;
 		});

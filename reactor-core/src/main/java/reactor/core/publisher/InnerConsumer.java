@@ -30,8 +30,13 @@ interface InnerConsumer<I>
 		extends CoreSubscriber<I>, Scannable {
 
 	@Override
+	default String stepName() {
+		return operatorName(); //TODO in 3.2.1 move code over from operatorName
+	}
+
+	@Override
 	default String operatorName() {
-		// /!\ this code is duplicated in `ScannableConsumer#operatorName` in order to use toString instead of simple class name
+		// /!\ this code is duplicated in `ScannableConsumer#stepName` in order to use toString instead of simple class name
 
 		/*
 		 * Strip an operator name of various prefixes and suffixes.

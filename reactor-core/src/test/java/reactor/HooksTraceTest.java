@@ -195,7 +195,7 @@ public class HooksTraceTest {
 		List<Publisher> l = new ArrayList<>();
 		Hooks.onLastOperator(p -> {
 			System.out.println(Scannable.from(p).parents().count());
-			System.out.println(Scannable.from(p).operatorName());
+			System.out.println(Scannable.from(p).stepName());
 			l.add(p);
 			return p;
 		});

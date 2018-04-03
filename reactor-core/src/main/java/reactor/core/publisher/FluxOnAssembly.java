@@ -83,7 +83,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@Override
-	public String operatorName() {
+	public String stepName() {
 		return snapshotStack.operatorAssemblyInformation();
 	}
 
@@ -364,8 +364,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Override
-		public String operatorName() {
+		public String stepName() {
 			return toString();
+		}
+
+		@Override
+		public String operatorName() {
+			return stepName();
 		}
 
 		@Override

@@ -31,11 +31,7 @@
  */
 package reactor.core.publisher;
 
-
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
@@ -62,7 +58,12 @@ interface SourceProducer<O> extends Scannable, Publisher<O> {
 	}
 
 	@Override
-	default String operatorName() {
+	default String stepName() {
 		return "source(" + getClass().getSimpleName() + ")";
+	}
+
+	@Override
+	default String operatorName() {
+		return stepName();
 	}
 }

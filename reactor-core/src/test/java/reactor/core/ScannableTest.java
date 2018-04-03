@@ -196,7 +196,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(Scannable.from(flux).operatorName())
+				.isEqualTo(Scannable.from(flux).stepName())
 				.isEqualTo("map");
 	}
 
@@ -333,7 +333,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(Scannable.from(flux).operatorName())
+				.isEqualTo(Scannable.from(flux).stepName())
 				.isEqualTo("map");
 	}
 
@@ -438,7 +438,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(Scannable.from(flux).operatorName())
+				.isEqualTo(Scannable.from(flux).stepName())
 				.isEqualTo("map");
 	}
 
@@ -537,7 +537,7 @@ public class ScannableTest {
 					Flux.from(s -> {
 						Scannable thisSubscriber = Scannable.from(s);
 						assertThat(thisSubscriber.isScanAvailable()).as("thisSubscriber.isScanAvailable").isTrue();
-						thisSubscriber.operatorChain().forEach(downstream::add);
+						thisSubscriber.steps().forEach(downstream::add);
 					})
 					    .map(a -> a)
 					    .delayElements(Duration.ofMillis(10))
@@ -549,7 +549,7 @@ public class ScannableTest {
 			Scannable thisOperator = Scannable.from(m);
 			assertThat(thisOperator.isScanAvailable()).as("thisOperator.isScanAvailable").isTrue();
 
-			thisOperator.operatorChain().forEach(upstream::add);
+			thisOperator.steps().forEach(upstream::add);
 
 		}
 		finally {
@@ -587,7 +587,7 @@ public class ScannableTest {
 		Scannable lastSubscriber = Scannable.from(subRef.get());
 		assertThat(lastSubscriber.isScanAvailable()).as("lastSubscriber.isScanAvailable").isTrue();
 
-		Stream<String> chain = lastSubscriber.operatorChain();
+		Stream<String> chain = lastSubscriber.steps();
 
 		assertThat(chain).containsExactly("just", "map", "filter", "reduce", "peek", "lambda");
 	}
@@ -604,7 +604,7 @@ public class ScannableTest {
 		Scannable operator = Scannable.from(m);
 		assertThat(operator.isScanAvailable()).as("operator.isScanAvailable").isTrue();
 
-		assertThat(operator.operatorChain())
+		assertThat(operator.steps())
 				.containsExactly("source(FluxConcatArray)", "map", "filter", "reduce", "peek");
 	}
 
@@ -614,7 +614,7 @@ public class ScannableTest {
 		                         .checkpoint("checkpointHere", true)
 		                         .map(a -> a);
 
-		assertThat(Scannable.from(flux).operatorChain())
+		assertThat(Scannable.from(flux).steps())
 				.containsExactly(
 						"source(FluxJust)",
 						"Flux.checkpoint ⇢ reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:614)",
@@ -628,7 +628,7 @@ public class ScannableTest {
 		                         .checkpoint("checkpointHere")
 		                         .map(a -> a);
 
-		assertThat(Scannable.from(flux).operatorChain())
+		assertThat(Scannable.from(flux).steps())
 				.containsExactly(
 						"source(FluxJust)",
 						"checkpoint(\"checkpointHere\")",
@@ -644,7 +644,7 @@ public class ScannableTest {
 				Flux.from(s -> {
 					Scannable thisSubscriber = Scannable.from(s);
 					assertThat(thisSubscriber.isScanAvailable()).as("thisSubscriber.isScanAvailable").isTrue();
-					thisSubscriber.operatorChain().forEach(downstream::add);
+					thisSubscriber.steps().forEach(downstream::add);
 				})
 				    .map(a -> a)
 				    .filter(a -> true)
@@ -666,7 +666,7 @@ public class ScannableTest {
 		assertThat(thisOperator.isScanAvailable())
 				.as("thisOperator.isScanAvailable")
 				.isTrue();
-		assertThat(thisOperator.operatorChain())
+		assertThat(thisOperator.steps())
 				.as("from upstream")
 				.containsExactly(
 				"source(FluxSource)",

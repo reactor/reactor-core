@@ -80,8 +80,8 @@ public interface Scannable {
 		 * Indicate that for some purposes a {@link Scannable} should be used as additional
 		 * source of information about a contiguous {@link Scannable} in the chain.
 		 * <p>
-		 * For example {@link Scannable#operatorChain()} uses this to collate the
-		 * {@link Scannable#operatorName() operatorName} of an assembly trace to its
+		 * For example {@link Scannable#steps()} uses this to collate the
+		 * {@link Scannable#stepName() stepName} of an assembly trace to its
 		 * wrapped operator (the one before it in the assembly chain).
 		 */
 		public static final Attr<Boolean> ACTUAL_METADATA = new Attr<>(false);
@@ -376,8 +376,9 @@ public interface Scannable {
 	}
 
 	/**
-	 * Check this {@link Scannable} and its {@link #parents()} for a name an return the
-	 * first one that is reachable.
+	 * Check this {@link Scannable} and its {@link #parents()} for a user-defined name and
+	 * return the first one that is reachable, or default to this {@link Scannable}
+	 * {@link #stepName()} if none.
 	 *
 	 * @return the name of the first parent that has one defined (including this scannable)
 	 */
@@ -391,14 +392,30 @@ public interface Scannable {
 				.map(s -> s.scan(Attr.NAME))
 				.filter(Objects::nonNull)
 				.findFirst()
-				.orElse(operatorName());
+				.orElse(stepName());
 	}
 
 	/**
-	 * @return the default operatorName of this operator
+	 * Return a meaningful {@link String} representation of this {@link Scannable} in
+	 * its chain of {@link #parents()} and {@link #actuals()}.
 	 */
+	default String stepName() {
+		//stepName defaults to calling operatorName so that old code that
+		//overrides operatorName() still work when called through stepName()
+		//TODO remove operatorName entirely in 3.2.1
+		return operatorName();
+	}
+
+	/**
+	 * Return a meaningful {@link String} representation of this {@link Scannable} in
+	 * its chain of {@link #parents()} and {@link #actuals()}.
+	 *
+	 * @deprecated replace usages and definitions of {@code operatorName} with {@link #stepName()}.
+	 * will be removed in 3.2.1
+	 */
+	@Deprecated
 	default String operatorName() {
-		// /!\ this code is duplicated in `InnerConsumer#operatorName` in order to use simple class name instead of toString
+		// /!\ this code is duplicated in `InnerConsumer#stepName` in order to use simple class name instead of toString
 
 		/*
 		 * Strip an operator name of various prefixes and suffixes.
@@ -421,9 +438,9 @@ public interface Scannable {
 	}
 
 	/**
-	 * List the operator names in the chain of operators (including the current element),
-	 * in their assembly order. This traverses the chain of operators both upstream and
-	 * downstream.
+	 * List the step names in the chain of {@link Scannable} (including the current element),
+	 * in their assembly order. This traverses the chain of {@link Scannable} both upstream
+	 * ({@link #parents()}) and downstream ({@link #actuals()}).
 	 * <ol>
 	 *     <li>if the current Scannable is a {@link Subscriber}, the chain can reach down to
 	 *     the final subscriber, provided it is {@link Scannable} (eg. lambda subscriber)</li>
@@ -431,9 +448,9 @@ public interface Scannable {
 	 *     source (that is {@link Scannable}).</li>
 	 * </ol>
 	 *
-	 * @return a {@link Stream} of {@link #operatorName()} for each discovered operator in the chain
+	 * @return a {@link Stream} of {@link #stepName()} for each discovered step in the {@link Scannable} chain
 	 */
-	default Stream<String> operatorChain() {
+	default Stream<String> steps() {
 		List<Scannable> chain = new ArrayList<>();
 		chain.addAll(parents().collect(Collectors.toList()));
 		Collections.reverse(chain);
@@ -449,11 +466,11 @@ public interface Scannable {
 			}
 			//noinspection ConstantConditions
 			if (stepAfter != null && stepAfter.scan(Attr.ACTUAL_METADATA)) {
-				chainNames.add(stepAfter.operatorName());
+				chainNames.add(stepAfter.stepName());
 				i++;
 			}
 			else {
-				chainNames.add(step.operatorName());
+				chainNames.add(step.stepName());
 			}
 		}
 

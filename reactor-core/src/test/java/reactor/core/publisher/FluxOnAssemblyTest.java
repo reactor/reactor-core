@@ -289,11 +289,11 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void operatorNameAndToString() {
+	public void stepNameAndToString() {
 		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty());
 
 		assertThat(test.toString())
-				.isEqualTo(test.operatorName())
-				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.operatorNameAndToString(FluxOnAssemblyTest.java:293)");
+				.isEqualTo(test.stepName())
+				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.stepNameAndToString(FluxOnAssemblyTest.java:293)");
 	}
 }

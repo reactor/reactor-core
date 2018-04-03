@@ -41,13 +41,13 @@ public class ParallelFluxOnAssemblyTest {
 	}
 
 	@Test
-	public void operatorNameAndToString() {
+	public void stepNameAndToString() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
 		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, "foo");
 
 		assertThat(test.toString())
-				.isEqualTo(test.operatorName())
-				.isEqualTo("reactor.core.publisher.ParallelFluxOnAssemblyTest.operatorNameAndToString(ParallelFluxOnAssemblyTest.java:46)");
+				.isEqualTo(test.stepName())
+				.isEqualTo("reactor.core.publisher.ParallelFluxOnAssemblyTest.stepNameAndToString(ParallelFluxOnAssemblyTest.java:46)");
 	}
 
 	@Test

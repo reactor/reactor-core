@@ -47,11 +47,11 @@ public class FluxCallableOnAssemblyTest {
 	}
 
 	@Test
-	public void operatorNameAndToString() {
+	public void stepNameAndToString() {
 		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty());
 
 		assertThat(test.toString())
-				.isEqualTo(test.operatorName())
-				.isEqualTo("reactor.core.publisher.FluxCallableOnAssemblyTest.operatorNameAndToString(FluxCallableOnAssemblyTest.java:51)");
+				.isEqualTo(test.stepName())
+				.isEqualTo("reactor.core.publisher.FluxCallableOnAssemblyTest.stepNameAndToString(FluxCallableOnAssemblyTest.java:51)");
 	}
 }
