@@ -357,6 +357,22 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Create a {@link Mono} that wraps a {@link CompletionStage} on subscription,
+	 * emitting the value produced by the {@link CompletionStage}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/fromfuture.png" alt="">
+	 * <p>
+	 * @param stageSupplier The {@link Supplier} of a {@link CompletionStage} that will produce a value (or a null to
+	 * complete immediately). This allows lazy triggering of CompletionStage-based APIs.
+	 * @param <T> type of the expected value
+	 * @return A {@link Mono}.
+	 */
+	public static <T> Mono<T> fromCompletionStage(Supplier<? extends CompletionStage<? extends T>> stageSupplier) {
+		return defer(() -> onAssembly(new MonoCompletionStage<>(stageSupplier.get())));
+	}
+
+	/**
 	 * Convert a {@link Publisher} to a {@link Mono} without any cardinality check
 	 * (ie this method doesn't check if the source is already a Mono, nor cancels the
 	 * source past the first element). Conversion supports {@link Fuseable} sources.
@@ -402,6 +418,23 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future) {
 		return onAssembly(new MonoCompletionStage<>(future));
+	}
+
+	/**
+	 * Create a {@link Mono} that wraps a {@link CompletableFuture} on subscription,
+	 * emitting the value produced by the Future.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/fromfuture.png" alt="">
+	 * <p>
+	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value (or a null to
+	 * complete immediately). This allows lazy triggering of future-based APIs.
+	 * @param <T> type of the expected value
+	 * @return A {@link Mono}.
+	 * @see #fromCompletionStage(Supplier) fromCompletionStage for a generalization
+	 */
+	public static <T> Mono<T> fromFuture(Supplier<? extends CompletableFuture<? extends T>> futureSupplier) {
+		return defer(() -> onAssembly(new MonoCompletionStage<>(futureSupplier.get())));
 	}
 
 	/**

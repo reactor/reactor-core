@@ -18,9 +18,14 @@ package reactor.core.publisher.scenarios;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -201,5 +206,41 @@ public class MonoTests {
 				Mono.just("foo").zipWhen(t -> Mono.empty()))
 		            .expectComplete()
 		            .verify();
+	}
+
+	@Test
+	public void fromFutureSupplier() {
+		AtomicInteger source = new AtomicInteger();
+
+		Supplier<CompletableFuture<Integer>> supplier = () -> CompletableFuture.completedFuture(source.incrementAndGet());
+		Mono<Number> mono = Mono.fromFuture(supplier);
+
+		Assertions.assertThat(source).hasValue(0);
+
+		Assertions.assertThat(mono.block())
+		          .isEqualTo(source.get())
+		          .isEqualTo(1);
+
+		Assertions.assertThat(mono.block())
+		          .isEqualTo(source.get())
+		          .isEqualTo(2);
+	}
+
+	@Test
+	public void fromCompletionStageSupplier() {
+		AtomicInteger source = new AtomicInteger();
+
+		Supplier<CompletableFuture<Integer>> supplier = () -> CompletableFuture.completedFuture(source.incrementAndGet());
+		Mono<Number> mono = Mono.fromCompletionStage(supplier);
+
+		Assertions.assertThat(source).hasValue(0);
+
+		Assertions.assertThat(mono.block())
+		          .isEqualTo(source.get())
+		          .isEqualTo(1);
+
+		Assertions.assertThat(mono.block())
+		          .isEqualTo(source.get())
+		          .isEqualTo(2);
 	}
 }
