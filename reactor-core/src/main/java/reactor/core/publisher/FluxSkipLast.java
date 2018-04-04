@@ -75,20 +75,22 @@ final class FluxSkipLast<T> extends FluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (size() == n) {
-				actual.onNext(poll());
+				actual.onNext(pollFirst());
 			}
-			offer(t);
+			offerLast(t);
 
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			actual.onError(t);
+			Operators.onDiscardQueueWithClear(this, actual.currentContext(), null);
 		}
 
 		@Override
 		public void onComplete() {
 			actual.onComplete();
+			Operators.onDiscardQueueWithClear(this, actual.currentContext(), null);
 		}
 
 
@@ -115,6 +117,7 @@ final class FluxSkipLast<T> extends FluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			s.cancel();
+			Operators.onDiscardQueueWithClear(this, actual.currentContext(), null);
 		}
 	}
 }

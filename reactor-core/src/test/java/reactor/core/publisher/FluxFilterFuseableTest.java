@@ -22,6 +22,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxFilterFuseable.FilterFuseableConditionalSubscriber;
+import reactor.core.publisher.FluxFilterFuseable.FilterFuseableSubscriber;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -33,7 +36,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
     @Test
     public void scanSubscriber() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFilterFuseable.FilterFuseableSubscriber<String> test = new FluxFilterFuseable.FilterFuseableSubscriber<>(actual, t -> true);
+        FilterFuseableSubscriber<String> test = new FilterFuseableSubscriber<>(actual, t -> true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -49,7 +52,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
     public void scanConditionalSubscriber() {
         @SuppressWarnings("unchecked")
         Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-        FluxFilterFuseable.FilterFuseableConditionalSubscriber<String> test = new FluxFilterFuseable.FilterFuseableConditionalSubscriber<>(actual, t -> true);
+        FilterFuseableConditionalSubscriber<String> test = new FilterFuseableConditionalSubscriber<>(actual, t -> true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -97,4 +100,201 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
             Hooks.resetOnNextError();
         }
     }
+
+	@Test
+	public void discardOnNextPredicateFail() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		)
+		            .expectFusion(Fuseable.NONE)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardOnNextPredicateMiss() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .filter(i -> i % 2 == 0)
+		)
+		            .expectFusion(Fuseable.NONE)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardTryOnNextPredicateFail() {
+		StepVerifier.create(Flux.range(1, 10) //range uses tryOnNext
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		)
+		            .expectFusion(Fuseable.NONE)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardTryOnNextPredicateMiss() {
+		StepVerifier.create(Flux.range(1, 10) //range uses tryOnNext
+		                        .filter(i -> i % 2 == 0)
+		)
+		            .expectFusion(Fuseable.NONE)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardPollAsyncPredicateFail() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .publishOn(Schedulers.newSingle("discardPollAsync"), 1)
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		)
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscarded(1); //publishOn also might discard the rest
+	}
+
+	@Test
+	public void discardPollAsyncPredicateMiss() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .publishOn(Schedulers.newSingle("discardPollAsync"))
+		                        .filter(i -> i % 2 == 0)
+		)
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardPollSyncPredicateFail() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		)
+		            .expectFusion(Fuseable.SYNC)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardPollSyncPredicateMiss() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .filter(i -> i % 2 == 0)
+		)
+		            .expectFusion(Fuseable.SYNC)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardConditionalOnNextPredicateFail() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		                        .filter(i -> true)
+		)
+		            .expectFusion(Fuseable.NONE)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardConditionalOnNextPredicateMiss() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .filter(i -> i % 2 == 0)
+		                        .filter(i -> true)
+		)
+		            .expectFusion(Fuseable.NONE)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardConditionalTryOnNextPredicateFail() {
+		StepVerifier.create(Flux.range(1, 10) //range uses tryOnNext
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		                        .filter(i -> true)
+		)
+		            .expectFusion(Fuseable.NONE)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardConditionalTryOnNextPredicateMiss() {
+		StepVerifier.create(Flux.range(1, 10) //range uses tryOnNext
+		                         .filter(i -> i % 2 == 0)
+		                         .filter(i -> true)
+		)
+		             .expectFusion(Fuseable.NONE)
+		             .expectNextCount(5)
+		             .expectComplete()
+		             .verifyThenAssertThat()
+		             .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardConditionalPollAsyncPredicateFail() {
+		StepVerifier.create(Flux.range(1, 10) //range uses tryOnNext, so let's use just instead
+		                        .publishOn(Schedulers.newSingle("discardPollAsync"))
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		                        .filter(i -> true)
+		)
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscarded(1); //publishOn also discards the rest
+	}
+
+	@Test
+	public void discardConditionalPollAsyncPredicateMiss() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .publishOn(Schedulers.newSingle("discardPollAsync"))
+		                        .filter(i -> i % 2 == 0)
+		                        .filter(i -> true)
+		)
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardConditionalPollSyncPredicateFail() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		                        .filter(i -> true)
+		)
+		            .expectFusion(Fuseable.SYNC)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardConditionalPollSyncPredicateMiss() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) //range uses tryOnNext, so let's use just instead
+		                        .filter(i -> i % 2 == 0)
+		                        .filter(i -> true)
+		)
+		            .expectFusion(Fuseable.SYNC)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
 }

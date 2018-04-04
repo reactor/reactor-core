@@ -28,6 +28,7 @@ import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * For each subscriber, tracks the source values that have been seen and
@@ -88,6 +89,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context ctx;
 
 		final C collection;
 
@@ -107,6 +109,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				BiPredicate<C, K> distinctPredicate,
 				Consumer<C> cleanupCallback) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.collection = collection;
 			this.keyExtractor = keyExtractor;
 			this.distinctPredicate = distinctPredicate;
@@ -132,7 +135,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.ctx);
 				return true;
 			}
 
@@ -143,7 +146,8 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, this.ctx));
+				Operators.onDiscard(t, this.ctx);
 				return true;
 			}
 
@@ -153,7 +157,8 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				b = distinctPredicate.test(collection, k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, ctx));
+				Operators.onDiscard(t, this.ctx);
 				return true;
 			}
 
@@ -161,13 +166,14 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				actual.onNext(t);
 				return true;
 			}
+			Operators.onDiscard(t , ctx);
 			return false;
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.ctx);
 				return;
 			}
 			done = true;
@@ -200,6 +206,9 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			s.cancel();
+			if (collection != null) {
+				cleanupCallback.accept(collection);
+			}
 		}
 
 		@Override
@@ -215,6 +224,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actual;
+		final Context ctx;
 
 		final C collection;
 
@@ -233,6 +243,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				BiPredicate<C, K> distinctPredicate,
 				Consumer<C> cleanupCallback) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.collection = collection;
 			this.keyExtractor = keyExtractor;
 			this.distinctPredicate = distinctPredicate;
@@ -251,7 +262,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.ctx);
 				return;
 			}
 
@@ -262,7 +273,8 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, this.ctx));
+				Operators.onDiscard(t, this.ctx);
 				return;
 			}
 
@@ -272,7 +284,8 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				b = distinctPredicate.test(collection, k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, this.ctx));
+				Operators.onDiscard(t, this.ctx);
 				return;
 			}
 
@@ -280,6 +293,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				actual.onNext(t);
 			}
 			else {
+				Operators.onDiscard(t, ctx);
 				s.request(1);
 			}
 		}
@@ -287,7 +301,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.ctx);
 				return true;
 			}
 
@@ -298,7 +312,8 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 						"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, this.ctx));
+				Operators.onDiscard(t, this.ctx);
 				return true;
 			}
 
@@ -308,17 +323,24 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				b = distinctPredicate.test(collection, k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, this.ctx));
+				Operators.onDiscard(t, this.ctx);
 				return true;
 			}
 
-			return b && actual.tryOnNext(t);
+			if (b) {
+				return actual.tryOnNext(t);
+			}
+			else {
+				Operators.onDiscard(t, ctx);
+				return false;
+			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.ctx);
 				return;
 			}
 			done = true;
@@ -351,6 +373,9 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			s.cancel();
+			if (collection != null) {
+				cleanupCallback.accept(collection);
+			}
 		}
 
 		@Override
@@ -368,6 +393,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 			           QueueSubscription<T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context ctx;
 
 		final C collection;
 
@@ -386,6 +412,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				BiPredicate<C, K> predicate,
 				Consumer<C> callback) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.collection = collection;
 			this.keyExtractor = keyExtractor;
 			this.distinctPredicate = predicate;
@@ -411,13 +438,12 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 
 		@Override
 		public boolean tryOnNext(T t) {
-
 			if (sourceMode == Fuseable.ASYNC) {
 				actual.onNext(null);
 				return true;
 			}
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.ctx);
 				return true;
 			}
 
@@ -428,7 +454,8 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 						"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(qs, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(qs, e, t, this.ctx));
+				Operators.onDiscard(t, this.ctx);
 				return true;
 			}
 
@@ -438,7 +465,8 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				b = distinctPredicate.test(collection, k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(qs, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(qs, e, t, this.ctx));
+				Operators.onDiscard(t, this.ctx);
 				return true;
 			}
 
@@ -446,13 +474,14 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 				actual.onNext(t);
 				return true;
 			}
+			Operators.onDiscard(t, ctx);
 			return false;
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.ctx);
 				return;
 			}
 			done = true;
@@ -485,6 +514,9 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			qs.cancel();
+			if (collection != null) {
+				cleanupCallback.accept(collection);
+			}
 		}
 
 		@Override
@@ -512,16 +544,23 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 					if (v == null) {
 						return null;
 					}
-					K r = Objects.requireNonNull(keyExtractor.apply(v),
-							"The keyExtractor returned a null collection");
+					try {
+						K r = Objects.requireNonNull(keyExtractor.apply(v),
+								"The keyExtractor returned a null collection");
 
-					if (distinctPredicate.test(collection, r)) {
-						if (dropped != 0) {
-							request(dropped);
+						if (distinctPredicate.test(collection, r)) {
+							if (dropped != 0) {
+								request(dropped);
+							}
+							return v;
 						}
-						return v;
+						Operators.onDiscard(v, ctx);
+						dropped++;
 					}
-					dropped++;
+					catch (Throwable error) {
+						Operators.onDiscard(v, this.ctx);
+						throw error;
+					}
 				}
 			}
 			else {
@@ -530,11 +569,20 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 					if (v == null) {
 						return null;
 					}
+					try {
 					K r = Objects.requireNonNull(keyExtractor.apply(v),
 							"The keyExtractor returned a null collection");
 
 					if (distinctPredicate.test(collection, r)) {
 						return v;
+					}
+					else {
+						Operators.onDiscard(v, ctx);
+					}
+					}
+					catch (Throwable error) {
+						Operators.onDiscard(v, this.ctx);
+						throw error;
 					}
 				}
 			}

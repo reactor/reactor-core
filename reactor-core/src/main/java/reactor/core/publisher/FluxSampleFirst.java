@@ -68,7 +68,8 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 	static final class SampleFirstMain<T, U> implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
-		final CoreSubscriber<? super T>                       actual;
+		final CoreSubscriber<? super T>                   actual;
+		final Context                                     ctx;
 
 		volatile boolean gate;
 
@@ -107,6 +108,7 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 		SampleFirstMain(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.throttler = throttler;
 		}
 
@@ -175,7 +177,7 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 				}
 				catch (Throwable e) {
 					Operators.terminate(S, this);
-					error(Operators.onOperatorError(null, e, t, actual.currentContext()));
+					error(Operators.onOperatorError(null, e, t, ctx));
 					return;
 				}
 
@@ -184,6 +186,9 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 				if (Operators.replace(OTHER, this, other)) {
 					p.subscribe(other);
 				}
+			}
+			else {
+				Operators.onDiscard(t, ctx);
 			}
 		}
 
@@ -204,7 +209,7 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 				}
 			}
 			else {
-				Operators.onErrorDropped(e, actual.currentContext());
+				Operators.onErrorDropped(e, ctx);
 			}
 		}
 

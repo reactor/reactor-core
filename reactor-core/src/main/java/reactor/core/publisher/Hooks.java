@@ -282,6 +282,31 @@ public abstract class Hooks {
 	}
 
 	/**
+	 * Set a global cleanup {@link Consumer} for data element that do not get propagated
+	 * properly (eg. data that is filtered out, enqueue or buffered but never propagated
+	 * due a cancellation or an error...).
+	 *
+	 * The hook is cumulative, so calling this method several times will set up the hook
+	 * for as many consumer invocations (even if called with the same consumer instance).
+	 *
+	 * @param c the {@link Consumer} to apply to data that is not propagated due to
+	 * filtering, queue clearing due to cancellation or error...
+	 */
+	public static void onDiscard(Consumer<Object> c) {
+		Objects.requireNonNull(c, "onDiscardHook");
+		log.debug("Hooking new default : onDiscard");
+
+		synchronized(log) {
+			if (onDiscardHook != null) {
+				onDiscardHook = onDiscardHook.andThen(c);
+			}
+			else {
+				onDiscardHook = c;
+			}
+		}
+	}
+
+	/**
 	 * Resets {@link #resetOnNextDropped() onNextDropped hook(s)} and
 	 * apply a strategy of throwing {@link Exceptions#failWithCancel()} instead.
 	 * <p>
@@ -455,6 +480,16 @@ public abstract class Hooks {
 	}
 
 	/**
+	 * Reset global {@link #onDiscard discard hook} to doing nothing.
+	 */
+	public static void resetOnDiscard() {
+		log.debug("Reset to factory defaults: onDiscard");
+		synchronized (log) {
+			onDiscardHook = null;
+		}
+	}
+
+	/**
 	 * Reset global onNext error handling strategy to terminating the sequence with
 	 * an onError and cancelling upstream ({@link OnNextFailureStrategy#STOP}).
 	 */
@@ -504,6 +539,7 @@ public abstract class Hooks {
 	//Hooks that are just callbacks
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
 	static volatile Consumer<Object>            onNextDroppedHook;
+	static volatile Consumer<Object>            onDiscardHook;
 
 	//Special hook that is between the two (strategy can be transformative, but not named)
 	static volatile OnNextFailureStrategy onNextErrorHook;
@@ -543,6 +579,11 @@ public abstract class Hooks {
 	 * hook in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
 	 */
 	static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onDiscard(Consumer)}
+	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Object&gt;}.
+	 */
+	static final String KEY_ON_DISCARD = "reactor.onDiscard.local";
 	/**
 	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
 	 * hook THAT IS ONLY APPLIED TO Operators{@link Operators#onRejectedExecution(Throwable, Context) onRejectedExecution}

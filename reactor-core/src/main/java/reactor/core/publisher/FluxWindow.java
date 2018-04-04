@@ -31,6 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
@@ -262,6 +263,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			implements Disposable, InnerOperator<T, Flux<T>> {
 
 		final CoreSubscriber<? super Flux<T>> actual;
+		final Context                         ctx;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
@@ -298,6 +300,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.size = size;
 			this.skip = skip;
 			this.processorQueueSupplier = processorQueueSupplier;
@@ -315,7 +318,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 
@@ -336,6 +339,9 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			if (w != null) {
 				w.onNext(t);
 			}
+			else {
+				Operators.onDiscard(t, ctx);
+			}
 
 			if (i == size) {
 				window = null;
@@ -355,7 +361,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, ctx);
 				return;
 			}
 			done = true;

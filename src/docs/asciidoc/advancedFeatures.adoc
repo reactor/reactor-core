@@ -12,6 +12,7 @@ This chapter covers advanced features and concepts of Reactor, including the fol
 * <<hooks>>
 * <<context>>
 * <<null-safety>>
+* <<cleanup>>
 
 [[advanced-mutualizing-operator-usage]]
 == Mutualizing Operator Usage
@@ -974,6 +975,72 @@ public void contextForLibraryReactivePut() {
 	            .verifyComplete();
 }
 ----
+
+[[cleanup]]
+== Dealing with Objects that need cleanup
+In very specific cases, your application may deal with types that necessitate some form of cleanup once they're not in use anymore.
+This is an advanced scenario, for example when you have _reference counted_ objects or when you're dealing with _off heap_ objects.
+Netty's `ByteBuf` is a prime example of both.
+
+In order to ensure proper cleanup of such objects, you need to accommodate for it in all of the following hooks (see <<hooks>>):
+
+ * The `onDiscard` hook
+ * The `onOperatorError` hook
+ * The `onNextDropped` hook
+ * Operator-specific handlers
+
+This is needed because each hook is made with a specific subset of cleanup in mind, and users might want ie. to implement specific error handling logic in addition to cleanup logic within `onOperatorError`.
+
+Note that some operators are less adapted to dealing with objects that need cleanup.
+For example, `bufferWhen` can introduce overlapping buffers, and that means that the hooks above might see a first buffer as being discarded and cleanup an element in it that is in a second buffer _which is still valid_.
+
+IMPORTANT: For the purpose of cleaning up, **all these hooks MUST be IDEMPOTENT**.
+They might on some occasions get applied several times to the same object.
+The hooks are also dealing with instances that can be any `Object`, and it is up to the user's implementation to distinguish between which instances need cleanup and which don't.
+
+
+=== The `onDiscard` hook
+
+This hook has been specifically put in place for cleanup of objects that would otherwise never be exposed to user code.
+It is intended as a cleanup hook for flows that operate under normal circumstances (ie. not malformed sources that push too many items, which is covered by `onNextDropped`).
+
+Obvious cases include operators that filter elements from upstream.
+These elements never reach the next operator (or final subscriber), but this is part of the normal path of execution.
+As such, they are passed to the `onDiscard` hook.
+For example:
+
+ * `filter`: items that don't match the filter are considered "discarded"
+ * `skip`: items skipped are discarded
+ * `buffer(maxSize, skip)` with `maxSize < skip`: "dropping buffer", items in between buffers are discarded
+ * ...
+
+But `onDiscard` is not limited to filtering operators, and is also used by operators that internally queue data for backpressure purposes.
+More specifically, most of the time this is important during cancellation: an operator that prefetches data from its source and later drains to its subscriber upon demand could have un-emitted data when it gets cancelled.
+Such operators use the `onDiscard` hook during cancellation to clear up their internal backpressure `Queue`.
+
+=== The `onOperatorError` hook
+
+The `onOperatorError` hook is intended to modify errors in a transverse manner (similar to an AOP catch-and-rethrow).
+
+When the error happens during the processing of an `onNext` signal, the element that was being emitted is passed to `onOperatorError`.
+
+If that type of element needs cleanup you need to implement it in the `onOperatorError` hook, possibly on top of error-rewriting code.
+
+=== The `onNextDropped` hook
+
+With malformed `Publisher`s, there could be cases where an operator receives an element when it expected none (typically, after having received the `onError` or `onComplete` signals).
+In such cases, the unexpected element is "dropped", passed to the `onNextDropped` hook.
+If you have types that need cleanup, you must detect these in the `onNextDropped` hook and implement cleanup code there as well.
+
+=== Operator-specific handlers
+
+Some operators that deal with buffers and/or collect values as part of their operations have specific handlers for cases where collected data isn't propagated downstream.
+If you use such operators with the type(s) that need cleanup, you need to perform cleanup in these handlers.
+
+For example, `distinct` has such a callback that is invoked when the operator terminates (or is cancelled) in order to clear the collection it uses to judge if an element is distinct or not.
+By default, the collection is a `HashSet` and the cleanup callback is simply a `Hashet::clear`.
+But if you deal with reference counted objects, you might want to change that to a more involved handler that would `release` each element in the set before `clear()`ing it.
+
 
 [[null-safety]]
 == Null-safety

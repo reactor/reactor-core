@@ -121,6 +121,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
+	 *
 	 * @param sources The {@link Publisher} sources to combine values from
 	 * @param combinator The aggregate function that will receive the latest value from each upstream and return the value
 	 * to signal downstream
@@ -140,6 +144,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
 	 *
 	 * @param sources The {@link Publisher} sources to combine values from
 	 * @param prefetch The demand sent to each combined source {@link Publisher}
@@ -178,6 +186,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
+	 *
 	 * @param source1 The first {@link Publisher} source to combine values from
 	 * @param source2 The second {@link Publisher} source to combine values from
 	 * @param combinator The aggregate function that will receive the latest value from each upstream and return the value
@@ -201,6 +213,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
 	 *
 	 * @param source1 The first {@link Publisher} source to combine values from
 	 * @param source2 The second {@link Publisher} source to combine values from
@@ -227,6 +243,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
 	 *
 	 * @param source1 The first {@link Publisher} source to combine values from
 	 * @param source2 The second {@link Publisher} source to combine values from
@@ -256,6 +276,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
 	 *
 	 * @param source1 The first {@link Publisher} source to combine values from
 	 * @param source2 The second {@link Publisher} source to combine values from
@@ -288,6 +312,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
 	 *
 	 * @param source1 The first {@link Publisher} source to combine values from
 	 * @param source2 The second {@link Publisher} source to combine values from
@@ -325,6 +353,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
+	 *
 	 * @param sources The list of {@link Publisher} sources to combine values from
 	 * @param combinator The aggregate function that will receive the latest value from each upstream and return the value
 	 * to signal downstream
@@ -345,6 +377,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/combinelatest.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator is NOT suited for types that need guaranteed discard of unpropagated elements, as
+	 * it doesn't track which elements have been used by the combinator and which haven't. Furthermore, elements can and
+	 * will be passed to the combinator multiple times.
 	 *
 	 * @param sources The list of {@link Publisher} sources to combine values from
 	 * @param prefetch demand produced to each combined source {@link Publisher}
@@ -409,6 +445,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatinner.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
 	 * @param <T> The type of values in both source and output sequences
 	 *
@@ -429,6 +468,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatinner.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
 	 * @param prefetch the inner source request size
 	 * @param <T> The type of values in both source and output sequences
@@ -474,6 +516,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatinner.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
 	 * @param <T> The type of values in both source and output sequences
 	 *
@@ -494,6 +539,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatinner.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
 	 * @param prefetch the inner source request size
 	 * @param <T> The type of values in both source and output sequences
@@ -521,6 +569,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatinner.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concatenate
 	 * @param delayUntilEnd delay error until all sources have been consumed instead of
 	 * after the current source
@@ -548,6 +599,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concat.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <T> The type of values in both source and output sequences
 	 *
@@ -587,6 +641,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * });
 	 * </code></pre>
 	 *
+	 * @reactor.discard The {@link FluxSink} exposed by this operator buffers in case of
+	 * overflow. The buffer is discarded when the main sequence is cancelled.
+	 *
 	 * @param <T> The type of values in the sequence
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
@@ -623,6 +680,11 @@ public abstract class Flux<T> implements Publisher<T> {
      *     });
      * }, FluxSink.OverflowStrategy.LATEST);
      * </code></pre>
+	 *
+	 * @reactor.discard The {@link FluxSink} exposed by this operator discards elements
+	 * as relevant to the chosen {@link OverflowStrategy}. For example, the {@link OverflowStrategy#DROP}
+	 * discards each items as they are being dropped, while {@link OverflowStrategy#BUFFER}
+	 * will discard the buffer upon cancellation.
      *
 	 * @param <T> The type of values in the sequence
 	 * @param backpressure the backpressure mode, see {@link OverflowStrategy} for the
@@ -663,6 +725,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * }, FluxSink.OverflowStrategy.LATEST);
 	 * </code></pre>
 	 *
+	 * @reactor.discard The {@link FluxSink} exposed by this operator buffers in case of
+	 * overflow. The buffer is discarded when the main sequence is cancelled.
+	 *
 	 * @param <T> The type of values in the sequence
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
@@ -699,6 +764,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *	 });
 	 * }, FluxSink.OverflowStrategy.LATEST);
 	 * </code></pre>
+	 *
+	 * @reactor.discard The {@link FluxSink} exposed by this operator discards elements
+	 * as relevant to the chosen {@link OverflowStrategy}. For example, the {@link OverflowStrategy#DROP}
+	 * discards each items as they are being dropped, while {@link OverflowStrategy#BUFFER}
+	 * will discard the buffer upon cancellation.
 	 *
 	 * @param <T> The type of values in the sequence
 	 * @param backpressure the backpressure mode, see {@link OverflowStrategy} for the
@@ -891,6 +961,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/fromiterable.png" alt="">
 	 * <p>
+	 *
 	 * @param it the {@link Iterable} to read data from
 	 * @param <T> The type of values in the source {@link Iterable} and resulting Flux
 	 *
@@ -2309,6 +2380,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffer.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @return a buffered {@link Flux} of at most one {@link List}
 	 * @see #collectList() for an alternative collecting algorithm returning {@link Mono}
 	 */
@@ -2323,6 +2396,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffersize.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the maximum collected size
 	 *
@@ -2339,6 +2414,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffersize.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal,
+	 * as well as latest unbuffered element if the bufferSupplier fails.
 	 *
 	 * @param maxSize the maximum collected size
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
@@ -2371,6 +2449,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffersize.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards elements in between buffers (in the case of
+	 * dropping buffers). It also discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 * Note however that overlapping buffer variant DOES NOT discard, as this might result in an element
+	 * being discarded from an early buffer while it is still valid in a more recent buffer.
+	 *
 	 * @param skip the number of items to count before creating a new buffer
 	 * @param maxSize the max collected size
 	 *
@@ -2401,6 +2484,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffersize.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards elements in between buffers (in the case of
+	 * dropping buffers). It also discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 * Note however that overlapping buffer variant DOES NOT discard, as this might result in an element
+	 * being discarded from an early buffer while it is still valid in a more recent buffer.
+	 *
 	 * @param skip the number of items to count before creating a new buffer
 	 * @param maxSize the max collected size
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
@@ -2421,6 +2509,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/bufferboundary.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param other the companion {@link Publisher} whose signals trigger new buffers
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by signals from a {@link Publisher}
@@ -2436,6 +2526,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/bufferboundary.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal,
+	 * and the last received element when the bufferSupplier fails.
 	 *
 	 * @param other the companion {@link Publisher} whose signals trigger new buffers
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
@@ -2453,6 +2546,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param timespan the duration from buffer creation until a buffer is closed and emitted
 	 *
@@ -2482,6 +2577,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 * It DOES NOT provide strong guarantees in the case of overlapping buffers, as elements
+	 * might get discarded too early (from the first of two overlapping buffers for instance).
+	 *
 	 * @param timespan the duration from buffer creation until a buffer is closed and emitted
 	 * @param timeshift the interval at which to create a new buffer
 	 *
@@ -2497,6 +2596,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param timespan the duration from buffer creation until a buffer is closed and emitted
 	 * @param timer a time-capable {@link Scheduler} instance to run on
@@ -2528,6 +2629,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 * It DOES NOT provide strong guarantees in the case of overlapping buffers, as elements
+	 * might get discarded too early (from the first of two overlapping buffers for instance).
+	 *
 	 * @param timespan the duration from buffer creation until a buffer is closed and emitted
 	 * @param timeshift the interval at which to create a new buffer
 	 * @param timer a time-capable {@link Scheduler} instance to run on
@@ -2550,6 +2655,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespansize.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout enforcing the release of a partial buffer
 	 *
@@ -2566,6 +2673,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespansize.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout enforcing the release of a partial buffer
@@ -2586,6 +2695,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespansize.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout enforcing the release of a partial buffer
 	 * @param timer a time-capable {@link Scheduler} instance to run on
@@ -2603,6 +2714,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespansize.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout enforcing the release of a partial buffer
@@ -2629,6 +2742,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
 	 * termination.
 	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
@@ -2651,6 +2766,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * On completion, if the latest buffer is non-empty and has not been closed it is
 	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
 	 * termination.
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
@@ -2675,6 +2792,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * On completion, if the latest buffer is non-empty and has not been closed it is
 	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
 	 * termination.
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal,
+	 * as well as the buffer-triggering element.
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes false.
 	 * @return a microbatched {@link Flux} of {@link List}
@@ -2703,6 +2823,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/bufferboundary.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 * It DOES NOT provide strong guarantees in the case of overlapping buffers, as elements
+	 * might get discarded too early (from the first of two overlapping buffers for instance).
 	 *
 	 * @param bucketOpening a companion {@link Publisher} to subscribe for buffer creation signals.
 	 * @param closeSelector a factory that, given a buffer opening signal, returns a companion
@@ -2737,6 +2861,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/bufferboundary.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 * It DOES NOT provide strong guarantees in the case of overlapping buffers, as elements
+	 * might get discarded too early (from the first of two overlapping buffers for instance).
 	 *
 	 * @param bucketOpening a companion {@link Publisher} to subscribe for buffer creation signals.
 	 * @param closeSelector a factory that, given a buffer opening signal, returns a companion
@@ -3279,6 +3407,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatmap.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
 	 * @param <V> the produced concatenated type
 	 *
@@ -3312,6 +3442,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatmap.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
 	 * @param prefetch the inner source produced demand
@@ -3350,6 +3482,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatmap.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
 	 * @param <V> the produced concatenated type
@@ -3387,6 +3520,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatmap.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
 	 * @param prefetch the inner source produced demand
@@ -3426,6 +3560,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatmap.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
 	 * @param delayUntilEnd delay error until all sources have been consumed instead of
@@ -3455,6 +3590,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
 	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param <R> the merged output sequence type
 	 *
@@ -3475,6 +3612,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
 	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
 	 * improvement for users that explore the API with the concat vs flatMap expectation.
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
@@ -3724,6 +3863,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/distinct.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that don't match the distinct predicate,
+	 * but you should use the version with a cleanup if you need discarding of keys
+	 * categorized by the operator as "seen". See {@link #distinct(Function, Supplier, BiPredicate, Consumer)}.
+	 *
 	 * @return a filtering {@link Flux} only emitting distinct values
 	 */
 	public final Flux<T> distinct() {
@@ -3737,6 +3880,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/distinctk.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that don't match the distinct predicate,
+	 * but you should use the version with a cleanup if you need discarding of keys
+	 * categorized by the operator as "seen". See {@link #distinct(Function, Supplier, BiPredicate, Consumer)}.
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @param <V> the type of the key extracted from each value in this sequence
@@ -3755,6 +3902,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/distinctk.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that don't match the distinct predicate,
+	 * but you should use the version with a cleanup if you need discarding of keys
+	 * categorized by the operator as "seen". See {@link #distinct(Function, Supplier, BiPredicate, Consumer)}.
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @param distinctCollectionSupplier supplier of the {@link Collection} used for distinct
@@ -3781,6 +3932,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/distinctk.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that don't match the distinct predicate,
+	 * but you should use the {@code cleanup} as well if you need discarding of keys
+	 * categorized by the operator as "seen".
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @param distinctStoreSupplier supplier of the arbitrary store object used in distinct
@@ -3814,10 +3969,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/distinctuntilchanged.png" alt="">
 	 * <p>
-	 * The values themselves are recorded into a {@link HashSet} for distinct detection.
+	 * The last distinct value seen is retained for further comparison, which is done
+	 * on the values themselves using {@link Object#equals(Object) the equals method}.
 	 * Use {@code distinctUntilChanged(Object::hashcode)} if you want a more lightweight approach that
 	 * doesn't retain all the objects, but is more susceptible to falsely considering two
 	 * elements as distinct due to a hashcode collision.
+	 *
+	 * @reactor.discard Although this operator discards elements that are considered as "already seen",
+	 * it is not recommended for cases where discarding is needed as the operator doesn't
+	 * discard the "key" (in this context, the distinct instance that was last seen).
 	 *
 	 * @return a filtering {@link Flux} with only one occurrence in a row of each element
 	 * (yet elements can repeat in the overall sequence)
@@ -3833,7 +3993,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/distinctuntilchangedk.png" alt="">
-
+	 *
+	 * @reactor.discard This operator discards elements that are considered as "already seen".
+	 * The keys themselves are not discarded.
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @param <V> the type of the key extracted from each value in this sequence
@@ -3852,6 +4014,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/distinctuntilchangedk.png"
 	 * alt="">
+	 *
+	 * @reactor.discard This operator discards elements that are considered as "already seen"
+	 * (for which the {@code keyComparator} returns {@literal true}). The keys themselves
+	 * are not discarded.
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 * @param keyComparator predicate used to compare keys.
@@ -4132,6 +4298,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/elementat.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that appear before the requested index.
+	 *
 	 * @param index zero-based index of the only item to emit
 	 *
 	 * @return a {@link Mono} of the item at the specified zero-based index
@@ -4146,6 +4314,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/elementatd.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that appear before the requested index.
 	 *
 	 * @param index zero-based index of the only item to emit
 	 * @param defaultValue a default value to emit if the sequence is shorter
@@ -4324,6 +4494,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * considered as if the predicate returned false: they cause the source value to be
 	 * dropped and a new element ({@code request(1)}) being requested from upstream.
 	 *
+	 * @reactor.discard This operator discards elements that do not match the filter. It
+	 * also discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 *
 	 * @return a new {@link Flux} containing only values that pass the predicate test
 	 */
 	public final Flux<T> filter(Predicate<? super T> p) {
@@ -4343,6 +4516,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * is a {@link Mono}, test will be cancelled after receiving that first value. Test
 	 * publishers are generated and subscribed to in sequence.
 	 *
+	 * @reactor.discard This operator discards elements that do not match the filter. It
+	 * also discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 *
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
 	 * for each value, to filter the Flux with
 	 * @return a filtered {@link Flux}
@@ -4360,6 +4536,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Note that only the first value of the test publisher is considered, and unless it
 	 * is a {@link Mono}, test will be cancelled after receiving that first value. Test
 	 * publishers are generated and subscribed to in sequence.
+	 *
+	 * @reactor.discard This operator discards elements that do not match the filter. It
+	 * also discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
 	 * for each value, to filter the Flux with
@@ -4393,6 +4572,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flatmap.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param <R> the merged output sequence type
 	 *
@@ -4431,6 +4613,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flatmapc.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param concurrency the maximum number of in-flight inner sequences
@@ -4475,6 +4659,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flatmapc.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param concurrency the maximum number of in-flight inner sequences
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
@@ -4517,6 +4703,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flatmapc.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param concurrency the maximum number of in-flight inner sequences
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
@@ -4557,6 +4745,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flatmaps.png" alt="">
 	 * <p>
+	 *
 	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge.
 	 * Use {@literal null} to ignore (provided at least one other mapper is specified).
 	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge.
@@ -4592,6 +4781,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
 	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
+	 * @reactor.discard This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param <R> the merged output sequence type
 	 *
@@ -4613,6 +4804,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
 	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
 	 * improvement for users that explore the API with the concat vs flatMap expectation.
+	 *
+	 * @reactor.discard This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
@@ -5062,6 +5255,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignoreelements.png" alt="">
 	 * <p>
 	 *
+	 * @reactor.discard This operator discards the upstream's elements.
+	 *
 	 * @return a new empty {@link Mono} representing the completion of this {@link Flux}.
 	 */
 	public final Mono<T> ignoreElements() {
@@ -5113,6 +5308,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/last.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements before the last.
+	 *
 	 * @return a {@link Mono} with the last value in this {@link Flux}
 	 */
     public final Mono<T> last() {
@@ -5135,6 +5332,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/last.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements before the last.
+	 *
 	 * @param defaultValue  a single fallback item if this {@link Flux} is empty
 	 * @return a {@link Mono} with the last value in this {@link Flux}
 	 */
@@ -5551,6 +5751,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal.
+	 *
 	 * @return a backpressured {@link Flux} that buffers with unbounded capacity
 	 *
 	 */
@@ -5566,6 +5768,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal,
+	 * as well as elements that are rejected by the buffer due to {@code maxSize}.
 	 *
 	 * @param maxSize maximum buffer backlog size before immediate error
 	 *
@@ -5584,6 +5789,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal,
+	 * as well as elements that are rejected by the buffer due to {@code maxSize} (even though
+	 * they are passed to the {@code onOverflow} {@link Consumer} first).
 	 *
 	 * @param maxSize maximum buffer backlog size before overflow callback is called
 	 * @param onOverflow callback to invoke on overflow
@@ -5606,6 +5815,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal,
+	 * as well as elements that are rejected by the buffer due to {@code maxSize} (even though
+	 * they are passed to the {@code bufferOverflowStrategy} first).
+	 *
 	 *
 	 * @param maxSize maximum buffer backlog size before overflow strategy is applied
 	 * @param bufferOverflowStrategy strategy to apply to overflowing elements
@@ -5637,6 +5851,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal,
+	 * as well as elements that are rejected by the buffer due to {@code maxSize} (even though
+	 * they are passed to the {@code onOverflow} {@link Consumer} AND the {@code bufferOverflowStrategy} first).
+	 *
 	 * @param maxSize maximum buffer backlog size before overflow callback is called
 	 * @param onBufferOverflow callback to invoke on overflow
 	 * @param bufferOverflowStrategy strategy to apply to overflowing elements
@@ -5665,6 +5883,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
 	 *
+	 * @reactor.discard This operator discards its internal buffer of elements that overflow,
+	 * after having applied the {@code onBufferEviction} handler.
+	 *
 	 * @param ttl maximum {@link Duration} for which an element is kept in the backlog
 	 * @param maxSize maximum buffer backlog size before overflow callback is called
 	 * @param onBufferEviction callback to invoke once TTL is reached or on overflow
@@ -5688,6 +5909,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
 	 *
+	 * @reactor.discard This operator discards its internal buffer of elements that overflow,
+	 * after having applied the {@code onBufferEviction} handler.
+	 *
 	 * @param ttl maximum {@link Duration} for which an element is kept in the backlog
 	 * @param maxSize maximum buffer backlog size before overflow callback is called
 	 * @param onBufferEviction callback to invoke once TTL is reached or on overflow
@@ -5709,6 +5933,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressuredrop.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that it drops.
+	 *
 	 * @return a backpressured {@link Flux} that drops overflowing elements
 	 */
 	public final Flux<T> onBackpressureDrop() {
@@ -5722,6 +5948,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressuredropc.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that it drops after having passed
+	 * them to the provided {@code onDropped} handler.
 	 *
 	 * @param onDropped the Consumer called when an value gets dropped due to lack of downstream requests
 	 * @return a backpressured {@link Flux} that drops overflowing elements
@@ -5738,6 +5967,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressureerror.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that it drops, after having propagated
+	 * the error.
+	 *
 	 * @return a backpressured {@link Flux} that errors on overflowing elements
 	 */
 	public final Flux<T> onBackpressureError() {
@@ -5750,6 +5982,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onbackpressurelatest.png" alt="">
+	 *
+	 * @reactor.discard Each time a new element comes in (the new "latest"), this operator
+	 * discards the previously retained element.
 	 *
 	 * @return a backpressured {@link Flux} that will only keep a reference to the last observed item
 	 */
@@ -6232,6 +6467,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
 	 * </pre></blockquote>
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 *
 	 * @return a {@link Flux} producing asynchronously on a given {@link Scheduler}
@@ -6253,6 +6490,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <blockquote><pre>
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
 	 * </pre></blockquote>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 * @param prefetch the asynchronous boundary capacity
@@ -6276,6 +6515,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <blockquote><pre>
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
 	 * </pre></blockquote>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation or error triggered by a data signal.
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 * @param delayError should the buffer be consumed before forwarding any error
@@ -6822,6 +7063,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/sampletimespan.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that are not part of the sampling.
+	 *
 	 * @param timespan the duration of the window after which to emit the latest observed item
 	 *
 	 * @return a {@link Flux} sampled to the last item seen over each periodic window
@@ -6846,6 +7089,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/sample.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that are not part of the sampling.
+	 *
 	 * @param sampler the sampler companion {@link Publisher}
 	 *
 	 * @param <U> the type of the sampler sequence
@@ -6863,6 +7108,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/samplefirsttimespan.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that are not part of the sampling.
+	 *
 	 * @param timespan the duration during which to skip values after each sample
 	 *
 	 * @return a {@link Flux} sampled to the first item of each duration-based window
@@ -6877,6 +7124,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/samplefirst.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that are not part of the sampling.
 	 *
 	 * @param samplerFactory supply a companion sampler {@link Publisher} which signals the end of the skip window
 	 * @param <U> the companion reified type
@@ -6896,6 +7145,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/sampletimeout.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that are not part of the sampling.
 	 *
 	 * @param throttlerFactory supply a companion sampler {@link Publisher} which signals
 	 * the end of the window during which no new emission should occur. If it is the case,
@@ -6920,6 +7171,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/sampletimeoutm.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that are not part of the sampling.
 	 *
 	 * @param throttlerFactory supply a companion sampler {@link Publisher} which signals
 	 * the end of the window during which no new emission should occur. If it is the case,
@@ -7135,6 +7388,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/skip.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that are skipped.
+	 *
 	 * @param skipped the number of elements to drop
 	 *
 	 * @return a dropping {@link Flux} with the specified number of elements skipped at
@@ -7155,6 +7410,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/skiptime.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that are skipped.
+	 *
 	 * @param timespan the initial time window during which to drop elements
 	 *
 	 * @return a {@link Flux} dropping at the beginning until the end of the given duration
@@ -7169,6 +7426,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/skiptime.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that are skipped.
 	 *
 	 * @param timespan the initial time window during which to drop elements
 	 * @param timer a time-capable {@link Scheduler} instance to measure the time window on
@@ -7190,6 +7449,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/skiplast.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that are skipped.
+	 *
 	 * @param n the number of elements to drop before completion
 	 *
 	 * @return a {@link Flux} dropping the specified number of elements at the end of the
@@ -7210,6 +7471,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/skipuntil.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that are skipped.
+	 *
 	 * @param untilPredicate the {@link Predicate} evaluated to stop skipping.
 	 *
 	 * @return a {@link Flux} dropping until the {@link Predicate} matches
@@ -7225,6 +7488,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/skipuntil.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements that are skipped.
+	 *
 	 * @param other the companion {@link Publisher} to coordinate with to stop skipping
 	 *
 	 * @return a {@link Flux} dropping until the other {@link Publisher} emits
@@ -7239,6 +7504,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/skipwhile.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements that are skipped.
 	 *
 	 * @param skipPredicate the {@link Predicate} that causes skipping while evaluating to true.
 	 *
@@ -7845,6 +8112,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignorethen.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements from the source.
+	 *
 	 * @return a new {@link Mono} representing the termination of this {@link Flux}
 	 */
 	public final Mono<Void> then() {
@@ -7863,6 +8133,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignorethen1.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements from the source.
+	 *
 	 * @param other a {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
 	 *
@@ -7880,6 +8152,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenempty.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards elements from the source.
+	 *
 	 * @param other a {@link Publisher} to wait for after this Flux's termination
 	 * @return a new {@link Mono} completing when both publishers have completed in
 	 * sequence
@@ -7895,6 +8169,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@code Publisher<V>} that will emit elements from the provided {@link Publisher}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenmany.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements from the source.
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the element type of the supplied Publisher
@@ -8221,6 +8497,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
+	 *
 	 * @param maxSize the maximum number of items to emit in the window before closing it
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count
@@ -8246,6 +8525,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
+	 * @reactor.discard The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
+	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
+	 *
 	 * @param maxSize the maximum number of items to emit in the window before closing it
 	 * @param skip the number of items to count before opening and emitting a new window
 	 *
@@ -8266,6 +8549,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowboundary.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
+	 *
 	 * @param boundary a {@link Publisher} to emit any item for a split signal and complete to terminate
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows delimited by a given {@link Publisher}
@@ -8282,6 +8568,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
 	 *
 	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
 	 *
@@ -8311,6 +8600,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
+	 * @reactor.discard The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
+	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
+	 *
 	 * @param timespan the maximum {@link Flux} window {@link Duration}
 	 * @param timeshift the period of time at which to create new {@link Flux} windows
 	 *
@@ -8328,6 +8621,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
 	 *
 	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
 	 * @param timer a time-capable {@link Scheduler} instance to run on
@@ -8358,6 +8654,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
+	 * @reactor.discard The overlapping variant DOES NOT discard elements, as they might be part of another still valid window.
+	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
+	 *
 	 * @param timespan the maximum {@link Flux} window {@link Duration}
 	 * @param timeshift the period of time at which to create new {@link Flux} windows
 	 * @param timer a time-capable {@link Scheduler} instance to run on
@@ -8382,6 +8682,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
+	 *
 	 * @param maxSize the maximum number of items to emit in the window before closing it
 	 * @param timespan the maximum {@link Duration} since the window was opened before closing it
 	 *
@@ -8400,6 +8703,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the maximum number of items to emit in the window before closing it
 	 * @param timespan the maximum {@link Duration} since the window was opened before closing it
@@ -8423,6 +8729,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntil.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
@@ -8450,6 +8759,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * expose empty windows, as the separators are emitted into the windows they close.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
@@ -8480,6 +8792,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
+	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
 	 * @param prefetch the request size to use for this {@link Flux}.
@@ -8508,6 +8823,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowwhile.png" alt="">
 	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal, as well as the triggering element(s) (that doesn't match
+	 * the predicate).
+	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @return a {@link Flux} of {@link Flux} windows, each containing
 	 * subsequent elements that all passed a predicate.
@@ -8528,6 +8847,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * to be emitted.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowwhile.png" alt="">
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal, as well as the triggering element(s) (that doesn't match
+	 * the predicate).
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @param prefetch the request size to use for this {@link Flux}.
@@ -8559,6 +8882,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * When Open signal is exactly coordinated with Close signal : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowboundary.png" alt="">
+	 *
+	 * @reactor.discard This operator DOES NOT discard elements.
 	 *
 	 * @param bucketOpening a {@link Publisher} that opens a new window when it emits any item
 	 * @param closeSelector a {@link Function} given an opening signal and returning a {@link Publisher} that

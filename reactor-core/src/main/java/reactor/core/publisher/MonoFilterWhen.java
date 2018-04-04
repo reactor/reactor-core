@@ -119,6 +119,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 			catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);
 				super.onError(ex);
+				Operators.onDiscard(t, actual.currentContext());
 				return;
 			}
 
@@ -131,6 +132,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 				catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
 					super.onError(ex);
+					Operators.onDiscard(t, actual.currentContext());
 					return;
 				}
 
@@ -139,6 +141,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 				}
 				else {
 					actual.onComplete();
+					Operators.onDiscard(t, actual.currentContext());
 				}
 			}
 			else {
@@ -191,6 +194,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 			}
 			else {
 				super.onComplete();
+				Operators.onDiscard(value, actual.currentContext());
 			}
 		}
 
@@ -199,6 +203,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 			//always propagate that error directly, as it means that the source Mono
 			//was at least valued rather than in error.
 			super.onError(ex);
+			Operators.onDiscard(value, actual.currentContext());
 		}
 
 		@Override

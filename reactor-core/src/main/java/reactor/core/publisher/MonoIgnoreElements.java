@@ -68,6 +68,7 @@ final class MonoIgnoreElements<T> extends MonoFromFluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			// deliberately ignored
+			Operators.onDiscard(t, actual.currentContext()); //FIXME cache context
 		}
 
 		@Override

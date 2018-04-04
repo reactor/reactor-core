@@ -20,6 +20,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Detaches the both the child Subscriber and the Subscription on
@@ -49,6 +50,11 @@ final class FluxDetach<T> extends FluxOperator<T, T> {
 
 		DetachSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual == null ? Context.empty() : actual.currentContext();
 		}
 
 		@Override
