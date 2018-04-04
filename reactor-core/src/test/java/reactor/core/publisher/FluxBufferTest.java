@@ -16,14 +16,18 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -527,5 +531,115 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void discardOnCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.never())
+		                        .buffer(4))
+		            .thenAwait(Duration.ofMillis(10))
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardOnCancelSkip() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5)
+		                        .limitRequest(2)
+		                        .concatWith(Mono.never())
+		                        .buffer(3, 4))
+		            .thenAwait(Duration.ofMillis(10))
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2);
+	}
+
+	@Test
+	public void discardOnCancelOverlap() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6)
+		                        .limitRequest(2)
+		                        .concatWith(Mono.never())
+		                        .buffer(4, 2))
+		            .thenAwait(Duration.ofMillis(10))
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2);
+	}
+
+	@Test
+	public void discardOnNextSupplierError() {
+		Supplier<List<Integer>> bufferSupplier = () -> null;
+
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .buffer(4, 4, bufferSupplier))
+		            .expectErrorMessage("The bufferSupplier returned a null buffer")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardOnNextSupplierErrorSkip() {
+		Supplier<List<Integer>> bufferSupplier = () -> null;
+
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5)
+		                        .buffer(3, 4, bufferSupplier))
+		            .expectErrorMessage("The bufferSupplier returned a null buffer")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardOnNextSupplierErrorOverlap() {
+		Supplier<List<Integer>> bufferSupplier = () -> null;
+
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6)
+		                        .buffer(4, 2, bufferSupplier))
+		            .expectErrorMessage("The bufferSupplier returned a null buffer")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardOnSkippedElements() {
+		//the skip flavor should discard elements that are not added to any buffer
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5)
+		                        .buffer(2, 3)
+		                        .flatMapIterable(Function.identity()))
+		            .expectNext(1, 2, 4, 5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(3);
+	}
+
+	@Test
+	public void discardOnError() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.error(new IllegalStateException("boom")))
+		                        .buffer(4))
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardOnErrorSkip() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.error(new IllegalStateException("boom")))
+		                        .buffer(4, 5))
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardOnErrorOverlap() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.error(new IllegalStateException("boom")))
+		                        .buffer(4, 2))
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3, 3); //we already opened a 2nd buffer
 	}
 }

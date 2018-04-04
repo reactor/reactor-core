@@ -59,6 +59,7 @@ public class HooksTest {
 //		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
+		Hooks.resetOnDiscard();
 	}
 
 	void simpleFlux(){

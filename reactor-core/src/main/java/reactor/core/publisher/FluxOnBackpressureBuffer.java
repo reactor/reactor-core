@@ -28,6 +28,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
@@ -71,9 +72,10 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			implements QueueSubscription<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
-		final Queue<T>              queue;
-		final Consumer<? super T>   onOverflow;
-		final boolean             delayError;
+		final Context                   ctx;
+		final Queue<T>                  queue;
+		final Consumer<? super T>       onOverflow;
+		final boolean                   delayError;
 
 		Subscription s;
 
@@ -100,6 +102,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				boolean delayError,
 				@Nullable Consumer<? super T> onOverflow) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.delayError = delayError;
 			this.onOverflow = onOverflow;
 
@@ -142,13 +145,13 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 			if (!queue.offer(t)) {
 				Throwable ex =
 						Operators.onOperatorError(s, Exceptions.failWithOverflow(), t,
-								actual.currentContext());
+								ctx);
 				if (onOverflow != null) {
 					try {
 						onOverflow.accept(t);
@@ -158,6 +161,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 						ex.initCause(e);
 					}
 				}
+				Operators.onDiscard(t, ctx);
 				onError(ex);
 				return;
 			}
@@ -167,7 +171,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, ctx);
 				return;
 			}
 			error = t;
@@ -266,7 +270,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 
 				if (cancelled) {
 					s.cancel();
-					q.clear();
+					Operators.onDiscardQueueWithClear(q, ctx, null);
 					return;
 				}
 
@@ -309,7 +313,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 
 				if (!enabledFusion) {
 					if (WIP.getAndIncrement(this) == 0) {
-						queue.clear();
+						Operators.onDiscardQueueWithClear(queue, ctx, null);
 					}
 				}
 			}
@@ -333,7 +337,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 
 		@Override
 		public void clear() {
-			queue.clear();
+			Operators.onDiscardQueueWithClear(queue, ctx, null);
 		}
 
 		@Override
@@ -353,7 +357,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a) {
 			if (cancelled) {
 				s.cancel();
-				queue.clear();
+				Operators.onDiscardQueueWithClear(queue, ctx, null);
 				return true;
 			}
 			if (d) {
@@ -372,7 +376,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				else {
 					Throwable e = error;
 					if (e != null) {
-						queue.clear();
+						Operators.onDiscardQueueWithClear(queue, ctx, null);
 						a.onError(e);
 						return true;
 					}

@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Runs the source in unbounded mode and emits only the latest value
@@ -51,6 +52,7 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 			implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context ctx;
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -76,6 +78,7 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 
 		LatestSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 		}
 
 		@Override
@@ -96,7 +99,10 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 				s.cancel();
 
 				if (WIP.getAndIncrement(this) == 0) {
-					VALUE.lazySet(this, null);
+					Object toDiscard = VALUE.getAndSet(this, null);
+					if (toDiscard != null) {
+						Operators.onDiscard(toDiscard, ctx);
+					}
 				}
 			}
 		}
@@ -114,7 +120,10 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			VALUE.lazySet(this, t);
+			Object toDiscard = VALUE.getAndSet(this, t);
+			if (toDiscard != null) {
+				Operators.onDiscard(toDiscard, ctx);
+			}
 			drain();
 		}
 
@@ -186,14 +195,19 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a) {
 			if (cancelled) {
-				VALUE.lazySet(this, null);
-				return true;
+				Object toDiscard = VALUE.getAndSet(this, null);
+				if (toDiscard != null) {
+					Operators.onDiscard(toDiscard, ctx);
+				}return true;
 			}
 
 			if (d) {
 				Throwable e = error;
 				if (e != null) {
-					VALUE.lazySet(this, null);
+					Object toDiscard = VALUE.getAndSet(this, null);
+					if (toDiscard != null) {
+						Operators.onDiscard(toDiscard, ctx);
+					}
 
 					a.onError(e);
 					return true;

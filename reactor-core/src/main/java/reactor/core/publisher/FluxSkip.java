@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Skips the first N elements from a reactive stream.
@@ -50,6 +51,7 @@ final class FluxSkip<T> extends FluxOperator<T, T> {
 			implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context ctx;
 
 		long remaining;
 
@@ -57,6 +59,7 @@ final class FluxSkip<T> extends FluxOperator<T, T> {
 
 		SkipSubscriber(CoreSubscriber<? super T> actual, long n) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.remaining = n;
 		}
 
@@ -77,6 +80,7 @@ final class FluxSkip<T> extends FluxOperator<T, T> {
 				actual.onNext(t);
 			}
 			else {
+				Operators.onDiscard(t, ctx);
 				remaining = r - 1;
 			}
 		}

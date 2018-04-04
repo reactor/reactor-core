@@ -80,6 +80,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 		final Function<? super T, ? extends Publisher<U>> throttler;
 		final Queue<SampleTimeoutOther<T, U>>             queue;
 		final CoreSubscriber<? super T>                   actual;
+		final Context                                     ctx;
 
 		volatile Subscription s;
 
@@ -126,6 +127,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				Function<? super T, ? extends Publisher<U>> throttler,
 				Queue<SampleTimeoutOther<T, U>> queue) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.throttler = throttler;
 			this.queue = queue;
 		}
@@ -166,6 +168,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				cancelled = true;
 				Operators.terminate(S, this);
 				Operators.terminate(OTHER, this);
+				Operators.onDiscardQueueWithClear(queue, ctx, SampleTimeoutOther::toStream);
 			}
 		}
 
@@ -191,7 +194,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 						"throttler returned a null publisher");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, ctx));
 				return;
 			}
 
@@ -208,7 +211,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, ctx);
 			}
 		}
 
@@ -243,7 +246,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				error(e);
 			}
 			else {
-				Operators.onErrorDropped(e, actual.currentContext());
+				Operators.onErrorDropped(e, ctx);
 			}
 		}
 
@@ -285,7 +288,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 						else {
 							cancel();
 
-							q.clear();
+							Operators.onDiscardQueueWithClear(q, ctx, SampleTimeoutOther::toStream);
 
 							Throwable e = Exceptions.failWithOverflow(
 									"Could not emit value due to lack of requests");
@@ -305,9 +308,9 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<SampleTimeoutOther<T, U>> q) {
 			if (cancelled) {
-				q.clear();
+				Operators.onDiscardQueueWithClear(q, ctx, SampleTimeoutOther::toStream);
 				return true;
 			}
 			if (d) {
@@ -315,7 +318,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				if (e != null && e != Exceptions.TERMINATED) {
 					cancel();
 
-					q.clear();
+					Operators.onDiscardQueueWithClear(q, ctx, SampleTimeoutOther::toStream);
 
 					a.onError(e);
 					return true;
@@ -396,5 +399,10 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				main.otherNext(this);
 			}
 		}
+
+		final Stream<T> toStream() {
+			return Stream.of(value);
+		}
+
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
@@ -81,6 +82,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 			implements InnerOperator<T, C> {
 
 		final CoreSubscriber<? super C> actual;
+		final Context                   ctx;
 
 		final static int NOT_TERMINATED          = 0;
 		final static int TERMINATED_WITH_SUCCESS = 1;
@@ -125,6 +127,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 				Scheduler.Worker timer,
 				Supplier<C> bufferSupplier) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.timespan = timespan;
 			this.timer = timer;
 			this.flushTask = () -> {
@@ -199,6 +202,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 
 				actual.onError(Exceptions.failWithOverflow(
 						"Could not emit buffer due to lack of requests"));
+				Operators.onDiscardMultiple(v, this.ctx);
 			}
 		}
 
@@ -232,7 +236,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 				}
 				catch (RejectedExecutionException ree) {
 					onError(Operators.onRejectedExecution(ree, subscription, null, value,
-							actual.currentContext()));
+							 this.ctx));
+					Operators.onDiscard(value, this.ctx);
 					return;
 				}
 			}
@@ -315,6 +320,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 				synchronized (this) {
 					C v = values;
 					if(v != null) {
+						Operators.onDiscardMultiple(v, this.ctx);
 						v.clear();
 						values = null;
 					}
@@ -340,6 +346,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 				if (s != null) {
 					this.subscription = null;
 					s.cancel();
+				}
+				C v = values;
+				if (v != null) {
+					Operators.onDiscardMultiple(v, this.ctx);
+					v.clear();
 				}
 			}
 		}

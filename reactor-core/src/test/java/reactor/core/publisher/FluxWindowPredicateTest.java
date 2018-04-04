@@ -17,9 +17,11 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 
@@ -36,6 +38,7 @@ import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -828,6 +831,26 @@ public class FluxWindowPredicateTest extends
 		            .verify(Duration.ofSeconds(1));
 
 		assertThat(req.get()).isEqualTo(13); //11 elements + the prefetch
+	}
+
+	@Test
+	public void discardOnWindowCancel() {
+		List<Object> discardMain = new ArrayList<>();
+		List<Object> discardWindow = new ArrayList<>();
+
+		StepVerifier.create(Flux.just(1, 2, 3, 0, 4, 5, 0, 0, 6)
+		                        .windowWhile(i -> i > 0)
+		                        .flatMap(w -> w.take(1)
+		                                       .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardWindow::add))
+		                        )
+		                        .subscriberContext(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<Object>) discardMain::add)))
+		            .expectNext(1, 4, 6)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasNotDiscardedElements();
+
+		assertThat(discardWindow).containsExactly(2, 3, 5);
+		assertThat(discardMain).containsExactly(0, 0, 0);
 	}
 
 	@Test
