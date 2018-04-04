@@ -34,7 +34,7 @@ import reactor.util.annotation.Nullable;
  * wraps other form of async-delayed execution of tasks.
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDelay extends Mono<Long> implements Scannable {
+final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<Long>  {
 
 	final Scheduler timedScheduler;
 

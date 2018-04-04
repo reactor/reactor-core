@@ -119,12 +119,23 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.ACTUAL_METADATA) return !stacktrace.checkpointed;
 
 		return null;
 	}
 
 	@Override
+	public String stepName() {
+		return stacktrace.operatorAssemblyInformation();
+	}
+
+	@Override
+	public String operatorName() {
+		return stepName();
+	}
+
+	@Override
 	public String toString() {
-		return stacktrace.stackFirst();
+		return stacktrace.operatorAssemblyInformation();
 	}
 }

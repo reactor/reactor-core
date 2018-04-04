@@ -649,7 +649,7 @@ public class HooksTest {
 		Hooks.onOperatorDebug();
 
 		Hooks.onEachOperator(p -> {
-			System.out.println(Scannable.from(p).operatorName());
+			System.out.println(Scannable.from(p).stepName());
 			return p;
 		});
 
@@ -740,7 +740,7 @@ public class HooksTest {
 		List<Publisher> l = new ArrayList<>();
 		Hooks.onLastOperator(p -> {
 			System.out.println(Scannable.from(p).parents().count());
-			System.out.println(Scannable.from(p).operatorName());
+			System.out.println(Scannable.from(p).stepName());
 			l.add(p);
 			return p;
 		});
@@ -767,13 +767,10 @@ public class HooksTest {
 			    })).flux().publish();
 
 			t.map(d -> d).subscribe(null,
-					e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-							("\t|_\tFlux.publish")));
+					e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t|_\tFlux.publish"));
 
-			t.filter(d -> true).subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("\t\t|_\tFlux.publish")));
-			t.distinct().subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("\t\t\t|_\tFlux.publish")));
+			t.filter(d -> true).subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t\t|_\tFlux.publish"));
+			t.distinct().subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t\t\t|_\tFlux.publish"));
 
 			t.connect();
 		}

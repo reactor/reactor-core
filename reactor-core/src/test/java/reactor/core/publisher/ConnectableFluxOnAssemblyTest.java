@@ -32,4 +32,23 @@ public class ConnectableFluxOnAssemblyTest {
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 	}
 
+	@Test
+	public void scanOperator() {
+		ConnectableFlux<String> source = Flux.just("foo").publish();
+		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source);
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(source);
+	}
+
+	@Test
+	public void stepNameAndToString() {
+		ConnectableFluxOnAssembly<?> test = new ConnectableFluxOnAssembly<>(Flux.empty().publish());
+
+		assertThat(test.toString())
+				.isEqualTo(test.stepName())
+				.isEqualTo("reactor.core.publisher.ConnectableFluxOnAssemblyTest.stepNameAndToString(ConnectableFluxOnAssemblyTest.java:47)");
+	}
+
 }

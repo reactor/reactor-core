@@ -37,7 +37,7 @@ import reactor.util.context.Context;
  *
  * @param <R> the source value types
  */
-final class MonoZip<T, R> extends Mono<R> implements Scannable {
+final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 
 	final boolean delayError;
 

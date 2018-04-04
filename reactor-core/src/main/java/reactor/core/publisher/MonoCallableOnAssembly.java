@@ -91,7 +91,24 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.ACTUAL_METADATA) return !stacktrace.checkpointed;
+
+		return super.scanUnsafe(key);
+	}
+
+	@Override
+	public String stepName() {
+		return stacktrace.operatorAssemblyInformation();
+	}
+
+	@Override
+	public String operatorName() {
+		return stepName();
+	}
+
+	@Override
 	public String toString() {
-		return stacktrace.stackFirst();
+		return stacktrace.operatorAssemblyInformation();
 	}
 }

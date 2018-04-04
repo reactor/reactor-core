@@ -44,7 +44,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, Scannable {
+final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceProducer<R> {
 
 	final Publisher<? extends T>[] array;
 

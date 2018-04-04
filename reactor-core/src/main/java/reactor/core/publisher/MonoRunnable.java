@@ -21,14 +21,12 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
  */
-final class MonoRunnable<T> extends Mono<T>
-        implements Callable<Void>, Scannable {
+final class MonoRunnable<T> extends Mono<T> implements Callable<Void>, SourceProducer<T>  {
 
     final Runnable run;
     

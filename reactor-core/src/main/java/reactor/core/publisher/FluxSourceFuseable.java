@@ -26,7 +26,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
-final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, Scannable {
+final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourceProducer<I> {
 
 	final Publisher<? extends I> source;
 

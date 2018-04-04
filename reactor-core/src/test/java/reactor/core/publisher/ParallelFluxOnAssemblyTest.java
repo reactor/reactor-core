@@ -34,7 +34,24 @@ public class ParallelFluxOnAssemblyTest {
 	}
 
 	@Test
-	public void scanOperator() throws Exception {
+	public void scanUnsafe() {
+		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty());
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
+	}
+
+	@Test
+	public void stepNameAndToString() {
+		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, "foo");
+
+		assertThat(test.toString())
+				.isEqualTo(test.stepName())
+				.isEqualTo("reactor.core.publisher.ParallelFluxOnAssemblyTest.stepNameAndToString(ParallelFluxOnAssemblyTest.java:46)");
+	}
+
+	@Test
+	public void scanOperator() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
 		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source);
 
@@ -42,6 +59,8 @@ public class ParallelFluxOnAssemblyTest {
 		assertThat(test.scan(Scannable.Attr.PREFETCH))
 				.isEqualTo(256)
 				.isEqualTo(source.getPrefetch());
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
 
 }

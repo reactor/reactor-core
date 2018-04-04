@@ -29,49 +29,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package reactor.core.publisher;
 
-import java.util.Objects;
-import java.util.function.Supplier;
-
-import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
-import reactor.core.Fuseable;
+import org.reactivestreams.Publisher;
+import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
- * Emits a generated {@link Throwable} instance to Subscribers, lazily generated via a
- * provided {@link java.util.function.Supplier}.
  *
- * @param <T> the value type
+ * {@link SourceProducer} is a {@link Publisher} that is {@link Scannable} for the
+ * purpose of being tied back to a chain of operators. By itself it doesn't allow
+ * walking the hierarchy of operators, as they can only be tied from downstream to upstream
+ * by referencing their sources.
  *
- * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ * @param <O> output operator produced type
+ *
+ * @author Simon Baslé
  */
-final class FluxErrorSupplied<T> extends Flux<T> implements Fuseable.ScalarCallable, SourceProducer<T> {
+interface SourceProducer<O> extends Scannable, Publisher<O> {
 
-	final Supplier<Throwable> errorSupplier;
+	@Override
+	@Nullable
+	default Object scanUnsafe(Attr key) {
+		if (key == Attr.PARENT) return Scannable.from(null);
+		if (key == Attr.ACTUAL) return Scannable.from(null);
 
-	FluxErrorSupplied(Supplier<Throwable> errorSupplier) {
-		this.errorSupplier = Objects.requireNonNull(errorSupplier, "errorSupplier");
+		return null;
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		Throwable error = Objects.requireNonNull(errorSupplier.get(), "errorSupplier produced a null Throwable");
-		Operators.error(actual, Operators.onOperatorError(error, actual.currentContext()));
+	default String stepName() {
+		return "source(" + getClass().getSimpleName() + ")";
 	}
 
 	@Override
-	public Object call() throws Exception {
-		Throwable error = Objects.requireNonNull(errorSupplier.get(), "errorSupplier produced a null Throwable");
-		if(error instanceof Exception){
-			throw ((Exception)error);
-		}
-		throw Exceptions.propagate(error);
-	}
-
-	@Override
-	public Object scanUnsafe(Attr key) {
-		return null; //no particular key to be represented, still useful in hooks
+	default String operatorName() {
+		return stepName();
 	}
 }

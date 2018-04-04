@@ -16,13 +16,18 @@
 
 package reactor.core;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Spliterators;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
@@ -70,6 +75,16 @@ public interface Scannable {
 		 */
 		public static final Attr<Scannable> ACTUAL = new Attr<>(null,
 				Scannable::from);
+
+		/**
+		 * Indicate that for some purposes a {@link Scannable} should be used as additional
+		 * source of information about a contiguous {@link Scannable} in the chain.
+		 * <p>
+		 * For example {@link Scannable#steps()} uses this to collate the
+		 * {@link Scannable#stepName() stepName} of an assembly trace to its
+		 * wrapped operator (the one before it in the assembly chain).
+		 */
+		public static final Attr<Boolean> ACTUAL_METADATA = new Attr<>(false);
 
 		/**
 		 * A {@link Integer} attribute implemented by components with a backlog
@@ -333,10 +348,10 @@ public interface Scannable {
 
 	/**
 	 * Return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
-	 * chain (downward).
+	 * chain (downward). The current {@link Scannable} is not included.
 	 *
 	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
-	 * chain (downward)
+	 * chain (downward, current {@link Scannable} not included).
 	 */
 	default Stream<? extends Scannable> actuals() {
 		return Attr.recurse(this, Attr.ACTUAL);
@@ -361,8 +376,9 @@ public interface Scannable {
 	}
 
 	/**
-	 * Check this {@link Scannable}e and its {@link #parents()} for a name an return the
-	 * first one that is reachable.
+	 * Check this {@link Scannable} and its {@link #parents()} for a user-defined name and
+	 * return the first one that is reachable, or default to this {@link Scannable}
+	 * {@link #stepName()} if none.
 	 *
 	 * @return the name of the first parent that has one defined (including this scannable)
 	 */
@@ -376,19 +392,44 @@ public interface Scannable {
 				.map(s -> s.scan(Attr.NAME))
 				.filter(Objects::nonNull)
 				.findFirst()
-				.orElse(operatorName());
+				.orElse(stepName());
 	}
 
 	/**
-	 * Check this {@link Scannable}e and its {@link #parents()} for a name an return the
-	 * first one that is reachable.
-	 *
-	 * @return the name of the first parent that has one defined (including this scannable)
+	 * Return a meaningful {@link String} representation of this {@link Scannable} in
+	 * its chain of {@link #parents()} and {@link #actuals()}.
 	 */
+	default String stepName() {
+		//stepName defaults to calling operatorName so that old code that
+		//overrides operatorName() still work when called through stepName()
+		//TODO remove operatorName entirely in 3.2.1
+		return operatorName();
+	}
+
+	/**
+	 * Return a meaningful {@link String} representation of this {@link Scannable} in
+	 * its chain of {@link #parents()} and {@link #actuals()}.
+	 *
+	 * @deprecated replace usages and definitions of {@code operatorName} with {@link #stepName()}.
+	 * will be removed in 3.2.1
+	 */
+	@Deprecated
 	default String operatorName() {
-		String stripped = toString()
-				.replaceAll("Parallel|Flux|Mono|Publisher", "")
-				.replaceAll("Fuseable|Operator", "");
+		// /!\ this code is duplicated in `InnerConsumer#stepName` in order to use simple class name instead of toString
+
+		/*
+		 * Strip an operator name of various prefixes and suffixes.
+		 * @param name the operator name, usually simpleClassName or fully-qualified classname.
+		 * @return the stripped operator name
+		 */
+		String name = toString();
+		if (name.contains("@") && name.contains("$")) {
+			name = name.substring(0, name.indexOf('$'));
+			name = name.substring(name.lastIndexOf('.') + 1);
+		}
+		String stripped = name
+				.replaceAll("Parallel|Flux|Mono|Publisher|Subscriber", "")
+				.replaceAll("Fuseable|Operator|Conditional", "");
 
 		if(stripped.length() > 0) {
 			return stripped.substring(0, 1).toLowerCase() + stripped.substring(1);
@@ -397,11 +438,51 @@ public interface Scannable {
 	}
 
 	/**
+	 * List the step names in the chain of {@link Scannable} (including the current element),
+	 * in their assembly order. This traverses the chain of {@link Scannable} both upstream
+	 * ({@link #parents()}) and downstream ({@link #actuals()}).
+	 * <ol>
+	 *     <li>if the current Scannable is a {@link Subscriber}, the chain can reach down to
+	 *     the final subscriber, provided it is {@link Scannable} (eg. lambda subscriber)</li>
+	 *     <li>if it is an operator the chain can reach up to the source, if it is a Reactor
+	 *     source (that is {@link Scannable}).</li>
+	 * </ol>
+	 *
+	 * @return a {@link Stream} of {@link #stepName()} for each discovered step in the {@link Scannable} chain
+	 */
+	default Stream<String> steps() {
+		List<Scannable> chain = new ArrayList<>();
+		chain.addAll(parents().collect(Collectors.toList()));
+		Collections.reverse(chain);
+		chain.add(this);
+		chain.addAll(actuals().collect(Collectors.toList()));
+
+		List<String> chainNames = new ArrayList<>(chain.size());
+		for (int i = 0; i < chain.size(); i++) {
+			Scannable step = chain.get(i);
+			Scannable stepAfter = null;
+			if (i < chain.size() - 1) {
+				stepAfter = chain.get(i + 1);
+			}
+			//noinspection ConstantConditions
+			if (stepAfter != null && stepAfter.scan(Attr.ACTUAL_METADATA)) {
+				chainNames.add(stepAfter.stepName());
+				i++;
+			}
+			else {
+				chainNames.add(step.stepName());
+			}
+		}
+
+		return chainNames.stream();
+	}
+
+	/**
 	 * Return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
-	 * chain (upward).
+	 * chain (upward). The current {@link Scannable} is not included.
 	 *
 	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
-	 * chain (upward)
+	 * chain (upward, current {@link Scannable} not included).
 	 */
 	default Stream<? extends Scannable> parents() {
 		return Attr.recurse(this, Attr.PARENT);

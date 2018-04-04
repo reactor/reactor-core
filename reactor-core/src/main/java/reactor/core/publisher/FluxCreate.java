@@ -42,7 +42,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
-final class FluxCreate<T> extends Flux<T> implements Scannable {
+final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	enum CreateMode {
 		PUSH_ONLY, PUSH_PULL

@@ -47,12 +47,12 @@ public class GuideDebuggingExtraTests {
 
 			assertThat(debugStack)
 					.endsWith("Error has been observed by the following operator(s):\n"
-							+ "\t|_\tFlux.map(FakeRepository.java:27)\n"
-							+ "\t|_\tFlux.map(FakeRepository.java:28)\n"
-							+ "\t|_\tFlux.filter(FakeUtils1.java:29)\n"
-							+ "\t|_\tFlux.transform(GuideDebuggingExtraTests.java:40)\n"
-							+ "\t|_\tFlux.elapsed(FakeUtils2.java:30)\n"
-							+ "\t|_\tFlux.transform(GuideDebuggingExtraTests.java:41)\n\n");
+							+ "\t|_\tFlux.map ⇢ reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)\n"
+							+ "\t|_\tFlux.map ⇢ reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)\n"
+							+ "\t|_\tFlux.filter ⇢ reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)\n"
+							+ "\t|_\tFlux.transform ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)\n"
+							+ "\t|_\tFlux.elapsed ⇢ reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)\n"
+							+ "\t|_\tFlux.transform ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:41)\n\n");
 		}
 		finally {
 			Hooks.resetOnOperatorDebug();

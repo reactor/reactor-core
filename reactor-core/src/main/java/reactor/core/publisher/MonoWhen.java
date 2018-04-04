@@ -33,7 +33,7 @@ import reactor.util.context.Context;
  * Waits for all Mono sources to produce a value or terminate, and if all of them produced
  * a value, emit a Tuples of those values; otherwise terminate.
  */
-final class MonoWhen extends Mono<Void> implements Scannable {
+final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 	final boolean delayError;
 

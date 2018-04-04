@@ -56,4 +56,26 @@ final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 	public T call() throws Exception {
 		return ((Callable<T>) source).call();
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.ACTUAL_METADATA) return !stacktrace.checkpointed;
+
+		return super.scanUnsafe(key);
+	}
+
+	@Override
+	public String stepName() {
+		return stacktrace.operatorAssemblyInformation();
+	}
+
+	@Override
+	public String operatorName() {
+		return stepName();
+	}
+
+	@Override
+	public String toString() {
+		return stacktrace.operatorAssemblyInformation();
+	}
 }

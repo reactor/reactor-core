@@ -83,92 +83,30 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@Override
+	public String stepName() {
+		return snapshotStack.operatorAssemblyInformation();
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.ACTUAL_METADATA) return !snapshotStack.checkpointed;
+
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public String toString() {
-		return snapshotStack.stackFirst();
+		return snapshotStack.operatorAssemblyInformation();
 	}
 
 	static String getStacktrace(AssemblySnapshotException snapshotStack) {
 		StackTraceElement[] stes = snapshotStack.getStackTrace();
-		StringBuilder sb = new StringBuilder();
-		for (StackTraceElement e : stes) {
-			String row = e.toString();
-			if (!fullStackTrace) {
-				if (e.getLineNumber() <= 1) {
-					continue;
-				}
-				if (row.contains("java.util.function")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.Flux.onAssembly")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.ParallelFlux.onAssembly")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.SignalLogger")) {
-					continue;
-				}
-				if (row.contains("FluxOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("MonoOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("MonoCallableOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("FluxCallableOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("OnOperatorDebug")) {
-					continue;
-				}
-				if (row.contains("reactor.core.publisher.Hooks")) {
-					continue;
-				}
-				if (row.contains(".junit.runner")) {
-					continue;
-				}
-				if (row.contains(".junit4.runner")) {
-					continue;
-				}
-				if (row.contains(".junit.internal")) {
-					continue;
-				}
-				if (row.contains("sun.reflect")) {
-					continue;
-				}
-				if (row.contains("useTraceAssembly")) {
-					continue;
-				}
-				if (row.contains("java.lang.Thread.")) {
-					continue;
-				}
-				if (row.contains("ThreadPoolExecutor")) {
-					continue;
-				}
-				if (row.contains("org.apache.catalina.")) {
-					continue;
-				}
-				if (row.contains("org.apache.tomcat.")) {
-					continue;
-				}
-				if (row.contains("com.intellij.")) {
-					continue;
-				}
-				if (row.contains("java.lang.reflect")) {
-					continue;
-				}
-			}
-			sb.append("\t")
-			  .append(row)
-			  .append("\n");
+		if (!fullStackTrace) {
+			return Traces.stackTraceToSanitizedString(stes);
 		}
-
-		return sb.toString();
+		else {
+			return Traces.stackTraceToString(stes);
+		}
 	}
 
 	static void fillStacktraceHeader(StringBuilder sb, Class<?> sourceClass,
@@ -191,7 +129,6 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			  .append(ase.getMessage())
 			  .append("]");
 		}
-
 		sb.append(" :\n");
 	}
 
@@ -211,31 +148,6 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, source));
 			}
 		}
-	}
-
-	static String extract(String source, boolean skipFirst) {
-		String usercode = null;
-		String last = null;
-		boolean first = skipFirst;
-		for (String s : source.split("\n")) {
-			if (s.isEmpty()) {
-				continue;
-			}
-			if (first) {
-				first = false;
-				continue;
-			}
-			if (!s.contains("reactor.core.publisher")) {
-				usercode = s.substring(s.indexOf('('));
-				break;
-			}
-			else {
-				last = s.replace("reactor.core.publisher.", "");
-				last = last.substring(0, last.indexOf("("));
-			}
-		}
-
-		return (last != null ? last : "") + usercode;
 	}
 
 	@Override
@@ -291,8 +203,8 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			return cached;
 		}
 
-		String stackFirst(){
-			return extract(toString(), false);
+		String operatorAssemblyInformation() {
+			return Traces.extractOperatorAssemblyInformation(toString());
 		}
 	}
 
@@ -300,7 +212,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		AssemblyLightSnapshotException(@Nullable String description) {
 			super(description);
-			cached = "\"description\" : \""+description+"\"";
+			cached = "checkpoint(\""+description+"\")";
 		}
 
 		@Override
@@ -314,7 +226,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Override
-		String stackFirst() {
+		String operatorAssemblyInformation() {
 			return toString();
 		}
 	}
@@ -333,7 +245,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			super(message);
 			//skip the "error seen by" if light (no stack)
 			if (!ase.isLight()) {
-				chainOrder.add(Tuples.of(parent.hashCode(), extract(message, true), 0));
+				chainOrder.add(Tuples.of(parent.hashCode(), Traces.extractOperatorAssemblyInformation(message, true), 0));
 			}
 		}
 
@@ -341,7 +253,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			for (int i = 0; i < indent; i++) {
 				sb.append("\t");
 			}
-			sb.append("\t|_")
+			sb.append("\t|_\t")
 			  .append(s)
 			  .append("\n");
 		}
@@ -376,7 +288,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					Tuple3<Integer, String, Integer> t =
 							Tuples.of(
 									parent.hashCode(),
-									extract(stacktrace, true), i);
+									Traces.extractOperatorAssemblyInformation(stacktrace, true), i);
 
 					if(!chainOrder.contains(t)){
 						chainOrder.add(t);
@@ -441,8 +353,24 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL_METADATA) return !snapshotStack.checkpointed;
 
 			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public String toString() {
+			return snapshotStack.operatorAssemblyInformation();
+		}
+
+		@Override
+		public String stepName() {
+			return toString();
+		}
+
+		@Override
+		public String operatorName() {
+			return stepName();
 		}
 
 		@Override
@@ -477,19 +405,22 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			StringBuilder sb = new StringBuilder();
 			fillStacktraceHeader(sb, parent.getClass(), snapshotStack);
 			OnAssemblyException set = null;
+			if (!snapshotStack.isLight()) {
+				sb.append(snapshotStack.toString());
+			}
+
 			if (t.getSuppressed().length > 0) {
 				for (Throwable e : t.getSuppressed()) {
 					if (e instanceof OnAssemblyException) {
 						OnAssemblyException oae = ((OnAssemblyException) e);
-						oae.add(parent, sb.append(snapshotStack.toString()).toString());
+						oae.add(parent, sb.toString());
 						set = oae;
 						break;
 					}
 				}
 			}
 			if (set == null) {
-				t = Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack,
-						sb.append(snapshotStack.toString()).toString()));
+				t = Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, sb.toString()));
 			}
 			else if(snapshotStack.checkpointed) {
 				t = Exceptions.addSuppressed(t, snapshotStack);
@@ -569,5 +500,5 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 }
-interface AssemblyOp {
-}
+
+interface AssemblyOp {}

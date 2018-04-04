@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 
 /**
  * Represents an never publisher which only calls onSubscribe.
@@ -27,7 +26,7 @@ import reactor.core.Scannable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxNever extends Flux<Object> implements Scannable {
+final class FluxNever extends Flux<Object> implements SourceProducer<Object> {
 
 	static final Publisher<Object> INSTANCE = new FluxNever();
 

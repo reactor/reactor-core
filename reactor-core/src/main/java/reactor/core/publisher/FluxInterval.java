@@ -33,7 +33,7 @@ import reactor.util.annotation.Nullable;
  * or a custom async callback function
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxInterval extends Flux<Long> implements Scannable {
+final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 
 	final Scheduler timedScheduler;
 	

@@ -22,7 +22,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -31,8 +30,7 @@ import reactor.core.Scannable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxError<T> extends Flux<T>
-		implements Fuseable.ScalarCallable, Scannable {
+final class FluxError<T> extends Flux<T> implements Fuseable.ScalarCallable, SourceProducer<T> {
 
 	final Throwable error;
 

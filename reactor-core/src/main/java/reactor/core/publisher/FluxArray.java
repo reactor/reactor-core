@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -32,7 +31,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxArray<T> extends Flux<T> implements Fuseable, Scannable {
+final class FluxArray<T> extends Flux<T> implements Fuseable, SourceProducer<T> {
 
 	final T[] array;
 
@@ -64,6 +63,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable, Scannable {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.BUFFERED) return array.length;
+
 		return null;
 	}
 

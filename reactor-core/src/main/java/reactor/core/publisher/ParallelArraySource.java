@@ -24,7 +24,7 @@ import reactor.core.CoreSubscriber;
  * 
  * @param <T> the value type
  */
-final class ParallelArraySource<T> extends ParallelFlux<T> {
+final class ParallelArraySource<T> extends ParallelFlux<T> implements SourceProducer<T>  {
 	final Publisher<T>[] sources;
 	
 	ParallelArraySource(Publisher<T>[] sources) {

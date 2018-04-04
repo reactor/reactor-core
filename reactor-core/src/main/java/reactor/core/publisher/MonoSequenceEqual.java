@@ -33,7 +33,7 @@ import reactor.util.context.Context;
 
 import static reactor.core.publisher.Operators.cancelledSubscription;
 
-final class MonoSequenceEqual<T> extends Mono<Boolean> implements Scannable {
+final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer<Boolean>  {
 	final Publisher<? extends T>            first;
 	final Publisher<? extends T>            second;
 	final BiPredicate<? super T, ? super T> comparer;

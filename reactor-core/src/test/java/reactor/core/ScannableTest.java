@@ -16,13 +16,17 @@
 
 package reactor.core;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.assertj.core.api.Condition;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.util.function.Tuple2;
@@ -192,7 +196,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(Scannable.from(flux).operatorName())
+				.isEqualTo(Scannable.from(flux).stepName())
 				.isEqualTo("map");
 	}
 
@@ -329,7 +333,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(Scannable.from(flux).operatorName())
+				.isEqualTo(Scannable.from(flux).stepName())
 				.isEqualTo("map");
 	}
 
@@ -434,7 +438,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(Scannable.from(flux).operatorName())
+				.isEqualTo(Scannable.from(flux).stepName())
 				.isEqualTo("map");
 	}
 
@@ -519,6 +523,156 @@ public class ScannableTest {
 		assertThat(Scannable.Attr.PREFETCH.isConversionSafe()).as("PREFETCH").isFalse();
 		assertThat(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM.isConversionSafe()).as("REQUESTED_FROM_DOWNSTREAM").isFalse();
 		assertThat(Scannable.Attr.TERMINATED.isConversionSafe()).as("TERMINATED").isFalse();
+	}
+
+	@Test
+	public void operatorChainWithDebugMode() {
+		Hooks.onOperatorDebug();
+
+		List<String> downstream = new ArrayList<>();
+		List<String> upstream = new ArrayList<>();
+
+		try {
+			Mono<?> m=
+					Flux.from(s -> {
+						Scannable thisSubscriber = Scannable.from(s);
+						assertThat(thisSubscriber.isScanAvailable()).as("thisSubscriber.isScanAvailable").isTrue();
+						thisSubscriber.steps().forEach(downstream::add);
+					})
+					    .map(a -> a)
+					    .delayElements(Duration.ofMillis(10))
+					    .filter(a -> true)
+					    .reduce((a, b) -> b);
+
+			m.subscribe();
+
+			Scannable thisOperator = Scannable.from(m);
+			assertThat(thisOperator.isScanAvailable()).as("thisOperator.isScanAvailable").isTrue();
+
+			thisOperator.steps().forEach(upstream::add);
+
+		}
+		finally {
+			Hooks.resetOnOperatorDebug();
+		}
+
+		assertThat(downstream).containsExactly(
+				"Flux.map ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
+				"Flux.delayElements ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
+				"Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.reduce ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)",
+				"lambda");
+
+		assertThat(upstream).containsExactly(
+				"source(FluxSource)",
+				"Flux.map ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
+				"Flux.delayElements ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
+				"Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.reduce ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)");
+	}
+
+	@Test
+	public void operatorChainWithLastSubscriber() {
+		AtomicReference<Subscription> subRef = new AtomicReference<>(null);
+
+		Mono<String> m=
+				Flux.just("foo")
+				    .map(a -> a)
+				    .filter(a -> true)
+				    .reduce((a, b) -> b)
+				    .doOnSubscribe(subRef::set);
+
+		m.subscribe();
+
+		Scannable lastSubscriber = Scannable.from(subRef.get());
+		assertThat(lastSubscriber.isScanAvailable()).as("lastSubscriber.isScanAvailable").isTrue();
+
+		Stream<String> chain = lastSubscriber.steps();
+
+		assertThat(chain).containsExactly("just", "map", "filter", "reduce", "peek", "lambda");
+	}
+
+	@Test
+	public void operatorChainWithLastOperator() {
+		Mono<String> m =
+				Flux.concat(Mono.just("foo"), Mono.just("bar"))
+				    .map(a -> a)
+				    .filter(a -> true)
+				    .reduce((a, b) -> b)
+				    .doOnSubscribe(sub -> {});
+
+		Scannable operator = Scannable.from(m);
+		assertThat(operator.isScanAvailable()).as("operator.isScanAvailable").isTrue();
+
+		assertThat(operator.steps())
+				.containsExactly("source(FluxConcatArray)", "map", "filter", "reduce", "peek");
+	}
+
+	@Test
+	public void operatorChainWithCheckpoint() {
+		Flux<String> flux  = Flux.just("foo")
+		                         .checkpoint("checkpointHere", true)
+		                         .map(a -> a);
+
+		assertThat(Scannable.from(flux).steps())
+				.containsExactly(
+						"source(FluxJust)",
+						"Flux.checkpoint ⇢ reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:614)",
+						"map"
+				);
+	}
+
+	@Test
+	public void operatorChainWithLightCheckpoint() {
+		Flux<String> flux  = Flux.just("foo")
+		                         .checkpoint("checkpointHere")
+		                         .map(a -> a);
+
+		assertThat(Scannable.from(flux).steps())
+				.containsExactly(
+						"source(FluxJust)",
+						"checkpoint(\"checkpointHere\")",
+						"map"
+				);
+	}
+
+	@Test
+	public void operatorChainWithoutDebugMode() {
+		List<String> downstream = new ArrayList<>();
+
+		Mono<?> m=
+				Flux.from(s -> {
+					Scannable thisSubscriber = Scannable.from(s);
+					assertThat(thisSubscriber.isScanAvailable()).as("thisSubscriber.isScanAvailable").isTrue();
+					thisSubscriber.steps().forEach(downstream::add);
+				})
+				    .map(a -> a)
+				    .filter(a -> true)
+				    .reduce((a, b) -> b);
+
+		m.subscribe();
+
+		assertThat(downstream)
+				.as("from downstream")
+				.containsExactly(
+				"map",
+				"filter",
+				"reduce",
+				"lambda");
+
+
+		Scannable thisOperator = Scannable.from(m);
+
+		assertThat(thisOperator.isScanAvailable())
+				.as("thisOperator.isScanAvailable")
+				.isTrue();
+		assertThat(thisOperator.steps())
+				.as("from upstream")
+				.containsExactly(
+				"source(FluxSource)",
+				"map",
+				"filter",
+				"reduce");
 	}
 
 }

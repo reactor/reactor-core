@@ -21,24 +21,25 @@ Consider the following stack trace:
 [source]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
-	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:120)
-	at reactor.core.publisher.FluxFlatMap$FlatMapMain.emitScalar(FluxFlatMap.java:380)
-	at reactor.core.publisher.FluxFlatMap$FlatMapMain.onNext(FluxFlatMap.java:349)
-	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:119)
-	at reactor.core.publisher.FluxRange$RangeSubscription.slowPath(FluxRange.java:144)
-	at reactor.core.publisher.FluxRange$RangeSubscription.request(FluxRange.java:99)
-	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.request(FluxMapFuseable.java:172)
-	at reactor.core.publisher.FluxFlatMap$FlatMapMain.onSubscribe(FluxFlatMap.java:316)
-	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onSubscribe(FluxMapFuseable.java:94)
+	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:129)
+	at reactor.core.publisher.FluxFlatMap$FlatMapMain.tryEmitScalar(FluxFlatMap.java:445)
+	at reactor.core.publisher.FluxFlatMap$FlatMapMain.onNext(FluxFlatMap.java:379)
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:121)
+	at reactor.core.publisher.FluxRange$RangeSubscription.slowPath(FluxRange.java:154)
+	at reactor.core.publisher.FluxRange$RangeSubscription.request(FluxRange.java:109)
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.request(FluxMapFuseable.java:162)
+	at reactor.core.publisher.FluxFlatMap$FlatMapMain.onSubscribe(FluxFlatMap.java:332)
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onSubscribe(FluxMapFuseable.java:90)
 	at reactor.core.publisher.FluxRange.subscribe(FluxRange.java:68)
-	at reactor.core.publisher.FluxMapFuseable.subscribe(FluxMapFuseable.java:67)
-	at reactor.core.publisher.FluxFlatMap.subscribe(FluxFlatMap.java:98)
+	at reactor.core.publisher.FluxMapFuseable.subscribe(FluxMapFuseable.java:63)
+	at reactor.core.publisher.FluxFlatMap.subscribe(FluxFlatMap.java:97)
 	at reactor.core.publisher.MonoSingle.subscribe(MonoSingle.java:58)
-	at reactor.core.publisher.Mono.subscribeWith(Mono.java:2668)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:2629)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:2604)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:2582)
-	at reactor.guide.GuideTests.debuggingCommonStacktrace(GuideTests.java:722)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:3096)
+	at reactor.core.publisher.Mono.subscribeWith(Mono.java:3204)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:3090)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:3057)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:3029)
+	at reactor.guide.GuideTests.debuggingCommonStacktrace(GuideTests.java:995)
 ----
 
 There is a lot going on there. We get an `IndexOutOfBoundsException`, which tells us that
@@ -124,39 +125,35 @@ the stack trace is as follows:
 [source]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
-	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:120)
-	at reactor.core.publisher.FluxOnAssembly$OnAssemblySubscriber.onNext(FluxOnAssembly.java:314) <1>
+	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:129)
+	at reactor.core.publisher.FluxOnAssembly$OnAssemblySubscriber.onNext(FluxOnAssembly.java:375) <1>
 ...
 <2>
 ...
-	at reactor.core.publisher.Mono.subscribeWith(Mono.java:2668)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:2629)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:2604)
-	at reactor.core.publisher.Mono.subscribe(Mono.java:2582)
-	at reactor.guide.GuideTests.debuggingActivated(GuideTests.java:727)
+	at reactor.core.publisher.Mono.subscribeWith(Mono.java:3204)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:3090)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:3057)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:3029)
+	at reactor.guide.GuideTests.debuggingActivated(GuideTests.java:1000)
 	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: <3>
 Assembly trace from producer [reactor.core.publisher.MonoSingle] : <4>
-	reactor.core.publisher.Flux.single(Flux.java:5335)
-	reactor.guide.GuideTests.scatterAndGather(GuideTests.java:689)
-	reactor.guide.GuideTests.populateDebug(GuideTests.java:702)
+	reactor.core.publisher.Flux.single(Flux.java:6676)
+	reactor.guide.GuideTests.scatterAndGather(GuideTests.java:949)
+	reactor.guide.GuideTests.populateDebug(GuideTests.java:962)
 	org.junit.rules.TestWatcher$1.evaluate(TestWatcher.java:55)
 	org.junit.rules.RunRules.evaluate(RunRules.java:20)
 Error has been observed by the following operator(s): <5>
-	|_	Flux.single(TestWatcher.java:55) <6>
+	|_	Flux.single ⇢ reactor.guide.GuideTests.scatterAndGather(GuideTests.java:949) <6>
 ----
 <1> This is new: We see the wrapper operator that captures the stack.
 <2> Apart from that, the first section of the stack trace is still the same for the most
 part, showing a bit of the operator's internals (so we removed a bit of the snippet here).
-//TODO I'd put it back in. Wading through the whole thing is part of the task
-// you're describing. You might instead highlight the most relevant lines, to
-// teach people what to look for.
 <3> This is where the new stuff from debugging mode starts to appear.
 <4> First, we get some details on where the operator was assembled.
 <5> We also get a traceback of the error as it propagated through the operator chain,
 from first to last (error site to subscribe site).
-<6> Each operator that saw the error is mentioned along with the class and line where it
-originated. If an operator is assembled from within Reactor code, the latter would be
-omitted.
+<6> Each operator that saw the error is mentioned along with the user class and line where it
+was used.
 
 As you can see, the captured stack trace is appended to the original error as a
 suppressed `OnAssemblyException`. There are two parts to it, but the first section is the
@@ -203,12 +200,12 @@ we would see the following final traceback:
 [source,java]
 ----
 Error has been observed by the following operator(s):
-	|_	Flux.map(FakeRepository.java:27)
-	|_	Flux.map(FakeRepository.java:28)
-	|_	Flux.filter(FakeUtils1.java:29)
-	|_	Flux.transform(GuideDebuggingExtraTests.java:41)
-	|_	Flux.elapsed(FakeUtils2.java:30)
-	|_	Flux.transform(GuideDebuggingExtraTests.java:42)
+	|_	Flux.map ⇢ reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)
+	|_	Flux.map ⇢ reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)
+	|_	Flux.filter ⇢ reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)
+	|_	Flux.transform ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)
+	|_	Flux.elapsed ⇢ reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)
+	|_	Flux.transform ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:41)
 ----
 
 This corresponds to the section of the chain of operators that gets notified of the error:
@@ -254,13 +251,14 @@ to the assembly traceback. This way, the stack trace is omitted and you rely on 
 description to identify the assembly site. A `checkpoint(String)` imposes less processing
 cost than a regular `checkpoint`.
 
+//snippets are in FluxOnAssemblyTest
 `checkpoint(String)` includes "light" in its output (which can be handy when
 searching), as shown in the following example:
 
 ----
 ...
 	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
-Assembly site of producer [reactor.core.publisher.FluxElapsed] is identified by light checkpoint [light checkpoint identifier].
+Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [light checkpoint identifier].
 ----
 
 Last but not least, if you want to add a more generic description to the checkpoint but
@@ -270,12 +268,11 @@ initial message for the traceback, augmented with a `description`, as shown in t
 following example:
 
 ----
-Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
 Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] : <1>
-	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:174)
-	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescription(FluxOnAssemblyTest.java:159)
+	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)
+	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
 Error has been observed by the following operator(s):
-	|_	ParallelFlux.checkpointnull
+	|_	ParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
 ----
 <1> `descriptionCorrelation1234` is the description provided in the `checkpoint`.
 
