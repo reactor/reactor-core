@@ -3675,6 +3675,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see Signal
 	 */
 	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxDoOnEachFuseable<>(this, signalConsumer));
+		}
 		return onAssembly(new FluxDoOnEach<>(this, signalConsumer));
 	}
 

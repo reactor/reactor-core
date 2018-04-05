@@ -1774,6 +1774,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoDoOnEachFuseable<>(this, signalConsumer));
+		}
 		return onAssembly(new MonoDoOnEach<>(this, signalConsumer));
 
 	}

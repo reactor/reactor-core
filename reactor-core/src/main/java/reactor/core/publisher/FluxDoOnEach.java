@@ -22,6 +22,8 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
+import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -41,14 +43,28 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		this.onSignal = Objects.requireNonNull(onSignal, "onSignal");
 	}
 
-	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		//TODO fuseable version?
-		//TODO conditional version?
-		source.subscribe(new DoOnEachSubscriber<>(actual, onSignal));
+	@SuppressWarnings("unchecked")
+	static <T> DoOnEachSubscriber<T> createSubscriber(CoreSubscriber<? super T> actual,
+			Consumer<? super Signal<T>> onSignal, boolean fuseable) {
+		if (fuseable) {
+			if(actual instanceof ConditionalSubscriber) {
+				return new DoOnEachFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal);
+			}
+			return new DoOnEachFuseableSubscriber<>(actual, onSignal);
+		}
+
+		if (actual instanceof ConditionalSubscriber) {
+			return new DoOnEachConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal);
+		}
+		return new DoOnEachSubscriber<>(actual, onSignal);
 	}
 
-	static final class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
+	@Override
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(createSubscriber(actual, onSignal, false));
+	}
+
+	static class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
 
 		final CoreSubscriber<? super T>   actual;
 		final Context                     cachedContext;
@@ -57,6 +73,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		T t;
 
 		Subscription s;
+		@Nullable
+		Fuseable.QueueSubscription<T> qs;
 
 		boolean done;
 
@@ -79,8 +97,15 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			this.s = s;
-			actual.onSubscribe(this);
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				if (s instanceof Fuseable.QueueSubscription) {
+					@SuppressWarnings("unchecked") final Fuseable.QueueSubscription<T> qs = (Fuseable.QueueSubscription<T>) s;
+					this.qs = qs;
+				}
+
+				actual.onSubscribe(this);
+			}
 		}
 
 		@Override
@@ -201,6 +226,110 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		@Override
 		public String toString() {
 			return "doOnEach_onNext(" + t + ")";
+		}
+	}
+
+	static class DoOnEachFuseableSubscriber<T> extends DoOnEachSubscriber<T>
+			implements Fuseable, Fuseable.QueueSubscription<T> {
+
+		private boolean syncFused;
+
+		DoOnEachFuseableSubscriber(CoreSubscriber<? super T> actual,
+				Consumer<? super Signal<T>> onSignal) {
+			super(actual, onSignal);
+		}
+
+		@Override
+		public int requestFusion(int mode) {
+			QueueSubscription<T> qs = this.qs;
+			if (qs != null && (mode & Fuseable.THREAD_BARRIER) == 0) {
+				int m = qs.requestFusion(mode);
+				if (m != Fuseable.NONE) {
+					syncFused = m == Fuseable.SYNC;
+				}
+				return m;
+			}
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public void clear() {
+			if (qs != null) {
+				qs.clear();
+			}
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return qs == null || qs.isEmpty();
+		}
+
+		@Override
+		@Nullable
+		public T poll() {
+			if (qs == null) {
+				return null;
+			}
+			T v = qs.poll();
+			if (v == null && syncFused) {
+				try {
+					onSignal.accept(Signal.complete(cachedContext));
+					done = true; //TODO verify if done should be set
+				}
+				catch (Throwable e) {
+					done = false;
+					throw e;
+				}
+			} else if (v != null) {
+				this.t = v;
+				onSignal.accept(this); //throw in case of error
+			}
+			return v;
+		}
+
+		@Override
+		public int size() {
+			return qs == null ? 0 : qs.size();
+		}
+	}
+
+	static final class DoOnEachConditionalSubscriber<T> extends DoOnEachSubscriber<T>
+			implements ConditionalSubscriber<T> {
+
+		DoOnEachConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+				Consumer<? super Signal<T>> onSignal) {
+			super(actual, onSignal);
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public boolean tryOnNext(T t) {
+			boolean result = ((ConditionalSubscriber<? super T>)actual).tryOnNext(t);
+			if (result) {
+				this.t = t;
+				onSignal.accept(this);
+			}
+			return result;
+		}
+	}
+
+	static final class DoOnEachFuseableConditionalSubscriber<T> extends DoOnEachFuseableSubscriber<T>
+			implements ConditionalSubscriber<T> {
+
+		DoOnEachFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+				Consumer<? super Signal<T>> onSignal) {
+			super(actual, onSignal);
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public boolean tryOnNext(T t) {
+			boolean result = ((ConditionalSubscriber<? super T>) actual).tryOnNext(t);
+			if (result) {
+				this.t = t;
+				onSignal.accept(this);
+			}
+			return result;
 		}
 	}
 }
