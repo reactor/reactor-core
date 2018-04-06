@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -26,6 +28,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -99,6 +102,27 @@ public class FluxTakeTest {
 		ts.assertNoValues()
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void takeNever() {
+		StepVerifier.create(
+				Flux.never().take(1))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void takeNeverZero() {
+		PublisherProbe<Object> probe = PublisherProbe.of(Flux.never());
+		StepVerifier.create(probe.flux().take(0))
+		            .expectSubscription()
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		probe.assertWasCancelled();
 	}
 
 	@Test
@@ -539,49 +563,53 @@ public class FluxTakeTest {
 	}
 
 	@Test
-	public void takeZeroLongMaxWhenNoRequest() {
+	public void takeZeroCancelsWhenNoRequest() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
 		                      .take(0), 0)
 		            .thenAwait()
-		            .then(() -> ts.assertMinRequested(Long.MAX_VALUE))
-		            .then(() -> ts.complete())
 		            .verifyComplete();
+
+		ts.assertWasNotRequested();
+		ts.assertWasCancelled();
 	}
 
 	@Test
-	public void takeZeroPassRequestWhenActive() {
+	public void takeZeroIgnoresRequestAndCancels() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
 		                      .take(0), 3)
 		            .thenAwait()
-		            .then(() -> ts.assertMinRequested(3))
-		            .then(() -> ts.complete())
 		            .verifyComplete();
+
+		ts.assertWasNotRequested();
+		ts.assertWasCancelled();
 	}
 
 	@Test
-	public void takeConditionalZeroLongMaxWhenNoRequest() {
+	public void takeConditionalZeroCancelsWhenNoRequest() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
 		                      .take(0)
 		                      .filter(d -> true), 0)
 		            .thenAwait()
-		            .then(() -> ts.assertMinRequested(Long.MAX_VALUE))
-		            .then(() -> ts.complete())
 		            .verifyComplete();
+
+		ts.assertWasNotRequested();
+		ts.assertWasCancelled();
 	}
 
 	@Test
-	public void takeConditionalZeroPassRequestWhenActive() {
+	public void takeConditionalZeroIgnoresRequestAndCancels() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
 		                      .take(0)
 		                      .filter(d -> true), 3)
 		            .thenAwait()
-		            .then(() -> ts.assertMinRequested(3))
-		            .then(() -> ts.complete())
 		            .verifyComplete();
+
+		ts.assertWasNotRequested();
+		ts.assertWasCancelled();
 	}
 
 	@Test
