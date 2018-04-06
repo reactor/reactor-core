@@ -575,7 +575,7 @@ public class FluxTakeTest {
 	}
 
 	@Test
-	public void takeZeroPassRequestWhenActive() {
+	public void takeZeroIgnoresRequestAndCancels() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
 		                      .take(0), 3)
@@ -587,27 +587,29 @@ public class FluxTakeTest {
 	}
 
 	@Test
-	public void takeConditionalZeroLongMaxWhenNoRequest() {
+	public void takeConditionalZeroCancelsWhenNoRequest() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
 		                      .take(0)
 		                      .filter(d -> true), 0)
 		            .thenAwait()
-		            .then(() -> ts.assertMinRequested(Long.MAX_VALUE))
-		            .then(() -> ts.complete())
 		            .verifyComplete();
+
+		ts.assertWasNotRequested();
+		ts.assertWasCancelled();
 	}
 
 	@Test
-	public void takeConditionalZeroPassRequestWhenActive() {
+	public void takeConditionalZeroIgnoresRequestAndCancels() {
 		TestPublisher<Integer> ts = TestPublisher.create();
 		StepVerifier.create(ts.flux()
 		                      .take(0)
 		                      .filter(d -> true), 3)
 		            .thenAwait()
-		            .then(() -> ts.assertMinRequested(3))
-		            .then(() -> ts.complete())
 		            .verifyComplete();
+
+		ts.assertWasNotRequested();
+		ts.assertWasCancelled();
 	}
 
 	@Test
