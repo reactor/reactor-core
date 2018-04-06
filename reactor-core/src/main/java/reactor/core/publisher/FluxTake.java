@@ -89,10 +89,14 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
-				if (n == 0 && wip == 0) {
-					request(Long.MAX_VALUE);
+				if (n == 0) {
+					s.cancel();
+					done = true;
+					Operators.complete(actual);
+				}
+				else {
+					this.s = s;
+					actual.onSubscribe(this);
 				}
 			}
 		}
@@ -206,10 +210,14 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
-				if (n == 0 && wip == 0) {
-					request(Long.MAX_VALUE);
+				if (n == 0) {
+					s.cancel();
+					done = true;
+					Operators.complete(actual);
+				}
+				else {
+					this.s = s;
+					actual.onSubscribe(this);
 				}
 			}
 		}
@@ -353,13 +361,14 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.qs, s)) {
-				this.qs = (QueueSubscription<T>) s;
-				actual.onSubscribe(this);
-
-				if (inputMode != Fuseable.SYNC) {
-					if (n == 0 && wip == 0) {
-						request(Long.MAX_VALUE);
-					}
+				if (n == 0) {
+					s.cancel();
+					done = true;
+					Operators.complete(actual);
+				}
+				else {
+					this.qs = (QueueSubscription<T>) s;
+					actual.onSubscribe(this);
 				}
 			}
 		}
