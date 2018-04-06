@@ -99,11 +99,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				if (s instanceof Fuseable.QueueSubscription) {
-					@SuppressWarnings("unchecked") final Fuseable.QueueSubscription<T> qs = (Fuseable.QueueSubscription<T>) s;
-					this.qs = qs;
-				}
-
+				this.qs = Operators.as(s);
 				actual.onSubscribe(this);
 			}
 		}
@@ -232,7 +228,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 	static class DoOnEachFuseableSubscriber<T> extends DoOnEachSubscriber<T>
 			implements Fuseable, Fuseable.QueueSubscription<T> {
 
-		private boolean syncFused;
+		boolean syncFused;
 
 		DoOnEachFuseableSubscriber(CoreSubscriber<? super T> actual,
 				Consumer<? super Signal<T>> onSignal) {
@@ -254,9 +250,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void clear() {
-			if (qs != null) {
-				qs.clear();
-			}
+			qs.clear(); //throws NPE, but should only be called after onSubscribe on a Fuseable
 		}
 
 		@Override
@@ -272,17 +266,16 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			T v = qs.poll();
 			if (v == null && syncFused) {
+				done = true;
 				try {
 					onSignal.accept(Signal.complete(cachedContext));
-					done = true; //TODO verify if done should be set
 				}
 				catch (Throwable e) {
-					done = false;
 					throw e;
 				}
 			} else if (v != null) {
 				this.t = v;
-				onSignal.accept(this); //throw in case of error
+				onSignal.accept(this); //throws in case of error
 			}
 			return v;
 		}

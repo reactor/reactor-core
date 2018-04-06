@@ -25,8 +25,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -40,6 +43,7 @@ import reactor.util.context.Context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
+@RunWith(JUnitParamsRunner.class)
 public class FluxDoOnEachTest {
 
 	@Test(expected = NullPointerException.class)
@@ -47,8 +51,50 @@ public class FluxDoOnEachTest {
 		new FluxDoOnEach<>(null, null);
 	}
 
+	private static final String sourceErrorMessage = "boomSource";
+
+	private Object[] sourcesError() {
+		return new Object[] {
+				new Object[] { Flux.<Integer>error(new IllegalStateException(sourceErrorMessage))
+						.hide() },
+				new Object[] { Flux.<Integer>error(new IllegalStateException(sourceErrorMessage))
+				                   .hide().filter(i -> true) },
+				new Object[] { Flux.<Integer>error(new IllegalStateException(sourceErrorMessage)) },
+				new Object[] { Flux.<Integer>error(new IllegalStateException(sourceErrorMessage))
+						.filter(i -> true) }
+		};
+	}
+
+	private Object[] sources12Complete() {
+		return new Object[] {
+				new Object[] { Flux.just(1,2).hide() },
+				new Object[] { Flux.just(1,2).hide().filter(i -> true) },
+				new Object[] { Flux.just(1,2) },
+				new Object[] { Flux.just(1,2).filter(i -> true) }
+		};
+	}
+
+	private Object[] sourcesEmpty() {
+		return new Object[] {
+				new Object[] { Flux.<Integer>empty().hide() },
+				new Object[] { Flux.<Integer>empty().hide().filter(i -> true) },
+				new Object[] { Flux.<Integer>empty() },
+				new Object[] { Flux.<Integer>empty().filter(i -> true) }
+		};
+	}
+
+	private Object[] sourcesNever() {
+		return new Object[] {
+				new Object[] { Flux.<Integer>never().hide() },
+				new Object[] { Flux.<Integer>never().hide().filter(i -> true) },
+				new Object[] { Flux.<Integer>never() },
+				new Object[] { Flux.<Integer>never().filter(i -> true) }
+		};
+	}
+
 	@Test
-	public void normal() {
+	@Parameters(method = "sources12Complete")
+	public void normal(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -56,9 +102,7 @@ public class FluxDoOnEachTest {
 		AtomicBoolean onComplete = new AtomicBoolean();
 		LongAdder state = new LongAdder();
 
-		Flux.just(1, 2)
-		    .hide()
-		    .doOnEach(s -> {
+		source.doOnEach(s -> {
 			    if (s.isOnNext()) {
 				    onNext.set(s.get());
 				    state.increment();
@@ -72,13 +116,12 @@ public class FluxDoOnEachTest {
 		    })
 		    .subscribe(ts);
 
-		Assert.assertEquals((Integer) 2, onNext.get());
-		Assert.assertNull(onError.get());
-		Assert.assertTrue(onComplete.get());
+		assertThat(onNext).hasValue(2);
+		assertThat(onError).hasValue(null);
+		assertThat(onComplete).isTrue();
 
-		Assert.assertEquals(2, state.intValue());
+		assertThat(state.intValue()).isEqualTo(2);
 	}
-
 
 	//see https://github.com/reactor/reactor-core/issues/1056
 	@Test
@@ -100,7 +143,8 @@ public class FluxDoOnEachTest {
 	}
 
 	@Test
-	public void error() {
+	@Parameters(method = "sourcesError")
+	public void error(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -108,8 +152,7 @@ public class FluxDoOnEachTest {
 		AtomicBoolean onComplete = new AtomicBoolean();
 		LongAdder state = new LongAdder();
 
-		Flux.error(new RuntimeException("forced " + "failure"))
-		    .cast(Integer.class)
+		source
 		    .doOnEach(s -> {
 			    if (s.isOnNext()) {
 				    onNext.set(s.get());
@@ -124,13 +167,16 @@ public class FluxDoOnEachTest {
 		    })
 		    .subscribe(ts);
 
-		Assert.assertNull(onNext.get());
-		Assert.assertTrue(onError.get() instanceof RuntimeException);
-		Assert.assertFalse(onComplete.get());
+		assertThat(onNext).hasValue(null);
+		assertThat(onError.get()).isInstanceOf(IllegalStateException.class)
+		                         .hasMessage(sourceErrorMessage);
+		assertThat(onComplete).isFalse();
+		assertThat(state.intValue()).isZero();
 	}
 
 	@Test
-	public void empty() {
+	@Parameters(method = "sourcesEmpty")
+	public void empty(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -138,8 +184,7 @@ public class FluxDoOnEachTest {
 		AtomicBoolean onComplete = new AtomicBoolean();
 		LongAdder state = new LongAdder();
 
-		Flux.empty()
-		    .cast(Integer.class)
+		source
 		    .doOnEach(s -> {
 			    if (s.isOnNext()) {
 				    onNext.set(s.get());
@@ -154,13 +199,15 @@ public class FluxDoOnEachTest {
 		    })
 		    .subscribe(ts);
 
-		Assert.assertNull(onNext.get());
-		Assert.assertNull(onError.get());
-		Assert.assertTrue(onComplete.get());
+		assertThat(onNext).hasValue(null);
+		assertThat(onError).hasValue(null);
+		assertThat(onComplete).isTrue();
+		assertThat(state.intValue()).isEqualTo(0);
 	}
 
 	@Test
-	public void never() {
+	@Parameters(method = "sourcesNever")
+	public void never(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -168,8 +215,7 @@ public class FluxDoOnEachTest {
 		AtomicBoolean onComplete = new AtomicBoolean();
 		LongAdder state = new LongAdder();
 
-		Flux.never()
-		    .cast(Integer.class)
+		source
 		    .doOnEach(s -> {
 			    if (s.isOnNext()) {
 				    onNext.set(s.get());
@@ -184,19 +230,21 @@ public class FluxDoOnEachTest {
 		    })
 		    .subscribe(ts);
 
-		Assert.assertNull(onNext.get());
-		Assert.assertNull(onError.get());
-		Assert.assertFalse(onComplete.get());
+		assertThat(onNext).hasValue(null);
+		assertThat(onError).hasValue(null);
+		assertThat(onComplete).isFalse();
+		assertThat(state.intValue()).isEqualTo(0);
 	}
 
 	@Test
-	public void nextCallbackError() {
+	@Parameters(method = "sources12Complete")
+	public void nextCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		LongAdder state = new LongAdder();
 
 		Throwable err = new Exception("test");
 
-		Flux.just(1)
+		source
 		    .doOnEach(s -> {
 			    if (s.isOnNext()) {
 				    state.increment();
@@ -211,14 +259,15 @@ public class FluxDoOnEachTest {
 	}
 
 	@Test
-	public void nextCallbackBubbleError() {
+	@Parameters(method = "sources12Complete")
+	public void nextCallbackBubbleError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		LongAdder state = new LongAdder();
 
 		Throwable err = new Exception("test");
 
 		try {
-			Flux.just(1)
+			source
 			    .doOnEach(s -> {
 				    if (s.isOnNext()) {
 					    state.increment();
@@ -236,13 +285,14 @@ public class FluxDoOnEachTest {
 	}
 
 	@Test
-	public void completeCallbackError() {
+	@Parameters(method = "sources12Complete")
+	public void completeCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		LongAdder state = new LongAdder();
 
 		Throwable err = new Exception("test");
 
-		Flux.just(1)
+		source
 		    .doOnEach(s -> {
 			    if (s.isOnComplete()) {
 				    state.increment();
@@ -256,14 +306,14 @@ public class FluxDoOnEachTest {
 	}
 
 	@Test
-	public void errorCallbackError() {
-		AssertSubscriber<String> ts = AssertSubscriber.create();
+	@Parameters(method = "sourcesError")
+	public void errorCallbackError(Flux<Integer> source) {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		LongAdder state = new LongAdder();
 
 		IllegalStateException err = new IllegalStateException("test");
 
-		Flux.error(new IllegalStateException("bar"))
-		    .cast(String.class)
+		source
 		    .doOnEach(s -> {
 			    if (s.isOnError()) {
 				    state.increment();
@@ -274,7 +324,8 @@ public class FluxDoOnEachTest {
 
 		ts.assertNoValues();
 		ts.assertError(IllegalStateException.class);
-		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage().equals("bar"));
+		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage().equals(sourceErrorMessage));
+		ts.assertErrorWith(e -> e.getMessage().equals("test"));
 
 		Assert.assertEquals(1, state.intValue());
 	}
