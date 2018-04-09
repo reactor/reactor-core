@@ -33,7 +33,12 @@ import org.junit.runner.RunWith;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
+import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxDoOnEach.DoOnEachConditionalSubscriber;
+import reactor.core.publisher.FluxDoOnEach.DoOnEachFuseableConditionalSubscriber;
+import reactor.core.publisher.FluxPeekFuseableTest.AssertQueueSubscription;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
@@ -113,7 +118,8 @@ public class FluxDoOnEachTest {
 			    else if (s.isOnComplete()) {
 				    onComplete.set(true);
 			    }
-		    })
+		})
+		      .filter(t -> true)
 		    .subscribe(ts);
 
 		assertThat(onNext).hasValue(2);
@@ -143,6 +149,153 @@ public class FluxDoOnEachTest {
 	}
 
 	@Test
+	public void fusedSync() {
+		AtomicReference<String> onNext = new AtomicReference<>();
+		AtomicReference<Throwable> onError = new AtomicReference<>();
+		AtomicBoolean onComplete = new AtomicBoolean();
+		LongAdder state = new LongAdder();
+
+		StepVerifier.create(Flux.just("sync")
+		                        .doOnEach(s -> {
+			                        if (s.isOnNext()) {
+				                        onNext.set(s.get());
+				                        state.increment();
+			                        }
+			                        else if (s.isOnError()) {
+				                        onError.set(s.getThrowable());
+			                        }
+			                        else if (s.isOnComplete()) {
+				                        onComplete.set(true);
+			                        }
+		                        }))
+		            .expectFusion(Fuseable.SYNC, Fuseable.SYNC)
+		            .expectNext("sync")
+		            .verifyComplete();
+
+		assertThat(onNext).hasValue("sync");
+		assertThat(onError).hasValue(null);
+		assertThat(onComplete).isTrue();
+	}
+
+	@Test
+	public void fusedSyncCallbackError() {
+		AtomicReference<String> onNext = new AtomicReference<>();
+		AtomicReference<Throwable> onError = new AtomicReference<>();
+		AtomicBoolean onComplete = new AtomicBoolean();
+		LongAdder state = new LongAdder();
+
+		StepVerifier.create(Flux.just("sync")
+		                        .doOnEach(s -> {
+			                        if (s.isOnNext()) {
+				                        onNext.set(s.get());
+				                        state.increment();
+			                        }
+			                        else if (s.isOnError()) {
+				                        onError.set(s.getThrowable());
+			                        }
+			                        else if (s.isOnComplete()) {
+			                        	throw new IllegalStateException("boom");
+			                        }
+		                        }))
+		            .expectFusion(Fuseable.SYNC, Fuseable.SYNC)
+		            .expectNext("sync")
+		            .verifyErrorMessage("boom");
+
+		assertThat(onNext).hasValue("sync");
+		assertThat(onError.get()).isNull();
+		assertThat(onComplete).isFalse();
+	}
+
+	@Test
+	public void fusedAsync() {
+		AtomicReference<String> onNext = new AtomicReference<>();
+		AtomicReference<Throwable> onError = new AtomicReference<>();
+		AtomicBoolean onComplete = new AtomicBoolean();
+		LongAdder state = new LongAdder();
+
+		StepVerifier.create(Flux.just("foo")
+		                        .publishOn(Schedulers.immediate())
+		                        .map(s -> s + "_async")
+		                        .doOnEach(s -> {
+			                        if (s.isOnNext()) {
+				                        onNext.set(s.get());
+				                        state.increment();
+			                        }
+			                        else if (s.isOnError()) {
+				                        onError.set(s.getThrowable());
+			                        }
+			                        else if (s.isOnComplete()) {
+				                        onComplete.set(true);
+			                        }
+		                        }))
+		            .expectFusion(Fuseable.ASYNC, Fuseable.ASYNC)
+		            .expectNext("foo_async")
+		            .verifyComplete();
+
+		assertThat(onNext).hasValue("foo_async");
+		assertThat(onError).hasValue(null);
+		assertThat(onComplete).isTrue();
+	}
+
+	@Test
+	public void fusedAsyncCallbackTransientError() {
+		AtomicReference<String> onNext = new AtomicReference<>();
+		AtomicReference<Throwable> onError = new AtomicReference<>();
+		AtomicBoolean onComplete = new AtomicBoolean();
+		LongAdder state = new LongAdder();
+
+		StepVerifier.create(Flux.just("foo")
+		                        .publishOn(Schedulers.immediate())
+		                        .map(s -> s + "_async")
+		                        .doOnEach(s -> {
+			                        if (s.isOnNext()) {
+				                        onNext.set(s.get());
+				                        state.increment();
+			                        }
+			                        else if (s.isOnError()) {
+				                        onError.set(s.getThrowable());
+			                        }
+			                        else if (s.isOnComplete()) {
+			                        	throw new IllegalStateException("boom");
+			                        }
+		                        }))
+		            .expectFusion(Fuseable.ASYNC, Fuseable.ASYNC)
+		            .expectNext("foo_async")
+		            .verifyErrorMessage("boom");
+
+		assertThat(onNext).hasValue("foo_async");
+		assertThat(onError.get()).isNotNull().hasMessage("boom");
+		assertThat(onComplete).isFalse();
+	}
+
+	@Test
+	public void fusedAsyncCallbackErrorsOnTerminal() {
+		AtomicReference<String> onNext = new AtomicReference<>();
+		AtomicReference<Throwable> onError = new AtomicReference<>();
+		AtomicBoolean onComplete = new AtomicBoolean();
+		LongAdder state = new LongAdder();
+
+		StepVerifier.create(Flux.just("foo")
+		                        .publishOn(Schedulers.immediate())
+		                        .map(s -> s + "_async")
+		                        .doOnEach(s -> {
+		                        	if (s.isOnNext()) {
+		                        		onNext.set(s.get());
+			                        }
+			                        else {
+				                        throw new IllegalStateException("boom");
+			                        }
+		                        }))
+		            .expectFusion(Fuseable.ASYNC, Fuseable.ASYNC)
+		            .expectNext("foo_async")
+		            .verifyErrorMessage("boom");
+
+		assertThat(onNext).hasValue("foo_async");
+		assertThat(onError.get()).isNull();
+		assertThat(onComplete).isFalse();
+	}
+
+	@Test
 	@Parameters(method = "sourcesError")
 	public void error(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -165,6 +318,7 @@ public class FluxDoOnEachTest {
 				    onComplete.set(true);
 			    }
 		    })
+		    .filter(t -> true)
 		    .subscribe(ts);
 
 		assertThat(onNext).hasValue(null);
@@ -197,6 +351,7 @@ public class FluxDoOnEachTest {
 				    onComplete.set(true);
 			    }
 		    })
+		    .filter(t -> true)
 		    .subscribe(ts);
 
 		assertThat(onNext).hasValue(null);
@@ -228,6 +383,7 @@ public class FluxDoOnEachTest {
 				    onComplete.set(true);
 			    }
 		    })
+		    .filter(t -> true)
 		    .subscribe(ts);
 
 		assertThat(onNext).hasValue(null);
@@ -251,6 +407,7 @@ public class FluxDoOnEachTest {
 				    throw Exceptions.propagate(err);
 			    }
 		    })
+		    .filter(t -> true)
 		    .subscribe(ts);
 
 		//nominal error path (DownstreamException)
@@ -274,6 +431,7 @@ public class FluxDoOnEachTest {
 					    throw Exceptions.bubble(err);
 				    }
 			    })
+			    .filter(t -> true)
 			    .subscribe(ts);
 
 			fail();
@@ -299,6 +457,7 @@ public class FluxDoOnEachTest {
 				    throw Exceptions.propagate(err);
 			    }
 		    })
+		    .filter(t -> true)
 		    .subscribe(ts);
 
 		ts.assertErrorMessage("test");
@@ -320,6 +479,7 @@ public class FluxDoOnEachTest {
 				    throw Exceptions.propagate(err);
 			    }
 		    })
+		    .filter(t -> true)
 		    .subscribe(ts);
 
 		ts.assertNoValues();
@@ -328,6 +488,66 @@ public class FluxDoOnEachTest {
 		ts.assertErrorWith(e -> e.getMessage().equals("test"));
 
 		Assert.assertEquals(1, state.intValue());
+	}
+
+	@Test
+	public void conditionalTryOnNext() {
+		ArrayList<Signal<Boolean>> signals = new ArrayList<>();
+		ConditionalSubscriber<Boolean> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<Boolean>() {
+			@Override
+			public boolean tryOnNext(Boolean v) {
+				super.tryOnNext(v);
+				return v;
+			}
+		};
+		DoOnEachConditionalSubscriber<Boolean> test = new DoOnEachConditionalSubscriber<>(actual, signals::add);
+		AssertQueueSubscription<Boolean> qs = new AssertQueueSubscription<>();
+
+		test.onSubscribe(qs);
+
+		assertThat(test.tryOnNext(true)).isTrue();
+		assertThat(test.tryOnNext(false)).isFalse();
+		test.onComplete();
+
+		assertThat(signals).hasSize(2);
+		assertThat(signals.get(0)).matches(Signal::isOnNext)
+		                          .matches(s -> s.get() == Boolean.TRUE);
+		assertThat(signals.get(1)).matches(Signal::isOnComplete);
+
+		List<Boolean> actualTryNext = ((FluxPeekFuseableTest.ConditionalAssertSubscriber<Boolean>) actual).next;
+		assertThat(actualTryNext).hasSize(2);
+		assertThat(actualTryNext.get(0)).isTrue();
+		assertThat(actualTryNext.get(1)).isFalse();
+	}
+
+	@Test
+	public void conditionalFuseableTryOnNext() {
+		ArrayList<Signal<Boolean>> signals = new ArrayList<>();
+		ConditionalSubscriber<Boolean> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<Boolean>() {
+			@Override
+			public boolean tryOnNext(Boolean v) {
+				super.tryOnNext(v);
+				return v;
+			}
+		};
+		DoOnEachFuseableConditionalSubscriber<Boolean> test = new DoOnEachFuseableConditionalSubscriber<>(actual, signals::add);
+		AssertQueueSubscription<Boolean> qs = new AssertQueueSubscription<>();
+
+		test.onSubscribe(qs);
+
+		assertThat(test.tryOnNext(true)).isTrue();
+		assertThat(test.tryOnNext(false)).isFalse();
+		test.onComplete();
+
+		assertThat(signals).hasSize(2);
+		assertThat(signals.get(0)).matches(Signal::isOnNext)
+		                          .matches(s -> s.get() == Boolean.TRUE);
+		assertThat(signals.get(1)).matches(Signal::isOnComplete);
+
+		List<Boolean> actualTryNext = ((FluxPeekFuseableTest.ConditionalAssertSubscriber<Boolean>) actual).next;
+		assertThat(actualTryNext).hasSize(2);
+		assertThat(actualTryNext.get(0)).isTrue();
+		assertThat(actualTryNext.get(1)).isFalse();
 	}
 
 	@Test

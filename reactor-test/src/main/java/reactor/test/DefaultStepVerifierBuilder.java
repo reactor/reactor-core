@@ -894,6 +894,11 @@ final class DefaultStepVerifierBuilder<T>
 			this.errorFormatter = errorFormatter;
 		}
 
+		@Override
+		public String toString() {
+			return "StepVerifier Subscriber";
+		}
+
 		static <R> Queue<Event<R>> conflateScript(List<Event<R>> script, @Nullable Logger logger) {
 			ConcurrentLinkedQueue<Event<R>> queue = new ConcurrentLinkedQueue<>(script);
 			ConcurrentLinkedQueue<Event<R>> conflated = new ConcurrentLinkedQueue<>();
