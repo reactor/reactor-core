@@ -2246,7 +2246,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Handle the items emitted by this {@link Mono} by calling a biconsumer with the
+	 * Handle the items emitted by this {@link Mono} by calling a {@link BiConsumer} with the
 	 * output sink for each onNext. At most one {@link SynchronousSink#next(Object)}
 	 * call must be performed and/or 0 or 1 {@link SynchronousSink#error(Throwable)} or
 	 * {@link SynchronousSink#complete()}.
@@ -2258,9 +2258,37 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <R> Mono<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
 		if (this instanceof Fuseable) {
-			return onAssembly(new MonoHandleFuseable<>(this, handler));
+			return onAssembly(new MonoHandleFuseable<>(this, handler, null));
 		}
-		return onAssembly(new MonoHandle<>(this, handler));
+		return onAssembly(new MonoHandle<>(this, handler, null));
+	}
+
+	/**
+	 * Handle the items emitted by this {@link Mono} by calling {@link BiConsumer} with the
+	 * output sink for each onNext. At most one {@link SynchronousSink#next(Object)}
+	 * call must be performed and/or 0 or 1 {@link SynchronousSink#error(Throwable)} or
+	 * {@link SynchronousSink#complete()}.
+	 * <p>
+	 * Additionally, a second {@link BiConsumer} is provided to react to the terminal
+	 * signal. An {@link Optional} is exposed that represents which terminal signal (valued
+	 * with a {@link Throwable} for {@code onError} or empty for {@code onComplete}). The
+	 * {@link SynchronousSink sink} can then be used to optionally change the completion
+	 * signal (the {@link SynchronousSink#next(Object) sink's next()} method is disallowed).
+	 * A {@code terminateHandler} that doesn't use the sink at all will result in the
+	 * original terminal signal to be propagated.
+	 *
+	 * @param <R> the transformed type
+	 *
+	 * @param handler the handling {@link BiConsumer}
+	 * @param terminateHandler the terminal {@link BiConsumer}
+	 * @return a transformed {@link Mono}
+	 */
+	public final <R> Mono<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler,
+			BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoHandleFuseable<>(this, handler, terminateHandler));
+		}
+		return onAssembly(new MonoHandle<>(this, handler, terminateHandler));
 	}
 
 	/**

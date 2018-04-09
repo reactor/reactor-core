@@ -148,19 +148,19 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 		}
 
 		@Override
-		public void next(T t) {
+		public SynchronousSink<T> next(T t) {
 			if (terminate) {
 				Operators.onNextDropped(t, actual.currentContext());
-				return;
+				return this;
 			}
 			if (hasValue) {
 				error(new IllegalStateException("More than one call to onNext"));
-				return;
+				return this;
 			}
 			//noinspection ConstantConditions
 			if (t == null) {
 				error(new NullPointerException("The generator produced a null value"));
-				return;
+				return this;
 			}
 			hasValue = true;
 			if (outputFused) {
@@ -168,12 +168,13 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 			} else {
 				actual.onNext(t);
 			}
+			return this;
 		}
 
 		@Override
-		public void error(Throwable e) {
+		public SynchronousSink<T> error(Throwable e) {
 			if (terminate) {
-				return;
+				return this;
 			}
 			terminate = true;
 			if (outputFused) {
@@ -181,17 +182,19 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 			} else {
 				actual.onError(e);
 			}
+			return this;
 		}
 
 		@Override
-		public void complete() {
+		public SynchronousSink<T> complete() {
 			if (terminate) {
-				return;
+				return this;
 			}
 			terminate = true;
 			if (!outputFused) {
 				actual.onComplete();
 			}
+			return this;
 		}
 
 		@Override

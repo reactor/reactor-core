@@ -16,9 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function. If the result is not {code null} then the
@@ -31,15 +33,27 @@ import reactor.core.CoreSubscriber;
  */
 final class MonoHandle<T, R> extends MonoOperator<T, R> {
 
-	final BiConsumer<? super T, SynchronousSink<R>> handler;
+	final BiConsumer<? super T, SynchronousSink<R>>           handler;
+	@Nullable
+	final BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler;
 
-	MonoHandle(Mono<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
+	/**
+	 *
+	 * @param source the source
+	 * @param handler the handler function
+	 * @param terminateHandler the optional terminate function that can optionally change
+	 * 	 * the terminate signal)
+	 */
+	MonoHandle(Mono<? extends T> source,
+			BiConsumer<? super T, SynchronousSink<R>> handler,
+			@Nullable BiConsumer<Optional<Throwable>, SynchronousSink<R>> terminateHandler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
+		this.terminateHandler = terminateHandler;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super R> actual) {
-		source.subscribe(new FluxHandle.HandleSubscriber<>(actual, handler));
+		source.subscribe(new FluxHandle.HandleSubscriber<>(actual, handler, terminateHandler));
 	}
 }

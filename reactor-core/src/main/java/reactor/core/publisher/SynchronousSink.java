@@ -39,7 +39,7 @@ public interface SynchronousSink<T> {
 	/**
 	 * @see Subscriber#onComplete()
 	 */
-	void complete();
+	SynchronousSink<T> complete();
 
 	/**
 	 * Return the current subscriber {@link Context}.
@@ -58,7 +58,7 @@ public interface SynchronousSink<T> {
 	 *
 	 * @see Subscriber#onError(Throwable)
 	 */
-	void error(Throwable e);
+	SynchronousSink<T> error(Throwable e);
 
 	/**
 	 * Try emitting, might throw an unchecked exception.
@@ -68,5 +68,5 @@ public interface SynchronousSink<T> {
 	 * @throws RuntimeException in case of unchecked error during the emission
 	 * @see Subscriber#onNext(Object)
 	 */
-	void next(T t);
+	SynchronousSink<T> next(T t);
 }
