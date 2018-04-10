@@ -99,7 +99,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 	}
 
 	static final class FluxPublishMulticaster<T> extends Flux<T>
-			implements InnerConsumer<T> {
+			implements InnerConsumer<T>, PublishMulticasterParent {
 
 		final int limit;
 
@@ -606,8 +606,9 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 			}
 		}
 
+		@Override
 		@SuppressWarnings("unchecked")
-		void terminate() {
+		public void terminate() {
 			Operators.terminate(S, this);
 			if (WIP.getAndIncrement(this) == 0) {
 				if (connected) {
@@ -677,17 +678,23 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		}
 	}
 
+	interface PublishMulticasterParent {
+
+		void terminate();
+
+	}
+
 	static final class CancelMulticaster<T>
 			implements InnerOperator<T, T>, QueueSubscription<T> {
 
 		final CoreSubscriber<? super T> actual;
 
-		final FluxPublishMulticaster<?> parent;
+		final PublishMulticasterParent parent;
 
 		Subscription s;
 
 		CancelMulticaster(CoreSubscriber<? super T> actual,
-				FluxPublishMulticaster<?> parent) {
+				PublishMulticasterParent parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -778,12 +785,12 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 		final CoreSubscriber<? super T> actual;
 
-		final FluxPublishMulticaster<?> parent;
+		final PublishMulticasterParent parent;
 
 		QueueSubscription<T> s;
 
 		CancelFuseableMulticaster(CoreSubscriber<? super T> actual,
-				FluxPublishMulticaster<?> parent) {
+				PublishMulticasterParent parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}

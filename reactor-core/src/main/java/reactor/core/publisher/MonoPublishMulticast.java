@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -38,7 +39,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> {
+final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fuseable {
 
 	final Function<? super Mono<T>, ? extends Mono<? extends R>> transform;
 
@@ -62,12 +63,18 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> {
 			return;
 		}
 
-		out.subscribe(new CancelMulticaster<>(actual, multicast));
+		if (out instanceof Fuseable) {
+			out.subscribe(new FluxPublishMulticast.CancelFuseableMulticaster<>(actual, multicast));
+		}
+		else {
+			out.subscribe(new FluxPublishMulticast.CancelMulticaster<>(actual, multicast));
+		}
+
 		source.subscribe(multicast);
 	}
 
 	static final class MonoPublishMulticaster<T> extends Mono<T>
-			implements InnerConsumer<T> {
+			implements InnerConsumer<T>, FluxPublishMulticast.PublishMulticasterParent {
 
 		volatile     Subscription s;
 		static final AtomicReferenceFieldUpdater<MonoPublishMulticaster, Subscription> S =
@@ -314,7 +321,8 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> {
 			}
 		}
 
-		void terminate() {
+		@Override
+		public void terminate() {
 			Operators.terminate(S, this);
 			if (WIP.getAndIncrement(this) == 0) {
 				if (connected) {
@@ -370,73 +378,6 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> {
 				parent.remove(this);
 				parent.drain();
 			}
-		}
-	}
-
-	static final class CancelMulticaster<T>
-			implements InnerOperator<T, T> {
-
-		final CoreSubscriber<? super T> actual;
-
-		final MonoPublishMulticaster<?> parent;
-
-		Subscription s;
-
-		CancelMulticaster(CoreSubscriber<? super T> actual,
-				MonoPublishMulticaster<?> parent) {
-			this.actual = actual;
-			this.parent = parent;
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) {
-				return s;
-			}
-
-			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public void request(long n) {
-			s.request(n);
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-			parent.terminate();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Override
-		public void onNext(T t) {
-			actual.onNext(t);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			actual.onError(t);
-			parent.terminate();
-		}
-
-		@Override
-		public void onComplete() {
-			actual.onComplete();
-			parent.terminate();
 		}
 	}
 

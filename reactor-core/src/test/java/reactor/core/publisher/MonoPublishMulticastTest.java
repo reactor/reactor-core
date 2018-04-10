@@ -180,18 +180,4 @@ public class MonoPublishMulticastTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
-	@Test
-	public void scanCancelMulticaster() {
-		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		MonoPublishMulticast.MonoPublishMulticaster<Integer> parent =
-				new MonoPublishMulticast.MonoPublishMulticaster<>(Context.empty());
-		MonoPublishMulticast.CancelMulticaster<Integer> test =
-				new MonoPublishMulticast.CancelMulticaster<>(actual, parent);
-		Subscription sub = Operators.emptySubscription();
-		test.onSubscribe(sub);
-
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-	}
-
 }
