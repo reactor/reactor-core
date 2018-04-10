@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import reactor.test.subscriber.AssertSubscriber;
 /**
  * @author Stephane Maldini
  */
-public class MonoThenMany {
+public class MonoThenManyTest {
 
 	@Test
-	public void testThenManySameType() throws InterruptedException {
+	public void testThenManySameType() {
 		Flux<String> test = Mono.just("A")
 		                        .thenMany(Flux.just("C", "D"));
 
@@ -37,7 +37,7 @@ public class MonoThenMany {
 	}
 
 	@Test
-	public void testThenManyFusion() throws InterruptedException {
+	public void testThenManyFusion() {
 		Flux<Integer> test = Mono.just("A")
 		                         .thenMany(Flux.just("C", "D"))
 		                         .thenMany(Flux.just(1, 2));
@@ -54,7 +54,7 @@ public class MonoThenMany {
 	}
 
 	@Test
-	public void testThenManyDifferentType() throws InterruptedException {
+	public void testThenManyDifferentType() {
 		Flux<String> test = Mono.just(1)
 		                        .thenMany(Flux.just("C", "D"));
 
