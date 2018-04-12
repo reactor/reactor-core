@@ -29,6 +29,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
@@ -69,6 +70,28 @@ public class MonoDoOnEachTest {
 		Mockito.verify(source).subscribe(argumentCaptor.capture());
 
 		assertThat(argumentCaptor.getValue()).isInstanceOf(FluxDoOnEach.DoOnEachSubscriber.class);
+	}
+
+	@Test
+	public void usesFluxDoOnEachConditionalSubscriber() {
+		AtomicReference<Scannable> ref = new AtomicReference<>();
+		Mono<String> source = Mono.just("foo")
+		                          .doOnSubscribe(sub -> ref.set(Scannable.from(sub)))
+		                          .hide()
+		                          .filter(t -> true);
+
+		final MonoDoOnEach<String> test =
+				new MonoDoOnEach<>(source, s -> { });
+
+		test.filter(t -> true)
+		    .subscribe();
+
+		Class expected = FluxDoOnEach.DoOnEachConditionalSubscriber.class;
+		assertThat(ref.get()
+		              .actuals()
+		              .map(Object::getClass)
+		)
+				.contains(expected);
 	}
 
 	@Test
@@ -226,6 +249,7 @@ public class MonoDoOnEachTest {
 	public void nextComplete() {
 		List<Tuple2<Signal, Context>> signalsAndContext = new ArrayList<>();
 		Mono.just(1)
+		    .hide()
 		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s, s.getContext())))
 		    .subscriberContext(Context.of("foo", "bar"))
 		    .subscribe();

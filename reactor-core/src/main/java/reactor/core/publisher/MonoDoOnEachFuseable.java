@@ -20,25 +20,27 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
- * Peek into the lifecycle events and signals of a sequence
+ * Peek into the lifecycle events and signals of a sequence, {@link reactor.core.Fuseable}
+ * version of {@link MonoDoOnEach}.
  *
  * @param <T> the value type
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDoOnEach<T> extends MonoOperator<T, T> {
+final class MonoDoOnEachFuseable<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final Consumer<? super Signal<T>> onSignal;
 
-	MonoDoOnEach(Mono<? extends T> source, Consumer<? super Signal<T>> onSignal) {
+	MonoDoOnEachFuseable(Mono<? extends T> source, Consumer<? super Signal<T>> onSignal) {
 		super(source);
 		this.onSignal = Objects.requireNonNull(onSignal, "onSignal");
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(FluxDoOnEach.createSubscriber(actual, onSignal, false));
+		source.subscribe(FluxDoOnEach.createSubscriber(actual, onSignal, true));
 	}
 }

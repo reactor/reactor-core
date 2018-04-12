@@ -58,6 +58,7 @@ ext {
   // Testing
   assertJVersion = '3.9.0'
   mockitoVersion = '2.10.0'
+  jUnitParamsVersion = '1.1.1'
 
   javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
 				  "https://docs.oracle.com/javaee/6/api/",
@@ -265,7 +266,8 @@ project('reactor-core') {
 			"org.testng:testng:6.8.5",
 			"org.assertj:assertj-core:$assertJVersion",
 			"org.mockito:mockito-core:$mockitoVersion",
-			"org.openjdk.jol:jol-core:0.9"
+			"org.openjdk.jol:jol-core:0.9",
+			"pl.pragmatists:JUnitParams:$jUnitParamsVersion"
 
 	if ("$compatibleVersion" != "SKIP") {
 	  baseline("io.projectreactor:reactor-core:$compatibleVersion") {
