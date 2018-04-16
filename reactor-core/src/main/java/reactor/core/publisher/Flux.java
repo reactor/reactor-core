@@ -4307,7 +4307,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *     (similar to merging the inner sequences).</li>
 	 * </ul>
 	 * The concurrency argument allows to control how many {@link Publisher} can be
-	 * subscribed to and merged in parallel.
+	 * subscribed to and merged in parallel. In turn, that argument shows the size of
+	 * the first {@link Subscription#request} to the upstream.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flatmapc.png" alt="">
@@ -4346,8 +4347,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *     (similar to merging the inner sequences).</li>
 	 * </ul>
 	 * The concurrency argument allows to control how many {@link Publisher} can be
-	 * subscribed to and merged in parallel. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Publisher}.
+	 * subscribed to and merged in parallel. In turn, that argument shows the size of
+	 * the first {@link Subscription#request} to the upstream.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the merged
+	 * {@link Publisher} (in other words prefetch size means the size of the first
+	 * {@link Subscription#request} to the merged {@link Publisher}).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flatmapc.png" alt="">
@@ -6025,8 +6029,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Reduce the values from this {@link Flux} sequence into an single object of the same
 	 * type than the emitted items. Reduction is performed using a {@link BiFunction} that
 	 * takes the intermediate result of the reduction and the current value and returns
-	 * the next intermediate value of the reduction. It will ignore sequence with 0 or 1
-	 * elements.
+	 * the next intermediate value of the reduction. Note, {@link BiFunction} will not
+	 * be invoked for a sequence with 0 or 1 elements. In case of one element's
+	 * sequence, the result will be directly sent to the subscriber.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/aggregate.png" alt="">
