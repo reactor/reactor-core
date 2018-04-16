@@ -1655,7 +1655,20 @@ public abstract class Flux<T> implements Publisher<T> {
 				source2,
 				combinator,
 				Queues.xs(),
-				Queues.XS_BUFFER_SIZE));
+				Queues.XS_BUFFER_SIZE,
+				false));
+	}
+
+    public static <T1, T2, O> Flux<O> zipDelayError(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			final BiFunction<? super T1, ? super T2, ? extends O> combinator) {
+
+		return onAssembly(new FluxZip<T1, O>(source1,
+				source2,
+				combinator,
+				Queues.xs(),
+				Queues.XS_BUFFER_SIZE,
+				true));
 	}
 
 	/**
@@ -1846,7 +1859,8 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxZip<Object, O>(sources,
 				combinator,
 				Queues.get(prefetch),
-				prefetch));
+				prefetch,
+				false));
 	}
 
 	/**
@@ -1913,7 +1927,8 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxZip<>(sources,
 				combinator,
 				Queues.get(prefetch),
-				prefetch));
+				prefetch,
+				false));
 	}
 
 	/**
@@ -8339,7 +8354,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		if (this instanceof FluxZip) {
 			@SuppressWarnings("unchecked")
 			FluxZip<T, V> o = (FluxZip<T, V>) this;
-			Flux<V> result = o.zipAdditionalSource(source2, combinator);
+			Flux<V> result = o.zipAdditionalSource(source2, combinator, false);
 			if (result != null) {
 				return result;
 			}

@@ -91,6 +91,40 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return the current exception if not composite, or combine further added exceptions
+	 * together as suppressed exceptions under a root Throwable with the
+	 * {@code "Multiple exceptions"} message, if the current is not null.
+	 * This is short-circuited if the current is {@link #TERMINATED}.
+	 *
+	 * @param current the current Throwable (can be null)
+	 * @param exception the Throwable to add.
+	 *
+	 * @return the composite exception, or the {@code exception} itself (if current was
+	 * null), or {@link #TERMINATED}.
+	 * @see #unwrapMultiple(Throwable)
+	 */
+	public static Throwable addThrowable(@Nullable Throwable current, Throwable exception) {
+		if (current == TERMINATED) {
+			return current;
+		}
+
+		if (current instanceof CompositeException) {
+			//this is ok, composite exceptions are never singletons
+			current.addSuppressed(exception);
+			return current;
+		}
+
+		Throwable update;
+		if (current == null) {
+			update = exception;
+		} else {
+			update = multiple(current, exception);
+		}
+
+		return update;
+	}
+
+	/**
 	 * Create a composite exception that wraps the given {@link Throwable Throwable(s)},
 	 * as suppressed exceptions. Instances create by this method can be detected using the
 	 * {@link #isMultiple(Throwable)} check. The {@link #unwrapMultiple(Throwable)} method
