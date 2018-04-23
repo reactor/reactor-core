@@ -61,25 +61,29 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 	final Supplier<? extends Queue<T>> queueSupplier;
 
 	final int prefetch;
+	final boolean delayError;
 
 	@SuppressWarnings("unchecked")
 	<U> FluxZip(Publisher<? extends T> p1,
 			Publisher<? extends U> p2,
 			BiFunction<? super T, ? super U, ? extends R> zipper2,
 			Supplier<? extends Queue<T>> queueSupplier,
-			int prefetch) {
+			int prefetch,
+			boolean delayError) {
 		this(new Publisher[]{Objects.requireNonNull(p1, "p1"),
 						Objects.requireNonNull(p2, "p2")},
 				new PairwiseZipper<>(new BiFunction[]{
 						Objects.requireNonNull(zipper2, "zipper2")}),
 				queueSupplier,
-				prefetch);
+				prefetch,
+				delayError);
 	}
 
 	FluxZip(Publisher<? extends T>[] sources,
 			Function<? super Object[], ? extends R> zipper,
 			Supplier<? extends Queue<T>> queueSupplier,
-			int prefetch) {
+			int prefetch,
+			boolean delayError) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -91,12 +95,14 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
+		this.delayError = delayError;
 	}
 
 	FluxZip(Iterable<? extends Publisher<? extends T>> sourcesIterable,
 			Function<? super Object[], ? extends R> zipper,
 			Supplier<? extends Queue<T>> queueSupplier,
-			int prefetch) {
+			int prefetch,
+			boolean delayError) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -105,6 +111,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
+		this.delayError = delayError;
 	}
 
 	@Override
@@ -114,7 +121,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	@Nullable
-	FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
+	FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper, boolean delayError) {
 		Publisher[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof PairwiseZipper) {
 			int oldLen = oldSources.length;
@@ -124,7 +131,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 			Function<Object[], R> z = ((PairwiseZipper<R>) this.zipper).then(zipper);
 
-			return new FluxZip<>(newSources, z, queueSupplier, prefetch);
+			return new FluxZip<>(newSources, z, queueSupplier, prefetch, delayError);
 		}
 		return null;
 	}
@@ -218,16 +225,17 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			scalars = Arrays.copyOfRange(scalars, 0, n, scalars.getClass());
 		}
 
-		handleBoth(s, srcs, scalars, n, sc);
+		handleBoth(s, srcs, scalars, n, sc, null, false); //FIXME delayedErrors hasEmpty
 	}
 
 	@SuppressWarnings("unchecked")
 	void handleArrayMode(CoreSubscriber<? super R> s, Publisher<? extends T>[] srcs) {
-
 		Object[] scalars = null; //optimisation: if no scalar source, no array creation
 		int n = srcs.length;
 
 		int sc = 0;
+		Throwable delayedErrors = null;
+		boolean hasEmpty = false;
 
 		for (int j = 0; j < n; j++) {
 			Publisher<? extends T> p = srcs[j];
@@ -245,14 +253,26 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 					v = ((Callable<? extends T>) p).call();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e,
-							s.currentContext()));
-					return;
+					if (delayError) {
+						v = SCALAR_ERROR;
+						delayedErrors = Exceptions.addThrowable(delayedErrors, e);
+					}
+					else {
+						Operators.error(s, Operators.onOperatorError(e,
+								s.currentContext()));
+						return;
+					}
 				}
 
 				if (v == null) {
-					Operators.complete(s);
-					return;
+					if (delayError) {
+						v = SCALAR_EMPTY;
+						hasEmpty = true;
+					}
+					else {
+						Operators.complete(s);
+						return;
+					}
 				}
 
 				if (scalars == null) {
@@ -264,7 +284,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			}
 		}
 
-		handleBoth(s, srcs, scalars, n, sc);
+		handleBoth(s, srcs, scalars, n, sc, delayedErrors, hasEmpty);
 	}
 
 	/**
@@ -287,11 +307,13 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			Publisher<? extends T>[] srcs,
 			@Nullable Object[] scalars,
 			int n,
-			int sc) {
+			int sc,
+			@Nullable Throwable delayedErrors,
+			boolean hasEmpty) {
 		if (sc != 0 && scalars != null) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =
-						new ZipSingleCoordinator<>(s, scalars, n, zipper);
+						new ZipSingleCoordinator<>(s, scalars, n, zipper, delayError, delayedErrors, hasEmpty);
 
 				s.onSubscribe(coordinator);
 
@@ -302,24 +324,32 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 				s.onSubscribe(sds);
 
-				R r;
-
-				try {
-					r = Objects.requireNonNull(zipper.apply(scalars),
-							"The zipper returned a null value");
+				if (delayError && delayedErrors != null) {
+					s.onError(delayedErrors);
 				}
-				catch (Throwable e) {
-					s.onError(Operators.onOperatorError(e, s.currentContext()));
-					return;
+				else if (hasEmpty) {
+					s.onComplete();
 				}
+				else {
+					R r;
 
-				sds.complete(r);
+					try {
+						r = Objects.requireNonNull(zipper.apply(scalars),
+								"The zipper returned a null value");
+					}
+					catch (Throwable e) {
+						s.onError(Operators.onOperatorError(e, s.currentContext()));
+						return;
+					}
+
+					sds.complete(r);
+				}
 			}
 
 		}
 		else {
 			ZipCoordinator<T, R> coordinator =
-					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch);
+					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch, delayError);
 
 			s.onSubscribe(coordinator);
 
@@ -330,10 +360,13 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return prefetch;
+		if (key == Attr.DELAY_ERROR) return delayError;
 		return null;
 	}
 
 	static final class ZipSingleCoordinator<T, R> extends Operators.MonoSubscriber<R, R> {
+
+		final boolean delayError;
 
 		final Function<? super Object[], ? extends R> zipper;
 
@@ -346,11 +379,20 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		static final AtomicIntegerFieldUpdater<ZipSingleCoordinator> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(ZipSingleCoordinator.class, "wip");
 
+		volatile Throwable error;
+		static final AtomicReferenceFieldUpdater<ZipSingleCoordinator, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(ZipSingleCoordinator.class, Throwable.class, "error");
+
+		boolean hasEmpty;
+
 		@SuppressWarnings("unchecked")
 		ZipSingleCoordinator(CoreSubscriber<? super R> subscriber,
 				Object[] scalars,
 				int n,
-				Function<? super Object[], ? extends R> zipper) {
+				Function<? super Object[], ? extends R> zipper,
+				boolean delayError,
+				@Nullable Throwable delayedErrors,
+				boolean hasEmpty) {
 			super(subscriber);
 			this.zipper = zipper;
 			this.scalars = scalars;
@@ -361,6 +403,9 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				}
 			}
 			this.subscribers = a;
+			this.delayError = delayError;
+			this.error = delayedErrors;
+			this.hasEmpty = hasEmpty;
 		}
 
 		void subscribe(int n, int sc, Publisher<? extends T>[] sources) {
@@ -381,6 +426,17 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			Object[] a = scalars;
 			a[index] = value;
 			if (WIP.decrementAndGet(this) == 0) {
+				if (delayError && error != null) {
+//					cancelAll();
+					actual.onError(error);
+					return;
+				}
+
+				if (hasEmpty) {
+					actual.onComplete();
+					return;
+				}
+
 				R r;
 
 				try {
@@ -398,19 +454,46 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		}
 
 		void error(Throwable e, int index) {
-			if (WIP.getAndSet(this, 0) > 0) {
-				cancelAll();
-				actual.onError(e);
+			if (delayError) {
+				int w = WIP.decrementAndGet(this);
+				Exceptions.addThrowable(ERROR, this, e);
+				if (w == 0) {
+//					cancelAll();
+					actual.onError(error);
+				}
+				else if (w < 0) {
+					Operators.onErrorDropped(e, actual.currentContext());
+				}
 			}
 			else {
-				Operators.onErrorDropped(e, actual.currentContext());
+				if (WIP.getAndSet(this, 0) > 0) {
+					cancelAll();
+					actual.onError(e);
+				}
+				else {
+					Operators.onErrorDropped(e, actual.currentContext());
+				}
 			}
 		}
 
 		void complete(int index) {
-			if (WIP.getAndSet(this, 0) > 0) {
-				cancelAll();
-				actual.onComplete();
+			if (delayError) {
+				if (WIP.decrementAndGet(this) == 0) {
+//					cancelAll();
+					if (error != null) {
+						actual.onError(error);
+					}
+					else {
+						actual.onComplete();
+					}
+				}
+
+			}
+			else {
+				if (WIP.getAndSet(this, 0) > 0) {
+					cancelAll();
+					actual.onComplete();
+				}
 			}
 		}
 
@@ -425,6 +508,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return wip == 0;
 			if (key == Attr.BUFFERED) return wip > 0 ? scalars.length : 0;
+			if (key == Attr.DELAY_ERROR) return delayError;
 
 			return super.scanUnsafe(key);
 		}
@@ -534,6 +618,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		final Function<? super Object[], ? extends R> zipper;
 
+		final boolean delayError;
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ZipCoordinator> WIP =
@@ -559,7 +645,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				Function<? super Object[], ? extends R> zipper,
 				int n,
 				Supplier<? extends Queue<T>> queueSupplier,
-				int prefetch) {
+				int prefetch,
+				boolean delayError) {
 			this.actual = actual;
 			this.zipper = zipper;
 			@SuppressWarnings("unchecked") ZipInner<T>[] a = new ZipInner[n];
@@ -568,12 +655,13 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			}
 			this.current = new Object[n];
 			this.subscribers = a;
+			this.delayError = delayError;
 		}
 
 		void subscribe(Publisher<? extends T>[] sources, int n) {
 			ZipInner<T>[] a = subscribers;
 			for (int i = 0; i < n; i++) {
-				if (cancelled || error != null) {
+				if (cancelled || (!delayError && error != null)) {
 					return;
 				}
 				sources[i].subscribe(a[i]);
@@ -612,6 +700,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.ERROR) return error;
+			if (key == Attr.DELAY_ERROR) return delayError;
 			if (key == Attr.CANCELLED) return cancelled;
 
 			return InnerProducer.super.scanUnsafe(key);
@@ -633,7 +722,6 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		}
 
 		void drain() {
-
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
@@ -656,59 +744,84 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						return;
 					}
 
-					if (error != null) {
+					if (error != null && !delayError) {
 						cancelAll();
-
 						Throwable ex = Exceptions.terminate(ERROR, this);
-
 						a.onError(ex);
 
 						return;
 					}
 
-					boolean empty = false;
+					boolean needMoreData = false;
+					boolean lastRound = false;
 
 					for (int j = 0; j < n; j++) {
 						ZipInner<T> inner = qs[j];
+						boolean d = inner.done;
 						if (values[j] == null) {
 							try {
-								boolean d = inner.done;
 								Queue<T> q = inner.queue;
 
 								T v = q != null ? q.poll() : null;
 
 								boolean sourceEmpty = v == null;
 								if (d && sourceEmpty) {
-									cancelAll();
-
-									a.onComplete();
-									return;
+									lastRound = true;
+									if (!delayError) {
+										cancelAll();
+										//source is done but there could be a delayed error
+										if (error != null) {
+											Throwable ex = Exceptions.terminate(ERROR, this);
+											a.onError(ex);
+											return;
+										}
+										else {
+											a.onComplete();
+											return;
+										}
+									}
 								}
 								if (!sourceEmpty) {
 									values[j] = v;
 								}
 								else {
-									empty = true;
+									needMoreData = true;
 								}
 							}
 							catch (Throwable ex) {
 								ex = Operators.onOperatorError(ex,
 										actual.currentContext());
-
-								cancelAll();
-
 								Exceptions.addThrowable(ERROR, this, ex);
-								//noinspection ConstantConditions
-								ex = Exceptions.terminate(ERROR, this);
 
-								a.onError(ex);
-
-								return;
+								if (!delayError) {
+									cancelAll();
+									//noinspection ConstantConditions
+									ex = Exceptions.terminate(ERROR, this);
+									a.onError(ex);
+									return;
+								}
+								else {
+									//consider the error as an empty case
+									lastRound = true;
+								}
 							}
 						}
 					}
 
-					if (empty) {
+					if (delayError && lastRound) {
+						//source is done but there could be a delayed error
+						if (error != null) {
+							Throwable ex = Exceptions.terminate(ERROR, this);
+							a.onError(ex);
+							return;
+						}
+						else {
+							a.onComplete();
+							return;
+						}
+					}
+
+					if (needMoreData) {
 						break;
 					}
 
@@ -718,7 +831,6 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 								"The zipper returned a null value");
 					}
 					catch (Throwable ex) {
-
 						ex = Operators.onOperatorError(null, ex, values.clone(),
 								actual.currentContext());
 						cancelAll();
@@ -744,7 +856,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						return;
 					}
 
-					if (error != null) {
+					if (!delayError && error != null) {
 						cancelAll();
 
 						Throwable ex = Exceptions.terminate(ERROR, this);
@@ -754,6 +866,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						return;
 					}
 
+					boolean lastRound = false;
 					for (int j = 0; j < n; j++) {
 						ZipInner<T> inner = qs[j];
 						if (values[j] == null) {
@@ -764,10 +877,20 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 								boolean empty = v == null;
 								if (d && empty) {
-									cancelAll();
-
-									a.onComplete();
-									return;
+									lastRound = true;
+									if (!delayError) {
+										cancelAll();
+										//source is done but there could be delayed errors
+										if (error != null) {
+											Throwable ex = Exceptions.terminate(ERROR, this);
+											a.onError(ex);
+											return;
+										}
+										else {
+											a.onComplete();
+											return;
+										}
+									}
 								}
 								if (!empty) {
 									values[j] = v;
@@ -776,17 +899,28 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 							catch (Throwable ex) {
 								ex = Operators.onOperatorError(null, ex, values,
 										actual.currentContext());
-
-								cancelAll();
-
 								Exceptions.addThrowable(ERROR, this, ex);
-								//noinspection ConstantConditions
-								ex = Exceptions.terminate(ERROR, this);
 
-								a.onError(ex);
-
-								return;
+								if (!delayError) {
+									cancelAll();
+									//noinspection ConstantConditions
+									ex = Exceptions.terminate(ERROR, this);
+									a.onError(ex);
+									return;
+								}
 							}
+						}
+					}
+					if (delayError && lastRound) {
+						//source is done but there could be a delayed error
+						if (error != null) {
+							Throwable ex = Exceptions.terminate(ERROR, this);
+							a.onError(ex);
+							return;
+						}
+						else {
+							a.onComplete();
+							return;
 						}
 					}
 
@@ -974,4 +1108,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			return new PairwiseZipper(newZippers);
 		}
 	}
+
+	private static final Object SCALAR_ERROR = new Object();
+	private static final Object SCALAR_EMPTY = new Object();
 }

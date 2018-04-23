@@ -20,18 +20,22 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
+import reactor.test.publisher.PublisherProbe;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
@@ -1278,21 +1282,23 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanOperator() {
-		FluxZip s = new FluxZip<>(Flux.just(1), Flux.just(2), Tuples::of, Queues.small(), 123);
+		FluxZip s = new FluxZip<>(Flux.just(1), Flux.just(2), Tuples::of, Queues.small(), 123, true);
 		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
 	}
 
 	@Test
     public void scanCoordinator() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> test = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
-				i -> 5, 123, Queues.unbounded(), 345);
+				i -> 5, 123, Queues.unbounded(), 345, true);
 
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
         Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 
         Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+        Assertions.assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
         test.error = new IllegalStateException("boom");
         Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 
@@ -1305,7 +1311,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> main = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
-				i -> 5, 123, Queues.unbounded(), 345);
+				i -> 5, 123, Queues.unbounded(), 345, true);
 		FluxZip.ZipInner<Integer> test = new FluxZip.ZipInner<>(main, 234, 1, Queues.unbounded());
 
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
@@ -1329,10 +1335,13 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanSingleCoordinator() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipSingleCoordinator<Integer, Integer> test =
-				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
+				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5,
+						true, null, false);
 
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+        Assertions.assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+
         test.wip = 1;
         Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
@@ -1349,7 +1358,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanSingleSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxZip.ZipSingleCoordinator<Integer, Integer> main =
-				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
+				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5,
+						true, null, false);
         FluxZip.ZipSingleSubscriber<Integer> test = new FluxZip.ZipSingleSubscriber<>(main, 0);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -1361,4 +1371,277 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+    @Test
+    public void zipDelayErrorScalarPartialCallableError() {
+		AtomicReference<SignalType> fluxNotScalarDone = new AtomicReference<>();
+		AtomicInteger fluxNotScalarNext = new AtomicInteger();
+	    final Flux<Integer> fluxError = Flux.error(new IllegalStateException("boom"));
+	    final Flux<Integer> fluxNotScalar = Flux.range(1, 2)
+	                                            .doFinally(fluxNotScalarDone::set)
+	                                            .doOnNext(n -> fluxNotScalarNext.incrementAndGet())
+	                                            .hide();
+
+	    final Flux<Tuple2<Integer, Integer>> test =
+			    Flux.zipDelayError(fluxError, fluxNotScalar, Tuples::of);
+
+	    StepVerifier.create(test)
+	                .verifyErrorMessage("boom");
+
+	    assertThat(fluxNotScalarDone.get()).isNotNull().isEqualTo(SignalType.ON_COMPLETE);
+	    assertThat(fluxNotScalarNext).hasValue(2);
+    }
+
+    @Test
+    public void zipDelayErrorScalarPartialNormalError() {
+		AtomicInteger count = new AtomicInteger();
+	    final Flux<Integer> fluxError = Flux.<Integer>error(new IllegalStateException("boom")).hide();
+	    final Mono<Integer> fluxScalar = Mono.fromCallable(count::incrementAndGet);
+
+	    final Flux<Tuple2<Integer, Integer>> test =
+			    Flux.zipDelayError(fluxError, fluxScalar, Tuples::of);
+
+	    StepVerifier.create(test)
+	                .verifyErrorMessage("boom");
+
+	    assertThat(count).hasValue(1);
+    }
+
+    @Test
+    public void zipDelayErrorScalarPartialCallableEmpty() {
+		AtomicReference<SignalType> fluxNotScalarDone = new AtomicReference<>();
+		AtomicInteger fluxNotScalarNext = new AtomicInteger();
+	    final Flux<Integer> fluxScalar = Flux.empty();
+	    final Flux<Integer> fluxNotScalar = Flux.range(1, 2)
+	                                            .doFinally(fluxNotScalarDone::set)
+	                                            .doOnNext(n -> fluxNotScalarNext.incrementAndGet())
+	                                            .hide();
+
+	    final Flux<Tuple2<Integer, Integer>> test =
+			    Flux.zipDelayError(fluxScalar, fluxNotScalar, Tuples::of);
+
+	    StepVerifier.create(test)
+	                .verifyComplete();
+
+	    assertThat(fluxNotScalarNext).hasValue(2);
+	    assertThat(fluxNotScalarDone.get()).isNotNull().isEqualTo(SignalType.ON_COMPLETE);
+    }
+
+    @Test
+    public void zipDelayErrorScalarPartialNormalEmpty() {
+	    AtomicInteger count = new AtomicInteger();
+	    final Flux<Integer> fluxEmpty = Flux.<Integer>empty().hide();
+	    final Mono<Integer> fluxScalar = Mono.fromCallable(count::incrementAndGet);
+
+	    final Flux<Tuple2<Integer, Integer>> test =
+			    Flux.zipDelayError(fluxEmpty, fluxScalar, Tuples::of);
+
+	    StepVerifier.create(test)
+	                .verifyComplete();
+
+	    assertThat(count).hasValue(1);
+    }
+
+    @Test
+    public void zipDelayErrorScalarFullWithErrorAndValue() {
+	    AtomicInteger count = new AtomicInteger();
+	    final Flux<Integer> fluxScalarError = Flux.error(new IllegalStateException("boom"));
+	    final Mono<Integer> fluxScalar = Mono.fromCallable(count::incrementAndGet);
+
+	    final Flux<Tuple2<Integer, Integer>> test =
+			    Flux.zipDelayError(fluxScalarError, fluxScalar, Tuples::of);
+
+	    StepVerifier.create(test)
+	                .verifyErrorMessage("boom");
+
+	    assertThat(count).hasValue(1);
+    }
+
+    @Test
+    public void zipDelayErrorScalarFullWithEmptyAndError() {
+		AtomicInteger count = new AtomicInteger();
+	    final Mono<Integer> fluxScalarEmpty = Mono.fromRunnable(count::incrementAndGet);
+	    final Flux<Integer> fluxScalarError = Flux.error(new IllegalStateException("boom"));
+
+	    final Flux<Tuple2<Integer, Integer>> test =
+			    Flux.zipDelayError(fluxScalarEmpty, fluxScalarError, Tuples::of);
+
+	    StepVerifier.create(test)
+	                .verifyErrorMessage("boom");
+
+	    assertThat(count).hasValue(1);
+    }
+
+    @Test
+    public void zipDelayErrorScalarFullWithEmptyAndValue() {
+	    AtomicInteger count = new AtomicInteger();
+	    final Flux<Integer> fluxScalarEmpty = Flux.empty();
+	    final Mono<Integer> fluxScalar = Mono.fromCallable(count::incrementAndGet);
+
+	    final Flux<Tuple2<Integer, Integer>> test =
+			    Flux.zipDelayError(fluxScalarEmpty, fluxScalar, Tuples::of);
+
+	    StepVerifier.create(test)
+	                .verifyComplete();
+
+	    assertThat(count).hasValue(1);
+    }
+
+    @Test
+	public void zipDelayErrorNoScalarFirstImmediateErrors() {
+		AtomicInteger nextCount = new AtomicInteger();
+		PublisherProbe<Integer> error = PublisherProbe.of(Flux.error(new IllegalStateException("boom")));
+		PublisherProbe<Integer> value = PublisherProbe.of(Flux.range(1, 2)
+		                                                      .doOnNext(n -> nextCount.incrementAndGet()));
+
+		StepVerifier.create(Flux.zipDelayError(error.flux(), value.flux(), Tuples::of))
+		            .verifyErrorMessage("boom");
+
+		error.assertWasSubscribed();
+		value.assertWasSubscribed();
+		assertThat(nextCount).hasValue(2);
+		value.assertWasNotCancelled();
+    }
+
+    @Test
+	public void zipDelayErrorNoScalarFirstEmpty() {
+	    AtomicInteger nextCount = new AtomicInteger();
+	    PublisherProbe<Integer> empty = PublisherProbe.of(Flux.empty());
+	    PublisherProbe<Integer> value = PublisherProbe.of(Flux.range(1, 2)
+	                                                          .doOnNext(n -> nextCount.incrementAndGet()));
+
+	    StepVerifier.create(Flux.zipDelayError(empty.flux(), value.flux(), Tuples::of))
+	                .verifyComplete();
+
+	    empty.assertWasRequested();
+	    value.assertWasRequested();
+	    assertThat(nextCount).hasValue(2);
+		value.assertWasNotCancelled();
+    }
+
+    @Test
+	public void zipDelayErrorNoScalarFirstValueThenErrors() {
+	    AtomicInteger firstNextCount = new AtomicInteger();
+	    AtomicInteger secondNextCount = new AtomicInteger();
+	    PublisherProbe<Integer> valueThenError = PublisherProbe.of(
+			    Flux.concat(Flux.just(1), Flux.error(new IllegalStateException("boom")))
+			        .doOnNext(n -> firstNextCount.incrementAndGet())
+	    );
+	    PublisherProbe<Integer> value = PublisherProbe.of(Flux.range(1, 2)
+	                                                          .doOnNext(n -> secondNextCount.incrementAndGet()));
+
+	    StepVerifier.create(Flux.zipDelayError(valueThenError.flux(), value.flux(), (a, b) -> a + b))
+	                .expectNext(2)
+	                .verifyErrorMessage("boom");
+
+	    valueThenError.assertWasSubscribed();
+	    value.assertWasSubscribed();
+	    assertThat(firstNextCount).hasValue(1);
+	    assertThat(secondNextCount).hasValue(2);
+	    value.assertWasNotCancelled();
+    }
+
+    @Test
+	public void zipDelayErrorNoScalarFirstValueThenEmpty() {
+	    AtomicInteger firstNextCount = new AtomicInteger();
+	    AtomicInteger secondNextCount = new AtomicInteger();
+	    PublisherProbe<Integer> valueThenEmpty = PublisherProbe.of(
+			    Flux.concat(Flux.just(1), Flux.empty())
+			        .doOnNext(n -> firstNextCount.incrementAndGet())
+	    );
+	    PublisherProbe<Integer> value = PublisherProbe.of(Flux.range(1, 2)
+	                                                          .doOnNext(n -> secondNextCount.incrementAndGet()));
+
+	    StepVerifier.create(Flux.zipDelayError(valueThenEmpty.flux(), value.flux(), (a, b) -> a + b))
+	                .expectNext(2)
+	                .verifyComplete();
+
+	    valueThenEmpty.assertWasSubscribed();
+	    value.assertWasSubscribed();
+	    assertThat(firstNextCount).hasValue(1);
+	    assertThat(secondNextCount).hasValue(2);
+	    value.assertWasNotCancelled();
+    }
+
+    @Test
+	public void zipDelayErrorNoScalarFirstValueThenEmpty4() {
+	    AtomicInteger firstNextCount = new AtomicInteger();
+	    AtomicInteger secondNextCount = new AtomicInteger();
+	    AtomicInteger thirdNextCount = new AtomicInteger();
+	    AtomicInteger fourthNextCount = new AtomicInteger();
+
+	    PublisherProbe<Integer> valueThenEmpty = PublisherProbe.of(Flux.range(1, 2)
+	                                                                   .doOnNext(n -> firstNextCount.incrementAndGet()));
+	    PublisherProbe<Integer> value1 = PublisherProbe.of(Flux.range(10, 3)
+	                                                          .doOnNext(n -> secondNextCount.incrementAndGet()));
+	    PublisherProbe<Integer> value2 = PublisherProbe.of(Flux.range(100, 4)
+	                                                           .log()
+	                                                           .doOnNext(n -> thirdNextCount.incrementAndGet()));
+	    PublisherProbe<Integer> value3 = PublisherProbe.of(Flux.range(1000, 5)
+	                                                          .doOnNext(n -> fourthNextCount.incrementAndGet()));
+
+	    @SuppressWarnings("unchecked")
+	    FluxZip<Integer, Integer> zip = new FluxZip<Integer, Integer>(
+			    new Publisher[] {valueThenEmpty.flux(), value1.flux(), value2.flux(), value3.flux()},
+			    o -> ((Integer) o[0] + (Integer) o[1] + (Integer) o[2] + (Integer) o[3]),
+			    Queues.small(), 10, true);
+
+	    StepVerifier.create(zip.log())
+	                .expectNext(1111)
+	                .expectNext(1115)
+	                .verifyComplete();
+
+	    valueThenEmpty.assertWasSubscribed();
+	    value1.assertWasSubscribed();
+	    value2.assertWasSubscribed();
+	    value3.assertWasSubscribed();
+
+	    value1.assertWasNotCancelled();
+	    value2.assertWasNotCancelled();
+	    value3.assertWasNotCancelled();
+
+	    assertThat(firstNextCount).as("first").hasValue(2);
+	    assertThat(secondNextCount).as("second").hasValue(3);
+	    assertThat(thirdNextCount).as("third").hasValue(4);
+	    assertThat(fourthNextCount).as("fourth").hasValue(5);
+    }
+
+    @Test
+	public void zipDelayErrorNoScalarAllValued() {
+	    PublisherProbe<Integer> first = PublisherProbe.of(Flux.range(1, 2));
+	    PublisherProbe<Integer> second = PublisherProbe.of(Flux.range(10, 2));
+
+	    StepVerifier.create(Flux.zipDelayError(first.flux(), second.flux(), (a, b) -> a + b))
+	                .expectNext(11, 13)
+	                .verifyComplete();
+
+	    first.assertWasRequested();
+	    second.assertWasRequested();
+
+	    first.assertWasNotCancelled();
+	    second.assertWasNotCancelled();
+    }
+
+    @Test
+	public void zipDelayErrorPartialScalarAllValued() {
+	    Flux<Integer> first = Flux.just(1);
+	    PublisherProbe<Integer> second = PublisherProbe.of(Flux.just(10));
+
+	    StepVerifier.create(Flux.zipDelayError(first, second.flux(), (a, b) -> a + b))
+	                .expectNext(11)
+	                .verifyComplete();
+
+	    second.assertWasCancelled(); //single subscriber always cancels, but there was 1 element emitted
+    }
+
+    @Test
+	public void zipDelayErrorFullScalarAllValued() {
+	    Flux<Integer> first = Flux.just(1);
+	    Flux<Integer> second = Flux.just(10);
+
+	    StepVerifier.create(Flux.zipDelayError(first, second, (a, b) -> a + b))
+	                .expectNext(11)
+	                .verifyComplete();
+    }
+
 }
