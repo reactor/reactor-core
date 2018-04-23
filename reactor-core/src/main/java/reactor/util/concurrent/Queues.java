@@ -49,6 +49,12 @@ public final class Queues {
 	 * @return the capacity of the queue, if discoverable with confidence, or {@link #CAPACITY_UNSURE} negative constant.
 	 */
 	public static final int capacity(Queue q) {
+		if (q instanceof ZeroQueue) {
+			return 0;
+		}
+		if (q instanceof OneQueue) {
+			return 1;
+		}
 		if (q instanceof SpscLinkedArrayQueue) {
 			return Integer.MAX_VALUE;
 		}
