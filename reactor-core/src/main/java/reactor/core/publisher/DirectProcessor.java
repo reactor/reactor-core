@@ -77,7 +77,9 @@ import reactor.util.annotation.Nullable;
  * </p>
  *
  * @param <T> the input and output value type
+ * @deprecated instantiate through {@link Processors#direct()} and use as a {@link ProcessorSink}
  */
+@Deprecated
 public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
@@ -87,6 +89,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> DirectProcessor<E> create() {
 		return new DirectProcessor<>();
 	}
@@ -126,6 +129,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 			s.cancel();
 		}
 	}
+
 
 	@Override
 	public void onNext(T t) {
@@ -279,6 +283,15 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 			return error;
 		}
 		return null;
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		long cap = 0L;
+		for (DirectInner inner : subscribers) {
+			cap = Math.max(inner.requested, cap);
+		}
+		return cap;
 	}
 
 	static final class DirectInner<T> implements InnerProducer<T> {

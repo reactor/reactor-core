@@ -28,7 +28,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -84,7 +83,9 @@ import reactor.util.context.Context;
  * </p>
  *
  * @param <T> the input and output type
+ * @deprecated instantiate through {@link Processors#unicast()} builder and use as a {@link ProcessorSink}
  */
+@Deprecated
 public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
 		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T> {
@@ -96,6 +97,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create() {
 		return new UnicastProcessor<>(Queues.<E>unbounded().get());
 	}
@@ -108,6 +110,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue) {
 		return new UnicastProcessor<>(queue);
 	}
@@ -121,6 +124,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
 		return new UnicastProcessor<>(queue, endcallback);
 	}
@@ -137,6 +141,7 @@ public final class UnicastProcessor<T>
 	 *
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue,
 			Consumer<? super E> onOverflow,
 			Disposable endcallback) {
@@ -187,6 +192,13 @@ public final class UnicastProcessor<T>
 		this.onOverflow = null;
 	}
 
+	UnicastProcessor(Queue<T> queue,
+			Consumer<? super T> onOverflow) {
+		this.queue = Objects.requireNonNull(queue, "queue");
+		this.onOverflow = Objects.requireNonNull(onOverflow, "onOverflow");
+		this.onTerminate = null;
+	}
+
 	public UnicastProcessor(Queue<T> queue,
 			Consumer<? super T> onOverflow,
 			Disposable onTerminate) {
@@ -195,9 +207,22 @@ public final class UnicastProcessor<T>
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
 	}
 
+	/**
+	 * @deprecated use {@link ProcessorSink#getAvailableCapacity()} instead
+	 */
 	@Override
+	@Deprecated
 	public int getBufferSize() {
 		return Queues.capacity(this.queue);
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		int cap = Queues.capacity(this.queue);
+		if (cap < 0) {
+			return Long.MAX_VALUE;
+		}
+		return cap;
 	}
 
 	@Override
@@ -488,8 +513,13 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
+	public void dispose() {
+		cancel();
+	}
+
+	@Override
 	public boolean isDisposed() {
-		return cancelled || done;
+		return cancelled;
 	}
 
 	@Override

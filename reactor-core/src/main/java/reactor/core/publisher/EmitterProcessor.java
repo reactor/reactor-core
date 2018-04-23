@@ -51,7 +51,9 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
+ * @deprecated instantiate through {@link Processors#emitter()} and use as a {@link ProcessorSink}
  */
+@Deprecated
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
@@ -62,6 +64,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create() {
 		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
@@ -75,6 +78,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
 		return create(Queues.SMALL_BUFFER_SIZE, autoCancel);
 	}
@@ -87,6 +91,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize) {
 		return create(bufferSize, true);
 	}
@@ -100,6 +105,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
 		return new EmitterProcessor<>(autoCancel, bufferSize);
 	}
@@ -298,9 +304,22 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
 	 * @return true if all subscribers have actually been cancelled and the processor auto shut down
+	 * @deprecated use {@link #isDisposed()} instead
 	 */
+	@Deprecated
 	public boolean isCancelled() {
-		return Operators.cancelledSubscription() == s;
+		return isDisposed();
+	}
+
+	@Override
+	public void dispose() {
+		super.dispose();
+		Operators.terminate(S, this);
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return super.disposed || Operators.cancelledSubscription() == s;
 	}
 
 	@Override
@@ -542,6 +561,15 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	@Override
 	public long downstreamCount() {
 		return subscribers.length;
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		int cap = Queues.capacity(this.queue);
+		if (cap < 0) {
+			return Long.MAX_VALUE;
+		}
+		return cap;
 	}
 
 	static final class EmitterInner<T> extends FluxPublish.PubSubInner<T> {

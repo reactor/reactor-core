@@ -43,7 +43,9 @@ import reactor.util.context.Context;
  * A base processor used by executor backed processors to take care of their ExecutorService
  *
  * @author Stephane Maldini
+ * @deprecated will be simplified into {@link ProcessorSink} in 3.2.0
  */
+@Deprecated
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		implements Runnable {
 
@@ -259,6 +261,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return upstreamSubscription;
+		if (key == Attr.LARGE_BUFFERED) return getPending();
 
 		return super.scanUnsafe(key);
 	}
@@ -303,7 +306,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	/**
 	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor.dispose()}.
 	 * @return if the underlying executor terminated and false if the timeout elapsed before termination
+	 * @deprecated will be made package-private in 3.2.0, use {@link FluxProcessorSink#disposeAndAwait(Duration)}
 	 */
+	@Deprecated
 	public final boolean awaitAndShutdown() {
 		return awaitAndShutdown(Duration.ofSeconds(-1));
 	}
@@ -313,7 +318,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param timeout the timeout value
 	 * @param timeUnit the unit for timeout
      * @return if the underlying executor terminated and false if the timeout elapsed before termination
-	 * @deprecated use {@link #awaitAndShutdown(Duration)} instead
+	 * @deprecated will be removed in 3.2.0, use {@link FluxProcessorSink#disposeAndAwait(Duration)} instead
 	 */
 	@Deprecated
 	public final boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
@@ -331,7 +336,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param timeout the timeout value as a {@link java.time.Duration}. Note this is converted to a {@link Long}
 	 * of nanoseconds (which amounts to roughly 292 years maximum timeout).
      * @return if the underlying executor terminated and false if the timeout elapsed before termination
+	 * @deprecated will be removed in 3.2.0, superseded by {@link FluxProcessorSink#disposeAndAwait(Duration)}
 	 */
+	@Deprecated
 	public final boolean awaitAndShutdown(Duration timeout) {
 		long nanos = -1;
 		if (!timeout.isNegative()) {
@@ -357,7 +364,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * guarantee to see a end if the buffer keeps replenishing due to concurrent producing.
 	 *
 	 * @return a {@link Flux} sequence possibly unbounded of incoming buffered values or empty if not supported.
+	 * @deprecated will be made package-private in 3.2.0
 	 */
+	@Deprecated
 	public Flux<IN> drain(){
 		return Flux.empty();
 	}
@@ -366,12 +375,15 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * Shutdown this {@code Processor}, forcibly halting any work currently executing and discarding any tasks that have
 	 * not yet been executed.
 	 * @return a Flux instance with the remaining undelivered values
+	 * @deprecated will be removed in 3.2.0, use {@link FluxProcessorSink#forceDispose()} instead
 	 */
+	//TODO make package private
 	final public Flux<IN> forceShutdown() {
 		int t = terminated;
 		if (t != FORCED_SHUTDOWN && TERMINATED.compareAndSet(this, t, FORCED_SHUTDOWN)) {
 			executor.shutdownNow();
 			requestTaskExecutor.shutdownNow();
+			this.disposed = true;
 		}
 		return drain();
 	}
@@ -379,6 +391,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	/**
 	 * @return a snapshot number of available onNext before starving the resource
 	 */
+	@Override
 	final public long getAvailableCapacity() {
 		return ringBuffer.bufferSize() - ringBuffer.getPending();
 	}
@@ -466,12 +479,19 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	/**
 	 * Shutdown this active {@code Processor} such that it can no longer be used. If the resource carries any work, it
 	 * will wait (but NOT blocking the caller) for all the remaining tasks to perform before closing the resource.
+	 * @deprecated will be removed in 3.2.0, use {@link #dispose()} instead
 	 */
 	public final void shutdown() {
+		dispose();
+	}
+
+	@Override
+	public final void dispose() {
 		try {
 			onComplete();
 			executor.shutdown();
 			requestTaskExecutor.shutdown();
+			super.disposed = true;
 		}
 		catch (Throwable t) {
 			onError(Operators.onOperatorError(t, currentContext()));

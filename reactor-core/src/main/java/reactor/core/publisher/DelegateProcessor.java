@@ -76,6 +76,11 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	}
 
 	@Override
+	public long getAvailableCapacity() {
+		return getBufferSize();
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public boolean isSerialized() {
 		return upstream instanceof SerializedSubscriber ||

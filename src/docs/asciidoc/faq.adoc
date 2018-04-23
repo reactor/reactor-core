@@ -187,7 +187,7 @@ chain or for different subscribers.
 
 [source,java]
 ----
-EmitterProcessor<Integer> processor = EmitterProcessor.create();
+Broadcaster<Integer> processor = Processors.emitter().build();
 processor.publishOn(scheduler1)
          .map(i -> transform(i))
          .publishOn(scheduler2)

@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -718,6 +717,21 @@ public class EmitterProcessorTest {
 		boolean autoCancel = false;
 		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize, autoCancel);
 		assertProcessor(processor, bufferSize, autoCancel);
+	}
+
+	@Test
+	public void cancelIsDisposed() {
+		ProcessorSink<Integer> processor = Processors.emitter();
+		assertThat(processor.asProcessor()).isExactlyInstanceOf(EmitterProcessor.class);
+
+		assertThat(processor.isDisposed()).as("not yet disposed").isFalse();
+
+		processor.dispose();
+
+		assertThat(processor.isDisposed()).as("disposed").isTrue();
+		assertThat(((EmitterProcessor) processor.asProcessor()).isCancelled())
+				.as("isCancelled")
+				.isTrue();
 	}
 
 	public void assertProcessor(EmitterProcessor<Integer> processor,

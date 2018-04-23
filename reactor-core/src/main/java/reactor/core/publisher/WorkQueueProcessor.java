@@ -63,7 +63,9 @@ import reactor.util.concurrent.WaitStrategy;
  *
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
+ * @deprecated prefer the {@link Processors#fanOut()} variant, will be removed in 3.2.0.
  */
+@Deprecated
 public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**
@@ -74,7 +76,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * {@code WorkQueueProcessor<String> processor = WorkQueueProcessor.<String>builder().build()}
 	 *
 	 * @param <T> Type of dispatched signal
+	 * @deprecated will be replaced by {@link Processors#fanOut()} in 3.2.0
 	 */
+	@Deprecated
 	public final static class Builder<T> {
 
 		String name;
@@ -162,7 +166,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param requestTaskExecutor internal request executor
 		 * @return builder with provided internal request executor
 		 */
-		public Builder<T> requestTaskExecutor(@Nullable ExecutorService requestTaskExecutor) {
+		public Builder<T> requestTaskExecutor(
+				@Nullable ExecutorService requestTaskExecutor) {
 			this.requestTaskExecutor = requestTaskExecutor;
 			return this;
 		}
@@ -205,6 +210,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * Create a new {@link WorkQueueProcessor} {@link Builder} with default properties.
 	 * @return new WorkQueueProcessor builder
 	 */
+	@Deprecated
 	public final static <T> Builder<T> builder() {
 		return new Builder<>();
 	}
@@ -216,6 +222,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create() {
 		return WorkQueueProcessor.<E>builder().build();
 	}
@@ -230,6 +237,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize) {
 		return WorkQueueProcessor.<E>builder().name(name).bufferSize(bufferSize).build();
 	}
@@ -246,6 +254,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize) {
 		return WorkQueueProcessor.<E>builder().share(true).name(name).bufferSize(bufferSize).build();
 	}
@@ -356,6 +365,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@Override
+	@Deprecated
 	public Flux<E> drain() {
 		return TopicProcessor.coldSource(ringBuffer, null, error, workSequence);
 	}

@@ -45,7 +45,9 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * <p>
  *
  * @param <T> the value type
+ * @deprecated instantiate through {@link Processors#replay()} or {@link Processors#cacheLast()} and use as a {@link ProcessorSink}
  */
+@Deprecated
 public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		implements Fuseable {
 
@@ -62,6 +64,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays its last pushed element to each new
 	 * {@link Subscriber}
 	 */
+	@Deprecated
 	public static <T> ReplayProcessor<T> cacheLast() {
 		return cacheLastOrDefault(null);
 	}
@@ -82,6 +85,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays its last pushed element to each new
 	 * {@link Subscriber}, or a default one if nothing was pushed yet
 	 */
+	@Deprecated
 	public static <T> ReplayProcessor<T> cacheLastOrDefault(@Nullable T value) {
 		ReplayProcessor<T> b = create(1);
 		if (value != null) {
@@ -99,6 +103,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays the whole history to each new
 	 * {@link Subscriber}.
 	 */
+	@Deprecated
 	public static <E> ReplayProcessor<E> create() {
 		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
@@ -113,6 +118,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays a limited history to each new
 	 * {@link Subscriber}.
 	 */
+	@Deprecated
 	public static <E> ReplayProcessor<E> create(int historySize) {
 		return create(historySize, false);
 	}
@@ -128,6 +134,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays the whole history to each new
 	 * {@link Subscriber} if configured as unbounded, a limited history otherwise.
 	 */
+	@Deprecated
 	public static <E> ReplayProcessor<E> create(int historySize, boolean unbounded) {
 		FluxReplay.ReplayBuffer<E> buffer;
 		if (unbounded) {
@@ -170,6 +177,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays elements based on their age.
 	 */
+	@Deprecated
 	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge) {
 		return createTimeout(maxAge, Schedulers.parallel());
 	}
@@ -205,6 +213,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays elements based on their age.
 	 */
+	@Deprecated
 	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge, Scheduler scheduler) {
 		return createSizeAndTimeout(Integer.MAX_VALUE, maxAge, scheduler);
 	}
@@ -243,6 +252,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replay up to {@code size} elements, but
 	 * will evict them from its history based on their age.
 	 */
+	@Deprecated
 	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size, Duration maxAge) {
 		return createSizeAndTimeout(size, maxAge, Schedulers.parallel());
 	}
@@ -281,6 +291,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replay up to {@code size} elements, but
 	 * will evict them from its history based on their age.
 	 */
+	@Deprecated
 	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size,
 			Duration maxAge,
 			Scheduler scheduler) {
@@ -354,6 +365,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public boolean isTerminated() {
 		return buffer.isDone();
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		return buffer.capacity() - buffer.size();
 	}
 
 	boolean add(FluxReplay.ReplaySubscription<T> rs) {
