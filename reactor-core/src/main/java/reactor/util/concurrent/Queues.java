@@ -15,8 +15,11 @@
  */
 package reactor.util.concurrent;
 
+import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
@@ -111,6 +114,9 @@ public final class Queues {
 		if (batchSize == 1) {
 			return ONE_SUPPLIER;
 		}
+		if (batchSize == 0) {
+			return ZERO_SUPPLIER;
+		}
 
 		final int adjustedBatchSize = Math.max(8, batchSize);
 		if (adjustedBatchSize > 10_000_000) {
@@ -128,6 +134,19 @@ public final class Queues {
 	 */
 	public static boolean isPowerOfTwo(final int x) {
 		return Integer.bitCount(x) == 1;
+	}
+
+	/**
+	 * A {@link Supplier} for an empty immutable {@link Queue}, to be used as a placeholder
+	 * in methods that require a Queue when one doesn't expect to store any data in said
+	 * Queue.
+	 *
+	 * @param <T> the reified {@link Queue} generic type
+	 * @return an immutable empty {@link Queue} {@link Supplier}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Supplier<Queue<T>> empty() {
+		return ZERO_SUPPLIER;
 	}
 
 	/**
@@ -322,6 +341,108 @@ public final class Queues {
         private static final long serialVersionUID = -6079491923525372331L;
 	}
 
+	static final class ZeroQueue<T> implements Queue<T>, Serializable {
+
+		@Override
+		public boolean add(T t) {
+			return false;
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends T> c) {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+			//NO-OP
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			return false;
+		}
+
+		@Override
+		public boolean containsAll(Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public T element() {
+			throw new NoSuchElementException("immutable empty queue");
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			return Collections.emptyIterator();
+		}
+
+		@Override
+		public boolean offer(T t) {
+			return false;
+		}
+
+		@Override
+		@Nullable
+		public T peek() {
+			return null;
+		}
+
+		@Override
+		@Nullable
+		public T poll() {
+			return null;
+		}
+
+		@Override
+		public T remove() {
+			throw new NoSuchElementException("immutable empty queue");
+		}
+
+		@Override
+		public boolean remove(Object o) {
+			return false;
+		}
+
+		@Override
+		public boolean removeAll(Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public boolean retainAll(Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public Object[] toArray() {
+			return new Object[0];
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public <T1> T1[] toArray(T1[] a) {
+			if (a.length > 0) {
+				a[0] = null;
+				return a;
+			}
+			return (T1[])toArray();
+		}
+
+		private static final long serialVersionUID = -8876883675795156827L;
+	}
+
 	static final class QueueIterator<T> implements Iterator<T> {
 
 		final Queue<T> queue;
@@ -345,6 +466,9 @@ public final class Queues {
 			queue.remove();
 		}
 	}
+
+    @SuppressWarnings("rawtypes")
+    static final Supplier ZERO_SUPPLIER  = ZeroQueue::new;
     @SuppressWarnings("rawtypes")
     static final Supplier ONE_SUPPLIER   = OneQueue::new;
 	@SuppressWarnings("rawtypes")
