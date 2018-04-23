@@ -63,7 +63,9 @@ import reactor.util.concurrent.WaitStrategy;
  *
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
+ * @deprecated prefer the {@link Processors#fanOut()} variant, will be removed in 3.2.0.
  */
+@Deprecated
 public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**
@@ -74,8 +76,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * {@code WorkQueueProcessor<String> processor = WorkQueueProcessor.<String>builder().build()}
 	 *
 	 * @param <T> Type of dispatched signal
+	 * @deprecated will be replaced by {@link Processors#fanOut()} in 3.2.0
 	 */
-	public final static class Builder<T> {
+	@Deprecated
+	public final static class Builder<T> implements Processors.FanOutProcessorBuilder<T> {
 
 		String name;
 		ExecutorService executor;
@@ -92,12 +96,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		/**
-		 * Configures name for this builder. Default value is WorkQueueProcessor.
-		 * Name is push to default if the provided <code>name</code> is null.
-		 * @param name Use a new cached ExecutorService and assign this name to the created threads
-		 *             if {@link #executor(ExecutorService)} is not configured.
-		 * @return builder with provided name
+		 * {@inheritDoc}
+		 * Default name is "WorkQueueProcessor".
 		 */
+		@Override
 		public Builder<T> name(@Nullable String name) {
 			if (executor != null)
 				throw new IllegalArgumentException("Executor service is configured, name will not be used.");
@@ -105,11 +107,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			return this;
 		}
 
-		/**
-		 * Configures buffer size for this builder. Default value is {@link Queues#SMALL_BUFFER_SIZE}.
-		 * @param bufferSize the internal buffer size to hold signals, must be a power of 2
-		 * @return builder with provided buffer size
-		 */
+		@Override
 		public Builder<T> bufferSize(int bufferSize) {
 			if (!Queues.isPowerOfTwo(bufferSize)) {
 				throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
@@ -123,67 +121,38 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			return this;
 		}
 
-		/**
-		 * Configures wait strategy for this builder. Default value is {@link WaitStrategy#liteBlocking()}.
-		 * Wait strategy is push to default if the provided <code>waitStrategy</code> is null.
-		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default smart blocking wait strategy.
-		 * @return builder with provided wait strategy
-		 */
+		@Override
 		public Builder<T> waitStrategy(@Nullable WaitStrategy waitStrategy) {
 			this.waitStrategy = waitStrategy;
 			return this;
 		}
 
-		/**
-		 * Configures auto-cancel for this builder. Default value is true.
-		 * @param autoCancel automatically cancel
-		 * @return builder with provided auto-cancel
-		 */
+		@Override
 		public Builder<T> autoCancel(boolean autoCancel) {
 			this.autoCancel = autoCancel;
 			return this;
 		}
 
-		/**
-		 * Configures an {@link ExecutorService} to execute as many event-loop consuming the
-		 * ringbuffer as subscribers. Name configured using {@link #name(String)} will be ignored
-		 * if executor is push.
-		 * @param executor A provided ExecutorService to manage threading infrastructure
-		 * @return builder with provided executor
-		 */
+		@Override
 		public Builder<T> executor(@Nullable ExecutorService executor) {
 			this.executor = executor;
 			return this;
 		}
 
-		/**
-		 * Configures an additional {@link ExecutorService} that is used internally
-		 * on each subscription.
-		 * @param requestTaskExecutor internal request executor
-		 * @return builder with provided internal request executor
-		 */
-		public Builder<T> requestTaskExecutor(@Nullable ExecutorService requestTaskExecutor) {
+		@Override
+		public Builder<T> requestTaskExecutor(
+				@Nullable ExecutorService requestTaskExecutor) {
 			this.requestTaskExecutor = requestTaskExecutor;
 			return this;
 		}
 
-		/**
-		 * Configures sharing state for this builder. A shared Processor authorizes
-		 * concurrent onNext calls and is suited for multi-threaded publisher that
-		 * will fan-in data.
-		 * @param share true to support concurrent onNext calls
-		 * @return builder with specified sharing
-		 */
+		@Override
 		public Builder<T> share(boolean share) {
 			this.share = share;
 			return this;
 		}
 
-		/**
-		 * Creates a new {@link WorkQueueProcessor} using the properties
-		 * of this builder.
-		 * @return a fresh processor
-		 */
+		@Override
 		public WorkQueueProcessor<T>  build() {
 			String name = this.name != null ? this.name : WorkQueueProcessor.class.getSimpleName();
 			WaitStrategy waitStrategy = this.waitStrategy != null ? this.waitStrategy : WaitStrategy.liteBlocking();
@@ -205,6 +174,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * Create a new {@link WorkQueueProcessor} {@link Builder} with default properties.
 	 * @return new WorkQueueProcessor builder
 	 */
+	@Deprecated
 	public final static <T> Builder<T> builder() {
 		return new Builder<>();
 	}
@@ -216,6 +186,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create() {
 		return WorkQueueProcessor.<E>builder().build();
 	}
@@ -230,6 +201,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize) {
 		return WorkQueueProcessor.<E>builder().name(name).bufferSize(bufferSize).build();
 	}
@@ -246,6 +218,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize) {
 		return WorkQueueProcessor.<E>builder().share(true).name(name).bufferSize(bufferSize).build();
 	}

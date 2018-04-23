@@ -1,9 +1,13 @@
 Processors are a special kind of `Publisher` that are also a `Subscriber`. That means
-that you can `subscribe` to a `Processor` (generally, they implement `Flux`), but you can
-also call methods to manually inject data into the sequence or terminate it.
+that you can `subscribe` to a `Processor`, but you can also call methods to manually inject
+data into the sequence or terminate it.
 
-There are several kinds of Processors, each with a few particular semantics, but before
-you start looking into these, you need to ask yourself the following question:
+Reactor offers a basic interface for Processors that have the same input and output types,
+the `BalancedFluxProcessor`, with different flavors exposed on the `Processors` utility
+class.
+
+Each flavor has a few particular semantics, but before you start looking into these, you
+need to ask yourself the following question:
 
 = Do I Need a Processor?
 Most of the time, you should try to avoid using a `Processor`. They are harder to use
@@ -21,17 +25,18 @@ terminate it).
 If, after exploring the above alternatives, you still think you need a `Processor`, read
 the <<processor-overview>> section below to learn about the different implementations.
 
-= Safely Produce from Multiple Threads by Using the `Sink` Facade
-Rather than directly using Reactor `Processors`, it is a good practice to obtain a `Sink`
-for the `Processor` by calling `sink()` once.
+= Safely Produce from Multiple Threads by Using the `FluxSink` Facade
+Rather than directly using Reactor `Processors`, it is a good practice to obtain a `FluxSink`
+for the `Processor` by calling `sink()` **once** (and storing the result in a variable to
+reuse it).
 
-`FluxProcessor` sinks safely gate multi-threaded producers and can be used by
+`BalancedFluxProcessor` sinks safely gate multi-threaded producers and can be used by
 applications that generate data from multiple threads concurrently. For example, a
-thread-safe serialized sink can be created for `UnicastProcessor`:
+thread-safe serialized sink can be created for the `unicast` flavor:
 
 [source,java]
 ----
-UnicastProcessor<Integer> processor = UnicastProcessor.create();
+BalancedFluxProcessor<Integer> processor = Processors.unicast().build();
 FluxSink<Integer> sink = processor.sink(overflowStrategy);
 ----
 
@@ -48,59 +53,77 @@ configuration:
 
 * An unbounded processor handles the overflow itself by dropping or buffering.
 * A bounded processor blocks or "spins" on the `IGNORE` strategy or applies the
-`overflowStrategy` behavior specified for the `sink`.
+`overflowStrategy` behavior specified when creating the `sink`.
 
 
 [[processor-overview]]
 = Overview of Available Processors
 Reactor Core comes with several flavors of `Processor`. Not all processors have the same
-semantics but are roughly split into three categories. The following list briefly
-describes the three kinds of processors:
+semantics but are roughly split into four categories, described below:
 
-* *direct* (`DirectProcessor` and `UnicastProcessor`): These processors can only push
-data through direct user action (calling their `Sink`'s methods directly).
-* *synchronous* (`EmitterProcessor` and `ReplayProcessor`): These processors can push data
+* *simple* (`direct` and `unicast` flavors): These processors have more limitations than the others.
+`direct` doesn't manage backpressure, while `unicast` is limited to a single `Subscriber`.
+Pushing data through direct user action (calling their `FluxSink`'s methods directly) is
+the favored way of using these.
+* *synchronous* (`emitter` and `replay` flavors): These processors are meant to push data
 both through user action and by subscribing to an upstream `Publisher` and synchronously
 draining it.
-* *asynchronous* (`WorkQueueProcessor` and `TopicProcessor`): These processors can push
-data obtained from multiple upstream `Publishers`. They are more robust and are  backed
-by a `RingBuffer` data structure in order to deal with their multiple upstreams.
+* *asynchronous* (`fanOut` flavor): These processors can push data obtained from
+**multiple** upstream `Publishers`. They are more robust but also are a bit more costly
+to instantiate, establishing more resources in order to deal with their multiple upstreams.
+* *mono* (`first` flavor): These processors, when attached to a `Publisher` source, only
+propagate at most one element from the source. Their `sink()` is actually a `MonoSink<T>`,
+which limits the sink interactions to follow the semantics of `Mono` (0-1 elements).
 
-The asynchronous processors are the most complex to instantiate, with a lot of different
-options. Consequently, they expose a `Builder` interface. The simpler processors have
-static factory methods instead.
 
-== DirectProcessor
-A `DirectProcessor` is a processor that can dispatch signals to zero to many
-`Subscribers`. It is the simplest one to instantiate, with a single `create()` static
-factory method. On the other hand, *it has the limitation of not handling backpressure*.
-As a consequence, a `DirectProcessor` signals an `IllegalStateException` to its
+
+== Direct Processor
+[source,java]
+----
+BalancedFluxProcessor<Integer> direct = Processors.direct();
+----
+
+A **direct** `Processor` can dispatch signals to zero to many `Subscribers`, but has the
+limitation of not handling backpressure.
+
+As a consequence, a direct `Processor` signals an `IllegalStateException` to its
 subscribers if you push N elements through it but at least one of its subscribers has
 requested less than N.
 
-Once the `Processor` has terminated (usually through its `Sink` `error(Throwable)` or
-`complete()` methods being called), it lets more subscribers subscribe but replays the
-termination signal to them immediately.
+Once the `Processor` has terminated (usually through its `FluxSink` `error(Throwable)`
+or `complete()` methods being called), it lets more subscribers subscribe but
+replays the termination signal to them immediately.
 
-== UnicastProcessor
-A `UnicastProcessor` can deal with backpressure using an internal buffer. The trade-off
-is that it can have *at most one* `Subscriber`.
+== Unicast Processor
+[source,java]
+----
+UnicastProcessorBuilder<Integer> builder = Processors.unicast();
+BalancedFluxProcessor<Integer> unicast = builder.build();
+----
 
-A `UnicastProcessor` has a few more options, reflected by a few `create` static factory
-methods. For instance, by default it is _unbounded_: if you push any amount of
-data through it while its `Subscriber` has not yet requested data, it will buffer all of
-the data.
+A **unicast** `Processor` can deal with backpressure using an internal buffer.
+The trade-off is that it can have *at most one* `Subscriber`.
+
+Such a `Processor` has a few more options in its builder. For instance, by default it is
+_unbounded_: if you push any amount of data through it while its `Subscriber` has not yet
+requested data, it will buffer all of the data.
 
 This can be changed by providing a custom `Queue` implementation for the internal
-buffering in the `create` factory method. If that queue is bounded, the processor could
-reject the push of a value when the buffer is full and not enough requests from
+buffering through the `queue(Queue)` builder method. If that queue is bounded, the processor
+could reject the push of a value when the buffer is full and not enough requests from
 downstream have been received.
 
 In that _bounded_ case, the processor can also be built with a callback that is invoked
 on each rejected element, allowing for cleanup of these rejected elements.
 
-== EmitterProcessor
-An `EmitterProcessor` is capable of emitting to several subscribers, while honoring
+== Emitter Processor
+[source,java]
+----
+EmitterProcessorBuilder<Integer> builder = Processors.emitter();
+BalancedFluxProcessor<Integer> emitter = builder.build();
+----
+
+An **emitter** `Processor` is capable of emitting to several subscribers, while honoring
 backpressure for each of its subscribers. It can also subscribe to a `Publisher` and
 relay its signals synchronously.
 
@@ -117,36 +140,56 @@ backpressure purposes.
 
 By default, if all of its subscribers are cancelled (which basically means they have all
 un-subscribed), it will clear its internal buffer and stop accepting new subscribers.
-This can be tuned by the `autoCancel` parameter in the `create` static factory methods.
+This can be deactivated by using the `noAutoCancel()` method in the builder.
 
-== ReplayProcessor
-A `ReplayProcessor` caches elements that are either pushed directly through its `Sink`
+== Replay Processor
+[source,java]
+----
+ReplayProcessorBuilder<Integer> builder = Processors.replay();
+BalancedFluxProcessor<Integer> replay = builder.build();
+----
+
+A **replay** `Processor` caches elements that are either pushed directly through its `FluxSink`
 or elements from an upstream `Publisher` and replays them to late subscribers.
 
-It can be created in multiple configurations:
+Depending on the methods called on the builder, it can create a replay Processor in
+multiple configurations:
 
-* Caching a single element (`cacheLast`).
-* Caching a limited history (`create(int)`), unbounded history (`create()`).
-* Caching time-based replay window (`createTimeout(Duration)`).
-* Caching combination of history size and time window
-(`createSizeOrTimeout(int, Duration)`).
+* Caching an unbounded history (no builder configuration and direct call to `build()`, or
+call to `historySize(int, true)`).
+* Caching a bounded history (`historySize(int)`).
+* Caching time-based replay windows, by only specifying a TTL (`maxAge(Duration)`).
+* Caching combination of history size and time window, by specifying both TTL
+(`maxAge(Duration)`) and history size (`historySize(int)`).
 
-== TopicProcessor
-A `TopicProcessor` is an asynchronous processor capable of relaying elements from
+There is also a factory method to produce a replay processor that caches the last pushed
+element: `Processors.cacheLast()`.
+
+== FanOut Processor
+[source,java]
+----
+FanOutProcessorBuilder<Integer> builder = Processors.fanOut();
+BalancedFluxProcessor<Integer> fanOut = builder.build();
+----
+
+A **fan out** `Processor` is an **asynchronous** processor capable of relaying elements from
 multiple upstream `Publishers` when created in the `shared` configuration (see the
-`share(boolean)` option of the `builder()`).
+`share(boolean)` option of the builder).
 
-Note that the share option is mandatory if you intend to concurrently call
-`TopicProcessor`'s `onNext`, `onComplete`, or `onError` methods directly or from a
-concurrent upstream Publisher.
+Note that the share option is mandatory if you intend to concurrently call the Processor's
+`onNext`, `onComplete`, or `onError` methods directly or from a concurrent upstream `Publisher`.
 
 Otherwise, such concurrent calls are illegal, as the processor is then fully compliant
 with the Reactive Streams specification.
 
-A `TopicProcessor` is capable of fanning out to multiple `Subscribers`. It does so by
-associating a `Thread` to each `Subscriber`, which will run until an `onError` or
-`onComplete` signal is pushed through the processor or until the associated `Subscriber`
-is cancelled. The maximum number of downstream subscribers is driven by the `executor`
+A fan out processor is capable of fanning out to multiple `Subscribers`,
+with the added overhead of establishing resources to keep track of each `Subscriber`
+until an `onError(Throwable)` or `onComplete()` signal is pushed through the processor or
+until the associated `Subscriber` is cancelled.
+
+This variant uses a `Thread`-per-`Subscriber` model.
+
+The maximum number of downstream subscribers is driven by the `executor(ExecutorService)`
 builder option. Provide a bounded `ExecutorService` to limit it to a specific number.
 
 The processor is backed by a `RingBuffer` data structure that stores pushed signals. Each
@@ -157,32 +200,16 @@ This processor also has an `autoCancel` builder option: If set to `true` (the de
 it results in the source `Publisher`(s) being cancelled when all subscribers are
 cancelled.
 
-== WorkQueueProcessor
-A `WorkQueueProcessor` is also an asynchronous processor capable of relaying elements
-from multiple upstream `Publishers` when created in the `shared` configuration (it shares
-most of its builder options with `TopicProcessor`).
+== First Processor
+[source,java]
+----
+MonoFirstProcessorBuilder<Integer> builder = Processors.first();
+BalancedMonoProcessor<Integer> first = builder
+    .attachSource(Flux.range(1, 10))
+    .build();
+//will emit `1`
+----
 
-It relaxes its compliance with the Reactive Streams specification, but it acquires the
-benefit of requiring fewer resources than the `TopicProcessor`. It is still based on a
-`RingBuffer` but avoids the overhead of creating one consumer `Thread` per `Subscriber`.
-As a result, it scales better than the `TopicProcessor`.
-
-The trade-off is that its distribution pattern is a little bit different: Requests from
-each subscriber all add up together, and the processor relays signals to only one
-`Subscriber` at a time, in a kind of round-robin distribution rather than fan-out
-pattern.
-
-NOTE: A fair round-robin distribution is not guaranteed.
-
-The `WorkQueueProcessor` mostly has the same builder options as the `TopicProcessor`,
-such as `autoCancel`, `share`, and `waitStrategy`. The maximum number of downstream
-subscribers is also driven by a configurable `ExecutorService` with the `executor`
-option.
-
-WARNING: You should take care not to subscribe too many `Subscribers` to a
-`WorkQueueProcessor`, as doing so *could lock the processor*. If you need to limit the
-number of possible subscribers, prefer doing so by using a `ThreadPoolExecutor` or a
-`ForkJoinPool`. The processor can detect their capacity and throw an exception if you
-subscribe one too many times.
-
-//TODO == MonoProcessor
+A **first** `Processor` is a `BalancedMonoProcessor` that captures the _first_ element
+that is pushed through it (either manually or by an upstream source `Publisher`) and
+replays it to further `Subscribers`.

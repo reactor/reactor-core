@@ -28,7 +28,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -41,10 +40,13 @@ import reactor.util.context.Context;
  * The implementation keeps the order of signals.
  *
  * @param <T> the input and output type
+ * @deprecated instantiate through {@link Processors#unicast()} builder and use as a {@link BalancedFluxProcessor}
  */
+@Deprecated
 public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
-		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T> {
+		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>,
+		           BalancedFluxProcessor<T> {
 
 	/**
 	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
@@ -53,6 +55,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create() {
 		return new UnicastProcessor<>(Queues.<E>unbounded().get());
 	}
@@ -65,6 +68,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue) {
 		return new UnicastProcessor<>(queue);
 	}
@@ -78,6 +82,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
 		return new UnicastProcessor<>(queue, endcallback);
 	}
@@ -94,6 +99,7 @@ public final class UnicastProcessor<T>
 	 *
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue,
 			Consumer<? super E> onOverflow,
 			Disposable endcallback) {
@@ -150,6 +156,11 @@ public final class UnicastProcessor<T>
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onOverflow = Objects.requireNonNull(onOverflow, "onOverflow");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
 	}
 
 	@Override

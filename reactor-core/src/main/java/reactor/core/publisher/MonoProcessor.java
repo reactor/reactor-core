@@ -25,15 +25,12 @@ import java.util.function.LongSupplier;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.WaitStrategy;
-import reactor.util.context.Context;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
@@ -47,11 +44,14 @@ import reactor.util.context.Context;
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
+ * @deprecated instantiate through {@link Processors#first} and use as a {@link BalancedMonoProcessor}
  */
+@Deprecated
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
+		implements CoreSubscriber<O>, Subscription,
 		           Scannable,
-		           LongSupplier {
+		           LongSupplier,
+		           BalancedMonoProcessor<O> {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -61,6 +61,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @return A {@link MonoProcessor}.
 	 */
+	@Deprecated
 	public static <T> MonoProcessor<T> create() {
 		return new MonoProcessor<>(null);
 	}
@@ -74,6 +75,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @return A {@link MonoProcessor}.
 	 */
+	@Deprecated
 	public static <T> MonoProcessor<T> create(WaitStrategy waitStrategy) {
 		return new MonoProcessor<>(null, waitStrategy);
 	}
@@ -97,6 +99,11 @@ public final class MonoProcessor<O> extends Mono<O>
 	MonoProcessor(@Nullable Publisher<? extends O> source, WaitStrategy waitStrategy) {
 		this.source = source;
 		this.waitStrategy = Objects.requireNonNull(waitStrategy, "waitStrategy");
+	}
+
+	@Override
+	public Mono<O> asMono() {
+		return this;
 	}
 
 	@Override
@@ -195,50 +202,28 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
-	/**
-	 * Return the produced {@link Throwable} error if any or null
-	 *
-	 * @return the produced {@link Throwable} error if any or null
-	 */
+	@Override
 	@Nullable
 	public final Throwable getError() {
 		return error;
 	}
 
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been interrupted via cancellation.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} is cancelled, {@code false}
-	 * otherwise.
-	 */
+	@Override
 	public boolean isCancelled() {
 		return state == STATE_CANCELLED;
 	}
 
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been completed with an error.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} was completed with an error, {@code false} otherwise.
-	 */
+	@Override
 	public final boolean isError() {
 		return state == STATE_ERROR;
 	}
 
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
-	 */
+	@Override
 	public final boolean isSuccess() {
 		return state == STATE_COMPLETE_NO_VALUE || state == STATE_SUCCESS_VALUE;
 	}
 
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been terminated by the
-	 * source producer with a success or an error.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
-	 */
+	@Override
 	public final boolean isTerminated() {
 		return state > STATE_POST_SUBSCRIBED;
 	}
@@ -467,21 +452,13 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
-	/**
-	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
-	 *
-	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
-	 */
+	@Override
 	public final long downstreamCount() {
 		//noinspection ConstantConditions
 		return Scannable.from(processor).inners().count();
 	}
 
-	/**
-	 * Return true if any {@link Subscriber} is actively subscribed
-	 *
-	 * @return true if any {@link Subscriber} is actively subscribed
-	 */
+	@Override
 	public final boolean hasDownstreams() {
 		return downstreamCount() != 0;
 	}
@@ -554,6 +531,11 @@ public final class MonoProcessor<O> extends Mono<O>
 			}
 		}
 		return out;
+	}
+
+	@Override
+	public boolean isSerialized() {
+		return false;
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
