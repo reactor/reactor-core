@@ -82,6 +82,21 @@ public class QueuesTest {
 	}
 
 	@Test
+	public void capacityOneQueue() {
+		Queue q = Queues.one().get();
+
+		assertThat(Queues.capacity(q)).isEqualTo(1);
+	}
+
+
+	@Test
+	public void capacityEmptyQueue() {
+		Queue q = Queues.empty().get();
+
+		assertThat(Queues.capacity(q)).isZero();
+	}
+
+	@Test
 	public void capacityOtherQueue() {
 		Queue q = new PriorityQueue<>(10);
 
