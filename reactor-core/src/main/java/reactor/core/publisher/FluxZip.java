@@ -427,7 +427,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			a[index] = value;
 			if (WIP.decrementAndGet(this) == 0) {
 				if (delayError && error != null) {
-					cancelAll();
+//					cancelAll();
 					actual.onError(error);
 					return;
 				}
@@ -458,7 +458,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				int w = WIP.decrementAndGet(this);
 				Exceptions.addThrowable(ERROR, this, e);
 				if (w == 0) {
-					cancelAll();
+//					cancelAll();
 					actual.onError(error);
 				}
 				else if (w < 0) {
@@ -479,7 +479,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		void complete(int index) {
 			if (delayError) {
 				if (WIP.decrementAndGet(this) == 0) {
-					cancelAll();
+//					cancelAll();
 					if (error != null) {
 						actual.onError(error);
 					}
@@ -752,40 +752,40 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						return;
 					}
 
-					boolean empty = false;
-					int doneCount = 0;
+					boolean needMoreData = false;
+					boolean lastRound = false;
 
 					for (int j = 0; j < n; j++) {
 						ZipInner<T> inner = qs[j];
+						boolean d = inner.done;
 						if (values[j] == null) {
 							try {
-								boolean d = inner.done;
-								if (d) {
-									doneCount++;
-								}
 								Queue<T> q = inner.queue;
 
 								T v = q != null ? q.poll() : null;
 
 								boolean sourceEmpty = v == null;
-								if (d && sourceEmpty && (!delayError || doneCount == n)) {
-									cancelAll();
-									//source is done but there could be a delayed error
-									if (error != null) {
-										Throwable ex = Exceptions.terminate(ERROR, this);
-										a.onError(ex);
-										return;
-									}
-									else {
-										a.onComplete();
-										return;
+								if (d && sourceEmpty) {
+									lastRound = true;
+									if (!delayError) {
+										cancelAll();
+										//source is done but there could be a delayed error
+										if (error != null) {
+											Throwable ex = Exceptions.terminate(ERROR, this);
+											a.onError(ex);
+											return;
+										}
+										else {
+											a.onComplete();
+											return;
+										}
 									}
 								}
 								if (!sourceEmpty) {
 									values[j] = v;
 								}
 								else {
-									empty = true;
+									needMoreData = true;
 								}
 							}
 							catch (Throwable ex) {
@@ -802,25 +802,26 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 								}
 								else {
 									//consider the error as an empty case
-									empty = true;
+									lastRound = true;
 								}
-							}
-						}
-						else if (inner.done && delayError && doneCount + 1 == n) {
-							//source is done but there could be a delayed error
-							if (error != null) {
-								Throwable ex = Exceptions.terminate(ERROR, this);
-								a.onError(ex);
-								return;
-							}
-							else {
-								a.onComplete();
-								return;
 							}
 						}
 					}
 
-					if (empty) {
+					if (delayError && lastRound) {
+						//source is done but there could be a delayed error
+						if (error != null) {
+							Throwable ex = Exceptions.terminate(ERROR, this);
+							a.onError(ex);
+							return;
+						}
+						else {
+							a.onComplete();
+							return;
+						}
+					}
+
+					if (needMoreData) {
 						break;
 					}
 
@@ -865,30 +866,30 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 						return;
 					}
 
-					int doneCount = 0;
+					boolean lastRound = false;
 					for (int j = 0; j < n; j++) {
 						ZipInner<T> inner = qs[j];
 						if (values[j] == null) {
 							try {
 								boolean d = inner.done;
-								if (d) {
-									doneCount++;
-								}
 								Queue<T> q = inner.queue;
 								T v = q != null ? q.poll() : null;
 
 								boolean empty = v == null;
-								if (d && empty && (!delayError || doneCount == n)) {
-									cancelAll();
-									//source is done but there could be delayed errors
-									if (error != null) {
-										Throwable ex = Exceptions.terminate(ERROR, this);
-										a.onError(ex);
-										return;
-									}
-									else {
-										a.onComplete();
-										return;
+								if (d && empty) {
+									lastRound = true;
+									if (!delayError) {
+										cancelAll();
+										//source is done but there could be delayed errors
+										if (error != null) {
+											Throwable ex = Exceptions.terminate(ERROR, this);
+											a.onError(ex);
+											return;
+										}
+										else {
+											a.onComplete();
+											return;
+										}
 									}
 								}
 								if (!empty) {
@@ -909,17 +910,17 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 								}
 							}
 						}
-						else if (inner.done && delayError && doneCount + 1 == n) {
-							//source is done but there could be a delayed error
-							if (error != null) {
-								Throwable ex = Exceptions.terminate(ERROR, this);
-								a.onError(ex);
-								return;
-							}
-							else {
-								a.onComplete();
-								return;
-							}
+					}
+					if (delayError && lastRound) {
+						//source is done but there could be a delayed error
+						if (error != null) {
+							Throwable ex = Exceptions.terminate(ERROR, this);
+							a.onError(ex);
+							return;
+						}
+						else {
+							a.onComplete();
+							return;
 						}
 					}
 
