@@ -62,7 +62,7 @@ endif::[]
 
 
 [appendix]
-include::operatorChoice.adoc[leveloffset=1]
+include::apdx-operatorChoice.adoc[leveloffset=1]
 ifeval::["{backend}" == "html5"]
 https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/apdx-operatorChoice.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
 to "<<which-operator>>"
