@@ -51,8 +51,11 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
+ * @deprecated instantiate through {@link Processors#emitter()} and use as a {@link BalancedFluxProcessor}
  */
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
+@Deprecated
+public final class EmitterProcessor<T> extends FluxProcessor<T, T>
+		implements BalancedFluxProcessor<T> {
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
@@ -62,6 +65,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create() {
 		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
@@ -75,6 +79,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
 		return create(Queues.SMALL_BUFFER_SIZE, autoCancel);
 	}
@@ -87,6 +92,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize) {
 		return create(bufferSize, true);
 	}
@@ -100,6 +106,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
 		return new EmitterProcessor<>(autoCancel, bufferSize);
 	}
@@ -151,6 +158,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		this.autoCancel = autoCancel;
 		this.prefetch = prefetch;
 		SUBSCRIBERS.lazySet(this, EMPTY);
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
 	}
 
 	@Override

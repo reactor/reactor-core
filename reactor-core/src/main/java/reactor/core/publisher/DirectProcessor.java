@@ -41,8 +41,11 @@ import reactor.util.annotation.Nullable;
  * A terminated DirectProcessor will emit the terminal signal to late subscribers.
  *
  * @param <T> the input and output value type
+ * @deprecated instantiate through {@link Processors#direct()} and use as a {@link BalancedFluxProcessor}
  */
-public final class DirectProcessor<T> extends FluxProcessor<T, T> {
+@Deprecated
+public final class DirectProcessor<T> extends FluxProcessor<T, T>
+		implements BalancedFluxProcessor<T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -51,6 +54,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> DirectProcessor<E> create() {
 		return new DirectProcessor<>();
 	}
@@ -73,6 +77,11 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	Throwable error;
 
 	DirectProcessor() {
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
 	}
 
 	@Override

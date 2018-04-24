@@ -38,7 +38,10 @@ import reactor.util.annotation.Nullable;
  *
  * @param <IN> the input value type
  * @param <OUT> the output value type
+ *
+ * @deprecated use {@link BalancedFluxProcessor} unless you really need asymmetric IN and OUT types.
  */
+@Deprecated
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, CoreSubscriber<IN>, Scannable, Disposable {
 
@@ -180,8 +183,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 
 	/**
 	 * Create a {@link FluxSink} that safely gates multi-threaded producer
-	 * {@link Subscriber#onNext(Object)}. This processor will be subscribed to 
-	 * that {@link FluxSink}, and any previous subscribers will be unsubscribed.
+	 * {@link Subscriber#onNext(Object)}. This processor will be subscribed to
+	 * said {@link FluxSink}, and any previous subscribers will be unsubscribed.
 	 *
 	 * <p> The returned {@link FluxSink} will not apply any
 	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
@@ -200,22 +203,14 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 
 	/**
 	 * Create a {@link FluxSink} that safely gates multi-threaded producer
-	 * {@link Subscriber#onNext(Object)}.  This processor will be subscribed to 
-	 * that {@link FluxSink}, and any previous subscribers will be unsubscribed.
+	 * {@link Subscriber#onNext(Object)}.  This processor will be subscribed to
+	 * said {@link FluxSink}, and any previous subscribers will be unsubscribed.
 	 *
-	 * <p> The returned {@link FluxSink} will not apply any
-	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
-	 * will behave in two possible ways depending on the Processor:
-	 * <ul>
-	 * <li> an unbounded processor will handle the overflow itself by dropping or
-	 * buffering </li>
-	 * <li> a bounded processor will block/spin on IGNORE strategy, or apply the
-	 * strategy behavior</li>
-	 * </ul>
+	 * <p> The returned {@link FluxSink} will deal with overflowing {@link FluxSink#next(Object)}
+	 * according to the selected {@link reactor.core.publisher.FluxSink.OverflowStrategy}.
 	 *
 	 * @param strategy the overflow strategy, see {@link FluxSink.OverflowStrategy}
-	 * for the
-	 * available strategies
+	 * for the available strategies
 	 * @return a serializing {@link FluxSink}
 	 */
 	public final FluxSink<IN> sink(FluxSink.OverflowStrategy strategy) {
