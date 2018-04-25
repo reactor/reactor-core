@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -292,19 +292,23 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			if (SUBSCRIBERS.get(this) == TERMINATED) {
 				return;
 			}
-			if (Operators.terminate(S, this)) {
+			if (CONNECTION.compareAndSet(parent, this, null)) {
+				Operators.terminate(S, this);
 				if (WIP.getAndIncrement(this) != 0) {
 					return;
 				}
-				disconnectAction();
+				disconnectAction(terminate());
 			}
 		}
 
-		void disconnectAction() {
-			queue.clear();
-			CancellationException ex = new CancellationException("Disconnected");
-			for (PubSubInner<T> inner : terminate()) {
-				inner.actual.onError(ex);
+		void disconnectAction(PubSubInner<T>[] inners) {
+			if (inners.length > 0) {
+				queue.clear();
+				CancellationException ex = new CancellationException("Disconnected");
+
+				for (PubSubInner<T> inner : inners) {
+					inner.actual.onError(ex);
+				}
 			}
 		}
 
@@ -483,7 +487,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 		boolean checkTerminated(boolean d, boolean empty) {
 			if (s == Operators.cancelledSubscription()) {
-				disconnectAction();
+				disconnectAction(terminate());
 				return true;
 			}
 			if (d) {
@@ -606,8 +610,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		void removeAndDrainParent() {
 			PublishSubscriber<T> p = parent;
 			if (p != null) {
-				p.drain();
 				p.remove(this);
+				p.drain();
 			}
 		}
 
