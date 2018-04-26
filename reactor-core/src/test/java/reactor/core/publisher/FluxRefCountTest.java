@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,6 +30,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -218,6 +221,28 @@ public class FluxRefCountTest {
 
 		ts1.assertValues(1, 2, 3, 4, 5);
 		ts2.assertValues(1, 2, 3, 4, 5);
+	}
+
+	@Test
+	public void asyncRetry() {
+		Flux<Integer> p;
+		AtomicBoolean error = new AtomicBoolean();
+		p = Flux.range(1, 5)
+		        .subscribeOn(Schedulers.parallel())
+		        .log("publish")
+		        .publish()
+		        .refCount(1)
+		        .doOnNext(v -> {
+			        if (v > 1 && error.compareAndSet(false, true)) {
+				        throw new RuntimeException("test");
+			        }
+		        })
+		        .log("retry")
+		        .retry();
+
+		StepVerifier.create(p)
+		            .expectNext(1, 1, 2, 3, 4, 5)
+		            .verifyComplete();
 	}
 
 	@Test
