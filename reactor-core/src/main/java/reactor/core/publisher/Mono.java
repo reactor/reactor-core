@@ -1485,7 +1485,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a replaying {@link Mono}
 	 */
 	public final Mono<T> cache() {
-		return onAssembly(new MonoProcessor<>(this));
+		return onAssembly(Processors.first(this).build().asMono());
 	}
 
 	/**
@@ -3337,6 +3337,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
+	@SuppressWarnings("deprecation")
 	public final Disposable subscribe() {
 		if(this instanceof MonoProcessor){
 			MonoProcessor<T> s = (MonoProcessor<T>)this;
@@ -3557,7 +3558,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Subscribe the given {@link Subscriber} to this {@link Mono} and return said
-	 * {@link Subscriber} (eg. a {@link MonoProcessor}).
+	 * {@link Subscriber}.
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe with
 	 * @param <E> the reified type of the {@link Subscriber} for chaining
@@ -3567,6 +3568,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
 		subscribe(subscriber);
 		return subscriber;
+	}
+
+	/**
+	 * Subscribe the given {@link MonoProcessorSink} to this {@link Mono} and return said
+	 * {@link MonoProcessorSink}.
+	 *
+	 * @param processorSink the {@link MonoProcessorSink} to subscribe with
+	 * @param <E> the reified type of the {@link Subscriber} for chaining
+	 *
+	 * @return the passed {@link MonoProcessorSink} after subscribing it to this {@link Mono}
+	 */
+	public final <E extends MonoProcessorSink<? super T>> E subscribeWith(E processorSink) {
+		subscribe(processorSink.asProcessor());
+		return processorSink;
 	}
 
 	/**
@@ -3899,7 +3914,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 *
 	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
+	 * @deprecated use #toProcessorSink
 	 */
+	@Deprecated
 	public final MonoProcessor<T> toProcessor() {
 		MonoProcessor<T> result;
 		if (this instanceof MonoProcessor) {
@@ -3910,6 +3927,31 @@ public abstract class Mono<T> implements Publisher<T> {
 		}
 		result.connect();
 		return result;
+	}
+
+	/**
+	 * Wrap this {@link Mono} into a {@link MonoProcessorSink} (turning it hot and allowing to block,
+	 * cancel, as well as many other operations). Note that the {@link MonoProcessor} is
+	 * subscribed to.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/unbounded1.png" alt="">
+	 * <p>
+	 *
+	 * @return a {@link MonoProcessorSink} to use to either retrieve value or dispose the underlying {@link Subscription}
+	 */
+	@SuppressWarnings("deprecation")
+	public final MonoProcessorSink<T> toProcessorSink() {
+		MonoProcessor<T> mp;
+		if (this instanceof MonoProcessor) {
+			mp = (MonoProcessor<T>) this;
+		}
+		else {
+			mp = new MonoProcessor<>(this);
+		}
+		Processors.MonoFirstProcessorSinkAdapter<T> adapter = new Processors.MonoFirstProcessorSinkAdapter<>(mp);
+		mp.connect();
+		return adapter;
 	}
 
 	/**

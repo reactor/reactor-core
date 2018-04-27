@@ -25,6 +25,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+@SuppressWarnings("deprecation")
 public class DirectProcessorTest {
 
     @Test(expected = NullPointerException.class)

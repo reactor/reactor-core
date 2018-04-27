@@ -331,10 +331,10 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> source = Flux.range(1, 2).doOnNext(v -> emission.getAndIncrement());
 
-		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
-		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.emitter();
+		FluxProcessorSink<Integer> source2 = Processors.emitter();
 
-		source.flatMap(v -> v == 1 ? source1 : source2, 1, 32).subscribe(ts);
+		source.flatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), 1, 32).subscribe(ts);
 
 		Assert.assertEquals(1, emission.get());
 
@@ -345,13 +345,13 @@ public class FluxFlatMapTest {
 		Assert.assertTrue("source1 no subscribers?", source1.downstreamCount() != 0);
 		Assert.assertFalse("source2 has subscribers?", source2.downstreamCount() != 0);
 
-		source1.onNext(1);
-		source2.onNext(10);
+		source1.next(1);
+		source2.next(10);
 
-		source1.onComplete();
+		source1.complete();
 
-		source2.onNext(2);
-		source2.onComplete();
+		source2.next(2);
+		source2.complete();
 
 		ts.assertValues(1, 10, 2)
 		.assertNoError()
@@ -366,10 +366,10 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> source = Flux.range(1, 1000).doOnNext(v -> emission.getAndIncrement());
 
-		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
-		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.emitter();
+		FluxProcessorSink<Integer> source2 = Processors.emitter();
 
-		source.flatMap(v -> v == 1 ? source1 : source2, Integer.MAX_VALUE, 32).subscribe(ts);
+		source.flatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), Integer.MAX_VALUE, 32).subscribe(ts);
 
 		Assert.assertEquals(1000, emission.get());
 
@@ -380,11 +380,11 @@ public class FluxFlatMapTest {
 		Assert.assertTrue("source1 no subscribers?", source1.downstreamCount() != 0);
 		Assert.assertTrue("source2 no  subscribers?", source2.downstreamCount() != 0);
 
-		source1.onNext(1);
-		source1.onComplete();
+		source1.next(1);
+		source1.complete();
 
-		source2.onNext(2);
-		source2.onComplete();
+		source2.next(2);
+		source2.complete();
 
 		ts.assertValueCount(1000)
 		.assertNoError()
@@ -608,16 +608,16 @@ public class FluxFlatMapTest {
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failNextOnTerminated() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicast();
 
 		Hooks.onNextDropped(c -> {
 			assertThat(c).isEqualTo(2);
 		});
-		StepVerifier.create(up.flatMap(Flux::just))
+		StepVerifier.create(up.asFlux().flatMap(Flux::just))
 		            .then(() -> {
-			            up.onNext(1);
-			            CoreSubscriber<? super Integer> a = up.actual;
-			            up.onComplete();
+			            up.next(1);
+			            CoreSubscriber<? super Integer> a = ((InnerOperator<Integer, Integer>) up).actual();
+			            up.complete();
 			            a.onNext(2);
 		            })
 		            .expectNext(1)
@@ -1029,15 +1029,15 @@ public class FluxFlatMapTest {
 
 		fmm.onSubscribe(Operators.emptySubscription());
 
-		EmitterProcessor<Integer> ps = EmitterProcessor.create();
+		FluxProcessorSink<Integer> ps = Processors.emitter();
 
-		fmm.onNext(ps);
+		fmm.onNext(ps.asFlux());
 
-		ps.onNext(1);
+		ps.next(1);
 
 		Operators.addCap(FluxFlatMap.FlatMapMain.REQUESTED, fmm, 2L);
 
-		ps.onNext(2);
+		ps.next(2);
 
 		fmm.drain();
 
@@ -1155,28 +1155,28 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void asyncInnerFusion() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.just(1)
 		                        .hide()
-		                        .flatMap(f -> up, 1))
-		            .then(() -> up.onNext(1))
-		            .then(() -> up.onNext(2))
-		            .then(() -> up.onNext(3))
-		            .then(() -> up.onNext(4))
-		            .then(() -> up.onComplete())
+		                        .flatMap(f -> up.asFlux(), 1))
+		            .then(() -> up.next(1))
+		            .then(() -> up.next(2))
+		            .then(() -> up.next(3))
+		            .then(() -> up.next(4))
+		            .then(() -> up.complete())
 		            .expectNext(1, 2, 3, 4)
 		            .verifyComplete();
 	}
 
 	@Test
 	public void failAsyncInnerFusion() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.just(1)
 		                        .hide()
-		                        .flatMap(f -> up, 1))
-		            .then(() -> up.onNext(1))
-		            .then(() -> up.onNext(2))
-		            .then(() -> up.onError(new Exception("test")))
+		                        .flatMap(f -> up.asFlux(), 1))
+		            .then(() -> up.next(1))
+		            .then(() -> up.next(2))
+		            .then(() -> up.error(new Exception("test")))
 		            .expectNext(1, 2)
 		            .verifyErrorMessage("test");
 	}

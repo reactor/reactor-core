@@ -30,6 +30,7 @@ import reactor.util.context.Context;
 /**
  * @author Stephane Maldini
  */
+@SuppressWarnings("deprecation")
 final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 
 	final Publisher<OUT> downstream;

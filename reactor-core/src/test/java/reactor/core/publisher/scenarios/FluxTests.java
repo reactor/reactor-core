@@ -83,6 +83,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
 
+@SuppressWarnings("deprecation")
 public class FluxTests extends AbstractReactorTest {
 
 	static final Logger LOG = Loggers.getLogger(FluxTests.class);

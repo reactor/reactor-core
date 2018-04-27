@@ -42,59 +42,59 @@ public class FluxSampleTest {
 	}
 
 	void sample(boolean complete, boolean which) {
-		DirectProcessor<Integer> main = DirectProcessor.create();
+		FluxProcessorSink<Integer> main = Processors.direct();
 
-		DirectProcessor<String> other = DirectProcessor.create();
+		FluxProcessorSink<String> other = Processors.direct();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		main.sample(other).subscribe(ts);
+		main.asFlux().sample(other.asFlux()).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertNoError();
 
-		main.onNext(1);
+		main.next(1);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertNoError();
 
-		other.onNext("first");
+		other.next("first");
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		other.onNext("second");
+		other.next("second");
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		main.onNext(2);
+		main.next(2);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		other.onNext("third");
+		other.next("third");
 
 		ts.assertValues(1, 2)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		DirectProcessor<?> p = which ? main : other;
+		FluxProcessorSink<?> p = which ? main : other;
 
 		if (complete) {
-			p.onComplete();
+			p.complete();
 
 			ts.assertValues(1, 2)
 			  .assertComplete()
 			  .assertNoError();
 		}
 		else {
-			p.onError(new RuntimeException("forced failure"));
+			p.error(new RuntimeException("forced failure"));
 
 			ts.assertValues(1, 2)
 			  .assertNotComplete()
@@ -128,13 +128,13 @@ public class FluxSampleTest {
 
 	@Test
 	public void subscriberCancels() {
-		DirectProcessor<Integer> main = DirectProcessor.create();
+		FluxProcessorSink<Integer> main = Processors.direct();
 
-		DirectProcessor<String> other = DirectProcessor.create();
+		FluxProcessorSink<String> other = Processors.direct();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		main.sample(other).subscribe(ts);
+		main.asFlux().sample(other.asFlux()).subscribe(ts);
 
 		Assert.assertTrue("Main no subscriber?", main.hasDownstreams());
 		Assert.assertTrue("Other no subscriber?", other.hasDownstreams());
@@ -150,20 +150,20 @@ public class FluxSampleTest {
 	}
 
 	public void completeImmediately(boolean which) {
-		DirectProcessor<Integer> main = DirectProcessor.create();
+		FluxProcessorSink<Integer> main = Processors.direct();
 
-		DirectProcessor<String> other = DirectProcessor.create();
+		FluxProcessorSink<String> other = Processors.direct();
 
 		if (which) {
-			main.onComplete();
+			main.complete();
 		}
 		else {
-			other.onComplete();
+			other.complete();
 		}
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		main.sample(other).subscribe(ts);
+		main.asFlux().sample(other.asFlux()).subscribe(ts);
 
 		Assert.assertFalse("Main subscriber?", main.hasDownstreams());
 		Assert.assertFalse("Other subscriber?", other.hasDownstreams());

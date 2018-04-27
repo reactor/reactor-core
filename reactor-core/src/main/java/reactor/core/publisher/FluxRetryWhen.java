@@ -55,7 +55,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 			Flux<Throwable>, ?
 			extends Publisher<?>> whenSourceFactory, Publisher<? extends T> source) {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
-		Subscriber<Throwable> signaller = Operators.serialize(other.completionSignal);
+		Subscriber<Throwable> signaller = Operators.serialize(other.completionSignal.asCoreSubscriber());
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
@@ -202,7 +202,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 	implements InnerConsumer<Object> {
 		RetryWhenMainSubscriber<?> main;
 
-		final DirectProcessor<Throwable> completionSignal = new DirectProcessor<>();
+		final FluxProcessorSink<Throwable> completionSignal = Processors.direct();
 
 		@Override
 		public Context currentContext() {
@@ -240,7 +240,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void subscribe(CoreSubscriber<? super Throwable> actual) {
-			completionSignal.subscribe(actual);
+			completionSignal.asProcessor().subscribe(actual);
 		}
 	}
 

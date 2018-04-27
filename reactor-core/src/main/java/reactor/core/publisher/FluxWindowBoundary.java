@@ -84,7 +84,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		final Queue<Object>                   queue;
 		final CoreSubscriber<? super Flux<T>> actual;
 
-		UnicastProcessor<T> window;
+		FluxProcessorSink<T> window;
 
 		volatile Subscription s;
 
@@ -128,7 +128,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 				Queue<T> processorQueue) {
 			this.actual = actual;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.window = new UnicastProcessor<>(processorQueue, this);
+			this.window = Processors.unicast(processorQueue).endCallback(this).build();
 			WINDOW_COUNT.lazySet(this, 2);
 			this.boundary = new WindowBoundaryOther<>(this);
 			this.queue = Queues.unboundedMultiproducer().get();
@@ -155,7 +155,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(boundary, window);
+			return Stream.of(boundary, Scannable.from(window.asFlux()));
 		}
 
 		@Override
@@ -270,7 +270,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 			final Subscriber<? super Flux<T>> a = actual;
 			final Queue<Object> q = queue;
-			UnicastProcessor<T> w = window;
+			FluxProcessorSink<T> w = window;
 
 			int missed = 1;
 
@@ -281,7 +281,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable e = Exceptions.terminate(ERROR, this);
 						if (e != Exceptions.TERMINATED) {
-							w.onError(e);
+							w.asProcessor().onError(e);
 
 							a.onError(e);
 						}
@@ -297,7 +297,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 					if (o == DONE) {
 						q.clear();
 
-						w.onComplete();
+						w.asProcessor().onComplete();
 
 						a.onComplete();
 						return;
@@ -306,10 +306,10 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 						@SuppressWarnings("unchecked")
 						T v = (T)o;
-						w.onNext(v);
+						w.asProcessor().onNext(v);
 					}
 					if (o == BOUNDARY_MARKER) {
-						w.onComplete();
+						w.asProcessor().onComplete();
 
 						if (cancelled == 0) {
 							if (requested != 0L) {
@@ -317,10 +317,10 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 								WINDOW_COUNT.getAndIncrement(this);
 
-								w = new UnicastProcessor<>(pq, this);
+								w = Processors.unicast(pq).endCallback(this).build();
 								window = w;
 
-								a.onNext(w);
+								a.onNext(w.asFlux());
 
 								if (requested != Long.MAX_VALUE) {
 									REQUESTED.decrementAndGet(this);
@@ -344,10 +344,10 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 			}
 		}
 
-		boolean emit(UnicastProcessor<T> w) {
+		boolean emit(FluxProcessorSink<T> w) {
 			long r = requested;
 			if (r != 0L) {
-				actual.onNext(w);
+				actual.onNext(w.asFlux());
 				if (r != Long.MAX_VALUE) {
 					REQUESTED.decrementAndGet(this);
 				}

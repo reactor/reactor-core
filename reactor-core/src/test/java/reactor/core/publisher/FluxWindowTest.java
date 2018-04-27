@@ -74,8 +74,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	}
 
 	// javac can't handle these inline and fails with type inference error
-	final Supplier<Queue<Integer>>                   pqs = ConcurrentLinkedQueue::new;
-	final Supplier<Queue<UnicastProcessor<Integer>>> oqs = ConcurrentLinkedQueue::new;
+	final Supplier<Queue<Integer>>                    pqs = ConcurrentLinkedQueue::new;
+	final Supplier<Queue<FluxProcessorSink<Integer>>> oqs = ConcurrentLinkedQueue::new;
 
 	@Test(expected = NullPointerException.class)
 	public void source1Null() {
@@ -428,17 +428,17 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void exactError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp = Processors.direct();
 
-		sp.window(2, 2)
+		sp.asFlux().window(2, 2)
 		  .subscribe(ts);
 
 		ts.assertValueCount(0)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.onNext(1);
-		sp.onError(new RuntimeException("forced failure"));
+		sp.next(1);
+		sp.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -456,17 +456,17 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void skipError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp = Processors.direct();
 
-		sp.window(2, 3)
+		sp.asFlux().window(2, 3)
 		  .subscribe(ts);
 
 		ts.assertValueCount(0)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.onNext(1);
-		sp.onError(new RuntimeException("forced failure"));
+		sp.next(1);
+		sp.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -484,18 +484,18 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void skipInGapError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp = Processors.direct();
 
-		sp.window(1, 3)
+		sp.asFlux().window(1, 3)
 		  .subscribe(ts);
 
 		ts.assertValueCount(0)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.onNext(1);
-		sp.onNext(2);
-		sp.onError(new RuntimeException("forced failure"));
+		sp.next(1);
+		sp.next(2);
+		sp.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -509,17 +509,17 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void overlapError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp = Processors.direct();
 
-		sp.window(2, 1)
+		sp.asFlux().window(2, 1)
 		  .subscribe(ts);
 
 		ts.assertValueCount(0)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.onNext(1);
-		sp.onError(new RuntimeException("forced failure"));
+		sp.next(1);
+		sp.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -603,7 +603,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
     public void scanOverlapSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
-        		123, 3, Queues.unbounded(), Queues.<UnicastProcessor<Integer>>unbounded().get());
+        		123, 3, Queues.unbounded(), Queues.<FluxProcessorSink<Integer>>unbounded().get());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -629,7 +629,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
     @Test
     public void scanOverlapSubscriberSmallBuffered() {
 	    @SuppressWarnings("unchecked")
-	    Queue<UnicastProcessor<Integer>> mockQueue = Mockito.mock(Queue.class);
+	    Queue<FluxProcessorSink<Integer>> mockQueue = Mockito.mock(Queue.class);
 
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
@@ -637,7 +637,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
         when(mockQueue.size()).thenReturn(Integer.MAX_VALUE - 2);
         //size() is 1
-        test.offer(UnicastProcessor.create());
+        test.offer(Processors.unicast());
 
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1);
         assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1L);
@@ -646,7 +646,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
     @Test
     public void scanOverlapSubscriberLargeBuffered() {
 	    @SuppressWarnings("unchecked")
-	    Queue<UnicastProcessor<Integer>> mockQueue = Mockito.mock(Queue.class);
+	    Queue<FluxProcessorSink<Integer>> mockQueue = Mockito.mock(Queue.class);
 
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
@@ -654,11 +654,11 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
         when(mockQueue.size()).thenReturn(Integer.MAX_VALUE);
         //size() is 5
-        test.offer(UnicastProcessor.create());
-        test.offer(UnicastProcessor.create());
-        test.offer(UnicastProcessor.create());
-        test.offer(UnicastProcessor.create());
-        test.offer(UnicastProcessor.create());
+        test.offer(Processors.unicast());
+        test.offer(Processors.unicast());
+        test.offer(Processors.unicast());
+        test.offer(Processors.unicast());
+        test.offer(Processors.unicast());
 
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
         assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 5L);

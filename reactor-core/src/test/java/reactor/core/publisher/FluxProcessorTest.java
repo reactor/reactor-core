@@ -32,6 +32,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("deprecation")
 public class FluxProcessorTest {
 
 	@Test(expected = NullPointerException.class)

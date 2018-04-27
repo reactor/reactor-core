@@ -42,28 +42,28 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntil() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
+				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
 
 		StepVerifier.create(bufferUntil)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(1))
-				.then(() -> sp1.onNext(2))
+				.then(() -> sp1.next(1))
+				.then(() -> sp1.next(2))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(3))
+				.then(() -> sp1.next(3))
 				.expectNext(Arrays.asList(1, 2, 3))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(4))
-				.then(() -> sp1.onNext(5))
+				.then(() -> sp1.next(4))
+				.then(() -> sp1.next(5))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(6))
+				.then(() -> sp1.next(6))
 				.expectNext(Arrays.asList(4, 5, 6))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(7))
-				.then(() -> sp1.onNext(8))
-				.then(sp1::onComplete)
+				.then(() -> sp1.next(7))
+				.then(() -> sp1.next(8))
+				.then(sp1::complete)
 				.expectNext(Arrays.asList(7, 8))
 				.expectComplete()
 				.verify();
@@ -106,18 +106,18 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntil() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
+				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
 
 		StepVerifier.create(bufferUntil)
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
-		            .then(() -> sp1.onNext(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(1))
+		            .then(() -> sp1.next(2))
+		            .then(() -> sp1.next(3))
 		            .expectNext(Arrays.asList(1, 2, 3))
-		            .then(() -> sp1.onNext(4))
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.next(4))
+		            .then(() -> sp1.error(new RuntimeException("forced failure")))
 		            .expectErrorMessage("forced failure")
 		            .verify();
 		assertFalse(sp1.hasDownstreams());
@@ -126,9 +126,9 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorUntil() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
-				sp1,
+				sp1.asFlux(),
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
@@ -136,12 +136,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferUntil)
 					.expectSubscription()
-					.then(() -> sp1.onNext(1))
-					.then(() -> sp1.onNext(2))
-					.then(() -> sp1.onNext(3))
+					.then(() -> sp1.next(1))
+					.then(() -> sp1.next(2))
+					.then(() -> sp1.next(3))
 					.expectNext(Arrays.asList(1, 2, 3))
-					.then(() -> sp1.onNext(4))
-					.then(() -> sp1.onNext(5))
+					.then(() -> sp1.next(4))
+					.then(() -> sp1.next(5))
 					.expectErrorMessage("predicate failure")
 					.verify();
 		assertFalse(sp1.hasDownstreams());
@@ -149,28 +149,28 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntilOther() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
+				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
 
 		StepVerifier.create(bufferUntilOther)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(1))
-				.then(() -> sp1.onNext(2))
+				.then(() -> sp1.next(1))
+				.then(() -> sp1.next(2))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(3))
+				.then(() -> sp1.next(3))
 				.expectNext(Arrays.asList(1, 2))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(4))
-				.then(() -> sp1.onNext(5))
+				.then(() -> sp1.next(4))
+				.then(() -> sp1.next(5))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(6))
+				.then(() -> sp1.next(6))
 				.expectNext(Arrays.asList(3, 4, 5))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(7))
-				.then(() -> sp1.onNext(8))
-				.then(sp1::onComplete)
+				.then(() -> sp1.next(7))
+				.then(() -> sp1.next(8))
+				.then(sp1::complete)
 				.expectNext(Arrays.asList(6, 7, 8))
 				.expectComplete()
 				.verify();
@@ -180,19 +180,19 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntilOther() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther =
-				new FluxBufferPredicate<>(sp1, i -> i % 3 == 0, Flux.listSupplier(),
+				new FluxBufferPredicate<>(sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(),
 						FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
 
 		StepVerifier.create(bufferUntilOther)
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
-		            .then(() -> sp1.onNext(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(1))
+		            .then(() -> sp1.next(2))
+		            .then(() -> sp1.next(3))
 		            .expectNext(Arrays.asList(1, 2))
-		            .then(() -> sp1.onNext(4))
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.next(4))
+		            .then(() -> sp1.error(new RuntimeException("forced failure")))
 		            .expectErrorMessage("forced failure")
 		            .verify();
 		assertFalse(sp1.hasDownstreams());
@@ -201,9 +201,9 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorUntilOther() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther =
-				new FluxBufferPredicate<>(sp1,
+				new FluxBufferPredicate<>(sp1.asFlux(),
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
@@ -211,12 +211,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferUntilOther)
 					.expectSubscription()
-					.then(() -> sp1.onNext(1))
-					.then(() -> sp1.onNext(2))
-					.then(() -> sp1.onNext(3))
+					.then(() -> sp1.next(1))
+					.then(() -> sp1.next(2))
+					.then(() -> sp1.next(3))
 					.expectNext(Arrays.asList(1, 2))
-					.then(() -> sp1.onNext(4))
-					.then(() -> sp1.onNext(5))
+					.then(() -> sp1.next(4))
+					.then(() -> sp1.next(5))
 					.expectErrorMessage("predicate failure")
 					.verify();
 		assertFalse(sp1.hasDownstreams());
@@ -225,29 +225,29 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhile() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 != 0, Flux.listSupplier(),
+				sp1.asFlux(), i -> i % 3 != 0, Flux.listSupplier(),
 				FluxBufferPredicate.Mode.WHILE);
 
 		StepVerifier.create(bufferWhile)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(1))
-				.then(() -> sp1.onNext(2))
+				.then(() -> sp1.next(1))
+				.then(() -> sp1.next(2))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(3))
+				.then(() -> sp1.next(3))
 				.expectNext(Arrays.asList(1, 2))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(4))
-				.then(() -> sp1.onNext(5))
+				.then(() -> sp1.next(4))
+				.then(() -> sp1.next(5))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(6))
+				.then(() -> sp1.next(6))
 				.expectNext(Arrays.asList(4, 5))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(7))
-				.then(() -> sp1.onNext(8))
-				.then(sp1::onComplete)
+				.then(() -> sp1.next(7))
+				.then(() -> sp1.next(8))
+				.then(sp1::complete)
 				.expectNext(Arrays.asList(7, 8))
 				.expectComplete()
 				.verify();
@@ -257,28 +257,28 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntInitiallyMatch() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
+				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
 		StepVerifier.create(bufferWhile)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(1))
-				.then(() -> sp1.onNext(2))
-				.then(() -> sp1.onNext(3))
+				.then(() -> sp1.next(1))
+				.then(() -> sp1.next(2))
+				.then(() -> sp1.next(3))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(4))
+				.then(() -> sp1.next(4))
 				.expectNext(Arrays.asList(3)) //emission of 4 triggers the buffer emit
-				.then(() -> sp1.onNext(5))
-				.then(() -> sp1.onNext(6))
+				.then(() -> sp1.next(5))
+				.then(() -> sp1.next(6))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(7)) // emission of 7 triggers the buffer emit
+				.then(() -> sp1.next(7)) // emission of 7 triggers the buffer emit
 				.expectNext(Arrays.asList(6))
-				.then(() -> sp1.onNext(8))
-				.then(() -> sp1.onNext(9))
+				.then(() -> sp1.next(8))
+				.then(() -> sp1.next(9))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(sp1::onComplete) // completion triggers the buffer emit
+				.then(sp1::complete) // completion triggers the buffer emit
 			    .expectNext(Collections.singletonList(9))
 				.expectComplete()
 				.verify(Duration.ofSeconds(1));
@@ -288,24 +288,24 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntMatch() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
-				sp1, i -> i > 4, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
+				sp1.asFlux(), i -> i > 4, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
 		StepVerifier.create(bufferWhile)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(1))
-		            .then(() -> sp1.onNext(2))
-		            .then(() -> sp1.onNext(3))
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(1))
+		            .then(() -> sp1.next(2))
+		            .then(() -> sp1.next(3))
+		            .then(() -> sp1.next(4))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(1))
-		            .then(() -> sp1.onNext(2))
-		            .then(() -> sp1.onNext(3))
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(1))
+		            .then(() -> sp1.next(2))
+		            .then(() -> sp1.next(3))
+		            .then(() -> sp1.next(4))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::onComplete)
+		            .then(sp1::complete)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
 		assertFalse(sp1.hasDownstreams());
@@ -314,18 +314,18 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorWhile() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
+				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
 		StepVerifier.create(bufferWhile)
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
-		            .then(() -> sp1.onNext(2))
-		            .then(() -> sp1.onNext(3))
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(1))
+		            .then(() -> sp1.next(2))
+		            .then(() -> sp1.next(3))
+		            .then(() -> sp1.next(4))
 		            .expectNext(Arrays.asList(3))
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.error(new RuntimeException("forced failure")))
 		            .expectErrorMessage("forced failure")
 		            .verify(Duration.ofMillis(100));
 		assertFalse(sp1.hasDownstreams());
@@ -334,9 +334,9 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorWhile() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
-				sp1,
+				sp1.asFlux(),
 				i -> {
 					if (i == 3) return true;
 					if (i == 5) throw new IllegalStateException("predicate failure");
@@ -345,12 +345,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferWhile)
 					.expectSubscription()
-					.then(() -> sp1.onNext(1)) //ignored
-					.then(() -> sp1.onNext(2)) //ignored
-					.then(() -> sp1.onNext(3)) //buffered
-					.then(() -> sp1.onNext(4)) //ignored, emits buffer
+					.then(() -> sp1.next(1)) //ignored
+					.then(() -> sp1.next(2)) //ignored
+					.then(() -> sp1.next(3)) //buffered
+					.then(() -> sp1.next(4)) //ignored, emits buffer
 					.expectNext(Arrays.asList(3))
-					.then(() -> sp1.onNext(5)) //fails
+					.then(() -> sp1.next(5)) //fails
 					.expectErrorMessage("predicate failure")
 					.verify(Duration.ofMillis(100));
 		assertFalse(sp1.hasDownstreams());
@@ -359,9 +359,9 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void bufferSupplierThrows() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 == 0,
+				sp1.asFlux(), i -> i % 3 == 0,
 				() -> { throw new RuntimeException("supplier failure"); },
 				FluxBufferPredicate.Mode.UNTIL);
 
@@ -374,10 +374,10 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void bufferSupplierThrowsLater() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		int count[] = {1};
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 == 0,
+				sp1.asFlux(), i -> i % 3 == 0,
 				() -> {
 					if (count[0]-- > 0) {
 						return new ArrayList<>();
@@ -389,26 +389,26 @@ public class FluxBufferPredicateTest {
 		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
 
 		StepVerifier.create(bufferUntil)
-		            .then(() -> sp1.onNext(1))
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.next(1))
+		            .then(() -> sp1.next(2))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(3))
 		            .expectErrorMessage("supplier failure")
 		            .verify();
 	}
 
 	@Test
 	public void bufferSupplierReturnsNull() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
-				sp1, i -> i % 3 == 0,
+				sp1.asFlux(), i -> i % 3 == 0,
 				() -> null,
 				FluxBufferPredicate.Mode.UNTIL);
 
 		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
 
 		StepVerifier.create(bufferUntil)
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.next(1))
 		            .expectErrorMatches(t -> t instanceof NullPointerException &&
 		                "The bufferSupplier returned a null initial buffer".equals(t.getMessage()))
 		            .verify();
@@ -418,7 +418,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void multipleTriggersOfEmptyBufferKeepInitialBuffer() {
 		//this is best demonstrated with bufferWhile:
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 		LongAdder bufferCount = new LongAdder();
 		Supplier<List<Integer>> bufferSupplier = () -> {
 			bufferCount.increment();
@@ -427,20 +427,20 @@ public class FluxBufferPredicateTest {
 
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new
 				FluxBufferPredicate<>(
-				sp1, i -> i >= 10,
+				sp1.asFlux(), i -> i >= 10,
 				bufferSupplier,
 				FluxBufferPredicate.Mode.WHILE);
 
 		StepVerifier.create(bufferWhile)
 		            .then(() -> assertThat(bufferCount.intValue(), is(1)))
-		            .then(() -> sp1.onNext(1))
-		            .then(() -> sp1.onNext(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(1))
+		            .then(() -> sp1.next(2))
+		            .then(() -> sp1.next(3))
 		            .then(() -> assertThat(bufferCount.intValue(), is(1)))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(10))
-		            .then(() -> sp1.onNext(11))
-		            .then(sp1::onComplete)
+		            .then(() -> sp1.next(10))
+		            .then(() -> sp1.next(11))
+		            .then(sp1::complete)
 		            .expectNext(Arrays.asList(10, 11))
 		            .then(() -> assertThat(bufferCount.intValue(), is(1)))
 		            .expectComplete()

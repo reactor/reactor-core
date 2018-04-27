@@ -353,6 +353,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	@Override
 	@Deprecated
+	@SuppressWarnings("deprecation")
 	public Flux<E> drain() {
 		return coldSource(ringBuffer, null, error, minimum);
 	}

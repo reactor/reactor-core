@@ -111,16 +111,17 @@ public class FluxBufferWhenTest {
 		}
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		final UnicastProcessor<Wrapper> processor = UnicastProcessor.create();
+		final FluxProcessorSink<Wrapper> processor = Processors.unicast();
 
 		Flux<Integer> emitter = Flux.range(1, 200)
 		                            .delayElements(Duration.ofMillis(25))
-		                            .doOnNext(i -> processor.onNext(new Wrapper(i)))
-		                            .doOnError(processor::onError)
-		                            .doOnComplete(processor::onComplete);
+		                            .doOnNext(i -> processor.next(new Wrapper(i)))
+		                            .doOnError(processor::error)
+		                            .doOnComplete(processor::complete);
 
 		Mono<List<Tuple3<Long, String, Long>>> buffers =
-				processor.buffer(Duration.ofMillis(500), Duration.ofMillis(250))
+				processor.asFlux()
+				         .buffer(Duration.ofMillis(500), Duration.ofMillis(250))
 				         .filter(b -> b.size() > 0)
 				         .index()
 				         .doOnNext(it -> System.gc())
@@ -156,53 +157,54 @@ public class FluxBufferWhenTest {
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
-		DirectProcessor<Integer> sp4 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp3 = Processors.direct();
+		FluxProcessorSink<Integer> sp4 = Processors.direct();
 
-		sp1.bufferWhen(sp2, v -> v == 1 ? sp3 : sp4)
+		sp1.asFlux()
+		   .bufferWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
 		   .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(1);
+		sp1.next(1);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(1);
+		sp2.next(1);
 
 		Assert.assertTrue("sp3 has no subscribers?", sp3.hasDownstreams());
 
-		sp1.onNext(2);
-		sp1.onNext(3);
-		sp1.onNext(4);
+		sp1.next(2);
+		sp1.next(3);
+		sp1.next(4);
 
-		sp3.onComplete();
+		sp3.complete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(5);
+		sp1.next(5);
 
-		sp2.onNext(2);
+		sp2.next(2);
 
 		Assert.assertTrue("sp4 has no subscribers?", sp4.hasDownstreams());
 
-		sp1.onNext(6);
+		sp1.next(6);
 
-		sp4.onComplete();
+		sp4.complete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4), Collections.singletonList(6))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.complete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4), Collections.singletonList(6))
 		  .assertNoError()
@@ -213,33 +215,34 @@ public class FluxBufferWhenTest {
 	public void startCompletes() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
-		DirectProcessor<Integer> open = DirectProcessor.create();
-		DirectProcessor<Integer> close = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.direct();
+		FluxProcessorSink<Integer> open = Processors.direct();
+		FluxProcessorSink<Integer> close = Processors.direct();
 
-		source.bufferWhen(open, v -> close)
-		   .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		source.onNext(1);
+		source.asFlux()
+		      .bufferWhen(open.asFlux(), v -> close.asFlux())
+		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		open.onNext(1);
-		open.onComplete();
+		source.next(1);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		open.next(1);
+		open.complete();
 
 		Assert.assertTrue("close has no subscribers?", close.hasDownstreams());
 
-		source.onNext(2);
-		source.onNext(3);
-		source.onNext(4);
+		source.next(2);
+		source.next(3);
+		source.next(4);
 
-		close.onComplete();
+		close.complete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4))
 		  .assertNoError()
@@ -255,28 +258,29 @@ public class FluxBufferWhenTest {
 	@Test
 	public void bufferWillAcumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
-		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.create();
+		FluxProcessorSink<Integer> numbers = Processors.emitter();
+		FluxProcessorSink<Integer> bucketOpening = Processors.emitter();
 
 		//"overlapping buffers"
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
+		FluxProcessorSink<Integer> boundaryFlux = Processors.emitter();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.bufferWhen(bucketOpening, u -> boundaryFlux )
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
+		                                                .bufferWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())
+		                                                .buffer()
+		                                                .publishNext()
+		                                                .toProcessor();
 		res.subscribe();
 
-		numbers.onNext(1);
-		numbers.onNext(2);
-		bucketOpening.onNext(1);
-		numbers.onNext(3);
-		bucketOpening.onNext(1);
-		numbers.onNext(5);
-		boundaryFlux.onNext(1);
-		bucketOpening.onNext(1);
-		boundaryFlux.onComplete();
-		numbers.onComplete();
+		numbers.next(1);
+		numbers.next(2);
+		bucketOpening.next(1);
+		numbers.next(3);
+		bucketOpening.next(1);
+		numbers.next(5);
+		boundaryFlux.next(1);
+		bucketOpening.next(1);
+		boundaryFlux.complete();
+		numbers.complete();
 
 		//"the collected overlapping lists are available"
 		assertThat(res.block()).containsExactly(Arrays.asList(3, 5),

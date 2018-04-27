@@ -129,7 +129,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final Disposable.Composite cancellations;
 
-		final Map<Integer, UnicastProcessor<TRight>> lefts;
+		final Map<Integer, FluxProcessorSink<TRight>> lefts;
 
 		final Map<Integer, TRight> rights;
 
@@ -206,7 +206,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.concat(
-					lefts.values().stream(),
+					lefts.values().stream().map(FluxProcessorSink::asScannable),
 					Scannable.from(cancellations).inners()
 			);
 		}
@@ -244,8 +244,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		void errorAll(Subscriber<?> a) {
 			Throwable ex = Exceptions.terminate(ERROR, this);
 
-			for (UnicastProcessor<TRight> up : lefts.values()) {
-				up.onError(ex);
+			for (FluxProcessorSink<TRight> up : lefts.values()) {
+				up.asProcessor().onError(ex);
 			}
 
 			lefts.clear();
@@ -285,8 +285,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					boolean empty = mode == null;
 
 					if (d && empty) {
-						for (UnicastProcessor<?> up : lefts.values()) {
-							up.onComplete();
+						for (FluxProcessorSink<?> up : lefts.values()) {
+							up.asProcessor().onComplete();
 						}
 
 						lefts.clear();
@@ -306,8 +306,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					if (mode == LEFT_VALUE) {
 						@SuppressWarnings("unchecked") TLeft left = (TLeft) val;
 
-						UnicastProcessor<TRight> up =
-								new UnicastProcessor<>(processorQueueSupplier.get());
+						FluxProcessorSink<TRight> up = Processors.unicast(processorQueueSupplier.get()).build();
 						int idx = leftIndex++;
 						lefts.put(idx, up);
 
@@ -343,7 +342,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						R w;
 
 						try {
-							w = Objects.requireNonNull(resultSelector.apply(left, up),
+							w = Objects.requireNonNull(resultSelector.apply(left, up.asFlux()),
 									"The resultSelector returned a null value");
 						}
 						catch (Throwable exc) {
@@ -369,7 +368,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						}
 
 						for (TRight right : rights.values()) {
-							up.onNext(right);
+							up.asProcessor().onNext(right);
 						}
 					}
 					else if (mode == RIGHT_VALUE) {
@@ -408,17 +407,17 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 							return;
 						}
 
-						for (UnicastProcessor<TRight> up : lefts.values()) {
-							up.onNext(right);
+						for (FluxProcessorSink<TRight> up : lefts.values()) {
+							up.asProcessor().onNext(right);
 						}
 					}
 					else if (mode == LEFT_CLOSE) {
 						LeftRightEndSubscriber end = (LeftRightEndSubscriber) val;
 
-						UnicastProcessor<TRight> up = lefts.remove(end.index);
+						FluxProcessorSink<TRight> up = lefts.remove(end.index);
 						cancellations.remove(end);
 						if (up != null) {
-							up.onComplete();
+							up.asProcessor().onComplete();
 						}
 					}
 					else if (mode == RIGHT_CLOSE) {

@@ -33,38 +33,39 @@ public class FluxSampleFirstTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp3 = Processors.direct();
 
-		sp1.sampleFirst(v -> v == 1 ? sp2 : sp3)
+		sp1.asFlux()
+		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(2);
+		sp1.next(2);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(1);
+		sp2.next(1);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(3);
+		sp1.next(3);
 
 		ts.assertValues(1, 3)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.complete();
 
 		ts.assertValues(1, 3)
 		  .assertNoError()
@@ -79,15 +80,16 @@ public class FluxSampleFirstTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp3 = Processors.direct();
 
-		sp1.sampleFirst(v -> v == 1 ? sp2 : sp3)
+		sp1.asFlux()
+		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp1.onError(new RuntimeException("forced failure"));
+		sp1.next(1);
+		sp1.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -103,15 +105,16 @@ public class FluxSampleFirstTest {
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp3 = Processors.direct();
 
-		sp1.sampleFirst(v -> v == 1 ? sp2 : sp3)
+		sp1.asFlux()
+		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp2.onError(new RuntimeException("forced failure"));
+		sp1.next(1);
+		sp2.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -127,14 +130,15 @@ public class FluxSampleFirstTest {
 	public void throttlerThrows() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 
-		sp1.sampleFirst(v -> {
+		sp1.asFlux()
+		   .sampleFirst(v -> {
 			throw new RuntimeException("forced failure");
 		})
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -148,12 +152,13 @@ public class FluxSampleFirstTest {
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 
-		sp1.sampleFirst(v -> null)
+		sp1.asFlux()
+		   .sampleFirst(v -> null)
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
 		ts.assertValues(1)
 		  .assertError(NullPointerException.class)

@@ -52,6 +52,7 @@ import static reactor.core.Scannable.Attr;
 /**
  * @author Stephane Maldini
  */
+@SuppressWarnings("deprecation")
 public class EmitterProcessorTest {
 
 	@Test

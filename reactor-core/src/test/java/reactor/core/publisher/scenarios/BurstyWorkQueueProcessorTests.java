@@ -47,6 +47,7 @@ public class BurstyWorkQueueProcessorTests {
 	public static final int BURST_SIZE              = 5;
 
 	private LongAccumulator            maxRingBufferPending;
+	@SuppressWarnings("deprecation")
 	private WorkQueueProcessor<Object> processor;
 	private ExecutorService            producerExecutor;
 	private AtomicLong                 droppedCount;
@@ -60,6 +61,7 @@ public class BurstyWorkQueueProcessorTests {
 
 	@Test
 	@Ignore
+	@SuppressWarnings("deprecation")
 	public void test() throws Exception {
 		processor = WorkQueueProcessor.builder().name("test-processor").bufferSize(RINGBUFFER_SIZE).build();
 

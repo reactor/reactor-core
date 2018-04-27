@@ -37,6 +37,7 @@ import static reactor.core.Scannable.Attr.TERMINATED;
 import static reactor.core.Scannable.Attr.PARENT;
 import static reactor.core.Scannable.Attr.ERROR;
 
+@SuppressWarnings("deprecation")
 public class EventLoopProcessorTest {
 
 	EventLoopProcessor<String> test;

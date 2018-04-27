@@ -37,32 +37,33 @@ public class FluxSampleTimeoutTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp3 = Processors.direct();
 
-		sp1.sampleTimeout(v -> v == 1 ? sp2 : sp3)
+		sp1.asFlux()
+		   .sampleTimeout(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp2.onNext(1);
+		sp1.next(1);
+		sp2.next(1);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(2);
-		sp1.onNext(3);
-		sp1.onNext(4);
+		sp1.next(2);
+		sp1.next(3);
+		sp1.next(4);
 
-		sp3.onNext(2);
+		sp3.next(2);
 
 		ts.assertValues(1, 4)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(5);
-		sp1.onComplete();
+		sp1.next(5);
+		sp1.complete();
 
 		ts.assertValues(1, 4, 5)
 		  .assertNoError()
@@ -77,14 +78,15 @@ public class FluxSampleTimeoutTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp2 = Processors.direct();
 
-		sp1.sampleTimeout(v -> sp2)
+		sp1.asFlux()
+		   .sampleTimeout(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp1.onError(new RuntimeException("forced failure"));
+		sp1.next(1);
+		sp1.error(new RuntimeException("forced failure"));
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -99,14 +101,14 @@ public class FluxSampleTimeoutTest {
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp2 = Processors.direct();
 
-		sp1.sampleTimeout(v -> sp2)
+		sp1.asFlux().sampleTimeout(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp2.onError(new RuntimeException("forced failure"));
+		sp1.next(1);
+		sp2.error(new RuntimeException("forced failure"));
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -121,12 +123,13 @@ public class FluxSampleTimeoutTest {
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
 
-		sp1.sampleTimeout(v -> null)
+		sp1.asFlux()
+		   .sampleTimeout(v -> null)
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)

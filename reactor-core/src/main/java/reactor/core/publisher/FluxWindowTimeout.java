@@ -100,7 +100,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		UnicastProcessor<T> window;
+		FluxProcessorSink<T> window;
 
 		volatile boolean terminated;
 
@@ -128,8 +128,8 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			UnicastProcessor<T> w = window;
-			return w == null ? Stream.empty() : Stream.of(w);
+			FluxProcessorSink<T> w = window;
+			return w == null ? Stream.empty() : Stream.of(w.asScannable());
 		}
 
 		@Override
@@ -157,12 +157,12 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				UnicastProcessor<T> w = UnicastProcessor.create();
+				FluxProcessorSink<T> w = Processors.unicast();
 				window = w;
 
 				long r = requested;
 				if (r != 0L) {
-					a.onNext(w);
+					a.onNext(w.asFlux());
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
 					}
@@ -197,8 +197,8 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 			}
 
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-				UnicastProcessor<T> w = window;
-				w.onNext(t);
+				FluxProcessorSink<T> w = window;
+				w.asProcessor().onNext(t);
 
 				int c = count + 1;
 
@@ -206,14 +206,14 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 					producerIndex++;
 					count = 0;
 
-					w.onComplete();
+					w.asProcessor().onComplete();
 
 					long r = requested;
 
 					if (r != 0L) {
-						w = UnicastProcessor.create();
+						w = Processors.unicast();
 						window = w;
-						actual.onNext(w);
+						actual.onNext(w.asFlux());
 						if (r != Long.MAX_VALUE) {
 							REQUESTED.decrementAndGet(this);
 						}
@@ -295,7 +295,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 		void drainLoop() {
 			final Queue<Object> q = queue;
 			final Subscriber<? super Flux<T>> a = actual;
-			UnicastProcessor<T> w = window;
+			FluxProcessorSink<T> w = window;
 
 			int missed = 1;
 			for (; ; ) {
@@ -321,10 +321,10 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable err = error;
 						if (err != null) {
-							w.onError(err);
+							w.asProcessor().onError(err);
 						}
 						else {
-							w.onComplete();
+							w.asProcessor().onComplete();
 						}
 						timer.dispose();
 						worker.dispose();
@@ -336,14 +336,14 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 					}
 
 					if (isHolder) {
-						w.onComplete();
+						w.asProcessor().onComplete();
 						count = 0;
-						w = UnicastProcessor.create();
+						w = Processors.unicast();
 						window = w;
 
 						long r = requested;
 						if (r != 0L) {
-							a.onNext(w);
+							a.onNext(w.asFlux());
 							if (r != Long.MAX_VALUE) {
 								REQUESTED.decrementAndGet(this);
 							}
@@ -360,21 +360,21 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 						continue;
 					}
 
-					w.onNext((T) o);
+					w.asProcessor().onNext((T) o);
 					int c = count + 1;
 
 					if (c >= maxSize) {
 						producerIndex++;
 						count = 0;
 
-						w.onComplete();
+						w.asProcessor().onComplete();
 
 						long r = requested;
 
 						if (r != 0L) {
-							w = UnicastProcessor.create();
+							w = Processors.unicast();
 							window = w;
-							actual.onNext(w);
+							actual.onNext(w.asFlux());
 							if (r != Long.MAX_VALUE) {
 								REQUESTED.decrementAndGet(this);
 							}

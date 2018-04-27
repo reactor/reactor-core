@@ -44,19 +44,20 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressured() {
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.direct();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		tp.onBackpressureLatest().subscribe(ts);
+		tp.asFlux()
+		  .onBackpressureLatest().subscribe(ts);
 
-		tp.onNext(1);
+		tp.next(1);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.onNext(2);
+		tp.next(2);
 
 		ts.request(1);
 
@@ -64,8 +65,8 @@ public class FluxOnBackpressureLatestTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.onNext(3);
-		tp.onNext(4);
+		tp.next(3);
+		tp.next(4);
 
 		ts.request(2);
 
@@ -73,8 +74,8 @@ public class FluxOnBackpressureLatestTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.onNext(5);
-		tp.onComplete();
+		tp.next(5);
+		tp.complete();
 
 		ts.assertValues(2, 4, 5)
 		  .assertNoError()
@@ -83,13 +84,14 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void error() {
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.direct();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		tp.onBackpressureLatest().subscribe(ts);
+		tp.asFlux()
+		  .onBackpressureLatest().subscribe(ts);
 
-		tp.onError(new RuntimeException("forced failure"));
+		tp.error(new RuntimeException("forced failure"));
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -99,23 +101,24 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressureWithDrop() {
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.direct();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>(0) {
 			@Override
 			public void onNext(Integer t) {
 				super.onNext(t);
 				if (t == 2) {
-					tp.onNext(3);
+					tp.next(3);
 				}
 			}
 		};
 
-		tp.onBackpressureLatest()
+		tp.asFlux()
+		  .onBackpressureLatest()
 		  .subscribe(ts);
 
-		tp.onNext(1);
-		tp.onNext(2);
+		tp.next(1);
+		tp.next(2);
 
 		ts.request(1);
 

@@ -1564,7 +1564,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mergedPublishers The {@link Publisher} of {@link Publisher} to switch on and mirror.
 	 * @param <T> the produced type
 	 *
-	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 * @return a {@link Flux} that mirrors data from incoming Publishers
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
 		return switchOnNext(mergedPublishers, Queues.XS_BUFFER_SIZE);
@@ -1585,7 +1585,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch the inner source request size
 	 * @param <T> the produced type
 	 *
-	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 * @return a {@link Flux} that mirrors data from incoming Publishers
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
 		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers),
@@ -6088,7 +6088,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> publishNext() {
-		return Mono.onAssembly(new MonoProcessor<>(this));
+		return Mono.onAssembly(Processors.first(this).build().asMono());
 	}
 
 	/**
@@ -7481,10 +7481,10 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Subscribe the given {@link Subscriber} to this {@link Flux} and return said
-	 * {@link Subscriber} (eg. a {@link FluxProcessor}).
+	 * {@link Subscriber}.
 	 *
 	 * <blockquote><pre>
-	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe() }
+	 * {@code flux.subscribeWith(new MySubscriberWithApi()).callApi() }
 	 * </pre></blockquote>
 	 *
 	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
@@ -7497,6 +7497,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
 		subscribe(subscriber);
 		return subscriber;
+	}
+
+	/**
+	 * Subscribe the given {@link ProcessorSink} to this {@link Flux} and return said
+	 * {@link ProcessorSink}.
+	 *
+	 * <blockquote><pre>
+	 * {@code flux.subscribeWith(Processors.unicast()).asFlux().subscribe() }
+	 * </pre></blockquote>
+	 *
+	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
+	 *
+	 * @param processorSink the {@link ProcessorSink} to subscribe with and return
+	 * @param <E> the reified type from the input/output subscriber
+	 *
+	 * @return the passed {@link ProcessorSink}
+	 */
+	public final <E extends ProcessorSink<? super T>> E subscribeWith(E processorSink) {
+		subscribe(processorSink.asProcessor());
+		return processorSink;
 	}
 
 	/**

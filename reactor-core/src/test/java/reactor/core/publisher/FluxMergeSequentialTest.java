@@ -141,25 +141,26 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsDelayEnd() {
-		DirectProcessor<Integer> main = DirectProcessor.create();
-		final DirectProcessor<Integer> inner = DirectProcessor.create();
+		FluxProcessorSink<Integer> main = Processors.direct();
+		final FluxProcessorSink<Integer> inner = Processors.direct();
 
-		AssertSubscriber<Integer> ts = main.flatMapSequentialDelayError(t -> inner, 32, 32)
+		AssertSubscriber<Integer> ts = main.asFlux()
+		                                   .flatMapSequentialDelayError(t -> inner.asFlux(), 32, 32)
 		                                   .subscribeWith(AssertSubscriber.create());
 
-		main.onNext(1);
-		main.onNext(2);
+		main.next(1);
+		main.next(2);
 
-		inner.onNext(2);
+		inner.next(2);
 
 		ts.assertValues(2);
 
-		main.onError(new RuntimeException("Forced failure"));
+		main.error(new RuntimeException("Forced failure"));
 
 		ts.assertNoError();
 
-		inner.onNext(3);
-		inner.onComplete();
+		inner.next(3);
+		inner.complete();
 
 		ts.assertValues(2, 3, 2, 3)
 		  .assertErrorMessage("Forced failure");
@@ -167,25 +168,25 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsImmediate() {
-		DirectProcessor<Integer> main = DirectProcessor.create();
-		final DirectProcessor<Integer> inner = DirectProcessor.create();
+		FluxProcessorSink<Integer> main = Processors.direct();
+		final FluxProcessorSink<Integer> inner = Processors.direct();
 
-		AssertSubscriber<Integer> ts = main.flatMapSequential(t -> inner)
+		AssertSubscriber<Integer> ts = main.asFlux().flatMapSequential(t -> inner.asFlux())
 		                                   .subscribeWith(AssertSubscriber.create());
 
-		main.onNext(1);
-		main.onNext(2);
+		main.next(1);
+		main.next(2);
 
-		inner.onNext(2);
+		inner.next(2);
 
 		ts.assertValues(2);
 
-		main.onError(new RuntimeException("Forced failure"));
+		main.error(new RuntimeException("Forced failure"));
 
 		assertFalse("inner has subscribers?", inner.hasDownstreams());
 
-		inner.onNext(3);
-		inner.onComplete();
+		inner.next(3);
+		inner.complete();
 
 		ts.assertValues(2).assertErrorMessage("Forced failure");
 	}
@@ -460,19 +461,20 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void testReentrantWork() {
-		final DirectProcessor<Integer> subject = DirectProcessor.create();
+		final FluxProcessorSink<Integer> subject = Processors.direct();
 
 		final AtomicBoolean once = new AtomicBoolean();
 
-		subject.flatMapSequential(Flux::just)
+		subject.asFlux()
+		       .flatMapSequential(Flux::just)
 		       .doOnNext(t -> {
 			       if (once.compareAndSet(false, true)) {
-				       subject.onNext(2);
+				       subject.next(2);
 			       }
 		       })
 		       .subscribe(ts);
 
-		subject.onNext(1);
+		subject.next(1);
 
 		ts.assertNoError();
 		ts.assertNotComplete();

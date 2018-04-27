@@ -55,7 +55,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
-		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
+		Subscriber<Long> signaller = Operators.serialize(other.completionSignal.asCoreSubscriber());
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
@@ -199,7 +199,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		RepeatWhenMainSubscriber<?> main;
 
-		final DirectProcessor<Long> completionSignal = new DirectProcessor<>();
+		final FluxProcessorSink<Long> completionSignal = Processors.direct();
 
 		@Override
 		public Context currentContext() {
@@ -237,7 +237,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void subscribe(CoreSubscriber<? super Long> actual) {
-			completionSignal.subscribe(actual);
+			completionSignal.asProcessor().subscribe(actual);
 		}
 
 	}

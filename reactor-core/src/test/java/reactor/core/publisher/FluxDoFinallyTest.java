@@ -138,15 +138,15 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFused() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		FluxProcessorSink<Integer> up = Processors.unicast();
+		up.next(1);
+		up.next(2);
+		up.next(3);
+		up.next(4);
+		up.next(5);
+		up.complete();
 
-		StepVerifier.create(up.doFinally(this))
+		StepVerifier.create(up.asFlux().doFinally(this))
 		            .expectFusion(ASYNC)
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
@@ -158,15 +158,15 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedThreadBarrier() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		FluxProcessorSink<Integer> up = Processors.unicast();
+		up.next(1);
+		up.next(2);
+		up.next(3);
+		up.next(4);
+		up.next(5);
+		up.complete();
 
-		StepVerifier.create(up.doFinally(this))
+		StepVerifier.create(up.asFlux().doFinally(this))
 		            .expectFusion(ASYNC | THREAD_BARRIER, NONE)
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
@@ -280,15 +280,15 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedConditional() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		FluxProcessorSink<Integer> up = Processors.unicast();
+		up.next(1);
+		up.next(2);
+		up.next(3);
+		up.next(4);
+		up.next(5);
+		up.complete();
 
-		StepVerifier.create(up.doFinally(this)
+		StepVerifier.create(up.asFlux().doFinally(this)
 		                      .filter(i -> true))
 		            .expectFusion(ASYNC)
 		            .expectNext(1, 2, 3, 4, 5)
@@ -301,15 +301,15 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedThreadBarrierConditional() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		FluxProcessorSink<Integer> up = Processors.unicast();
+		up.next(1);
+		up.next(2);
+		up.next(3);
+		up.next(4);
+		up.next(5);
+		up.complete();
 
-		StepVerifier.create(up.doFinally(this)
+		StepVerifier.create(up.asFlux().doFinally(this)
 		                      .filter(i -> true))
 		            .expectFusion(ASYNC | THREAD_BARRIER, NONE)
 		            .expectNext(1, 2, 3, 4, 5)

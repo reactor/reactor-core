@@ -86,18 +86,19 @@ public class FluxWindowWhenTest {
 		}
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		final UnicastProcessor<Wrapper> processor = UnicastProcessor.create();
+		final FluxProcessorSink<Wrapper> processor = Processors.unicast();
 
 		Flux<Integer> emitter = Flux.range(1, 400)
 		                            .delayElements(Duration.ofMillis(10))
-		                            .doOnNext(i -> processor.onNext(new Wrapper(i)))
-		                            .doOnComplete(processor::onComplete);
+		                            .doOnNext(i -> processor.next(new Wrapper(i)))
+		                            .doOnComplete(processor::complete);
 
 		AtomicReference<FluxWindowWhen.WindowWhenMainSubscriber> startEndMain = new AtomicReference<>();
 		AtomicReference<List> windows = new AtomicReference<>();
 
 		Mono<List<Tuple3<Long, Integer, Long>>> buffers =
-				processor.window(Duration.ofMillis(1000), Duration.ofMillis(500))
+				processor.asFlux()
+				         .window(Duration.ofMillis(1000), Duration.ofMillis(500))
 				         .doOnSubscribe(s -> {
 					         FluxWindowWhen.WindowWhenMainSubscriber sem =
 							         (FluxWindowWhen.WindowWhenMainSubscriber) s;
@@ -140,31 +141,32 @@ public class FluxWindowWhenTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
-		DirectProcessor<Integer> sp4 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp3 = Processors.direct();
+		FluxProcessorSink<Integer> sp4 = Processors.direct();
 
-		sp1.windowWhen(sp2, v -> v == 1 ? sp3 : sp4)
+		sp1.asFlux()
+		   .windowWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
-		sp2.onNext(1);
+		sp2.next(1);
 
-		sp1.onNext(2);
+		sp1.next(2);
 
-		sp2.onNext(2);
+		sp2.next(2);
 
-		sp1.onNext(3);
+		sp1.next(3);
 
-		sp3.onNext(1);
+		sp3.next(1);
 
-		sp1.onNext(4);
+		sp1.next(4);
 
-		sp4.onNext(1);
+		sp4.next(1);
 
-		sp1.onComplete();
+		sp1.complete();
 
 		ts.assertValueCount(2)
 		  .assertNoError()
@@ -183,32 +185,33 @@ public class FluxWindowWhenTest {
 	public void normalStarterEnds() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
-		DirectProcessor<Integer> openSelector = DirectProcessor.create();
-		DirectProcessor<Integer> closeSelectorFor1 = DirectProcessor.create();
-		DirectProcessor<Integer> closeSelectorForOthers = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.direct();
+		FluxProcessorSink<Integer> openSelector = Processors.direct();
+		FluxProcessorSink<Integer> closeSelectorFor1 = Processors.direct();
+		FluxProcessorSink<Integer> closeSelectorForOthers = Processors.direct();
 
-		source.windowWhen(openSelector, v -> v == 1 ? closeSelectorFor1 : closeSelectorForOthers)
-		   .subscribe(ts);
+		source.asFlux()
+		      .windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorForOthers.asFlux())
+		      .subscribe(ts);
 
-		source.onNext(1);
+		source.next(1);
 
-		openSelector.onNext(1);
+		openSelector.next(1);
 
-		source.onNext(2);
+		source.next(2);
 
-		openSelector.onNext(2);
+		openSelector.next(2);
 
-		source.onNext(3);
+		source.next(3);
 
-		closeSelectorFor1.onNext(1);
+		closeSelectorFor1.next(1);
 
-		source.onNext(4);
+		source.next(4);
 
-		closeSelectorForOthers.onNext(1);
+		closeSelectorForOthers.next(1);
 
-		openSelector.onComplete();
-		source.onComplete(); //TODO evaluate, should the open completing cause the source to lose subscriber?
+		openSelector.complete();
+		source.complete(); //TODO evaluate, should the open completing cause the source to lose subscriber?
 
 		ts.assertValueCount(2)
 		  .assertNoError()
@@ -227,24 +230,25 @@ public class FluxWindowWhenTest {
 	public void oneWindowOnly() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
-		DirectProcessor<Integer> openSelector = DirectProcessor.create();
-		DirectProcessor<Integer> closeSelectorFor1 = DirectProcessor.create();
-		DirectProcessor<Integer> closeSelectorOthers = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.direct();
+		FluxProcessorSink<Integer> openSelector = Processors.direct();
+		FluxProcessorSink<Integer> closeSelectorFor1 = Processors.direct();
+		FluxProcessorSink<Integer> closeSelectorOthers = Processors.direct();
 
-		source.windowWhen(openSelector, v -> v == 1 ? closeSelectorFor1 : closeSelectorOthers)
-		   .subscribe(ts);
+		source.asFlux()
+		      .windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorOthers.asFlux())
+		      .subscribe(ts);
 
-		openSelector.onNext(1);
+		openSelector.next(1);
 
-		source.onNext(1);
-		source.onNext(2);
-		source.onNext(3);
+		source.next(1);
+		source.next(2);
+		source.next(3);
 
-		closeSelectorFor1.onComplete();
+		closeSelectorFor1.complete();
 
-		source.onNext(4);
-		source.onComplete();
+		source.next(4);
+		source.complete();
 
 		ts.assertValueCount(1)
 		  .assertNoError()
@@ -262,29 +266,30 @@ public class FluxWindowWhenTest {
 	@Test
 	public void windowWillAcumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
-		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.create();
+		FluxProcessorSink<Integer> numbers = Processors.emitter();
+		FluxProcessorSink<Integer> bucketOpening = Processors.emitter();
 
 		//"overlapping buffers"
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
+		FluxProcessorSink<Integer> boundaryFlux = Processors.emitter();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.windowWhen(bucketOpening, u -> boundaryFlux )
-		                                       .flatMap(Flux::buffer)
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
+		                                                .windowWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())
+		                                                .flatMap(Flux::buffer)
+		                                                .buffer()
+		                                                .publishNext()
+		                                                .toProcessor();
 		res.subscribe();
 
-		numbers.onNext(1);
-		numbers.onNext(2);
-		bucketOpening.onNext(1);
-		numbers.onNext(3);
-		bucketOpening.onNext(1);
-		numbers.onNext(5);
-		boundaryFlux.onNext(1);
-		bucketOpening.onNext(1);
-		boundaryFlux.onComplete();
-		numbers.onComplete();
+		numbers.next(1);
+		numbers.next(2);
+		bucketOpening.next(1);
+		numbers.next(3);
+		bucketOpening.next(1);
+		numbers.next(5);
+		boundaryFlux.next(1);
+		bucketOpening.next(1);
+		boundaryFlux.complete();
+		numbers.complete();
 
 		//"the collected overlapping lists are available"
 		assertThat(res.block()).containsExactly(

@@ -247,10 +247,10 @@ public class MonoFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final EmitterProcessor<Boolean> pp = EmitterProcessor.create();
+		final FluxProcessorSink<Boolean> pp = Processors.emitter();
 
 		StepVerifier.create(Mono.just(1)
-		                        .filterWhen(v -> pp))
+		                        .filterWhen(v -> pp.asFlux()))
 		            .thenCancel();
 
 		assertThat(pp.hasDownstreams()).isFalse();
