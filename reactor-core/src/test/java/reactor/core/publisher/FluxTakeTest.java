@@ -300,18 +300,10 @@ public class FluxTakeTest {
 		FluxProcessorSink<Integer> up = Processors.unicast();
 		Hooks.onNextDropped(t -> assertThat(t).isEqualTo(1));
 		StepVerifier.create(up.asFlux().take(2))
-		            .then(() -> unicastActual(up).onComplete())
-		            .then(() -> unicastActual(up).onNext(1))
+		            .then(() -> ProcessorsTestUtils.unicastActual(up).onComplete())
+		            .then(() -> ProcessorsTestUtils.unicastActual(up).onNext(1))
 		            .verifyComplete();
 		Hooks.resetOnNextDropped();
-	}
-
-	//FIXME extract similar methods in test as a utility method
-	private static <T> CoreSubscriber<T> unicastActual(FluxProcessorSink<T> unicast) {
-		assertThat(unicast).isInstanceOf(InnerOperator.class);
-		@SuppressWarnings("unchecked")
-		CoreSubscriber<T> actual = ((InnerOperator) unicast).actual();
-		return actual;
 	}
 
 	@Test
@@ -502,10 +494,10 @@ public class FluxTakeTest {
 			            assertTrackableBeforeOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            assertTrackableAfterOnSubscribe((InnerOperator) unicastActual(up));
-			            unicastActual(up).onError(new Exception("test"));
-			            assertTrackableAfterOnComplete((InnerOperator) unicastActual(up));
-			            unicastActual(up).onError(new Exception("test2"));
+			            assertTrackableAfterOnSubscribe((InnerOperator) ProcessorsTestUtils.unicastActual(up));
+			            ProcessorsTestUtils.unicastActual(up).onError(new Exception("test"));
+			            assertTrackableAfterOnComplete((InnerOperator) ProcessorsTestUtils.unicastActual(up));
+			            ProcessorsTestUtils.unicastActual(up).onError(new Exception("test2"));
 		            })
 		            .verifyErrorMessage("test");
 
@@ -521,10 +513,10 @@ public class FluxTakeTest {
 			            assertTrackableAfterOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            assertTrackableAfterOnSubscribe((InnerOperator)unicastActual(up));
-			            unicastActual(up).onComplete();
-			            assertTrackableAfterOnComplete((InnerOperator)unicastActual(up));
-			            unicastActual(up).onComplete();
+			            assertTrackableAfterOnSubscribe((InnerOperator) ProcessorsTestUtils.unicastActual(up));
+			            ProcessorsTestUtils.unicastActual(up).onComplete();
+			            assertTrackableAfterOnComplete((InnerOperator)ProcessorsTestUtils.unicastActual(up));
+			            ProcessorsTestUtils.unicastActual(up).onComplete();
 		            })
 		            .verifyComplete();
 	}

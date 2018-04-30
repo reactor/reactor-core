@@ -927,8 +927,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	private static final <T> FluxZip.ZipInner<T> zipInnerFrom(FluxProcessorSink<T> up) {
-		assertThat(up).isInstanceOf(InnerOperator.class);
-		CoreSubscriber actual = ((InnerOperator) up).actual();
+		CoreSubscriber<T> actual = ProcessorsTestUtils.unicastActual(up);
 		assertThat(actual).isInstanceOf(FluxZip.ZipInner.class);
 		return (FluxZip.ZipInner<T>) actual;
 	}

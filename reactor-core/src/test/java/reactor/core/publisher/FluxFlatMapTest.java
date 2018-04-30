@@ -616,7 +616,7 @@ public class FluxFlatMapTest {
 		StepVerifier.create(up.asFlux().flatMap(Flux::just))
 		            .then(() -> {
 			            up.next(1);
-			            CoreSubscriber<? super Integer> a = ((InnerOperator<Integer, Integer>) up).actual();
+			            CoreSubscriber<? super Integer> a = ProcessorsTestUtils.unicastActual(up);
 			            up.complete();
 			            a.onNext(2);
 		            })

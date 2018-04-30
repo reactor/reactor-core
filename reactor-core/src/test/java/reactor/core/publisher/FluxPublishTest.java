@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -57,20 +56,22 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
+	//FIXME remove dependency to EmitterProcessor, cannot be ported to FluxProcessorSink though
 	public void prematureOnComplete() {
-		FluxProcessorSink<Flux<String>> incomingProcessor = Processors.emitter(Queues.SMALL_BUFFER_SIZE).noAutoCancel().build();
+		EmitterProcessor<Flux<String>> incomingProcessor = EmitterProcessor.create(false);
+		//Processors.emitter(Integer.MAX_VALUE).noAutoCancel().build();
 
 		Flux.just("ALPHA", "BRAVO", "CHARLIE", "DELTA", "ALPHA", "BRAVO", "CHARLIE", "DELTA", "ALPHA", "BRAVO", "CHARLIE", "DELTA")
 		    .log("stream.incoming")
 		    .windowWhile(s -> !"DELTA".equals(s),1 )
-		    .subscribe(incomingProcessor.asProcessor());
+		    .subscribe(incomingProcessor);
 
 		AtomicInteger windowIndex = new AtomicInteger(0);
 		AtomicInteger nextIndex = new AtomicInteger(0);
 
 		System.out.println("ZERO");
 		incomingProcessor
-				.asFlux()
 				.next()
 				.flatMapMany(flux -> flux
 						.takeWhile(s -> !"CHARLIE".equals(s))
@@ -81,7 +82,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 				.verifyComplete();
 
 		System.out.println("ONE");
-		incomingProcessor.asFlux()
+		incomingProcessor
 		                 .next()
 		                 .flatMapMany(flux -> flux
 				                 .takeWhile(s -> !"CHARLIE".equals(s))
@@ -92,7 +93,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		                 .verifyComplete();
 
 		System.out.println("TWO");
-		incomingProcessor.asFlux()
+		incomingProcessor
 		                 .next()
 		                 .flatMapMany(flux -> flux
 				                 .takeWhile(s -> !"CHARLIE".equals(s))
