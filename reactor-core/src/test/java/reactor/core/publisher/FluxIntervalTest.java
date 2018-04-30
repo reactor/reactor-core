@@ -179,4 +179,15 @@ public class FluxIntervalTest {
 		            .expectNextCount(6)
 		            .verifyErrorMessage("Could not emit tick 32 due to lack of requests (interval doesn't support small downstream requests that replenish slower than the ticks)");
     }
+
+    @Test
+	public void shouldBeAbleToScheduleIntervalsWithLowGranularity() {
+		StepVerifier.create(Flux.interval(Duration.ofNanos(1)))
+		            .expectSubscription()
+		            .expectNext(0L)
+		            .expectNext(1L)
+		            .expectNext(2L)
+		            .thenCancel()
+		            .verify();
+    }
 }
