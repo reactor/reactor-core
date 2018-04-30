@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.Before;
 import org.junit.Test;
-import reactor.test.RaceTestUtils;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;

@@ -23,7 +23,7 @@ import org.junit.Test;
 import reactor.core.Disposables.CompositeDisposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.FakeDisposable;
-import reactor.test.RaceTestUtils;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
