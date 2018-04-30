@@ -1556,28 +1556,4 @@ public class WorkQueueProcessorTest {
 		assertTrue(processor.awaitAndShutdown(Duration.ofMillis(400)));
 	}
 
-	@Test
-	public void respectBackpressure() {
-		EventLoopProcessor<Integer> processor = WorkQueueProcessor.<Integer>builder()
-				.name("processor")
-				.bufferSize(4)
-				.build();
-		Flux<Integer> publisher = Flux.just(1, 2, 3, 4, 5, 6);
-		publisher.subscribe(processor);
-
-
-		StepVerifier.create(processor.log(), 0)
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(100))
-		            .thenRequest(5)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .expectNoEvent(Duration.ofSeconds(5))
-		            .thenRequest(1)
-		            .expectNext(6)
-		            .expectComplete()
-		            .verify();
-
-//		Assertions.assertThat(processor.awaitAndShutdown(Duration.ofMillis(400)))
-//		          .as("shutdown").isTrue();
-	}
 }

@@ -443,8 +443,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		boolean isRunning() {
-			return running.get() && (processor.terminated == 0 || processor.error == null &&
-					processor.ringBuffer.getAsLong() > sequence.getAsLong());
+			return running.get() && (processor.terminated == 0 ||
+					(processor.terminated != FORCED_SHUTDOWN &&
+							processor.error == null &&
+							processor.ringBuffer.getAsLong() > sequence.getAsLong())
+			);
 		}
 
 		/**
@@ -484,7 +487,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						}
 					}
 					else if (processor.terminated == FORCED_SHUTDOWN) {
-						return;
+							return;
 					}
 				}
 
@@ -503,7 +506,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							do {
 								nextSequence = processor.workSequence.getAsLong() + 1L;
 								while ((!unbounded && pendingRequest.getAsLong() == 0L)) {
-									if (!isRunning() || processor.isTerminated()) {
+									if (!isRunning()) {
 										WaitStrategy.alert();
 									}
 									LockSupport.parkNanos(1L);
@@ -568,7 +571,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							}
 						}
 						else if (processor.terminated == FORCED_SHUTDOWN) {
-							break;
+								break;
 						}
 						//processedSequence = true;
 						//continue event-loop
@@ -675,7 +678,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		void readNextEvent(final boolean unbounded) {
 				//pause until request
 			while ((!unbounded && getAndSub(pendingRequest, 1L) == 0L)) {
-				if (!isRunning() || processor.isTerminated()) {
+				if (!isRunning()) {
 					WaitStrategy.alert();
 				}
 				//Todo Use WaitStrategy?
