@@ -154,6 +154,29 @@ public class VirtualTimeSchedulerTests {
 	}
 
 	@Test
+	public void nestedSchedule() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		List<Long> singleExecutionsTimestamps = new ArrayList<>();
+
+		try {
+			vts.schedule(() -> vts.schedule(
+					() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+					100, TimeUnit.MILLISECONDS
+					),
+					300, TimeUnit.MILLISECONDS);
+
+			vts.advanceTimeBy(Duration.ofMillis(1000));
+
+			assertThat(singleExecutionsTimestamps)
+					.as("single executions")
+					.containsExactly(400L);
+		}
+		finally {
+			vts.dispose();
+		}
+	}
+
+	@Test
 	public void racingAdvanceTimeOnEmptyQueue() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		try {
