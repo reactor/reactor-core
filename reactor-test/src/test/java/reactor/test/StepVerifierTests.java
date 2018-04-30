@@ -1967,6 +1967,25 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void gh783() {
+		int size = 1;
+		Scheduler parallel = Schedulers.newParallel("gh-783");
+		StepVerifier.withVirtualTime(() -> Flux.just("Oops")
+		                                       .take(size)
+		                                       .subscribeOn(parallel)
+		                                       .flatMap(message -> {
+			                                       Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
+			                                       return interval.map( tick -> message);
+		                                       })
+		                                       .take(size)
+		                                       .collectList()
+		)
+		            .thenAwait(Duration.ofHours(1))
+		            .consumeNextWith(list -> assertThat(list).hasSize(size))
+		            .verifyComplete();
+	}
+
+	@Test
 	public void gh783_deferredAdvanceTime() {
 		int size = 61;
 		Scheduler parallel = Schedulers.newParallel("gh-783");
@@ -1984,7 +2003,6 @@ public class StepVerifierTests {
 		            .consumeNextWith(list -> assertThat(list).hasSize(size))
 		            .expectComplete()
 		            .verify();
-//		            .verify(Duration.ofSeconds(5));
 	}
 
 	@Test
