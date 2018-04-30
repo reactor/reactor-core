@@ -1291,7 +1291,9 @@ final class DefaultStepVerifierBuilder<T>
 					setFailure(null, actualSignal, "did not expect: %s", actualSignal);
 					return;
 				}
-				onTaskEvent();
+				if (onTaskEvent()) {
+					event = this.script.peek();
+				}
 
 				if (event instanceof DefaultStepVerifierBuilder.SignalConsumeWhileEvent) {
 					if (consumeWhile(actualSignal, (SignalConsumeWhileEvent<T>) event)) {
@@ -1322,9 +1324,6 @@ final class DefaultStepVerifierBuilder<T>
 				}
 
 				event = this.script.peek();
-				if (event == null || !(event instanceof EagerEvent)) {
-					return;
-				}
 
 				for (; ; ) {
 					if (event == null || !(event instanceof EagerEvent)) {
@@ -1469,21 +1468,23 @@ final class DefaultStepVerifierBuilder<T>
 			return false;
 		}
 
-		void onTaskEvent() {
+		boolean onTaskEvent() {
 			Event<T> event;
+			boolean foundTaskEvents = false;
 			for (; ; ) {
 				if (isCancelled()) {
-					return;
+					return foundTaskEvents;
 				}
 				event = this.script.peek();
 				if (!(event instanceof TaskEvent)) {
-					break;
+					return foundTaskEvents;
 				}
 				event = this.script.poll();
 				if (!(event instanceof TaskEvent)) {
-					return;
+					return foundTaskEvents;
 				}
 				taskEvents.add((TaskEvent<T>) event);
+				foundTaskEvents = true;
 			}
 		}
 
