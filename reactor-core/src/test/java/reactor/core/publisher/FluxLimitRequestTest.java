@@ -28,9 +28,9 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.test.RaceTestUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

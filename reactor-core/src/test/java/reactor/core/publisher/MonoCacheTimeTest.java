@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.RaceTestUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.MonoOperatorTest;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

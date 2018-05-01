@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.FakeDisposable;
-import reactor.test.RaceTestUtils;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -16,6 +16,11 @@
 
 package reactor.test.scheduler;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.junit.After;
@@ -25,6 +30,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -114,6 +120,135 @@ public class VirtualTimeSchedulerTests {
 		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
 	}
 
+
+	@Test
+	public void captureNowInScheduledTask() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		List<Long> singleExecutionsTimestamps = new ArrayList<>();
+		List<Long> periodicExecutionTimestamps = new ArrayList<>();
+
+		try {
+			vts.advanceTimeBy(Duration.ofMillis(100));
+
+			vts.schedule(() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+					100, TimeUnit.MILLISECONDS);
+
+			vts.schedule(() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+					456, TimeUnit.MILLISECONDS);
+
+			vts.schedulePeriodically(() -> periodicExecutionTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+					0, 100, TimeUnit.MILLISECONDS);
+
+			vts.advanceTimeBy(Duration.ofMillis(1000));
+
+			assertThat(singleExecutionsTimestamps)
+					.as("single executions")
+					.containsExactly(100L, 456L + 100L);
+			assertThat(periodicExecutionTimestamps)
+					.as("periodic executions")
+					.containsExactly(100L, 200L, 300L, 400L, 500L, 600L, 700L, 800L, 900L, 1000L, 1100L);
+		}
+		finally {
+			vts.dispose();
+		}
+	}
+
+	@Test
+	public void nestedSchedule() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		List<Long> singleExecutionsTimestamps = new ArrayList<>();
+
+		try {
+			vts.schedule(() -> vts.schedule(
+					() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+					100, TimeUnit.MILLISECONDS
+					),
+					300, TimeUnit.MILLISECONDS);
+
+			vts.advanceTimeBy(Duration.ofMillis(1000));
+
+			assertThat(singleExecutionsTimestamps)
+					.as("single executions")
+					.containsExactly(400L);
+		}
+		finally {
+			vts.dispose();
+		}
+	}
+
+	@Test
+	public void racingAdvanceTimeOnEmptyQueue() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		try {
+			for (int i = 1; i <= 100; i++) {
+				RaceTestUtils.race(
+						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
+						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+
+				assertThat(vts.now(TimeUnit.MILLISECONDS))
+						.as("iteration " + i)
+						.isEqualTo(13_000 * i);
+			}
+		}
+		finally {
+			vts.dispose();
+		}
+	}
+
+	@Test
+	public void racingAdvanceTimeOnFullQueue() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		try {
+			vts.schedule(() -> {}, 10, TimeUnit.HOURS);
+			for (int i = 1; i <= 100; i++) {
+				reactor.test.util.RaceTestUtils.race(
+						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
+						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+
+				assertThat(vts.now(TimeUnit.MILLISECONDS))
+						.as("now() iteration " + i)
+						.isEqualTo(13_000 * i);
+
+				assertThat(vts.nanoTime)
+						.as("now() == nanoTime in iteration " + i)
+						.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
+			}
+		}
+		finally {
+			vts.dispose();
+		}
+	}
+
+	@Test
+	public void racingAdvanceTimeOnVaryingQueue() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		AtomicInteger count = new AtomicInteger();
+		try {
+			for (int i = 1; i <= 100; i++) {
+				RaceTestUtils.race(
+						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
+						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+
+				if (i % 10 == 0) {
+					vts.schedule(count::incrementAndGet, 14, TimeUnit.SECONDS);
+				}
+
+				assertThat(vts.now(TimeUnit.MILLISECONDS))
+						.as("now() iteration " + i)
+						.isEqualTo(13_000 * i);
+			}
+			assertThat(count).as("scheduled task run").hasValue(10);
+
+			assertThat(vts.nanoTime)
+					.as("now() == nanoTime")
+					.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
+
+			assertThat(vts.deferredNanoTime).as("cleared deferredNanoTime").isZero();
+		}
+		finally {
+			vts.dispose();
+		}
+	}
 
 	@SuppressWarnings("unchecked")
 	private static Scheduler uncache(Scheduler potentialCached) {

@@ -34,11 +34,11 @@ import reactor.core.publisher.FluxExpand.ExpandBreathSubscriber;
 import reactor.core.publisher.FluxExpand.ExpandDepthSubscriber;
 import reactor.core.publisher.FluxExpand.ExpandDepthSubscription;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.RaceTestUtils;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;

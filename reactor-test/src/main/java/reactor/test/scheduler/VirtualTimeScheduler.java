@@ -22,6 +22,7 @@ import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -29,6 +30,7 @@ import java.util.function.Supplier;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Operators;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
@@ -184,6 +186,13 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	volatile long nanoTime;
 
+	volatile long deferredNanoTime;
+	static final AtomicLongFieldUpdater<VirtualTimeScheduler> DEFERRED_NANO_TIME = AtomicLongFieldUpdater.newUpdater(VirtualTimeScheduler.class, "deferredNanoTime");
+
+	volatile int advanceTimeWip;
+	static final AtomicIntegerFieldUpdater<VirtualTimeScheduler> ADVANCE_TIME_WIP =
+			AtomicIntegerFieldUpdater.newUpdater(VirtualTimeScheduler.class, "advanceTimeWip");
+
 	volatile boolean shutdown;
 
 	final VirtualTimeWorker directWorker;
@@ -206,7 +215,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * @param delayTime the amount of time to move the {@link VirtualTimeScheduler}'s clock forward
 	 */
 	public void advanceTimeBy(Duration delayTime) {
-		advanceTime(nanoTime + delayTime.toNanos());
+		advanceTime(delayTime.toNanos());
 	}
 
 	/**
@@ -218,7 +227,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	public void advanceTimeTo(Instant instant) {
 		long targetTime = TimeUnit.NANOSECONDS.convert(instant.toEpochMilli(),
 				TimeUnit.MILLISECONDS);
-		advanceTime(targetTime);
+		advanceTime(targetTime - nanoTime);
 	}
 
 	@Override
@@ -231,7 +240,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	@Override
 	public long now(TimeUnit unit) {
-		return unit.convert(nanoTime, TimeUnit.NANOSECONDS);
+		return unit.convert(nanoTime + deferredNanoTime, TimeUnit.NANOSECONDS);
 	}
 
 	@Override
@@ -285,22 +294,44 @@ public class VirtualTimeScheduler implements Scheduler {
 		return periodicTask;
 	}
 
-	final void advanceTime(long targetTimeInNanoseconds) {
-		while (!queue.isEmpty()) {
-			TimedRunnable current = queue.peek();
-			if (current.time > targetTimeInNanoseconds) {
+	final void advanceTime(long timeShiftInNanoseconds) {
+		Operators.addCap(DEFERRED_NANO_TIME, this, timeShiftInNanoseconds);
+		drain();
+	}
+
+	final void drain() {
+		int remainingWork = ADVANCE_TIME_WIP.incrementAndGet(this);
+		if (remainingWork != 1) {
+			return;
+		}
+		for(;;) {
+			if (!queue.isEmpty()) {
+				//resetting for the first time a delayed schedule is called after a deferredNanoTime is set
+				long targetNanoTime = nanoTime + DEFERRED_NANO_TIME.getAndSet(this, 0);
+
+				while (!queue.isEmpty()) {
+					TimedRunnable current = queue.peek();
+					if (current == null || current.time > targetNanoTime) {
+						break;
+					}
+					//for the benefit of tasks that call `now()`
+					// if scheduled time is 0 (immediate) use current virtual time
+					nanoTime = current.time == 0 ? nanoTime : current.time;
+					queue.remove();
+
+					// Only execute if not unsubscribed
+					if (!current.scheduler.shutdown) {
+						current.run.run();
+					}
+				}
+				nanoTime = targetNanoTime;
+			}
+
+			remainingWork = ADVANCE_TIME_WIP.addAndGet(this, -remainingWork);
+			if (remainingWork == 0) {
 				break;
 			}
-			// if scheduled time is 0 (immediate) use current virtual time
-			nanoTime = current.time == 0 ? nanoTime : current.time;
-			queue.remove();
-
-			// Only execute if not unsubscribed
-			if (!current.scheduler.shutdown) {
-				current.run.run();
-			}
 		}
-		nanoTime = targetTimeInNanoseconds;
 	}
 
 	static final class TimedRunnable implements Comparable<TimedRunnable> {
@@ -358,6 +389,8 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		volatile boolean shutdown;
 
+		VirtualTimeWorker() { }
+
 		@Override
 		public Disposable schedule(Runnable run) {
 			if (shutdown) {
@@ -368,7 +401,11 @@ public class VirtualTimeScheduler implements Scheduler {
 					run,
 					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
-			return () -> queue.remove(timedTask);
+			drain();
+			return () -> {
+				queue.remove(timedTask);
+				drain();
+			};
 		}
 
 		@Override
@@ -381,7 +418,11 @@ public class VirtualTimeScheduler implements Scheduler {
 					run,
 					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
-			return () -> queue.remove(timedTask);
+			drain();
+			return () -> {
+				queue.remove(timedTask);
+				drain();
+			};
 		}
 
 		@Override
@@ -390,7 +431,7 @@ public class VirtualTimeScheduler implements Scheduler {
 				long period,
 				TimeUnit unit) {
 			final long periodInNanoseconds = unit.toNanos(period);
-			final long firstNowNanoseconds = now(TimeUnit.NANOSECONDS);
+			final long firstNowNanoseconds = nanoTime;
 			final long firstStartInNanoseconds = firstNowNanoseconds + unit.toNanos(initialDelay);
 
 			PeriodicTask periodicTask = new PeriodicTask(firstStartInNanoseconds, task,
@@ -439,7 +480,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 					long nextTick;
 
-					long nowNanoseconds = now(TimeUnit.NANOSECONDS);
+					long nowNanoseconds = nanoTime;
 					// If the clock moved in a direction quite a bit, rebase the repetition period
 					if (nowNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS < lastNowNanoseconds || nowNanoseconds >= lastNowNanoseconds + periodInNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS) {
 						nextTick = nowNanoseconds + periodInNanoseconds;

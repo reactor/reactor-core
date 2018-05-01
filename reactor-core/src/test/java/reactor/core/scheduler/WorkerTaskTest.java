@@ -26,8 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
-import reactor.core.publisher.Hooks;
-import reactor.test.RaceTestUtils;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
