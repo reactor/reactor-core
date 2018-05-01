@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -846,6 +846,13 @@ public abstract class Operators {
 		}
 
 		return _actual;
+	}
+
+	static Context multiSubscribersContext(InnerProducer<?>[] subscribers){
+		if (subscribers.length > 0){
+			return subscribers[0].actual().currentContext();
+		}
+		return Context.empty();
 	}
 
 	static <T> long addCapCancellable(AtomicLongFieldUpdater<T> updater, T instance,

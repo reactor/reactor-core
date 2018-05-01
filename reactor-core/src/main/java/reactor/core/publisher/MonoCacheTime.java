@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -326,6 +326,11 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		@Override
 		public void onComplete() {
 			signalCached(Signal.complete());
+		}
+
+		@Override
+		public Context currentContext() {
+			return Operators.multiSubscribersContext(subscribers);
 		}
 
 		@Nullable
