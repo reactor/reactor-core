@@ -72,6 +72,11 @@ import reactor.util.function.Tuples;
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
  * (successfully or with an error).
+ * <p>
+ * The recommended way to learn about the {@link Flux} API and discover new operators is
+ * through the reference documentation, rather than through this javadoc (as opposed to
+ * learning more about individual operators). See the <a href="http://projectreactor.io/docs/core/release/reference/docs/index.html#which-operator">
+ * "which operator do I need?" appendix</a>.
  *
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flux.png" alt="">
