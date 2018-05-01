@@ -27,8 +27,9 @@ public class TopicProcessorVerification extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
-		return TopicProcessor.<Long>builder().name("rb-async")
-		                                     .bufferSize(bufferSize)
-		                                     .build();
+		return TopicProcessor.<Long>builder()
+				.name("topicProcessorVerification")
+				.bufferSize(bufferSize)
+				.build();
 	}
 }

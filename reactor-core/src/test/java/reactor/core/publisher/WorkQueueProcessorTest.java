@@ -37,6 +37,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
@@ -46,6 +47,7 @@ import reactor.core.publisher.FluxCreate.SerializedSink;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -1528,4 +1530,30 @@ public class WorkQueueProcessorTest {
 			s.request(Long.MAX_VALUE);
 		}
 	}
+
+	@Test
+	public void testForceShutdownAfterShutdown() throws InterruptedException {
+		WorkQueueProcessor<String> processor = WorkQueueProcessor.<String>builder()
+				.name("processor").bufferSize(4)
+				.waitStrategy(WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS)) //eliminate the waitstrategy diff
+				.build();
+		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
+		publisher.subscribe(processor);
+
+		AssertSubscriber<String> subscriber = AssertSubscriber.create(0);
+		processor.subscribe(subscriber);
+
+		subscriber.request(1);
+
+		Thread.sleep(250);
+
+		processor.shutdown();
+
+		assertFalse(processor.awaitAndShutdown(Duration.ofMillis(400)));
+
+		processor.forceShutdown();
+
+		assertTrue(processor.awaitAndShutdown(Duration.ofMillis(400)));
+	}
+
 }
