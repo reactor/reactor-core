@@ -174,6 +174,13 @@ public interface StepVerifier {
 	 * will use virtual time.
 	 * Each {@link #verify()} will fully (re)play the scenario.
 	 * The verification will request an unbounded amount of values.
+	 * <p>
+	 * Note that virtual time, {@link Step#thenAwait(Duration)} sources that are
+	 * subscribed on a different {@link reactor.core.scheduler.Scheduler} (eg. a source
+	 * that is initialized outside of the lambda with a dedicated Scheduler) and
+	 * delays introduced within the data path (eg. an interval in a flatMap) are not
+	 * always compatible, as this can perform the clock move BEFORE the interval schedules
+	 * itself, resulting in the interval never playing out.
 	 *
 	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to subscribe
 	 * to and verify. In order for operators to use virtual time, they must be invoked
@@ -194,6 +201,13 @@ public interface StepVerifier {
 	 * will use virtual time.
 	 * Each {@link #verify()} will fully (re)play the scenario.
 	 * The verification will request a specified amount of values.
+	 * <p>
+	 * Note that virtual time, {@link Step#thenAwait(Duration)} sources that are
+	 * subscribed on a different {@link reactor.core.scheduler.Scheduler} (eg. a source
+	 * that is initialized outside of the lambda with a dedicated Scheduler) and
+	 * delays introduced within the data path (eg. an interval in a flatMap) are not
+	 * always compatible, as this can perform the clock move BEFORE the interval schedules
+	 * itself, resulting in the interval never playing out.
 	 *
 	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to subscribe
 	 * to and verify. In order for operators to use virtual time, they must be invoked
@@ -216,6 +230,13 @@ public interface StepVerifier {
 	 * will use virtual time.
 	 * Each {@link #verify()} will fully (re)play the scenario.
 	 * The verification will request a specified amount of values.
+	 * <p>
+	 * Note that virtual time, {@link Step#thenAwait(Duration)} sources that are
+	 * subscribed on a different {@link reactor.core.scheduler.Scheduler} (eg. a source
+	 * that is initialized outside of the lambda with a dedicated Scheduler) and
+	 * delays introduced within the data path (eg. an interval in a flatMap) are not
+	 * always compatible, as this can perform the clock move BEFORE the interval schedules
+	 * itself, resulting in the interval never playing out.
 	 *
 	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to subscribe
 	 * to and verify. In order for operators to use virtual time, they must be invoked
@@ -245,6 +266,13 @@ public interface StepVerifier {
 	 * Each {@link #verify()} will fully (re)play the scenario.
 	 * The verification will request a specified amount of values according to
 	 * the provided {@link StepVerifierOptions options}.
+	 * <p>
+	 * Note that virtual time, {@link Step#thenAwait(Duration)} sources that are
+	 * subscribed on a different {@link reactor.core.scheduler.Scheduler} (eg. a source
+	 * that is initialized outside of the lambda with a dedicated Scheduler) and
+	 * delays introduced within the data path (eg. an interval in a flatMap) are not
+	 * always compatible, as this can perform the clock move BEFORE the interval schedules
+	 * itself, resulting in the interval never playing out.
 	 *
 	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to subscribe
 	 * to and verify. In order for operators to use virtual time, they must be invoked
