@@ -443,10 +443,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		boolean isRunning() {
-			return running.get() && (processor.terminated == 0 || processor.error == null &&
-					processor.ringBuffer.getAsLong() > sequence.getAsLong());
+			return running.get() && (processor.terminated == 0 ||
+					(processor.terminated != FORCED_SHUTDOWN &&
+							processor.error == null &&
+							processor.ringBuffer.getAsLong() > sequence.getAsLong())
+			);
 		}
-
 
 		/**
 		 * It is ok to have another thread rerun this method after a halt().
@@ -474,13 +476,18 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					if(!running.get()){
 						return;
 					}
-					if(processor.terminated == 1 && processor.ringBuffer.getAsLong() == -1L) {
-						if (processor.error != null) {
-							subscriber.onError(processor.error);
+					if(processor.terminated == SHUTDOWN) {
+						if (processor.ringBuffer.getAsLong() == -1L) {
+							if (processor.error != null) {
+								subscriber.onError(processor.error);
+								return;
+							}
+							subscriber.onComplete();
 							return;
 						}
-						subscriber.onComplete();
-						return;
+					}
+					else if (processor.terminated == FORCED_SHUTDOWN) {
+							return;
 					}
 				}
 
@@ -536,6 +543,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 					}
 					catch (InterruptedException | RuntimeException ce) {
+						if (ce instanceof InterruptedException) {
+							Thread.currentThread().interrupt();
+						}
 						if (Exceptions.isCancel(ce)){
 							reschedule(event);
 							break;
@@ -548,7 +558,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						if (!running.get()) {
 							break;
 						}
-						if(processor.terminated == 1) {
+						if(processor.terminated == SHUTDOWN) {
 							if (processor.error != null) {
 								processedSequence = true;
 								subscriber.onError(processor.error);
@@ -559,6 +569,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								subscriber.onComplete();
 								break;
 							}
+						}
+						else if (processor.terminated == FORCED_SHUTDOWN) {
+								break;
 						}
 						//processedSequence = true;
 						//continue event-loop
@@ -639,6 +652,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				}
 				catch (InterruptedException e) {
 					running.set(false);
+					Thread.currentThread().interrupt();
 					return true;
 				}
 				finally {
