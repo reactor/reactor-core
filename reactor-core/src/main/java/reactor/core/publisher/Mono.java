@@ -60,32 +60,39 @@ import reactor.util.function.Tuple6;
 import reactor.util.function.Tuples;
 
 /**
- * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
- * with an error.
+ * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by
+ * emitting an element, or with an error.
  *
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mono.png" alt="">
+ * The recommended way to learn about the {@link Mono} API and discover new operators is
+ * through the reference documentation, rather than through this javadoc (as opposed to
+ * learning more about individual operators). See the <a href="http://projectreactor.io/docs/core/release/reference/docs/index.html#which-operator">
+ * "which operator do I need?" appendix</a>.
+ *
+ * <p><img width="640"
+ * src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mono.png"
+ * alt="">
+ *
  * <p>
  *
  * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
  * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a
- * {@link Mono}, while there is a {@link Mono#flatMapMany flatMapMany} alias with possibly more than 1 emission.
+ * {@link Mono}, while there is a {@link Mono#flatMapMany flatMapMany} alias with possibly more than
+ * 1 emission.
  *
  * <p>{@code Mono<Void>} should be used for {@link Publisher} that just completes without any value.
  *
- * <p>It is intended to be used in implementations and return types, input parameters should keep using raw {@link
- * Publisher} as much as possible.
+ * <p>It is intended to be used in implementations and return types, input parameters should keep
+ * using raw {@link Publisher} as much as possible.
  *
  * <p>Note that using state in the {@code java.util.function} / lambdas used within Mono operators
  * should be avoided, as these may be shared between several {@link Subscriber Subscribers}.
  *
  * @param <T> the type of the single value of this class
- * 
  * @author Sebastien Deleuze
  * @author Stephane Maldini
  * @author David Karnok
  * @author Simon Baslé
- *
  * @see Flux
  */
 public abstract class Mono<T> implements Publisher<T> {
