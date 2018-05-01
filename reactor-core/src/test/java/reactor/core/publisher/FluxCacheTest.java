@@ -24,6 +24,8 @@ import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class FluxCacheTest {
 
 	@Test
@@ -141,6 +143,70 @@ public class FluxCacheTest {
 		finally {
 			VirtualTimeScheduler.reset();
 		}
+	}
+
+	@Test
+	public void cacheContextHistory() {
+		AtomicInteger contextFillCount = new AtomicInteger();
+		Flux<String> cached = Flux.just(1, 2)
+		                          .flatMap(i -> Mono.subscriberContext()
+		                                            .map(ctx -> ctx.getOrDefault("a", "BAD"))
+		                          )
+		                          .cache(1)
+		                          .subscriberContext(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
+
+		//at first pass, the context is captured
+		String cacheMiss = cached.blockLast();
+		assertThat(cacheMiss).as("cacheMiss").isEqualTo("GOOD1");
+		assertThat(contextFillCount).as("cacheMiss").hasValue(1);
+
+		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since first context is cached
+		String cacheHit = cached.blockLast();
+		assertThat(cacheHit).as("cacheHit").isEqualTo("GOOD1"); //value from the cache
+		assertThat(contextFillCount).as("cacheHit").hasValue(2); //function was still invoked
+
+		//at third subscribe, function is called for the 3rd time, but the context is still cached
+		String cacheHit2 = cached.blockLast();
+		assertThat(cacheHit2).as("cacheHit2").isEqualTo("GOOD1");
+		assertThat(contextFillCount).as("cacheHit2").hasValue(3);
+
+		//at fourth subscribe, function is called for the 4th time, but the context is still cached
+		String cacheHit3 = cached.blockLast();
+		assertThat(cacheHit3).as("cacheHit3").isEqualTo("GOOD1");
+		assertThat(contextFillCount).as("cacheHit3").hasValue(4);
+	}
+
+	@Test
+	public void cacheContextTime() throws InterruptedException {
+		AtomicInteger contextFillCount = new AtomicInteger();
+		Flux<String> cached = Flux.just(1)
+		                          .flatMap(i -> Mono.subscriberContext()
+		                                            .map(ctx -> ctx.getOrDefault("a", "BAD"))
+		                          )
+		                          .cache(Duration.ofMillis(500))
+		                          .subscriberContext(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
+
+		//at first pass, the context is captured
+		String cacheMiss = cached.blockLast();
+		assertThat(cacheMiss).as("cacheMiss").isEqualTo("GOOD1");
+		assertThat(contextFillCount).as("cacheMiss").hasValue(1);
+
+		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since Mono.subscriberContext() result is cached
+		String cacheHit = cached.blockLast();
+		assertThat(cacheHit).as("cacheHit").isEqualTo("GOOD1"); //value from the cache
+		assertThat(contextFillCount).as("cacheHit").hasValue(2); //function was still invoked
+
+		Thread.sleep(500);
+
+		//at third subscribe, after the expiration delay, function is called for the 3rd time, but this time the resulting context is cached
+		String cacheExpired = cached.blockLast();
+		assertThat(cacheExpired).as("cacheExpired").isEqualTo("GOOD3");
+		assertThat(contextFillCount).as("cacheExpired").hasValue(3);
+
+		//at fourth subscribe, function is called but ignored, the cached context is visible
+		String cachePostExpired = cached.blockLast();
+		assertThat(cachePostExpired).as("cachePostExpired").isEqualTo("GOOD3");
+		assertThat(contextFillCount).as("cachePostExpired").hasValue(4);
 	}
 
 }

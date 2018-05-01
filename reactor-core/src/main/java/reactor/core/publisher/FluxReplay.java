@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,11 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * @param <T>
- * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ * @see <a href="https://giReplaySubscriptionthub.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fuseable {
 
@@ -52,6 +53,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 	interface ReplaySubscription<T> extends QueueSubscription<T>, InnerProducer<T> {
 
+		@Override
 		CoreSubscriber<? super T> actual();
 
 		boolean enter();
@@ -1054,6 +1056,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		ReplayInner<T> inner = new ReplayInner<>(actual);
+		actual.onSubscribe(inner);
+
 		for (; ; ) {
 			ReplaySubscriber<T> c = connection;
 			if (scheduler != null && c != null && c.buffer.isExpired()) {
@@ -1062,6 +1066,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 					continue;
 				}
 				c = u;
+				c.add(inner);
 				source.subscribe(u);
 			}
 			else if (c == null) {
@@ -1071,11 +1076,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				}
 
 				c = u;
+				c.add(inner);
 			}
-
-			c.add(inner);
-
-			actual.onSubscribe(inner);
 
 			if (inner.isCancelled()) {
 				c.remove(inner);
@@ -1289,6 +1291,11 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		boolean tryConnect() {
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
+		}
+
+		@Override
+		public Context currentContext() {
+			return Operators.multiSubscribersContext(subscribers);
 		}
 
 		@Override

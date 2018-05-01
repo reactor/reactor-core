@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.EMPTY;
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
@@ -417,6 +418,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			subscription = s;
 			s.request(Long.MAX_VALUE);
 		}
+	}
+
+	@Override
+	public Context currentContext() {
+		return Operators.multiSubscribersContext(subscribers);
 	}
 
 	@Override
