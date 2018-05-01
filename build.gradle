@@ -51,6 +51,9 @@ ext {
 	}
   }
 
+  // Metrics
+  micrometerVersion = 'latest.release' //TODO specify a version of micrometer?
+
   // Logging
   slf4jVersion = '1.7.12'
   logbackVersion = '1.1.2'
@@ -249,6 +252,9 @@ project('reactor-core') {
 	//Optional Logging Operator
 	optional "org.slf4j:slf4j-api:$slf4jVersion"
 
+	//Optional Metrics
+	optional "io.micrometer:micrometer-core:$micrometerVersion"
+
 	optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
 
 	//Optional JDK 9 Converter
@@ -257,6 +263,7 @@ project('reactor-core') {
 	testCompile 'junit:junit:4.12'
 
 	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
 	// Testing
 	testCompile(project(":reactor-test")) {
 	  exclude module: 'reactor-core'

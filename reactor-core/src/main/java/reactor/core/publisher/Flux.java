@@ -5354,6 +5354,10 @@ public abstract class Flux<T> implements Publisher<T> {
 		return merge(this, other);
 	}
 
+	public final Flux<T> metrics() {
+		return onAssembly(new FluxMetrics<>(this));
+	}
+
 	/**
 	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
 	 * as long as this is the first reachable {@link Scannable#parents()}.
