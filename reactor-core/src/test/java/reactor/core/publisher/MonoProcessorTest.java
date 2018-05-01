@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +47,7 @@ public class MonoProcessorTest {
 		WeakReference<CompletableFuture<Date>> refFuture = new WeakReference<>(future);
 
 		Mono<Date> source = Mono.fromFuture(future);
-		Mono<String> data = source.map(Date::toString).cache();
+		Mono<String> data = source.map(Date::toString).log().cache().log();
 
 		future.complete(date);
 		assertThat(data.block()).isEqualTo(date.toString());
@@ -545,9 +546,6 @@ public class MonoProcessorTest {
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
-
-		test.getOrStart();
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNotNull();
 	}
 
 	@Test
@@ -574,10 +572,10 @@ public class MonoProcessorTest {
 
 	@Test
 	public void monoToProcessorConnects() {
-		MonoProcessor<String> connectedProcessor = Mono.just("foo")
-		                                          .toProcessor();
+		TestPublisher<String> tp = TestPublisher.create();
+		MonoProcessor<String> connectedProcessor = tp.mono().toProcessor();
 
-		assertThat(connectedProcessor.connected).isEqualTo(1);
+		assertThat(connectedProcessor.subscription).isNotNull();
 	}
 
 	@Test
