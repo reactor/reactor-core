@@ -3684,9 +3684,8 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Wrap this {@link Mono} into a {@link MonoProcessor} (turning it hot and allowing to block,
-	 * cancel, as well as many other operations). Note that the {@link MonoProcessor} is
-	 * {@link MonoProcessor#connect() connected to} (which is equivalent to calling subscribe
-	 * on it).
+	 * cancel, as well as many other operations). Note that the {@link MonoProcessor}
+	 * is subscribed to its parent source if any.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/unbounded1.png" alt="">
@@ -3698,11 +3697,12 @@ public abstract class Mono<T> implements Publisher<T> {
 		MonoProcessor<T> result;
 		if (this instanceof MonoProcessor) {
 			result = (MonoProcessor<T>)this;
+			result.connect();
 		}
 		else {
 			result = new MonoProcessor<>(this);
+			subscribe(result);
 		}
-		result.connect();
 		return result;
 	}
 
