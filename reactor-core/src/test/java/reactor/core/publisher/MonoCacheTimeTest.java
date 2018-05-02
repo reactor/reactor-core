@@ -28,6 +28,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.MonoOperatorTest;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
@@ -612,10 +613,11 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	}
 
 	@Test
-	public void contextFromFirstSubscriberCached() throws InterruptedException {
+	public void contextFromFirstSubscriberCached() {
 		AtomicInteger contextFillCount = new AtomicInteger();
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		Mono<Context> cached = Mono.subscriberContext()
-		                           .cache(Duration.ofMillis(500))
+		                           .as(m -> new MonoCacheTime<>(m, Duration.ofMillis(500), vts))
 		                           .subscriberContext(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
 
 		//at first pass, the context is captured
@@ -628,7 +630,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		assertThat(cacheHit).as("cacheHit").isEqualTo("GOOD1"); //value from the cache
 		assertThat(contextFillCount).as("cacheHit").hasValue(2); //function was still invoked
 
-		Thread.sleep(500);
+		vts.advanceTimeBy(Duration.ofMillis(501));
 
 		//at third subscribe, after the expiration delay, function is called for the 3rd time, but this time the resulting context is cached
 		String cacheExpired = cached.map(x -> x.getOrDefault("a", "BAD")).block();
@@ -639,6 +641,8 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		String cachePostExpired = cached.map(x -> x.getOrDefault("a", "BAD")).block();
 		assertThat(cachePostExpired).as("cachePostExpired").isEqualTo("GOOD3");
 		assertThat(contextFillCount).as("cachePostExpired").hasValue(4);
+
+		vts.dispose();
 	}
 
 }
