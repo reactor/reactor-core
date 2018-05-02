@@ -27,6 +27,10 @@ import org.junit.Test;
  */
 public class FluxMetricsTest {
 
+	//TODO add proper tests for metrics
+
+	//TODO also add a test that the fallback is used when no Micrometer in classpath
+
 	@Test
 	public void pickupMetrics() {
 		Metrics.addRegistry(new SimpleMeterRegistry());
