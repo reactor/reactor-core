@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
@@ -147,10 +146,9 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 		final Counter                   malformedSourceCounter;
 		final Counter                   subscribedCounter;
-		
-		final List<Tag> commonTags;
+		final Counter                   requestedCounter;
 
-		final AtomicLong requested;
+		final List<Tag> commonTags;
 
 		Timer.Sample subscribeToTerminateSample;
 		Timer.Sample onNextIntervalSample;
@@ -201,10 +199,25 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 					.description("Measures delays between onNext signals (or between onSubscribe and first onNext)")
 					.register(registry);
 
-			//find the global meters
-			this.subscribedCounter = registry.counter(METER_SUBSCRIBED, this.commonTags);
+			this.subscribedCounter = Counter
+					.builder(METER_SUBSCRIBED)
+					.tags(commonTags)
+					.description("Counts how many Reactor sequences have been subscribed to")
+					.register(registry);
+
 			this.malformedSourceCounter = registry.counter(METER_MALFORMED, this.commonTags);
-			this.requested = registry.gauge(METER_BACKPRESSURE, this.commonTags, new AtomicLong());
+
+			if (!REACTOR_DEFAULT_NAME.equals(sequenceName)) {
+				this.requestedCounter = Counter
+						.builder(METER_REQUESTED)
+						.tags(commonTags)
+						.description("Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount")
+						.baseUnit("request amount")
+						.register(registry);
+			}
+			else {
+				requestedCounter = null;
+			}
 		}
 
 		@Override
@@ -219,7 +232,6 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			requested.decrementAndGet();
 
 			//record the delay since previous onNext/onSubscribe. This also records the count.
 			this.onNextIntervalSample.stop(onNextIntervalTimer);
@@ -259,7 +271,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.subscribedCounter.increment(); //TODO decrement somehow on termination?
+				this.subscribedCounter.increment();
 				this.subscribeToTerminateSample = Timer.start(registry);
 				this.onNextIntervalSample = Timer.start(registry);
 
@@ -272,17 +284,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		@Override
 		public void request(long l) {
 			if (Operators.validate(l)) {
-				//reproduces the Operators.addCap(AtomicLongFieldUpdater) on AtomicLong
-				long r, u;
-				for (;;) {
-					r = requested.get();
-					if (r == Long.MAX_VALUE) {
-						break;
-					}
-					u = Operators.addCap(r, l);
-					if (requested.compareAndSet(r, u)) {
-						break;
-					}
+				if (requestedCounter != null) {
+					requestedCounter.increment(l);
 				}
 				s.request(l);
 			}
@@ -304,7 +307,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	static final String METER_SUBSCRIBED             = "reactor.subscribed";
 	static final String METER_SUBSCRIBE_TO_TERMINATE = "reactor.subscribe.to.terminate";
 	static final String METER_ON_NEXT_DELAY          = "reactor.onNext.delay";
-	static final String METER_BACKPRESSURE           = "reactor.backpressure";
+	static final String METER_REQUESTED              = "reactor.requested";
 
 	static final String TAG_TERMINATION_TYPE = "reactor.termination.type";
 	static final String TAG_SEQUENCE_NAME    = "reactor.sequence.name";
