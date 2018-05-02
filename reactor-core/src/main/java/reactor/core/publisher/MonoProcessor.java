@@ -401,16 +401,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public Context currentContext() {
-		//FIXME when #1114 merged
-		NextInner<O>[] inners = this.subscribers;
-		if (inners.length > 0) {
-			return inners[0].actual.currentContext();
-		}
-		return Context.empty();
-	}
-
-	@Override
 	public Stream<? extends Scannable> inners() {
 		return Stream.of(subscribers);
 	}
@@ -478,6 +468,11 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (parent != null && SUBSCRIBERS.compareAndSet(this, EMPTY_WITH_SOURCE, EMPTY)) {
 			parent.subscribe(this);
 		}
+	}
+
+	@Override
+	public Context currentContext() {
+		return Operators.multiSubscribersContext(subscribers);
 	}
 
 	@Override

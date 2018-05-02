@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * @param <T>
@@ -52,6 +53,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 	interface ReplaySubscription<T> extends QueueSubscription<T>, InnerProducer<T> {
 
+		@Override
 		CoreSubscriber<? super T> actual();
 
 		boolean enter();
@@ -1053,36 +1055,35 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		ReplayInner<T> inner = new ReplayInner<>(actual);
+
+		boolean expired;
 		for (; ; ) {
 			ReplaySubscriber<T> c = connection;
-			if (scheduler != null && c != null && c.buffer.isExpired()) {
+			expired = scheduler != null && c != null && c.buffer.isExpired();
+			if (c == null || expired) {
 				ReplaySubscriber<T> u = newState();
 				if (!CONNECTION.compareAndSet(this, c, u)) {
 					continue;
 				}
-				c = u;
-				source.subscribe(u);
-			}
-			else if (c == null) {
-				ReplaySubscriber<T> u = newState();
-				if (!CONNECTION.compareAndSet(this, null, u)) {
-					continue;
-				}
 
 				c = u;
 			}
 
-			c.add(inner);
-
+			ReplayInner<T> inner = new ReplayInner<>(actual);
 			actual.onSubscribe(inner);
+			c.add(inner);
 
 			if (inner.isCancelled()) {
 				c.remove(inner);
+				return;
 			}
 
 			inner.parent = c;
 			c.buffer.replay(inner);
+
+			if (expired) {
+				source.subscribe(c);
+			}
 
 			break;
 		}
@@ -1289,6 +1290,11 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		boolean tryConnect() {
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
+		}
+
+		@Override
+		public Context currentContext() {
+			return Operators.multiSubscribersContext(subscribers);
 		}
 
 		@Override

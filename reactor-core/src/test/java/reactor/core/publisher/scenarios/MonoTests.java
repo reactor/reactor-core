@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -141,7 +143,7 @@ public class MonoTests {
 	}
 
 	@Test
-	public void promiseOnAfter() throws Exception {
+	public void promiseOnAfter() {
 		String h = Mono.fromCallable(() -> {
 			Thread.sleep(400);
 			return "hello";
@@ -153,7 +155,7 @@ public class MonoTests {
 	}
 
 	@Test
-	public void promiseDelays() throws Exception {
+	public void promiseDelays() {
 		Tuple2<Long, String> h = Mono.delay(Duration.ofMillis(3000))
 		                             .log("time1")
 		                             .map(d -> "Spring wins")
@@ -201,5 +203,34 @@ public class MonoTests {
 				Mono.just("foo").zipWhen(t -> Mono.empty()))
 		            .expectComplete()
 		            .verify();
+	}
+
+	@Test
+	public void monoCacheContextHistory() {
+		AtomicInteger contextFillCount = new AtomicInteger();
+		Mono<String> cached = Mono.subscriberContext()
+		                          .map(ctx -> ctx.getOrDefault("a", "BAD"))
+		                          .cache()
+		                          .subscriberContext(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
+
+		//at first pass, the context is captured
+		String cacheMiss = cached.block();
+		Assertions.assertThat(cacheMiss).as("cacheMiss").isEqualTo("GOOD1");
+		Assertions.assertThat(contextFillCount).as("cacheMiss").hasValue(1);
+
+		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since first context is cached
+		String cacheHit = cached.block();
+		Assertions.assertThat(cacheHit).as("cacheHit").isEqualTo("GOOD1"); //value from the cache
+		Assertions.assertThat(contextFillCount).as("cacheHit").hasValue(2); //function was still invoked
+
+		//at third subscribe, function is called for the 3rd time, but the context is still cached
+		String cacheHit2 = cached.block();
+		Assertions.assertThat(cacheHit2).as("cacheHit2").isEqualTo("GOOD1");
+		Assertions.assertThat(contextFillCount).as("cacheHit2").hasValue(3);
+
+		//at fourth subscribe, function is called for the 4th time, but the context is still cached
+		String cacheHit3 = cached.block();
+		Assertions.assertThat(cacheHit3).as("cacheHit3").isEqualTo("GOOD1");
+		Assertions.assertThat(contextFillCount).as("cacheHit3").hasValue(4);
 	}
 }
