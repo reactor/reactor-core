@@ -202,6 +202,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			this.subscribedCounter = Counter
 					.builder(METER_SUBSCRIBED)
 					.tags(commonTags)
+					.baseUnit("subscribers")
 					.description("Counts how many Reactor sequences have been subscribed to")
 					.register(registry);
 
@@ -212,7 +213,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 						.builder(METER_REQUESTED)
 						.tags(commonTags)
 						.description("Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount")
-						.baseUnit("request amount")
+						.baseUnit("requested amount")
 						.register(registry);
 			}
 			else {
