@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,9 +59,11 @@ extends Mono<T>
             try {
                 if (e != null) {
                     actual.onError(e);
-                } else if (v != null) {
+                }
+                else if (v != null) {
                     sds.complete(v);
-                } else {
+                }
+                else {
                     actual.onComplete();
                 }
             }
