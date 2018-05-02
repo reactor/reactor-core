@@ -93,40 +93,48 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
+		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
+		actual.onSubscribe(inner);
 		for(;;){
 			Signal<T> state = this.state;
-			if (state == EMPTY) {
-				//init or expired
-				CoordinatorSubscriber<T> newState = new CoordinatorSubscriber<>(this);
-				if (STATE.compareAndSet(this, EMPTY, newState)) {
-					CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual, newState);
-					if (newState.add(inner)) {
-						actual.onSubscribe(inner);
-						source.subscribe(newState);
-						break;
+			if (state == EMPTY || state instanceof CoordinatorSubscriber) {
+				boolean subscribe = false;
+				CoordinatorSubscriber<T> coordinator;
+				if (state == EMPTY) {
+					coordinator = new CoordinatorSubscriber<>(this);
+					if (!STATE.compareAndSet(this, EMPTY, coordinator)) {
+						continue;
 					}
+					subscribe = true;
 				}
-			}
-			else if (state instanceof CoordinatorSubscriber) {
-				//subscribed to source once, but not yet valued / cached
-				CoordinatorSubscriber<T> coordinator = (CoordinatorSubscriber<T>) state;
+				else {
+					coordinator = (CoordinatorSubscriber<T>) state;
+				}
 
-				CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual, coordinator);
 				if (coordinator.add(inner)) {
-					actual.onSubscribe(inner);
+					if (inner.isCancelled()) {
+						coordinator.remove(inner);
+					}
+					else {
+						inner.coordinator = coordinator;
+					}
+
+					if (subscribe) {
+						source.subscribe(coordinator);
+					}
 					break;
 				}
 			}
 			else {
 				//state is an actual signal, cached
 				if (state.isOnNext()) {
-					actual.onSubscribe(new Operators.ScalarSubscription<>(actual, state.get()));
+					inner.complete(state.get());
 				}
 				else if (state.isOnComplete()) {
-					Operators.complete(actual);
+					inner.onComplete();
 				}
 				else {
-					Operators.error(actual, state.getThrowable());
+					inner.onError(state.getThrowable());
 				}
 				break;
 			}
@@ -345,17 +353,19 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 	static final class CacheMonoSubscriber<T> extends Operators.MonoSubscriber<T, T> {
 
-		final CoordinatorSubscriber<T> coordinator;
+		CoordinatorSubscriber<T> coordinator;
 
-		CacheMonoSubscriber(CoreSubscriber<? super T> actual, CoordinatorSubscriber<T> coordinator) {
+		CacheMonoSubscriber(CoreSubscriber<? super T> actual) {
 			super(actual);
-			this.coordinator = coordinator;
 		}
 
 		@Override
 		public void cancel() {
 			super.cancel();
-			coordinator.remove(this);
+			CoordinatorSubscriber<T> coordinator = this.coordinator;
+			if (coordinator != null) {
+				coordinator.remove(this);
+			}
 		}
 	}
 
