@@ -149,17 +149,19 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		final Counter                   subscribedCounter;
 		
 		final List<Tag> commonTags;
-		final String[]  tagsForComplete;
-		final String[]  tagsForError;
-		final String[]  tagsForCancel;
 
 		final AtomicLong requested;
 
-		Timer.Sample subscribeToTerminateTimer;
-		Timer.Sample onNextIntervalTimer;
+		Timer.Sample subscribeToTerminateSample;
+		Timer.Sample onNextIntervalSample;
 
 		boolean done;
 		Subscription s;
+
+		final Timer onNextIntervalTimer;
+		final Timer subscribeToCompleteTimer;
+		final Timer subscribeToErrorTimer;
+		final Timer subscribeToCancelTimer;
 
 		MicrometerMetricsSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry,
@@ -173,31 +175,36 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			commonTags.add(Tag.of(TAG_SEQUENCE_NAME, sequenceName));
 			commonTags.add(Tag.of(TAG_SEQUENCE_TYPE, monoSource ? TAGVALUE_MONO : TAGVALUE_FLUX));
 			commonTags.addAll(sequenceTags);
-			
-			//prepare copies for TERMINATION TYPE
-			int tagSize = commonTags.size();
-			this.tagsForComplete = new String[(tagSize + 1) * 2];
-			this.tagsForError = new String[(tagSize + 1) * 2];
-			this.tagsForCancel = new String[(tagSize + 1) * 2];
-			
-			fillTerminationTags(tagsForComplete, commonTags, tagSize, TAGVALUE_ON_COMPLETE);
-			fillTerminationTags(tagsForError, commonTags, tagSize, TAGVALUE_ON_ERROR);
-			fillTerminationTags(tagsForCancel, commonTags, tagSize, TAGVALUE_CANCEL);
-			
+
+			this.subscribeToCompleteTimer = Timer
+					.builder(METER_SUBSCRIBE_TO_TERMINATE)
+					.tags(commonTags)
+					.tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_COMPLETE)
+					.description("Times the duration elapsed between a subscription and the onComplete termination of the sequence")
+					.register(registry);
+			this.subscribeToErrorTimer = Timer
+					.builder(METER_SUBSCRIBE_TO_TERMINATE)
+					.tags(commonTags)
+					.tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_ERROR)
+					.description("Times the duration elapsed between a subscription and the onError termination of the sequence")
+					.register(registry);
+			this.subscribeToCancelTimer = Timer
+					.builder(METER_SUBSCRIBE_TO_TERMINATE)
+					.tags(commonTags)
+					.tag(TAG_TERMINATION_TYPE, TAGVALUE_CANCEL)
+					.description("Times the duration elapsed between a subscription and the cancellation of the sequence")
+					.register(registry);
+
+			this.onNextIntervalTimer = Timer
+					.builder(METER_ON_NEXT_DELAY)
+					.tags(commonTags)
+					.description("Measures delays between onNext signals (or between onSubscribe and first onNext)")
+					.register(registry);
+
 			//find the global meters
 			this.subscribedCounter = registry.counter(METER_SUBSCRIBED, this.commonTags);
 			this.malformedSourceCounter = registry.counter(METER_MALFORMED, this.commonTags);
 			this.requested = registry.gauge(METER_BACKPRESSURE, this.commonTags, new AtomicLong());
-		}
-
-		private static void fillTerminationTags(String[] target, List<Tag> rootTags, int size, String value) {
-			for (int i = 0; i < size; i++) {
-				Tag tag = rootTags.get(i);
-				target[i * 2] = tag.getKey();
-				target[i * 2 + 1] = tag.getValue();
-			}
-			target[size * 2] = TAG_TERMINATION_TYPE;
-			target[size * 2 + 1] = value;
 		}
 
 		@Override
@@ -215,9 +222,9 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			requested.decrementAndGet();
 
 			//record the delay since previous onNext/onSubscribe. This also records the count.
-			this.onNextIntervalTimer.stop(registry.timer(METER_ON_NEXT_DELAY, this.commonTags));
+			this.onNextIntervalSample.stop(onNextIntervalTimer);
 			//reset the timer sample
-			this.onNextIntervalTimer = Timer.start(registry);
+			this.onNextIntervalSample = Timer.start(registry);
 
 			actual.onNext(t);
 		}
@@ -230,10 +237,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
-			this.onNextIntervalTimer.stop(registry.timer(METER_ON_NEXT_DELAY, this.commonTags));
-
-			this.subscribeToTerminateTimer.stop(registry.timer(METER_SUBSCRIBE_TO_TERMINATE,
-					this.tagsForError));
+			this.onNextIntervalSample.stop(this.onNextIntervalTimer);
+			this.subscribeToTerminateSample.stop(subscribeToErrorTimer);
 
 			actual.onError(e);
 		}
@@ -245,10 +250,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
-			this.onNextIntervalTimer.stop(registry.timer(METER_ON_NEXT_DELAY, this.commonTags));
-
-			this.subscribeToTerminateTimer.stop(registry.timer(METER_SUBSCRIBE_TO_TERMINATE,
-					this.tagsForComplete));
+			this.onNextIntervalSample.stop(this.onNextIntervalTimer);
+			this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
 
 			actual.onComplete();
 		}
@@ -257,8 +260,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.subscribedCounter.increment(); //TODO decrement somehow on termination?
-				this.subscribeToTerminateTimer = Timer.start(registry);
-				this.onNextIntervalTimer = Timer.start(registry);
+				this.subscribeToTerminateSample = Timer.start(registry);
+				this.onNextIntervalSample = Timer.start(registry);
 
 				this.s = s;
 				actual.onSubscribe(this);
@@ -287,8 +290,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void cancel() {
-			this.subscribeToTerminateTimer.stop(registry.timer(METER_SUBSCRIBE_TO_TERMINATE,
-					this.tagsForCancel));
+			this.subscribeToTerminateSample.stop(subscribeToCancelTimer);
 			
 			s.cancel();
 		}
