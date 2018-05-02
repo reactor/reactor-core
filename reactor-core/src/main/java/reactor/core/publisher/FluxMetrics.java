@@ -298,16 +298,19 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	static final String REACTOR_DEFAULT_NAME = "reactor";
 
-	static final String METER_MALFORMED              = "reactor.malformedSource";
+	//Note: meters and tag names are normalized by micrometer on the basis that the word
+	// separator is the dot, not camelCase...
+	static final String METER_MALFORMED              = "reactor.malformed.source";
 	static final String METER_SUBSCRIBED             = "reactor.subscribed";
-	static final String METER_SUBSCRIBE_TO_TERMINATE = "reactor.subscribeToTerminate";
-	static final String METER_ON_NEXT_DELAY          = "reactor.onNextDelay";
+	static final String METER_SUBSCRIBE_TO_TERMINATE = "reactor.subscribe.to.terminate";
+	static final String METER_ON_NEXT_DELAY          = "reactor.onNext.delay";
 	static final String METER_BACKPRESSURE           = "reactor.backpressure";
 
-	static final String TAG_TERMINATION_TYPE = "reactor.terminationType";
-	static final String TAG_SEQUENCE_NAME    = "reactor.sequenceName";
-	static final String TAG_SEQUENCE_TYPE    = "reactor.sequenceType";
+	static final String TAG_TERMINATION_TYPE = "reactor.termination.type";
+	static final String TAG_SEQUENCE_NAME    = "reactor.sequence.name";
+	static final String TAG_SEQUENCE_TYPE    = "reactor.sequence.type";
 
+	//... tag values are free-for-all
 	static final String TAGVALUE_ON_ERROR    = "onError";
 	static final String TAGVALUE_ON_COMPLETE = "onComplete";
 	static final String TAGVALUE_CANCEL      = "cancel";
