@@ -2284,7 +2284,78 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Mono<T> hide() {
 	    return onAssembly(new MonoHide<>(this));
 	}
-	
+
+	private static final Predicate<Object> BOOLEAN_OR_THERE_PREDICATE = (Object o) -> {
+		if (o instanceof Boolean) return (Boolean) o;
+		return true;
+	};
+
+	public final <R> Mono<R> ifThen(Mono<R> thenMono) {
+		return ifThen(thenMono, null);
+	}
+
+	public final <R> Mono<R> ifThen(Mono<R> thenMono, @Nullable Mono<R> elseMono) {
+		return ifThen(BOOLEAN_OR_THERE_PREDICATE, thenMono, elseMono);
+	}
+
+	public final <R> Mono<R> ifThen(Predicate<? super T> ifPredicate,
+			Mono<R> thenMono) {
+		return ifThen(ifPredicate, thenMono, null);
+	}
+
+	public final <R> Mono<R> ifThen(Predicate<? super T> ifPredicate,
+			Mono<R> thenMono, @Nullable Mono<R> elseMono) {
+		Mono<R> valuePath = flatMap(v -> {
+			if (ifPredicate.test(v)) {
+				return thenMono;
+			}
+			else if (elseMono != null) {
+				return elseMono;
+			}
+			else {
+				return Mono.empty();
+			}
+		});
+
+		if (elseMono != null) {
+			return valuePath.switchIfEmpty(elseMono);
+		}
+		return valuePath;
+	}
+
+	public final <R> Flux<R> ifThenMany(Publisher<R> thenPublisher) {
+		return ifThenMany(thenPublisher, null);
+	}
+
+	public final <R> Flux<R> ifThenMany(Publisher<R> thenPublisher, @Nullable Publisher<R> elsePublisher) {
+		return ifThenMany(BOOLEAN_OR_THERE_PREDICATE, thenPublisher, elsePublisher);
+	}
+
+	public final <R> Flux<R> ifThenMany(Predicate<? super T> ifPredicate,
+			Publisher<R> thenPublisher) {
+		return ifThenMany(ifPredicate, thenPublisher, null);
+	}
+
+	public final <R> Flux<R> ifThenMany(Predicate<? super T> ifPredicate,
+			Publisher<R> thenPublisher, @Nullable Publisher<R> elsePublisher) {
+		Flux<R> valuePath = flatMapMany(v -> {
+			if (ifPredicate.test(v)) {
+				return thenPublisher;
+			}
+			else if (elsePublisher != null) {
+				return elsePublisher;
+			}
+			else {
+				return Mono.empty();
+			}
+		});
+
+		if (elsePublisher != null) {
+			return valuePath.switchIfEmpty(elsePublisher);
+		}
+		return valuePath;
+	}
+
 	/**
 	 * Ignores onNext signal (dropping it) and only propagates termination events.
 	 *
