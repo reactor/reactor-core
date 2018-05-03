@@ -17,32 +17,19 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.jetbrains.annotations.TestOnly;
 import org.junit.Test;
-import org.reactivestreams.Subscription;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-
-public class MicrometerMetricsTest {
-
-	@Test
-	public void testUsesMicrometer() {
-		AtomicReference<Subscription> subRef = new AtomicReference<>();
-
-		new FluxMetrics<>(Flux.just("foo"))
-				.doOnSubscribe(subRef::set)
-				.subscribe();
-
-		assertThat(subRef.get()).isInstanceOf(FluxMetrics.MicrometerMetricsSubscriber.class);
-	}
-
+/**
+ * @author Simon Baslé
+ */
+public class FluxMetricsTest {
 
 	//TODO add proper tests for metrics
+
+	//TODO also add a test that the fallback is used when no Micrometer in classpath
 
 	@Test
 	public void pickupMetrics() {

@@ -241,20 +241,6 @@ project('reactor-core') {
 	baseline
   }
 
-  sourceSets {
-	metricsTest {
-		  java.srcDir 'src/metricsTest/java'
-		  resources.srcDir 'src/metricsTest/resources'
-	}
-  }
-
-  idea {
-	module {
-	  testSourceDirs += project.sourceSets.metricsTest.java.srcDirs
-	  testSourceDirs += project.sourceSets.metricsTest.resources.srcDirs
-	}
-  }
-
   dependencies {
 	// Reactive Streams
 	compile "org.reactivestreams:reactive-streams:1.0.2"
@@ -277,6 +263,7 @@ project('reactor-core') {
 	testCompile 'junit:junit:4.12'
 
 	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
 	// Testing
 	testCompile(project(":reactor-test")) {
 	  exclude module: 'reactor-core'
@@ -288,16 +275,6 @@ project('reactor-core') {
 			"org.mockito:mockito-core:$mockitoVersion",
 			"org.openjdk.jol:jol-core:0.9",
 			"pl.pragmatists:JUnitParams:$jUnitParamsVersion"
-
-	//metrics tests inherit test dependencies + add micrometer at runtime
-	metricsTestCompile sourceSets.main.output
-	metricsTestCompile sourceSets.test.output
-	metricsTestCompile configurations.compile
-	metricsTestCompile configurations.testCompile
-	metricsTestRuntime configurations.runtime
-	metricsTestRuntime configurations.testRuntime
-
-	metricsTestRuntime "io.micrometer:micrometer-core:$micrometerVersion"
 
 	if ("$compatibleVersion" != "SKIP") {
 	  baseline("io.projectreactor:reactor-core:$compatibleVersion") {
@@ -406,22 +383,9 @@ project('reactor-core') {
   task testNG(type: Test, group: 'verification') {
 	mustRunAfter testStaticInit
 	useTestNG()
-	include "${project.buildDir}/reactor-core/src/metricsTest/java/**/*Test.*"
+	include '**/*Verification.*'
 	doFirst {
 	  println "Additional tests from `testNG` ($includes)"
-	}
-  }
-
-  task testMetrics(type: Test, group: 'verification') {
-	mustRunAfter tasks.test
-	testClassesDir = sourceSets.metricsTest.output.classesDir
-//	include '**/*MetricsTest.java'
-	classpath = sourceSets.metricsTest.runtimeClasspath
-
-	binResultsDir = file("$buildDir/metrics-test-results/binary/metricsTest")
-
-	doFirst {
-	  println "Additional tests from `testMetrics` ($includes)"
 	}
   }
 
