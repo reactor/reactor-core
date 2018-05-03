@@ -188,7 +188,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
-			this.onNextIntervalSample.stop(this.onNextIntervalTimer);
+//			this.onNextIntervalSample.stop(this.onNextIntervalTimer);
 			this.subscribeToTerminateSample.stop(subscribeToErrorTimer);
 
 			actual.onError(e);
@@ -201,7 +201,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
-			this.onNextIntervalSample.stop(this.onNextIntervalTimer);
+//			this.onNextIntervalSample.stop(this.onNextIntervalTimer);
 			this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
 
 			actual.onComplete();
