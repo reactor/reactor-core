@@ -45,7 +45,13 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		//resolve the tags and names at instantiation
 		Scannable scannable = Scannable.from(flux);
 		if (scannable.isScanAvailable()) {
-			this.name = scannable.name();
+			String nameOrDefault = scannable.name();
+			if (scannable.stepName().equals(nameOrDefault)) {
+				this.name = REACTOR_DEFAULT_NAME;
+			}
+			else {
+				this.name = nameOrDefault;
+			}
 			this.tags = scannable.tags()
 			                     .map(tuple -> Tag.of(tuple.getT1(), tuple.getT2()))
 			                     .collect(Collectors.toList());
