@@ -66,83 +66,15 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		InnerOperator<T,T> metricsOperator;
+		CoreSubscriber<? super T> metricsOperator;
 		try {
 			metricsOperator = new MicrometerMetricsSubscriber<>(actual, Metrics.globalRegistry,
 					this.name, this.tags, false);
 		}
 		catch (Throwable e) {
-			metricsOperator = new SimplisticMetricsSubscriber<>(actual);
+			metricsOperator = actual;
 		}
 		source.subscribe(metricsOperator);
-	}
-
-	static final class SimplisticMetricsSubscriber<T> implements InnerOperator<T,T> {
-
-		final CoreSubscriber<? super T> actual;
-
-		boolean done;
-		Subscription s;
-
-		SimplisticMetricsSubscriber(CoreSubscriber<? super T> actual) {
-			this.actual = actual;
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
-				return;
-			}
-			//TODO
-		}
-
-		@Override
-		public void onError(Throwable e) {
-			if (done) {
-				Operators.onErrorDropped(e, actual.currentContext());
-				return;
-			}
-			done = true;
-			//TODO
-		}
-
-		@Override
-		public void onComplete() {
-			if (done) {
-				return;
-			}
-			done = true;
-			//TODO
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Override
-		public void request(long l) {
-			if (Operators.validate(l)) {
-				s.request(l);
-			}
-
-			//TODO
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-			//TODO
-		}
 	}
 
 	static final class MicrometerMetricsSubscriber<T> implements InnerOperator<T,T> {
