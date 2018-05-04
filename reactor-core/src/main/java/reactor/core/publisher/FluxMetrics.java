@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
@@ -33,7 +34,9 @@ import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
-/** @author Simon Baslé */
+/**
+ * @author Simon Baslé
+ */
 final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxMetrics.class);
@@ -83,9 +86,9 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 		final MeterRegistry             registry;
 
-		final Counter                   malformedSourceCounter;
-		final Counter                   subscribedCounter;
-		final Counter                   requestedCounter;
+		final Counter             malformedSourceCounter;
+		final Counter             subscribedCounter;
+		final DistributionSummary requestedCounter;
 
 		Timer.Sample subscribeToTerminateSample;
 		long lastNextEventNanos = -1L;
@@ -146,7 +149,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			this.malformedSourceCounter = registry.counter(METER_MALFORMED, commonTags);
 
 			if (!REACTOR_DEFAULT_NAME.equals(sequenceName)) {
-				this.requestedCounter = Counter
+				this.requestedCounter = DistributionSummary
 						.builder(METER_REQUESTED)
 						.tags(commonTags)
 						.description("Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount")
@@ -225,7 +228,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		public void request(long l) {
 			if (Operators.validate(l)) {
 				if (requestedCounter != null) {
-					requestedCounter.increment(l);
+					requestedCounter.record(l);
 				}
 				s.request(l);
 			}
