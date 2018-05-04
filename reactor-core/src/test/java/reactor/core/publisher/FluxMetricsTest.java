@@ -126,49 +126,24 @@ public class FluxMetricsTest {
 		assertThat(namedMeter.count()).isZero();
 	}
 
-	@Test //FIXME
+	@Test
 	public void usesTags() {
 		Flux.range(1, 8)
 		    .tag("tag1", "A")
 		    .name("usesTags")
-		    .tag("tag2", "B")
+		    .tag("tag2", "foo")
 		    .metrics()
 		    .blockLast();
 
-		Flux.range(1, 100)
-		    .tag("tag1", "A")
-		    .name("usesTags")
-		    .tag("tag2", "A")
-		    .metrics()
-		    .blockLast();
-
-		Timer meterGlobal = registry
-				.find(FluxMetrics.METER_ON_NEXT_DELAY)
-				.tag(FluxMetrics.TAG_SEQUENCE_NAME, "usesTags")
-				.timer();
-
-		Timer meterTag1 = registry
+		Timer meter = registry
 				.find(FluxMetrics.METER_ON_NEXT_DELAY)
 				.tag(FluxMetrics.TAG_SEQUENCE_NAME, "usesTags")
 				.tag("tag1", "A")
+				.tag("tag2", "foo")
 				.timer();
 
-		Timer meterTag1And2 = registry
-				.find(FluxMetrics.METER_ON_NEXT_DELAY)
-				.tag(FluxMetrics.TAG_SEQUENCE_NAME, "usesTags")
-				.tag("tag1", "A")
-				.tag("tag2", "A")
-				.timer();
-
-		assertThat(meterGlobal).isNotNull();
-		assertThat(meterTag1).isNotNull();
-		assertThat(meterTag1And2).isNotNull();
-
-		assertSoftly(softly -> {
-			softly.assertThat(meterGlobal.count()).as("meterGlobal").isEqualTo(108L);
-			softly.assertThat(meterGlobal.count()).as("meterTag1").isEqualTo(8L);
-			softly.assertThat(meterGlobal.count()).as("meterTag1And2").isEqualTo(100L);
-		});
+		assertThat(meter).isNotNull();
+		assertThat(meter.count()).isEqualTo(8L);
 	}
 
 	@Test
