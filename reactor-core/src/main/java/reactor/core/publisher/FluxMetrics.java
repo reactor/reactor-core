@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
@@ -89,7 +90,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		final List<Tag> commonTags;
 
 		Timer.Sample subscribeToTerminateSample;
-		Timer.Sample onNextIntervalSample;
+		long lastNextEventNanos = -1L;
 
 		boolean done;
 		Subscription s;
@@ -173,9 +174,9 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			}
 
 			//record the delay since previous onNext/onSubscribe. This also records the count.
-			this.onNextIntervalSample.stop(onNextIntervalTimer);
-			//reset the timer sample
-			this.onNextIntervalSample = Timer.start(registry);
+			long last = this.lastNextEventNanos;
+			this.lastNextEventNanos = System.nanoTime();
+			this.onNextIntervalTimer.record(lastNextEventNanos - last, TimeUnit.NANOSECONDS);
 
 			actual.onNext(t);
 		}
@@ -188,7 +189,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
-//			this.onNextIntervalSample.stop(this.onNextIntervalTimer);
+			//we don't record the time between last onNext and onError,
+			// because it would skew the onNext count by one
 			this.subscribeToTerminateSample.stop(subscribeToErrorTimer);
 
 			actual.onError(e);
@@ -201,7 +203,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
-//			this.onNextIntervalSample.stop(this.onNextIntervalTimer);
+			//we don't record the time between last onNext and onComplete,
+			// because it would skew the onNext count by one
 			this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
 
 			actual.onComplete();
@@ -212,7 +215,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			if (Operators.validate(this.s, s)) {
 				this.subscribedCounter.increment();
 				this.subscribeToTerminateSample = Timer.start(registry);
-				this.onNextIntervalSample = Timer.start(registry);
+				this.lastNextEventNanos = System.nanoTime();
 
 				this.s = s;
 				actual.onSubscribe(this);
@@ -232,6 +235,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void cancel() {
+			//we don't record the time between last onNext and cancel,
+			// because it would skew the onNext count by one
 			this.subscribeToTerminateSample.stop(subscribeToCancelTimer);
 			
 			s.cancel();
