@@ -87,8 +87,6 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		final Counter                   subscribedCounter;
 		final Counter                   requestedCounter;
 
-		final List<Tag> commonTags;
-
 		Timer.Sample subscribeToTerminateSample;
 		long lastNextEventNanos = -1L;
 
@@ -108,7 +106,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			this.actual = actual;
 			this.registry = registry;
 
-			this.commonTags = new ArrayList<>();
+			List<Tag> commonTags = new ArrayList<>();
 			commonTags.add(Tag.of(TAG_SEQUENCE_NAME, sequenceName));
 			commonTags.add(Tag.of(TAG_SEQUENCE_TYPE, monoSource ? TAGVALUE_MONO : TAGVALUE_FLUX));
 			commonTags.addAll(sequenceTags);
@@ -145,7 +143,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 					.description("Counts how many Reactor sequences have been subscribed to")
 					.register(registry);
 
-			this.malformedSourceCounter = registry.counter(METER_MALFORMED, this.commonTags);
+			this.malformedSourceCounter = registry.counter(METER_MALFORMED, commonTags);
 
 			if (!REACTOR_DEFAULT_NAME.equals(sequenceName)) {
 				this.requestedCounter = Counter
