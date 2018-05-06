@@ -17,13 +17,24 @@
 package reactor.core.publisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.extractProperty;
+import static org.assertj.core.api.Fail.fail;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 public class MonoPublishMulticastTest {
 
@@ -86,6 +97,34 @@ public class MonoPublishMulticastTest {
 		Assert.assertFalse("Still subscribed?", sp.isCancelled());
 	}
 
+	@Test
+	public void nullFunction() {
+		assertThatNullPointerException()
+				.isThrownBy(() -> Mono.just("Foo")
+				                      .publish(null))
+				.withMessage("transform");
+	}
+
+	@Test
+	public void npeFunction() {
+		StepVerifier.create(Mono.just("Foo")
+		                        .publish(m -> null))
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(NullPointerException.class)
+				            .hasMessage("The transform returned a null Mono"))
+		            .verify();
+	}
+
+	@Test
+	public void failingFunction() {
+		RuntimeException expected = new IllegalStateException("boom");
+		StepVerifier.create(Mono.just("Foo")
+		                        .publish(m -> {
+			                        throw expected;
+		                        }))
+		            .expectErrorSatisfies(e -> assertThat(e).isSameAs(expected))
+		            .verify();
+	}
 
     @Test
     public void syncCancelBeforeComplete() {
@@ -96,5 +135,49 @@ public class MonoPublishMulticastTest {
     public void normalCancelBeforeComplete() {
         assertThat(Mono.just(Mono.just(1).hide().publish(v -> v)).flatMapMany(v -> v).blockLast()).isEqualTo(1);
     }
+
+	@Test
+	public void scanMulticaster() {
+		MonoPublishMulticast.MonoPublishMulticaster<Integer> test =
+				new MonoPublishMulticast.MonoPublishMulticaster<>(Context.empty());
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		test.value = 1;
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+		test.error = new IllegalArgumentException("boom");
+		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
+		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.terminate();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanMulticastInner() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		MonoPublishMulticast.MonoPublishMulticaster<Integer> parent =
+				new MonoPublishMulticast.MonoPublishMulticaster<>(Context.empty());
+		MonoPublishMulticast.PublishMulticastInner<Integer> test =
+				new MonoPublishMulticast.PublishMulticastInner<>(parent, actual);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		test.request(789);
+		//does not track request in the Mono version
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
 
 }
