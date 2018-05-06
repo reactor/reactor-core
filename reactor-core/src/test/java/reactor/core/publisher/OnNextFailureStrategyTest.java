@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.sun.org.apache.xpath.internal.operations.Number;
 import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
@@ -604,7 +605,7 @@ public class OnNextFailureStrategyTest {
 		                        .filter(s -> 3 / s.length() == 1)
 		                        .errorStrategyContinue((t, v) -> {
 									errorDropped.add(t);
-									valueDropped.add(v);
+									valueDropped.add((String) v);
 								});
 
 
@@ -631,7 +632,7 @@ public class OnNextFailureStrategyTest {
 				                        t -> t instanceof ArithmeticException,
 										(t, v) -> {
 											errorDropped.add(t);
-											valueDropped.add(v);
+											valueDropped.add((String) v);
 										});
 
 		StepVerifier.create(test)
@@ -657,7 +658,7 @@ public class OnNextFailureStrategyTest {
 				                        t -> t instanceof IllegalStateException,
 										(t, v) -> {
 											errorDropped.add(t);
-											valueDropped.add(v);
+											valueDropped.add((String) v);
 										});
 
 		StepVerifier.create(test)
@@ -680,7 +681,7 @@ public class OnNextFailureStrategyTest {
 				.errorStrategyContinue(ArithmeticException.class,
 									   (t, v) -> {
 										   errorDropped.add(t);
-										   valueDropped.add(v);
+										   valueDropped.add((String) v);
 									   });
 
 		StepVerifier.create(test)
@@ -705,7 +706,7 @@ public class OnNextFailureStrategyTest {
 				.errorStrategyContinue(IllegalStateException.class,
 									   (t, v) -> {
 										   errorDropped.add(t);
-										   valueDropped.add(v);
+										   valueDropped.add((String) v);
 									   });
 
 		StepVerifier.create(test)
@@ -802,6 +803,31 @@ public class OnNextFailureStrategyTest {
 				.verifyThenAssertThat()
 				.hasDropped(0)
 				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorStrategyLocalHandlerWithSimpleMappingScoping() {
+		List<String> valueDropped = new ArrayList<>();
+		List<Throwable> errorDropped = new ArrayList<>();
+
+		Flux<Integer> test = Flux.just("0", "1", "2", "asdfghc3")
+		                         .map(Integer::parseInt)
+		                         .filter(l -> l < 3)
+		                         .errorStrategyContinue((t, v) -> {
+			                         errorDropped.add(t);
+			                         valueDropped.add((String) v); // <--- STRING HERE
+		                         });
+
+		StepVerifier.create(test)
+		            .expectNext(0, 1, 2)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasNotDroppedErrors()
+		            .hasNotDroppedElements();
+
+
+		assertThat(valueDropped).containsOnly("asdfghc3");
+		assertThat(errorDropped.get(0)).isExactlyInstanceOf(NumberFormatException.class);
 	}
 
 

@@ -3979,9 +3979,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that attempts to continue processing on errors.
 	 */
-	public final Flux<T> errorStrategyContinue(BiConsumer<Throwable, ? super T> errorConsumer) {
+	public final Flux<T> errorStrategyContinue(BiConsumer<Throwable, Object> errorConsumer) {
 		//this cast is ok as only T values will be propagated in this sequence
-		@SuppressWarnings("unchecked") BiConsumer<Throwable, Object> genericConsumer = (BiConsumer<Throwable, Object>) errorConsumer;
+		BiConsumer<Throwable, Object> genericConsumer = (BiConsumer<Throwable, Object>) errorConsumer;
 		return subscriberContext(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resume(genericConsumer)
@@ -4000,8 +4000,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that attempts to continue processing on some errors.
 	 */
-	public final <E extends Throwable> Flux<T> errorStrategyContinue(Class<E> type,
-																	 BiConsumer<Throwable, ? super T> errorConsumer) {
+	public final <E extends Throwable> Flux<T> errorStrategyContinue(Class<E> type, BiConsumer<Throwable, Object> errorConsumer) {
 		return errorStrategyContinue(type::isInstance, errorConsumer);
 	}
 
@@ -4018,12 +4017,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that attempts to continue processing on some errors.
 	 */
 	public final <E extends Throwable> Flux<T> errorStrategyContinue(Predicate<E> errorPredicate,
-																	 BiConsumer<Throwable, ? super T> errorConsumer) {
+																	 BiConsumer<Throwable, Object> errorConsumer) {
 		//this cast is ok as only T values will be propagated in this sequence
 		@SuppressWarnings("unchecked")
 		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
-		@SuppressWarnings("unchecked")
-		BiConsumer<Throwable, Object> genericErrorConsumer = (BiConsumer<Throwable, Object>) errorConsumer;
+		BiConsumer<Throwable, Object> genericErrorConsumer = errorConsumer;
 		return subscriberContext(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
