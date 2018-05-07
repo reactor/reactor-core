@@ -3286,9 +3286,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * the last operator of a chain towards the first.
 	 * <p>
 	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and passes the new enriched {@link Context}
-	 * to operators above it in the chain (upstream, by way of them using
-	 * {@code Flux#subscribe(Subscriber,Context)}).
+	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
+	 * visible to operators above it in the chain.
 	 *
 	 * @param mergeContext the {@link Context} to merge with a previous {@link Context}
 	 * state, returning a new one.
@@ -3309,9 +3308,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * the last operator of a chain towards the first.
 	 * <p>
 	 * So this operator enriches a {@link Context} coming from under it in the chain
-	 * (downstream, by default an empty one) and passes the new enriched {@link Context}
-	 * to operators above it in the chain (upstream, by way of them using
-	 * {@code Flux#subscribe(Subscriber,Context)}).
+	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
+	 * visible to operators above it in the chain.
 	 *
 	 * @param doOnContext the function taking a previous {@link Context} state
 	 *  and returning a new one.
