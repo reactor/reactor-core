@@ -34,6 +34,8 @@ import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
+import static reactor.util.Metrics.*;
+
 /**
  * Activate metrics gathering on a {@link Flux} if Micrometer is on the classpath.
  *
@@ -73,11 +75,11 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<? super T> metricsOperator;
-		try {
+		if (reactor.util.Metrics.isMicrometerAvailable()) {
 			metricsOperator = new MicrometerMetricsSubscriber<>(actual, Metrics.globalRegistry,
 					this.name, this.tags, false);
 		}
-		catch (Throwable e) {
+		else {
 			metricsOperator = actual;
 		}
 		source.subscribe(metricsOperator);
@@ -245,25 +247,4 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			s.cancel();
 		}
 	}
-
-	static final String REACTOR_DEFAULT_NAME = "reactor";
-
-	//Note: meters and tag names are normalized by micrometer on the basis that the word
-	// separator is the dot, not camelCase...
-	static final String METER_MALFORMED              = "reactor.malformed.source";
-	static final String METER_SUBSCRIBED             = "reactor.subscribed";
-	static final String METER_SUBSCRIBE_TO_TERMINATE = "reactor.subscribe.to.terminate";
-	static final String METER_ON_NEXT_DELAY          = "reactor.onNext.delay";
-	static final String METER_REQUESTED              = "reactor.requested";
-
-	static final String TAG_TERMINATION_TYPE = "reactor.termination.type";
-	static final String TAG_SEQUENCE_NAME    = "reactor.sequence.name";
-	static final String TAG_SEQUENCE_TYPE    = "reactor.sequence.type";
-
-	//... tag values are free-for-all
-	static final String TAGVALUE_ON_ERROR    = "onError";
-	static final String TAGVALUE_ON_COMPLETE = "onComplete";
-	static final String TAGVALUE_CANCEL      = "cancel";
-	static final String TAGVALUE_FLUX        = "Flux";
-	static final String TAGVALUE_MONO        = "Mono";
 }

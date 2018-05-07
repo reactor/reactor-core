@@ -64,7 +64,7 @@ public class FluxMetricsTest {
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan unavailable").isFalse();
-		assertThat(test.name).isEqualTo(FluxMetrics.REACTOR_DEFAULT_NAME);
+		assertThat(test.name).isEqualTo(reactor.util.Metrics.REACTOR_DEFAULT_NAME);
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class FluxMetricsTest {
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan available").isTrue();
-		assertThat(test.name).isEqualTo(FluxMetrics.REACTOR_DEFAULT_NAME);
+		assertThat(test.name).isEqualTo(reactor.util.Metrics.REACTOR_DEFAULT_NAME);
 	}
 
 	@Test
@@ -109,14 +109,14 @@ public class FluxMetricsTest {
 		Mono.when(unnamed, named).block();
 
 		Timer unnamedMeter = registry
-				.find(FluxMetrics.METER_SUBSCRIBE_TO_TERMINATE)
-				.tag(FluxMetrics.TAG_SEQUENCE_NAME, FluxMetrics.REACTOR_DEFAULT_NAME)
+				.find(reactor.util.Metrics.METER_SUBSCRIBE_TO_TERMINATE)
+				.tag(reactor.util.Metrics.TAG_SEQUENCE_NAME, reactor.util.Metrics.REACTOR_DEFAULT_NAME)
 				.timer();
 
 		Timer namedMeter = registry
-				.find(FluxMetrics.METER_SUBSCRIBE_TO_TERMINATE)
-				.tag(FluxMetrics.TAG_TERMINATION_TYPE, FluxMetrics.TAGVALUE_ON_ERROR)
-				.tag(FluxMetrics.TAG_SEQUENCE_NAME, "foo")
+				.find(reactor.util.Metrics.METER_SUBSCRIBE_TO_TERMINATE)
+				.tag(reactor.util.Metrics.TAG_TERMINATION_TYPE, reactor.util.Metrics.TAGVALUE_ON_ERROR)
+				.tag(reactor.util.Metrics.TAG_SEQUENCE_NAME, "foo")
 				.timer();
 
 		assertThat(unnamedMeter).isNotNull();
@@ -136,8 +136,8 @@ public class FluxMetricsTest {
 		    .blockLast();
 
 		Timer meter = registry
-				.find(FluxMetrics.METER_ON_NEXT_DELAY)
-				.tag(FluxMetrics.TAG_SEQUENCE_NAME, "usesTags")
+				.find(reactor.util.Metrics.METER_ON_NEXT_DELAY)
+				.tag(reactor.util.Metrics.TAG_SEQUENCE_NAME, "usesTags")
 				.tag("tag1", "A")
 				.tag("tag2", "foo")
 				.timer();
@@ -153,7 +153,7 @@ public class FluxMetricsTest {
 		    .blockLast();
 
 		Timer nextMeter = registry
-				.find(FluxMetrics.METER_ON_NEXT_DELAY)
+				.find(reactor.util.Metrics.METER_ON_NEXT_DELAY)
 				.timer();
 
 		assertThat(nextMeter).isNotNull();

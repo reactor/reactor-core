@@ -24,6 +24,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxMetrics.MicrometerMetricsSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -47,7 +48,7 @@ public class MonoMetrics<T> extends MonoOperator<T, T> {
 		if (scannable.isScanAvailable()) {
 			String nameOrDefault = scannable.name();
 			if (scannable.stepName().equals(nameOrDefault)) {
-				this.name = FluxMetrics.REACTOR_DEFAULT_NAME;
+				this.name = reactor.util.Metrics.REACTOR_DEFAULT_NAME;
 			}
 			else {
 				this.name = nameOrDefault;
@@ -59,7 +60,7 @@ public class MonoMetrics<T> extends MonoOperator<T, T> {
 		else {
 			LOGGER.warn("Attempting to activate metrics but the upstream is not Scannable. " +
 					"You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
-			this.name = FluxMetrics.REACTOR_DEFAULT_NAME;
+			this.name = reactor.util.Metrics.REACTOR_DEFAULT_NAME;
 			this.tags = Collections.emptyList();
 		}
 	}
@@ -67,11 +68,11 @@ public class MonoMetrics<T> extends MonoOperator<T, T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<? super T> metricsOperator;
-		try {
-			metricsOperator = new reactor.core.publisher.FluxMetrics.MicrometerMetricsSubscriber<>(actual, Metrics.globalRegistry,
+		if (reactor.util.Metrics.isMicrometerAvailable()) {
+			metricsOperator = new MicrometerMetricsSubscriber<>(actual, Metrics.globalRegistry,
 					this.name, this.tags, true);
 		}
-		catch (Throwable e) {
+		else {
 			metricsOperator = actual;
 		}
 		source.subscribe(metricsOperator);
