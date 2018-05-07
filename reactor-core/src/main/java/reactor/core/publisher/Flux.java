@@ -5354,6 +5354,16 @@ public abstract class Flux<T> implements Publisher<T> {
 		return merge(this, other);
 	}
 
+	/**
+	 * Activate metrics for this sequence, provided there is an instrumentation facade
+	 * on the classpath (otherwise this method is a pure no-op).
+	 * <p>
+	 * Metrics are gathered on {@link Subscriber} events, and it is recommended to also
+	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
+	 * sequence.
+	 *
+	 * @return an instrumented {@link Flux}
+	 */
 	public final Flux<T> metrics() {
 		return onAssembly(new FluxMetrics<>(this));
 	}

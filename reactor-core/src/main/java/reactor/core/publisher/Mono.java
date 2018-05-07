@@ -2496,6 +2496,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Activate metrics for this sequence, provided there is an instrumentation facade
+	 * on the classpath (otherwise this method is a pure no-op).
+	 * <p>
+	 * Metrics are gathered on {@link Subscriber} events, and it is recommended to also
+	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
+	 * sequence.
+	 *
+	 * @return an instrumented {@link Mono}
+	 */
+	public final Mono<T> metrics() {
+		return onAssembly(new MonoMetrics<>(this));
+	}
+
+	/**
 	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
 	 * as long as this is the first reachable {@link Scannable#parents()}.
 	 *

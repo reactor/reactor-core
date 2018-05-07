@@ -35,6 +35,8 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 
 /**
+ * Activate metrics gathering on a {@link Flux} if Micrometer is on the classpath.
+ *
  * @author Simon Baslé
  */
 final class FluxMetrics<T> extends FluxOperator<T, T> {
