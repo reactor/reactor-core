@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -298,6 +298,18 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 		            .then(() -> assertThat(evicted).containsExactly(1, 2, 3, 4, 5, 6, 7))
 		            .thenRequest(10)
 		            .expectNext(8, 9, 10)
+		            .verifyComplete();
+	}
+
+
+
+	@Test
+	public void gh1194() {
+		StepVerifier.withVirtualTime(() ->
+				Flux.just("1", "not requested", "not requested")
+				    .onBackpressureBuffer(Duration.ofSeconds(1), 3, s -> {}), 1)
+		            .expectNext("1")
+		            .thenAwait(Duration.ofSeconds(1))
 		            .verifyComplete();
 	}
 
