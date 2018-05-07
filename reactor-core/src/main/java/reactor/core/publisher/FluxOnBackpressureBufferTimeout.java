@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -381,6 +381,10 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 						worker.dispose();
 						return;
 					}
+				}
+
+				if (e != 0 && r != Long.MAX_VALUE) {
+					REQUESTED.addAndGet(this, -e);
 				}
 
 				missed = WIP.addAndGet(this, -missed);
