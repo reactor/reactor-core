@@ -16,18 +16,14 @@
 
 package reactor.core.publisher;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 import reactor.core.publisher.FluxMetrics.MicrometerMetricsSubscriber;
-import reactor.util.Logger;
-import reactor.util.Loggers;
+import reactor.util.function.Tuple2;
 
 /**
  * Activate metrics gathering on a {@link Mono} if Micrometer is on the classpath.
@@ -36,35 +32,15 @@ import reactor.util.Loggers;
  */
 public class MonoMetrics<T> extends MonoOperator<T, T> {
 
-	private static final Logger
-			LOGGER = Loggers.getLogger(reactor.core.publisher.FluxMetrics.class);
-
 	final String    name;
 	final List<Tag> tags;
 
 	MonoMetrics(Mono<? extends T> mono) {
 		super(mono);
 
-		//resolve the tags and names at instantiation
-		Scannable scannable = Scannable.from(mono);
-		if (scannable.isScanAvailable()) {
-			String nameOrDefault = scannable.name();
-			if (scannable.stepName().equals(nameOrDefault)) {
-				this.name = reactor.util.Metrics.REACTOR_DEFAULT_NAME;
-			}
-			else {
-				this.name = nameOrDefault;
-			}
-			this.tags = scannable.tags()
-			                     .map(tuple -> Tag.of(tuple.getT1(), tuple.getT2()))
-			                     .collect(Collectors.toList());
-		}
-		else {
-			LOGGER.warn("Attempting to activate metrics but the upstream is not Scannable. " +
-					"You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
-			this.name = reactor.util.Metrics.REACTOR_DEFAULT_NAME;
-			this.tags = Collections.emptyList();
-		}
+		Tuple2<String, List<Tag>> nameAndTags = FluxMetrics.resolveNameAndTags(mono);
+		this.name = nameAndTags.getT1();
+		this.tags = nameAndTags.getT2();
 	}
 
 	@Override

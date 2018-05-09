@@ -29,11 +29,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static reactor.util.Metrics.*;
 
@@ -46,31 +49,50 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxMetrics.class);
 
+	/**
+	 * Extract the name and tags from the upstream, and detect if there was an actual name
+	 * (ie. distinct from {@link Scannable#stepName()}) set by the user.
+	 *
+	 * @param source the upstream
+	 * @return a {@link Tuple2} of name and list of {@link Tag}
+	 */
+	static Tuple2<String, List<Tag>> resolveNameAndTags(Publisher<?> source) {
+		//resolve the tags and names at instantiation
+		String name;
+		List<Tag> tags;
+
+		Scannable scannable = Scannable.from(source);
+		if (scannable.isScanAvailable()) {
+			String nameOrDefault = scannable.name();
+			if (scannable.stepName().equals(nameOrDefault)) {
+				name = REACTOR_DEFAULT_NAME;
+			}
+			else {
+				name = nameOrDefault;
+			}
+			tags = scannable.tags()
+			                .map(tuple -> Tag.of(tuple.getT1(), tuple.getT2()))
+			                .collect(Collectors.toList());
+		}
+		else {
+			LOGGER.warn("Attempting to activate metrics but the upstream is not Scannable. " +
+					"You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
+			name = reactor.util.Metrics.REACTOR_DEFAULT_NAME;
+			tags = Collections.emptyList();
+		}
+
+		return Tuples.of(name, tags);
+	}
+
 	final String    name;
 	final List<Tag> tags;
 
 	FluxMetrics(Flux<? extends T> flux) {
 		super(flux);
-		//resolve the tags and names at instantiation
-		Scannable scannable = Scannable.from(flux);
-		if (scannable.isScanAvailable()) {
-			String nameOrDefault = scannable.name();
-			if (scannable.stepName().equals(nameOrDefault)) {
-				this.name = REACTOR_DEFAULT_NAME;
-			}
-			else {
-				this.name = nameOrDefault;
-			}
-			this.tags = scannable.tags()
-			                     .map(tuple -> Tag.of(tuple.getT1(), tuple.getT2()))
-			                     .collect(Collectors.toList());
-		}
-		else {
-			LOGGER.warn("Attempting to activate metrics but the upstream is not Scannable. " +
-					"You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
-			this.name = REACTOR_DEFAULT_NAME;
-			this.tags = Collections.emptyList();
-		}
+
+		Tuple2<String, List<Tag>> nameAndTags = resolveNameAndTags(flux);
+		this.name = nameAndTags.getT1();
+		this.tags = nameAndTags.getT2();
 	}
 
 	@Override
