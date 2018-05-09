@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -77,7 +78,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		CoreSubscriber<? super T> metricsOperator;
 		if (reactor.util.Metrics.isMicrometerAvailable()) {
 			metricsOperator = new MicrometerMetricsSubscriber<>(actual, Metrics.globalRegistry,
-					this.name, this.tags, false);
+					Clock.SYSTEM, this.name, this.tags, false);
 		}
 		else {
 			metricsOperator = actual;
@@ -89,6 +90,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 		final MeterRegistry             registry;
+		final Clock                     clock;
 
 		final Counter             malformedSourceCounter;
 		final Counter             subscribedCounter;
@@ -107,11 +109,13 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 		MicrometerMetricsSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry,
+				Clock clock,
 				String sequenceName,
 				List<Tag> sequenceTags,
 				boolean monoSource) {
 			this.actual = actual;
 			this.registry = registry;
+			this.clock = clock;
 
 			List<Tag> commonTags = new ArrayList<>();
 			commonTags.add(Tag.of(TAG_SEQUENCE_NAME, sequenceName));
@@ -180,7 +184,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 			//record the delay since previous onNext/onSubscribe. This also records the count.
 			long last = this.lastNextEventNanos;
-			this.lastNextEventNanos = System.nanoTime();
+			this.lastNextEventNanos = clock.monotonicTime();
 			this.onNextIntervalTimer.record(lastNextEventNanos - last, TimeUnit.NANOSECONDS);
 
 			actual.onNext(t);
@@ -220,7 +224,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			if (Operators.validate(this.s, s)) {
 				this.subscribedCounter.increment();
 				this.subscribeToTerminateSample = Timer.start(registry);
-				this.lastNextEventNanos = System.nanoTime();
+				this.lastNextEventNanos = clock.monotonicTime();
 
 				this.s = s;
 				actual.onSubscribe(this);

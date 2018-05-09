@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import reactor.core.CoreSubscriber;
@@ -43,6 +44,7 @@ public class MonoMetrics<T> extends MonoOperator<T, T> {
 
 	MonoMetrics(Mono<? extends T> mono) {
 		super(mono);
+
 		//resolve the tags and names at instantiation
 		Scannable scannable = Scannable.from(mono);
 		if (scannable.isScanAvailable()) {
@@ -70,7 +72,7 @@ public class MonoMetrics<T> extends MonoOperator<T, T> {
 		CoreSubscriber<? super T> metricsOperator;
 		if (reactor.util.Metrics.isMicrometerAvailable()) {
 			metricsOperator = new MicrometerMetricsSubscriber<>(actual, Metrics.globalRegistry,
-					this.name, this.tags, true);
+					Clock.SYSTEM, this.name, this.tags, true);
 		}
 		else {
 			metricsOperator = actual;
