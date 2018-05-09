@@ -1,0 +1,460 @@
+/*
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package reactor.core.publisher;
+
+import java.time.Duration;
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.MockClock;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleConfig;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.Fuseable;
+import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.*;
+import static reactor.util.Metrics.*;
+
+public class FluxMetricsFuseableTest {
+
+	private MeterRegistry registry;
+
+	@Before
+	public void setupRegistry() {
+		registry = new SimpleMeterRegistry();
+		Metrics.addRegistry(registry);
+	}
+
+	@After
+	public void removeRegistry() {
+		Metrics.removeRegistry(registry);
+	}
+
+	// === Fuseable-specific tests ===
+
+	@Test
+	public void queueClearEmptySizeDelegates() {
+		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+		FluxMetrics.MicrometerMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(testSubscriber,
+						registry, Clock.SYSTEM, "foo", Collections.emptyList(),
+						false);
+
+		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
+		testQueue.offer(1);
+		assertThat(testQueue.size()).isEqualTo(1);
+
+		fuseableSubscriber.onSubscribe(testQueue);
+
+		assertThat(fuseableSubscriber.isEmpty()).as("isEmpty").isFalse();
+		assertThat(fuseableSubscriber.size()).as("size").isEqualTo(1);
+
+		fuseableSubscriber.clear();
+
+		assertThat(testQueue.size()).as("original queue impacted").isZero();
+		assertThat(fuseableSubscriber.size()).as("size after clear").isEqualTo(0);
+	}
+
+	@Test
+	public void queueClearEmptySizeWhenQueueSubscriptionNull() {
+		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+		FluxMetrics.MicrometerMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(testSubscriber,
+						registry, Clock.SYSTEM, "foo", Collections.emptyList(),
+						false);
+
+		assertThat(fuseableSubscriber.size()).as("size").isEqualTo(0);
+		assertThat(fuseableSubscriber.isEmpty()).as("isEmpty").isTrue();
+		assertThatCode(fuseableSubscriber::clear).doesNotThrowAnyException();
+	}
+
+	@Test
+	public void queuePollTracksOnNext() {
+		//prepare registry with mock clock
+		MockClock clock = new MockClock();
+		removeRegistry();
+		registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
+		Metrics.globalRegistry.add(registry);
+
+		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+		FluxMetrics.MicrometerMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(testSubscriber,
+						registry, clock, "foo", Collections.emptyList(),
+						false);
+
+		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
+		testQueue.offer(1);
+
+		fuseableSubscriber.onSubscribe(testQueue);
+		clock.add(Duration.ofMillis(200));
+
+		Integer val1 = fuseableSubscriber.poll();
+		Integer val2 = fuseableSubscriber.poll();
+
+		assertThat(val1).isEqualTo(1);
+		assertThat(val2).isNull();
+
+		//test meters
+		Timer nextTimer = registry.find(reactor.util.Metrics.METER_ON_NEXT_DELAY)
+				.timer();
+
+		assertThat(nextTimer).isNotNull();
+		assertThat(nextTimer.max(TimeUnit.MILLISECONDS)).as("onNext max delay").isEqualTo(200);
+	}
+
+	@Test
+	public void queuePollSyncTracksOnComplete() {
+		//prepare registry with mock clock
+		MockClock clock = new MockClock();
+		removeRegistry();
+		registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
+		Metrics.globalRegistry.add(registry);
+
+		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+		FluxMetrics.MicrometerMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(testSubscriber,
+						registry, clock, "foo", Collections.emptyList(),
+						false);
+
+		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
+		testQueue.offer(1);
+
+		fuseableSubscriber.onSubscribe(testQueue);
+		fuseableSubscriber.requestFusion(Fuseable.SYNC);
+
+		clock.add(Duration.ofMillis(200));
+		Integer val1 = fuseableSubscriber.poll();
+		clock.add(Duration.ofMillis(123));
+		Integer val2 = fuseableSubscriber.poll();
+
+		assertThat(val1).isEqualTo(1);
+		assertThat(val2).isNull();
+
+		//test meters
+		Timer terminationTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
+		                          .tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_COMPLETE)
+		                          .timer();
+
+		assertThat(terminationTimer).isNotNull();
+		assertThat(terminationTimer.max(TimeUnit.MILLISECONDS)).as("terminate max delay").isEqualTo(323);
+	}
+
+	@Test
+	public void queuePollError() {
+		//prepare registry with mock clock
+		MockClock clock = new MockClock();
+		removeRegistry();
+		registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
+		Metrics.globalRegistry.add(registry);
+
+		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+		FluxMetrics.MicrometerMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(testSubscriber,
+						registry, clock, "foo", Collections.emptyList(),
+						false);
+
+		FluxPeekFuseableTest.AssertQueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
+		testQueue.setCompleteWithError(true);
+		testQueue.offer(1);
+
+		fuseableSubscriber.onSubscribe(testQueue);
+		fuseableSubscriber.requestFusion(Fuseable.SYNC);
+
+		clock.add(Duration.ofMillis(200));
+		Integer val1 = fuseableSubscriber.poll();
+		assertThat(val1).isEqualTo(1);
+
+		clock.add(Duration.ofMillis(123));
+		assertThatIllegalStateException().isThrownBy(fuseableSubscriber::poll)
+		                                 .withMessage("AssertQueueSubscriber poll error");
+
+		//test meters
+		Timer terminationTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
+		                          .tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_ERROR)
+		                          .timer();
+
+		assertThat(terminationTimer).isNotNull();
+		assertThat(terminationTimer.max(TimeUnit.MILLISECONDS)).as("terminate max delay").isEqualTo(323);
+	}
+
+	@Test
+	public void requestFusionDelegates() {
+		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+		FluxMetrics.MicrometerMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(testSubscriber,
+						registry, Clock.SYSTEM, "foo", Collections.emptyList(),
+						false);
+
+		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
+		fuseableSubscriber.onSubscribe(testQueue);
+
+		assertThat(fuseableSubscriber.requestFusion(Fuseable.SYNC))
+				.as("fusion mode SYNC").isEqualTo(Fuseable.SYNC);
+
+		assertThat(fuseableSubscriber.requestFusion(Fuseable.ASYNC))
+				.as("fusion mode ASYNC").isEqualTo(Fuseable.ASYNC);
+
+		assertThat(fuseableSubscriber.requestFusion(Fuseable.NONE))
+				.as("fusion mode NONE").isEqualTo(Fuseable.NONE);
+	}
+
+	// === the following are Fuseable versions of FluxMetrics tests ===
+	@Test
+	public void testUsesMicrometerFuseable() {
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+
+		new FluxMetricsFuseable<>(Flux.just("foo"))
+				.doOnSubscribe(subRef::set)
+				.subscribe();
+
+		assertThat(subRef.get()).isInstanceOf(FluxMetrics.MicrometerMetricsFuseableSubscriber.class);
+	}
+
+	@Test
+	public void splitMetricsOnNameFuseable() {
+		final Flux<Integer> unnamed = Flux.just(1)
+		                                  .metrics();
+		final Flux<Integer> named = Flux.range(1, 40)
+		                                .name("foo")
+		                                .metrics();
+		Mono.when(unnamed, named).block();
+
+		Timer unnamedMeter = registry
+				.find(METER_SUBSCRIBE_TO_TERMINATE)
+				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
+				.timer();
+
+		Timer namedMeter = registry
+				.find(METER_SUBSCRIBE_TO_TERMINATE)
+				.tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_ERROR)
+				.tag(TAG_SEQUENCE_NAME, "foo")
+				.timer();
+
+		assertThat(unnamedMeter).isNotNull();
+		assertThat(namedMeter).isNotNull();
+
+		assertThat(unnamedMeter.count()).isEqualTo(1L);
+		assertThat(namedMeter.count()).isZero();
+	}
+
+	@Test
+	public void usesTagsFuseable() {
+		Flux.range(1, 8)
+		    .tag("tag1", "A")
+		    .name("usesTags")
+		    .tag("tag2", "foo")
+		    .metrics()
+		    .blockLast();
+
+		Timer meter = registry
+				.find(METER_ON_NEXT_DELAY)
+				.tag(TAG_SEQUENCE_NAME, "usesTags")
+				.tag("tag1", "A")
+				.tag("tag2", "foo")
+				.timer();
+
+		assertThat(meter).isNotNull();
+		assertThat(meter.count()).isEqualTo(8L);
+	}
+
+	@Test
+	public void onNextTimerCountsFuseable() {
+		Flux.range(1, 123)
+		    .metrics()
+		    .blockLast();
+
+		Timer nextMeter = registry
+				.find(METER_ON_NEXT_DELAY)
+				.timer();
+
+		assertThat(nextMeter).isNotNull();
+		assertThat(nextMeter.count()).isEqualTo(123L);
+
+		Flux.range(1, 10)
+		    .metrics()
+		    .take(3)
+		    .blockLast();
+
+		assertThat(nextMeter.count()).isEqualTo(126L);
+
+		Flux.range(1, 1000)
+		    .name("foo")
+		    .metrics()
+		    .blockLast();
+
+		assertThat(nextMeter.count())
+				.as("notTakingNamedIntoAccount")
+				.isEqualTo(126L);
+	}
+
+
+	@Test
+	public void subscribeToCompleteFuseable() {
+		Mono.delay(Duration.ofMillis(100))
+		    .map(i -> "foo")
+		    .metrics()
+		    .block();
+
+		Timer stcCompleteTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
+		                                 .tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_COMPLETE)
+		                                 .timer();
+
+		Timer stcErrorTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
+		                              .tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_ERROR)
+		                              .timer();
+
+		Timer stcCancelTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
+		                               .tag(TAG_TERMINATION_TYPE, TAGVALUE_CANCEL)
+		                               .timer();
+
+		assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+				.as("subscribe to complete timer")
+				.isGreaterThanOrEqualTo(100);
+
+		assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
+				.as("subscribe to error timer")
+				.isZero();
+
+		assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+				.as("subscribe to cancel timer")
+				.isZero();
+	}
+
+	@Test
+	public void subscribeToErrorFuseable() {
+		Mono.delay(Duration.ofMillis(100)) //delayElements is not Fuseable, had to rework the test
+		    .map(v -> 100 / v)
+		    .metrics()
+		    .onErrorReturn(-1L)
+		    .block();
+
+		Timer stcCompleteTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
+		                                 .tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_COMPLETE)
+		                                 .timer();
+
+		Timer stcErrorTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
+		                              .tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_ERROR)
+		                              .timer();
+
+		Timer stcCancelTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
+		                               .tag(TAG_TERMINATION_TYPE, TAGVALUE_CANCEL)
+		                               .timer();
+
+		assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+				.as("subscribe to complete timer")
+				.isZero();
+
+		assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
+				.as("subscribe to error timer")
+				.isGreaterThanOrEqualTo(100);
+
+		assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+				.as("subscribe to cancel timer")
+				.isZero();
+	}
+
+	@Test
+	public void countsSubscriptionsFuseable() {
+		Flux<Integer> test = Flux.range(1, 10)
+		                         .metrics();
+
+		test.subscribe();
+		Counter meter = registry.find(METER_SUBSCRIBED)
+		                        .counter();
+
+		assertThat(meter).isNotNull();
+		assertThat(meter.count()).as("after 1s subscribe").isEqualTo(1);
+
+		test.subscribe();
+		test.subscribe();
+
+		assertThat(meter.count()).as("after more subscribe").isEqualTo(3);
+	}
+
+	@Test
+	public void requestTrackingDisabledIfNotNamedFuseable() {
+		Flux.range(1, 10)
+		    .metrics()
+		    .blockLast();
+
+		DistributionSummary meter = registry.find(METER_REQUESTED)
+		                                    .summary();
+
+		if (meter != null) { //meter could be null in some tests
+			assertThat(meter.count()).isZero();
+		}
+	}
+
+	@Test
+	public void requestTrackingHasMeterForNamedSequenceFuseable() {
+		Flux.range(1, 10)
+		    .name("foo")
+		    .metrics()
+		    .blockLast();
+
+		DistributionSummary meter = registry.find(METER_REQUESTED)
+		                                    .summary();
+
+		assertThat(meter).as("global find").isNotNull();
+
+		meter = registry.find(METER_REQUESTED)
+		                .tag(TAG_SEQUENCE_NAME, "foo")
+		                .summary();
+
+		assertThat(meter).as("tagged find").isNotNull();
+	}
+
+	@Test
+	public void requestTrackingFuseable() {
+		BaseSubscriber<Integer> bs = new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(1);
+			}
+		};
+		Flux.range(1, 10)
+		    .name("foo")
+		    .metrics()
+		    .subscribe(bs);
+
+		DistributionSummary meter = registry.find(METER_REQUESTED)
+		                                    .tag(TAG_SEQUENCE_NAME, "foo")
+		                                    .summary();
+
+		assertThat(meter).as("meter").isNotNull();
+		assertThat(meter.totalAmount()).isEqualTo(1);
+
+		bs.request(7);
+		assertThat(meter.totalAmount()).isEqualTo(8);
+		assertThat(meter.max()).isEqualTo(7);
+
+		bs.request(100);
+		assertThat(meter.totalAmount()).isEqualTo(108);
+		assertThat(meter.max()).isEqualTo(100);
+	}
+}

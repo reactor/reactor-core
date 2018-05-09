@@ -5365,6 +5365,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an instrumented {@link Flux}
 	 */
 	public final Flux<T> metrics() {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxMetricsFuseable<>(this));
+		}
 		return onAssembly(new FluxMetrics<>(this));
 	}
 

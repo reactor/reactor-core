@@ -35,14 +35,9 @@ import reactor.core.Scannable;
 import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 import static reactor.util.Metrics.*;
 
-/**
- * @author Simon Baslé
- */
 public class FluxMetricsTest {
 
 	private MeterRegistry registry;
@@ -109,10 +104,12 @@ public class FluxMetricsTest {
 	@Test
 	public void splitMetricsOnName() {
 		final Flux<Integer> unnamed = Flux.<Integer>error(new IllegalStateException("boom"))
+				.hide()
 				.metrics()
 				.onErrorResume(e -> Mono.empty());
 		final Flux<Integer> named = Flux.range(1, 40)
 		                                .name("foo")
+		                                .hide()
 		                                .metrics();
 		Mono.when(unnamed, named).block();
 
@@ -140,6 +137,7 @@ public class FluxMetricsTest {
 		    .tag("tag1", "A")
 		    .name("usesTags")
 		    .tag("tag2", "foo")
+		    .hide()
 		    .metrics()
 		    .blockLast();
 
@@ -157,6 +155,7 @@ public class FluxMetricsTest {
 	@Test
 	public void onNextTimerCounts() {
 		Flux.range(1, 123)
+		    .hide()
 		    .metrics()
 		    .blockLast();
 
@@ -168,6 +167,7 @@ public class FluxMetricsTest {
 		assertThat(nextMeter.count()).isEqualTo(123L);
 
 		Flux.range(1, 10)
+		    .hide()
 		    .metrics()
 		    .take(3)
 		    .blockLast();
@@ -176,6 +176,7 @@ public class FluxMetricsTest {
 
 		Flux.range(1, 1000)
 		    .name("foo")
+		    .hide()
 		    .metrics()
 		    .blockLast();
 
@@ -189,7 +190,10 @@ public class FluxMetricsTest {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 		Flux<Integer> source = testPublisher.flux();
 
-		source.metrics().subscribe();
+		source
+				.hide()
+				.metrics()
+				.subscribe();
 
 		testPublisher.next(1)
 		             .complete()
@@ -212,7 +216,9 @@ public class FluxMetricsTest {
 			TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 			Flux<Integer> source = testPublisher.flux();
 
-			source.metrics().subscribe();
+			source.hide()
+			      .metrics()
+			      .subscribe();
 
 			testPublisher.next(1)
 			             .complete()
@@ -236,8 +242,11 @@ public class FluxMetricsTest {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 		Flux<Integer> source = testPublisher.flux();
 
-		source.metrics().subscribe(v -> assertThat(v).isEqualTo(1),
-				e -> assertThat(e).hasMessage("malformedOnComplete"));
+		source
+				.hide()
+				.metrics()
+				.subscribe(v -> assertThat(v).isEqualTo(1),
+						e -> assertThat(e).hasMessage("malformedOnComplete"));
 
 		testPublisher.next(1)
 		             .error(new IllegalStateException("malformedOnComplete"))
@@ -255,6 +264,7 @@ public class FluxMetricsTest {
 	public void subscribeToComplete() {
 		Flux.just("foo")
 		    .delayElements(Duration.ofMillis(100))
+		    .hide()
 		    .metrics()
 		    .blockLast();
 		
@@ -288,6 +298,7 @@ public class FluxMetricsTest {
 		Flux.just(1, 0)
 		    .delayElements(Duration.ofMillis(100))
 		    .map(v -> 100 / v)
+		    .hide()
 		    .metrics()
 		    .onErrorReturn(-1)
 		    .blockLast();
@@ -321,6 +332,7 @@ public class FluxMetricsTest {
 	public void subscribeToCancel() {
 		Flux.just(1, 0)
 		    .delayElements(Duration.ofMillis(100))
+		    .hide()
 		    .metrics()
 		    .take(1)
 		    .blockLast();
@@ -353,7 +365,8 @@ public class FluxMetricsTest {
 	@Test
 	public void countsSubscriptions() {
 		Flux<Integer> test = Flux.range(1, 10)
-				.metrics();
+		                         .hide()
+		                         .metrics();
 
 		test.subscribe();
 		Counter meter = registry.find(METER_SUBSCRIBED)
@@ -371,6 +384,7 @@ public class FluxMetricsTest {
 	@Test
 	public void requestTrackingDisabledIfNotNamed() {
 		Flux.range(1, 10)
+		    .hide()
 		    .metrics()
 		    .blockLast();
 
@@ -386,6 +400,7 @@ public class FluxMetricsTest {
 	public void requestTrackingHasMeterForNamedSequence() {
 		Flux.range(1, 10)
 		    .name("foo")
+		    .hide()
 		    .metrics()
 		    .blockLast();
 
@@ -411,6 +426,7 @@ public class FluxMetricsTest {
 		};
 		Flux.range(1, 10)
 		    .name("foo")
+		    .hide()
 		    .metrics()
 		    .subscribe(bs);
 

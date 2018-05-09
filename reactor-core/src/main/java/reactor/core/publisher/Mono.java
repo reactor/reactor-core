@@ -2506,6 +2506,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an instrumented {@link Mono}
 	 */
 	public final Mono<T> metrics() {
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoMetricsFuseable<>(this));
+		}
 		return onAssembly(new MonoMetrics<>(this));
 	}
 
