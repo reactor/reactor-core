@@ -32,9 +32,11 @@ import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -108,7 +110,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		source.subscribe(metricsOperator);
 	}
 
-	static final class MicrometerMetricsSubscriber<T> implements InnerOperator<T,T> {
+	static class MicrometerMetricsSubscriber<T> implements InnerOperator<T,T> {
 
 		final CoreSubscriber<? super T> actual;
 		final MeterRegistry             registry;
@@ -122,6 +124,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		long lastNextEventNanos = -1L;
 
 		boolean done;
+		@Nullable
+		Fuseable.QueueSubscription<T> qs;
 		Subscription s;
 
 		final Timer onNextIntervalTimer;
@@ -248,6 +252,10 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				this.subscribeToTerminateSample = Timer.start(registry);
 				this.lastNextEventNanos = clock.monotonicTime();
 
+				if (s instanceof Fuseable.QueueSubscription) {
+					//noinspection unchecked
+					this.qs = (Fuseable.QueueSubscription<T>) s;
+				}
 				this.s = s;
 				actual.onSubscribe(this);
 
@@ -271,6 +279,81 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			this.subscribeToTerminateSample.stop(subscribeToCancelTimer);
 			
 			s.cancel();
+		}
+	}
+
+	/**
+	 * @implNote we don't want to particularly track fusion-specific calls, as this
+	 * subscriber would only detect fused subsequences immediately upstream of it, so
+	 * Counters would be a bit irrelevant. We however want to instrument onNext counts.
+	 *
+	 * @param <T>
+	 */
+	static final class MicrometerMetricsFuseableSubscriber<T> extends MicrometerMetricsSubscriber<T>
+			implements Fuseable, Fuseable.QueueSubscription<T> {
+
+		private boolean syncFused;
+
+		public MicrometerMetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
+				MeterRegistry registry, Clock clock, String sequenceName, List<Tag> sequenceTags,
+				boolean monoSource) {
+			super(actual, registry, clock, sequenceName, sequenceTags, monoSource);
+		}
+
+		@Override
+		public int requestFusion(int mode) {
+			//Simply negotiate the fusion by delegating:
+			if (qs != null) {
+				int negotiated = qs.requestFusion(mode);
+				this.syncFused = negotiated == Fuseable.SYNC;
+				return negotiated;
+			}
+			return Fuseable.NONE; //should not happen unless requestFusion called before subscribe
+		}
+
+		@Override
+		@Nullable
+		public T poll() {
+			if (qs == null) {
+				return null;
+			}
+			try {
+				T v = qs.poll();
+
+				if (v == null && syncFused) {
+					//this is also a complete event
+					this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
+				}
+				if (v != null) {
+					//this is an onNext event
+					//record the delay since previous onNext/onSubscribe. This also records the count.
+					long last = this.lastNextEventNanos;
+					this.lastNextEventNanos = clock.monotonicTime();
+					this.onNextIntervalTimer.record(lastNextEventNanos - last, TimeUnit.NANOSECONDS);
+				}
+				return v;
+			} catch (Throwable e) {
+				//record error termination
+				this.subscribeToTerminateSample.stop(subscribeToErrorTimer);
+				throw e;
+			}
+		}
+
+		@Override
+		public void clear() {
+			if (qs != null) {
+				qs.clear();
+			}
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return qs == null || qs.isEmpty();
+		}
+
+		@Override
+		public int size() {
+			return qs == null ? 0 : qs.size();
 		}
 	}
 }
