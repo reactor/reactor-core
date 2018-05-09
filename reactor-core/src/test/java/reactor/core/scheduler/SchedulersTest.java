@@ -1078,6 +1078,43 @@ public class SchedulersTest {
 		}
 	}
 
+	@Test
+	public void testWorkerScheduleSupportZeroPeriodWithDelayPeriod() {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			Disposable.Composite tasks = Disposables.composite();
+			Disposable disposable = Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> { }, 1000, 0, TimeUnit.MILLISECONDS);
+
+			disposable.dispose();
+
+			assertThat(executorService.isAllTasksCancelled()).isTrue();
+		}
+	}
+
+	@Test
+	public void testWorkerScheduleSupportZeroPeriod() throws InterruptedException {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(2);
+			Disposable.Composite tasks = Disposables.composite();
+			Disposable disposable = Schedulers.workerSchedulePeriodically(executorService, tasks,
+					latch::countDown, 0, 0, TimeUnit.MILLISECONDS);
+			latch.await();
+
+			disposable.dispose();
+
+			Thread.sleep(100);
+
+			int tasksBefore = executorService.tasks.size();
+
+			Thread.sleep(100);
+
+			int tasksAfter = executorService.tasks.size();
+
+			assertThat(tasksAfter).isEqualTo(tasksBefore);
+			assertThat(tasks.size()).isEqualTo(0);
+		}
+	}
+
 	final static class TaskCheckingScheduledExecutor extends ScheduledThreadPoolExecutor implements AutoCloseable {
 
 		private final List<RunnableScheduledFuture<?>> tasks = new CopyOnWriteArrayList<>();

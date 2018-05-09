@@ -26,10 +26,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
@@ -736,6 +734,33 @@ public abstract class Schedulers {
 			long period,
 			TimeUnit unit) {
 
+		if (period <= 0L) {
+			InstantPeriodicWorkerTask isr =
+					new InstantPeriodicWorkerTask(task, exec, tasks);
+			try {
+				Future<?> f;
+				if (initialDelay <= 0L) {
+					f = exec.submit(isr);
+				}
+				else {
+					f = exec.schedule(isr, initialDelay, unit);
+				}
+				isr.setFirst(f);
+			}
+			catch (RejectedExecutionException ex) {
+				isr.dispose();
+				//RejectedExecutionException are propagated up
+				throw ex;
+			}
+			catch (IllegalArgumentException | NullPointerException ex) {
+				isr.dispose();
+				//IllegalArgumentException are wrapped into RejectedExecutionException and propagated up
+				throw new RejectedExecutionException(ex);
+			}
+
+			return isr;
+		}
+
 		PeriodicWorkerTask sr = new PeriodicWorkerTask(task, tasks);
 		if (!tasks.add(sr)) {
 			throw Exceptions.failWithRejected();
@@ -749,6 +774,11 @@ public abstract class Schedulers {
 			sr.dispose();
 			//RejectedExecutionException are propagated up
 			throw ex;
+		}
+		catch (IllegalArgumentException | NullPointerException ex) {
+			sr.dispose();
+			//IllegalArgumentException are wrapped into RejectedExecutionException and propagated up
+			throw new RejectedExecutionException(ex);
 		}
 
 		return sr;
