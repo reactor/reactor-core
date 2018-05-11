@@ -47,12 +47,11 @@ public class FluxMetricsFuseableTest {
 	@Before
 	public void setupRegistry() {
 		registry = new SimpleMeterRegistry();
-		Metrics.addRegistry(registry);
 	}
 
 	@After
 	public void removeRegistry() {
-		Metrics.removeRegistry(registry);
+		registry.close();
 	}
 
 	// === Fuseable-specific tests ===
@@ -228,7 +227,7 @@ public class FluxMetricsFuseableTest {
 	public void testUsesMicrometerFuseable() {
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
-		new FluxMetricsFuseable<>(Flux.just("foo"))
+		new FluxMetricsFuseable<>(Flux.just("foo"), registry)
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
@@ -237,15 +236,19 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void splitMetricsOnNameFuseable() {
-		final Flux<Integer> unnamed = Flux.just(1)
-		                                  .metrics();
-		final Flux<Integer> named = Flux.range(1, 40)
-		                                .name("foo")
-		                                .metrics();
+		final Flux<Integer> unnamedSource = Flux.just(0).map(v -> 100 / v);
+		final Flux<Integer> namedSource = Flux.range(1, 40)
+		                                      .name("foo");
+		
+		final Flux<Integer> unnamed = new FluxMetricsFuseable<>(unnamedSource, registry)
+				.onErrorResume(e -> Mono.empty());
+		final Flux<Integer> named = new FluxMetricsFuseable<>(namedSource, registry);
+
 		Mono.when(unnamed, named).block();
 
 		Timer unnamedMeter = registry
 				.find(METER_SUBSCRIBE_TO_TERMINATE)
+				.tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_ERROR)
 				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
 				.timer();
 
@@ -256,19 +259,19 @@ public class FluxMetricsFuseableTest {
 				.timer();
 
 		assertThat(unnamedMeter).isNotNull();
-		assertThat(namedMeter).isNotNull();
-
 		assertThat(unnamedMeter.count()).isEqualTo(1L);
+
+		assertThat(namedMeter).isNotNull();
 		assertThat(namedMeter.count()).isZero();
 	}
 
 	@Test
 	public void usesTagsFuseable() {
-		Flux.range(1, 8)
-		    .tag("tag1", "A")
-		    .name("usesTags")
-		    .tag("tag2", "foo")
-		    .metrics()
+		Flux<Integer> source = Flux.range(1, 8)
+		                           .tag("tag1", "A")
+		                           .name("usesTags")
+		                           .tag("tag2", "foo");
+		new FluxMetricsFuseable<>(source, registry)
 		    .blockLast();
 
 		Timer meter = registry
@@ -284,8 +287,8 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void onNextTimerCountsFuseable() {
-		Flux.range(1, 123)
-		    .metrics()
+		Flux<Integer> source = Flux.range(1, 123);
+		new FluxMetricsFuseable<>(source, registry)
 		    .blockLast();
 
 		Timer nextMeter = registry
@@ -295,16 +298,16 @@ public class FluxMetricsFuseableTest {
 		assertThat(nextMeter).isNotNull();
 		assertThat(nextMeter.count()).isEqualTo(123L);
 
-		Flux.range(1, 10)
-		    .metrics()
+		Flux<Integer> source2 = Flux.range(1, 10);
+		new FluxMetricsFuseable<>(source2, registry)
 		    .take(3)
 		    .blockLast();
 
 		assertThat(nextMeter.count()).isEqualTo(126L);
 
-		Flux.range(1, 1000)
-		    .name("foo")
-		    .metrics()
+		Flux<Integer> source3 = Flux.range(1, 1000)
+		    .name("foo");
+		new FluxMetricsFuseable<>(source3, registry)
 		    .blockLast();
 
 		assertThat(nextMeter.count())
@@ -315,9 +318,9 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void subscribeToCompleteFuseable() {
-		Mono.delay(Duration.ofMillis(100))
-		    .map(i -> "foo")
-		    .metrics()
+		Mono<String> source = Mono.delay(Duration.ofMillis(100))
+		    .map(i -> "foo");
+		new MonoMetricsFuseable<>(source, registry)
 		    .block();
 
 		Timer stcCompleteTimer = registry.find(METER_SUBSCRIBE_TO_TERMINATE)
@@ -347,9 +350,9 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void subscribeToErrorFuseable() {
-		Mono.delay(Duration.ofMillis(100)) //delayElements is not Fuseable, had to rework the test
-		    .map(v -> 100 / v)
-		    .metrics()
+		Mono<Long> source = Mono.delay(Duration.ofMillis(100)) //delayElements is not Fuseable, had to rework the test
+		    .map(v -> 100 / v);
+		new MonoMetricsFuseable<>(source, registry)
 		    .onErrorReturn(-1L)
 		    .block();
 
@@ -380,8 +383,8 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void countsSubscriptionsFuseable() {
-		Flux<Integer> test = Flux.range(1, 10)
-		                         .metrics();
+		Flux<Integer> source = Flux.range(1, 10);
+		Flux<Integer> test = new FluxMetricsFuseable<>(source, registry);
 
 		test.subscribe();
 		Counter meter = registry.find(METER_SUBSCRIBED)
@@ -398,8 +401,8 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void requestTrackingDisabledIfNotNamedFuseable() {
-		Flux.range(1, 10)
-		    .metrics()
+		Flux<Integer> source = Flux.range(1, 10);
+		new FluxMetricsFuseable<>(source, registry)
 		    .blockLast();
 
 		DistributionSummary meter = registry.find(METER_REQUESTED)
@@ -412,9 +415,9 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void requestTrackingHasMeterForNamedSequenceFuseable() {
-		Flux.range(1, 10)
-		    .name("foo")
-		    .metrics()
+		Flux<Integer> source = Flux.range(1, 10)
+		    .name("foo");
+		new FluxMetricsFuseable<>(source, registry)
 		    .blockLast();
 
 		DistributionSummary meter = registry.find(METER_REQUESTED)
@@ -437,9 +440,9 @@ public class FluxMetricsFuseableTest {
 				subscription.request(1);
 			}
 		};
-		Flux.range(1, 10)
-		    .name("foo")
-		    .metrics()
+		Flux<Integer> source = Flux.range(1, 10)
+		    .name("foo");
+		new FluxMetricsFuseable<>(source, registry)
 		    .subscribe(bs);
 
 		DistributionSummary meter = registry.find(METER_REQUESTED)
