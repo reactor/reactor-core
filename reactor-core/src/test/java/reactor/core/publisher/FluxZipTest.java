@@ -746,8 +746,10 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		});
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1.asFlux(), s -> {
-				Stream<? extends Scannable> inners = Scannable.from(d1)
-				                                              .inners();
+				Scannable d1Scannable = Scannable.from(d1.asProcessor());
+				assertThat(d1Scannable.isScanAvailable()).as("d1 actually scannable").isTrue();
+
+				Stream<? extends Scannable> inners = d1Scannable.inners();
 				CoreSubscriber<?> a = ((DirectProcessor.DirectInner) inners.findFirst().get())
 						.actual;
 
