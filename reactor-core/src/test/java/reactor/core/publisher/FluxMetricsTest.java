@@ -114,6 +114,7 @@ public class FluxMetricsTest {
 
 		Timer unnamedMeter = registry
 				.find(METER_SUBSCRIBE_TO_TERMINATE)
+				.tag(TAG_TERMINATION_TYPE, TAGVALUE_ON_ERROR)
 				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
 				.timer();
 
