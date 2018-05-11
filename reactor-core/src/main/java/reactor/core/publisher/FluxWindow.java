@@ -254,7 +254,8 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(window.asScannable());
+			FluxProcessorSink<T> w = window;
+			return w == null ? Stream.empty() : Stream.of(w.asScannable());
 		}
 	}
 
@@ -438,7 +439,8 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(window.asScannable());
+			FluxProcessorSink<T> w = window;
+			return w == null ? Stream.empty() : Stream.of(w.asScannable());
 		}
 	}
 
@@ -735,7 +737,9 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(toArray())
-			             .map(Scannable::from);
+			             .filter(Objects::nonNull)
+			             .map(o -> ((FluxProcessorSink) o))
+			             .map(FluxProcessorSink::asScannable);
 		}
 	}
 
