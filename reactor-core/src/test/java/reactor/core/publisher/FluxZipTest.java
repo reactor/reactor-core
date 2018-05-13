@@ -34,6 +34,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple7;
@@ -1230,7 +1231,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		assertThat(c.inners()).hasSize(3);
-		assertThat(s.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(s.done || s.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -1361,4 +1362,17 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	public void checkContext() {
+		StepVerifier.create(Flux.just(1, 2)
+		                        .subscriberContext(Context.of("a", "b"))
+		                        .zipWith(Flux.just(3, 4)))
+		            .expectSubscription()
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .expectNextCount(2)
+		            .verifyComplete();
+	}
 }

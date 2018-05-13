@@ -62,6 +62,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 	final int prefetch;
 
+	final boolean isZipWith;
+
 	@SuppressWarnings("unchecked")
 	<U> FluxZip(Publisher<? extends T> p1,
 			Publisher<? extends U> p2,
@@ -76,10 +78,34 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				prefetch);
 	}
 
+	@SuppressWarnings("unchecked")
+	<U> FluxZip(Publisher<? extends T> p1,
+			Publisher<? extends U> p2,
+			BiFunction<? super T, ? super U, ? extends R> zipper2,
+			Supplier<? extends Queue<T>> queueSupplier,
+			int prefetch,
+			boolean isZipWith) {
+		this(new Publisher[]{Objects.requireNonNull(p1, "p1"),
+						Objects.requireNonNull(p2, "p2")},
+				new PairwiseZipper<>(new BiFunction[]{
+						Objects.requireNonNull(zipper2, "zipper2")}),
+				queueSupplier,
+				prefetch,
+				isZipWith);
+	}
+
 	FluxZip(Publisher<? extends T>[] sources,
 			Function<? super Object[], ? extends R> zipper,
 			Supplier<? extends Queue<T>> queueSupplier,
 			int prefetch) {
+		this(sources, zipper, queueSupplier, prefetch, false);
+	}
+
+	FluxZip(Publisher<? extends T>[] sources,
+			Function<? super Object[], ? extends R> zipper,
+			Supplier<? extends Queue<T>> queueSupplier,
+			int prefetch,
+			boolean isZipWith) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -91,6 +117,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
+		this.isZipWith = isZipWith;
 	}
 
 	FluxZip(Iterable<? extends Publisher<? extends T>> sourcesIterable,
@@ -105,6 +132,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
+		this.isZipWith = false;
 	}
 
 	@Override
@@ -124,7 +152,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 			Function<Object[], R> z = ((PairwiseZipper<R>) this.zipper).then(zipper);
 
-			return new FluxZip<>(newSources, z, queueSupplier, prefetch);
+			return new FluxZip<>(newSources, z, queueSupplier, prefetch, isZipWith);
 		}
 		return null;
 	}
@@ -291,7 +319,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		if (sc != 0 && scalars != null) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =
-						new ZipSingleCoordinator<>(s, scalars, n, zipper);
+						new ZipSingleCoordinator<>(s, scalars, n, zipper, isZipWith);
 
 				s.onSubscribe(coordinator);
 
@@ -319,7 +347,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		}
 		else {
 			ZipCoordinator<T, R> coordinator =
-					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch);
+					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch, isZipWith);
 
 			s.onSubscribe(coordinator);
 
@@ -341,6 +369,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		final ZipSingleSubscriber<T>[] subscribers;
 
+		final boolean isZipWith;
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ZipSingleCoordinator> WIP =
@@ -351,6 +381,15 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				Object[] scalars,
 				int n,
 				Function<? super Object[], ? extends R> zipper) {
+			this(subscriber, scalars, n, zipper, false);
+		}
+
+		@SuppressWarnings("unchecked")
+		ZipSingleCoordinator(CoreSubscriber<? super R> subscriber,
+				Object[] scalars,
+				int n,
+				Function<? super Object[], ? extends R> zipper,
+				boolean isZipWith) {
 			super(subscriber);
 			this.zipper = zipper;
 			this.scalars = scalars;
@@ -361,6 +400,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				}
 			}
 			this.subscribers = a;
+			this.isZipWith = isZipWith;
 		}
 
 		void subscribe(int n, int sc, Publisher<? extends T>[] sources) {
@@ -423,6 +463,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
+			if (key == Attr.ACTUAL && isZipWith) return subscribers[0];
 			if (key == Attr.TERMINATED) return wip == 0;
 			if (key == Attr.BUFFERED) return wip > 0 ? scalars.length : 0;
 
@@ -534,6 +575,8 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		final Function<? super Object[], ? extends R> zipper;
 
+		final boolean isZipWith;
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ZipCoordinator> WIP =
@@ -560,6 +603,15 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				int n,
 				Supplier<? extends Queue<T>> queueSupplier,
 				int prefetch) {
+			this(actual, zipper, n, queueSupplier, prefetch, false);
+		}
+
+		ZipCoordinator(CoreSubscriber<? super R> actual,
+				Function<? super Object[], ? extends R> zipper,
+				int n,
+				Supplier<? extends Queue<T>> queueSupplier,
+				int prefetch,
+				boolean isZipWith) {
 			this.actual = actual;
 			this.zipper = zipper;
 			@SuppressWarnings("unchecked") ZipInner<T>[] a = new ZipInner[n];
@@ -568,6 +620,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			}
 			this.current = new Object[n];
 			this.subscribers = a;
+			this.isZipWith = isZipWith;
 		}
 
 		void subscribe(Publisher<? extends T>[] sources, int n) {
@@ -610,6 +663,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
+			if (key == Attr.ACTUAL && isZipWith) return subscribers[0];
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.CANCELLED) return cancelled;
@@ -628,7 +682,9 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 		void cancelAll() {
 			for (ZipInner<T> s : subscribers) {
-				s.cancel();
+				if (!s.done) {
+					s.cancel();
+				}
 			}
 		}
 

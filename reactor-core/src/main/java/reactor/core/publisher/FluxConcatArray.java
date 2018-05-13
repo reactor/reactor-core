@@ -20,9 +20,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -33,13 +35,21 @@ import reactor.util.annotation.Nullable;
 final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<? extends T>[] array;
-	
+
+
+	final int     mainIndex;
 	final boolean delayError;
 
 	@SafeVarargs
 	FluxConcatArray(boolean delayError, Publisher<? extends T>... array) {
+		this(delayError, -1, array);
+	}
+
+	@SafeVarargs
+	FluxConcatArray(boolean delayError, int mainIndex, Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.delayError = delayError;
+		this.mainIndex = mainIndex;
 	}
 
 	@Override
@@ -72,7 +82,14 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			}
 			return;
 		}
-		ConcatArraySubscriber<T> parent = new ConcatArraySubscriber<>(actual, a);
+
+		Operators.MultiSubscriptionSubscriber<T, T> parent;
+		if (mainIndex > -1) {
+			parent = new ConcatWithArraySubscriber<>(actual, a, mainIndex);
+		}
+		else {
+			parent = new ConcatArraySubscriber<>(actual, a);
+		}
 
 		actual.onSubscribe(parent);
 
@@ -104,7 +121,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		System.arraycopy(array, 0, newArray, 0, n);
 		newArray[n] = source;
 		
-		return new FluxConcatArray<>(delayError, newArray);
+		return new FluxConcatArray<>(delayError, mainIndex,  newArray);
 	}
 
 	/**
@@ -126,7 +143,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		newArray[n - 1] = Mono.ignoreElements(newArray[n - 1]);
 		newArray[n] = source;
 
-		return new FluxConcatArray<>(delayError, newArray);
+		return new FluxConcatArray<>(delayError, mainIndex, newArray);
 	}
 
 	/**
@@ -144,8 +161,10 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];
 		System.arraycopy(array, 0, newArray, 1, n);
 		newArray[0] = source;
-		
-		return new FluxConcatArray<>(delayError, newArray);
+
+		return mainIndex > -1
+				? new FluxConcatArray<>(delayError, mainIndex + 1, newArray)
+				: new FluxConcatArray<>(delayError, newArray);
 	}
 
 	
@@ -163,8 +182,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 		long produced;
 
-		ConcatArraySubscriber(CoreSubscriber<? super T> actual, Publisher<? extends T>[]
-				sources) {
+		ConcatArraySubscriber(CoreSubscriber<? super T> actual, Publisher<? extends T>[] sources) {
 			super(actual);
 			this.sources = sources;
 		}
@@ -214,6 +232,160 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 				} while (WIP.decrementAndGet(this) != 0);
 			}
 
+		}
+	}
+
+	static final class ConcatWithArraySubscriber<T>
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
+
+		final Publisher<? extends T>[] sources;
+
+		ConcatWithInner<T> main;
+
+		int mainIndex;
+
+		int index;
+
+		volatile int                                                  wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ConcatWithArraySubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ConcatWithArraySubscriber.class, "wip");
+
+		long produced;
+
+		ConcatWithArraySubscriber(CoreSubscriber<? super T> actual, Publisher<? extends T>[] sources, int mainIndex) {
+			super(actual);
+			this.sources = sources;
+			this.mainIndex = mainIndex;
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.ACTUAL) return main;
+
+			return super.scanUnsafe(key);
+		}
+
+		@Override
+		public void onNext(T t) {
+			produced++;
+
+			actual.onNext(t);
+		}
+
+		@Override
+		public void onComplete() {
+			if (WIP.getAndIncrement(this) == 0) {
+				Publisher<? extends T>[] a = sources;
+				do {
+
+					if (isCancelled()) {
+						return;
+					}
+
+					int i = index;
+					if (i == a.length) {
+						actual.onComplete();
+						return;
+					}
+
+					Publisher<? extends T> p = a[i];
+
+					if (p == null) {
+						actual.onError(new NullPointerException("The " + i + "th source Publisher is null"));
+						return;
+					}
+
+					long c = produced;
+					if (c != 0L) {
+						produced = 0L;
+						produced(c);
+					}
+
+					if (i == mainIndex) {
+						main = new ConcatWithInner<>(this);
+						p.subscribe(main);
+					}
+					else {
+						p.subscribe(this);
+					}
+
+					if (isCancelled()) {
+						return;
+					}
+
+					index = ++i;
+				} while (WIP.decrementAndGet(this) != 0);
+			}
+
+		}
+	}
+
+	static final class ConcatWithInner<R>
+			implements InnerConsumer<R>, Subscription {
+
+		final ConcatWithArraySubscriber<R> parent;
+
+		volatile Subscription s;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<ConcatWithInner, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ConcatWithInner.class, Subscription.class, "s");
+
+		volatile boolean done;
+
+		ConcatWithInner(ConcatWithArraySubscriber<R> parent) {
+			this.parent = parent;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.setOnce(S, this, s)) {
+				parent.onSubscribe(s);
+			}
+		}
+
+		@Override
+		public void onNext(R t) {
+			parent.onNext(t);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			done = true;
+			parent.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			// onComplete is practically idempotent so there is no risk due to subscription-race in async mode
+			done = true;
+			parent.onComplete();
+		}
+
+		@Override
+		public void request(long n) {
+			parent.request(n);
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.currentContext();
+		}
+
+		@Override
+		public void cancel() {
+			Operators.terminate(S, this);
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+
+			return null;
 		}
 	}
 
