@@ -1851,6 +1851,12 @@ public abstract class Operators {
 			if (publisher instanceof ParallelFlux) {
 				return new ParallelLift<>((ParallelFlux<I>)publisher, lifter);
 			}
+			if (publisher instanceof ConnectableFlux) {
+				return new ConnectableLift<>((ConnectableFlux<I>) publisher, lifter);
+			}
+			if (publisher instanceof GroupedFlux) {
+				return new GroupedLift<>((GroupedFlux<?, I>) publisher, lifter);
+			}
 
 			return new FluxLift<>(publisher, lifter);
 		}
