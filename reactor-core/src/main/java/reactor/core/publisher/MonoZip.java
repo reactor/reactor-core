@@ -37,7 +37,7 @@ import reactor.util.context.Context;
  *
  * @param <R> the source value types
  */
-final class MonoZip<T, R> extends Mono<R> {
+final class MonoZip<T, R> extends Mono<R> implements Scannable {
 
 	final boolean delayError;
 
@@ -127,6 +127,12 @@ final class MonoZip<T, R> extends Mono<R> {
 		for (int i = 0; i < n; i++) {
 			a[i].subscribe(subs[i]);
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.DELAY_ERROR) return delayError;
+		return null;
 	}
 
 	static final class ZipCoordinator<R> extends Operators.MonoSubscriber<Object, R> {

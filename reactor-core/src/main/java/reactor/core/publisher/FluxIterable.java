@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -23,7 +24,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.function.Tuple2;
 
 /**
  * Emits the contents of an Iterable source.
@@ -32,7 +35,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxIterable<T> extends Flux<T> implements Fuseable {
+final class FluxIterable<T> extends Flux<T> implements Fuseable, Scannable {
 
 	final Iterable<? extends T> iterable;
 	private final Runnable      onClose;
@@ -59,6 +62,15 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		}
 
 		subscribe(actual, it, onClose);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.BUFFERED) {
+			if (iterable instanceof Collection) return ((Collection) iterable).size();
+			if (iterable instanceof Tuple2) return ((Tuple2) iterable).size();
+		}
+		return null;
 	}
 
 	/**

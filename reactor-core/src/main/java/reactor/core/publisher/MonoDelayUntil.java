@@ -40,7 +40,7 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
-final class MonoDelayUntil<T> extends Mono<T> {
+final class MonoDelayUntil<T> extends Mono<T> implements Scannable {
 
 	final Mono<T> source;
 
@@ -81,6 +81,11 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(actual, otherGenerators);
 		actual.onSubscribe(parent);
 		source.subscribe(parent);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 	static final class DelayUntilCoordinator<T>

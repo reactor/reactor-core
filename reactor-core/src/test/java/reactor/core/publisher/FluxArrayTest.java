@@ -96,6 +96,12 @@ public class FluxArrayTest {
 	}
 
 	@Test
+	public void scanOperator() {
+		FluxArray s = new FluxArray<>("A", "B", "C");
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
+	}
+
+	@Test
 	public void scanConditionalSubscription() {
 		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);

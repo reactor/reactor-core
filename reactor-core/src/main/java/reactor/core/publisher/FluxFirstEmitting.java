@@ -35,7 +35,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstEmitting<T> extends Flux<T> {
+final class FluxFirstEmitting<T> extends Flux<T> implements Scannable {
 
 	final Publisher<? extends T>[] array;
 
@@ -159,6 +159,11 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 			return new FluxFirstEmitting<>(newArray);
 		}
 		return null;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 	static final class RaceCoordinator<T>

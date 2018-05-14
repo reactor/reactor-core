@@ -37,7 +37,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the final value type
  */
-final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
+final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
 
     final Publisher<?>[] ignore;
     
@@ -71,6 +71,11 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
         b[n] = last;
         
         return new MonoIgnoreThen<>(b, newLast);
+    }
+
+    @Override
+    public Object scanUnsafe(Attr key) {
+        return null; //no particular key to be represented, still useful in hooks
     }
     
     static final class ThenIgnoreMain<T>

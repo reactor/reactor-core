@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -31,7 +32,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFirst<T> extends Mono<T> {
+final class MonoFirst<T> extends Mono<T> implements Scannable {
 
 	final Mono<? extends T>[] array;
 
@@ -146,6 +147,11 @@ final class MonoFirst<T> extends Mono<T> {
 				new FluxFirstEmitting.RaceCoordinator<>(n);
 
 		coordinator.subscribe(a, n, actual);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 }
