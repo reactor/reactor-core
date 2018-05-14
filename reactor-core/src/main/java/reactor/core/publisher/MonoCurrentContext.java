@@ -18,12 +18,14 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.context.Context;
 
 /**
  * Materialize current {@link Context} from the subscribing flow
  */
-final class MonoCurrentContext extends Mono<Context> implements Fuseable {
+final class MonoCurrentContext extends Mono<Context>
+		implements Fuseable, Scannable {
 
 	static final MonoCurrentContext INSTANCE = new MonoCurrentContext();
 
@@ -31,5 +33,10 @@ final class MonoCurrentContext extends Mono<Context> implements Fuseable {
 	public void subscribe(CoreSubscriber<? super Context> actual) {
 		Context ctx = actual.currentContext();
 		actual.onSubscribe(Operators.scalarSubscription(actual, ctx));
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 }

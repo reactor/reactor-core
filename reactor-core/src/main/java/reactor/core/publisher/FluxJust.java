@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -50,7 +51,8 @@ import reactor.util.annotation.Nullable;
  *
  * @author Stephane Maldini
  */
-final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, Fuseable {
+final class FluxJust<T> extends Flux<T>
+		implements Fuseable.ScalarCallable<T>, Fuseable, Scannable {
 
 	final T value;
 
@@ -66,6 +68,12 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 	@Override
 	public void subscribe(final CoreSubscriber<? super T> actual) {
 		actual.onSubscribe(new WeakScalarSubscription<>(value, actual));
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.BUFFERED) return 1;
+		return null;
 	}
 
 	static final class WeakScalarSubscription<T> implements QueueSubscription<T>,

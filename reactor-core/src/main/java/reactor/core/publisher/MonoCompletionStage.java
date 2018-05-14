@@ -21,6 +21,7 @@ import java.util.concurrent.CompletionStage;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -32,9 +33,8 @@ import reactor.util.Loggers;
  *
  * @param <T> the value type
  */
-final class MonoCompletionStage<T>
-extends Mono<T>
-        implements Fuseable {
+final class MonoCompletionStage<T> extends Mono<T>
+        implements Fuseable, Scannable {
 
     static final Logger LOGGER = Loggers.getLogger(MonoCompletionStage.class);
 
@@ -72,5 +72,10 @@ extends Mono<T>
                 throw Exceptions.bubble(e1);
             }
         });
+    }
+
+    @Override
+    public Object scanUnsafe(Attr key) {
+        return null; //no particular key to be represented, still useful in hooks
     }
 }

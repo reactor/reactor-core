@@ -455,6 +455,12 @@ public class MonoZipTest {
 	}
 
 	@Test
+	public void scanOperator() {
+		MonoZip s = new MonoZip<>(true, z -> z);
+		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).as("delayError").isTrue();
+	}
+
+	@Test
 	public void scanCoordinator() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(

@@ -44,7 +44,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
+final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, Scannable {
 
 	final Publisher<? extends T>[] array;
 
@@ -174,6 +174,12 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		actual.onSubscribe(coordinator);
 
 		coordinator.subscribe(a, n);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PREFETCH) return prefetch;
+		return null;
 	}
 
 	static final class CombineLatestCoordinator<T, R>

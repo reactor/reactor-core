@@ -42,7 +42,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
-final class FluxCreate<T> extends Flux<T> {
+final class FluxCreate<T> extends Flux<T> implements Scannable {
 
 	enum CreateMode {
 		PUSH_ONLY, PUSH_PULL
@@ -97,6 +97,11 @@ final class FluxCreate<T> extends Flux<T> {
 			Exceptions.throwIfFatal(ex);
 			sink.error(Operators.onOperatorError(ex, actual.currentContext()));
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 	/**

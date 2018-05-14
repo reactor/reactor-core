@@ -88,6 +88,12 @@ public class FluxJustTest {
         assertThat(value.get()).isEqualTo("test");
     }
 
+    @Test
+    public void scanOperator() {
+    	FluxJust s = new FluxJust("foo");
+    	assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+    }
+
 	@Test
 	public void scanSubscription() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));

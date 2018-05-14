@@ -21,8 +21,11 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoWhenTest {
 
@@ -134,5 +137,11 @@ public class MonoWhenTest {
 
 		StepVerifier.create(Mono.when(voidPublishers))
 		            .verifyErrorMatches(e -> e == boom1);
+	}
+
+	@Test
+	public void scanOperator() {
+		MonoWhen s = new MonoWhen(true);
+		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).as("delayError").isTrue();
 	}
 }

@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -30,7 +31,7 @@ import reactor.core.CoreSubscriber;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxConcatIterable<T> extends Flux<T> {
+final class FluxConcatIterable<T> extends Flux<T> implements Scannable {
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
@@ -59,6 +60,11 @@ final class FluxConcatIterable<T> extends Flux<T> {
 		if (!parent.isCancelled()) {
 			parent.onComplete();
 		}
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 	static final class ConcatIterableSubscriber<T>

@@ -45,7 +45,10 @@ public abstract class Hooks {
 	/**
 	 * Add a {@link Publisher} operator interceptor for each operator created
 	 * ({@link Flux} or {@link Mono}). The passed function is applied to the original
-	 * operator {@link Publisher} and can return a different {@link Publisher}.
+	 * operator {@link Publisher} and can return a different {@link Publisher},
+	 * on the condition that it generically maintains the same data type as the original.
+	 * Use of the {@link Flux}/{@link Mono} APIs is discouraged as it will recursively
+	 * call this hook, leading to {@link StackOverflowError}.
 	 * <p>
 	 * Note that sub-hooks are cumulative, but invoking this method twice with the same instance
 	 * (or any instance that has the same `toString`) will result in only a single instance
@@ -72,7 +75,10 @@ public abstract class Hooks {
 	/**
 	 * Add or replace a named {@link Publisher} operator interceptor for each operator created
 	 * ({@link Flux} or {@link Mono}). The passed function is applied to the original
-	 * operator {@link Publisher} and can return a different {@link Publisher}.
+	 * operator {@link Publisher} and can return a different {@link Publisher},
+	 * on the condition that it generically maintains the same data type as the original.
+	 * Use of the {@link Flux}/{@link Mono} APIs is discouraged as it will recursively
+	 * call this hook, leading to {@link StackOverflowError}.
 	 * <p>
 	 * Note that sub-hooks are cumulative. Invoking this method twice with the same key will
 	 * replace the old sub-hook with that name, but keep the execution order (eg. A-h1, B-h2,
@@ -160,13 +166,18 @@ public abstract class Hooks {
 	/**
 	 * Add a {@link Publisher} operator interceptor for the last operator created
 	 * in every flow ({@link Flux} or {@link Mono}). The passed function is applied
-	 * to the original operator {@link Publisher} and can return a different {@link Publisher}.
+	 * to the original operator {@link Publisher} and can return a different {@link Publisher},
+	 * on the condition that it generically maintains the same data type as the original.
 	 * <p>
 	 * Note that sub-hooks are cumulative, but invoking this method twice with the same
 	 * instance (or any instance that has the same `toString`) will result in only a single
 	 * instance being applied. See {@link #onLastOperator(String, Function)} for a variant
 	 * that allows you to name the sub-hooks (and thus replace them or remove them individually
 	 * later on). Can be fully reset via {@link #resetOnLastOperator()}.
+	 * <p>
+	 * This pointcut function cannot make use of {@link Flux}, {@link Mono} or
+	 * {@link ParallelFlux} APIs as it would lead to a recursive call to the hook: the
+	 * operator calls would effectively invoke onEachOperator from onEachOperator.
 	 *
 	 * @param onLastOperator the sub-hook: a function to intercept last operation call
 	 * (e.g. {@code map(fn2)} in {@code flux.map(fn).map(fn2).subscribe()})
@@ -183,7 +194,10 @@ public abstract class Hooks {
 	/**
 	 * Add or replace a named {@link Publisher} operator interceptor for the last operator created
 	 * in every flow ({@link Flux} or {@link Mono}). The passed function is applied
-	 * to the original operator {@link Publisher} and can return a different {@link Publisher}.
+	 * to the original operator {@link Publisher} and can return a different {@link Publisher},
+	 * on the condition that it generically maintains the same data type as the original.
+	 * Use of the {@link Flux}/{@link Mono} APIs is discouraged as it will recursively
+	 * call this hook, leading to {@link StackOverflowError}.
 	 * <p>
 	 * Note that sub-hooks are cumulative. Invoking this method twice with the same key will
 	 * replace the old sub-hook with that name, but keep the execution order (eg. A-h1, B-h2,
@@ -191,6 +205,10 @@ public abstract class Hooks {
 	 * Removing a particular key using {@link #resetOnLastOperator(String)} then adding it
 	 * back will result in the execution order changing (the later sub-hook being executed
 	 * last). Can be fully reset via {@link #resetOnLastOperator()}.
+	 * <p>
+	 * This pointcut function cannot make use of {@link Flux}, {@link Mono} or
+	 * {@link ParallelFlux} APIs as it would lead to a recursive call to the hook: the
+	 * operator calls would effectively invoke onEachOperator from onEachOperator.
 	 *
 	 * @param key the key for the sub-hook to add/replace
 	 * @param onLastOperator the sub-hook: a function to intercept last operation call

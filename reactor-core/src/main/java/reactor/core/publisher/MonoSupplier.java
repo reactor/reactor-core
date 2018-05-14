@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -31,9 +32,8 @@ import reactor.util.annotation.Nullable;
  * @param <T> the returned value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoSupplier<T> 
-extends Mono<T>
-		implements Callable<T>, Fuseable {
+final class MonoSupplier<T> extends Mono<T>
+		implements Callable<T>, Fuseable, Scannable {
 
 	final Supplier<? extends T> supplier;
 
@@ -83,5 +83,10 @@ extends Mono<T>
 	@Nullable
 	public T call() throws Exception {
 		return supplier.get();
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 }

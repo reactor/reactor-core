@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 
 /**
@@ -55,7 +56,7 @@ public abstract class JdkFlowAdapter {
 		return new FlowPublisherAsFlux<>(publisher);
 	}
 
-	private static class FlowPublisherAsFlux<T> extends Flux<T> {
+	private static class FlowPublisherAsFlux<T> extends Flux<T> implements Scannable {
         private final java.util.concurrent.Flow.Publisher<T> pub;
 
         private FlowPublisherAsFlux(java.util.concurrent.Flow.Publisher<T> pub) {
@@ -66,6 +67,11 @@ public abstract class JdkFlowAdapter {
         public void subscribe(final CoreSubscriber<? super T> actual) {
         	pub.subscribe(new SubscriberToRS<>(actual));
         }
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			return null; //no particular key to be represented, still useful in hooks
+		}
     }
 
     private static class PublisherAsFlowPublisher<T> implements Flow.Publisher<T> {

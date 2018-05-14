@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -27,8 +28,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRange extends Flux<Integer>
-		implements Fuseable {
+final class FluxRange extends Flux<Integer> implements Fuseable, Scannable {
 
 	final long start;
 
@@ -66,6 +66,11 @@ final class FluxRange extends Flux<Integer>
 			return;
 		}
 		actual.onSubscribe(new RangeSubscription(actual, st, en));
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		return null; //no particular key to be represented, still useful in hooks
 	}
 
 	static final class RangeSubscription implements InnerProducer<Integer>,

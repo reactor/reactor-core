@@ -20,6 +20,7 @@ import java.util.Optional;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -115,6 +116,12 @@ public class MonoJustTest {
 	public void onMonoSuccessReturnOnBlock() {
 		assertThat(Mono.just("test")
 		               .block()).isEqualToIgnoringCase("test");
+	}
+
+	@Test
+	public void scanOperator() {
+    	MonoJust s = new MonoJust<>("foo");
+    	assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 	}
 
 }

@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -263,6 +264,12 @@ public class MonoSequenceEqualTest {
 
 		Assert.assertEquals("left has been subscribed multiple times", 1, innerSub1.intValue());
 		Assert.assertEquals("right has been subscribed multiple times", 1, innerSub2.intValue());
+	}
+
+	@Test
+	public void scanOperator() {
+		MonoSequenceEqual<Integer> s = new MonoSequenceEqual<>(Mono.just(1), Mono.just(2), (a, b) -> true, 123);
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 	}
 
 	@Test

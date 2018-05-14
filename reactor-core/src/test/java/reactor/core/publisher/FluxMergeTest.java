@@ -20,8 +20,11 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -142,5 +145,14 @@ public class FluxMergeTest {
 				)
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void scanOperator() {
+		@SuppressWarnings("unchecked")
+		Publisher<String>[] sources = new Publisher[0];
+		FluxMerge<String> s = new FluxMerge<>(sources, true, 3, Queues.small(), 123, Queues.small());
+		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).as("delayError").isTrue();
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).as("prefetch").isEqualTo(123);
 	}
 }
