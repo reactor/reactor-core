@@ -29,16 +29,52 @@ import reactor.util.annotation.Nullable;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
+ * Please note, that along with multiple consumers, current implementation of
+ * DirectProcessor supports multiple producers. However, all producers must produce
+ * messages on the same Thread, otherwise
+ * <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a> contract is
+ * violated.
  * <p>
+ *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/directprocessornormal.png" alt="">
+ * </p>
+ *
+ * </br>
+ * </br>
+ *
  * <p>
- * This implementation signals an IllegalStateException if a Subscriber is not ready to
- * receive a value due to not requesting enough.
+ *     <b>Note: </b> DirectProcessor does not coordinate backpressure between its
+ *     Subscribers and the upstream, but consumes its upstream in an
+ *     unbounded manner.
+ *     In the case where a downstream Subscriber is not ready to receive items (hasn't
+ *     requested yet or enough), it will be terminated with an
+ *     <i>{@link IllegalStateException}</i>.
+ *     Hence in terms of interaction model, DirectProcessor only supports PUSH from the
+ *     source through the processor to the Subscribers.
+ *
+ *     <p>
+ *        <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/directprocessorerror.png" alt="">
+ *     </p>
+ * </p>
+ *
+ * </br>
+ * </br>
+ *
  * <p>
+ *      <b>Note: </b> If there are no Subscribers, upstream items are dropped and only
+ *      the terminal events are retained. A terminated DirectProcessor will emit the
+ *      terminal signal to late subscribers.
+ *
+ *      <p>
+ *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/directprocessorterminal.png" alt="">
+ *      </p>
+ * </p>
+ *
+ * </br>
+ * </br>
+ *
  * <p>
- * The implementation ignores Subscriptions push via onSubscribe.
- * <p>
- * <p>
- * A terminated DirectProcessor will emit the terminal signal to late subscribers.
+ *      <b>Note: </b> The implementation ignores Subscriptions push via onSubscribe.
+ * </p>
  *
  * @param <T> the input and output value type
  */

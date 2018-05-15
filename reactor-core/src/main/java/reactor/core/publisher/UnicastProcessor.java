@@ -35,10 +35,53 @@ import reactor.util.context.Context;
 
 /**
  * A Processor implementation that takes a custom queue and allows
- * only a single subscriber.
+ * only a single subscriber. UnicastProcessor allows demultiplexing of the events which
+ * means that it supports multiple producers and only one consumer.
+ * However, it should be noticed that multi-producer case is only valid if appropriate
+ * Queue
+ * is provided. Otherwise, it could break
+ * <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a> if Publishers
+ * publish on different threads.
  *
  * <p>
- * The implementation keeps the order of signals.
+ *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/unicastprocessornormal.png" alt="">
+ * </p>
+ *
+ * </br>
+ * </br>
+ *
+ * <p>
+ *      <b>Note: </b> UnicastProcessor does not respect the actual subscriber's
+ *      demand as it is described in
+ *      <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a>. However,
+ *      UnicastProcessor embraces configurable Queue internally which allows enabling
+ *      backpressure support and preventing of consumer's overwhelming.
+ *
+ *      Hence, interaction model between producers and UnicastProcessor will be PUSH
+ *      only. In opposite, interaction model between UnicastProcessor and consumer will be
+ *      PUSH-PULL as defined in
+ *      <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a>.
+ *
+ *      In the case when upstream's signals overflow the bound of internal Queue,
+ *      UnicastProcessor will fail with signaling onError(
+ *      {@link reactor.core.Exceptions.OverflowException}).
+ *
+ *      <p>
+ *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/unicastprocessoroverflow.png" alt="">
+ *      </p>
+ * </p>
+ *
+ * </br>
+ * </br>
+ *
+ * <p>
+ *      <b>Note: </b> The implementation keeps the order of signals. That means that in
+ *      case of terminal signal (completion or error signals) it will be postponed
+ *      until all of the previous signals has been consumed.
+ *      <p>
+ *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/unicastprocessorterminal.png" alt="">
+ *      </p>
+ * </p>
  *
  * @param <T> the input and output type
  */
