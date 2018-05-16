@@ -780,8 +780,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -802,8 +802,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param combinator a {@link BiFunction} combinator function when both sources
 	 * complete
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
 	 * @param <O> output value
 	 *
 	 * @return a {@link Mono}.
@@ -825,9 +825,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -849,10 +849,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -878,11 +878,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -910,12 +910,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
 	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -945,13 +945,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
 	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
 	 * @param p7 The seventh upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
-	 * @param <T7> type of the value from source7
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
+	 * @param <T7> type of the value from p7
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -983,14 +983,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
 	 * @param p7 The seventh upstream {@link Publisher} to subscribe to.
 	 * @param p8 The eight upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
-	 * @param <T7> type of the value from source7
-	 * @param <T8> type of the value from source8
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
+	 * @param <T7> type of the value from p7
+	 * @param <T8> type of the value from p8
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1064,8 +1064,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1087,9 +1087,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1112,10 +1112,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1141,11 +1141,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1174,12 +1174,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
 	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1210,13 +1210,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
 	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
 	 * @param p7 The seventh upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
-	 * @param <T7> type of the value from source7
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
+	 * @param <T7> type of the value from p7
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1249,14 +1249,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
 	 * @param p7 The seventh upstream {@link Publisher} to subscribe to.
 	 * @param p8 The eight upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
-	 * @param <T7> type of the value from source7
-	 * @param <T8> type of the value from source8
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
+	 * @param <T7> type of the value from p7
+	 * @param <T8> type of the value from p8
 	 *
 	 * @return a {@link Mono}.
 	 */
