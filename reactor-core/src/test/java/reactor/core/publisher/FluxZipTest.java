@@ -565,6 +565,35 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	@SuppressWarnings("unchecked")
+	public void zip7() {
+		StepVerifier.create(Flux.zip(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				Flux.just(5),
+				Flux.just(6),
+				Flux.just(7)))
+		            .expectNext(Tuples.of(1, 2, 3, 4, 5, 6, 7))
+		            .verifyComplete();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void zip8() {
+		StepVerifier.create(Flux.zip(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				Flux.just(5),
+				Flux.just(6),
+				Flux.just(7),
+				Flux.just(8)))
+		            .expectNext(Tuples.of(1, 2, 3, 4, 5, 6, 7, 8))
+		            .verifyComplete();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
 	public void createZipWithPrefetch() {
 		Flux<Integer>[] list = new Flux[]{Flux.just(1), Flux.just(2)};
 		Flux<Integer> f = Flux.zip(obj -> 0, 123, list);

@@ -33,6 +33,8 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
+import reactor.util.function.Tuple7;
+import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -274,6 +276,45 @@ public class MonoZipTest {
 	}
 
 	@Test
+	public void whenMonoJust7() {
+		MonoProcessor<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>> mp =
+				MonoProcessor.create();
+		StepVerifier.create(Mono.zip(Mono.just(1),
+				Mono.just(2),
+				Mono.just(3),
+				Mono.just(4),
+				Mono.just(5),
+				Mono.just(6),
+				Mono.just(7))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5 && v.getT6() == 6 && v.getT7() == 7).isTrue())
+		            .verifyComplete();
+	}
+
+	@Test
+	public void whenMonoJust8() {
+		MonoProcessor<Tuple8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer>> mp =
+				MonoProcessor.create();
+		StepVerifier.create(Mono.zip(Mono.just(1),
+				Mono.just(2),
+				Mono.just(3),
+				Mono.just(4),
+				Mono.just(5),
+				Mono.just(6),
+				Mono.just(7),
+				Mono.just(8))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5 && v.getT6() == 6 && v.getT7() == 7 && v.getT8() == 8).isTrue())
+		            .verifyComplete();
+	}
+
+	@Test
 	public void whenMonoError() {
 		MonoProcessor<Tuple2<Integer, Integer>> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.zip(Mono.<Integer>error(new Exception("test1")),
@@ -370,6 +411,45 @@ public class MonoZipTest {
 		            .then(() -> assertThat(mp.isSuccess()).isTrue())
 		            .then(() -> assertThat(mp.isTerminated()).isTrue())
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5 && v.getT6() == 6).isTrue())
+		            .verifyComplete();
+	}
+
+	@Test
+	public void whenDelayMonoJust7() {
+		MonoProcessor<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>> mp =
+				MonoProcessor.create();
+		StepVerifier.create(Mono.zipDelayError(Mono.just(1),
+				Mono.just(2),
+				Mono.just(3),
+				Mono.just(4),
+				Mono.just(5),
+				Mono.just(6),
+				Mono.just(7))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5 && v.getT6() == 6 && v.getT7() == 7).isTrue())
+		            .verifyComplete();
+	}
+
+	@Test
+	public void whenDelayMonoJust8() {
+		MonoProcessor<Tuple8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer>> mp =
+				MonoProcessor.create();
+		StepVerifier.create(Mono.zipDelayError(Mono.just(1),
+				Mono.just(2),
+				Mono.just(3),
+				Mono.just(4),
+				Mono.just(5),
+				Mono.just(6),
+				Mono.just(7),
+				Mono.just(8))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5 && v.getT6() == 6 && v.getT7() == 7 && v.getT8() == 8).isTrue())
 		            .verifyComplete();
 	}
 
