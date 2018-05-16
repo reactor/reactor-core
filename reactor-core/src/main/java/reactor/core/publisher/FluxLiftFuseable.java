@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package reactor.core.publisher;
+
+import java.util.Objects;
+import java.util.function.BiFunction;
+
+import org.reactivestreams.Publisher;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Scannable;
+
+/**
+ * @author Stephane Maldini
+ */
+final class FluxLiftFuseable<I, O> extends FluxOperator<I, O>
+		implements Fuseable {
+
+	final BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
+			lifter;
+
+	FluxLiftFuseable(Publisher<I> p,
+			BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+		super(Flux.from(p));
+		this.lifter = lifter;
+	}
+
+	@Override
+	public void subscribe(CoreSubscriber<? super O> actual) {
+		CoreSubscriber<? super I> input =
+				lifter.apply(Scannable.from(source), actual);
+
+		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
+
+		if (actual instanceof QueueSubscription
+				&& !(input instanceof QueueSubscription)) {
+			//user didn't produce a QueueSubscription, original was one
+			input = Operators.noFusionQueueSubscription(input);
+		}
+		//otherwise QS is not required or user already made a compatible conversion
+		source.subscribe(input);
+	}
+}

@@ -32,11 +32,14 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+
+import static reactor.core.Fuseable.NONE;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -95,9 +98,9 @@ public abstract class Operators {
 	 */
 	@SuppressWarnings("unchecked")
 	@Nullable
-	public static <T> Fuseable.QueueSubscription<T> as(Subscription s) {
-		if (s instanceof Fuseable.QueueSubscription) {
-			return (Fuseable.QueueSubscription<T>) s;
+	public static <T> QueueSubscription<T> as(Subscription s) {
+		if (s instanceof QueueSubscription) {
+			return (QueueSubscription<T>) s;
 		}
 		return null;
 	}
@@ -240,6 +243,26 @@ public abstract class Operators {
 			}
 		}
 		return u;
+	}
+
+	/**
+	 * Decorate a non-fuseable {@link CoreSubscriber} (typically from an intermediate
+	 * operator, and as such also a {@link Subscription}) for compatibility with the
+	 * fusion contract. Despite implementing {@link QueueSubscription}, it always
+	 * {@link QueueSubscription#requestFusion(int) negotiates the fusion} to
+	 * {@link Fuseable#NONE}.
+	 *
+	 * @param input the inner operator to decorate
+	 * @param <T> the type of data on the operator
+	 * @return a non-fuseable inner operator disguised as a {@link QueueSubscription}
+	 */
+	public static <T> CoreSubscriber<? super T> noFusionQueueSubscription(
+			CoreSubscriber<? super T> input) {
+		if (input instanceof QueueSubscription) {
+			return input;
+		}
+
+		return new NoFusionQueueSubscription<>(input);
 	}
 
 	/**
@@ -991,7 +1014,7 @@ public abstract class Operators {
 
 	}
 
-	final static class EmptySubscription implements Fuseable.QueueSubscription<Object>, Scannable {
+	final static class EmptySubscription implements QueueSubscription<Object>, Scannable {
 		static final EmptySubscription INSTANCE = new EmptySubscription();
 
 		@Override
@@ -1022,7 +1045,7 @@ public abstract class Operators {
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE; // can't enable fusion due to complete/error possibility
+			return NONE; // can't enable fusion due to complete/error possibility
 		}
 
 		@Override
@@ -1144,6 +1167,101 @@ public abstract class Operators {
 	}
 
 	/**
+	 * A {@link QueueSubscription} decorating a {@link CoreSubscriber} that isn't
+	 * fuseable by always negotiating fusion to {@link Fuseable#NONE}.
+	 *
+	 * @param <T>
+	 */
+	static final class NoFusionQueueSubscription<T>
+			implements InnerOperator<T, T>, QueueSubscription<T> {
+
+		final CoreSubscriber<? super T> actual;
+
+		Subscription s;
+
+		NoFusionQueueSubscription(CoreSubscriber<? super T> actual) {
+			this.actual = actual;
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) {
+				return s;
+			}
+
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
+
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				actual.onSubscribe(this);
+			}
+		}
+
+		@Override
+		public void onNext(T t) {
+			actual.onNext(t);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			actual.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			actual.onComplete();
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return NONE;
+		}
+
+		@Override
+		public void clear() {
+			// should not be called because fusion is always rejected
+		}
+
+		@Override
+		public boolean isEmpty() {
+			// should not be called because fusion is always rejected
+			return false;
+		}
+
+		@Override
+		public int size() {
+			// should not be called because fusion is always rejected
+			return 0;
+		}
+
+		@Override
+		@Nullable
+		public T poll() {
+			// should not be called because fusion is always rejected
+			return null;
+		}
+	}
+
+	/**
 	 * A Subscriber/Subscription barrier that holds a single value at most and properly gates asynchronous behaviors
 	 * resulting from concurrent request or cancel and onXXX signals.
 	 * Publisher Operators using this Subscriber can be fused (implement Fuseable).
@@ -1154,7 +1272,7 @@ public abstract class Operators {
 	public static class MonoSubscriber<I, O>
 			implements InnerOperator<I, O>,
 			           Fuseable, //for constants only
-			           Fuseable.QueueSubscription<O> {
+			           QueueSubscription<O> {
 
 		protected final CoreSubscriber<? super O> actual;
 
@@ -1845,20 +1963,37 @@ public abstract class Operators {
 			if (filter != null && !filter.test(Scannable.from(publisher))) {
 				return (Publisher<O>)publisher;
 			}
-			if (publisher instanceof Mono) {
-				return new MonoLift<>(publisher, lifter);
-			}
-			if (publisher instanceof ParallelFlux) {
-				return new ParallelLift<>((ParallelFlux<I>)publisher, lifter);
-			}
-			if (publisher instanceof ConnectableFlux) {
-				return new ConnectableLift<>((ConnectableFlux<I>) publisher, lifter);
-			}
-			if (publisher instanceof GroupedFlux) {
-				return new GroupedLift<>((GroupedFlux<?, I>) publisher, lifter);
-			}
 
-			return new FluxLift<>(publisher, lifter);
+			if (publisher instanceof Fuseable) {
+				if (publisher instanceof Mono) {
+					return new MonoLiftFuseable<>(publisher, lifter);
+				}
+				if (publisher instanceof ParallelFlux) {
+					return new ParallelLiftFuseable<>((ParallelFlux<I>)publisher, lifter);
+				}
+				if (publisher instanceof ConnectableFlux) {
+					return new ConnectableLiftFuseable<>((ConnectableFlux<I>) publisher, lifter);
+				}
+				if (publisher instanceof GroupedFlux) {
+					return new GroupedLiftFuseable<>((GroupedFlux<?, I>) publisher, lifter);
+				}
+				return new FluxLiftFuseable<>(publisher, lifter);
+			}
+			else {
+				if (publisher instanceof Mono) {
+					return new MonoLift<>(publisher, lifter);
+				}
+				if (publisher instanceof ParallelFlux) {
+					return new ParallelLift<>((ParallelFlux<I>)publisher, lifter);
+				}
+				if (publisher instanceof ConnectableFlux) {
+					return new ConnectableLift<>((ConnectableFlux<I>) publisher, lifter);
+				}
+				if (publisher instanceof GroupedFlux) {
+					return new GroupedLift<>((GroupedFlux<?, I>) publisher, lifter);
+				}
+				return new FluxLift<>(publisher, lifter);
+			}
 		}
 	}
 
