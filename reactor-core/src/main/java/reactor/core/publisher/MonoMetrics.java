@@ -28,7 +28,11 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**
- * Activate metrics gathering on a {@link Mono} if Micrometer is on the classpath.
+ * Activate metrics gathering on a {@link Mono}, assumes Micrometer is on the classpath.
+ *
+ * @implNote Metrics.isMicrometerAvailable() test should be performed BEFORE instantiating
+ * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
+ * Micrometer is not there.
  *
  * @author Simon Baslé
  */
@@ -38,7 +42,7 @@ public class MonoMetrics<T> extends MonoOperator<T, T> {
 	final List<Tag> tags;
 
 	@Nullable
-	final Object registryCandidate;
+	final MeterRegistry meterRegistry;
 
 	MonoMetrics(Mono<? extends T> mono) {
 		this(mono, null);
@@ -47,33 +51,26 @@ public class MonoMetrics<T> extends MonoOperator<T, T> {
 	/**
 	 * For testing purposes.
 	 *
-	 * @param registryCandidate the registry to use, as a plain {@link Object} to avoid leaking dependency
+	 * @param meterRegistry the registry to use
 	 */
-	MonoMetrics(Mono<? extends T> mono, @Nullable Object registryCandidate) {
+	MonoMetrics(Mono<? extends T> mono, @Nullable MeterRegistry meterRegistry) {
 		super(mono);
 
 		Tuple2<String, List<Tag>> nameAndTags = FluxMetrics.resolveNameAndTags(mono);
 		this.name = nameAndTags.getT1();
 		this.tags = nameAndTags.getT2();
 
-		this.registryCandidate = registryCandidate;
+		this.meterRegistry = meterRegistry;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<? super T> metricsOperator;
-		if (reactor.util.Metrics.isMicrometerAvailable()) {
-			MeterRegistry registry = Metrics.globalRegistry;
-			if (registryCandidate instanceof MeterRegistry) {
-				registry = (MeterRegistry) registryCandidate;
-			}
-			metricsOperator = new MicrometerMetricsSubscriber<>(actual, registry,
-					Clock.SYSTEM, this.name, this.tags, true);
+		MeterRegistry registry = Metrics.globalRegistry;
+		if (meterRegistry != null) {
+			registry = meterRegistry;
 		}
-		else {
-			metricsOperator = actual;
-		}
-		source.subscribe(metricsOperator);
+		source.subscribe(new MicrometerMetricsSubscriber<>(actual, registry,
+				Clock.SYSTEM, this.name, this.tags,true));
 	}
 
 }

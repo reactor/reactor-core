@@ -20,9 +20,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
+ * Utility class around metrics, useful to programmatically reference meters and detect
+ * if Micrometer is on the classpath. For now hidden from the public API.
+ *
  * @author Simon Baslé
  */
-public final class Metrics {
+final class Metrics {
 
 	private static final boolean isMicrometerAvailable;
 

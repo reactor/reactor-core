@@ -29,8 +29,12 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**
- * Activate metrics gathering on a {@link Mono} if Micrometer is on the classpath
- * (Fuseable version).
+ * Activate metrics gathering on a {@link Mono} (Fuseable version), assumes Micrometer is
+ * on the classpath.
+ *
+ * @implNote Metrics.isMicrometerAvailable() test should be performed BEFORE instantiating
+ * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
+ * Micrometer is not there.
  *
  * @author Simon Baslé
  */
@@ -40,7 +44,7 @@ public class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseab
 	final List<Tag> tags;
 
 	@Nullable
-	final Object registryCandidate;
+	final MeterRegistry registryCandidate;
 
 	MonoMetricsFuseable(Mono<? extends T> mono) {
 		this(mono, null);
@@ -51,7 +55,7 @@ public class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseab
 	 *
 	 * @param registryCandidate the registry to use, as a plain {@link Object} to avoid leaking dependency
 	 */
-	MonoMetricsFuseable(Mono<? extends T> mono, @Nullable Object registryCandidate) {
+	MonoMetricsFuseable(Mono<? extends T> mono, @Nullable MeterRegistry registryCandidate) {
 		super(mono);
 
 		Tuple2<String, List<Tag>> nameAndTags = FluxMetrics.resolveNameAndTags(mono);
@@ -64,18 +68,12 @@ public class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseab
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<? super T> metricsOperator;
-		if (reactor.util.Metrics.isMicrometerAvailable()) {
 			MeterRegistry registry = Metrics.globalRegistry;
-			if (registryCandidate instanceof MeterRegistry) {
-				registry = (MeterRegistry) registryCandidate;
+			if (registryCandidate != null) {
+				registry = registryCandidate;
 			}
-			metricsOperator = new MicrometerMetricsFuseableSubscriber<>(actual, registry,
-					Clock.SYSTEM, this.name, this.tags, true);
-		}
-		else {
-			metricsOperator = actual;
-		}
-		source.subscribe(metricsOperator);
+		source.subscribe(new MicrometerMetricsFuseableSubscriber<>(actual, registry,
+				Clock.SYSTEM, this.name, this.tags, true));
 	}
 
 }

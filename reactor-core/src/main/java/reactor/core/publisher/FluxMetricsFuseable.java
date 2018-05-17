@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.List;
 
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
@@ -30,8 +31,12 @@ import reactor.util.function.Tuple2;
 import static reactor.core.publisher.FluxMetrics.resolveNameAndTags;
 
 /**
- * Activate metrics gathering on a {@link Flux} if Micrometer is on the classpath
- * (Fuseable version).
+ * Activate metrics gathering on a {@link Flux} (Fuseable version), assumes Micrometer is
+ * on the classpath.
+ *
+ * @implNote Metrics.isMicrometerAvailable() test should be performed BEFORE instantiating
+ * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
+ * Micrometer is not there.
  *
  * @author Simon Baslé
  */
@@ -40,7 +45,7 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 	final String    name;
 	final List<Tag> tags;
 	@Nullable
-	final Object    registryCandidate;
+	final MeterRegistry     registryCandidate;
 
 	FluxMetricsFuseable(Flux<? extends T> flux) {
 		this(flux, null);
@@ -51,7 +56,7 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 	 *
 	 * @param candidate the registry to use, as a plain {@link Object} to avoid leaking dependency
 	 */
-	FluxMetricsFuseable(Flux<? extends T> flux, @Nullable Object candidate) {
+	FluxMetricsFuseable(Flux<? extends T> flux, @Nullable MeterRegistry candidate) {
 		super(flux);
 
 		Tuple2<String, List<Tag>> nameAndTags = resolveNameAndTags(flux);
@@ -63,19 +68,12 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<? super T> metricsOperator;
-		if (reactor.util.Metrics.isMicrometerAvailable()) {
-			MeterRegistry registry = Metrics.globalRegistry;
-			if (registryCandidate instanceof MeterRegistry) {
-				registry = (MeterRegistry) registryCandidate;
-			}
-			metricsOperator = new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(actual, registry,
-					Clock.SYSTEM, this.name, this.tags, false);
+		MeterRegistry registry = Metrics.globalRegistry;
+		if (registryCandidate != null) {
+			registry = registryCandidate;
 		}
-		else {
-			metricsOperator = actual;
-		}
-		source.subscribe(metricsOperator);
+		source.subscribe(new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(actual, registry,
+				Clock.SYSTEM, this.name, this.tags, false));
 	}
 
 }

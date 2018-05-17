@@ -43,7 +43,11 @@ import reactor.util.function.Tuples;
 import static reactor.util.Metrics.*;
 
 /**
- * Activate metrics gathering on a {@link Flux} if Micrometer is on the classpath.
+ * Activate metrics gathering on a {@link Flux}, assuming Micrometer is on the classpath.
+ *
+ * @implNote Metrics.isMicrometerAvailable() test should be performed BEFORE instantiating
+ * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
+ * Micrometer is not there.
  *
  * @author Simon Baslé
  */
@@ -90,7 +94,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	final List<Tag> tags;
 
 	@Nullable
-	final Object    registryCandidate;
+	final MeterRegistry    registryCandidate;
 
 	FluxMetrics(Flux<? extends T> flux) {
 		this(flux, null);
@@ -99,9 +103,9 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	/**
 	 * For testing purposes.
 	 *
-	 * @param registry the registry to use, as a plain {@link Object} to avoid leaking dependency
+	 * @param registry the registry to use, or null for global one
 	 */
-	FluxMetrics(Flux<? extends T> flux, @Nullable Object registry) {
+	FluxMetrics(Flux<? extends T> flux, @Nullable MeterRegistry registry) {
 		super(flux);
 
 		Tuple2<String, List<Tag>> nameAndTags = resolveNameAndTags(flux);
@@ -113,19 +117,12 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<? super T> metricsOperator;
-		if (reactor.util.Metrics.isMicrometerAvailable()) {
-			MeterRegistry registry = Metrics.globalRegistry;
-			if (registryCandidate instanceof MeterRegistry) {
-				registry = (MeterRegistry) registryCandidate;
-			}
-			metricsOperator = new MicrometerMetricsSubscriber<>(actual, registry,
-					Clock.SYSTEM, this.name, this.tags, false);
+		MeterRegistry registry = Metrics.globalRegistry;
+		if (registryCandidate != null) {
+			registry = registryCandidate;
 		}
-		else {
-			metricsOperator = actual;
-		}
-		source.subscribe(metricsOperator);
+		source.subscribe(new MicrometerMetricsSubscriber<>(actual, registry,
+				Clock.SYSTEM, this.name, this.tags, false));
 	}
 
 	static class MicrometerMetricsSubscriber<T> implements InnerOperator<T,T> {

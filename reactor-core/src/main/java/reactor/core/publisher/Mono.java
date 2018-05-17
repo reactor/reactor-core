@@ -49,6 +49,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -2506,6 +2507,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an instrumented {@link Mono}
 	 */
 	public final Mono<T> metrics() {
+		if (!Metrics.isMicrometerAvailable()) {
+			return this;
+		}
+
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoMetricsFuseable<>(this));
 		}
