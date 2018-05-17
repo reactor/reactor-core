@@ -40,8 +40,6 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import static reactor.util.Metrics.*;
-
 /**
  * Activate metrics gathering on a {@link Flux}, assuming Micrometer is on the classpath.
  *
@@ -54,6 +52,91 @@ import static reactor.util.Metrics.*;
 final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxMetrics.class);
+
+	private static final boolean isMicrometerAvailable;
+
+	static {
+		boolean micrometer;
+		try {
+			io.micrometer.core.instrument.Metrics.globalRegistry.getRegistries();
+			micrometer = true;
+		}
+		catch (Throwable t) {
+			micrometer = false;
+		}
+		isMicrometerAvailable = micrometer;
+	}
+
+	/**
+	 * @return true if the Micrometer instrumentation facade is available
+	 */
+	static final boolean isMicrometerAvailable() {
+		return isMicrometerAvailable;
+	}
+
+	//=== Constants ===
+
+	/**
+	 * The default sequence name that will be used for instrumented {@link Flux} and
+	 * {@link Mono} that don't have a {@link Flux#name(String) name}.
+	 *
+	 * @see #TAG_SEQUENCE_NAME
+	 */
+	static final String REACTOR_DEFAULT_NAME = "reactor";
+
+	//Note: meters and tag names are normalized by micrometer on the basis that the word
+	// separator is the dot, not camelCase...
+	/**
+	 * Meter that counts the number of events received from a malformed source (ie an
+	 * onNext after an onComplete).
+	 */
+	static final String METER_MALFORMED              = "reactor.malformed.source";
+	/**
+	 * Meter that counts the number of subscriptions to a sequence.
+	 */
+	static final String METER_SUBSCRIBED             = "reactor.subscribed";
+	/**
+	 * Meter that times the duration between the subscription and the sequence's terminal
+	 * event. The timer is also using the {@link #TAG_TERMINATION_TYPE} tag to determine
+	 * which kind of event terminated the sequence.
+	 */
+	static final String METER_SUBSCRIBE_TO_TERMINATE = "reactor.subscribe.to.terminate";
+	/**
+	 * Meter that times the delays between each onNext (or between the first onNext and
+	 * the onSubscribe event).
+	 */
+	static final String METER_ON_NEXT_DELAY          = "reactor.onNext.delay";
+	/**
+	 * Meter that tracks the request amount, in {@link Flux#name(String) named}
+	 * sequences only.
+	 */
+	static final String METER_REQUESTED              = "reactor.requested";
+
+	/**
+	 * Tag used by {@link #METER_SUBSCRIBE_TO_TERMINATE} to mark what kind of terminating
+	 * event occurred: {@link #TAGVALUE_ON_COMPLETE}, {@link #TAGVALUE_ON_ERROR} or
+	 * {@link #TAGVALUE_CANCEL}.
+	 */
+	static final String TAG_TERMINATION_TYPE = "reactor.termination.type";
+	/**
+	 * Tag bearing the sequence's name, as given by the {@link Flux#name(String)} operator.
+	 */
+	static final String TAG_SEQUENCE_NAME    = "reactor.sequence.name";
+	/**
+	 * Tag bearing the sequence's type, {@link Flux} or {@link Mono}.
+	 * @see #TAGVALUE_FLUX
+	 * @see #TAGVALUE_MONO
+	 */
+	static final String TAG_SEQUENCE_TYPE    = "reactor.sequence.type";
+
+	//... tag values are free-for-all
+	static final String TAGVALUE_ON_ERROR    = "onError";
+	static final String TAGVALUE_ON_COMPLETE = "onComplete";
+	static final String TAGVALUE_CANCEL      = "cancel";
+	static final String TAGVALUE_FLUX        = "Flux";
+	static final String TAGVALUE_MONO        = "Mono";
+
+	// === Utility Methods ===
 
 	/**
 	 * Extract the name and tags from the upstream, and detect if there was an actual name
@@ -83,12 +166,14 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		else {
 			LOGGER.warn("Attempting to activate metrics but the upstream is not Scannable. " +
 					"You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
-			name = reactor.util.Metrics.REACTOR_DEFAULT_NAME;
+			name = REACTOR_DEFAULT_NAME;
 			tags = Collections.emptyList();
 		}
 
 		return Tuples.of(name, tags);
 	}
+
+	// === Operator ===
 
 	final String    name;
 	final List<Tag> tags;

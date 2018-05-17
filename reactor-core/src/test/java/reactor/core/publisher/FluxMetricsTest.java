@@ -36,7 +36,7 @@ import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
-import static reactor.util.Metrics.*;
+import static reactor.core.publisher.FluxMetrics.*;
 
 public class FluxMetricsTest {
 

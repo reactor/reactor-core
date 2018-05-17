@@ -38,7 +38,7 @@ import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.*;
-import static reactor.util.Metrics.*;
+import static reactor.core.publisher.FluxMetrics.*;
 
 public class FluxMetricsFuseableTest {
 
@@ -119,7 +119,7 @@ public class FluxMetricsFuseableTest {
 		assertThat(val2).isNull();
 
 		//test meters
-		Timer nextTimer = registry.find(reactor.util.Metrics.METER_ON_NEXT_DELAY)
+		Timer nextTimer = registry.find(METER_ON_NEXT_DELAY)
 				.timer();
 
 		assertThat(nextTimer).isNotNull();
