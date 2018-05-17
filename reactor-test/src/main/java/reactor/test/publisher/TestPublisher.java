@@ -52,7 +52,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 
 	/**
 	 * Create a {@link Violation noncompliant} {@link TestPublisher}
-	 * with a given push of reactive streams spec violations that will be overlooked.
+	 * with a given set of reactive streams spec violations that will be overlooked.
 	 *
 	 * @param first the first allowed {@link Violation}
 	 * @param rest additional optional violations
@@ -147,7 +147,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	/**
 	 * Send 1 {@link Subscriber#onNext(Object) onNext} signal to the subscribers.
 	 *
-	 * @param value the item to emit (can be null if the relevant {@link Violation} is push)
+	 * @param value the item to emit (can be null if the relevant {@link Violation} is set)
 	 * @return this {@link TestPublisher} for chaining.
 	 */
 	public abstract TestPublisher<T> next(@Nullable T value);

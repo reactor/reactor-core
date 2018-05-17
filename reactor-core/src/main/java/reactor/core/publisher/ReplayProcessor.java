@@ -145,7 +145,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
 	 * with a timestamp value supplied by the {@link Schedulers#parallel()} and keeps only
 	 * those whose age is less than the supplied time value converted to milliseconds. For
-	 * example, an item arrives at T=0 and the max age is push to 5; at T&gt;=5 this first
+	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
 	 * item is then evicted by any subsequent item or termination signal, leaving the
 	 * buffer empty.
 	 * <p>
@@ -180,7 +180,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
 	 * with a timestamp value supplied by the {@link Scheduler} and keeps only
 	 * those whose age is less than the supplied time value converted to milliseconds. For
-	 * example, an item arrives at T=0 and the max age is push to 5; at T&gt;=5 this first
+	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
 	 * item is then evicted by any subsequent item or termination signal, leaving the
 	 * buffer empty.
 	 * <p>

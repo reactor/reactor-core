@@ -649,7 +649,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to create the resource
 	 * @param sourceSupplier a {@link Mono} factory to create the Mono depending on the created resource
 	 * @param resourceCleanup invoked on completion to clean-up the resource
-	 * @param eager push to true to clean before terminating downstream subscribers
+	 * @param eager set to true to clean before terminating downstream subscribers
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
@@ -1597,7 +1597,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
 	 *
-	 * @param description a description (must be unique enough if forceStackTrace is push
+	 * @param description a description (must be unique enough if forceStackTrace is set
 	 * to false).
 	 * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
 	 * to use a stack trace.

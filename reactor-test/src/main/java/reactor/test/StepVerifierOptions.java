@@ -38,7 +38,7 @@ public class StepVerifierOptions {
 	private Context initialContext;
 
 	/**
-	 * Create a new default push of options for a {@link StepVerifier} that can be tuned
+	 * Create a new default set of options for a {@link StepVerifier} that can be tuned
 	 * using the various available non-getter methods (which can be chained).
 	 */
 	public static StepVerifierOptions create() {
