@@ -57,6 +57,8 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
+import reactor.util.function.Tuple7;
+import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 
 /**
@@ -778,8 +780,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -800,8 +802,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param combinator a {@link BiFunction} combinator function when both sources
 	 * complete
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
 	 * @param <O> output value
 	 *
 	 * @return a {@link Mono}.
@@ -823,9 +825,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -847,10 +849,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -876,11 +878,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -908,12 +910,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
 	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -925,6 +927,83 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
 		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have produced an item, aggregating their values into a {@link Tuple7}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param p7 The seventh upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
+	 * @param <T7> type of the value from p7
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4, T5, T6, T7> Mono<Tuple7<T1, T2, T3, T4, T5, T6, T7>> zip(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6,
+			Mono<? extends T7> p7) {
+		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6, p7));
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have produced an item, aggregating their values into a {@link Tuple8}.
+	 * An error or <strong>empty</strong> completion of any source will cause other sources
+	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param p7 The seventh upstream {@link Publisher} to subscribe to.
+	 * @param p8 The eight upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
+	 * @param <T7> type of the value from p7
+	 * @param <T8> type of the value from p8
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4, T5, T6, T7, T8> Mono<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> zip(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6,
+			Mono<? extends T7> p7,
+			Mono<? extends T8> p8) {
+		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6, p7, p8));
 	}
 
 	/**
@@ -985,8 +1064,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1008,9 +1087,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1033,10 +1112,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1062,11 +1141,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p3 The third upstream {@link Publisher} to subscribe to.
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1095,12 +1174,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
 	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
 	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -1112,6 +1191,85 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
 		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have produced an item, aggregating their values into a {@link Tuple7} and delaying errors.
+	 * If a Mono source completes without value, all other sources are run to completion then
+	 * the resulting {@link Mono} completes empty.
+	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param p7 The seventh upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
+	 * @param <T7> type of the value from p7
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4, T5, T6, T7> Mono<Tuple7<T1, T2, T3, T4, T5, T6, T7>> zipDelayError(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6,
+			Mono<? extends T7> p7) {
+		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6, p7));
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have produced an item, aggregating their values into a {@link Tuple8} and delaying errors.
+	 * If a Mono source completes without value, all other sources are run to completion then
+	 * the resulting {@link Mono} completes empty.
+	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param p7 The seventh upstream {@link Publisher} to subscribe to.
+	 * @param p8 The eight upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from p1
+	 * @param <T2> type of the value from p2
+	 * @param <T3> type of the value from p3
+	 * @param <T4> type of the value from p4
+	 * @param <T5> type of the value from p5
+	 * @param <T6> type of the value from p6
+	 * @param <T7> type of the value from p7
+	 * @param <T8> type of the value from p8
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4, T5, T6, T7, T8> Mono<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> zipDelayError(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6,
+			Mono<? extends T7> p7,
+			Mono<? extends T8> p8) {
+		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6, p7, p8));
 	}
 
 	/**

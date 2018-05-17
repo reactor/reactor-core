@@ -67,6 +67,8 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
+import reactor.util.function.Tuple7;
+import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 
 /**
@@ -1795,6 +1797,81 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T5> source5,
 			Publisher<? extends T6> source6) {
 		return zip(Tuples.fn6(), source1, source2, source3, source4, source5, source6);
+	}
+
+	/**
+	 * Zip seven sources together, that is to say wait for all the sources to emit one
+	 * element and combine these elements once into a {@link Tuple7}.
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/zipt.png" alt="">
+	 * <p>
+	 * @param source1 The first upstream {@link Publisher} to subscribe to.
+	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param source3 The third upstream {@link Publisher} to subscribe to.
+	 * @param source4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param source5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param source6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param source7 The seventh upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 * @param <T5> type of the value from source5
+	 * @param <T6> type of the value from source6
+	 * @param <T7> type of the value from source7
+	 *
+	 * @return a zipped {@link Flux}
+	 */
+	public static <T1, T2, T3, T4, T5, T6, T7> Flux<Tuple7<T1, T2, T3, T4, T5, T6, T7>> zip(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Publisher<? extends T4> source4,
+			Publisher<? extends T5> source5,
+			Publisher<? extends T6> source6,
+			Publisher<? extends T7> source7) {
+		return zip(Tuples.fn7(), source1, source2, source3, source4, source5, source6, source7);
+	}
+
+	/**
+	 * Zip eight sources together, that is to say wait for all the sources to emit one
+	 * element and combine these elements once into a {@link Tuple8}.
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/zipt.png" alt="">
+	 * <p>
+	 * @param source1 The first upstream {@link Publisher} to subscribe to.
+	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param source3 The third upstream {@link Publisher} to subscribe to.
+	 * @param source4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param source5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param source6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param source7 The seventh upstream {@link Publisher} to subscribe to.
+	 * @param source8 The eight upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 * @param <T5> type of the value from source5
+	 * @param <T6> type of the value from source6
+	 * @param <T7> type of the value from source7
+	 * @param <T8> type of the value from source8
+	 *
+	 * @return a zipped {@link Flux}
+	 */
+	public static <T1, T2, T3, T4, T5, T6, T7, T8> Flux<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> zip(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Publisher<? extends T4> source4,
+			Publisher<? extends T5> source5,
+			Publisher<? extends T6> source6,
+			Publisher<? extends T7> source7,
+			Publisher<? extends T8> source8) {
+		return zip(Tuples.fn8(), source1, source2, source3, source4, source5, source6, source7, source8);
 	}
 
 	/**
