@@ -16,8 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.core.Fuseable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,6 +84,7 @@ public class LiftFunctionTest {
 				.isExactlyInstanceOf(ConnectableLift.class);
 	}
 
+	@Ignore("GroupedFlux is always fuseable for now")
 	@Test
 	public void liftGroupedFlux() {
 		Flux<GroupedFlux<String, Integer>> sourceGroups = Flux
@@ -93,6 +98,84 @@ public class LiftFunctionTest {
 		            .doOnNext(liftOperator -> assertThat(liftOperator)
 				            .isInstanceOf(GroupedFlux.class)
 				            .isExactlyInstanceOf(GroupedLift.class))
+		            .blockLast();
+	}
+
+	@Test
+	public void liftMonoFuseable() {
+		Mono<Integer> source = Mono.just(1);
+
+		Operators.LiftFunction<Integer, Integer> liftFunction =
+				new Operators.LiftFunction<>(null, (s, actual) -> actual);
+		Publisher<Integer> liftOperator = liftFunction.apply(source);
+
+		assertThat(liftOperator)
+				.isInstanceOf(Mono.class)
+				.isInstanceOf(Fuseable.class)
+				.isExactlyInstanceOf(MonoLiftFuseable.class);
+	}
+
+	@Test
+	public void liftFluxFuseable() {
+		Flux<Integer> source = Flux.just(1);
+
+		Operators.LiftFunction<Integer, Integer> liftFunction =
+				new Operators.LiftFunction<>(null, (s, actual) -> actual);
+		Publisher<Integer> liftOperator = liftFunction.apply(source);
+
+		assertThat(liftOperator)
+				.isInstanceOf(Flux.class)
+				.isInstanceOf(Fuseable.class)
+				.isExactlyInstanceOf(FluxLiftFuseable.class);
+	}
+
+	@Ignore("Need a fuseable ParallelFlux")
+	@Test
+	public void liftParallelFluxFuseable() {
+//		ParallelFlux<Integer> source = Flux.just(1)
+//		                                   .parallel(2)
+	//FIXME use collect?
+//		                                   .collect(() -> new ArrayList<Integer>(), (c, v) -> c.add(v));
+//
+//		Operators.LiftFunction<Integer, Integer> liftFunction =
+//				new Operators.LiftFunction<>(null, (s, actual) -> actual);
+//		Publisher<Integer> liftOperator = liftFunction.apply(source);
+//
+//		assertThat(liftOperator)
+//				.isInstanceOf(ParallelFlux.class)
+//				.isExactlyInstanceOf(ParallelLiftFuseable.class);
+	}
+
+	@Test
+	public void liftConnectableFluxFuseable() {
+		ConnectableFlux<Integer> source = Flux.just(1)
+		                                      .publish()
+		                                      .replay(2);
+
+		Operators.LiftFunction<Integer, Integer> liftFunction =
+				new Operators.LiftFunction<>(null, (s, actual) -> actual);
+		Publisher<Integer> liftOperator = liftFunction.apply(source);
+
+		assertThat(liftOperator)
+				.isInstanceOf(ConnectableFlux.class)
+				.isInstanceOf(Fuseable.class)
+				.isExactlyInstanceOf(ConnectableLiftFuseable.class);
+	}
+
+	@Test
+	public void liftGroupedFluxFuseable() {
+		Flux<GroupedFlux<String, Integer>> sourceGroups = Flux
+				.just(1)
+				.groupBy(i -> "" + i);
+
+		Operators.LiftFunction<Integer, Integer> liftFunction =
+				new Operators.LiftFunction<>(null, (s, actual) -> actual);
+
+		sourceGroups.map(g -> liftFunction.apply(g))
+		            .doOnNext(liftOperator -> assertThat(liftOperator)
+				            .isInstanceOf(GroupedFlux.class)
+				            .isInstanceOf(Fuseable.class)
+				            .isExactlyInstanceOf(GroupedLiftFuseable.class))
 		            .blockLast();
 	}
 }
