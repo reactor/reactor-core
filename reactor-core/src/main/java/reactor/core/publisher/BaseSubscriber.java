@@ -195,7 +195,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 				hookOnComplete();
 			}
 			catch (Throwable throwable) {
-				//onError itself will short-circuit due to the CancelledSubscription being push above
+				//onError itself will short-circuit due to the CancelledSubscription being set above
 				hookOnError(Operators.onOperatorError(throwable, currentContext()));
 			}
 			finally {

@@ -2413,7 +2413,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * the resulting {@link Flux} each time the given predicate returns true. Note that
 	 * the buffer into which the element that triggers the predicate to return true
 	 * (and thus closes a buffer) is included depends on the {@code cutBefore} parameter:
-	 * push it to true to include the boundary element in the newly opened buffer, false to
+	 * set it to true to include the boundary element in the newly opened buffer, false to
 	 * include it in the closed buffer (as in {@link #bufferUntil(Predicate)}).
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffersize.png"
@@ -2424,7 +2424,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * termination.
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
-	 * @param cutBefore push to true to include the triggering element in the new buffer rather than the old.
+	 * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate, boolean cutBefore) {
@@ -2680,7 +2680,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
 	 *
-	 * @param description a description (must be unique enough if forceStackTrace is push
+	 * @param description a description (must be unique enough if forceStackTrace is set
 	 * to false).
 	 * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
 	 * to use a stack trace.
@@ -7851,7 +7851,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-	 * @param cutBefore push to true to include the triggering element in the new window rather than the old.
+	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
 	 * on the predicate.
 	 */
@@ -7877,7 +7877,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-	 * @param cutBefore push to true to include the triggering element in the new window rather than the old.
+	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
 	 * @param prefetch the request size to use for this {@link Flux}.
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
 	 * on the predicate.

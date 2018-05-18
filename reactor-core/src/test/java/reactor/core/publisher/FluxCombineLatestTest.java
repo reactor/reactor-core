@@ -265,7 +265,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 		FluxCombineLatest.CombineLatestCoordinator<String, Integer> test = new FluxCombineLatest.CombineLatestCoordinator<>(
 				actual, arr -> { throw new IllegalStateException("boomArray");}, 123, Queues.<FluxCombineLatest.SourceAndArray>one().get(), 456);
 		test.request(2L);
-		test.error = new IllegalStateException("boom"); //most straightforward way to push it as otherwise it is drained
+		test.error = new IllegalStateException("boom"); //most straightforward way to set it as otherwise it is drained
 
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);

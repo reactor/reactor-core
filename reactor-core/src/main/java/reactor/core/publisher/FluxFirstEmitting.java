@@ -28,7 +28,7 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
- * Given a push of source Publishers the values of that Publisher is forwarded to the
+ * Given a set of source Publishers the values of that Publisher is forwarded to the
  * subscriber which responds first with any signal.
  *
  * @param <T> the value type

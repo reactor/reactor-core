@@ -97,7 +97,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 		/**
 		 * Configures name for this builder. Default value is TopicProcessor.
-		 * Name is push to default if the provided <code>name</code> is null.
+		 * Name is set to default if the provided <code>name</code> is null.
 		 * @param name Use a new cached ExecutorService and assign this name to the created threads
 		 *             if {@link #executor(ExecutorService)} is not configured.
 		 * @return builder with provided name
@@ -129,7 +129,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 		/**
 		 * Configures wait strategy for this builder. Default value is {@link WaitStrategy#phasedOffLiteLock(long, long, TimeUnit)}.
-		 * Wait strategy is push to default if the provided <code>waitStrategy</code> is null.
+		 * Wait strategy is set to default if the provided <code>waitStrategy</code> is null.
 		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default blocking wait strategy.
 		 * @return builder with provided wait strategy
 		 */
@@ -151,7 +151,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		/**
 		 * Configures an {@link ExecutorService} to execute as many event-loop consuming the
 		 * ringbuffer as subscribers. Name configured using {@link #name(String)} will be ignored
-		 * if executor is push.
+		 * if executor is set.
 		 * @param executor A provided ExecutorService to manage threading infrastructure
 		 * @return builder with provided executor
 		 */
@@ -315,11 +315,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 			signalProcessor.sequence.set(minimum.getAsLong());
 			ringBuffer.addGatingSequence(signalProcessor.sequence);
-			//push eventProcessor sequence to minimum index (replay)
+			//set eventProcessor sequence to minimum index (replay)
 		}
 		else {
 			//otherwise only listen to new data
-			//push eventProcessor sequence to ringbuffer index
+			//set eventProcessor sequence to ringbuffer index
 			signalProcessor.sequence.set(ringBuffer.getCursor());
 			ringBuffer.addGatingSequence(signalProcessor.sequence);
 

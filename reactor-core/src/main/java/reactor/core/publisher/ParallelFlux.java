@@ -205,7 +205,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
 	 *
-	 * @param description a description (must be unique enough if forceStackTrace is push
+	 * @param description a description (must be unique enough if forceStackTrace is set
 	 * to false).
 	 * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
 	 * to use a stack trace.

@@ -1337,7 +1337,7 @@ public class StepVerifierTests {
 	}
 
 	//TODO records: find a way to test the case where supplied collection is null, and signal is complete/error
-	//TODO records: find a way to test the case where there hasn't been a recorder push, and signal is complete/error
+	//TODO records: find a way to test the case where there hasn't been a recorder set, and signal is complete/error
 
 	@Test
 	public void cancelOnUnexpectedNextWithMoreData() {

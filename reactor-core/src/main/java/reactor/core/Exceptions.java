@@ -347,7 +347,7 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Throws a particular {@code Throwable} only if it belongs to a push of "fatal" error
+	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error
 	 * varieties. These varieties are as follows: <ul>
 	 *     <li>{@code BubblingException} (as detectable by {@link #isBubbling(Throwable)})</li>
 	 *     <li>{@code ErrorCallbackNotImplemented} (as detectable by {@link #isErrorCallbackNotImplemented(Throwable)})</li>
@@ -366,7 +366,7 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Throws a particular {@code Throwable} only if it belongs to a push of "fatal" error
+	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error
 	 * varieties native to the JVM. These varieties are as follows:
 	 * <ul> <li>{@link VirtualMachineError}</li> <li>{@link ThreadDeath}</li>
 	 * <li>{@link LinkageError}</li> </ul>

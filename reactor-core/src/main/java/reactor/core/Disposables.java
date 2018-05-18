@@ -521,11 +521,11 @@ public final class Disposables {
 	static final Disposable DISPOSED = disposed();
 
 	/**
-	 * Atomically push the field to a {@link Disposable} and dispose the old content.
+	 * Atomically set the field to a {@link Disposable} and dispose the old content.
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the new Disposable to push
+	 * @param newValue the new Disposable to set
 	 * @return true if successful, false if the field contains the {@link #DISPOSED} instance.
 	 */
 	static <T> boolean set(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
@@ -552,7 +552,7 @@ public final class Disposables {
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the new Disposable to push, null allowed
+	 * @param newValue the new Disposable to set, null allowed
 	 * @return true if the operation succeeded, false if the target field contained
 	 * the common {@link #DISPOSED} instance and the given disposable is not null but is disposed.
 	 */
