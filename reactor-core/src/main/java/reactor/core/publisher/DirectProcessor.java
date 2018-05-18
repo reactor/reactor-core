@@ -73,7 +73,7 @@ import reactor.util.annotation.Nullable;
  * </br>
  *
  * <p>
- *      <b>Note: </b> The implementation ignores Subscriptions push via onSubscribe.
+ *      <b>Note: </b> The implementation ignores Subscriptions set via onSubscribe.
  * </p>
  *
  * @param <T> the input and output value type

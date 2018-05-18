@@ -57,20 +57,20 @@ public interface Disposable {
 	interface Swap extends Disposable, Supplier<Disposable> {
 
 		/**
-		 * Atomically push the next {@link Disposable} on this container and dispose the previous
+		 * Atomically set the next {@link Disposable} on this container and dispose the previous
 		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
 		 *
-		 * @param next the {@link Disposable} to push, may be null
+		 * @param next the {@link Disposable} to set, may be null
 		 * @return true if the operation succeeded, false if the container has been disposed
 		 * @see #replace(Disposable)
 		 */
 		boolean update(@Nullable Disposable next);
 
 		/**
-		 * Atomically push the next {@link Disposable} on this container but don't dispose the previous
+		 * Atomically set the next {@link Disposable} on this container but don't dispose the previous
 		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
 		 *
-		 * @param next the {@link Disposable} to push, may be null
+		 * @param next the {@link Disposable} to set, may be null
 		 * @return true if the operation succeeded, false if the container has been disposed
 		 * @see #update(Disposable)
 		 */

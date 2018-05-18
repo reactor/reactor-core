@@ -40,11 +40,11 @@ final class OperatorDisposables {
 	static final Disposable DISPOSED = Disposables.disposed();
 
 	/**
-	 * Atomically push the field to a {@link Disposable} and dispose the old content.
+	 * Atomically set the field to a {@link Disposable} and dispose the old content.
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the new Disposable to push
+	 * @param newValue the new Disposable to set
 	 * @return true if successful, false if the field contains the {@link #DISPOSED} instance.
 	 */
 	public static <T> boolean set(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
@@ -66,7 +66,7 @@ final class OperatorDisposables {
 	}
 
 	/**
-	 * Atomically push the field to the given non-null {@link Disposable} and return true,
+	 * Atomically set the field to the given non-null {@link Disposable} and return true,
 	 * or return false if the field is non-null.
 	 * If the target field contains the common {@link #DISPOSED} instance, the supplied disposable
 	 * is disposed. If the field contains other non-null {@link Disposable}, an {@link IllegalStateException}
@@ -74,7 +74,7 @@ final class OperatorDisposables {
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the new Disposable to push, not null
+	 * @param newValue the new Disposable to set, not null
 	 * @return true if the operation succeeded, false
 	 */
 	public static <T> boolean setOnce(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue,
@@ -96,7 +96,7 @@ final class OperatorDisposables {
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the new Disposable to push, null allowed
+	 * @param newValue the new Disposable to set, null allowed
 	 * @return true if the operation succeeded, false if the target field contained
 	 * the common {@link #DISPOSED} instance and the given disposable is not null but is disposed.
 	 */
@@ -161,12 +161,12 @@ final class OperatorDisposables {
 	}
 
 	/**
-	 * Atomically try to push the given {@link Disposable} on the field if it is null or
+	 * Atomically try to set the given {@link Disposable} on the field if it is null or
 	 * disposes it if the field contains {@link #DISPOSED}.
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the disposable to push
+	 * @param newValue the disposable to set
 	 * @return true if successful, false otherwise
 	 */
 	public static <T> boolean trySet(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue) {

@@ -719,7 +719,7 @@ public abstract class Operators {
 	 * @param <F> the instance type containing the field
 	 * @param field the field accessor
 	 * @param instance the parent instance
-	 * @param s the subscription to push once
+	 * @param s the subscription to set once
 	 * @return true if successful, false if the target was not empty or has been cancelled
 	 */
 	public static <F> boolean setOnce(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
@@ -790,7 +790,7 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Check Subscription current state and cancel new Subscription if current is push,
+	 * Check Subscription current state and cancel new Subscription if current is set,
 	 * or return true if ready to subscribe.
 	 *
 	 * @param current current Subscription, expected to be null
@@ -1098,8 +1098,8 @@ public abstract class Operators {
 		/**
 		 * Atomically sets the single subscription and requests the missed amount from it.
 		 *
-		 * @param s the subscription to push
-		 * @return false if this arbiter is cancelled or there was a subscription already push
+		 * @param s the subscription to set
+		 * @return false if this arbiter is cancelled or there was a subscription already set
 		 */
 		public final boolean set(Subscription s) {
 			Objects.requireNonNull(s, "s");
@@ -1208,7 +1208,7 @@ public abstract class Operators {
 					return;
 				}
 
-				// if state is >= HAS_CANCELLED or bit zero is push (*_HAS_VALUE) case, return
+				// if state is >= HAS_CANCELLED or bit zero is set (*_HAS_VALUE) case, return
 				if ((state & ~HAS_REQUEST_NO_VALUE) != 0) {
 					return;
 				}
@@ -1290,7 +1290,7 @@ public abstract class Operators {
 			if (validate(n)) {
 				for (; ; ) {
 					int s = state;
-					// if the any bits 1-31 are push, we are either in fusion mode (FUSED_*)
+					// if the any bits 1-31 are set, we are either in fusion mode (FUSED_*)
 					// or request has been called (HAS_REQUEST_*)
 					if ((s & ~NO_REQUEST_HAS_VALUE) != 0) {
 						return;
@@ -1380,7 +1380,7 @@ public abstract class Operators {
 
 	/**
 	 * A subscription implementation that arbitrates request amounts between subsequent Subscriptions, including the
-	 * duration until the first Subscription is push.
+	 * duration until the first Subscription is set.
 	 * <p>
 	 * The class is thread safe but switching Subscriptions should happen only when the source associated with the current
 	 * Subscription has finished emitting values. Otherwise, two sources may emit for one request.
@@ -1398,7 +1398,7 @@ public abstract class Operators {
 
 		protected boolean unbounded;
 		/**
-		 * The current subscription which may null if no Subscriptions have been push.
+		 * The current subscription which may null if no Subscriptions have been set.
 		 */
 		Subscription subscription;
 		/**
@@ -1601,7 +1601,7 @@ public abstract class Operators {
 		}
 
 		/**
-		 * When setting a new subscription via push(), should
+		 * When setting a new subscription via set(), should
 		 * the previous subscription be cancelled?
 		 * @return true if cancellation is needed
 		 */
