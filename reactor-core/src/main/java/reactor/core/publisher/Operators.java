@@ -32,11 +32,14 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+
+import static reactor.core.Fuseable.NONE;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -95,9 +98,9 @@ public abstract class Operators {
 	 */
 	@SuppressWarnings("unchecked")
 	@Nullable
-	public static <T> Fuseable.QueueSubscription<T> as(Subscription s) {
-		if (s instanceof Fuseable.QueueSubscription) {
-			return (Fuseable.QueueSubscription<T>) s;
+	public static <T> QueueSubscription<T> as(Subscription s) {
+		if (s instanceof QueueSubscription) {
+			return (QueueSubscription<T>) s;
 		}
 		return null;
 	}
@@ -991,7 +994,7 @@ public abstract class Operators {
 
 	}
 
-	final static class EmptySubscription implements Fuseable.QueueSubscription<Object>, Scannable {
+	final static class EmptySubscription implements QueueSubscription<Object>, Scannable {
 		static final EmptySubscription INSTANCE = new EmptySubscription();
 
 		@Override
@@ -1022,7 +1025,7 @@ public abstract class Operators {
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE; // can't enable fusion due to complete/error possibility
+			return NONE; // can't enable fusion due to complete/error possibility
 		}
 
 		@Override
@@ -1154,7 +1157,7 @@ public abstract class Operators {
 	public static class MonoSubscriber<I, O>
 			implements InnerOperator<I, O>,
 			           Fuseable, //for constants only
-			           Fuseable.QueueSubscription<O> {
+			           QueueSubscription<O> {
 
 		protected final CoreSubscriber<? super O> actual;
 
@@ -1845,20 +1848,37 @@ public abstract class Operators {
 			if (filter != null && !filter.test(Scannable.from(publisher))) {
 				return (Publisher<O>)publisher;
 			}
-			if (publisher instanceof Mono) {
-				return new MonoLift<>(publisher, lifter);
-			}
-			if (publisher instanceof ParallelFlux) {
-				return new ParallelLift<>((ParallelFlux<I>)publisher, lifter);
-			}
-			if (publisher instanceof ConnectableFlux) {
-				return new ConnectableLift<>((ConnectableFlux<I>) publisher, lifter);
-			}
-			if (publisher instanceof GroupedFlux) {
-				return new GroupedLift<>((GroupedFlux<?, I>) publisher, lifter);
-			}
 
-			return new FluxLift<>(publisher, lifter);
+			if (publisher instanceof Fuseable) {
+				if (publisher instanceof Mono) {
+					return new MonoLiftFuseable<>(publisher, lifter);
+				}
+				if (publisher instanceof ParallelFlux) {
+					return new ParallelLiftFuseable<>((ParallelFlux<I>)publisher, lifter);
+				}
+				if (publisher instanceof ConnectableFlux) {
+					return new ConnectableLiftFuseable<>((ConnectableFlux<I>) publisher, lifter);
+				}
+				if (publisher instanceof GroupedFlux) {
+					return new GroupedLiftFuseable<>((GroupedFlux<?, I>) publisher, lifter);
+				}
+				return new FluxLiftFuseable<>(publisher, lifter);
+			}
+			else {
+				if (publisher instanceof Mono) {
+					return new MonoLift<>(publisher, lifter);
+				}
+				if (publisher instanceof ParallelFlux) {
+					return new ParallelLift<>((ParallelFlux<I>)publisher, lifter);
+				}
+				if (publisher instanceof ConnectableFlux) {
+					return new ConnectableLift<>((ConnectableFlux<I>) publisher, lifter);
+				}
+				if (publisher instanceof GroupedFlux) {
+					return new GroupedLift<>((GroupedFlux<?, I>) publisher, lifter);
+				}
+				return new FluxLift<>(publisher, lifter);
+			}
 		}
 	}
 
