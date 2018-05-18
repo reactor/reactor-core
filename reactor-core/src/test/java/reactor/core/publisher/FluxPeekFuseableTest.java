@@ -980,8 +980,13 @@ public class FluxPeekFuseableTest {
 	static class AssertQueueSubscription<T> implements Fuseable.QueueSubscription<T> {
 		boolean isCancelled;
 		int requested;
+		boolean completeWithError;
 
 		private Queue<T> q = Queues.<T>small().get();
+
+		public void setCompleteWithError(boolean completeWithError) {
+			this.completeWithError = completeWithError;
+		}
 
 		@Override
 		public int requestFusion(int requestedMode) {
@@ -1005,7 +1010,11 @@ public class FluxPeekFuseableTest {
 
 		@Override
 		public T poll() {
-			return q.poll();
+			T value = q.poll();
+			if (value == null && completeWithError) {
+				throw new IllegalStateException("AssertQueueSubscriber poll error");
+			}
+			return value;
 		}
 
 		@Override
