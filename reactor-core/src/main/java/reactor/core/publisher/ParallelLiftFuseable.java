@@ -81,7 +81,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 			if (actual instanceof Fuseable.QueueSubscription
 					&& !(converted instanceof QueueSubscription)) {
 				//user didn't produce a QueueSubscription, original was one
-				converted = Operators.noFusionQueueSubscription(converted);
+				converted = new FluxHide.SuppressFuseableSubscriber<>(converted);
 			}
 			//otherwise QS is not required or user already made a compatible conversion
 			subscribers[i++] = converted;

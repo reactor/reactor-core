@@ -246,26 +246,6 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Decorate a non-fuseable {@link CoreSubscriber} (typically from an intermediate
-	 * operator, and as such also a {@link Subscription}) for compatibility with the
-	 * fusion contract. Despite implementing {@link QueueSubscription}, it always
-	 * {@link QueueSubscription#requestFusion(int) negotiates the fusion} to
-	 * {@link Fuseable#NONE}.
-	 *
-	 * @param input the inner operator to decorate
-	 * @param <T> the type of data on the operator
-	 * @return a non-fuseable inner operator disguised as a {@link QueueSubscription}
-	 */
-	public static <T> CoreSubscriber<? super T> noFusionQueueSubscription(
-			CoreSubscriber<? super T> input) {
-		if (input instanceof QueueSubscription) {
-			return input;
-		}
-
-		return new NoFusionQueueSubscription<>(input);
-	}
-
-	/**
 	 * An unexpected exception is about to be dropped.
 	 * <p>
 	 * If no hook is registered for {@link Hooks#onErrorDropped(Consumer)}, the dropped
@@ -1164,101 +1144,6 @@ public abstract class Operators {
 		static final AtomicLongFieldUpdater<DeferredSubscription> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(DeferredSubscription.class, "requested");
 
-	}
-
-	/**
-	 * A {@link QueueSubscription} decorating a {@link CoreSubscriber} that isn't
-	 * fuseable by always negotiating fusion to {@link Fuseable#NONE}.
-	 *
-	 * @param <T>
-	 */
-	static final class NoFusionQueueSubscription<T>
-			implements InnerOperator<T, T>, QueueSubscription<T> {
-
-		final CoreSubscriber<? super T> actual;
-
-		Subscription s;
-
-		NoFusionQueueSubscription(CoreSubscriber<? super T> actual) {
-			this.actual = actual;
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) {
-				return s;
-			}
-
-			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public void request(long n) {
-			s.request(n);
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Override
-		public void onNext(T t) {
-			actual.onNext(t);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			actual.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			actual.onComplete();
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			return NONE;
-		}
-
-		@Override
-		public void clear() {
-			// should not be called because fusion is always rejected
-		}
-
-		@Override
-		public boolean isEmpty() {
-			// should not be called because fusion is always rejected
-			return false;
-		}
-
-		@Override
-		public int size() {
-			// should not be called because fusion is always rejected
-			return 0;
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			// should not be called because fusion is always rejected
-			return null;
-		}
 	}
 
 	/**

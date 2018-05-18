@@ -74,7 +74,7 @@ final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 		if (actual instanceof Fuseable.QueueSubscription
 				&& !(input instanceof QueueSubscription)) {
 			//user didn't produce a QueueSubscription, original was one
-			input = Operators.noFusionQueueSubscription(input);
+			input = new FluxHide.SuppressFuseableSubscriber<>(input);
 		}
 		//otherwise QS is not required or user already made a compatible conversion
 		source.subscribe(input);

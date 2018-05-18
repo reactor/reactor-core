@@ -64,7 +64,7 @@ final class FluxLiftFuseable<I, O> extends FluxOperator<I, O>
 		if (actual instanceof QueueSubscription
 				&& !(input instanceof QueueSubscription)) {
 			//user didn't produce a QueueSubscription, original was one
-			input = Operators.noFusionQueueSubscription(input);
+			input = new FluxHide.SuppressFuseableSubscriber<>(input);
 		}
 		//otherwise QS is not required or user already made a compatible conversion
 		source.subscribe(input);
