@@ -44,7 +44,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressured() {
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
@@ -84,7 +84,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void error() {
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
@@ -101,7 +101,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressureWithDrop() {
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>(0) {
 			@Override

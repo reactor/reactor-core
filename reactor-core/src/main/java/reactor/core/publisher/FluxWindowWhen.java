@@ -101,7 +101,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 		static final AtomicReferenceFieldUpdater<WindowWhenMainSubscriber, Disposable> BOUNDARY =
 				AtomicReferenceFieldUpdater.newUpdater(WindowWhenMainSubscriber.class, Disposable.class, "boundary");
 
-		final List<FluxProcessorSink<T>> windows;
+		final List<FluxProcessorFacade<T>> windows;
 
 		volatile long openWindowCount;
 		static final AtomicLongFieldUpdater<WindowWhenMainSubscriber> OPEN_WINDOW_COUNT =
@@ -134,7 +134,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 				return;
 			}
 			if (fastEnter()) {
-				for (FluxProcessorSink<T> w : windows) {
+				for (FluxProcessorFacade<T> w : windows) {
 					w.asProcessor().onNext(t);
 				}
 				if (leave(-1) == 0) {
@@ -209,7 +209,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 		void drainLoop() {
 			final Queue<Object> q = queue;
 			final Subscriber<? super Flux<T>> a = actual;
-			final List<FluxProcessorSink<T>> ws = this.windows;
+			final List<FluxProcessorFacade<T>> ws = this.windows;
 			int missed = 1;
 
 			for (;;) {
@@ -225,12 +225,12 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 						Throwable e = error;
 						if (e != null) {
 							actual.onError(e);
-							for (FluxProcessorSink<T> w : ws) {
+							for (FluxProcessorFacade<T> w : ws) {
 								w.asProcessor().onError(e);
 							}
 						} else {
 							actual.onComplete();
-							for (FluxProcessorSink<T> w : ws) {
+							for (FluxProcessorFacade<T> w : ws) {
 								w.asProcessor().onComplete();
 							}
 						}
@@ -246,7 +246,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 						@SuppressWarnings("unchecked")
 						WindowOperation<T, U> wo = (WindowOperation<T, U>) o;
 
-						FluxProcessorSink<T> w = wo.w;
+						FluxProcessorFacade<T> w = wo.w;
 						if (w != null) {
 							if (ws.remove(wo.w)) {
 								wo.w.asProcessor().onComplete();
@@ -264,7 +264,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 						}
 
 
-						w = Processors.unicast(processorQueueSupplier.get()).build();
+						w = UnicastProcessor.create(processorQueueSupplier.get());
 
 						long r = requested();
 						if (r != 0L) {
@@ -300,7 +300,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 						continue;
 					}
 
-					for (FluxProcessorSink<T> w : ws) {
+					for (FluxProcessorFacade<T> w : ws) {
 						@SuppressWarnings("unchecked")
 						T t = (T) o;
 						w.asProcessor().onNext(t);
@@ -331,9 +331,9 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 	}
 
 	static final class WindowOperation<T, U> {
-		final FluxProcessorSink<T> w;
+		final FluxProcessorFacade<T> w;
 		final U open;
-		WindowOperation(@Nullable FluxProcessorSink<T> w, @Nullable U open) {
+		WindowOperation(@Nullable FluxProcessorFacade<T> w, @Nullable U open) {
 			this.w = w;
 			this.open = open;
 		}
@@ -407,11 +407,11 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 				AtomicReferenceFieldUpdater.newUpdater(WindowWhenCloseSubscriber.class, Subscription.class, "subscription");
 
 		final WindowWhenMainSubscriber<T, ?, V> parent;
-		final FluxProcessorSink<T>               w;
+		final FluxProcessorFacade<T>               w;
 
 		boolean done;
 
-		WindowWhenCloseSubscriber(WindowWhenMainSubscriber<T, ?, V> parent, FluxProcessorSink<T> w) {
+		WindowWhenCloseSubscriber(WindowWhenMainSubscriber<T, ?, V> parent, FluxProcessorFacade<T> w) {
 			this.parent = parent;
 			this.w = w;
 		}

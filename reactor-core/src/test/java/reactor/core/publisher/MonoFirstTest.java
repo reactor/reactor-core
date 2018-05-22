@@ -106,11 +106,13 @@ public class MonoFirstTest {
 
 	@Test
 	public void firstMonoJust() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		MonoProcessorFacade<Integer> mp = Processors.first();
 		StepVerifier.create(Mono.first(Mono.just(1), Mono.just(2))
-		                        .subscribeWith(mp))
+		                        .subscribeWith(mp)
+		                        .asMono())
 		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isComplete()).isTrue())
+		            .then(() -> assertThat(mp.isValued()).isFalse())
 		            .then(() -> assertThat(mp.isTerminated()).isTrue())
 		            .expectNext(1)
 		            .verifyComplete();

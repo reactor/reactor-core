@@ -37,6 +37,17 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("deprecation")
 public class UnicastProcessorTest {
 
+	@Test
+	public void fluxProcessorFacadeViewsAreSame() {
+		UnicastProcessor<Object> processor = UnicastProcessor.create();
+
+		assertThat(processor)
+				.isSameAs(processor.asCoreSubscriber())
+				.isSameAs(processor.asProcessor())
+				.isSameAs(processor.asScannable())
+				.isSameAs(processor.asFlux());
+	}
+
     @Test
     public void secondSubscriberRejectedProperly() {
 

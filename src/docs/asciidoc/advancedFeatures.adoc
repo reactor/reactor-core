@@ -167,7 +167,7 @@ Compare the first example to the second example, shown in the following code:
 
 [source,java]
 ----
-FluxProcessorSink<String> hotSource = Processors.unicast();
+FluxProcessorSink<String> hotSource = Processors.unicastSink();
 
 Flux<String> hotFlux = hotSource.asFlux()
                                 .publish()

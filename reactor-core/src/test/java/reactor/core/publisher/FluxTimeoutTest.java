@@ -98,9 +98,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		FluxProcessorSink<Integer> source = Processors.direct();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -123,9 +123,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		FluxProcessorSink<Integer> source = Processors.direct();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -148,9 +148,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		FluxProcessorSink<Integer> source = Processors.direct();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -234,9 +234,9 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> source = Processors.direct();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		source.asFlux()
 		      .timeout(tp.asFlux(), v -> tp.asFlux())

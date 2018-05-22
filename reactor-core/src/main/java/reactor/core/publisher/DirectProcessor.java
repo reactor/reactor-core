@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -77,10 +78,11 @@ import reactor.util.annotation.Nullable;
  * </p>
  *
  * @param <T> the input and output value type
- * @deprecated instantiate through {@link Processors#direct()} and use as a {@link ProcessorSink}
+ * @deprecated instantiate through {@link Processors#directSink()} or {@link Processors#direct()}
+ * depending on whether you want to manually push data or push through a source. Will be removed in 3.3.
  */
 @Deprecated
-public final class DirectProcessor<T> extends FluxProcessor<T, T> {
+public final class DirectProcessor<T> extends FluxProcessor<T, T> implements FluxProcessorFacade<T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -274,6 +276,26 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	public boolean hasDownstreams() {
 		DirectInner<T>[] s = subscribers;
 		return s != EMPTY && s != TERMINATED;
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
+	public Processor<T, T> asProcessor() {
+		return this;
+	}
+
+	@Override
+	public CoreSubscriber<T> asCoreSubscriber() {
+		return this;
+	}
+
+	@Override
+	public Scannable asScannable() {
+		return this;
 	}
 
 	@Override

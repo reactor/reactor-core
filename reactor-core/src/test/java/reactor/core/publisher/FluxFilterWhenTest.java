@@ -253,7 +253,7 @@ public class FluxFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final FluxProcessorSink<Boolean> pp = Processors.emitter();
+		final FluxProcessorSink<Boolean> pp = Processors.emitterSink();
 
 		StepVerifier.create(Flux.range(1, 5)
 		                        .filterWhen(v -> pp.asFlux(), 16))

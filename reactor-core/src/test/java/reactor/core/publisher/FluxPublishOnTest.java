@@ -244,7 +244,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		FluxProcessorSink<Integer> up =
-				Processors.unicast(new ConcurrentLinkedQueue<Integer>()).build();
+				Processors.unicast(new ConcurrentLinkedQueue<Integer>()).buildSink();
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.next(i);
@@ -265,7 +265,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void normalAsyncFusedBackpressured() throws Exception {
 		FluxProcessorSink<Integer> up =
-				Processors.unicast(Queues.<Integer>unbounded(1024).get()).build();
+				Processors.unicast(Queues.<Integer>unbounded(1024).get()).buildSink();
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.next(0);
@@ -452,7 +452,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	public void diamond() {
 
-		FluxProcessorSink<Integer> sp = Processors.direct();
+		FluxProcessorFacade<Integer> sp = Processors.direct();
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux<Integer> fork1 = sp.asFlux().map(d -> d)
@@ -696,7 +696,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void mappedAsyncSourceWithNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		FluxProcessorSink<Integer> up =
-				Processors.unicast(Queues.<Integer>get(2).get()).build();
+				Processors.unicast(Queues.<Integer>get(2).get()).buildSink();
 		up.next(1);
 		up.next(2);
 		up.complete();
@@ -717,7 +717,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void mappedAsyncSourceWithNullPostFilter() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		FluxProcessorSink<Integer> up =
-				Processors.unicast(Queues.<Integer>get(2).get()).build();
+				Processors.unicast(Queues.<Integer>get(2).get()).buildSink();
 		up.next(1);
 		up.next(2);
 		up.complete();
@@ -800,7 +800,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void threadBoundaryPreventsInvalidFusionMap() {
 		FluxProcessorSink<Integer> up =
-				Processors.unicast(Queues.<Integer>get(2).get()).build();
+				Processors.unicast(Queues.<Integer>get(2).get()).buildSink();
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -824,7 +824,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void threadBoundaryPreventsInvalidFusionFilter() {
 		FluxProcessorSink<Integer> up =
-				Processors.unicast(Queues.<Integer>get(2).get()).build();
+				Processors.unicast(Queues.<Integer>get(2).get()).buildSink();
 
 		String s = Thread.currentThread()
 		                 .getName();
@@ -1176,7 +1176,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		final ConcurrentHashMap<Object, Long> seenInternal = new ConcurrentHashMap<>();
 		final ConcurrentHashMap<Object, Long> seenConsumer = new ConcurrentHashMap<>();
 
-		FluxProcessorSink<Integer> d = Processors.emitter();
+		FluxProcessorSink<Integer> d = Processors.emitterSink();
 
 		/*Disposable c = */
 		d.asFlux()
@@ -1242,7 +1242,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		CountDownLatch latch = new CountDownLatch(items);
 		Random random = ThreadLocalRandom.current();
 
-		FluxProcessorSink<String> d = Processors.emitter();
+		FluxProcessorSink<String> d = Processors.emitterSink();
 
 		Flux<Integer> tasks = d.asFlux()
 		                       .publishOn(Schedulers.parallel())

@@ -64,6 +64,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
+import reactor.core.publisher.Processors;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.Signal;
 import reactor.core.publisher.SignalType;
@@ -985,7 +986,11 @@ public class FluxTests extends AbstractReactorTest {
 		}).log("points")
 		  .buffer(2)
 		  .map(pairs -> new Point(pairs.get(0), pairs.get(1)))
-		  .subscribeWith(TopicProcessor.<Point>builder().name("tee").bufferSize(32).build());
+		  .subscribeWith(Processors.<Point>fanOut()
+				  .name("tee")
+				  .bufferSize(32)
+				  .buildFacade())
+		  .asFlux();
 
 		Flux<InnerSample> innerSamples = points.log("inner-1")
 		                                          .filter(Point::isInner)

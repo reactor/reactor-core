@@ -86,7 +86,7 @@ public class FluxWindowWhenTest {
 		}
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		final FluxProcessorSink<Wrapper> processor = Processors.unicast();
+		final FluxProcessorSink<Wrapper> processor = Processors.unicastSink();
 
 		Flux<Integer> emitter = Flux.range(1, 400)
 		                            .delayElements(Duration.ofMillis(10))
@@ -141,10 +141,10 @@ public class FluxWindowWhenTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
-		FluxProcessorSink<Integer> sp3 = Processors.direct();
-		FluxProcessorSink<Integer> sp4 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
+		FluxProcessorSink<Integer> sp3 = Processors.directSink();
+		FluxProcessorSink<Integer> sp4 = Processors.directSink();
 
 		sp1.asFlux()
 		   .windowWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
@@ -185,10 +185,10 @@ public class FluxWindowWhenTest {
 	public void normalStarterEnds() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> source = Processors.direct();
-		FluxProcessorSink<Integer> openSelector = Processors.direct();
-		FluxProcessorSink<Integer> closeSelectorFor1 = Processors.direct();
-		FluxProcessorSink<Integer> closeSelectorForOthers = Processors.direct();
+		FluxProcessorSink<Integer> source = Processors.directSink();
+		FluxProcessorSink<Integer> openSelector = Processors.directSink();
+		FluxProcessorSink<Integer> closeSelectorFor1 = Processors.directSink();
+		FluxProcessorSink<Integer> closeSelectorForOthers = Processors.directSink();
 
 		source.asFlux()
 		      .windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorForOthers.asFlux())
@@ -230,10 +230,10 @@ public class FluxWindowWhenTest {
 	public void oneWindowOnly() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> source = Processors.direct();
-		FluxProcessorSink<Integer> openSelector = Processors.direct();
-		FluxProcessorSink<Integer> closeSelectorFor1 = Processors.direct();
-		FluxProcessorSink<Integer> closeSelectorOthers = Processors.direct();
+		FluxProcessorSink<Integer> source = Processors.directSink();
+		FluxProcessorSink<Integer> openSelector = Processors.directSink();
+		FluxProcessorSink<Integer> closeSelectorFor1 = Processors.directSink();
+		FluxProcessorSink<Integer> closeSelectorOthers = Processors.directSink();
 
 		source.asFlux()
 		      .windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorOthers.asFlux())
@@ -266,11 +266,11 @@ public class FluxWindowWhenTest {
 	@Test
 	public void windowWillAcumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		FluxProcessorSink<Integer> numbers = Processors.emitter();
-		FluxProcessorSink<Integer> bucketOpening = Processors.emitter();
+		FluxProcessorSink<Integer> numbers = Processors.emitterSink();
+		FluxProcessorSink<Integer> bucketOpening = Processors.emitterSink();
 
 		//"overlapping buffers"
-		FluxProcessorSink<Integer> boundaryFlux = Processors.emitter();
+		FluxProcessorSink<Integer> boundaryFlux = Processors.emitterSink();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
 		                                                .windowWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())

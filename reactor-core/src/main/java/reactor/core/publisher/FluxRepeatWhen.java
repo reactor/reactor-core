@@ -199,7 +199,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		RepeatWhenMainSubscriber<?> main;
 
-		final FluxProcessorSink<Long> completionSignal = Processors.direct();
+		final FluxProcessorFacade<Long> completionSignal = Processors.direct();
 
 		@Override
 		public Context currentContext() {

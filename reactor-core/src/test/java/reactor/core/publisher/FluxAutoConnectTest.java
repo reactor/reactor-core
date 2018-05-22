@@ -42,7 +42,7 @@ public class FluxAutoConnectTest {
 	
 	@Test
 	public void connectImmediately() {
-		FluxProcessorSink<Integer> e = Processors.emitter();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
@@ -59,7 +59,7 @@ public class FluxAutoConnectTest {
 
 	@Test
 	public void connectAfterMany() {
-		FluxProcessorSink<Integer> e = Processors.emitter();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		

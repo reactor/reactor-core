@@ -22,12 +22,14 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -83,12 +85,12 @@ import reactor.util.context.Context;
  * </p>
  *
  * @param <T> the input and output type
- * @deprecated instantiate through {@link Processors#unicast()} builder and use as a {@link ProcessorSink}
+ * @deprecated instantiate through {@link Processors#unicast()} builder and use as a {@link ProcessorFacade}
  */
 @Deprecated
 public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
-		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T> {
+		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>, FluxProcessorFacade<T> {
 
 	/**
 	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
@@ -152,6 +154,7 @@ public final class UnicastProcessor<T>
 	final Consumer<? super T> onOverflow;
 
 	volatile Disposable onTerminate;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<UnicastProcessor, Disposable> ON_TERMINATE =
 			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Disposable.class, "onTerminate");
@@ -208,7 +211,7 @@ public final class UnicastProcessor<T>
 	}
 
 	/**
-	 * @deprecated use {@link ProcessorSink#getAvailableCapacity()} instead
+	 * @deprecated use {@link ProcessorFacade#getAvailableCapacity()} instead
 	 */
 	@Override
 	@Deprecated
@@ -525,6 +528,26 @@ public final class UnicastProcessor<T>
 	@Override
 	public boolean isTerminated() {
 		return done;
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
+	public Processor<T, T> asProcessor() {
+		return this;
+	}
+
+	@Override
+	public CoreSubscriber<T> asCoreSubscriber() {
+		return this;
+	}
+
+	@Override
+	public Scannable asScannable() {
+		return this;
 	}
 
 	@Override

@@ -100,7 +100,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxProcessorSink<T> window;
+		FluxProcessorFacade<T> window;
 
 		volatile boolean terminated;
 
@@ -128,7 +128,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			return w == null ? Stream.empty() : Stream.of(w.asScannable());
 		}
 
@@ -157,7 +157,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				FluxProcessorSink<T> w = Processors.unicast();
+				FluxProcessorFacade<T> w = Processors.unicast();
 				window = w;
 
 				long r = requested;
@@ -197,7 +197,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 			}
 
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-				FluxProcessorSink<T> w = window;
+				FluxProcessorFacade<T> w = window;
 				w.asProcessor().onNext(t);
 
 				int c = count + 1;
@@ -295,7 +295,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 		void drainLoop() {
 			final Queue<Object> q = queue;
 			final Subscriber<? super Flux<T>> a = actual;
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 
 			int missed = 1;
 			for (; ; ) {

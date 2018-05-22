@@ -51,9 +51,9 @@ public class ProcessorsTestUtils {
 	 * @return the actual {@link CoreSubscriber} the unicast processor is attached to
 	 */
 	public static <T> CoreSubscriber<T> unicastActual(FluxProcessorSink<T> unicast) {
-		assertThat(unicast.asProcessor()).isInstanceOf(InnerOperator.class);
+		assertThat(unicast.asFlux()).isInstanceOf(InnerOperator.class);
 		@SuppressWarnings("unchecked")
-		CoreSubscriber<T> actual = ((InnerOperator) unicast.asProcessor()).actual();
+		CoreSubscriber<T> actual = ((InnerOperator) unicast.asFlux()).actual();
 		return actual;
 	}
 

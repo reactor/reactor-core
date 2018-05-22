@@ -331,8 +331,8 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> source = Flux.range(1, 2).doOnNext(v -> emission.getAndIncrement());
 
-		FluxProcessorSink<Integer> source1 = Processors.emitter();
-		FluxProcessorSink<Integer> source2 = Processors.emitter();
+		FluxProcessorSink<Integer> source1 = Processors.emitterSink();
+		FluxProcessorSink<Integer> source2 = Processors.emitterSink();
 
 		source.flatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), 1, 32).subscribe(ts);
 
@@ -366,8 +366,8 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> source = Flux.range(1, 1000).doOnNext(v -> emission.getAndIncrement());
 
-		FluxProcessorSink<Integer> source1 = Processors.emitter();
-		FluxProcessorSink<Integer> source2 = Processors.emitter();
+		FluxProcessorSink<Integer> source1 = Processors.emitterSink();
+		FluxProcessorSink<Integer> source2 = Processors.emitterSink();
 
 		source.flatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), Integer.MAX_VALUE, 32).subscribe(ts);
 
@@ -608,7 +608,7 @@ public class FluxFlatMapTest {
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failNextOnTerminated() {
-		FluxProcessorSink<Integer> up = Processors.unicast();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 
 		Hooks.onNextDropped(c -> {
 			assertThat(c).isEqualTo(2);
@@ -1029,7 +1029,7 @@ public class FluxFlatMapTest {
 
 		fmm.onSubscribe(Operators.emptySubscription());
 
-		FluxProcessorSink<Integer> ps = Processors.emitter();
+		FluxProcessorSink<Integer> ps = Processors.emitterSink();
 
 		fmm.onNext(ps.asFlux());
 
@@ -1155,7 +1155,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void asyncInnerFusion() {
-		FluxProcessorSink<Integer> up = Processors.unicast();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		StepVerifier.create(Flux.just(1)
 		                        .hide()
 		                        .flatMap(f -> up.asFlux(), 1))
@@ -1170,7 +1170,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void failAsyncInnerFusion() {
-		FluxProcessorSink<Integer> up = Processors.unicast();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		StepVerifier.create(Flux.just(1)
 		                        .hide()
 		                        .flatMap(f -> up.asFlux(), 1))

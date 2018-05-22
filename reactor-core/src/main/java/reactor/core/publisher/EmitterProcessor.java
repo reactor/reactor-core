@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -51,10 +52,11 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
- * @deprecated instantiate through {@link Processors#emitter()} and use as a {@link ProcessorSink}
+ * @deprecated instantiate through {@link Processors#emitter()} and use as a {@link ProcessorFacade}
  */
 @Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
+public final class EmitterProcessor<T> extends FluxProcessor<T, T>
+		implements FluxProcessorFacade<T> {
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
@@ -115,6 +117,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	final boolean autoCancel;
 
 	volatile Subscription s;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
@@ -294,6 +297,26 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		}
 		done = true;
 		drain();
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
+	public Processor<T, T> asProcessor() {
+		return this;
+	}
+
+	@Override
+	public CoreSubscriber<T> asCoreSubscriber() {
+		return this;
+	}
+
+	@Override
+	public Scannable asScannable() {
+		return this;
 	}
 
 	@Override

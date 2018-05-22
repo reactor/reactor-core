@@ -129,7 +129,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final Disposable.Composite cancellations;
 
-		final Map<Integer, FluxProcessorSink<TRight>> lefts;
+		final Map<Integer, FluxProcessorFacade<TRight>> lefts;
 
 		final Map<Integer, TRight> rights;
 
@@ -206,7 +206,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.concat(
-					lefts.values().stream().map(FluxProcessorSink::asScannable),
+					lefts.values().stream().map(FluxProcessorFacade::asScannable),
 					Scannable.from(cancellations).inners()
 			);
 		}
@@ -244,7 +244,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		void errorAll(Subscriber<?> a) {
 			Throwable ex = Exceptions.terminate(ERROR, this);
 
-			for (FluxProcessorSink<TRight> up : lefts.values()) {
+			for (FluxProcessorFacade<TRight> up : lefts.values()) {
 				up.asProcessor().onError(ex);
 			}
 
@@ -285,7 +285,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					boolean empty = mode == null;
 
 					if (d && empty) {
-						for (FluxProcessorSink<?> up : lefts.values()) {
+						for (FluxProcessorFacade<?> up : lefts.values()) {
 							up.asProcessor().onComplete();
 						}
 
@@ -306,7 +306,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					if (mode == LEFT_VALUE) {
 						@SuppressWarnings("unchecked") TLeft left = (TLeft) val;
 
-						FluxProcessorSink<TRight> up = Processors.unicast(processorQueueSupplier.get()).build();
+						FluxProcessorFacade<TRight> up = UnicastProcessor.create(processorQueueSupplier.get());
 						int idx = leftIndex++;
 						lefts.put(idx, up);
 
@@ -407,14 +407,14 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 							return;
 						}
 
-						for (FluxProcessorSink<TRight> up : lefts.values()) {
+						for (FluxProcessorFacade<TRight> up : lefts.values()) {
 							up.asProcessor().onNext(right);
 						}
 					}
 					else if (mode == LEFT_CLOSE) {
 						LeftRightEndSubscriber end = (LeftRightEndSubscriber) val;
 
-						FluxProcessorSink<TRight> up = lefts.remove(end.index);
+						FluxProcessorFacade<TRight> up = lefts.remove(end.index);
 						cancellations.remove(end);
 						if (up != null) {
 							up.asProcessor().onComplete();

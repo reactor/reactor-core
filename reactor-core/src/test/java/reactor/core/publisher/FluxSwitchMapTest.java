@@ -34,8 +34,8 @@ public class FluxSwitchMapTest {
 	public void noswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -64,8 +64,8 @@ public class FluxSwitchMapTest {
 	public void noswitchBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -106,9 +106,9 @@ public class FluxSwitchMapTest {
 	public void doswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
-		FluxProcessorSink<Integer> sp3 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
+		FluxProcessorSink<Integer> sp3 = Processors.directSink();
 
 		sp1.asFlux().switchMap(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
@@ -156,8 +156,8 @@ public class FluxSwitchMapTest {
 	public void mainCompletesBefore() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -185,8 +185,8 @@ public class FluxSwitchMapTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -210,8 +210,8 @@ public class FluxSwitchMapTest {
 	public void innerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -237,7 +237,7 @@ public class FluxSwitchMapTest {
 	public void mapperThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 
 		sp1.asFlux().switchMap(v -> {
 			throw new RuntimeException("forced failure");
@@ -256,7 +256,7 @@ public class FluxSwitchMapTest {
 	public void mapperReturnsNull() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 
 		sp1.asFlux().switchMap(v -> null)
 		   .subscribe(ts);
@@ -278,7 +278,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void switchOnNextDynamicallyOnNext() {
-		FluxProcessorSink<Flux<Integer>> up = Processors.unicast();
+		FluxProcessorSink<Flux<Integer>> up = Processors.unicastSink();
 		up.next(Flux.range(1, 3));
 		up.next(Flux.range(2, 3).concatWith(Mono.never()));
 		up.next(Flux.range(4, 3));

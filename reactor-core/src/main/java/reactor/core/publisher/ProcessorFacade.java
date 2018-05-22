@@ -29,47 +29,48 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Simon Baslé
  */
-public interface ProcessorSink<T> extends Disposable {
+public interface ProcessorFacade<T> extends Disposable {
+//	/**
+//	 * Terminate with the given exception
+//	 * <p>
+//	 * Calling this method multiple times or after the other terminating methods is
+//	 * an unsupported operation. It will discard the exception through the
+//	 * {@link Hooks#onErrorDropped(Consumer)} hook (which by default throws the exception
+//	 * wrapped via {@link reactor.core.Exceptions#bubble(Throwable)}). This is to avoid
+//	 * complete and silent swallowing of the exception.
+//	 *
+//	 * @param e the exception to complete with
+//	 */
+//	void error(Throwable e);
+//
+//	/**
+//	 * Return a view of this {@link ProcessorFacade} that is a
+//	 * {@link Processor Processor&lt;T, T&gt;}, suitable for subscribing to a source
+//	 * {@link Publisher}.
+//	 *
+//	 * @return the {@link Processor} backing this {@link ProcessorFacade}
+//	 */
+//	Processor<T, T> asProcessor();
+//
+//	/**
+//	 * Return a view of this {@link ProcessorFacade} that is a {@link CoreSubscriber},
+//   * suitable for subscribing to a source {@link Publisher}.
+//	 *
+//	 * @implSpec if the backing {@link Processor} doesn't come from Reactor, this method
+//	 * should return it wrapped in a {@link CoreSubscriber} adapter.
+//	 * @return the {@link CoreSubscriber} backing this {@link ProcessorFacade}
+//	 */
+//	CoreSubscriber<T> asCoreSubscriber();
 
 	/**
-	 * Return a view of this {@link ProcessorSink} that is a
-	 * {@link Processor Processor&lt;T, T&gt;}.
-	 *
-	 * @return the {@link Processor} backing this {@link ProcessorSink}
-	 */
-	Processor<T, T> asProcessor();
-
-	/**
-	 * Return a view of this {@link ProcessorSink} that is a {@link CoreSubscriber}, or
-	 *
-	 * @implSpec if the backing {@link Processor} doesn't come from Reactor, this method
-	 * should return it wrapped in a {@link CoreSubscriber} adapter.
-	 * @return the {@link CoreSubscriber} backing this {@link ProcessorSink}
-	 */
-	CoreSubscriber<T> asCoreSubscriber();
-
-	/**
-	 * Return a view of this {@link ProcessorSink} that is {@link Scannable}.
+	 * Return a view of this {@link ProcessorFacade} that is {@link Scannable}.
 	 * <p>
 	 * Possibly return an unscannable instance if no backing element is Scannable
 	 * (see {@link Scannable#isScanAvailable()}).
 	 *
-	 * @return the {@link Scannable} backing this {@link ProcessorSink}
+	 * @return the {@link Scannable} backing this {@link ProcessorFacade}
 	 */
 	Scannable asScannable();
-
-	/**
-	 * Terminate with the give exception
-	 * <p>
-	 * Calling this method multiple times or after the other terminating methods is
-	 * an unsupported operation. It will discard the exception through the
-	 * {@link Hooks#onErrorDropped(Consumer)} hook (which by default throws the exception
-	 * wrapped via {@link reactor.core.Exceptions#bubble(Throwable)}). This is to avoid
-	 * complete and silent swallowing of the exception.
-	 *
-	 * @param e the exception to complete with
-	 */
-	void error(Throwable e);
 
 	/**
 	 * Return the produced {@link Throwable} error if any or null
@@ -98,43 +99,43 @@ public interface ProcessorSink<T> extends Disposable {
 	}
 
 	/**
-	 * Indicates whether this {@link ProcessorSink} has been terminated by the
+	 * Indicates whether this {@link ProcessorFacade} has been terminated by the
 	 * source producer with a success or an error.
 	 *
-	 * @return {@code true} if this {@link ProcessorSink} is successful, {@code false} otherwise.
+	 * @return {@code true} if this {@link ProcessorFacade} is successful, {@code false} otherwise.
 	 */
 	boolean isTerminated();
 
 	/**
-	 * Forcibly terminate the {@link ProcessorSink}, preventing it to be reused and
+	 * Forcibly terminate the {@link ProcessorFacade}, preventing it to be reused and
 	 * resubscribed.
 	 */
 	@Override
 	void dispose();
 
 	/**
-	 * Indicates whether this {@link ProcessorSink} has been terminated by calling its
+	 * Indicates whether this {@link ProcessorFacade} has been terminated by calling its
 	 * {@link #dispose()} method.
 	 *
-	 * @return true if the {@link ProcessorSink} has been terminated.
+	 * @return true if the {@link ProcessorFacade} has been terminated.
 	 */
 	@Override
 	boolean isDisposed();
 
 
 	/**
-	 * For asynchronous {@link ProcessorSink}, which maintain heavy resources
+	 * For asynchronous {@link ProcessorFacade}, which maintain heavy resources
 	 * (such as {@link Processors#fanOut()}), this method attempts to forcibly shutdown
-	 * these resources, unlike {@link #dispose()} which would let the {@link ProcessorSink}
+	 * these resources, unlike {@link #dispose()} which would let the {@link ProcessorFacade}
 	 * tear down the resources gracefully.
 	 * <p>
-	 * Since for asynchronous {@link ProcessorSink} there could be undistributed values at
+	 * Since for asynchronous {@link ProcessorFacade} there could be undistributed values at
 	 * this point, said values are returned as a {@link Flux}.
 	 * <p>
 	 * For other implementations, this is equivalent to calling {@link #dispose()} and
 	 * returns an {@link Flux#empty() empty Flux}.
 	 *
-	 * @return a {@link Flux} of the undistributed values for async {@link ProcessorSink Broadcasters}
+	 * @return a {@link Flux} of the undistributed values for async {@link ProcessorFacade Broadcasters}
 	 */
 	default Flux<T> forceDispose() {
 		dispose();
@@ -142,7 +143,7 @@ public interface ProcessorSink<T> extends Disposable {
 	}
 
 	/**
-	 * For {@link ProcessorSink} that maintain heavy resources (such as {@link Processors#fanOut()}),
+	 * For {@link ProcessorFacade} that maintain heavy resources (such as {@link Processors#fanOut()}),
 	 * this method attempts to shutdown these resources gracefully within the given {@link Duration}.
 	 * Unlike {@link #dispose()}, this <strong>blocks</strong> for the given {@link Duration}.
 	 *
@@ -183,9 +184,9 @@ public interface ProcessorSink<T> extends Disposable {
 	}
 
 	/**
-	 * Return true if this {@link ProcessorSink} supports multithread producing
+	 * Return true if this {@link ProcessorFacade} supports multithread producing
 	 *
-	 * @return true if this {@link ProcessorSink} supports multithread producing
+	 * @return true if this {@link ProcessorFacade} supports multithread producing
 	 */
 	boolean isSerialized();
 

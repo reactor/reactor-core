@@ -47,7 +47,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	final Supplier<? extends Queue<FluxProcessorSink<T>>> overflowQueueSupplier;
+	final Supplier<? extends Queue<FluxProcessorFacade<T>>> overflowQueueSupplier;
 
 	FluxWindow(Flux<? extends T> source,
 			int size,
@@ -67,7 +67,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			int size,
 			int skip,
 			Supplier<? extends Queue<T>> processorQueueSupplier,
-			Supplier<? extends Queue<FluxProcessorSink<T>>> overflowQueueSupplier) {
+			Supplier<? extends Queue<FluxProcessorFacade<T>>> overflowQueueSupplier) {
 		super(source);
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
@@ -124,7 +124,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxProcessorSink<T> window;
+		FluxProcessorFacade<T> window;
 
 		boolean done;
 
@@ -154,11 +154,11 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 			int i = index;
 
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			if (cancelled == 0 && i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = Processors.unicast(processorQueueSupplier.get()).endCallback(this).build();
+				w = Processors.unicast(processorQueueSupplier.get()).endCallback(this).buildFacade();
 				window = w;
 
 				actual.onNext(w.asFlux());
@@ -185,7 +185,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 				return;
 			}
 			done = true;
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			if (w != null) {
 				window = null;
 				w.asProcessor().onError(t);
@@ -200,7 +200,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 				return;
 			}
 			done = true;
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			if (w != null) {
 				window = null;
 				w.asProcessor().onComplete();
@@ -254,7 +254,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			return w == null ? Stream.empty() : Stream.of(w.asScannable());
 		}
 	}
@@ -290,7 +290,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxProcessorSink<T> window;
+		FluxProcessorFacade<T> window;
 
 		boolean done;
 
@@ -322,11 +322,13 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 			int i = index;
 
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			if (i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = Processors.unicast(processorQueueSupplier.get()).endCallback(this).build();
+				w = Processors.unicast(processorQueueSupplier.get())
+				              .endCallback(this)
+				              .buildFacade();
 				window = w;
 
 				actual.onNext(w.asFlux());
@@ -361,7 +363,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			}
 			done = true;
 
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			if (w != null) {
 				window = null;
 				w.asProcessor().onError(t);
@@ -377,7 +379,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			}
 			done = true;
 
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			if (w != null) {
 				window = null;
 				w.asProcessor().onComplete();
@@ -439,19 +441,19 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			FluxProcessorSink<T> w = window;
+			FluxProcessorFacade<T> w = window;
 			return w == null ? Stream.empty() : Stream.of(w.asScannable());
 		}
 	}
 
-	static final class WindowOverlapSubscriber<T> extends ArrayDeque<FluxProcessorSink<T>>
+	static final class WindowOverlapSubscriber<T> extends ArrayDeque<FluxProcessorFacade<T>>
 			implements Disposable, InnerOperator<T, Flux<T>> {
 
 		final CoreSubscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-		final Queue<FluxProcessorSink<T>> queue;
+		final Queue<FluxProcessorFacade<T>> queue;
 
 		final int size;
 
@@ -499,7 +501,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 				int size,
 				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
-				Queue<FluxProcessorSink<T>> overflowQueue) {
+				Queue<FluxProcessorFacade<T>> overflowQueue) {
 			this.actual = actual;
 			this.size = size;
 			this.skip = skip;
@@ -529,7 +531,9 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 				if (cancelled == 0) {
 					WINDOW_COUNT.getAndIncrement(this);
 
-					FluxProcessorSink<T> w = Processors.unicast(processorQueueSupplier.get()).endCallback(this).build();
+					FluxProcessorFacade<T> w = Processors.unicast(processorQueueSupplier.get())
+					                                     .endCallback(this)
+					                                     .buildFacade();
 
 					offer(w);
 
@@ -540,7 +544,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 			i++;
 
-			for (FluxProcessorSink<T> w : this) {
+			for (FluxProcessorFacade<T> w : this) {
 				w.asProcessor().onNext(t);
 			}
 
@@ -548,7 +552,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			if (p == size) {
 				produced = p - skip;
 
-				FluxProcessorSink<T> w = poll();
+				FluxProcessorFacade<T> w = poll();
 				if (w != null) {
 					w.asProcessor().onComplete();
 				}
@@ -573,7 +577,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			}
 			done = true;
 
-			for (FluxProcessorSink<T> w : this) {
+			for (FluxProcessorFacade<T> w : this) {
 				w.asProcessor().onError(t);
 			}
 			clear();
@@ -589,7 +593,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			}
 			done = true;
 
-			for (FluxProcessorSink<T> w : this) {
+			for (FluxProcessorFacade<T> w : this) {
 				w.asProcessor().onComplete();
 			}
 			clear();
@@ -603,7 +607,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 			}
 
 			final Subscriber<? super Flux<T>> a = actual;
-			final Queue<FluxProcessorSink<T>> q = queue;
+			final Queue<FluxProcessorFacade<T>> q = queue;
 			int missed = 1;
 
 			for (; ; ) {
@@ -614,7 +618,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 				while (e != r) {
 					boolean d = done;
 
-					FluxProcessorSink<T> t = q.poll();
+					FluxProcessorFacade<T> t = q.poll();
 
 					boolean empty = t == null;
 
@@ -738,8 +742,8 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(toArray())
 			             .filter(Objects::nonNull)
-			             .map(o -> ((FluxProcessorSink) o))
-			             .map(FluxProcessorSink::asScannable);
+			             .map(o -> ((FluxProcessorFacade) o))
+			             .map(FluxProcessorFacade::asScannable);
 		}
 	}
 

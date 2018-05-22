@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -45,11 +46,11 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * <p>
  *
  * @param <T> the value type
- * @deprecated instantiate through {@link Processors#replay()} or {@link Processors#cacheLast()} and use as a {@link ProcessorSink}
+ * @deprecated instantiate through {@link Processors#replay()} or {@link Processors#cacheLast()} and use as a {@link ProcessorFacade}
  */
 @Deprecated
 public final class ReplayProcessor<T> extends FluxProcessor<T, T>
-		implements Fuseable {
+		implements Fuseable, FluxProcessorFacade<T> {
 
 	/**
 	 * Create a {@link ReplayProcessor} that caches the last element it has pushed,
@@ -309,6 +310,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	Subscription subscription;
 
 	volatile FluxReplay.ReplaySubscription<T>[] subscribers;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<ReplayProcessor, FluxReplay.ReplaySubscription[]>
 			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(ReplayProcessor.class,
@@ -333,6 +335,26 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			}
 		}
 		buffer.replay(rs);
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
+	public Processor<T, T> asProcessor() {
+		return this;
+	}
+
+	@Override
+	public CoreSubscriber<T> asCoreSubscriber() {
+		return this;
+	}
+
+	@Override
+	public Scannable asScannable() {
+		return this;
 	}
 
 	@Override

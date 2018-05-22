@@ -16,14 +16,14 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Consumer;
-
-import reactor.core.Disposable;
+import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
+import reactor.core.CoreSubscriber;
 
 /**
  * @author Simon Baslé
  */
-public interface FluxProcessorSink<T> extends ProcessorFacade<T>, FluxSink<T> {
+public interface FluxProcessorFacade<T> extends ProcessorFacade<T> {
 
 	/**
 	 * Expose a Reactor {@link Flux} API on top of the {@link FluxProcessorSink}'s output,
@@ -37,22 +37,22 @@ public interface FluxProcessorSink<T> extends ProcessorFacade<T>, FluxSink<T> {
 	Flux<T> asFlux();
 
 	/**
-	 * Terminate with the given exception
-	 * <p>
-	 * Calling this method multiple times or after the other terminating methods is
-	 * an unsupported operation. It will discard the exception through the
-	 * {@link Hooks#onErrorDropped(Consumer)} hook (which by default throws the exception
-	 * wrapped via {@link reactor.core.Exceptions#bubble(Throwable)}). This is to avoid
-	 * complete and silent swallowing of the exception.
+	 * Return a view of this {@link FluxProcessorFacade} that is a
+	 * {@link Processor Processor&lt;T, T&gt;}, suitable for subscribing to a source
+	 * {@link Publisher}.
 	 *
-	 * @param e the exception to complete with
+	 * @return the {@link Processor} backing this {@link ProcessorFacade}
 	 */
-	@Override
-	void error(Throwable e);
+	Processor<T, T> asProcessor();
 
 	/**
-	 * @return the {@link OverflowStrategy} that was used when instantiating this {@link FluxProcessorSink}
+	 * Return a view of this {@link FluxProcessorFacade} that is a {@link CoreSubscriber},
+	 * suitable for subscribing to a source {@link Publisher}.
+	 *
+	 * @implSpec if the backing {@link Processor} doesn't come from Reactor, this method
+	 * should return it wrapped in a {@link CoreSubscriber} adapter.
+	 * @return the {@link CoreSubscriber} backing this {@link ProcessorFacade}
 	 */
-	OverflowStrategy getOverflowStrategy();
+	CoreSubscriber<T> asCoreSubscriber();
 
 }

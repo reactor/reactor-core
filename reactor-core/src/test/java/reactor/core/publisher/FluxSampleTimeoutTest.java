@@ -37,9 +37,9 @@ public class FluxSampleTimeoutTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
-		FluxProcessorSink<Integer> sp3 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
+		FluxProcessorSink<Integer> sp3 = Processors.directSink();
 
 		sp1.asFlux()
 		   .sampleTimeout(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
@@ -78,8 +78,8 @@ public class FluxSampleTimeoutTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux()
 		   .sampleTimeout(v -> sp2.asFlux())
@@ -101,8 +101,8 @@ public class FluxSampleTimeoutTest {
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().sampleTimeout(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -123,7 +123,7 @@ public class FluxSampleTimeoutTest {
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 
 		sp1.asFlux()
 		   .sampleTimeout(v -> null)

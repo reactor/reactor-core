@@ -56,6 +56,17 @@ import static reactor.core.Scannable.Attr;
 public class EmitterProcessorTest {
 
 	@Test
+	public void fluxProcessorFacadeViewsAreSame() {
+		EmitterProcessor<Object> processor = EmitterProcessor.create();
+
+		assertThat(processor)
+				.isSameAs(processor.asCoreSubscriber())
+				.isSameAs(processor.asProcessor())
+				.isSameAs(processor.asScannable())
+				.isSameAs(processor.asFlux());
+	}
+
+	@Test
 	public void testColdIdentityProcessor() throws InterruptedException {
 		final int elements = 10;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
@@ -722,7 +733,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void cancelIsDisposed() {
-		ProcessorSink<Integer> processor = Processors.emitter();
+		FluxProcessorFacade<Integer> processor = Processors.emitter();
 		assertThat(processor.asProcessor()).isExactlyInstanceOf(EmitterProcessor.class);
 
 		assertThat(processor.isDisposed()).as("not yet disposed").isFalse();

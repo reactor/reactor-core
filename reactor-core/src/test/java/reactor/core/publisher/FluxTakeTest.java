@@ -183,7 +183,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressured() {
-		FluxProcessorSink<String> up = Processors.unicast();
+		FluxProcessorSink<String> up = Processors.unicastSink();
 		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
 		            .then(() -> up.next("test"))
@@ -200,7 +200,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressuredCancelled() {
-		FluxProcessorSink<String> up = Processors.unicast();
+		FluxProcessorSink<String> up = Processors.unicastSink();
 		StepVerifier.create(up.asFlux().take(3).doOnSubscribe(s -> {
 			assertThat(((Fuseable.QueueSubscription)s).size()).isEqualTo(0);
 		}), 0)
@@ -297,7 +297,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void failNextIfTerminatedTakeFused() {
-		FluxProcessorSink<Integer> up = Processors.unicast();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		Hooks.onNextDropped(t -> assertThat(t).isEqualTo(1));
 		StepVerifier.create(up.asFlux().take(2))
 		            .then(() -> ProcessorsTestUtils.unicastActual(up).onComplete())
@@ -373,7 +373,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedAsync() {
-		FluxProcessorSink<String> up = Processors.unicast();
+		FluxProcessorSink<String> up = Processors.unicastSink();
 		StepVerifier.create(up.asFlux().take(2))
 		            .expectFusion(Fuseable.ASYNC)
 		            .then(() -> {
@@ -486,7 +486,7 @@ public class FluxTakeTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void failFusedDoubleError() {
-		FluxProcessorSink<Integer> up = Processors.unicast();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
 		StepVerifier.create(up.asFlux()
 		                        .take(2))
@@ -506,7 +506,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void ignoreFusedDoubleComplete() {
-		FluxProcessorSink<Integer> up = Processors.unicast();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		StepVerifier.create(up.asFlux()
 		                        .take(2).filter(d -> true))
 		            .consumeSubscriptionWith(s -> {

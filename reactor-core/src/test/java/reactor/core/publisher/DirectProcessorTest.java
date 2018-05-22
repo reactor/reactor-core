@@ -49,6 +49,17 @@ public class DirectProcessorTest {
     }
 
     @Test
+    public void fluxProcessorFacadeViewsAreSame() {
+	    DirectProcessor<Object> processor = DirectProcessor.create();
+
+	    assertThat(processor)
+			    .isSameAs(processor.asCoreSubscriber())
+			    .isSameAs(processor.asProcessor())
+			    .isSameAs(processor.asScannable())
+			    .isSameAs(processor.asFlux());
+    }
+
+    @Test
     public void normal() {
         DirectProcessor<Integer> tp = DirectProcessor.create();
 

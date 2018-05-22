@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import com.sun.webkit.EventLoop;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -38,16 +39,37 @@ import reactor.util.concurrent.WaitStrategy;
 import reactor.util.context.Context;
 
 /**
- * Utility class to create various flavors of {@link  ProcessorSink Flux Processors}.
+ * Utility class to create various flavors of {@link  ProcessorFacade Flux Processors}.
  *
  * @author Simon Baslé
  */
 public final class Processors {
 
 	/**
-	 * Create a "direct" {@link ProcessorSink}: it can dispatch signals to zero to many
-	 * {@link Subscriber Subscribers}, but has the limitation of not
-	 * handling backpressure.
+	 * Create a "direct" {@link FluxProcessorFacade}: when used {@link FluxProcessorFacade#asProcessor() as a Processor}
+	 * it is suitable for transferring data from a {@link Publisher} source and can
+	 * dispatch signals to zero to many {@link Subscriber Subscribers}, but has the
+	 * limitation of not handling backpressure.
+	 * <p>
+	 * As a consequence, a direct Processor signals an {@link IllegalStateException} to its
+	 * subscribers if you push N elements through it but at least one of its subscribers has
+	 * requested less than N.
+	 * <p>
+	 * Once the Processor has terminated it lets more subscribers subscribe but replays
+	 * the termination signal to them immediately.
+	 *
+	 * @param <T> the type of the data flowing through the processor
+	 * @return a new direct {@link FluxProcessorFacade}
+	 */
+	@SuppressWarnings("deprecation")
+	public static final <T> FluxProcessorFacade<T> direct() {
+		return new DirectProcessor<>();
+	}
+
+	/**
+	 * Create a "direct" {@link FluxProcessorSink}: it is suitable for manual push and
+	 * can dispatch signals to zero to many {@link Subscriber Subscribers}, but has the
+	 * limitation of not handling backpressure.
 	 * <p>
 	 * As a consequence, a direct Processor signals an {@link IllegalStateException} to its
 	 * subscribers if you push N elements through it but at least one of its subscribers has
@@ -58,36 +80,58 @@ public final class Processors {
 	 * subscribe but replays the termination signal to them immediately.
 	 *
 	 * @param <T> the type of the data flowing through the processor
-	 * @return a new direct {@link ProcessorSink}
+	 * @return a new direct {@link ProcessorFacade}
 	 */
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessorSink<T> direct() {
+	public static final <T> FluxProcessorSink<T> directSink() {
 		return new FluxProcessorSinkAdapter<>(new DirectProcessor<>(), null);
 	}
 
+
+
 	/**
-	 * Create an unbounded "unicast" {@link ProcessorSink}, which can deal with
-	 * backpressure using an internal buffer, but <strong>can have at most one
+	 * Create an unbounded "unicast" {@link FluxProcessorFacade}: when used {@link FluxProcessorFacade#asProcessor() as a Processor}
+	 * it is suitable for transferring data from a {@link Publisher} source and can
+	 * deal with backpressure using an internal buffer, but <strong>can have at most one
 	 * {@link Subscriber}</strong>.
 	 * <p>
 	 * The returned unicast Processor is unbounded: if you push any amount of data through
 	 * it while its {@link Subscriber} has not yet requested data, it will buffer
 	 * all of the data. Use the builder variant to provide a {@link Queue} through the
 	 * {@link #unicast(Queue)} method, which returns a builder that allows further
-	 * configuration.
+	 * configuration (as well as obtaining an instance suitable for manual push usage).
 	 *
 	 * @param <T>
-	 * @return a new unicast {@link ProcessorSink}
+	 * @return a new unicast {@link FluxProcessorFacade}
 	 */
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessorSink<T> unicast() {
+	public static final <T> FluxProcessorFacade<T> unicast() {
+		return UnicastProcessor.create();
+	}
+
+	/**
+	 * Create an unbounded "unicast" {@link FluxProcessorSink}: it is suitable for manual
+	 * push and can deal with backpressure using an internal buffer, but <strong>can have
+	 * at most one {@link Subscriber}</strong>.
+	 * <p>
+	 * The returned unicast Processor is unbounded: if you push any amount of data through
+	 * it while its {@link Subscriber} has not yet requested data, it will buffer
+	 * all of the data. Use the builder variant to provide a {@link Queue} through the
+	 * {@link #unicast(Queue)} method, which returns a builder that allows further
+	 * configuration (as well as obtaining an instance suitable for subscribing).
+	 *
+	 * @param <T>
+	 * @return a new unicast {@link FluxProcessorSink}
+	 */
+	@SuppressWarnings("deprecation")
+	public static final <T> FluxProcessorSink<T> unicastSink() {
 		return new FluxProcessorSinkAdapter<>(UnicastProcessor.create(), null);
 	}
 
 	/**
-	 * Create a builder for a "unicast" {@link ProcessorSink}, which can deal with
-	 * backpressure using an internal buffer, but <strong>can have at most one
-	 * {@link Subscriber}</strong>.
+	 * Create a builder for a "unicast" {@link FluxProcessorFacade} or
+	 * {@link FluxProcessorSink}, which can deal with backpressure using an internal buffer
+	 * but <strong>can have at most one {@link Subscriber}</strong>.
 	 * <p>
 	 * This unicast Processor can be fine tuned through its builder, but it requires at
 	 * least a {@link Queue}. If said queue is unbounded and if you push any amount of
@@ -97,17 +141,20 @@ public final class Processors {
 	 *
 	 * @param queue the {@link Queue} to back the processor, making it bounded or unbounded
 	 * @param <T>
-	 * @return a builder to create a new unicast {@link ProcessorSink}
+	 * @return a builder to create a new unicast {@link FluxProcessorFacade} or {@link FluxProcessorSink}
 	 */
 	public static final <T> UnicastProcessorBuilder<T> unicast(Queue<T> queue) {
 		return new UnicastProcessorBuilder<>(queue);
 	}
 
+
+
 	/**
-	 * Create a new "emitter" {@link ProcessorSink}, which is capable
-	 * of emitting to several {@link Subscriber Subscribers} while honoring backpressure
-	 * for each of its subscribers. It can also subscribe to a {@link Publisher} and relay
-	 * its signals synchronously.
+	 * Create a new "emitter" {@link FluxProcessorFacade}: when used
+	 * {@link FluxProcessorFacade#asProcessor() as a Processor} it is suitable for
+	 * transferring data from a {@link Publisher} source and relay its signals synchronously.
+	 * It can emit to several {@link Subscriber Subscribers} while honoring backpressure
+	 * for each of them.
 	 *
 	 * <p>
 	 * Initially, when it has no {@link Subscriber}, this emitter Processor can still accept
@@ -129,17 +176,48 @@ public final class Processors {
 	 * it will clear its internal buffer and stop accepting new subscribers. This can be
 	 * tuned by creating a processor through the builder method, {@link #emitter(int)}.
 	 *
-	 * @return a new auto-cancelling emitter {@link ProcessorSink}
+	 * @return a new auto-cancelling emitter {@link FluxProcessorFacade}
 	 */
-	public static final <T> FluxProcessorSink<T> emitter() {
-		return new EmitterProcessorBuilder(-1).build();
+	public static final <T> FluxProcessorFacade<T> emitter() {
+		return new EmitterProcessorBuilder(-1).buildFacade();
 	}
 
 	/**
-	 * Create a builder for an "emitter" {@link ProcessorSink}, which is capable
+	 * Create a new "emitter" {@link FluxProcessorSink}: it is suitable for manual push and
+	 * can emit to several {@link Subscriber Subscribers} while honoring backpressure
+	 * for each of them.
+	 *
+	 * <p>
+	 * Initially, when it has no {@link Subscriber}, this emitter Processor can still accept
+	 * a few data pushes up to {@link Queues#SMALL_BUFFER_SIZE}.
+	 * After that point, if no {@link Subscriber} has come in and consumed the data,
+	 * calls to {@link FluxProcessorSink#next(Object) onNext} block until the processor
+	 * is drained (which can only happen concurrently by then).
+	 *
+	 * <p>
+	 * Thus, the first {@link Subscriber} to subscribe receives up to {@code bufferSize}
+	 * elements upon subscribing. However, after that, the processor stops replaying signals
+	 * to additional subscribers. These subsequent subscribers instead only receive the
+	 * signals pushed through the processor after they have subscribed. The internal buffer
+	 * is still used for backpressure purposes.
+	 *
+	 * <p>
+	 * The returned emitter Processor is {@code auto-cancelling}, which means that when
+	 * all the Processor's subscribers are cancelled (ie. they have all un-subscribed),
+	 * it will clear its internal buffer and stop accepting new subscribers. This can be
+	 * tuned by creating a processor through the builder method, {@link #emitter(int)}.
+	 *
+	 * @return a new auto-cancelling emitter {@link FluxProcessorSink}
+	 */
+	public static final <T> FluxProcessorSink<T> emitterSink() {
+		return new EmitterProcessorBuilder(-1).buildSink();
+	}
+
+	/**
+	 * Create a builder for an "emitter" {@link FluxProcessorFacade} or {@link FluxProcessorSink}, which is capable
 	 * of emitting to several {@link Subscriber Subscribers} while honoring backpressure
-	 * for each of its subscribers. It can also subscribe to a {@link Publisher} and relay
-	 * its signals synchronously.
+	 * for each of its subscribers. When built as a {@link FluxProcessorFacade} it can
+	 * also subscribe to a {@link Publisher} and relay its signals synchronously.
 	 *
 	 * <p>
 	 * Initially, when it has no {@link Subscriber}, an emitter Processor can still accept
@@ -162,7 +240,7 @@ public final class Processors {
 	 * {@link EmitterProcessorBuilder#noAutoCancel()} method in the builder.
 	 *
 	 * @param bufferSize the size of the initial replay buffer (must be positive)
-	 * @return a builder to create a new emitter {@link ProcessorSink}
+	 * @return a builder to create a new emitter {@link ProcessorFacade}
 	 */
 	public static final EmitterProcessorBuilder emitter(int bufferSize) {
 		if (bufferSize < 0) {
@@ -171,10 +249,12 @@ public final class Processors {
 		return new EmitterProcessorBuilder(bufferSize);
 	}
 
+
+
 	/**
-	 * Create a new unbounded "replay" {@link ProcessorSink}, which caches
-	 * elements that are either pushed directly through it or elements from an upstream
-	 * {@link Publisher}, and replays them to late {@link Subscriber Subscribers}.
+	 * Create a new unbounded "replay" {@link FluxProcessorFacade}, which caches
+	 * elements from an upstream {@link Publisher} and replays them to late
+	 * {@link Subscriber Subscribers}.
 	 *
 	 * <p>
 	 * Replay Processors can be created in multiple configurations (this method creates
@@ -199,17 +279,54 @@ public final class Processors {
 	 *     </li>
 	 * </ul>
 	 *
-	 * @return a builder to create a new replay {@link ProcessorSink}
+	 * @return a new replay {@link FluxProcessorFacade}
 	 */
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessorSink<T> replay() {
+	public static final <T> FluxProcessorFacade<T> replay() {
+		return ReplayProcessor.create();
+	}
+
+
+	/**
+	 * Create a new unbounded "replay" {@link FluxProcessorFacade}, which caches
+	 * elements that are pushed directly through it and replays them to late
+	 * {@link Subscriber Subscribers}.
+	 *
+	 * <p>
+	 * Replay Processors can be created in multiple configurations (this method creates
+	 * an unbounded variant):
+	 * <ul>
+	 *     <li>
+	 *         Caching an unbounded history (call to this method, or the {@link #replay(int) size variant}
+	 *         of the replay builder with a call to its {@link ReplayProcessorBuilder#unbounded()}
+	 *         method).
+	 *     </li>
+	 *     <li>
+	 *         Caching a bounded history ({@link #replay(int)}).
+	 *     </li>
+	 *     <li>
+	 *         Caching time-based replay windows (by only specifying a TTL in the time-oriented
+	 *         builder {@link #replay(Duration)}).
+	 *     </li>
+	 *     <li>
+	 *         Caching combination of history size and time window (by using the time-oriented
+	 *         builder {@link #replay(Duration)} and configuring a size on it via its
+	 *         {@link ReplayTimeProcessorBuilder#historySize(int)} method).
+	 *     </li>
+	 * </ul>
+	 *
+	 * @return a new replay {@link FluxProcessorSink}
+	 */
+	@SuppressWarnings("deprecation")
+	public static final <T> FluxProcessorSink<T> replaySink() {
 		return new FluxProcessorSinkAdapter<>(ReplayProcessor.create(), null);
 	}
 
 	/**
-	 * Create a builder for a "replay" {@link ProcessorSink}, which caches
-	 * elements that are either pushed directly through it or elements from an upstream
-	 * {@link Publisher}, and replays them to late {@link Subscriber Subscribers}.
+	 * Create a builder for a "replay" processor, which caches elements that are either
+	 * pushed directly through it (when built as a {@link FluxProcessorSink} or elements
+	 * from an upstream {@link Publisher} (when built as a {@link FluxProcessorFacade},
+	 * and replays them to late {@link Subscriber Subscribers}.
 	 *
 	 * <p>
 	 * Replay Processors can be created in multiple configurations (this builder allows to
@@ -233,16 +350,17 @@ public final class Processors {
 	 *     </li>
 	 * </ul>
 	 *
-	 * @return a builder to create a new replay {@link ProcessorSink}
+	 * @return a builder to create a new replay {@link FluxProcessorFacade} or {@link FluxProcessorSink}
 	 */
 	public static final ReplayTimeProcessorBuilder replay(Duration maxAge) {
 		return new ReplayTimeProcessorBuilder(maxAge);
 	}
 
 	/**
-	 * Create a builder for a "replay" {@link ProcessorSink}, which caches
-	 * elements that are either pushed directly through it or elements from an upstream
-	 * {@link Publisher}, and replays them to late {@link Subscriber Subscribers}.
+	 * Create a builder for a "replay" processor, which caches elements that are either
+	 * pushed directly through it (when built as a {@link FluxProcessorSink} or elements
+	 * from an upstream {@link Publisher} (when built as a {@link FluxProcessorFacade},
+	 * and replays them to late {@link Subscriber Subscribers}.
 	 *
 	 * <p>
 	 * Replay Processors can be created in multiple configurations (this builder exclusively
@@ -266,18 +384,20 @@ public final class Processors {
 	 *     </li>
 	 * </ul>
 	 *
-	 * @return a builder to create a new replay {@link ProcessorSink}
+	 * @return a builder to create a new replay {@link FluxProcessorFacade} or {@link FluxProcessorSink}
 	 */
 	public static final ReplayProcessorBuilder replay(int historySize) {
 		return new ReplayProcessorBuilder(historySize);
 	}
 
+
+
 	/**
-	 * Create a new "replay" {@link ProcessorSink} (see {@link #replay()}) that
+	 * Create a new "replay" {@link FluxProcessorSink} (see {@link #replaySink()}) that
 	 * caches the last element it has pushed, replaying it to late {@link Subscriber subscribers}.
 	 *
 	 * @param <T>
-	 * @return a new replay {@link ProcessorSink} that caches its last pushed element
+	 * @return a new replay {@link FluxProcessorSink} that caches its last pushed element
 	 */
 	@SuppressWarnings("deprecation")
 	public static final <T> FluxProcessorSink<T> cacheLast() {
@@ -285,21 +405,23 @@ public final class Processors {
 	}
 
 	/**
-	 * Create a new "replay" {@link ProcessorSink} (see {@link #replay()}) that
+	 * Create a new "replay" {@link FluxProcessorSink} (see {@link #replaySink()}) that
 	 * caches the last element it has pushed, replaying it to late {@link Subscriber subscribers}.
 	 * If a {@link Subscriber} comes in <strong>before</strong> any value has been pushed,
 	 * then the {@code defaultValue} is emitted instead.
 	 *
 	 * @param <T>
-	 * @return a new replay {@link ProcessorSink} that caches its last pushed element
+	 * @return a new replay {@link FluxProcessorSink} that caches its last pushed element
 	 */
 	@SuppressWarnings("deprecation")
 	public static final <T> FluxProcessorSink<T> cacheLastOrDefault(T defaultValue) {
 		return new FluxProcessorSinkAdapter<>(ReplayProcessor.cacheLastOrDefault(defaultValue), null);
 	}
 
+
+
 	/**
-	 * Create a builder for a "fan out" {@link ProcessorSink}, which is an
+	 * Create a builder for a "fan out" {@link ProcessorFacade}, which is an
 	 * <strong>asynchronous</strong> processor optionally capable of relaying elements from multiple
 	 * upstream {@link Publisher Publishers} when created in the shared configuration (see the {@link
 	 * FanOutProcessorBuilder#share(boolean)} option of the builder).
@@ -307,8 +429,9 @@ public final class Processors {
 	 * <p>
 	 * Note that the share option is mandatory if you intend to concurrently call the
 	 * {@link FluxProcessorSink#next(Object)}, {@link FluxProcessorSink#complete()} or
-	 * {@link FluxProcessorSink#error(Throwable)} methods directly or from a concurrent upstream
-	 * {@link Publisher}.
+	 * {@link FluxProcessorSink#error(Throwable)} methods directly (when building as a
+	 * {@link FluxProcessorSink}) or from multiple concurrent upstream {@link Publisher}
+	 * (when building as a {@link FluxProcessorFacade}).
 	 *
 	 * <p>
 	 * Otherwise, such concurrent calls are illegal, as the processor is then fully compliant with
@@ -317,7 +440,7 @@ public final class Processors {
 	 * <p>
 	 * A fan out processor is capable of fanning out to multiple {@link Subscriber Subscribers},
 	 * with the added overhead of establishing resources to keep track of each {@link Subscriber}
-	 * until an {@link ProcessorSink#error(Throwable)} or {@link FluxProcessorSink#complete()}
+	 * until an {@link Subscriber#onError(Throwable) onError} or {@link Subscriber#onComplete() onComplete}
 	 * signal is pushed through the processor or until the associated {@link Subscriber} is cancelled.
 	 *
 	 * <p>
@@ -333,24 +456,25 @@ public final class Processors {
 	 * option: Set it to {@code false} to avoid cancelling the source {@link Publisher Publisher(s)}
 	 * when all subscribers are cancelled.
 	 *
-	 * @return a builder to create a new fan out {@link ProcessorSink}
+	 * @return a builder to create a new fan out {@link ProcessorFacade}
 	 */
 	public static final FanOutProcessorBuilder fanOut() {
 		return new FanOutProcessorBuilder();
 	}
 
 	/**
-	 * Create a builder for a "fan out" {@link ProcessorSink} with relaxed
+	 * Create a builder for a "fan out" {@link ProcessorFacade} with relaxed
 	 * Reactive Streams compliance. This is an <strong>asynchronous</strong> processor
 	 * optionally capable of relaying elements from multiple upstream {@link Publisher Publishers}
 	 * when created in the shared configuration (see the {@link FanOutProcessorBuilder#share(boolean)}
 	 * option of the builder).
 	 *
 	 * <p>
-	 * Note that the share option is mandatory if you intend to concurrently call the Processor's
-	 * {@link FluxProcessorSink#next(Object)}, {@link FluxProcessorSink#complete()} ()}, or
-	 * {@link FluxProcessorSink#error(Throwable)} methods directly or from a concurrent upstream
-	 * {@link Publisher}. Otherwise, such concurrent calls are illegal.
+	 * Note that the share option is mandatory if you intend to concurrently call the
+	 * {@link FluxProcessorSink#next(Object)}, {@link FluxProcessorSink#complete()} or
+	 * {@link FluxProcessorSink#error(Throwable)} methods directly (when building as a
+	 * {@link FluxProcessorSink}) or from multiple concurrent upstream {@link Publisher}
+	 * (when building as a {@link FluxProcessorFacade}).
 	 *
 	 * <p>
 	 * A fan out processor is capable of fanning out to multiple {@link Subscriber Subscribers},
@@ -377,75 +501,64 @@ public final class Processors {
 	 * option: If set to {@code true} (the default), it results in the source {@link Publisher
 	 * Publisher(s)} being cancelled when all subscribers are cancelled.
 	 *
-	 * @return a builder to create a new round-robin fan out {@link ProcessorSink}
+	 * @return a builder to create a new round-robin fan out {@link ProcessorFacade}
 	 */
 	@Deprecated
 	public static final FanOutProcessorBuilder relaxedFanOut() {
 		return new FanOutProcessorBuilder(true);
 	}
 
+
+
 	/**
-	 * Create a "first" {@link ProcessorSink}, which will wait for a source
+	 * Create a "first" {@link MonoProcessorFacade}, which will immediately connect to a
+	 * source {@link Publisher}. It will then propagate only the first
+	 * incoming {@link Subscriber#onNext(Object) onNext} signal, and cancel the source
+	 * subscription (unless it is a {@link Mono}). The processor will replay that signal
+	 * to new {@link Subscriber Subscribers}.
+	 *
+	 * @param <T> the type of the processor
+	 * @return a new "first" {@link MonoProcessorFacade}
+	 */
+	@SuppressWarnings("deprecation")
+	public static final <T> MonoProcessorFacade<T> firstFrom(Publisher<T> source) {
+		MonoProcessor<T> processor = new MonoProcessor<>(source);
+		processor.connect();
+		return processor;
+	}
+	/**
+	 * Create a "first" {@link MonoProcessorFacade}, which will wait for a source
 	 * {@link Subscriber#onSubscribe(Subscription)}. It will then propagate only the first
 	 * incoming {@link Subscriber#onNext(Object) onNext} signal, and cancel the source
 	 * subscription (unless it is a {@link Mono}). The processor will replay that signal
 	 * to new {@link Subscriber Subscribers}.
 	 *
-	 * <p>
-	 * Manual usage by pushing events through the {@link MonoSink} is naturally limited to at most
-	 * one call to {@link MonoSink#success(Object)}.
-	 *
 	 * @param <T> the type of the processor
-	 * @return a new "first" {@link ProcessorSink} that is detached
+	 * @return a new "first" {@link MonoProcessorFacade}
 	 */
 	@SuppressWarnings("deprecation")
-	public static final <T> ProcessorSink<T> first() {
+	public static final <T> MonoProcessorFacade<T> first() {
+		return new MonoProcessor<>(null);
+	}
+
+	/**
+	 * Create a {@link MonoProcessorSink}, which allows to manually push a value.
+	 * Its {@link MonoSink} API naturally limits it to at most one call to
+	 * {@link MonoSink#success(Object)}, but it can be used to manually signal a simple
+	 * valueless completion or an error as well.
+	 *
+	 * @param <T> the type of the processor
+	 * @return a new {@link MonoProcessorSink}
+	 */
+	@SuppressWarnings("deprecation")
+	public static final <T> MonoProcessorSink<T> monoSink() {
 		return new MonoFirstProcessorSinkAdapter<>(new MonoProcessor<>(null));
-	}
-
-	/**
-	 * Create a "first" {@link ProcessorSink}, which will wait for a source
-	 * {@link Subscriber#onSubscribe(Subscription)}. It will then propagate only the first
-	 * incoming {@link Subscriber#onNext(Object) onNext} signal, and cancel the source
-	 * subscription (unless it is a {@link Mono}). The processor will replay that signal
-	 * to new {@link Subscriber Subscribers}.
-	 *
-	 * <p>
-	 * Manual usage by pushing events through the {@link MonoSink} is naturally limited to at most
-	 * one call to {@link MonoSink#success(Object)}.
-	 *
-	 * @param waitStrategy the {@link WaitStrategy} to use in blocking methods of the processor
-	 * @param <T> the type of the processor
-	 * @return a new "first" {@link ProcessorSink} that is detached
-	 */
-	@SuppressWarnings("deprecation")
-	public static final <T> ProcessorSink<T> first(WaitStrategy waitStrategy) {
-		return new MonoFirstProcessorSinkAdapter<>(new MonoProcessor<>(null, waitStrategy));
-	}
-
-	/**
-	 * Create a builder for a "first" {@link ProcessorSink} that is attached to a
-	 * {@link Publisher} source, of which it will propagate only the first incoming
-	 * {@link Subscriber#onNext(Object) onNext} signal. Once this is done, the processor
-	 * cancels the source subscription (unless it is a {@link Mono}). It will then
-	 * replay that signal to new {@link Subscriber Subscribers}.
-	 *
-	 * <p>
-	 * Manual usage by pushing events through the {@link MonoSink} is naturally limited to at most
-	 * one call to {@link MonoSink#success(Object)}.
-	 *
-	 * @param source the source to attach to
-	 * @param <T> the type of the source, which drives the type of the processor
-	 * @return a builder to create a new "first" {@link ProcessorSink} attached to a source
-	 */
-	public static final <T> MonoFirstProcessorBuilder<T> first(Publisher<? extends T> source) {
-		return new MonoFirstProcessorBuilder<>(source);
 	}
 
 	//=== BUILDERS to replace factory method only processors ===
 
 	/**
-	 * A builder for the {@link #unicast()} flavor of {@link ProcessorSink}.
+	 * A builder for the {@link #unicast()} flavor of {@link ProcessorFacade}.
 	 *
 	 * @param <T>
 	 */
@@ -453,7 +566,6 @@ public final class Processors {
 
 		private final Queue<T> queue;
 		private Disposable endcallback;
-		private OverflowStrategy overflowStrategy;
 		private Consumer<? super T> onOverflow;
 
 		/**
@@ -485,18 +597,6 @@ public final class Processors {
 		}
 
 		/**
-		 * Set an {@link OverflowStrategy} to use when creating the {@link FluxSink}
-		 * backing this {@link FluxProcessorSink}.
-		 *
-		 * @param overflowStrategy the strategy to use on sink methods
-		 * @return the builder
-		 */
-		public UnicastProcessorBuilder<T> withOverflowStrategy(OverflowStrategy overflowStrategy) {
-			this.overflowStrategy = overflowStrategy;
-			return this;
-		}
-
-		/**
 		 * When a bounded {@link #UnicastProcessorBuilder(Queue) queue} has been provided,
 		 * set up a callback to be executed on every element rejected by the {@link Queue}
 		 * once it is already full.
@@ -514,9 +614,23 @@ public final class Processors {
 		 * configuration.
 		 *
 		 * @return a new unicast {@link FluxProcessorSink Processor}
+		 * @see #buildSink(OverflowStrategy)
+		 * @see #buildFacade()
+		 */
+		public FluxProcessorSink<T> buildSink() {
+			return buildSink(OverflowStrategy.IGNORE);
+		}
+		/**
+		 * Build the unicast {@link FluxProcessorSink} according to the builder's
+		 * configuration.
+		 *
+		 * @param overflowStrategy the strategy to use on sink methods
+		 * @return a new unicast {@link FluxProcessorSink Processor}
+		 * @see #buildSink()
+		 * @see #buildFacade()
 		 */
 		@SuppressWarnings("deprecation")
-		public FluxProcessorSink<T> build() {
+		public FluxProcessorSink<T> buildSink(OverflowStrategy overflowStrategy) {
 			UnicastProcessor<T> processor;
 			if (endcallback != null && onOverflow != null) {
 				processor = new UnicastProcessor<>(queue, onOverflow, endcallback);
@@ -533,16 +647,42 @@ public final class Processors {
 
 			return new FluxProcessorSinkAdapter<>(processor, overflowStrategy);
 		}
+
+		/**
+		 * Build the unicast {@link FluxProcessorFacade} according to the builder's
+		 * configuration.
+		 *
+		 * @return a new unicast {@link FluxProcessorFacade Processor}
+		 * @see #buildSink()
+		 * @see #buildSink(OverflowStrategy)
+		 */
+		@SuppressWarnings("deprecation")
+		public FluxProcessorFacade<T> buildFacade() {
+			UnicastProcessor<T> processor;
+			if (endcallback != null && onOverflow != null) {
+				processor = new UnicastProcessor<>(queue, onOverflow, endcallback);
+			}
+			else if (endcallback != null) {
+				processor = new UnicastProcessor<>(queue, endcallback);
+			}
+			else if (onOverflow == null) {
+				processor = new UnicastProcessor<>(queue);
+			}
+			else {
+				processor = new UnicastProcessor<>(queue, onOverflow);
+			}
+
+			return processor;
+		}
 	}
 
 	/**
-	 * A builder for the {@link #emitter()} flavor of {@link ProcessorSink}.
+	 * A builder for the {@link #emitter()} flavor of {@link ProcessorFacade}.
 	 */
 	public static final class EmitterProcessorBuilder {
 
 		private final int bufferSize;
 		private boolean autoCancel = true;
-		private OverflowStrategy overflowStrategy;
 
 		/**
 		 * Initialize the builder with the replay capacity of the emitter Processor,
@@ -575,25 +715,49 @@ public final class Processors {
 		}
 
 		/**
-		 * Set an {@link OverflowStrategy} to use when creating the {@link FluxSink}
-		 * backing this {@link FluxProcessorSink}.
+		 * Build the emitter {@link FluxProcessorSink} according to the builder's
+		 * configuration.
 		 *
-		 * @param overflowStrategy the strategy to use on sink methods
-		 * @return the builder
+		 * @return a new emitter {@link FluxProcessorSink}
 		 */
-		public EmitterProcessorBuilder withOverflowStrategy(OverflowStrategy overflowStrategy) {
-			this.overflowStrategy = overflowStrategy;
-			return this;
+		@SuppressWarnings("deprecation")
+		public <T> FluxProcessorFacade<T>  buildFacade() {
+			EmitterProcessor<T> processor;
+			if (bufferSize >= 0 && !autoCancel) {
+				processor = new EmitterProcessor<>(false, bufferSize);
+			}
+			else if (bufferSize >= 0) {
+				processor = new EmitterProcessor<>(true, bufferSize);
+			}
+			else if (!autoCancel) {
+				processor = new EmitterProcessor<>(false, Queues.SMALL_BUFFER_SIZE);
+			}
+			else {
+				processor = new EmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
+			}
+
+			return processor;
 		}
 
 		/**
-		 * Build the emitter {@link ProcessorSink} according to the builder's
+		 * Build the emitter {@link FluxProcessorSink} according to the builder's
 		 * configuration.
 		 *
-		 * @return a new emitter {@link ProcessorSink}
+		 * @return a new emitter {@link FluxProcessorSink}
+		 */
+		public <T> FluxProcessorSink<T> buildSink() {
+			return buildSink(OverflowStrategy.IGNORE);
+		}
+
+		/**
+		 * Build the emitter {@link FluxProcessorSink} according to the builder's
+		 * configuration.
+		 *
+		 * @param overflowStrategy the strategy to use on sink methods
+		 * @return a new emitter {@link FluxProcessorSink}
 		 */
 		@SuppressWarnings("deprecation")
-		public <T> FluxProcessorSink<T> build() {
+		public <T> FluxProcessorSink<T> buildSink(OverflowStrategy overflowStrategy) {
 			EmitterProcessor<T> processor;
 			if (bufferSize >= 0 && !autoCancel) {
 				processor = new EmitterProcessor<>(false, bufferSize);
@@ -613,13 +777,12 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the size-configured {@link #replay()} flavor of {@link ProcessorSink}.
+	 * A builder for the size-configured {@link #replay()} flavor of {@link ProcessorFacade}.
 	 */
 	public static final class ReplayProcessorBuilder {
 
 		private final int       size;
 		private boolean         unbounded;
-		private OverflowStrategy overflowStrategy;
 
 		/**
 		 * Set the history capacity to a specific bounded size.
@@ -645,24 +808,22 @@ public final class Processors {
 		}
 
 		/**
-		 * Set an {@link OverflowStrategy} to use when creating the {@link FluxSink}
-		 * backing this {@link FluxProcessorSink}.
+		 * Build the replay {@link FluxProcessorSink} according to the builder's configuration.
 		 *
-		 * @param overflowStrategy the strategy to use on sink methods
-		 * @return the builder
+		 * @return a new replay {@link FluxProcessorSink}
 		 */
-		public ReplayProcessorBuilder withOverflowStrategy(OverflowStrategy overflowStrategy) {
-			this.overflowStrategy = overflowStrategy;
-			return this;
+		public <T> FluxProcessorSink<T> buildSink() {
+			return buildSink(OverflowStrategy.IGNORE);
 		}
 
 		/**
-		 * Build the replay {@link ProcessorSink} according to the builder's configuration.
+		 * Build the replay {@link FluxProcessorSink} according to the builder's configuration.
 		 *
-		 * @return a new replay {@link ProcessorSink}
+		 * @param overflowStrategy the strategy to use on sink methods
+		 * @return a new replay {@link FluxProcessorSink}
 		 */
 		@SuppressWarnings("deprecation")
-		public <T> FluxProcessorSink<T> build() {
+		public <T> FluxProcessorSink<T> buildSink(OverflowStrategy overflowStrategy) {
 			ReplayProcessor<T> processor;
 			if (size < 0) {
 				processor = ReplayProcessor.create();
@@ -676,10 +837,30 @@ public final class Processors {
 
 			return new FluxProcessorSinkAdapter<>(processor, overflowStrategy);
 		}
+
+		/**
+		 * Build the replay {@link FluxProcessorFacade} according to the builder's configuration.
+		 *
+		 * @return a new replay {@link FluxProcessorFacade}
+		 */
+		@SuppressWarnings("deprecation")
+		public <T> FluxProcessorFacade<T> buildFacade() {
+			ReplayProcessor<T> processor;
+			if (size < 0) {
+				processor = ReplayProcessor.create();
+			}
+			else if (unbounded) {
+				processor = ReplayProcessor.create(size, true);
+			}
+			else {
+				processor = ReplayProcessor.create(size);
+			}
+			return processor;
+		}
 	}
 
 	/**
-	 * A builder for the time-oriented {@link #replay()} flavors of {@link ProcessorSink}.
+	 * A builder for the time-oriented {@link #replay()} flavors of {@link ProcessorFacade}.
 	 * This can also be used to build a time + size oriented replay processor.
 	 */
 	public static final class ReplayTimeProcessorBuilder {
@@ -687,7 +868,6 @@ public final class Processors {
 		private final Duration  maxAge;
 		private int       size = -1;
 		private Scheduler scheduler = null;
-		private OverflowStrategy overflowStrategy;
 
 		public ReplayTimeProcessorBuilder(Duration maxAge) {
 			this.maxAge = maxAge;
@@ -716,24 +896,22 @@ public final class Processors {
 		}
 
 		/**
-		 * Set an {@link OverflowStrategy} to use when creating the {@link FluxSink}
-		 * backing this {@link FluxProcessorSink}.
+		 * Build the replay {@link FluxProcessorSink} according to the builder's configuration.
 		 *
-		 * @param overflowStrategy the strategy to use on sink methods
-		 * @return the builder
+		 * @return a new replay {@link FluxProcessorSink}
 		 */
-		public ReplayTimeProcessorBuilder withOverflowStrategy(OverflowStrategy overflowStrategy) {
-			this.overflowStrategy = overflowStrategy;
-			return this;
+		public <T> FluxProcessorSink<T> buildSink() {
+			return buildSink(OverflowStrategy.IGNORE);
 		}
 
 		/**
-		 * Build the replay {@link ProcessorSink} according to the builder's configuration.
+		 * Build the replay {@link FluxProcessorSink} according to the builder's configuration.
 		 *
-		 * @return a new replay {@link ProcessorSink}
+		 * @param overflowStrategy the strategy to use on sink methods
+		 * @return a new replay {@link FluxProcessorSink}
 		 */
 		@SuppressWarnings("deprecation")
-		public <T> ProcessorSink<T> build() {
+		public <T> FluxProcessorSink<T> buildSink(OverflowStrategy overflowStrategy) {
 			//replay size and timeout
 			ReplayProcessor<T> processor;
 			if (size != -1) {
@@ -753,10 +931,36 @@ public final class Processors {
 
 			return new FluxProcessorSinkAdapter<>(processor, overflowStrategy);
 		}
+
+		/**
+		 * Build the replay {@link FluxProcessorFacade} according to the builder's configuration.
+		 *
+		 * @return a new replay {@link FluxProcessorFacade}
+		 */
+		@SuppressWarnings("deprecation")
+		public <T> FluxProcessorFacade<T> buildFacade() {
+			//replay size and timeout
+			ReplayProcessor<T> processor;
+			if (size != -1) {
+				if (scheduler != null) {
+					processor = ReplayProcessor.createSizeAndTimeout(size, maxAge, scheduler);
+				}
+				else {
+					processor = ReplayProcessor.createSizeAndTimeout(size, maxAge);
+				}
+			}
+			else if (scheduler != null) {
+				processor = ReplayProcessor.createTimeout(maxAge, scheduler);
+			}
+			else {
+				processor = ReplayProcessor.createTimeout(maxAge);
+			}
+			return processor;
+		}
 	}
 
 	/**
-	 * A builder for the {@link #fanOut()} flavor of {@link ProcessorSink}.
+	 * A builder for the {@link #fanOut()} flavor of {@link ProcessorFacade}.
 	 */
 	public static final class FanOutProcessorBuilder {
 
@@ -773,8 +977,6 @@ public final class Processors {
 		WaitStrategy waitStrategy;
 		boolean share;
 		boolean autoCancel;
-		@Nullable
-		OverflowStrategy overflowStrategy;
 
 		FanOutProcessorBuilder() {
 			this(false);
@@ -873,7 +1075,7 @@ public final class Processors {
 		 * Configures sharing state for this builder. A shared fanout processor authorizes
 		 * is suited for multi-threaded publisher that will fan-in data.
 		 *
-		 * @param share true to support concurrent sources on the {@link ProcessorSink#asProcessor Processor}
+		 * @param share true to support concurrent sources on the {@link FluxProcessorFacade#asProcessor Processor}
 		 * @return builder with specified sharing
 		 */
 		public FanOutProcessorBuilder share(boolean share) {
@@ -881,26 +1083,8 @@ public final class Processors {
 			return this;
 		}
 
-		/**
-		 * Set an {@link OverflowStrategy} to use when creating the {@link FluxSink}
-		 * backing this {@link FluxProcessorSink}.
-		 *
-		 * @param overflowStrategy the strategy to use on sink methods
-		 * @return the builder
-		 */
-		public FanOutProcessorBuilder withOverflowStrategy(OverflowStrategy overflowStrategy) {
-			this.overflowStrategy = overflowStrategy;
-			return this;
-		}
-
-		/**
-		 * Creates a new fanout {@link ProcessorSink} according to the builder's
-		 * configuration.
-		 *
-		 * @return a new fanout {@link ProcessorSink}
-		 */
 		@SuppressWarnings("deprecation")
-		public <T> FluxProcessorSink<T>  build() {
+		private <T> EventLoopProcessor<T> buildFluxProcessor() {
 			this.name = this.name != null ? this.name : "fanOut";
 			this.waitStrategy = this.waitStrategy != null ? this.waitStrategy : WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS);
 			EventLoopProcessor.EventLoopFactory threadFactory = this.executor != null
@@ -937,48 +1121,38 @@ public final class Processors {
 						autoCancel,
 						null);
 			}
-
-			return new AsyncFluxProcessorSinkAdapter<>(processor, overflowStrategy);
-		}
-	}
-
-	/**
-	 * A builder for the {@link #first()} flavor of {@link ProcessorSink},
-	 * directly attached to a {@link Publisher} source.
-	 *
-	 * @param <T>
-	 */
-	public static final class MonoFirstProcessorBuilder<T> {
-
-		private final Publisher<? extends T> source;
-
-		public MonoFirstProcessorBuilder(Publisher<? extends T> source) {
-			this.source = source;
+			return processor;
 		}
 
 		/**
-		 * Create the processor with a {@link WaitStrategy} and attach it to the source.
+		 * Creates a new fanout {@link FluxProcessorSink} according to the builder's
+		 * configuration.
 		 *
-		 * @param waitStrategy the {@link WaitStrategy} to use for blocking methods of the processor
-		 * @return a new "first" {@link ProcessorSink} with a wait strategy, that
-		 * is attached to a source
+		 * @return a new fanout {@link FluxProcessorSink}
 		 */
-		public ProcessorSink<T> withWaitStrategy(WaitStrategy waitStrategy) {
-			@SuppressWarnings("deprecation")
-			MonoProcessor<T> processor = new MonoProcessor<>(this.source, waitStrategy);
-			return new MonoFirstProcessorSinkAdapter<>(processor);
+		public <T> FluxProcessorSink<T>  buildSink() {
+			return buildSink(OverflowStrategy.IGNORE);
 		}
 
 		/**
-		 * Create the {@link ProcessorSink} by immediately attaching it to the
-		 * {@link Publisher} source.
+		 * Creates a new fanout {@link FluxProcessorSink} according to the builder's
+		 * configuration.
 		 *
-		 * @return a new first {@link ProcessorSink} that is attached to a source
+		 * @param overflowStrategy the strategy to use on sink methods
+		 * @return a new fanout {@link FluxProcessorSink}
 		 */
-		public MonoProcessorSink<T> build() {
-			@SuppressWarnings("deprecation")
-			MonoProcessor<T> processor = new MonoProcessor<>(source);
-			return new MonoFirstProcessorSinkAdapter<>(processor);
+		public <T> FluxProcessorSink<T>  buildSink(OverflowStrategy overflowStrategy) {
+			return new AsyncFluxProcessorSinkAdapter<>(buildFluxProcessor(), overflowStrategy);
+		}
+
+		/**
+		 * Creates a new fanout {@link FluxProcessorFacade} according to the builder's
+		 * configuration.
+		 *
+		 * @return a new fanout {@link FluxProcessorFacade}
+		 */
+		public <T> FluxProcessorFacade<T>  buildFacade() {
+			return buildFluxProcessor();
 		}
 	}
 
@@ -997,16 +1171,6 @@ public final class Processors {
 			this.processor = processor;
 			this.overflowStrategy = overflowStrategy == null ? OverflowStrategy.IGNORE : overflowStrategy;
 			this.sink = processor.sink(this.overflowStrategy);
-		}
-
-		@Override
-		public Processor<T, T> asProcessor() {
-			return processor;
-		}
-
-		@Override
-		public CoreSubscriber<T> asCoreSubscriber() {
-			return processor;
 		}
 
 		@Override
@@ -1151,16 +1315,6 @@ public final class Processors {
 
 		@Override
 		public Mono<T> asMono() {
-			return processor;
-		}
-
-		@Override
-		public Processor<T, T> asProcessor() {
-			return processor;
-		}
-
-		@Override
-		public CoreSubscriber<T> asCoreSubscriber() {
 			return processor;
 		}
 

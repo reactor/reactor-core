@@ -42,7 +42,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntil() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
 
@@ -106,7 +106,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntil() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
 
@@ -126,7 +126,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorUntil() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(),
 				i -> {
@@ -149,7 +149,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntilOther() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
 
@@ -180,7 +180,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntilOther() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther =
 				new FluxBufferPredicate<>(sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(),
 						FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
@@ -201,7 +201,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorUntilOther() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther =
 				new FluxBufferPredicate<>(sp1.asFlux(),
 				i -> {
@@ -225,7 +225,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhile() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 != 0, Flux.listSupplier(),
 				FluxBufferPredicate.Mode.WHILE);
@@ -257,7 +257,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntInitiallyMatch() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -288,7 +288,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntMatch() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i > 4, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -314,7 +314,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorWhile() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -334,7 +334,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorWhile() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(),
 				i -> {
@@ -359,7 +359,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void bufferSupplierThrows() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0,
 				() -> { throw new RuntimeException("supplier failure"); },
@@ -374,7 +374,7 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void bufferSupplierThrowsLater() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		int count[] = {1};
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0,
@@ -399,7 +399,7 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void bufferSupplierReturnsNull() {
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0,
 				() -> null,
@@ -418,7 +418,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void multipleTriggersOfEmptyBufferKeepInitialBuffer() {
 		//this is best demonstrated with bufferWhile:
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		LongAdder bufferCount = new LongAdder();
 		Supplier<List<Integer>> bufferSupplier = () -> {
 			bufferCount.increment();

@@ -736,7 +736,8 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionAvailable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Processors.unicast(Queues.<Integer>get(2).get()).build()
+		Processors.unicast(Queues.<Integer>get(2).get())
+		          .buildSink()
 		          .asFlux()
 		          .doOnNext(v -> { })
 		          .subscribe(ts);

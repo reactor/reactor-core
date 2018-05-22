@@ -26,7 +26,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessorFacade;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.MonoProcessorFacade;
 import reactor.core.publisher.SignalType;
 import reactor.core.publisher.WorkQueueProcessor;
 
@@ -63,13 +65,17 @@ public class BurstyWorkQueueProcessorTests {
 	@Ignore
 	@SuppressWarnings("deprecation")
 	public void test() throws Exception {
-		processor = WorkQueueProcessor.builder().name("test-processor").bufferSize(RINGBUFFER_SIZE).build();
+		processor = WorkQueueProcessor.builder()
+		                              .name("test-processor")
+		                              .bufferSize(RINGBUFFER_SIZE)
+		                              .build();
 
 		Flux
 				.create((emitter) -> burstyProducer(emitter, PRODUCED_MESSAGES_COUNT, BURST_SIZE))
 				.onBackpressureDrop(this::incrementDroppedMessagesCounter)
 			//	.log("test", Level.INFO, SignalType.REQUEST)
-				.subscribeWith(processor)
+				.subscribeWith((FluxProcessorFacade<Object>) processor)
+				.asFlux()
 				.map(this::complicatedCalculation)
 				.subscribe(this::logConsumedValue);
 

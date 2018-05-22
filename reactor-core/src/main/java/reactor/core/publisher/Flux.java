@@ -6088,7 +6088,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> publishNext() {
-		return Mono.onAssembly(Processors.first(this).build().asMono());
+		return Mono.onAssembly(Processors.firstFrom(this).asMono());
 	}
 
 	/**
@@ -7500,8 +7500,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe the given {@link ProcessorSink} to this {@link Flux} and return said
-	 * {@link ProcessorSink}.
+	 * Subscribe the given {@link FluxProcessorFacade} to this {@link Flux} and return said
+	 * {@link FluxProcessorFacade}.
 	 *
 	 * <blockquote><pre>
 	 * {@code flux.subscribeWith(Processors.unicast()).asFlux().subscribe() }
@@ -7509,14 +7509,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
 	 *
-	 * @param processorSink the {@link ProcessorSink} to subscribe with and return
+	 * @param processorFacade the {@link FluxProcessorFacade} to subscribe with and return
 	 * @param <E> the reified type from the input/output subscriber
 	 *
-	 * @return the passed {@link ProcessorSink}
+	 * @return the passed {@link FluxProcessorFacade}
 	 */
-	public final <E extends ProcessorSink<? super T>> E subscribeWith(E processorSink) {
-		subscribe(processorSink.asProcessor());
-		return processorSink;
+	public final <E extends FluxProcessorFacade<? super T>> E subscribeWith(E processorFacade) {
+		subscribe(processorFacade.asProcessor());
+		return processorFacade;
 	}
 
 	/**

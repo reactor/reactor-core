@@ -76,7 +76,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 				scenario(f -> f.publish(p -> Flux.just("test", "test1", "test2")))
 						.fusionMode(Fuseable.SYNC),
 
-				scenario(f -> f.publish(p -> p.subscribeWith(UnicastProcessor.create()), 256))
+				scenario(f -> f.publish(p -> p.subscribeWith(Processors.unicast()).asFlux(), 256))
 						.fusionMode(Fuseable.ASYNC),
 
 
@@ -156,7 +156,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		FluxProcessorSink<Integer> up =
-				Processors.unicast(Queues.<Integer>get(16).get()).build();
+				Processors.unicast(Queues.<Integer>get(16).get()).buildSink();
 
 		up.asFlux()
 		  .publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
@@ -178,7 +178,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 	public void cancelComposes() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp = Processors.emitter();
+		FluxProcessorSink<Integer> sp = Processors.emitterSink();
 
 		sp.asFlux()
 		  .publish(o -> Flux.<Integer>never())
@@ -195,7 +195,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 	public void cancelComposes2() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp = Processors.emitter();
+		FluxProcessorSink<Integer> sp = Processors.emitterSink();
 
 		sp.asFlux()
 		  .publish(o -> Flux.<Integer>empty())

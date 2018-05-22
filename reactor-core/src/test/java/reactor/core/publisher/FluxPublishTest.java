@@ -206,7 +206,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> up = Processors.unicast(Queues.<Integer>get(8).get()).build();
+		FluxProcessorSink<Integer> up = Processors.unicast(Queues.<Integer>get(8).get())
+		                                          .buildSink();
 		up.next(1);
 		up.next(2);
 		up.next(3);
@@ -245,7 +246,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
-		FluxProcessorSink<Integer> up = Processors.unicast(Queues.<Integer>get(8).get()).build();
+		FluxProcessorSink<Integer> up = Processors.unicast(Queues.<Integer>get(8).get())
+		                                          .buildSink();
 		up.next(1);
 		up.next(2);
 		up.next(3);
@@ -393,7 +395,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	public void disconnect() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> e = Processors.emitter();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
 		ConnectableFlux<Integer> p = e.asFlux().publish();
 
@@ -417,7 +419,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	public void disconnectBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		FluxProcessorSink<Integer> e = Processors.emitter();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
 		ConnectableFlux<Integer> p = e.asFlux().publish();
 
@@ -438,7 +440,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	public void error() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> e = Processors.emitter();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
 		ConnectableFlux<Integer> p = e.asFlux().publish();
 
@@ -474,7 +476,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retry() {
-		FluxProcessorSink<Integer> dp = Processors.direct();
+		FluxProcessorSink<Integer> dp = Processors.directSink();
 		StepVerifier.create(
 				dp.asFlux()
 				  .publish()
@@ -501,7 +503,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retryWithPublishOn() {
-		FluxProcessorSink<Integer> dp = Processors.direct();
+		FluxProcessorSink<Integer> dp = Processors.directSink();
 		StepVerifier.create(
 				dp.asFlux()
 				  .publishOn(Schedulers.parallel()).publish()

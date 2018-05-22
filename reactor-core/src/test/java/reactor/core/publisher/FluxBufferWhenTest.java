@@ -111,7 +111,7 @@ public class FluxBufferWhenTest {
 		}
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		final FluxProcessorSink<Wrapper> processor = Processors.unicast();
+		final FluxProcessorSink<Wrapper> processor = Processors.unicastSink();
 
 		Flux<Integer> emitter = Flux.range(1, 200)
 		                            .delayElements(Duration.ofMillis(25))
@@ -157,10 +157,10 @@ public class FluxBufferWhenTest {
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
-		FluxProcessorSink<Integer> sp3 = Processors.direct();
-		FluxProcessorSink<Integer> sp4 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
+		FluxProcessorSink<Integer> sp3 = Processors.directSink();
+		FluxProcessorSink<Integer> sp4 = Processors.directSink();
 
 		sp1.asFlux()
 		   .bufferWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
@@ -215,9 +215,9 @@ public class FluxBufferWhenTest {
 	public void startCompletes() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> source = Processors.direct();
-		FluxProcessorSink<Integer> open = Processors.direct();
-		FluxProcessorSink<Integer> close = Processors.direct();
+		FluxProcessorSink<Integer> source = Processors.directSink();
+		FluxProcessorSink<Integer> open = Processors.directSink();
+		FluxProcessorSink<Integer> close = Processors.directSink();
 
 		source.asFlux()
 		      .bufferWhen(open.asFlux(), v -> close.asFlux())
@@ -258,11 +258,11 @@ public class FluxBufferWhenTest {
 	@Test
 	public void bufferWillAcumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		FluxProcessorSink<Integer> numbers = Processors.emitter();
-		FluxProcessorSink<Integer> bucketOpening = Processors.emitter();
+		FluxProcessorSink<Integer> numbers = Processors.emitterSink();
+		FluxProcessorSink<Integer> bucketOpening = Processors.emitterSink();
 
 		//"overlapping buffers"
-		FluxProcessorSink<Integer> boundaryFlux = Processors.emitter();
+		FluxProcessorSink<Integer> boundaryFlux = Processors.emitterSink();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
 		                                                .bufferWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())

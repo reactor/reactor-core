@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -66,7 +67,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
- * @deprecated instantiate through {@link Processors#fanOut()} and use as a {@link ProcessorSink}
+ * @deprecated instantiate through {@link Processors#fanOut()} and use as a {@link ProcessorFacade}
  */
 @Deprecated
 public final class TopicProcessor<E> extends EventLoopProcessor<E>  {

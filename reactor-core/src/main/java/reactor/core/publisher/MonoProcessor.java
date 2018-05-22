@@ -47,13 +47,14 @@ import reactor.util.context.Context;
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
- * @deprecated instantiate through {@link Processors#first} and use as a {@link ProcessorSink}
+ * @deprecated instantiate through {@link Processors#first} and use as a {@link ProcessorFacade}
  */
 @Deprecated
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
 		           Scannable,
-		           LongSupplier {
+		           LongSupplier,
+		           MonoProcessorFacade<O> {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -530,21 +531,33 @@ public final class MonoProcessor<O> extends Mono<O>
 		//TODO should it return true if terminated?
 	}
 
-	/**
-	 * Return the produced {@link Throwable} error if any or null
-	 *
-	 * @return the produced {@link Throwable} error if any or null
-	 */
+	@Override
+	public Mono<O> asMono() {
+		return this;
+	}
+
+	@Override
+	public Processor<O, O> asProcessor() {
+		return this;
+	}
+
+	@Override
+	public CoreSubscriber<O> asCoreSubscriber() {
+		return this;
+	}
+
+	@Override
+	public Scannable asScannable() {
+		return this;
+	}
+
+	@Override
 	@Nullable
 	public final Throwable getError() {
 		return isTerminated() ? error : null;
 	}
 
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been completed with an error.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} was completed with an error, {@code false} otherwise.
-	 */
+	@Override
 	public final boolean isError() {
 		return getError() != null;
 	}
@@ -555,14 +568,22 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
 	 * @deprecated use {@link Processors#first()}'s {@link MonoProcessorSink#isComplete()} instead
 	 */
+	@Deprecated
 	public final boolean isSuccess() {
+		return isComplete();
+	}
+
+	@Override
+	public boolean isComplete() {
 		return isTerminated() && error == null;
 	}
 
-	final boolean isValued() {
-		return isTerminated() && value != null;
+	@Override
+	public boolean isValued() {
+		return isComplete() && value != null;
 	}
 
+	@Override
 	public final boolean isTerminated() {
 		return subscribers == TERMINATED;
 	}
@@ -590,6 +611,11 @@ public final class MonoProcessor<O> extends Mono<O>
 	 */
 	public final boolean hasDownstreams() {
 		return downstreamCount() != 0;
+	}
+
+	@Override
+	public boolean isSerialized() {
+		return false;
 	}
 
 	final static class NextInner<T> extends Operators.MonoSubscriber<T, T> {

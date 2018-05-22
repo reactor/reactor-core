@@ -89,7 +89,7 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void someDrops() {
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 

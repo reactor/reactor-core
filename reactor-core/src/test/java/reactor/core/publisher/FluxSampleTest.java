@@ -42,9 +42,9 @@ public class FluxSampleTest {
 	}
 
 	void sample(boolean complete, boolean which) {
-		FluxProcessorSink<Integer> main = Processors.direct();
+		FluxProcessorSink<Integer> main = Processors.directSink();
 
-		FluxProcessorSink<String> other = Processors.direct();
+		FluxProcessorSink<String> other = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -128,9 +128,9 @@ public class FluxSampleTest {
 
 	@Test
 	public void subscriberCancels() {
-		FluxProcessorSink<Integer> main = Processors.direct();
+		FluxProcessorSink<Integer> main = Processors.directSink();
 
-		FluxProcessorSink<String> other = Processors.direct();
+		FluxProcessorSink<String> other = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -150,9 +150,9 @@ public class FluxSampleTest {
 	}
 
 	public void completeImmediately(boolean which) {
-		FluxProcessorSink<Integer> main = Processors.direct();
+		FluxProcessorSink<Integer> main = Processors.directSink();
 
-		FluxProcessorSink<String> other = Processors.direct();
+		FluxProcessorSink<String> other = Processors.directSink();
 
 		if (which) {
 			main.complete();

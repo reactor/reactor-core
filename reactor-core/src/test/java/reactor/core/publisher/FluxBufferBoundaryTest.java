@@ -73,8 +73,8 @@ public class FluxBufferBoundaryTest
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().buffer(sp2.asFlux())
 		   .subscribe(ts);
@@ -124,8 +124,8 @@ public class FluxBufferBoundaryTest
 	public void mainError() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().buffer(sp2.asFlux())
 		   .subscribe(ts);
@@ -170,8 +170,8 @@ public class FluxBufferBoundaryTest
 	public void otherError() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().buffer(sp2.asFlux())
 		   .subscribe(ts);
@@ -216,8 +216,8 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierThrows() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().buffer(sp2.asFlux(), (Supplier<List<Integer>>) () -> {
 			throw new RuntimeException("forced failure");
@@ -237,8 +237,8 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierThrowsLater() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		int count[] = {1};
 
@@ -268,8 +268,8 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierReturnsNUll() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux().buffer(sp2.asFlux(), (Supplier<List<Integer>>) () -> null)
 		   .subscribe(ts);
@@ -319,10 +319,10 @@ public class FluxBufferBoundaryTest
 	@Test
 	public void bufferWillAcumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
-		FluxProcessorSink<Integer> numbers = Processors.emitter();
+		FluxProcessorSink<Integer> numbers = Processors.emitterSink();
 
 		//non overlapping buffers
-		FluxProcessorSink<Integer> boundaryFlux = Processors.emitter();
+		FluxProcessorSink<Integer> boundaryFlux = Processors.emitterSink();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
 		                                                .buffer(boundaryFlux.asFlux())

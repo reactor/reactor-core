@@ -170,7 +170,9 @@ public class MonoFilterTest {
 	@Test
 	public void filterMono() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
-		StepVerifier.create(Mono.just(2).filter(s -> s % 2 == 0).subscribeWith(mp))
+		StepVerifier.create(Mono.just(2).filter(s -> s % 2 == 0)
+		                        .subscribeWith((MonoProcessorFacade<Integer>) mp)
+		                        .asMono())
 		            .then(() -> assertThat(mp.isError()).isFalse())
 		            .then(() -> assertThat(mp.isSuccess()).isTrue())
 		            .then(() -> assertThat(mp.peek()).isEqualTo(2))
@@ -183,7 +185,9 @@ public class MonoFilterTest {
 	@Test
 	public void filterMonoNot() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
-		StepVerifier.create(Mono.just(1).filter(s -> s % 2 == 0).subscribeWith(mp))
+		StepVerifier.create(Mono.just(1).filter(s -> s % 2 == 0)
+		                        .subscribeWith((MonoProcessorFacade<Integer>) mp)
+		                        .asMono())
 		            .then(() -> assertThat(mp.isError()).isFalse())
 		            .then(() -> assertThat(mp.isSuccess()).isTrue())
 		            .then(() -> assertThat(mp.peek()).isNull())

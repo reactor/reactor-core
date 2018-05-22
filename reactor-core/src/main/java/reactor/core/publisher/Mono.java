@@ -1485,7 +1485,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a replaying {@link Mono}
 	 */
 	public final Mono<T> cache() {
-		return onAssembly(Processors.first(this).build().asMono());
+		return onAssembly(Processors.firstFrom(this).asMono());
 	}
 
 	/**
@@ -3571,17 +3571,17 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe the given {@link MonoProcessorSink} to this {@link Mono} and return said
-	 * {@link MonoProcessorSink}.
+	 * Subscribe the given {@link MonoProcessorFacade} to this {@link Mono} and return said
+	 * {@link MonoProcessorFacade}.
 	 *
-	 * @param processorSink the {@link MonoProcessorSink} to subscribe with
+	 * @param processorFacade the {@link MonoProcessorFacade} to subscribe with
 	 * @param <E> the reified type of the {@link Subscriber} for chaining
 	 *
-	 * @return the passed {@link MonoProcessorSink} after subscribing it to this {@link Mono}
+	 * @return the passed {@link MonoProcessorFacade} after subscribing it to this {@link Mono}
 	 */
-	public final <E extends MonoProcessorSink<? super T>> E subscribeWith(E processorSink) {
-		subscribe(processorSink.asProcessor());
-		return processorSink;
+	public final <E extends MonoProcessorFacade<? super T>> E subscribeWith(E processorFacade) {
+		subscribe(processorFacade.asProcessor());
+		return processorFacade;
 	}
 
 	/**
@@ -3941,6 +3941,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link MonoProcessorSink} to use to either retrieve value or dispose the underlying {@link Subscription}
 	 */
 	@SuppressWarnings("deprecation")
+	//FIXME
 	public final MonoProcessorSink<T> toProcessorSink() {
 		MonoProcessor<T> mp;
 		if (this instanceof MonoProcessor) {

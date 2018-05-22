@@ -81,7 +81,8 @@ public class FluxMergeSequentialTest {
 	@Test
 	public void normalFusedAsync() {
 		StepVerifier.create(Flux.range(1, 5)
-		                        .subscribeWith(UnicastProcessor.create())
+		                        .subscribeWith(Processors.unicast())
+		                        .asFlux()
 		                        .flatMapSequential(t -> Flux.range(t, 2)))
 		            .expectNext(1, 2, 2, 3, 3, 4, 4, 5, 5, 6)
 		            .verifyComplete();
@@ -141,8 +142,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsDelayEnd() {
-		FluxProcessorSink<Integer> main = Processors.direct();
-		final FluxProcessorSink<Integer> inner = Processors.direct();
+		FluxProcessorSink<Integer> main = Processors.directSink();
+		final FluxProcessorSink<Integer> inner = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = main.asFlux()
 		                                   .flatMapSequentialDelayError(t -> inner.asFlux(), 32, 32)
@@ -168,8 +169,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsImmediate() {
-		FluxProcessorSink<Integer> main = Processors.direct();
-		final FluxProcessorSink<Integer> inner = Processors.direct();
+		FluxProcessorSink<Integer> main = Processors.directSink();
+		final FluxProcessorSink<Integer> inner = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = main.asFlux().flatMapSequential(t -> inner.asFlux())
 		                                   .subscribeWith(AssertSubscriber.create());
@@ -461,7 +462,7 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void testReentrantWork() {
-		final FluxProcessorSink<Integer> subject = Processors.direct();
+		final FluxProcessorSink<Integer> subject = Processors.directSink();
 
 		final AtomicBoolean once = new AtomicBoolean();
 

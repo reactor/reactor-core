@@ -247,7 +247,7 @@ public class MonoFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final FluxProcessorSink<Boolean> pp = Processors.emitter();
+		final FluxProcessorSink<Boolean> pp = Processors.emitterSink();
 
 		StepVerifier.create(Mono.just(1)
 		                        .filterWhen(v -> pp.asFlux()))

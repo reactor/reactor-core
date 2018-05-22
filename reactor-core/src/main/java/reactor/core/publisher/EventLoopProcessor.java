@@ -31,7 +31,9 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -43,11 +45,11 @@ import reactor.util.context.Context;
  * A base processor used by executor backed processors to take care of their ExecutorService
  *
  * @author Stephane Maldini
- * @deprecated will be simplified into {@link ProcessorSink} in 3.2.0
+ * @deprecated will be simplified into {@link ProcessorFacade} in 3.2.0
  */
 @Deprecated
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
-		implements Runnable {
+		implements Runnable, FluxProcessorFacade<IN> {
 
 	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer,
 			@Nullable Throwable t,
@@ -394,6 +396,26 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	@Override
 	final public long getAvailableCapacity() {
 		return ringBuffer.bufferSize() - ringBuffer.getPending();
+	}
+
+	@Override
+	public CoreSubscriber<IN> asCoreSubscriber() {
+		return this;
+	}
+
+	@Override
+	public Flux<IN> asFlux() {
+		return this;
+	}
+
+	@Override
+	public Processor<IN, IN> asProcessor() {
+		return this;
+	}
+
+	@Override
+	public Scannable asScannable() {
+		return this;
 	}
 
 	@Override

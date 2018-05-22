@@ -70,7 +70,7 @@ public class MonoTimeoutTest {
 
 		MonoProcessor<Integer> source = MonoProcessor.create();
 
-		FluxProcessorSink<Integer> tp = Processors.direct();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		source.timeout(tp.asFlux())
 		      .subscribe(ts);

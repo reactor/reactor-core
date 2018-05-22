@@ -202,7 +202,7 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		FluxProcessorSink<String> hotSource = Processors.unicast();
+		FluxProcessorSink<String> hotSource = Processors.unicastSink();
 
 		Flux<String> hotFlux = hotSource.asFlux()
 		                                .publish()

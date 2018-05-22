@@ -80,7 +80,7 @@ which limits the sink interactions to follow the semantics of `Mono` (0-1 elemen
 == Direct Processor
 [source,java]
 ----
-Broadcaster<Integer> direct = Processors.direct();
+FluxProcessorSink<Integer> direct = Processors.directSink();
 ----
 
 A **direct** `Processor` can dispatch signals to zero to many `Subscribers`, but has the
@@ -97,8 +97,7 @@ replays the termination signal to them immediately.
 == Unicast Processor
 [source,java]
 ----
-UnicastProcessorBuilder<Integer> builder = Processors.unicast();
-Broadcaster<Integer> unicast = builder.build();
+FluxProcessorSink<Integer> unicast = Processors.unicastSink();
 ----
 
 A **unicast** `Processor` can deal with backpressure using an internal buffer.
@@ -119,8 +118,7 @@ on each rejected element, allowing for cleanup of these rejected elements.
 == Emitter Processor
 [source,java]
 ----
-EmitterProcessorBuilder<Integer> builder = Processors.emitter();
-Broadcaster<Integer> emitter = builder.build();
+FluxProcessorSink<Integer> emitter = Processors.emitterSink();
 ----
 
 An **emitter** `Processor` is capable of emitting to several subscribers, while honoring
@@ -145,8 +143,7 @@ This can be deactivated by using the `noAutoCancel()` method in the builder.
 == Replay Processor
 [source,java]
 ----
-ReplayProcessorBuilder<Integer> builder = Processors.replay();
-Broadcaster<Integer> replay = builder.build();
+FluxProcessorSink<Integer> builder = Processors.replaySink();
 ----
 
 A **replay** `Processor` caches elements that are either pushed directly through its `FluxSink`
@@ -169,7 +166,7 @@ element: `Processors.cacheLast()`.
 [source,java]
 ----
 FanOutProcessorBuilder<Integer> builder = Processors.fanOut();
-Broadcaster<Integer> fanOut = builder.build();
+FluxProcessorSink<Integer> fanOut = builder.buildSink();
 ----
 
 A **fan out** `Processor` is an **asynchronous** processor capable of relaying elements from
@@ -203,10 +200,9 @@ cancelled.
 == First Processor
 [source,java]
 ----
-MonoFirstProcessorBuilder<Integer> builder = Processors.first();
-Broadcaster<Integer> first = builder
-    .attachSource(Flux.range(1, 10))
-    .build();
+MonoProcessorFacade<Integer> first = Processors.firstFrom(
+    Flux.range(1, 10)
+);
 //will emit `1`
 ----
 

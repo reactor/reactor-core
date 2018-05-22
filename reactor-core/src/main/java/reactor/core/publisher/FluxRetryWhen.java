@@ -202,7 +202,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 	implements InnerConsumer<Object> {
 		RetryWhenMainSubscriber<?> main;
 
-		final FluxProcessorSink<Throwable> completionSignal = Processors.direct();
+		final FluxProcessorFacade<Throwable> completionSignal = Processors.direct();
 
 		@Override
 		public Context currentContext() {

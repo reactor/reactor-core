@@ -498,7 +498,8 @@ public class FluxPeekFuseableTest {
 	public void asyncFusionAvailable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Processors.unicast(Queues.<Integer>get(2).get()).build()
+		Processors.unicast(Queues.<Integer>get(2).get())
+		          .buildSink()
 		          .asFlux()
 		          .doOnNext(v -> {
 		          })

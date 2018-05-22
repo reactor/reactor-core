@@ -53,8 +53,8 @@ public class FluxWindowBoundaryTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux()
 		   .window(sp2.asFlux())
@@ -89,8 +89,8 @@ public class FluxWindowBoundaryTest {
 	public void normalOtherCompletes() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux()
 		   .window(sp2.asFlux())
@@ -125,8 +125,8 @@ public class FluxWindowBoundaryTest {
 	public void mainError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux()
 		   .window(sp2.asFlux())
@@ -167,8 +167,8 @@ public class FluxWindowBoundaryTest {
 	public void otherError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessorSink<Integer> sp1 = Processors.direct();
-		FluxProcessorSink<Integer> sp2 = Processors.direct();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		sp1.asFlux()
 		   .window(sp2.asFlux())
@@ -227,10 +227,10 @@ public class FluxWindowBoundaryTest {
 	@Test
 	public void windowWillAcumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
-		FluxProcessorSink<Integer> numbers = Processors.emitter();
+		FluxProcessorSink<Integer> numbers = Processors.emitterSink();
 
 		//non overlapping buffers
-		FluxProcessorSink<Integer> boundaryFlux = Processors.emitter();
+		FluxProcessorSink<Integer> boundaryFlux = Processors.emitterSink();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
 		                                                .window(boundaryFlux.asFlux())

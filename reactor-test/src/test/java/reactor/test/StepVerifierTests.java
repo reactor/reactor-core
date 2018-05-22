@@ -555,7 +555,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyThenOnCompleteRange() {
-		FluxProcessorSink<Void> p = Processors.direct();
+		FluxProcessorSink<Void> p = Processors.directSink();
 
 		Flux<String> flux = Flux.range(0, 3)
 		                        .map(d -> "t" + d)
@@ -1822,7 +1822,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void takeAsyncFusedBackpressured() {
-		FluxProcessorSink<String> up = Processors.unicast();;
+		FluxProcessorSink<String> up = Processors.unicastSink();
 		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
 		            .then(() -> up.next("test"))
@@ -1837,7 +1837,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void cancelAsyncFusion() {
-		FluxProcessorSink<String> up = Processors.unicast();;
+		FluxProcessorSink<String> up = Processors.unicastSink();
 		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
 		            .then(() -> up.next("test"))
@@ -1908,7 +1908,7 @@ public class StepVerifierTests {
 	@Test
 	public void assertNextWithSubscribeOnDirectProcessor() {
 		Scheduler scheduler = Schedulers.newElastic("test");
-		FluxProcessorSink<Integer> processor = Processors.direct();;
+		FluxProcessorSink<Integer> processor = Processors.directSink();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
 		                             .doOnNext(processor::next)
 		                             .subscribeOn(scheduler);
