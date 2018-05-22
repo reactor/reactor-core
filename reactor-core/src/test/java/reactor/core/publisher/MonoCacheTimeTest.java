@@ -354,11 +354,12 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	}
 
 	@Test
-	public void expireAfterTtlNormal() throws InterruptedException {
+	public void expireAfterTtlNormal() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		AtomicInteger subCount = new AtomicInteger();
 		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet()));
 
-		Mono<Integer> cached = source.cache(Duration.ofMillis(100))
+		Mono<Integer> cached = source.cache(Duration.ofMillis(100), vts)
 		                             .hide();
 
 		StepVerifier.create(cached)
@@ -367,7 +368,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		            .as("first subscription caches 1")
 		            .verifyComplete();
 
-		Thread.sleep(110);
+		vts.advanceTimeBy(Duration.ofMillis(110));
 
 		StepVerifier.create(cached)
 		            .expectNext(2)
@@ -401,11 +402,12 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
 
 	@Test
-	public void expireAfterTtlConditional() throws InterruptedException {
+	public void expireAfterTtlConditional() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		AtomicInteger subCount = new AtomicInteger();
 		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet()));
 
-		Mono<Integer> cached = source.cache(Duration.ofMillis(100))
+		Mono<Integer> cached = source.cache(Duration.ofMillis(100), vts)
 				.hide()
 				.filter(always -> true);
 
@@ -415,7 +417,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		            .as("first subscription caches 1")
 		            .verifyComplete();
 
-		Thread.sleep(110);
+		vts.advanceTimeBy(Duration.ofMillis(110));
 
 		StepVerifier.create(cached)
 		            .expectNext(2)
