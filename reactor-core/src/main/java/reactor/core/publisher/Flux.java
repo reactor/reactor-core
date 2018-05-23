@@ -2672,7 +2672,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a replaying {@link Flux}
 	 */
 	public final Flux<T> cache(Duration ttl) {
-		return replay(Integer.MAX_VALUE, ttl).autoConnect();
+		return cache(ttl, Schedulers.parallel());
+	}
+
+	/**
+	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further
+	 * {@link Subscriber}. Will retain an unbounded history but apply a per-item expiry timeout
+	 * <p>
+	 *   Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 *   the next {@link Subscriber} will start over a new subscription.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/cache.png"
+	 * alt="">
+	 *
+	 * @param ttl Time-to-live for each cached item and post termination.
+	 * @param timer the {@link Scheduler} on which to measure the duration.
+	 *
+	 * @return a replaying {@link Flux}
+	 */
+	public final Flux<T> cache(Duration ttl, Scheduler timer) {
+		return cache(Integer.MAX_VALUE, ttl, timer);
 	}
 
 	/**
@@ -2692,7 +2711,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a replaying {@link Flux}
 	 */
 	public final Flux<T> cache(int history, Duration ttl) {
-		return replay(history, ttl).autoConnect();
+		return cache(history, ttl, Schedulers.parallel());
+	}
+
+	/**
+	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further
+	 * {@link Subscriber}. Will retain up to the given history size and apply a per-item expiry
+	 * timeout.
+	 * <p>
+	 *   Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 *   the next {@link Subscriber} will start over a new subscription.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/cache.png"
+	 * alt="">
+	 *
+	 * @param history number of elements retained in cache
+	 * @param ttl Time-to-live for each cached item and post termination.
+	 * @param timer the {@link Scheduler} on which to measure the duration.
+	 *
+	 * @return a replaying {@link Flux}
+	 */
+	public final Flux<T> cache(int history, Duration ttl, Scheduler timer) {
+		return replay(history, ttl, timer).autoConnect();
 	}
 
 	/**
