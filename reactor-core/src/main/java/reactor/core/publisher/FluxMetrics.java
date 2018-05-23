@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -70,7 +70,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	/**
 	 * @return true if the Micrometer instrumentation facade is available
 	 */
-	static final boolean isMicrometerAvailable() {
+	static boolean isMicrometerAvailable() {
 		return isMicrometerAvailable;
 	}
 
@@ -394,7 +394,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 		private boolean syncFused;
 
-		public MicrometerMetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
+		MicrometerMetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry, Clock clock, String sequenceName, List<Tag> sequenceTags,
 				boolean monoSource) {
 			super(actual, registry, clock, sequenceName, sequenceTags, monoSource);
