@@ -522,10 +522,9 @@ public final class Processors {
 	 */
 	@SuppressWarnings("deprecation")
 	public static final <T> MonoProcessorFacade<T> firstFrom(Publisher<T> source) {
-		MonoProcessor<T> processor = new MonoProcessor<>(source);
-		processor.connect();
-		return processor;
+		return new MonoProcessor<>(source);
 	}
+
 	/**
 	 * Create a "first" {@link MonoProcessorFacade}, which will wait for a source
 	 * {@link Subscriber#onSubscribe(Subscription)}. It will then propagate only the first

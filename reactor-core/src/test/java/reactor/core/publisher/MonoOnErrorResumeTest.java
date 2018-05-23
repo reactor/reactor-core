@@ -201,10 +201,10 @@ public class MonoOnErrorResumeTest {
 				.onErrorMap(TestException.class, e -> new Exception("test"))
 				.subscribeWith(mp)
 				.asMono())
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isComplete()).isFalse())
-		            .then(() -> assertThat(mp.isValued()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isError()).as("isError").isTrue())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isFalse())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyErrorMessage("test");
 	}
 
@@ -215,10 +215,10 @@ public class MonoOnErrorResumeTest {
 				.onErrorResume(TestException.class, e -> Mono.just(1))
 				.subscribeWith(mp)
 				.asMono())
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isComplete()).isTrue())
-		            .then(() -> assertThat(mp.isValued()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isTrue())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .expectNext(1)
 		            .verifyComplete();
 	}
@@ -230,10 +230,10 @@ public class MonoOnErrorResumeTest {
 				.onErrorResume(RuntimeException.class, e -> Mono.just(1))
 				.subscribeWith(mp)
 				.asMono())
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isComplete()).isFalse())
-		            .then(() -> assertThat(mp.isValued()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isError()).as("isError").isTrue())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isFalse())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyError(TestException.class);
 	}
 
@@ -244,10 +244,10 @@ public class MonoOnErrorResumeTest {
 				.onErrorReturn(TestException.class, 1)
 				.subscribeWith(mp)
 				.asMono())
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isComplete()).isTrue())
-		            .then(() -> assertThat(mp.isValued()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isTrue())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .expectNext(1)
 		            .verifyComplete();
 	}
@@ -260,10 +260,10 @@ public class MonoOnErrorResumeTest {
 				.onErrorReturn(TestException.class::isInstance, 1)
 				.subscribeWith(mp)
 				.asMono())
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isComplete()).isTrue())
-		            .then(() -> assertThat(mp.isValued()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isTrue())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .expectNext(1)
 		            .verifyComplete();
 	}
@@ -275,10 +275,10 @@ public class MonoOnErrorResumeTest {
 				.onErrorReturn(RuntimeException.class, 1)
 				.subscribeWith(mp)
 				.asMono())
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isComplete()).isFalse())
-		            .then(() -> assertThat(mp.isValued()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isError()).as("isError").isTrue())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isFalse())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyError(TestException.class);
 	}
 
@@ -289,10 +289,10 @@ public class MonoOnErrorResumeTest {
 				.onErrorReturn(RuntimeException.class::isInstance, 1)
 				.subscribeWith(mp)
 				.asMono())
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isComplete()).isFalse())
-		            .then(() -> assertThat(mp.isValued()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isError()).as("isError").isTrue())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isFalse())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyError(TestException.class);
 	}
 }

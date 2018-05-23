@@ -110,10 +110,10 @@ public class MonoFirstTest {
 		StepVerifier.create(Mono.first(Mono.just(1), Mono.just(2))
 		                        .subscribeWith(mp)
 		                        .asMono())
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isComplete()).isTrue())
-		            .then(() -> assertThat(mp.isValued()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isTrue())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .expectNext(1)
 		            .verifyComplete();
 	}
