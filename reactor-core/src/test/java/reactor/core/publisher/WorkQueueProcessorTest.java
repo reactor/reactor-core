@@ -967,7 +967,7 @@ public class WorkQueueProcessorTest {
 		processor.forceShutdown();
 
 		Condition<Thread> defaultRequestTaskThread = new Condition<>(
-				thread -> expectedName.equals(thread.getName()),
+				thread -> thread != null && expectedName.equals(thread.getName()),
 				"a thread named \"%s\"", expectedName);
 
 		Assertions.assertThat(threads)
@@ -998,7 +998,7 @@ public class WorkQueueProcessorTest {
 		processor.forceShutdown();
 
 		Condition<Thread> customRequestTaskThread = new Condition<>(
-				thread -> expectedName.equals(thread.getName()),
+				thread -> thread != null && expectedName.equals(thread.getName()),
 				"a thread named \"%s\"", expectedName);
 
 		Assertions.assertThat(threads)
@@ -1029,7 +1029,7 @@ public class WorkQueueProcessorTest {
 		processor.forceShutdown();
 
 		Condition<Thread> customRequestTaskThread = new Condition<>(
-				thread -> expectedName.equals(thread.getName()),
+				thread -> thread != null && expectedName.equals(thread.getName()),
 				"a thread named \"%s\"", expectedName);
 
 		Assertions.assertThat(threads)
