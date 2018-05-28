@@ -14,7 +14,7 @@ Reactor 3.1 introduces first-class support for Kotlin which is described in this
 [[kotlin-requirements]]
 == Requirements ==
 
-Kotlin supports Kotlin 1.1+ and requires
+Reactor supports Kotlin 1.1+ and requires
 https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib[`kotlin-stdlib`]
 (or one of its https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre7[`kotlin-stdlib-jre7`]
 / https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre8[`kotlin-stdlib-jre8`] variants).
