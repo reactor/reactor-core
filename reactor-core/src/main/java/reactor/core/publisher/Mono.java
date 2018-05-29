@@ -3684,6 +3684,10 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Let this {@link Mono} complete then emit the provided value.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/thenreturn1.png"
+	 * alt="">
+	 *
 	 * @param value a value to emit after termination
 	 * @param <V> the element type of the supplied value
 	 *
