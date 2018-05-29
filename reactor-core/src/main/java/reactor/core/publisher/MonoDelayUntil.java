@@ -263,7 +263,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
-				s.request(Integer.MAX_VALUE);
+				s.request(Long.MAX_VALUE);
 			} else {
 				s.cancel();
 			}
