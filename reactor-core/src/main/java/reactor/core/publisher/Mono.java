@@ -736,7 +736,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whendelayerror.png" alt="">
 	 * <p>
 	 *
 	 * @param sources The sources to use.
@@ -753,7 +753,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/whendelayerror.png" alt="">
 	 * <p>
 	 * @param sources The sources to use.
 	 *
