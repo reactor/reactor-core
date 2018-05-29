@@ -63,7 +63,7 @@ Flux.fromIterable(getSomeLongList())
     .doOnNext(serviceA::someObserver)
     .map(d -> d * 2)
     .take(3)
-    .onErrorResumeWith(errorHandler::fallback)
+    .onErrorResume(errorHandler::fallback)
     .doAfterTerminate(serviceM::incrementTerminate)
     .subscribe(System.out::println);
 ```
