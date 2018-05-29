@@ -7728,7 +7728,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
 	 * second completion signal is replayed, or any error signal that occurs instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignorethen.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/thenempty.png"
 	 * alt="">
 	 *
 	 * @param other a {@link Publisher} to wait for after this Flux's termination
@@ -7745,7 +7745,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * In other words ignore element from this flux and transform the completion signal into a
 	 * {@code Publisher<V>} that will emit elements from the provided {@link Publisher}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignorethens.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/thenmany.png" alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the element type of the supplied Publisher
