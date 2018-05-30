@@ -17,7 +17,14 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxMergeWithTest {
 
@@ -98,5 +105,19 @@ public class FluxMergeWithTest {
 		ts.assertValues(1, 2, 3)
 		.assertNoError()
 		.assertComplete();
+	}
+
+	@Test
+	public void scanForActualShouldReturnFirst() {
+		StepVerifier.create(Flux.just(1, 2)
+		    .subscriberContext(Context.of("a", "b"))
+		    .flatMap(Flux::just)
+		    .mergeWith(Flux.just(3)))
+		            .expectSubscription()
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .expectNextCount(3)
+		            .verifyComplete();
 	}
 }

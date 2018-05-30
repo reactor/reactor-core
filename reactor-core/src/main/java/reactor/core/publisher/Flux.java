@@ -3385,7 +3385,11 @@ public abstract class Flux<T> implements Publisher<T> {
 
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
-		return concat(this, other);
+
+		@SuppressWarnings("unchecked")
+		Publisher<? extends T>[] sources = new Publisher[]{this, other};
+
+		return onAssembly(new FluxConcatArray<>(false, 0, sources));
 	}
 
 	/**
@@ -5482,7 +5486,17 @@ public abstract class Flux<T> implements Publisher<T> {
 			FluxMerge<T> fluxMerge = (FluxMerge<T>) this;
 			return fluxMerge.mergeAdditionalSource(other, Queues::get);
 		}
-		return merge(this, other);
+
+		@SuppressWarnings("unchecked")
+		Publisher<? extends T>[] publishers = new Publisher[] {this, other};
+
+		return onAssembly(new FluxMerge<>(publishers,
+				false,
+				2,
+				Queues.get(2),
+				Queues.XS_BUFFER_SIZE,
+				Queues.get(Queues.XS_BUFFER_SIZE),
+				true));
 	}
 
 	/**
@@ -7190,7 +7204,11 @@ public abstract class Flux<T> implements Publisher<T> {
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 			return fluxConcatArray.concatAdditionalSourceFirst(publisher);
 		}
-		return concat(publisher, this);
+
+		@SuppressWarnings("unchecked")
+		Publisher<? extends T>[] sources = new Publisher[]{publisher, this};
+
+		return onAssembly(new FluxConcatArray<>(false, 1, sources));
 	}
 
 	/**
@@ -7774,9 +7792,11 @@ public abstract class Flux<T> implements Publisher<T> {
 			return fluxConcatArray.concatAdditionalIgnoredLast(other);
 		}
 
+
 		@SuppressWarnings("unchecked")
-		Flux<V> concat = (Flux<V>)concat(ignoreElements(), other);
-		return concat;
+		Publisher<? extends V>[] sources = new Publisher[]{ignoreElements(), other};
+
+		return onAssembly(new FluxConcatArray<>(false, 0, sources));
 	}
 
 	/**
@@ -8516,7 +8536,13 @@ public abstract class Flux<T> implements Publisher<T> {
 				return result;
 			}
 		}
-		return zip(this, source2, combinator);
+
+		return onAssembly(new FluxZip<>(this,
+				source2,
+				combinator,
+				Queues.xs(),
+				Queues.XS_BUFFER_SIZE,
+				true));
 	}
 
 	/**

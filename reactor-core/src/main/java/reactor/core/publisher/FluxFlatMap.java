@@ -179,7 +179,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		return false;
 	}
 
-	static final class FlatMapMain<T, R> extends FlatMapTracker<FlatMapInner<R>>
+	static class FlatMapMain<T, R> extends FlatMapTracker<FlatMapInner<R>>
 			implements InnerOperator<T, R> {
 
 		final boolean                                               delayError;

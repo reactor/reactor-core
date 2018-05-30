@@ -26,6 +26,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -288,6 +289,50 @@ public class FluxConcatArrayTest {
 
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void checkContext() {
+		StepVerifier.create(Flux.just(1, 2)
+		                        .subscriberContext(Context.of("a", "b"))
+		                        .concatMap(Flux::just)
+		                        .concatWith(Flux.just(3)))
+		            .expectSubscription()
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .expectNextCount(3)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void checkContext2() {
+		StepVerifier.create(Flux.just(1, 2)
+		                        .subscriberContext(Context.of("a", "b"))
+		                        .concatMap(Flux::just)
+		                        .startWith(Flux.just(3)))
+		            .expectSubscription()
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .expectNextCount(3)
+		            .verifyComplete();
+	}
+
+
+
+	@Test
+	public void checkContext3() {
+		StepVerifier.create(Flux.just(1, 2)
+		                        .subscriberContext(Context.of("a", "b"))
+		                        .concatMap(Flux::just)
+		                        .thenMany(Flux.just(3)))
+		            .expectSubscription()
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .expectNextCount(1)
+		            .verifyComplete();
 	}
 
 }
