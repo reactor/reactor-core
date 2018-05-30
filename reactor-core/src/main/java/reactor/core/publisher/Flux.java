@@ -384,7 +384,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Concatenates the values to the end of the {@link Flux}
-	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/concatwithvalues.png" alt="">
+	 * <p>
 	 * @param values The values to concatenate
 	 *
 	 * @return a new {@link Flux} concatenating all source sequences
