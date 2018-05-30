@@ -1277,6 +1277,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergeordered.png" alt="">
+	 * <p>
 	 *
 	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
 	 * @param <I> a {@link Comparable} merged type that has a {@link Comparator#naturalOrder() natural order}
@@ -1295,6 +1298,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergeordered.png" alt="">
+	 * <p>
 	 *
 	 * @param comparator the {@link Comparator} to use to find the smallest value
 	 * @param sources {@link Publisher} sources to merge
@@ -1314,6 +1320,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergeordered.png" alt="">
+	 * <p>
 	 *
 	 * @param prefetch the number of elements to prefetch from each source (avoiding too
 	 * many small requests to the source when picking)
@@ -5434,6 +5443,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
 	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
 	 * another source.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergeordered.png" alt="">
+	 * <p>
 	 *
 	 * @param other the {@link Publisher} to merge with
 	 * @param otherComparator the {@link Comparator} to use for merging
