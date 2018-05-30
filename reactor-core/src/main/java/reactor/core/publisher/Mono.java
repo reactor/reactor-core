@@ -1033,7 +1033,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * An error or <strong>empty</strong> completion of any source will cause other sources
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/zip1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zip1.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
 	 * @param combinator the function to transform the combined array into an arbitrary

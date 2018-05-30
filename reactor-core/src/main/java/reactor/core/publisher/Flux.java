@@ -5444,7 +5444,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
 	 * another source.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mergeordered.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/mergeordered.png" alt="">
 	 * <p>
 	 *
 	 * @param other the {@link Publisher} to merge with
@@ -5822,7 +5822,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * choose the fallback depending on the error.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onerrorresume.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/onerrorresume.png" alt="">
 	 * <p>
 	 * @param fallback the function to choose the fallback to an alternative {@link Publisher}
 	 *
@@ -5836,7 +5836,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Subscribe to a fallback publisher when an error matching the given type
 	 * occurs, using a function to choose the fallback depending on the error.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onerrorresume.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/onerrorresume.png"
 	 * alt="">
 	 *
 	 * @param type the error type to match
@@ -5858,7 +5858,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Subscribe to a fallback publisher when an error matching a given predicate
 	 * occurs.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/onerrorresume.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/onerrorresume.png"
 	 * alt="">
 	 *
 	 * @param predicate the error predicate to match
