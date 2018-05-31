@@ -68,7 +68,7 @@ the favored way of using these.
 * *synchronous* (`emitter` and `replay` flavors): These processors are meant to push data
 both through user action and by subscribing to an upstream `Publisher` and synchronously
 draining it.
-* *asynchronous* (`fanOut` flavor): These processors can push data obtained from
+* *asynchronous* (`asyncEmitter` flavor): These processors can push data obtained from
 **multiple** upstream `Publishers`. They are more robust but also are a bit more costly
 to instantiate, establishing more resources in order to deal with their multiple upstreams.
 * *mono* (`first` flavor): These processors, when attached to a `Publisher` source, only
@@ -165,8 +165,8 @@ element: `Processors.cacheLast()`.
 == FanOut Processor
 [source,java]
 ----
-FanOutProcessorBuilder<Integer> builder = Processors.fanOut();
-FluxProcessorSink<Integer> fanOut = builder.buildSink();
+AsyncEmitterProcessorBuilder<Integer> builder = Processors.asyncEmitter();
+FluxProcessorSink<Integer> asyncEmitter = builder.buildSink();
 ----
 
 A **fan out** `Processor` is an **asynchronous** processor capable of relaying elements from

@@ -63,7 +63,7 @@ public class FluxWithProcessorVerification extends AbstractProcessorVerification
 						                          otherStream,
 						                          combinator)))
 				 .doOnNext(array -> cumulatedJoin.getAndIncrement())
-				 .subscribeWith(Processors.fanOut()
+				 .subscribeWith(Processors.asyncEmitter()
 				                          .name("fluxion-raw-join")
 				                          .bufferSize(bufferSize)
 				                          .buildFacade())

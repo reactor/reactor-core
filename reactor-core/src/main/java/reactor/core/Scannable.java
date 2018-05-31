@@ -139,7 +139,7 @@ public interface Scannable {
 		 * {@literal Integer.MIN_VALUE}, which serves as a signal that this attribute
 		 * should be used instead. Defaults to {@literal null}.
 		 * <p>
-		 * {@code Flux.flatMap}, {@code Flux.filterWhen}, {@link Processors#fanOut()},
+		 * {@code Flux.flatMap}, {@code Flux.filterWhen}, {@link Processors#asyncEmitter()},
 		 * and {@code Flux.window} (with overlap) are known to use this attribute.
 		 */
 		public static final Attr<Long> LARGE_BUFFERED = new Attr<>(null);

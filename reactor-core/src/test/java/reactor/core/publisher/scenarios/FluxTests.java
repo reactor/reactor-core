@@ -986,7 +986,7 @@ public class FluxTests extends AbstractReactorTest {
 		}).log("points")
 		  .buffer(2)
 		  .map(pairs -> new Point(pairs.get(0), pairs.get(1)))
-		  .subscribeWith(Processors.<Point>fanOut()
+		  .subscribeWith(Processors.<Point>asyncEmitter()
 				  .name("tee")
 				  .bufferSize(32)
 				  .buildFacade())

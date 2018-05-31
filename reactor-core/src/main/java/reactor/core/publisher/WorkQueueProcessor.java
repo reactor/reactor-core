@@ -63,7 +63,7 @@ import reactor.util.concurrent.WaitStrategy;
  *
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
- * @deprecated prefer the {@link Processors#fanOut()} variant, will be removed in 3.2.0.
+ * @deprecated prefer the {@link Processors#asyncEmitter()} variant, will be removed in 3.2.0.
  */
 @Deprecated
 public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
@@ -76,7 +76,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * {@code WorkQueueProcessor<String> processor = WorkQueueProcessor.<String>builder().build()}
 	 *
 	 * @param <T> Type of dispatched signal
-	 * @deprecated will be replaced by {@link Processors#fanOut()} in 3.2.0
+	 * @deprecated will be replaced by {@link Processors#asyncEmitter()} in 3.2.0
 	 */
 	@Deprecated
 	public final static class Builder<T> {

@@ -84,7 +84,7 @@ public interface ProcessorFacade<T> extends Disposable {
 
 	/**
 	 * For asynchronous {@link ProcessorFacade}, which maintain heavy resources
-	 * (such as {@link Processors#fanOut()}), this method attempts to forcibly shutdown
+	 * (such as {@link Processors#asyncEmitter()}), this method attempts to forcibly shutdown
 	 * these resources, unlike {@link #dispose()} which would let the {@link ProcessorFacade}
 	 * tear down the resources gracefully.
 	 * <p>
@@ -102,7 +102,7 @@ public interface ProcessorFacade<T> extends Disposable {
 	}
 
 	/**
-	 * For {@link ProcessorFacade} that maintain heavy resources (such as {@link Processors#fanOut()}),
+	 * For {@link ProcessorFacade} that maintain heavy resources (such as {@link Processors#asyncEmitter()}),
 	 * this method attempts to shutdown these resources gracefully within the given {@link Duration}.
 	 * Unlike {@link #dispose()}, this <strong>blocks</strong> for the given {@link Duration}.
 	 *

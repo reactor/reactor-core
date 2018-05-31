@@ -425,7 +425,7 @@ public final class Processors {
 	 * Create a builder for a "fan out" {@link ProcessorFacade}, which is an
 	 * <strong>asynchronous</strong> processor optionally capable of relaying elements from multiple
 	 * upstream {@link Publisher Publishers} when created in the shared configuration (see the {@link
-	 * FanOutProcessorBuilder#share(boolean)} option of the builder).
+	 * AsyncEmitterProcessorBuilder#share(boolean)} option of the builder).
 	 *
 	 * <p>
 	 * Note that the share option is mandatory if you intend to concurrently call the
@@ -449,25 +449,25 @@ public final class Processors {
 	 *
 	 * <p>
 	 * The maximum number of downstream subscribers for this processor is driven by the {@link
-	 * FanOutProcessorBuilder#executor(ExecutorService) executor} builder option. Provide a bounded
+	 * AsyncEmitterProcessorBuilder#executor(ExecutorService) executor} builder option. Provide a bounded
 	 * {@link ExecutorService} to limit it to a specific number.
 	 *
 	 * <p>
-	 * There is also an {@link FanOutProcessorBuilder#autoCancel(boolean) autoCancel} builder
+	 * There is also an {@link AsyncEmitterProcessorBuilder#autoCancel(boolean) autoCancel} builder
 	 * option: Set it to {@code false} to avoid cancelling the source {@link Publisher Publisher(s)}
 	 * when all subscribers are cancelled.
 	 *
 	 * @return a builder to create a new fan out {@link ProcessorFacade}
 	 */
-	public static final FanOutProcessorBuilder fanOut() {
-		return new FanOutProcessorBuilder();
+	public static final AsyncEmitterProcessorBuilder asyncEmitter() {
+		return new AsyncEmitterProcessorBuilder();
 	}
 
 	/**
 	 * Create a builder for a "fan out" {@link ProcessorFacade} with relaxed
 	 * Reactive Streams compliance. This is an <strong>asynchronous</strong> processor
 	 * optionally capable of relaying elements from multiple upstream {@link Publisher Publishers}
-	 * when created in the shared configuration (see the {@link FanOutProcessorBuilder#share(boolean)}
+	 * when created in the shared configuration (see the {@link AsyncEmitterProcessorBuilder#share(boolean)}
 	 * option of the builder).
 	 *
 	 * <p>
@@ -494,19 +494,19 @@ public final class Processors {
 	 *
 	 * <p>
 	 * The maximum number of downstream subscribers for this processor is driven by the {@link
-	 * FanOutProcessorBuilder#executor(ExecutorService) executor} builder option. Provide a bounded
+	 * AsyncEmitterProcessorBuilder#executor(ExecutorService) executor} builder option. Provide a bounded
 	 * {@link ExecutorService} to limit it to a specific number.
 	 *
 	 * <p>
-	 * There is also an {@link FanOutProcessorBuilder#autoCancel(boolean) autoCancel} builder
+	 * There is also an {@link AsyncEmitterProcessorBuilder#autoCancel(boolean) autoCancel} builder
 	 * option: If set to {@code true} (the default), it results in the source {@link Publisher
 	 * Publisher(s)} being cancelled when all subscribers are cancelled.
 	 *
 	 * @return a builder to create a new round-robin fan out {@link ProcessorFacade}
 	 */
 	@Deprecated
-	public static final FanOutProcessorBuilder relaxedFanOut() {
-		return new FanOutProcessorBuilder(true);
+	public static final AsyncEmitterProcessorBuilder relaxedFanOut() {
+		return new AsyncEmitterProcessorBuilder(true);
 	}
 
 
@@ -960,9 +960,9 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the {@link #fanOut()} flavor of {@link ProcessorFacade}.
+	 * A builder for the {@link #asyncEmitter()} flavor of {@link ProcessorFacade}.
 	 */
-	public static final class FanOutProcessorBuilder {
+	public static final class AsyncEmitterProcessorBuilder {
 
 		boolean useWorkQueueProcessor;
 
@@ -978,11 +978,11 @@ public final class Processors {
 		boolean share;
 		boolean autoCancel;
 
-		FanOutProcessorBuilder() {
+		AsyncEmitterProcessorBuilder() {
 			this(false);
 		}
 
-		FanOutProcessorBuilder(boolean useWorkQueueProcessor) {
+		AsyncEmitterProcessorBuilder(boolean useWorkQueueProcessor) {
 			this.bufferSize = Queues.SMALL_BUFFER_SIZE;
 			this.autoCancel = true;
 			this.share = false;
@@ -991,13 +991,13 @@ public final class Processors {
 
 		/**
 		 * Configures name for this builder, if {@link #executor(ExecutorService)} is not configured.
-		 * Default value is {@code "fanOut"}.
+		 * Default value is {@code "asyncEmitter"}.
 		 * Name is reset to default if the provided {@code name} is null.
 		 *
 		 * @param name Use a new cached ExecutorService and assign this name to the created threads.
 		 * @return builder with provided name
 		 */
-		public FanOutProcessorBuilder name(@Nullable String name) {
+		public AsyncEmitterProcessorBuilder name(@Nullable String name) {
 			if (executor != null)
 				throw new IllegalArgumentException("Executor service is configured, name cannot be set.");
 			this.name = name;
@@ -1010,7 +1010,7 @@ public final class Processors {
 		 * @param bufferSize the internal buffer size to hold signals, must be a power of 2.
 		 * @return builder with provided buffer size
 		 */
-		public FanOutProcessorBuilder bufferSize(int bufferSize) {
+		public AsyncEmitterProcessorBuilder bufferSize(int bufferSize) {
 			if (!Queues.isPowerOfTwo(bufferSize)) {
 				throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
 			}
@@ -1029,7 +1029,7 @@ public final class Processors {
 		 * @param waitStrategy A RingBuffer {@link WaitStrategy} to use instead of the default blocking wait strategy.
 		 * @return builder with provided wait strategy
 		 */
-		public FanOutProcessorBuilder waitStrategy(@Nullable WaitStrategy waitStrategy) {
+		public AsyncEmitterProcessorBuilder waitStrategy(@Nullable WaitStrategy waitStrategy) {
 			this.waitStrategy = waitStrategy;
 			return this;
 		}
@@ -1040,7 +1040,7 @@ public final class Processors {
 		 * @param autoCancel true to automatically cancel when all subscribers have cancelled.
 		 * @return builder with provided auto-cancel
 		 */
-		public FanOutProcessorBuilder autoCancel(boolean autoCancel) {
+		public AsyncEmitterProcessorBuilder autoCancel(boolean autoCancel) {
 			this.autoCancel = autoCancel;
 			return this;
 		}
@@ -1053,7 +1053,7 @@ public final class Processors {
 		 * @param executor A provided ExecutorService to manage threading infrastructure
 		 * @return builder with provided executor
 		 */
-		public FanOutProcessorBuilder executor(@Nullable ExecutorService executor) {
+		public AsyncEmitterProcessorBuilder executor(@Nullable ExecutorService executor) {
 			this.executor = executor;
 			return this;
 		}
@@ -1066,7 +1066,7 @@ public final class Processors {
 		 * @param requestTaskExecutor internal request executor
 		 * @return builder with provided internal request executor
 		 */
-		public FanOutProcessorBuilder requestTaskExecutor(@Nullable ExecutorService requestTaskExecutor) {
+		public AsyncEmitterProcessorBuilder requestTaskExecutor(@Nullable ExecutorService requestTaskExecutor) {
 			this.requestTaskExecutor = requestTaskExecutor;
 			return this;
 		}
@@ -1078,14 +1078,14 @@ public final class Processors {
 		 * @param share true to support concurrent sources on the {@link FluxProcessorFacade#asProcessor Processor}
 		 * @return builder with specified sharing
 		 */
-		public FanOutProcessorBuilder share(boolean share) {
+		public AsyncEmitterProcessorBuilder share(boolean share) {
 			this.share = share;
 			return this;
 		}
 
 		@SuppressWarnings("deprecation")
 		private <T> EventLoopProcessor<T> buildFluxProcessor() {
-			this.name = this.name != null ? this.name : "fanOut";
+			this.name = this.name != null ? this.name : "asyncEmitter";
 			this.waitStrategy = this.waitStrategy != null ? this.waitStrategy : WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS);
 			EventLoopProcessor.EventLoopFactory threadFactory = this.executor != null
 					? null
@@ -1093,7 +1093,7 @@ public final class Processors {
 
 			String requestTaskExecutorName = threadFactory != null
 					? threadFactory.get()
-					: "fanOutRequest";
+					: "asyncEmitterRequest";
 
 			ExecutorService requestTaskExecutor = this.requestTaskExecutor != null
 					? this.requestTaskExecutor

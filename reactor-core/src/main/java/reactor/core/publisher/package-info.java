@@ -35,7 +35,7 @@
  *         {@link reactor.core.publisher.Processors#unicast()} and
  *         {@link reactor.core.publisher.Processors#direct()}</li>
  *         <li>A dedicated parallel pub-sub event buffering broadcaster :
- *         {@link reactor.core.publisher.Processors#fanOut()}</li>
+ *         {@link reactor.core.publisher.Processors#asyncEmitter()}</li>
  *         <li>A dedicated parallel work queue distribution for slow consumers :
  *         {@link reactor.core.publisher.Processors#relaxedFanOut()}</li>
  * </ul>
