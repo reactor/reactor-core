@@ -55,7 +55,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
-		Subscriber<Long> signaller = Operators.serialize(other.completionSignal.asCoreSubscriber());
+		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
@@ -194,12 +194,14 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 	}
 
+	//use of DirectProcessor internally instead of facade, to avoid going through builder in critical path
+	@SuppressWarnings("deprecation")
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
 			implements InnerConsumer<Object> {
 
 		RepeatWhenMainSubscriber<?> main;
 
-		final FluxProcessorFacade<Long> completionSignal = Processors.direct();
+		final DirectProcessor<Long> completionSignal = new DirectProcessor<>();
 
 		@Override
 		public Context currentContext() {
@@ -237,7 +239,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void subscribe(CoreSubscriber<? super Long> actual) {
-			completionSignal.asProcessor().subscribe(actual);
+			completionSignal.subscribe(actual);
 		}
 
 	}

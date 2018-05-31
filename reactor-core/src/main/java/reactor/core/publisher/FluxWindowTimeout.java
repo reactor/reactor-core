@@ -37,6 +37,8 @@ import reactor.util.concurrent.Queues;
 /**
  * @author David Karnok
  */
+//use of UnicastProcessor internally instead of facade, to avoid going through builder in critical path
+@SuppressWarnings("deprecation")
 final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 	final int            maxSize;
@@ -100,7 +102,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxProcessorFacade<T> window;
+		UnicastProcessor<T> window;
 
 		volatile boolean terminated;
 
@@ -128,8 +130,8 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			FluxProcessorFacade<T> w = window;
-			return w == null ? Stream.empty() : Stream.of(Scannable.from(w));
+			UnicastProcessor<T> w = window;
+			return w == null ? Stream.empty() : Stream.of(w);
 		}
 
 		@Override
@@ -157,12 +159,12 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				FluxProcessorFacade<T> w = Processors.unicast();
+				UnicastProcessor<T> w = UnicastProcessor.create();
 				window = w;
 
 				long r = requested;
 				if (r != 0L) {
-					a.onNext(w.asFlux());
+					a.onNext(w);
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
 					}
@@ -197,8 +199,8 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 			}
 
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-				FluxProcessorFacade<T> w = window;
-				w.asProcessor().onNext(t);
+				UnicastProcessor<T> w = window;
+				w.onNext(t);
 
 				int c = count + 1;
 
@@ -206,14 +208,14 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 					producerIndex++;
 					count = 0;
 
-					w.asProcessor().onComplete();
+					w.onComplete();
 
 					long r = requested;
 
 					if (r != 0L) {
-						w = Processors.unicast();
+						w = UnicastProcessor.create();
 						window = w;
-						actual.onNext(w.asFlux());
+						actual.onNext(w);
 						if (r != Long.MAX_VALUE) {
 							REQUESTED.decrementAndGet(this);
 						}
@@ -295,7 +297,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 		void drainLoop() {
 			final Queue<Object> q = queue;
 			final Subscriber<? super Flux<T>> a = actual;
-			FluxProcessorFacade<T> w = window;
+			UnicastProcessor<T> w = window;
 
 			int missed = 1;
 			for (; ; ) {
@@ -321,10 +323,10 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable err = error;
 						if (err != null) {
-							w.asProcessor().onError(err);
+							w.onError(err);
 						}
 						else {
-							w.asProcessor().onComplete();
+							w.onComplete();
 						}
 						timer.dispose();
 						worker.dispose();
@@ -336,14 +338,14 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 					}
 
 					if (isHolder) {
-						w.asProcessor().onComplete();
+						w.onComplete();
 						count = 0;
-						w = Processors.unicast();
+						w = UnicastProcessor.create();
 						window = w;
 
 						long r = requested;
 						if (r != 0L) {
-							a.onNext(w.asFlux());
+							a.onNext(w);
 							if (r != Long.MAX_VALUE) {
 								REQUESTED.decrementAndGet(this);
 							}
@@ -360,21 +362,21 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 						continue;
 					}
 
-					w.asProcessor().onNext((T) o);
+					w.onNext((T) o);
 					int c = count + 1;
 
 					if (c >= maxSize) {
 						producerIndex++;
 						count = 0;
 
-						w.asProcessor().onComplete();
+						w.onComplete();
 
 						long r = requested;
 
 						if (r != 0L) {
-							w = Processors.unicast();
+							w = UnicastProcessor.create();
 							window = w;
-							actual.onNext(w.asFlux());
+							actual.onNext(w);
 							if (r != Long.MAX_VALUE) {
 								REQUESTED.decrementAndGet(this);
 							}

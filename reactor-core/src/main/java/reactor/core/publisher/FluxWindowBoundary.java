@@ -42,6 +42,8 @@ import reactor.util.context.Context;
  * @param <U> the boundary publisher's type (irrelevant)
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+//use of UnicastProcessor internally instead of facade, to avoid going through builder in critical path
+@SuppressWarnings("deprecation")
 final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 	final Publisher<U> other;
@@ -84,7 +86,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		final Queue<Object>                   queue;
 		final CoreSubscriber<? super Flux<T>> actual;
 
-		FluxProcessorFacade<T> window;
+		UnicastProcessor<T> window;
 
 		volatile Subscription s;
 
@@ -128,7 +130,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 				Queue<T> processorQueue) {
 			this.actual = actual;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.window = Processors.unicast(processorQueue).endCallback(this).buildFacade();
+			this.window = new UnicastProcessor<>(processorQueue, this);
 			WINDOW_COUNT.lazySet(this, 2);
 			this.boundary = new WindowBoundaryOther<>(this);
 			this.queue = Queues.unboundedMultiproducer().get();
@@ -155,7 +157,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(boundary, Scannable.from(window));
+			return Stream.of(boundary, window);
 		}
 
 		@Override
@@ -270,7 +272,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 			final Subscriber<? super Flux<T>> a = actual;
 			final Queue<Object> q = queue;
-			FluxProcessorFacade<T> w = window;
+			UnicastProcessor<T> w = window;
 
 			int missed = 1;
 
@@ -281,7 +283,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable e = Exceptions.terminate(ERROR, this);
 						if (e != Exceptions.TERMINATED) {
-							w.asProcessor().onError(e);
+							w.onError(e);
 
 							a.onError(e);
 						}
@@ -297,7 +299,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 					if (o == DONE) {
 						q.clear();
 
-						w.asProcessor().onComplete();
+						w.onComplete();
 
 						a.onComplete();
 						return;
@@ -306,10 +308,10 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 						@SuppressWarnings("unchecked")
 						T v = (T)o;
-						w.asProcessor().onNext(v);
+						w.onNext(v);
 					}
 					if (o == BOUNDARY_MARKER) {
-						w.asProcessor().onComplete();
+						w.onComplete();
 
 						if (cancelled == 0) {
 							if (requested != 0L) {
@@ -317,11 +319,10 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 								WINDOW_COUNT.getAndIncrement(this);
 
-								//noinspection deprecation
 								w = new UnicastProcessor<>(pq, this);
 								window = w;
 
-								a.onNext(w.asFlux());
+								a.onNext(w);
 
 								if (requested != Long.MAX_VALUE) {
 									REQUESTED.decrementAndGet(this);
@@ -345,10 +346,10 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 			}
 		}
 
-		boolean emit(FluxProcessorFacade<T> w) {
+		boolean emit(UnicastProcessor<T> w) {
 			long r = requested;
 			if (r != 0L) {
-				actual.onNext(w.asFlux());
+				actual.onNext(w);
 				if (r != Long.MAX_VALUE) {
 					REQUESTED.decrementAndGet(this);
 				}
