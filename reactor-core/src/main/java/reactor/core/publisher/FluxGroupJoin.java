@@ -59,6 +59,8 @@ import reactor.util.context.Context;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 3.0
  */
+//use of UnicastProcessor internally instead of facade, to avoid going through builder in critical path
+@SuppressWarnings("deprecation")
 final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		extends FluxOperator<TLeft, R> {
 
@@ -129,7 +131,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final Disposable.Composite cancellations;
 
-		final Map<Integer, FluxProcessorFacade<TRight>> lefts;
+		final Map<Integer, UnicastProcessor<TRight>> lefts;
 
 		final Map<Integer, TRight> rights;
 
@@ -206,7 +208,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.concat(
-					lefts.values().stream().map(Scannable::from),
+					lefts.values().stream(),
 					Scannable.from(cancellations).inners()
 			);
 		}
@@ -244,8 +246,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		void errorAll(Subscriber<?> a) {
 			Throwable ex = Exceptions.terminate(ERROR, this);
 
-			for (FluxProcessorFacade<TRight> up : lefts.values()) {
-				up.asProcessor().onError(ex);
+			for (UnicastProcessor<TRight> up : lefts.values()) {
+				up.onError(ex);
 			}
 
 			lefts.clear();
@@ -285,8 +287,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					boolean empty = mode == null;
 
 					if (d && empty) {
-						for (FluxProcessorFacade<?> up : lefts.values()) {
-							up.asProcessor().onComplete();
+						for (UnicastProcessor<?> up : lefts.values()) {
+							up.onComplete();
 						}
 
 						lefts.clear();
@@ -306,7 +308,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					if (mode == LEFT_VALUE) {
 						@SuppressWarnings("unchecked") TLeft left = (TLeft) val;
 
-						FluxProcessorFacade<TRight> up = UnicastProcessor.create(processorQueueSupplier.get());
+						UnicastProcessor<TRight> up =
+								new UnicastProcessor<>(processorQueueSupplier.get());
 						int idx = leftIndex++;
 						lefts.put(idx, up);
 
@@ -342,7 +345,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						R w;
 
 						try {
-							w = Objects.requireNonNull(resultSelector.apply(left, up.asFlux()),
+							w = Objects.requireNonNull(resultSelector.apply(left, up),
 									"The resultSelector returned a null value");
 						}
 						catch (Throwable exc) {
@@ -368,7 +371,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						}
 
 						for (TRight right : rights.values()) {
-							up.asProcessor().onNext(right);
+							up.onNext(right);
 						}
 					}
 					else if (mode == RIGHT_VALUE) {
@@ -407,17 +410,17 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 							return;
 						}
 
-						for (FluxProcessorFacade<TRight> up : lefts.values()) {
-							up.asProcessor().onNext(right);
+						for (UnicastProcessor<TRight> up : lefts.values()) {
+							up.onNext(right);
 						}
 					}
 					else if (mode == LEFT_CLOSE) {
 						LeftRightEndSubscriber end = (LeftRightEndSubscriber) val;
 
-						FluxProcessorFacade<TRight> up = lefts.remove(end.index);
+						UnicastProcessor<TRight> up = lefts.remove(end.index);
 						cancellations.remove(end);
 						if (up != null) {
-							up.asProcessor().onComplete();
+							up.onComplete();
 						}
 					}
 					else if (mode == RIGHT_CLOSE) {
