@@ -746,7 +746,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		});
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1.asFlux(), s -> {
-				Scannable d1Scannable = d1.asScannable();
+				Scannable d1Scannable = Scannable.from(d1);
 				assertThat(d1Scannable.isScanAvailable()).as("d1 actually scannable").isTrue();
 
 				Stream<? extends Scannable> inners = d1Scannable.inners();
@@ -1051,8 +1051,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	public void prematureCompleteSourceEmptyDouble() {
 		FluxProcessorSink<Integer> d = Processors.directSink();
 		StepVerifier.create(Flux.zip(obj -> 0, d.asFlux(), s -> {
-			Stream<? extends Scannable> inners = d.asScannable()
-			                                      .inners();
+			Stream<? extends Scannable> inners = Scannable.from(d)
+			                                              .inners();
 			CoreSubscriber<?> a =
 					((DirectProcessor.DirectInner) inners.findFirst().get())
 							.actual;

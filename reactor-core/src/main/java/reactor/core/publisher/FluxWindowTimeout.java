@@ -129,7 +129,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 		@Override
 		public Stream<? extends Scannable> inners() {
 			FluxProcessorFacade<T> w = window;
-			return w == null ? Stream.empty() : Stream.of(w.asScannable());
+			return w == null ? Stream.empty() : Stream.of(Scannable.from(w));
 		}
 
 		@Override

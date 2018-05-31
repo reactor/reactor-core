@@ -353,11 +353,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Scannable asScannable() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	public Throwable getError() {
 		return buffer.getError();

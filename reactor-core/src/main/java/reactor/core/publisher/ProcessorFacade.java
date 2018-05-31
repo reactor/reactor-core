@@ -30,47 +30,6 @@ import reactor.util.annotation.Nullable;
  * @author Simon Baslé
  */
 public interface ProcessorFacade<T> extends Disposable {
-//	/**
-//	 * Terminate with the given exception
-//	 * <p>
-//	 * Calling this method multiple times or after the other terminating methods is
-//	 * an unsupported operation. It will discard the exception through the
-//	 * {@link Hooks#onErrorDropped(Consumer)} hook (which by default throws the exception
-//	 * wrapped via {@link reactor.core.Exceptions#bubble(Throwable)}). This is to avoid
-//	 * complete and silent swallowing of the exception.
-//	 *
-//	 * @param e the exception to complete with
-//	 */
-//	void error(Throwable e);
-//
-//	/**
-//	 * Return a view of this {@link ProcessorFacade} that is a
-//	 * {@link Processor Processor&lt;T, T&gt;}, suitable for subscribing to a source
-//	 * {@link Publisher}.
-//	 *
-//	 * @return the {@link Processor} backing this {@link ProcessorFacade}
-//	 */
-//	Processor<T, T> asProcessor();
-//
-//	/**
-//	 * Return a view of this {@link ProcessorFacade} that is a {@link CoreSubscriber},
-//   * suitable for subscribing to a source {@link Publisher}.
-//	 *
-//	 * @implSpec if the backing {@link Processor} doesn't come from Reactor, this method
-//	 * should return it wrapped in a {@link CoreSubscriber} adapter.
-//	 * @return the {@link CoreSubscriber} backing this {@link ProcessorFacade}
-//	 */
-//	CoreSubscriber<T> asCoreSubscriber();
-
-	/**
-	 * Return a view of this {@link ProcessorFacade} that is {@link Scannable}.
-	 * <p>
-	 * Possibly return an unscannable instance if no backing element is Scannable
-	 * (see {@link Scannable#isScanAvailable()}).
-	 *
-	 * @return the {@link Scannable} backing this {@link ProcessorFacade}
-	 */
-	Scannable asScannable();
 
 	/**
 	 * Return the produced {@link Throwable} error if any or null

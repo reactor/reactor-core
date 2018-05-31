@@ -414,11 +414,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
-	public Scannable asScannable() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	final public Throwable getError() {
 		return error;

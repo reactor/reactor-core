@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.stream.Stream;
 
 import com.sun.webkit.EventLoop;
 import org.reactivestreams.Processor;
@@ -1157,7 +1158,7 @@ public final class Processors {
 
 	//=== Adapter Classes from FluxProcessor to FluxProcessorSink ===
 
-	static class FluxProcessorSinkAdapter<T> implements FluxProcessorSink<T> {
+	static class FluxProcessorSinkAdapter<T> implements FluxProcessorSink<T>, Scannable {
 
 		@SuppressWarnings("deprecation")
 		final FluxProcessor<T, T> processor;
@@ -1170,11 +1171,6 @@ public final class Processors {
 			this.processor = processor;
 			this.overflowStrategy = overflowStrategy == null ? OverflowStrategy.IGNORE : overflowStrategy;
 			this.sink = processor.sink(this.overflowStrategy);
-		}
-
-		@Override
-		public Scannable asScannable() {
-			return processor;
 		}
 
 		@Override
@@ -1277,6 +1273,43 @@ public final class Processors {
 			return processor.isSerialized();
 		}
 
+		//==delegates to processor as Scannable ==
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Scannable.Attr key) {
+			return processor.scanUnsafe(key);
+		}
+
+		@Override
+		public boolean isScanAvailable() {
+			return processor.isScanAvailable();
+		}
+
+		@Override
+		public String stepName() {
+			return processor.stepName();
+		}
+
+		@Override
+		public String operatorName() {
+			return processor.operatorName();
+		}
+
+		@Override
+		public Stream<? extends Scannable> parents() {
+			return processor.parents();
+		}
+
+		@Override
+		public Stream<? extends Scannable> actuals() {
+			return processor.actuals();
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return processor.inners();
+		}
 	}
 
 	static final class AsyncFluxProcessorSinkAdapter<T> extends FluxProcessorSinkAdapter<T> {
@@ -1300,7 +1333,7 @@ public final class Processors {
 		}
 	}
 
-	static class MonoFirstProcessorSinkAdapter<T> implements MonoProcessorSink<T> {
+	static class MonoFirstProcessorSinkAdapter<T> implements MonoProcessorSink<T>, Scannable {
 
 		@SuppressWarnings("deprecation")
 		final MonoProcessor<T> processor;
@@ -1314,11 +1347,6 @@ public final class Processors {
 
 		@Override
 		public Mono<T> asMono() {
-			return processor;
-		}
-
-		@Override
-		public Scannable asScannable() {
 			return processor;
 		}
 
@@ -1418,6 +1446,44 @@ public final class Processors {
 		@Override
 		public boolean hasDownstreams() {
 			return processor.hasDownstreams();
+		}
+
+		//==delegates to processor as Scannable ==
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Scannable.Attr key) {
+			return processor.scanUnsafe(key);
+		}
+
+		@Override
+		public boolean isScanAvailable() {
+			return processor.isScanAvailable();
+		}
+
+		@Override
+		public String stepName() {
+			return processor.stepName();
+		}
+
+		@Override
+		public String operatorName() {
+			return processor.operatorName();
+		}
+
+		@Override
+		public Stream<? extends Scannable> parents() {
+			return processor.parents();
+		}
+
+		@Override
+		public Stream<? extends Scannable> actuals() {
+			return processor.actuals();
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return processor.inners();
 		}
 	}
 }

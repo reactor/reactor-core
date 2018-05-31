@@ -155,7 +155,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(boundary, window.asScannable());
+			return Stream.of(boundary, Scannable.from(window));
 		}
 
 		@Override

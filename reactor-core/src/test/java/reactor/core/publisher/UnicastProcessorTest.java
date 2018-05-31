@@ -24,8 +24,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.junit.Test;
-import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
@@ -44,7 +44,7 @@ public class UnicastProcessorTest {
 		assertThat(processor)
 				.isSameAs(processor.asCoreSubscriber())
 				.isSameAs(processor.asProcessor())
-				.isSameAs(processor.asScannable())
+				.isSameAs(Scannable.from(processor))
 				.isSameAs(processor.asFlux());
 	}
 

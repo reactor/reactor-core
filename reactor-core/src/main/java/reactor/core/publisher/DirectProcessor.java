@@ -294,11 +294,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Flu
 	}
 
 	@Override
-	public Scannable asScannable() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	public Throwable getError() {
 		if (subscribers == TERMINATED) {

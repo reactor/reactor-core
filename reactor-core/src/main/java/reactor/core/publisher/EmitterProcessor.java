@@ -315,11 +315,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Scannable asScannable() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	public Throwable getError() {
 		return error;

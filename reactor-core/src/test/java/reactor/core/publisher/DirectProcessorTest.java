@@ -55,7 +55,7 @@ public class DirectProcessorTest {
 	    assertThat(processor)
 			    .isSameAs(processor.asCoreSubscriber())
 			    .isSameAs(processor.asProcessor())
-			    .isSameAs(processor.asScannable())
+			    .isSameAs(Scannable.from(processor))
 			    .isSameAs(processor.asFlux());
     }
 

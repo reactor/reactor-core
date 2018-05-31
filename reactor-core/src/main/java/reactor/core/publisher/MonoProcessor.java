@@ -547,11 +547,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public Scannable asScannable() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	public final Throwable getError() {
 		return isTerminated() ? error : null;

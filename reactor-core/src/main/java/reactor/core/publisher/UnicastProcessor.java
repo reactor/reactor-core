@@ -546,11 +546,6 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public Scannable asScannable() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	public Throwable getError() {
 		return error;

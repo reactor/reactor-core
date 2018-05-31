@@ -206,7 +206,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.concat(
-					lefts.values().stream().map(FluxProcessorFacade::asScannable),
+					lefts.values().stream().map(Scannable::from),
 					Scannable.from(cancellations).inners()
 			);
 		}
