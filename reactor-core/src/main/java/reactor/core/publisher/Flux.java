@@ -5130,8 +5130,12 @@ public abstract class Flux<T> implements Publisher<T> {
     public final Mono<T> last() {
 	    if (this instanceof Callable) {
 		    @SuppressWarnings("unchecked")
-		    Callable<T> thiz = (Callable<T>)this;
-	        return convertToMono(thiz);
+		    Callable<T> thiz = (Callable<T>) this;
+		    Mono<T> callableMono = convertToMono(thiz);
+		    if (callableMono == MonoEmpty.INSTANCE) {
+			    return Mono.error(new NoSuchElementException("Flux#last() didn't observe any onNext signal from Callable flux"));
+		    }
+	        return callableMono;
 	    }
 		return Mono.onAssembly(new MonoTakeLastOne<>(this));
 	}
