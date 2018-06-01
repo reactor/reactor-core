@@ -20,6 +20,9 @@ import org.reactivestreams.Processor;
 import reactor.core.CoreSubscriber;
 
 /**
+ * A simple {@link Processor} that has the same type for input and output, and exposes a
+ * view of itself as a {@link Flux}.
+ *
  * @author Simon Baslé
  */
 public interface FluxProcessorFacade<T> extends ProcessorFacade<T>, CoreSubscriber<T>, Processor<T, T> {

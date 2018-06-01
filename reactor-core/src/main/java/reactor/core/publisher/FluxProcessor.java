@@ -39,7 +39,7 @@ import reactor.util.annotation.Nullable;
  * @param <IN> the input value type
  * @param <OUT> the output value type
  *
- * @deprecated use {@link ProcessorFacade} unless you really need asymmetric IN and OUT types.
+ * @deprecated Discouraged, use {@link FluxProcessorFacade} and/or {@link FluxProcessorSink} unless you really need asymmetric IN and OUT types.
  */
 @Deprecated
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>

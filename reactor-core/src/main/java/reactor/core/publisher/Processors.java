@@ -38,7 +38,8 @@ import reactor.util.concurrent.WaitStrategy;
 import reactor.util.context.Context;
 
 /**
- * Utility class to create various flavors of {@link  ProcessorFacade Flux Processors}.
+ * Utility class to create various flavors of {@link FluxProcessorFacade} and
+ * {@link FluxProcessorSink}, as well as their Mono counterparts.
  *
  * @author Simon Baslé
  */
@@ -79,7 +80,7 @@ public final class Processors {
 	 * subscribe but replays the termination signal to them immediately.
 	 *
 	 * @param <T> the type of the data flowing through the processor
-	 * @return a new direct {@link ProcessorFacade}
+	 * @return a new direct {@link FluxProcessorSink}
 	 */
 	@SuppressWarnings("deprecation")
 	public static final <T> FluxProcessorSink<T> directSink() {
@@ -238,7 +239,7 @@ public final class Processors {
 	 * {@link EmitterProcessorBuilder#noAutoCancel()} method in the builder.
 	 *
 	 * @param bufferSize the size of the initial replay buffer (must be positive)
-	 * @return a builder to create a new emitter {@link ProcessorFacade}
+	 * @return a builder to create a new emitter {@link FluxProcessorFacade} or {@link FluxProcessorSink}
 	 */
 	public static final EmitterProcessorBuilder emitter(int bufferSize) {
 		if (bufferSize < 0) {
@@ -419,10 +420,11 @@ public final class Processors {
 
 
 	/**
-	 * Create a builder for a "fan out" {@link ProcessorFacade}, which is an
-	 * <strong>asynchronous</strong> processor optionally capable of relaying elements from multiple
-	 * upstream {@link Publisher Publishers} when created in the shared configuration (see the {@link
-	 * AsyncEmitterProcessorBuilder#share(boolean)} option of the builder).
+	 * Create a builder for a "async emitter" {@link FluxProcessorFacade} or {@link FluxProcessorSink},
+	 * which is an <strong>asynchronous</strong> processor optionally capable of relaying
+	 * elements from multiple upstream {@link Publisher Publishers} when created in the
+	 * shared configuration (see the {@link AsyncEmitterProcessorBuilder#share(boolean)}
+	 * option of the builder).
 	 *
 	 * <p>
 	 * Note that the share option is mandatory if you intend to concurrently call the
@@ -436,7 +438,7 @@ public final class Processors {
 	 * the Reactive Streams specification.
 	 *
 	 * <p>
-	 * A fan out processor is capable of fanning out to multiple {@link Subscriber Subscribers},
+	 * An async emitter processor is capable of fanning out to multiple {@link Subscriber Subscribers},
 	 * with the added overhead of establishing resources to keep track of each {@link Subscriber}
 	 * until an {@link Subscriber#onError(Throwable) onError} or {@link Subscriber#onComplete() onComplete}
 	 * signal is pushed through the processor or until the associated {@link Subscriber} is cancelled.
@@ -454,18 +456,18 @@ public final class Processors {
 	 * option: Set it to {@code false} to avoid cancelling the source {@link Publisher Publisher(s)}
 	 * when all subscribers are cancelled.
 	 *
-	 * @return a builder to create a new fan out {@link ProcessorFacade}
+	 * @return a builder to create a new async emitter {@link FluxProcessorFacade} or {@link FluxProcessorSink}
 	 */
 	public static final AsyncEmitterProcessorBuilder asyncEmitter() {
 		return new AsyncEmitterProcessorBuilder();
 	}
 
 	/**
-	 * Create a builder for a "fan out" {@link ProcessorFacade} with relaxed
-	 * Reactive Streams compliance. This is an <strong>asynchronous</strong> processor
-	 * optionally capable of relaying elements from multiple upstream {@link Publisher Publishers}
-	 * when created in the shared configuration (see the {@link AsyncEmitterProcessorBuilder#share(boolean)}
-	 * option of the builder).
+	 * Create a builder for a "async emitter" {@link FluxProcessorFacade} or {@link FluxProcessorSink}
+	 * with relaxed Reactive Streams compliance. This is an <strong>asynchronous</strong>
+	 * processor optionally capable of relaying elements from multiple upstream
+	 * {@link Publisher Publishers} when created in the shared configuration (see the
+	 * {@link AsyncEmitterProcessorBuilder#share(boolean)} option of the builder).
 	 *
 	 * <p>
 	 * Note that the share option is mandatory if you intend to concurrently call the
@@ -475,7 +477,7 @@ public final class Processors {
 	 * (when building as a {@link FluxProcessorFacade}).
 	 *
 	 * <p>
-	 * A fan out processor is capable of fanning out to multiple {@link Subscriber Subscribers},
+	 * An async emitter processor is capable of fanning out to multiple {@link Subscriber Subscribers},
 	 * with the added overhead of establishing resources to keep track of each {@link Subscriber}
 	 * until an {@link FluxProcessorSink#error(Throwable)} or {@link
 	 * FluxProcessorSink#complete()} signal is pushed through the processor or until the
@@ -499,7 +501,7 @@ public final class Processors {
 	 * option: If set to {@code true} (the default), it results in the source {@link Publisher
 	 * Publisher(s)} being cancelled when all subscribers are cancelled.
 	 *
-	 * @return a builder to create a new round-robin fan out {@link ProcessorFacade}
+	 * @return a builder to create a new round-robin async emitter {@link FluxProcessorFacade} or {@link FluxProcessorSink}
 	 */
 	@Deprecated
 	public static final AsyncEmitterProcessorBuilder relaxedFanOut() {
@@ -555,7 +557,7 @@ public final class Processors {
 	//=== BUILDERS to replace factory method only processors ===
 
 	/**
-	 * A builder for the {@link #unicast()} flavor of {@link ProcessorFacade}.
+	 * A builder for the {@link #unicast()} flavor of {@link FluxProcessorFacade} and {@link FluxProcessorSink}.
 	 *
 	 * @param <T>
 	 */
@@ -594,9 +596,9 @@ public final class Processors {
 		}
 
 		/**
-		 * When a bounded {@link #UnicastProcessorBuilder(Queue) queue} has been provided,
-		 * set up a callback to be executed on every element rejected by the {@link Queue}
-		 * once it is already full.
+		 * When a bounded queue has been provided in the constructor, set up a callback
+		 * to be executed on every element rejected by the {@link Queue} once it is
+		 * already full.
 		 *
 		 * @param c the cleanup consumer for overflowing elements in a bounded queue
 		 * @return the builder
@@ -611,7 +613,7 @@ public final class Processors {
 		 * configuration.
 		 *
 		 * @return a new unicast {@link FluxProcessorSink Processor}
-		 * @see #buildSink(OverflowStrategy)
+		 * @see #buildSink(FluxSink.OverflowStrategy)
 		 * @see #buildFacade()
 		 */
 		public FluxProcessorSink<T> buildSink() {
@@ -651,7 +653,7 @@ public final class Processors {
 		 *
 		 * @return a new unicast {@link FluxProcessorFacade Processor}
 		 * @see #buildSink()
-		 * @see #buildSink(OverflowStrategy)
+		 * @see #buildSink(FluxSink.OverflowStrategy)
 		 */
 		@SuppressWarnings("deprecation")
 		public FluxProcessorFacade<T> buildFacade() {
@@ -674,7 +676,7 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the {@link #emitter()} flavor of {@link ProcessorFacade}.
+	 * A builder for the {@link #emitter()} flavor of {@link FluxProcessorFacade} or {@link FluxProcessorSink}.
 	 */
 	public static final class EmitterProcessorBuilder {
 
@@ -712,10 +714,10 @@ public final class Processors {
 		}
 
 		/**
-		 * Build the emitter {@link FluxProcessorSink} according to the builder's
+		 * Build the emitter {@link FluxProcessorFacade} according to the builder's
 		 * configuration.
 		 *
-		 * @return a new emitter {@link FluxProcessorSink}
+		 * @return a new emitter {@link FluxProcessorFacade}
 		 */
 		@SuppressWarnings("deprecation")
 		public <T> FluxProcessorFacade<T>  buildFacade() {
@@ -774,7 +776,7 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the size-configured {@link #replay()} flavor of {@link ProcessorFacade}.
+	 * A builder for the size-configured {@link #replay()} flavor of {@link FluxProcessorFacade} or {@link FluxProcessorSink}.
 	 */
 	public static final class ReplayProcessorBuilder {
 
@@ -785,7 +787,6 @@ public final class Processors {
 		 * Set the history capacity to a specific bounded size.
 		 *
 		 * @param size the history buffer capacity
-		 * @return the builder, with a bounded capacity
 		 */
 		public ReplayProcessorBuilder(int size) {
 			this.size = size;
@@ -857,7 +858,7 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the time-oriented {@link #replay()} flavors of {@link ProcessorFacade}.
+	 * A builder for the time-oriented {@link #replay()} flavors of {@link FluxProcessorFacade} or {@link FluxProcessorSink}.
 	 * This can also be used to build a time + size oriented replay processor.
 	 */
 	public static final class ReplayTimeProcessorBuilder {
@@ -957,7 +958,7 @@ public final class Processors {
 	}
 
 	/**
-	 * A builder for the {@link #asyncEmitter()} flavor of {@link ProcessorFacade}.
+	 * A builder for the {@link #asyncEmitter()} flavor of {@link FluxProcessorFacade} or {@link FluxProcessorSink}.
 	 */
 	public static final class AsyncEmitterProcessorBuilder {
 

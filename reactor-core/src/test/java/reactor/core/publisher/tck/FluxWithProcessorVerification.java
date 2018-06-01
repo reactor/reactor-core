@@ -23,9 +23,7 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Processor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.ProcessorFacade;
 import reactor.core.publisher.Processors;
-import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 
 /**

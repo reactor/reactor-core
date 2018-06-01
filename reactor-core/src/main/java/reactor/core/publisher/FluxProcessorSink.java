@@ -18,9 +18,11 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
-import reactor.core.Disposable;
-
 /**
+ * A standalone {@link FluxSink}, similar to a {@link FluxProcessorFacade} except tailored
+ * for manual triggering of events rather than {@link org.reactivestreams.Processor}-like
+ * subscribe-and-emit use.
+ *
  * @author Simon Baslé
  */
 public interface FluxProcessorSink<T> extends ProcessorFacade<T>, FluxSink<T> {
@@ -51,7 +53,7 @@ public interface FluxProcessorSink<T> extends ProcessorFacade<T>, FluxSink<T> {
 	void error(Throwable e);
 
 	/**
-	 * @return the {@link OverflowStrategy} that was used when instantiating this {@link FluxProcessorSink}
+	 * @return the {@link FluxSink.OverflowStrategy} that was used when instantiating this {@link FluxProcessorSink}
 	 */
 	OverflowStrategy getOverflowStrategy();
 

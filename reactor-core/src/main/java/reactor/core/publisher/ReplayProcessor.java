@@ -46,7 +46,8 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * <p>
  *
  * @param <T> the value type
- * @deprecated instantiate through {@link Processors#replay()} or {@link Processors#cacheLast()} and use as a {@link ProcessorFacade}
+ * @deprecated instantiate through {@link Processors#replay()} or {@link Processors#cacheLast()}
+ * and use as a {@link FluxProcessorFacade}, will be removed from public API in 3.3
  */
 @Deprecated
 public final class ReplayProcessor<T> extends FluxProcessor<T, T>

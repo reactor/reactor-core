@@ -47,7 +47,7 @@ import reactor.util.context.Context;
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
- * @deprecated instantiate through {@link Processors#first} and use as a {@link ProcessorFacade}
+ * @deprecated instantiate through {@link Processors#first} and use as a {@link MonoProcessorFacade}, will be removed from public API in 3.3
  */
 @Deprecated
 public final class MonoProcessor<O> extends Mono<O>

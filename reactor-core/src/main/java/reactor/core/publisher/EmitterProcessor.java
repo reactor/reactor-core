@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -52,7 +51,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
- * @deprecated instantiate through {@link Processors#emitter()} and use as a {@link ProcessorFacade}
+ * @deprecated instantiate through {@link Processors#emitter()} and use as a {@link FluxProcessorFacade}, will be removed from public API in 3.3
  */
 @Deprecated
 public final class EmitterProcessor<T> extends FluxProcessor<T, T>

@@ -27,6 +27,8 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
+ * Common introspection API for Reactor simpler processors.
+ *
  * @author Simon Baslé
  */
 public interface ProcessorFacade<T> extends Disposable {

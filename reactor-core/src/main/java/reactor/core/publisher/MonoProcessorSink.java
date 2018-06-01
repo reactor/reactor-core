@@ -33,6 +33,10 @@
 package reactor.core.publisher;
 
 /**
+ * A standalone {@link MonoSink}, similar to {@link MonoProcessorFacade} except tailored
+ * for manual triggering of events rather than {@link org.reactivestreams.Processor}-like
+ * subscribe-and-emit use.
+ *
  * @author Simon Baslé
  */
 public interface MonoProcessorSink<T> extends ProcessorFacade<T>, MonoSink<T> {
@@ -52,7 +56,7 @@ public interface MonoProcessorSink<T> extends ProcessorFacade<T>, MonoSink<T> {
 	 * Indicates whether this {@link MonoProcessorSink} has completed with or without a value,
 	 * whereas {@link #isValued()} indicates it completed with a value.
 	 *
-	 * @return {@code true} if this {@link ProcessorFacade} is completed, but without value, {@code false} otherwise.
+	 * @return {@code true} if this {@link MonoProcessorSink} is completed, but without value, {@code false} otherwise.
 	 */
 	@Override
 	boolean isComplete();
@@ -61,7 +65,7 @@ public interface MonoProcessorSink<T> extends ProcessorFacade<T>, MonoSink<T> {
 	 * Indicates whether this {@link MonoProcessorSink} has completed with a value,
 	 * whereas {@link #isComplete()} indicates it completed, but could be without a value.
 	 *
-	 * @return {@code true} if this {@link ProcessorFacade} is completed with value, {@code false} otherwise.
+	 * @return {@code true} if this {@link MonoProcessorSink} is completed with value, {@code false} otherwise.
 	 */
 	boolean isValued();
 

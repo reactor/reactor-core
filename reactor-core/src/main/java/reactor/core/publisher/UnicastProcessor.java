@@ -85,7 +85,8 @@ import reactor.util.context.Context;
  * </p>
  *
  * @param <T> the input and output type
- * @deprecated instantiate through {@link Processors#unicast()} builder and use as a {@link ProcessorFacade}
+ * @deprecated instantiate through {@link Processors#unicast()} builder and use as a
+ * {@link FluxProcessorFacade}, will be removed from public API in 3.3
  */
 @Deprecated
 public final class UnicastProcessor<T>

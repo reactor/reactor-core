@@ -20,6 +20,9 @@ import org.reactivestreams.Processor;
 import reactor.core.CoreSubscriber;
 
 /**
+ * A simple {@link Processor} that has the same type for input and output, and exposes a
+ * view of itself as a {@link Mono}.
+ *
  * @author Simon Baslé
  */
 public interface MonoProcessorFacade<T> extends ProcessorFacade<T>, CoreSubscriber<T>, Processor<T, T> {
@@ -39,7 +42,7 @@ public interface MonoProcessorFacade<T> extends ProcessorFacade<T>, CoreSubscrib
 	 * Indicates whether this {@link MonoProcessorFacade} has completed with or without a value,
 	 * whereas {@link #isValued()} indicates it completed with a value.
 	 *
-	 * @return {@code true} if this {@link ProcessorFacade} is completed, but without value, {@code false} otherwise.
+	 * @return {@code true} if this {@link MonoProcessorFacade} is completed, but without value, {@code false} otherwise.
 	 */
 	@Override
 	boolean isComplete();
@@ -48,7 +51,7 @@ public interface MonoProcessorFacade<T> extends ProcessorFacade<T>, CoreSubscrib
 	 * Indicates whether this {@link MonoProcessorFacade} has completed with a value,
 	 * whereas {@link #isComplete()} indicates it completed, but could be without a value.
 	 *
-	 * @return {@code true} if this {@link ProcessorFacade} is completed with value, {@code false} otherwise.
+	 * @return {@code true} if this {@link MonoProcessorFacade} is completed with value, {@code false} otherwise.
 	 */
 	boolean isValued();
 

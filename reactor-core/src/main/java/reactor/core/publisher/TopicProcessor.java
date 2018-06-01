@@ -67,7 +67,8 @@ import reactor.util.concurrent.WaitStrategy;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
- * @deprecated instantiate through {@link Processors#asyncEmitter()} and use as a {@link ProcessorFacade}
+ * @deprecated instantiate through {@link Processors#asyncEmitter()} and use as a
+ * {@link FluxProcessorFacade}, will be removed from public API in 3.3
  */
 @Deprecated
 public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
