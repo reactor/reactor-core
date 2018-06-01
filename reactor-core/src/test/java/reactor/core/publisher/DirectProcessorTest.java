@@ -17,7 +17,9 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -53,8 +55,8 @@ public class DirectProcessorTest {
 	    DirectProcessor<Object> processor = DirectProcessor.create();
 
 	    assertThat(processor)
-			    .isSameAs(processor.asCoreSubscriber())
-			    .isSameAs(processor.asProcessor())
+			    .isInstanceOf(CoreSubscriber.class)
+			    .isInstanceOf(Processor.class)
 			    .isSameAs(Scannable.from(processor))
 			    .isSameAs(processor.asFlux());
     }

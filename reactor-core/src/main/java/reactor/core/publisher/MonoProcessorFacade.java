@@ -17,13 +17,12 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Processor;
-import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 
 /**
  * @author Simon Baslé
  */
-public interface MonoProcessorFacade<T> extends ProcessorFacade<T> {
+public interface MonoProcessorFacade<T> extends ProcessorFacade<T>, CoreSubscriber<T>, Processor<T, T> {
 
 	/**
 	 * Expose a Reactor {@link Mono} API on top of the {@link MonoProcessorFacade}'s output,
@@ -35,26 +34,6 @@ public interface MonoProcessorFacade<T> extends ProcessorFacade<T> {
 	 * @return a full reactive {@link Mono} API on top of the {@link MonoProcessorFacade}'s output
 	 */
 	Mono<T> asMono();
-
-	/**
-	 * Return a view of this {@link MonoProcessorFacade} that is a
-	 * {@link Processor Processor&lt;T, T&gt;}, suitable for subscribing to a source
-	 * {@link Publisher}.
-	 *
-	 * @return the {@link Processor} backing this {@link MonoProcessorFacade}
-	 */
-	Processor<T, T> asProcessor();
-
-	/**
-	 * Return a view of this {@link MonoProcessorFacade} that is a {@link CoreSubscriber},
-   * suitable for subscribing to a source {@link Publisher}.
-	 *
-	 * @implSpec if the backing {@link Processor} doesn't come from Reactor, this method
-	 * should return it wrapped in a {@link CoreSubscriber} adapter.
-	 * @return the {@link CoreSubscriber} backing this {@link MonoProcessorFacade}
-	 */
-	CoreSubscriber<T> asCoreSubscriber();
-
 
 	/**
 	 * Indicates whether this {@link MonoProcessorFacade} has completed with or without a value,

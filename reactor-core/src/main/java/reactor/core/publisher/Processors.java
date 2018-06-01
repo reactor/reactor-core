@@ -24,12 +24,10 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 
-import com.sun.webkit.EventLoop;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
@@ -47,7 +45,7 @@ import reactor.util.context.Context;
 public final class Processors {
 
 	/**
-	 * Create a "direct" {@link FluxProcessorFacade}: when used {@link FluxProcessorFacade#asProcessor() as a Processor}
+	 * Create a "direct" {@link FluxProcessorFacade}: when used as a {@link Processor}
 	 * it is suitable for transferring data from a {@link Publisher} source and can
 	 * dispatch signals to zero to many {@link Subscriber Subscribers}, but has the
 	 * limitation of not handling backpressure.
@@ -91,7 +89,7 @@ public final class Processors {
 
 
 	/**
-	 * Create an unbounded "unicast" {@link FluxProcessorFacade}: when used {@link FluxProcessorFacade#asProcessor() as a Processor}
+	 * Create an unbounded "unicast" {@link FluxProcessorFacade}: when used as a {@link Processor}
 	 * it is suitable for transferring data from a {@link Publisher} source and can
 	 * deal with backpressure using an internal buffer, but <strong>can have at most one
 	 * {@link Subscriber}</strong>.
@@ -151,11 +149,10 @@ public final class Processors {
 
 
 	/**
-	 * Create a new "emitter" {@link FluxProcessorFacade}: when used
-	 * {@link FluxProcessorFacade#asProcessor() as a Processor} it is suitable for
-	 * transferring data from a {@link Publisher} source and relay its signals synchronously.
-	 * It can emit to several {@link Subscriber Subscribers} while honoring backpressure
-	 * for each of them.
+	 * Create a new "emitter" {@link FluxProcessorFacade}: when used as a {@link Processor}
+	 * it is suitable for transferring data from a {@link Publisher} source and relay its
+	 * signals synchronously. It can emit to several {@link Subscriber Subscribers} while
+	 * honoring backpressure for each of them.
 	 *
 	 * <p>
 	 * Initially, when it has no {@link Subscriber}, this emitter Processor can still accept
@@ -1075,7 +1072,7 @@ public final class Processors {
 		 * Configures sharing state for this builder. A shared fanout processor authorizes
 		 * is suited for multi-threaded publisher that will fan-in data.
 		 *
-		 * @param share true to support concurrent sources on the {@link FluxProcessorFacade#asProcessor Processor}
+		 * @param share true to support concurrent sources on the {@link Processor}
 		 * @return builder with specified sharing
 		 */
 		public AsyncEmitterProcessorBuilder share(boolean share) {

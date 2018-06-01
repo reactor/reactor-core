@@ -20,16 +20,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
-import java.util.logging.Level;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessorFacade;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.MonoProcessorFacade;
-import reactor.core.publisher.SignalType;
 import reactor.core.publisher.WorkQueueProcessor;
 
 import static org.testng.Assert.assertEquals;
@@ -74,7 +70,7 @@ public class BurstyWorkQueueProcessorTests {
 				.create((emitter) -> burstyProducer(emitter, PRODUCED_MESSAGES_COUNT, BURST_SIZE))
 				.onBackpressureDrop(this::incrementDroppedMessagesCounter)
 			//	.log("test", Level.INFO, SignalType.REQUEST)
-				.subscribeWith((FluxProcessorFacade<Object>) processor)
+				.subscribeWith(processor)
 				.asFlux()
 				.map(this::complicatedCalculation)
 				.subscribe(this::logConsumedValue);

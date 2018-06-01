@@ -284,16 +284,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Flu
 	}
 
 	@Override
-	public Processor<T, T> asProcessor() {
-		return this;
-	}
-
-	@Override
-	public CoreSubscriber<T> asCoreSubscriber() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	public Throwable getError() {
 		if (subscribers == TERMINATED) {

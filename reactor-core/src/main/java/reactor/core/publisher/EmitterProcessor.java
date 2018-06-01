@@ -305,16 +305,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Processor<T, T> asProcessor() {
-		return this;
-	}
-
-	@Override
-	public CoreSubscriber<T> asCoreSubscriber() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	public Throwable getError() {
 		return error;

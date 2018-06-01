@@ -3571,20 +3571,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe the given {@link MonoProcessorFacade} to this {@link Mono} and return said
-	 * {@link MonoProcessorFacade}.
-	 *
-	 * @param processorFacade the {@link MonoProcessorFacade} to subscribe with
-	 * @param <E> the reified type of the {@link Subscriber} for chaining
-	 *
-	 * @return the passed {@link MonoProcessorFacade} after subscribing it to this {@link Mono}
-	 */
-	public final <E extends MonoProcessorFacade<? super T>> E subscribeWith(E processorFacade) {
-		subscribe(processorFacade.asProcessor());
-		return processorFacade;
-	}
-
-	/**
 	 * Fallback to an alternative {@link Mono} if this mono is completed without data
 	 *
 	 * <p>

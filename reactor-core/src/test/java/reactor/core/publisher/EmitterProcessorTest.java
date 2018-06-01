@@ -60,8 +60,8 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Object> processor = EmitterProcessor.create();
 
 		assertThat(processor)
-				.isSameAs(processor.asCoreSubscriber())
-				.isSameAs(processor.asProcessor())
+				.isInstanceOf(CoreSubscriber.class)
+				.isInstanceOf(Processor.class)
 				.isSameAs(Scannable.from(processor))
 				.isSameAs(processor.asFlux());
 	}
@@ -734,14 +734,14 @@ public class EmitterProcessorTest {
 	@Test
 	public void cancelIsDisposed() {
 		FluxProcessorFacade<Integer> processor = Processors.emitter();
-		assertThat(processor.asProcessor()).isExactlyInstanceOf(EmitterProcessor.class);
+		assertThat(processor).isExactlyInstanceOf(EmitterProcessor.class);
 
 		assertThat(processor.isDisposed()).as("not yet disposed").isFalse();
 
 		processor.dispose();
 
 		assertThat(processor.isDisposed()).as("disposed").isTrue();
-		assertThat(((EmitterProcessor) processor.asProcessor()).isCancelled())
+		assertThat(((EmitterProcessor) processor).isCancelled())
 				.as("isCancelled")
 				.isTrue();
 	}

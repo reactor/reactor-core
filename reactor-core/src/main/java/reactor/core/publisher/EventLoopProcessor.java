@@ -399,17 +399,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
-	public CoreSubscriber<IN> asCoreSubscriber() {
-		return this;
-	}
-
-	@Override
 	public Flux<IN> asFlux() {
-		return this;
-	}
-
-	@Override
-	public Processor<IN, IN> asProcessor() {
 		return this;
 	}
 

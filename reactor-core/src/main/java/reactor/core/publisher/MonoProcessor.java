@@ -537,16 +537,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public Processor<O, O> asProcessor() {
-		return this;
-	}
-
-	@Override
-	public CoreSubscriber<O> asCoreSubscriber() {
-		return this;
-	}
-
-	@Override
 	@Nullable
 	public final Throwable getError() {
 		return isTerminated() ? error : null;

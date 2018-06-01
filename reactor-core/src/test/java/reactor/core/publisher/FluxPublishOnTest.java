@@ -468,7 +468,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux.range(0, 128)
 		    .hide()
 		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
-		    .subscribe(sp.asProcessor());
+		    .subscribe(sp);
 
 		ts.await(Duration.ofSeconds(5))
 		  .assertTerminated()

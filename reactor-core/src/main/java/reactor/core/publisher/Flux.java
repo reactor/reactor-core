@@ -7500,26 +7500,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe the given {@link FluxProcessorFacade} to this {@link Flux} and return said
-	 * {@link FluxProcessorFacade}.
-	 *
-	 * <blockquote><pre>
-	 * {@code flux.subscribeWith(Processors.unicast()).asFlux().subscribe() }
-	 * </pre></blockquote>
-	 *
-	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
-	 *
-	 * @param processorFacade the {@link FluxProcessorFacade} to subscribe with and return
-	 * @param <E> the reified type from the input/output subscriber
-	 *
-	 * @return the passed {@link FluxProcessorFacade}
-	 */
-	public final <E extends FluxProcessorFacade<? super T>> E subscribeWith(E processorFacade) {
-		subscribe(processorFacade.asProcessor());
-		return processorFacade;
-	}
-
-	/**
 	 * Switch to an alternative {@link Publisher} if this sequence is completed without any data.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/switchifempty.png" alt="">
