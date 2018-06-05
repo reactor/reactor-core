@@ -17,6 +17,7 @@ package reactor.util;
 
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 
@@ -100,6 +101,22 @@ public abstract class Loggers {
 		LoggerFactory loggerFactory = new ConsoleLoggerFactory();
 		loggerFactory.getLogger(name).debug("Using Console logging");
 		LOGGER_FACTORY = loggerFactory;
+	}
+
+	/**
+	 * Use a custom type of {@link Logger} created through the provided {@link Function},
+	 * which takes a logger name as input.
+	 * <p>
+	 * The previously active logger factory is simply replaced without
+	 * any particular clean-up.
+	 *
+	 * @param loggerFactory the {@link Function} that provides a (possibly cached) {@link Logger}
+	 * given a name.
+	 */
+	public static final void useCustomLoggers(final Function<String, ? extends Logger> loggerFactory) {
+		String name = LoggerFactory.class.getName();
+		loggerFactory.apply(name).debug("Using custom logging");
+		LOGGER_FACTORY = loggerFactory::apply;
 	}
 
 	/**
