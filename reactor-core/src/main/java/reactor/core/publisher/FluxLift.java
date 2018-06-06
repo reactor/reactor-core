@@ -27,11 +27,11 @@ import reactor.core.Scannable;
  */
 final class FluxLift<I, O> extends FluxOperator<I, O> {
 
-	final BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
+	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;
 
 	FluxLift(Publisher<I> p,
-			BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
 		super(Flux.from(p));
 		this.lifter = lifter;
 	}
@@ -39,7 +39,7 @@ final class FluxLift<I, O> extends FluxOperator<I, O> {
 	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
-				lifter.apply(Scannable.from(source), actual);
+				lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

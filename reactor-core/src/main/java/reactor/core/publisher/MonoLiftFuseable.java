@@ -31,19 +31,18 @@ import reactor.core.Scannable;
 final class MonoLiftFuseable<I, O> extends MonoOperator<I, O>
 		implements Fuseable {
 
-	final BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
+	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;
 
 	MonoLiftFuseable(Publisher<I> p,
-			BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
 		super(Mono.from(p));
 		this.lifter = lifter;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
-		CoreSubscriber<? super I> input =
-				lifter.apply(Scannable.from(source), actual);
+		CoreSubscriber<? super I> input = lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

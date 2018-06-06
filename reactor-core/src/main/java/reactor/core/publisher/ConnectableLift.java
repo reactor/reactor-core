@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -30,13 +31,13 @@ import reactor.util.annotation.Nullable;
  */
 final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannable {
 
-	final BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
+	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;
 
 	final ConnectableFlux<I> source;
 
 	ConnectableLift(ConnectableFlux<I> p,
-			BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
 		this.source = Objects.requireNonNull(p, "source");
 		this.lifter = lifter;
 	}
@@ -62,7 +63,7 @@ final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannabl
 	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
-				lifter.apply(Scannable.from(source), actual);
+				lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 

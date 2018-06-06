@@ -24,10 +24,12 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -556,5 +558,104 @@ public class OperatorsTest {
 		             .hasNoSuppressedExceptions()
 		             .hasNoCause();
 		assertThat(s.isCancelled()).as("subscription cancelled").isTrue();
+	}
+
+	@Test
+	public void liftVsLiftPublisher() {
+		Publisher<Object> notScannable = new Flux<Object>() {
+			@Override
+			public void subscribe(CoreSubscriber<? super Object> actual) { }
+		};
+
+		AtomicReference<Scannable> scannableRef = new AtomicReference<>();
+		AtomicReference<Publisher> rawRef = new AtomicReference<>();
+
+		@SuppressWarnings("unchecked")
+		Function<Publisher<Object>, Publisher<Object>> lift = (Function<Publisher<Object>, Publisher<Object>>)
+				Operators.lift((sc, sub) -> {
+					scannableRef.set(sc);
+					return sub;
+				});
+
+		@SuppressWarnings("unchecked")
+		Function<Publisher<Object>, Publisher<Object>> liftPublisher = (Function<Publisher<Object>, Publisher<Object>>)
+				Operators.liftPublisher((pub, sub) -> {
+					rawRef.set(pub);
+					return sub;
+				});
+
+		Publisher<Object> lifted = lift.apply(notScannable);
+		Publisher<Object> liftedRaw = liftPublisher.apply(notScannable);
+
+		assertThat(scannableRef).hasValue(null);
+		assertThat(rawRef).hasValue(null);
+
+		lifted.subscribe(new BaseSubscriber<Object>() {});
+		liftedRaw.subscribe(new BaseSubscriber<Object>() {});
+
+		assertThat(scannableRef.get())
+				.isNotNull()
+				.isNotSameAs(notScannable)
+				.matches(s -> !s.isScanAvailable(), "not scannable");
+		assertThat(rawRef.get())
+				.isNotNull()
+				.isSameAs(notScannable);
+	}
+
+	@Test
+	public void liftVsLiftRawWithPredicate() {
+		Publisher<Object> notScannable = new Flux<Object>() {
+			@Override
+			public void subscribe(CoreSubscriber<? super Object> actual) { }
+		};
+
+		AtomicReference<Scannable> scannableRef = new AtomicReference<>();
+		AtomicReference<Scannable> scannableFilterRef = new AtomicReference<>();
+		AtomicReference<Publisher> rawRef = new AtomicReference<>();
+		AtomicReference<Publisher> rawFilterRef = new AtomicReference<>();
+
+		@SuppressWarnings("unchecked")
+		Function<Publisher<Object>, Publisher<Object>> lift = (Function<Publisher<Object>, Publisher<Object>>)
+				Operators.lift(sc -> {
+							scannableFilterRef.set(sc);
+							return true;
+						},
+						(sc, sub) -> {
+							scannableRef.set(sc);
+							return sub;
+						});
+
+		@SuppressWarnings("unchecked")
+		Function<Publisher<Object>, Publisher<Object>> liftRaw = (Function<Publisher<Object>, Publisher<Object>>)
+				Operators.liftPublisher(pub -> {
+							rawFilterRef.set(pub);
+							return true;
+						},
+						(pub, sub) -> {
+							rawRef.set(pub);
+							return sub;
+						});
+
+		Publisher<Object> lifted = lift.apply(notScannable);
+		Publisher<Object> liftedRaw = liftRaw.apply(notScannable);
+
+		assertThat(scannableRef).hasValue(null);
+		assertThat(scannableFilterRef).doesNotHaveValue(null);
+		assertThat(rawRef).hasValue(null);
+		assertThat(rawFilterRef).doesNotHaveValue(null);
+
+		lifted.subscribe(new BaseSubscriber<Object>() {});
+		liftedRaw.subscribe(new BaseSubscriber<Object>() {});
+
+		assertThat(scannableRef.get())
+				.isNotNull()
+				.isNotSameAs(notScannable)
+				.matches(s -> !s.isScanAvailable(), "not scannable")
+				.isSameAs(scannableFilterRef.get());
+
+		assertThat(rawRef.get())
+				.isNotNull()
+				.isSameAs(notScannable)
+				.isSameAs(rawFilterRef.get());
 	}
 }
