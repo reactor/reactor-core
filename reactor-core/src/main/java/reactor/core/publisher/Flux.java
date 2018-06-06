@@ -5132,7 +5132,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		    @SuppressWarnings("unchecked")
 		    Callable<T> thiz = (Callable<T>) this;
 		    Mono<T> callableMono = convertToMono(thiz);
-		    if (callableMono == MonoEmpty.INSTANCE) {
+		    if (callableMono == Mono.empty()) {
 			    return Mono.error(new NoSuchElementException("Flux#last() didn't observe any onNext signal from Callable flux"));
 		    }
 	        return callableMono;
