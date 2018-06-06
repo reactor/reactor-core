@@ -22,18 +22,14 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
 
-import org.assertj.core.internal.Predicates;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -565,7 +561,7 @@ public class OperatorsTest {
 	}
 
 	@Test
-	public void liftVsLiftRaw() {
+	public void liftVsLiftPublisher() {
 		Publisher<Object> notScannable = new Flux<Object>() {
 			@Override
 			public void subscribe(CoreSubscriber<? super Object> actual) { }
@@ -582,14 +578,14 @@ public class OperatorsTest {
 				});
 
 		@SuppressWarnings("unchecked")
-		Function<Publisher<Object>, Publisher<Object>> liftRaw = (Function<Publisher<Object>, Publisher<Object>>)
-				Operators.liftRaw((pub, sub) -> {
+		Function<Publisher<Object>, Publisher<Object>> liftPublisher = (Function<Publisher<Object>, Publisher<Object>>)
+				Operators.liftPublisher((pub, sub) -> {
 					rawRef.set(pub);
 					return sub;
 				});
 
 		Publisher<Object> lifted = lift.apply(notScannable);
-		Publisher<Object> liftedRaw = liftRaw.apply(notScannable);
+		Publisher<Object> liftedRaw = liftPublisher.apply(notScannable);
 
 		assertThat(scannableRef).hasValue(null);
 		assertThat(rawRef).hasValue(null);
@@ -631,7 +627,7 @@ public class OperatorsTest {
 
 		@SuppressWarnings("unchecked")
 		Function<Publisher<Object>, Publisher<Object>> liftRaw = (Function<Publisher<Object>, Publisher<Object>>)
-				Operators.liftRaw(pub -> {
+				Operators.liftPublisher(pub -> {
 							rawFilterRef.set(pub);
 							return true;
 						},
