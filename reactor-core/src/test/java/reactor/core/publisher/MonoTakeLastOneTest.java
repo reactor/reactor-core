@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher;
 
+import java.util.NoSuchElementException;
+
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -26,10 +28,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MonoTakeLastOneTest {
 
 	@Test
-	public void empty() {
+	public void emptyThrowsNoSuchElement() {
+		StepVerifier.create(Flux.empty()
+		                        .hide()
+		                        .last())
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(NoSuchElementException.class)
+		                                                    .hasMessage("Flux#last() didn't observe any onNext signal"));
+	}
+
+	@Test
+	public void emptyCallableThrowsNoSuchElement() {
 		StepVerifier.create(Flux.empty()
 		                        .last())
-		            .verifyComplete();
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(NoSuchElementException.class)
+		                                                    .hasMessage("Flux#last() didn't observe any onNext signal from Callable flux"));
 	}
 
 	@Test
