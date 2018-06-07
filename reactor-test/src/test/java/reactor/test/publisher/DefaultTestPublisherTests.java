@@ -66,6 +66,34 @@ public class DefaultTestPublisherTests {
 	}
 
 	@Test
+	public void normalDoesntAllowsMultipleReplayOnSubscribe() {
+		TestPublisher<String> publisher = TestPublisher.create();
+		publisher.replayOnSubscribe(ts -> ts.emit("A", "B"));
+
+		StepVerifier.create(publisher)
+		            .expectNextCount(2).as("first")
+		            .verifyComplete();
+
+		StepVerifier.create(publisher)
+		            .expectNextCount(0).as("second")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void noCleanupAllowsMultipleReplayOnSubscribe() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		publisher.replayOnSubscribe(ts -> ts.emit("A", "B"));
+
+		StepVerifier.create(publisher)
+		            .expectNextCount(2).as("first")
+		            .verifyComplete();
+
+		StepVerifier.create(publisher)
+		            .expectNextCount(2).as("second")
+		            .verifyComplete();
+	}
+
+	@Test
 	public void misbehavingAllowsOverflow() {
 		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.REQUEST_OVERFLOW);
 

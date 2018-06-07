@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -85,6 +86,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 				remove(p);
 			}
 			wasSubscribed = true;
+
+			if (replayOnSubscribe != null) {
+				replayOnSubscribe.accept(this);
+			}
+
 		} else {
 			Throwable e = error;
 			if (e != null) {
@@ -239,6 +245,18 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		void onComplete() {
 			actual.onComplete();
 		}
+	}
+
+	private Consumer<TestPublisher<T>> replayOnSubscribe = null;
+
+	public TestPublisher<T> replayOnSubscribe(Consumer<TestPublisher<T>> replay) {
+		if (replayOnSubscribe == null) {
+			replayOnSubscribe = replay;
+		}
+		else {
+			replayOnSubscribe = replayOnSubscribe.andThen(replay);
+		}
+		return this;
 	}
 
 	@Override
