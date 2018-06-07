@@ -600,37 +600,12 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		            .verifyComplete();
 	}
 
-	static class Foo {
-
-		static final AtomicLong finalized = new AtomicLong();
-		private final int i;
-
-		public Foo(int i) {
-			this.i = i;
-		}
-
-		@Override
-		public int hashCode() {
-			return i % 3;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			return obj instanceof Foo && ((Foo) obj).i == i;
-		}
-
-		@Override
-		protected void finalize() throws Throwable {
-			finalized.incrementAndGet();
-		}
-	}
-
 	@Test
 	public void distinctDefaultDoesntRetainObjects() throws InterruptedException {
-		Foo.finalized.set(0);
-		Flux<Foo> test = Flux.range(1, 100)
-		                     .map(i -> new Foo(i))
-		                     .distinct();
+		DistinctDefault.finalized.set(0);
+		Flux<DistinctDefault> test = Flux.range(1, 100)
+		                                 .map(DistinctDefault::new)
+		                                 .distinct();
 
 		StepVerifier.create(test)
 		            .expectNextCount(100)
@@ -639,16 +614,16 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(Foo.finalized.longValue())
+		assertThat(DistinctDefault.finalized.longValue())
 				.as("none retained")
 				.isEqualTo(100);
 	}
 
 	@Test
 	public void distinctDefaultErrorDoesntRetainObjects() throws InterruptedException {
-		Foo.finalized.set(0);
-		Flux<Foo> test = Flux.range(1, 100)
-		                     .map(i -> new Foo(i))
+		DistinctDefaultError.finalized.set(0);
+		Flux<DistinctDefaultError> test = Flux.range(1, 100)
+		                     .map(DistinctDefaultError::new)
 		                     .concatWith(Mono.error(new IllegalStateException("boom")))
 		                     .distinct();
 
@@ -659,19 +634,19 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(Foo.finalized.longValue())
+		assertThat(DistinctDefaultError.finalized.longValue())
 				.as("none retained after error")
 				.isEqualTo(100);
 	}
 
 	@Test
 	public void distinctDefaultCancelDoesntRetainObjects() throws InterruptedException {
-		Foo.finalized.set(0);
-		Flux<Foo> test = Flux.range(1, 100)
-		                     .map(i -> new Foo(i))
-		                     .concatWith(Mono.error(new IllegalStateException("boom")))
-		                     .distinct()
-		                     .take(50);
+		DistinctDefaultCancel.finalized.set(0);
+		Flux<DistinctDefaultCancel> test = Flux.range(1, 100)
+		                                 .map(DistinctDefaultCancel::new)
+		                                 .concatWith(Mono.error(new IllegalStateException("boom")))
+		                                 .distinct()
+		                                 .take(50);
 
 		StepVerifier.create(test)
 		            .expectNextCount(50)
@@ -680,8 +655,83 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(Foo.finalized.longValue())
+		assertThat(DistinctDefaultCancel.finalized.longValue())
 				.as("none retained after cancel")
 				.isEqualTo(50);
+	}
+
+	static class DistinctDefault {
+
+		static final AtomicLong finalized = new AtomicLong();
+		private final int i;
+
+		public DistinctDefault(int i) {
+			this.i = i;
+		}
+
+		@Override
+		public int hashCode() {
+			return i % 3;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof DistinctDefault && ((DistinctDefault) obj).i == i;
+		}
+
+		@Override
+		protected void finalize() throws Throwable {
+			finalized.incrementAndGet();
+		}
+	}
+
+	static class DistinctDefaultError {
+
+		static final AtomicLong finalized = new AtomicLong();
+		private final int i;
+
+		public DistinctDefaultError(int i) {
+			this.i = i;
+		}
+
+		@Override
+		public int hashCode() {
+			return i % 3;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof DistinctDefaultError && ((DistinctDefaultError) obj).i == i;
+		}
+
+		@Override
+		protected void finalize() throws Throwable {
+			finalized.incrementAndGet();
+		}
+	}
+
+	static class DistinctDefaultCancel {
+
+		static final AtomicLong finalized = new AtomicLong();
+		private final int i;
+
+		public DistinctDefaultCancel(int i) {
+			this.i = i;
+		}
+
+		@Override
+		public int hashCode() {
+			return i % 3;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof DistinctDefaultCancel && ((DistinctDefaultCancel) obj).i == i;
+		}
+
+		@Override
+		protected void finalize() throws Throwable {
+			finalized.incrementAndGet();
+		}
 	}
 }

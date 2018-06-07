@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
 import org.junit.Test;
@@ -28,6 +27,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxDistinctTest.DistinctDefault;
+import reactor.core.publisher.FluxDistinctTest.DistinctDefaultCancel;
+import reactor.core.publisher.FluxDistinctTest.DistinctDefaultError;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -291,10 +293,10 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test
 	public void distinctUntilChangedDefaultDoesntRetainObjects() throws InterruptedException {
-		FluxDistinctTest.Foo.finalized.set(0);
-		Flux<FluxDistinctTest.Foo> test = Flux.range(1, 100)
-		                                      .map(FluxDistinctTest.Foo::new)
-		                                      .distinctUntilChanged();
+		DistinctDefault.finalized.set(0);
+		Flux<DistinctDefault> test = Flux.range(1, 100)
+		                                                  .map(DistinctDefault::new)
+		                                                  .distinctUntilChanged();
 
 		StepVerifier.create(test)
 		            .expectNextCount(100)
@@ -303,18 +305,18 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(FluxDistinctTest.Foo.finalized.longValue())
+		assertThat(DistinctDefault.finalized.longValue())
 				.as("none retained")
 				.isEqualTo(100);
 	}
 
 	@Test
 	public void distinctUntilChangedDefaultErrorDoesntRetainObjects() throws InterruptedException {
-		FluxDistinctTest.Foo.finalized.set(0);
-		Flux<FluxDistinctTest.Foo> test = Flux.range(1, 100)
-		                                      .map(FluxDistinctTest.Foo::new)
-		                                      .concatWith(Mono.error(new IllegalStateException("boom")))
-		                                      .distinctUntilChanged();
+		DistinctDefaultError.finalized.set(0);
+		Flux<DistinctDefaultError> test = Flux.range(1, 100)
+		                                                  .map(DistinctDefaultError::new)
+		                                                  .concatWith(Mono.error(new IllegalStateException("boom")))
+		                                                  .distinctUntilChanged();
 
 		StepVerifier.create(test)
 		            .expectNextCount(100)
@@ -323,19 +325,19 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(FluxDistinctTest.Foo.finalized.longValue())
+		assertThat(DistinctDefaultError.finalized.longValue())
 				.as("none retained after error")
 				.isEqualTo(100);
 	}
 
 	@Test
 	public void distinctUntilChangedDefaultCancelDoesntRetainObjects() throws InterruptedException {
-		FluxDistinctTest.Foo.finalized.set(0);
-		Flux<FluxDistinctTest.Foo> test = Flux.range(1, 100)
-		                                      .map(FluxDistinctTest.Foo::new)
-		                                      .concatWith(Mono.error(new IllegalStateException("boom")))
-		                                      .distinctUntilChanged()
-		                                      .take(50);
+		DistinctDefaultCancel.finalized.set(0);
+		Flux<DistinctDefaultCancel> test = Flux.range(1, 100)
+		                                                  .map(DistinctDefaultCancel::new)
+		                                                  .concatWith(Mono.error(new IllegalStateException("boom")))
+		                                                  .distinctUntilChanged()
+		                                                  .take(50);
 
 		StepVerifier.create(test)
 		            .expectNextCount(50)
@@ -344,7 +346,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(FluxDistinctTest.Foo.finalized.longValue())
+		assertThat(FluxDistinctTest.DistinctDefaultCancel.finalized.longValue())
 				.as("none retained after cancel")
 				.isEqualTo(50);
 	}
