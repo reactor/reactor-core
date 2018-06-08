@@ -149,16 +149,16 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (wip != 0) {
-				s.request(n);
-			}
-			else if (WIP.compareAndSet(this, 0, 1)) {
+			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				if (n >= this.n) {
 					s.request(Long.MAX_VALUE);
 				} else {
 					s.request(n);
 				}
+				return;
 			}
+
+			s.request(n);
 		}
 
 		@Override
@@ -298,17 +298,17 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (wip != 0) {
-				s.request(n);
-			}
-			else if (WIP.compareAndSet(this, 0, 1)) {
+			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				if (n >= this.n) {
 					s.request(Long.MAX_VALUE);
 				}
 				else {
 					s.request(n);
 				}
+				return;
 			}
+
+			s.request(n);
 		}
 
 		@Override
@@ -426,17 +426,17 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (wip != 0) {
-				qs.request(n);
-			}
-			else if (WIP.compareAndSet(this, 0, 1)) {
+			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				if (n >= this.n) {
 					qs.request(Long.MAX_VALUE);
 				}
 				else {
 					qs.request(n);
 				}
+				return;
 			}
+
+			qs.request(n);
 		}
 
 		@Override

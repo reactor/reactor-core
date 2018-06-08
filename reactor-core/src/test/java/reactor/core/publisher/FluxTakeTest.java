@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -657,4 +659,90 @@ public class FluxTakeTest {
         test.onError(new IllegalStateException("boom"));
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
+
+    @Test
+	public void onSubscribeRaceRequestingShouldBeConsistentForTakeFuseableTest() throws InterruptedException {
+		for (int i = 0; i < 5; i++) {
+			int take = 3000;
+			RaceSubscriber<Integer> actual = new RaceSubscriber<>(take);
+			Flux.range(0, Integer.MAX_VALUE)
+			    .take(take)
+			    .subscribe(actual);
+
+			actual.await(5, TimeUnit.SECONDS);
+		}
+    }
+
+	@Test
+	public void onSubscribeRaceRequestingShouldBeConsistentForTakeConditionalTest() throws InterruptedException {
+		for (int i = 0; i < 5; i++) {
+			int take = 3000;
+			RaceSubscriber<Integer> actual = new RaceSubscriber<>(take);
+			Flux.range(0, Integer.MAX_VALUE)
+			    .take(take)
+			    .filter(e -> true)
+			    .subscribe(actual);
+
+			actual.await(5, TimeUnit.SECONDS);
+		}
+	}
+
+	@Test
+	public void onSubscribeRaceRequestingShouldBeConsistentForTakeTest() throws InterruptedException {
+		for (int i = 0; i < 5; i++) {
+			int take = 3000;
+			RaceSubscriber<Integer> actual = new RaceSubscriber<>(take);
+			Flux.range(0, Integer.MAX_VALUE)
+			    .hide()
+			    .take(take)
+			    .subscribe(actual);
+
+			actual.await(5, TimeUnit.SECONDS);
+		}
+	}
+
+    static final class RaceSubscriber<T> extends BaseSubscriber<T> {
+	    final CountDownLatch countDownLatch = new CountDownLatch(1);
+	    final int take;
+	    int received;
+
+	    RaceSubscriber(int take) {
+		    this.take = take;
+	    }
+
+	    @Override
+		public void hookOnSubscribe(Subscription s) {
+			CountDownLatch countDownLatch = new CountDownLatch(take);
+			for (int i = 0; i < take; i++) {
+				new Thread(() -> {
+					countDownLatch.countDown();
+					try {
+						countDownLatch.await();
+					}
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					s.request(1);
+				}).start();
+			}
+		}
+
+		@Override
+		public void hookOnNext(T element) {
+			received++;
+		}
+
+		@Override
+		public void hookOnComplete() {
+			assertThat(received).isEqualTo(take);
+			countDownLatch.countDown();
+		}
+
+		public void await(int timeout, TimeUnit unit) throws InterruptedException {
+			if (!countDownLatch.await(timeout, unit)) {
+				throw new RuntimeException("Expected Completion within "+ timeout +
+						" " + unit.name() + " but Complete signal was not emitted");
+			}
+		}
+	}
 }
