@@ -17,6 +17,9 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -25,7 +28,15 @@ import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
+import reactor.core.Scannable.Attr;
+import reactor.core.ScannableTest;
+import reactor.core.publisher.FluxUsingWhen.ResourceSubscriber;
+import reactor.core.publisher.FluxUsingWhen.UsingWhenFuseableSubscriber;
+import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
@@ -616,8 +627,8 @@ public class FluxUsingWhenTest {
 				new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		assertQueueSubscription.offer("foo");
 
-		FluxUsingWhen.UsingWhenSubscriber<String, String>
-				test = new FluxUsingWhen.UsingWhenSubscriber<>(
+		UsingWhenSubscriber<String, String>
+				test = new UsingWhenSubscriber<>(
 				new LambdaSubscriber<>(null, null, null, null),
 				"resource", it -> Mono.empty(), it -> Mono.empty(), null);
 
@@ -637,8 +648,8 @@ public class FluxUsingWhenTest {
 				new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		assertQueueSubscription.offer("foo");
 
-		FluxUsingWhen.UsingWhenFuseableSubscriber<String, String>
-				test = new FluxUsingWhen.UsingWhenFuseableSubscriber<>(
+		UsingWhenFuseableSubscriber<String, String>
+				test = new UsingWhenFuseableSubscriber<>(
 				new LambdaSubscriber<>(null, null, null, null),
 				"resource", it -> Mono.empty(), it -> Mono.empty(), null);
 
@@ -667,8 +678,8 @@ public class FluxUsingWhenTest {
 				new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		assertQueueSubscription.offer("foo");
 
-		FluxUsingWhen.UsingWhenFuseableSubscriber<String, String>
-				test = new FluxUsingWhen.UsingWhenFuseableSubscriber<>(
+		UsingWhenFuseableSubscriber<String, String>
+				test = new UsingWhenFuseableSubscriber<>(
 				new LambdaSubscriber<>(null, null, null, null),
 				"resource", it -> Mono.error(new IllegalStateException("asyncComplete error")), it -> Mono.empty(), null);
 
@@ -687,7 +698,146 @@ public class FluxUsingWhenTest {
 				.contains("java.lang.IllegalStateException: asyncComplete error");
 	}
 
-	//TODO scanUnsafe tests
+	// == scanUnsafe tests ==
+
+	@Test
+	public void scanOperator() {
+		FluxUsingWhen<Object, Object> op = new FluxUsingWhen<>(Mono.empty(), Mono::just, Mono::just, Mono::just, Mono::just);
+
+		assertThat(op.scanUnsafe(Attr.ACTUAL))
+				.isSameAs(op.scanUnsafe(Attr.ACTUAL_METADATA))
+				.isSameAs(op.scanUnsafe(Attr.BUFFERED))
+				.isSameAs(op.scanUnsafe(Attr.CAPACITY))
+				.isSameAs(op.scanUnsafe(Attr.CANCELLED))
+				.isSameAs(op.scanUnsafe(Attr.DELAY_ERROR))
+				.isSameAs(op.scanUnsafe(Attr.ERROR))
+				.isSameAs(op.scanUnsafe(Attr.LARGE_BUFFERED))
+				.isSameAs(op.scanUnsafe(Attr.NAME))
+				.isSameAs(op.scanUnsafe(Attr.PARENT))
+				.isSameAs(op.scanUnsafe(Attr.RUN_ON))
+				.isSameAs(op.scanUnsafe(Attr.PREFETCH))
+				.isSameAs(op.scanUnsafe(Attr.REQUESTED_FROM_DOWNSTREAM))
+				.isSameAs(op.scanUnsafe(Attr.TERMINATED))
+				.isSameAs(op.scanUnsafe(Attr.TAGS))
+				.isNull();
+	}
+
+	@Test
+	public void scanResourceSubscriber() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		ResourceSubscriber<String, Integer> op = new ResourceSubscriber<>(actual, s -> Flux.just(s.length()), Mono::just, Mono::just, Mono::just, true);
+		final Subscription parent = Operators.emptySubscription();
+		op.onSubscribe(parent);
+
+		assertThat(op.scan(Attr.PARENT)).as("PARENT").isSameAs(parent);
+		assertThat(op.scan(Attr.ACTUAL)).as("ACTUAL").isSameAs(actual);
+
+		assertThat(op.scan(Attr.PREFETCH)).as("PREFETCH").isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED").isFalse();
+		op.resourceProvided = true;
+		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED resourceProvided").isTrue();
+
+		assertThat(op.scanUnsafe(Attr.CANCELLED)).as("CANCELLED not supported").isNull();
+	}
+
+	@Test
+	public void scanUsingWhenSubscriber() {
+		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		UsingWhenSubscriber<Integer, String> op = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
+		final Subscription parent = Operators.emptySubscription();
+		op.onSubscribe(parent);
+
+		assertThat(op.scan(Attr.PARENT)).as("PARENT").isSameAs(parent);
+		assertThat(op.scan(Attr.ACTUAL)).as("ACTUAL")
+		                                .isSameAs(actual)
+		                                .isSameAs(op.actual());
+
+		assertThat(op.scan(Attr.TERMINATED)).as("pre TERMINATED").isFalse();
+		assertThat(op.scan(Attr.CANCELLED)).as("pre CANCELLED").isFalse();
+
+		op.deferredError(new IllegalStateException("boom"));
+		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED with error").isTrue();
+		assertThat(op.scan(Attr.ERROR)).as("ERROR").hasMessage("boom");
+
+		op.cancel();
+		assertThat(op.scan(Attr.CANCELLED)).as("CANCELLED").isTrue();
+	}
+
+	@Test
+	public void scanUsingWhenFuseableSubscriber() {
+		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		UsingWhenFuseableSubscriber<Integer, String> op = new UsingWhenFuseableSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
+		final Subscription parent = Operators.emptySubscription();
+		op.onSubscribe(parent);
+
+		assertThat(op.scan(Attr.PARENT)).as("PARENT").isSameAs(parent);
+		assertThat(op.scan(Attr.ACTUAL)).as("ACTUAL")
+		                                .isSameAs(actual)
+		                                .isSameAs(op.actual());
+
+		assertThat(op.scan(Attr.TERMINATED)).as("pre TERMINATED").isFalse();
+
+		op.deferredError(new IllegalStateException("boom"));
+		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED with error").isTrue();
+		assertThat(op.scan(Attr.ERROR)).as("ERROR").hasMessage("boom");
+
+		//need something different from EmptySubscription to detect cancel
+		op.qs = null;
+		assertThat(op.scan(Attr.CANCELLED)).as("pre CANCELLED").isFalse();
+		op.cancel();
+		assertThat(op.scan(Attr.CANCELLED)).as("CANCELLED").isTrue();
+	}
+
+	@Test
+	public void scanCommitInner() {
+		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
+		final Subscription parent = Operators.emptySubscription();
+		up.onSubscribe(parent);
+
+		FluxUsingWhen.CommitInner op = new FluxUsingWhen.CommitInner(up);
+
+		assertThat(op.scan(Attr.PARENT)).as("PARENT").isSameAs(up);
+		assertThat(op.scan(Attr.ACTUAL)).as("ACTUAL").isSameAs(up.actual);
+
+		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED before").isFalse();
+
+		op.onError(new IllegalStateException("boom"));
+		assertThat(op.scan(Attr.TERMINATED))
+				.as("TERMINATED by error")
+				.isSameAs(up.scan(Attr.TERMINATED))
+				.isTrue();
+		assertThat(up.scan(Attr.ERROR)).as("parent ERROR")
+		                               .hasMessage("Async resource cleanup failed after onComplete")
+		                               .hasCause(new IllegalStateException("boom"));
+
+		assertThat(op.scanUnsafe(Attr.PREFETCH)).as("PREFETCH not supported").isNull();
+	}
+
+	@Test
+	public void scanRollbackSubscriber() {
+		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
+		final Subscription parent = Operators.emptySubscription();
+		up.onSubscribe(parent);
+
+		FluxUsingWhen.RollbackInner op = new FluxUsingWhen.RollbackInner(up, new IllegalStateException("rollback cause"));
+
+		assertThat(op.scan(Attr.PARENT)).as("PARENT").isSameAs(up);
+		assertThat(op.scan(Attr.ACTUAL)).as("ACTUAL").isSameAs(up.actual);
+
+		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED before").isFalse();
+
+		op.onComplete();
+		assertThat(op.scan(Attr.TERMINATED))
+				.as("TERMINATED by complete")
+				.isSameAs(up.scan(Attr.TERMINATED))
+				.isTrue();
+		assertThat(up.scan(Attr.ERROR)).as("parent ERROR").hasMessage("rollback cause");
+
+		assertThat(op.scanUnsafe(Attr.PREFETCH)).as("PREFETCH not supported").isNull();
+	}
 
 	// == utility test classes ==
 	static class TestResource {

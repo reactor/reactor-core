@@ -205,11 +205,16 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			return null; //TODO enrich
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return actual;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.TERMINATED) return resourceProvided;
+
+			return null;
 		}
 	}
 
-	static class UsingWhenSubscriber<T, S> implements InnerOperator<T, T>,
+	static class UsingWhenSubscriber<T, S> implements UsingWhenParent<T>,
 	                                                  QueueSubscription<T> {
 
 		//state that differs in the different variants
@@ -226,9 +231,10 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		@Nullable
 		final Function<? super S, ? extends Publisher<?>> asyncCancel;
 
-		volatile int                                                wip;
-		static final AtomicIntegerFieldUpdater<UsingWhenSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(UsingWhenSubscriber.class, "wip");
+		/**
+		 * Also stores the onComplete terminal state as {@link Exceptions#TERMINATED}
+		 */
+		Throwable error;
 
 		UsingWhenSubscriber(CoreSubscriber<? super T> actual,
 				S resource,
@@ -249,10 +255,12 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return wip == 1;
+			if (key == Attr.TERMINATED) return error != null;
+			if (key == Attr.ERROR) return (error == Exceptions.TERMINATED) ? null : error;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return s;
 
-			return InnerOperator.super.scanUnsafe(key);
+			return UsingWhenParent.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -325,6 +333,19 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			p.subscribe(new CommitInner(this));
 		}
 
+
+		@Override
+		public void deferredComplete() {
+			this.error = Exceptions.TERMINATED;
+			this.actual.onComplete();
+		}
+
+		@Override
+		public void deferredError(Throwable error) {
+			this.error = error;
+			this.actual.onError(error);
+		}
+
 		// below methods have changes in the different implementations
 
 		@Override
@@ -384,13 +405,14 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		}
 	}
 
-	static final class UsingWhenFuseableSubscriber<T, S> implements InnerOperator<T, T>,
-	                                                                QueueSubscription<T> {
+	static final class UsingWhenFuseableSubscriber<T, S> implements QueueSubscription<T>,
+	                                                                UsingWhenParent<T> {
 
 		//state that differs in the different variants
 		int mode;
 		final CoreSubscriber<? super T>                                                         actual;
 		volatile     QueueSubscription<T>                                                       qs;
+
 		static final AtomicReferenceFieldUpdater<UsingWhenFuseableSubscriber, QueueSubscription>SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(UsingWhenFuseableSubscriber.class,
 						QueueSubscription.class, "qs");
@@ -401,10 +423,11 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		final Function<? super S, ? extends Publisher<?>> asyncError;
 		@Nullable
 		final Function<? super S, ? extends Publisher<?>> asyncCancel;
-		volatile int                                      wip;
 
-		static final AtomicIntegerFieldUpdater<UsingWhenFuseableSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(UsingWhenFuseableSubscriber.class, "wip");
+		/**
+		 * Also stores the onComplete terminal state as {@link Exceptions#TERMINATED}
+		 */
+		Throwable error;
 
 		UsingWhenFuseableSubscriber(CoreSubscriber<? super T> actual,
 				S resource,
@@ -425,10 +448,12 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return wip == 1;
+			if (key == Attr.TERMINATED) return error != null;
+			if (key == Attr.ERROR) return (error == Exceptions.TERMINATED) ? null : error;
+			if (key == Attr.CANCELLED) return  qs == CANCELLED;
 			if (key == Attr.PARENT) return qs;
 
-			return InnerOperator.super.scanUnsafe(key);
+			return UsingWhenParent.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -441,8 +466,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		@Override
 		public void cancel() {
 			QueueSubscription a = SUBSCRIPTION.get(this);
-			if (a != null) {
-				a = SUBSCRIPTION.getAndSet(this, null);
+			if (a != CANCELLED) {
+				a = SUBSCRIPTION.getAndSet(this, CANCELLED);
 				if (a != null) {
 					a.cancel();
 
@@ -508,6 +533,18 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			p.subscribe(new CommitInner(this));
 		}
 
+		@Override
+		public void deferredComplete() {
+			this.error = Exceptions.TERMINATED;
+			this.actual.onComplete();
+		}
+
+		@Override
+		public void deferredError(Throwable error) {
+			this.error = error;
+			this.actual.onError(error);
+		}
+
 		// below are methods differing from UsingAsyncSubscriber
 
 		@Override
@@ -540,11 +577,10 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			T v = qs.poll();
 
 			if (v == null && mode == SYNC) {
-				if (WIP.compareAndSet(this, 0, 1)) {
-					Flux.from(asyncComplete.apply(resource))
-					    .subscribe(it -> {},
-							    e -> Loggers.getLogger(FluxUsingWhen.class).warn("Async resource cleanup failed after poll", e));
-				}
+				Flux.from(asyncComplete.apply(resource))
+				    .subscribe(it -> {},
+						    e -> Loggers.getLogger(FluxUsingWhen.class)
+						                .warn("Async resource cleanup failed after poll", e));
 			}
 			return v;
 		}
@@ -555,14 +591,55 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			this.mode = m;
 			return m;
 		}
+
+		private static final QueueSubscription<?> CANCELLED = new QueueSubscription<Object>() {
+			@Override
+			public void request(long l) {
+				//NO-OP
+			}
+
+			@Override
+			public void cancel() {
+				//NO-OP
+			}
+
+			@Override
+			public int size() {
+				return 0;
+			}
+
+			@Override
+			public boolean isEmpty() {
+				return false;
+			}
+
+			@Override
+			public void clear() {
+				//NO-OP
+			}
+
+			@Nullable
+			@Override
+			public Object poll() {
+				return null;
+			}
+
+			@Override
+			public int requestFusion(int requestedMode) {
+				return Fuseable.NONE;
+			}
+		};
+
 	}
 
 	static final class RollbackInner implements InnerConsumer<Object> {
 
-		final InnerOperator        parent;
+		final UsingWhenParent        parent;
 		final Throwable            rollbackCause;
 
-		RollbackInner(InnerOperator ts, Throwable rollbackCause) {
+		boolean done;
+
+		RollbackInner(UsingWhenParent ts, Throwable rollbackCause) {
 			this.parent = ts;
 			this.rollbackCause = rollbackCause;
 		}
@@ -580,13 +657,15 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 
 		@Override
 		public void onError(Throwable e) {
+			done = true;
 			RuntimeException rollbackError = new RuntimeException("Async resource cleanup failed after onError", e);
-			parent.actual().onError(Exceptions.addSuppressed(rollbackError, rollbackCause));
+			parent.deferredError(Exceptions.addSuppressed(rollbackError, rollbackCause));
 		}
 
 		@Override
 		public void onComplete() {
-			parent.actual().onError(rollbackCause);
+			done = true;
+			parent.deferredError(rollbackCause);
 		}
 
 		@Override
@@ -594,6 +673,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.ERROR) return rollbackCause;
+			if (key == Attr.TERMINATED) return done;
 
 			return null;
 		}
@@ -601,9 +681,11 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 
 	static final class CommitInner implements InnerConsumer<Object> {
 
-		final InnerOperator parent;
+		final UsingWhenParent parent;
 
-		CommitInner(InnerOperator ts) {
+		boolean done;
+
+		CommitInner(UsingWhenParent ts) {
 			this.parent = ts;
 		}
 
@@ -620,22 +702,32 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 
 		@Override
 		public void onError(Throwable e) {
-			Throwable e_ = Operators.onOperatorError(e, parent.actual().currentContext());
+			done = true;
+			Throwable e_ = Operators.onOperatorError(e, parent.currentContext());
 			Throwable commitError = new RuntimeException("Async resource cleanup failed after onComplete", e_);
-			parent.actual().onError(commitError);
+			parent.deferredError(commitError);
 		}
 
 		@Override
 		public void onComplete() {
-			parent.actual().onComplete();
+			done = true;
+			parent.deferredComplete();
 		}
 
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
+			if (key == Attr.TERMINATED) return done;
 
 			return null;
 		}
+	}
+
+	private interface UsingWhenParent<T> extends InnerOperator<T, T> {
+
+		void deferredComplete();
+
+		void deferredError(Throwable error);
 	}
 }

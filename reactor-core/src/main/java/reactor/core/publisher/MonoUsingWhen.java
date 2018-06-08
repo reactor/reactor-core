@@ -198,7 +198,12 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements Fuseable, SourceProdu
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			return null; //TODO enrich
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return actual;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.TERMINATED) return resourceProvided;
+
+			return null;
 		}
 	}
 
