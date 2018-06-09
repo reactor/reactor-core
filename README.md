@@ -25,10 +25,10 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.1.7.BUILD-SNAPSHOT"
-      //testCompile("io.projectreactor:reactor-test:3.1.7.BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.1.7.RELEASE"
-      testCompile("io.projectreactor:reactor-test:3.1.7.RELEASE")
+      //compile "io.projectreactor:reactor-core:3.1.9.BUILD-SNAPSHOT"
+      //testCompile("io.projectreactor:reactor-test:3.1.9.BUILD-SNAPSHOT")
+      compile "io.projectreactor:reactor-core:3.1.8.RELEASE"
+      testCompile("io.projectreactor:reactor-test:3.1.8.RELEASE")
     }
 ```
 
