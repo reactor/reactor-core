@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -46,19 +45,17 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	private static final ColdTestPublisherSubscription[] EMPTY = new ColdTestPublisherSubscription[0];
 
 	final List<T> values;
-	Throwable error;
+	Throwable     error;
 
 	volatile boolean wasRequested;
 	volatile boolean wasSubscribed;
 
+	@SuppressWarnings("unchecked")
+	volatile ColdTestPublisherSubscription<T>[] subscribers = EMPTY;
+
 	volatile int cancelCount;
 	static final AtomicIntegerFieldUpdater<ColdTestPublisher> CANCEL_COUNT =
 			AtomicIntegerFieldUpdater.newUpdater(ColdTestPublisher.class, "cancelCount");
-
-	@SuppressWarnings("unchecked")
-	volatile ColdTestPublisherSubscription<T>[] subscribers = EMPTY;
-	static final AtomicReferenceFieldUpdater<ColdTestPublisher, ColdTestPublisherSubscription[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(ColdTestPublisher.class, ColdTestPublisherSubscription[].class, "subscribers");
 
 	ColdTestPublisher() {
 		this.values = Collections.synchronizedList(new ArrayList<>());
