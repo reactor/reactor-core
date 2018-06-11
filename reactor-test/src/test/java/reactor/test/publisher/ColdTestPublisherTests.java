@@ -31,6 +31,63 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class ColdTestPublisherTests {
 
 	@Test
+	public void gh1236_test() {
+		TestPublisher<String> result = TestPublisher.createCold();
+
+		assertThat(result.emit("value").mono().block()).isEqualTo("value");
+	}
+
+	@Test
+	public void coldWithSequentialSubscriptions() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		publisher.emit("A", "B", "C");
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void coldWithSequentialSubscriptionsAndTerminalSignalChanges() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		publisher.emit("A", "B", "C");
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+
+		publisher.error(new IllegalStateException("boom"));
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyErrorMessage("boom");
+
+		publisher.emit("D");
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C", "D")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void coldWithSignalEmittingWithinStepVerifier() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		StepVerifier.create(publisher)
+		            .then(() -> publisher.emit("A", "B", "C"))
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+	}
+
+	@Test
 	public void coldDisallowsNull() {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 

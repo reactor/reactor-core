@@ -35,22 +35,14 @@ import reactor.util.annotation.Nullable;
  * and allow "spec violations", as enumerated in {@link Violation}. Use the
  * {@link #createNoncompliant(Violation, Violation...)} factory method to create such
  * a misbehaving publisher.
+ * <p>
+ * TestPublisher are generally hot, directly propagating signals to currently subscribed
+ * downstreams and only replaying the first termination signal to subsequent subscribers.
+ * TestPublishers are also generally not safe to use from multiple parallel threads.
  *
  * @author Simon Basle
  */
 public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T> {
-
-	/**
-	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
-	 * subscribers. It caches the {@link #next(Object)} events and replays them to
-	 * all subscribers upon subscription.
-	 *
-	 * @param <T> the type of the publisher
-	 * @return the new {@link TestPublisher}
-	 */
-	public static <T> TestPublisher<T> createCold() {
-		return new ColdTestPublisher<>();
-	}
 
 	/**
 	 * Create a standard hot {@link TestPublisher}.
@@ -73,6 +65,20 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 */
 	public static <T> TestPublisher<T> createNoncompliant(Violation first, Violation... rest) {
 		return new DefaultTestPublisher<>(first, rest);
+	}
+
+	/**
+	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
+	 * subscribers. It caches the {@link #next(Object)} events and replays them to
+	 * all subscribers upon subscription.
+	 * <p>
+	 * Note that this type of {@link Publisher} isn't
+	 *
+	 * @param <T> the type of the publisher
+	 * @return the new {@link TestPublisher}
+	 */
+	public static <T> TestPublisher<T> createCold() {
+		return new ColdTestPublisher<>();
 	}
 
 	/**

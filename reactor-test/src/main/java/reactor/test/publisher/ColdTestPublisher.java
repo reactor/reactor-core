@@ -35,38 +35,33 @@ import reactor.core.publisher.Operators;
 import reactor.util.annotation.Nullable;
 
 /**
- * @author Simon Baslé
+ * A cold implementation of a {@link TestPublisher}.
+ *
+ * @author Simon Basle
+ * @author Stephane Maldini
  */
-public class ColdTestPublisher<T> extends TestPublisher<T> {
+final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	@SuppressWarnings("rawtypes")
 	private static final ColdTestPublisherSubscription[] EMPTY = new ColdTestPublisherSubscription[0];
 
-	@SuppressWarnings("rawtypes")
-	private static final ColdTestPublisherSubscription[] TERMINATED = new ColdTestPublisherSubscription[0];
-
-	volatile int cancelCount;
-
-	final List<T> values = Collections.synchronizedList(new ArrayList<>());
+	final List<T> values;
 	Throwable error;
 
-	static final AtomicIntegerFieldUpdater<ColdTestPublisher> CANCEL_COUNT =
-			AtomicIntegerFieldUpdater.newUpdater(ColdTestPublisher.class, "cancelCount");
-
-
-	final    boolean hasOverflown = false;
 	volatile boolean wasRequested;
 	volatile boolean wasSubscribed;
 
+	volatile int cancelCount;
+	static final AtomicIntegerFieldUpdater<ColdTestPublisher> CANCEL_COUNT =
+			AtomicIntegerFieldUpdater.newUpdater(ColdTestPublisher.class, "cancelCount");
+
 	@SuppressWarnings("unchecked")
 	volatile ColdTestPublisherSubscription<T>[] subscribers = EMPTY;
-
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<ColdTestPublisher, ColdTestPublisherSubscription[]>
-			SUBSCRIBERS =
+	static final AtomicReferenceFieldUpdater<ColdTestPublisher, ColdTestPublisherSubscription[]> SUBSCRIBERS =
 			AtomicReferenceFieldUpdater.newUpdater(ColdTestPublisher.class, ColdTestPublisherSubscription[].class, "subscribers");
 
 	ColdTestPublisher() {
+		this.values = Collections.synchronizedList(new ArrayList<>());
 	}
 
 	@Override
@@ -102,19 +97,13 @@ public class ColdTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	boolean add(ColdTestPublisherSubscription<T> s) {
-		ColdTestPublisherSubscription<T>[] a = subscribers;
-		if (a == TERMINATED) {
-			return false;
-		}
-
 		synchronized (this) {
-			a = subscribers;
-			if (a == TERMINATED) {
-				return false;
-			}
+
+			ColdTestPublisherSubscription<T>[] a = subscribers;
 			int len = a.length;
 
-			@SuppressWarnings("unchecked") ColdTestPublisherSubscription<T>[] b = new ColdTestPublisherSubscription[len + 1];
+			@SuppressWarnings("unchecked")
+			ColdTestPublisherSubscription<T>[] b = new ColdTestPublisherSubscription[len + 1];
 			System.arraycopy(a, 0, b, 0, len);
 			b[len] = s;
 
@@ -128,13 +117,13 @@ public class ColdTestPublisher<T> extends TestPublisher<T> {
 	void remove(ColdTestPublisherSubscription<T> s) {
 		ColdTestPublisherSubscription<T>[] a = subscribers;
 
-		if (a == TERMINATED || a == EMPTY) {
+		if (a == EMPTY) {
 			return;
 		}
 
 		synchronized (this) {
 			a = subscribers;
-			if (a == TERMINATED || a == EMPTY) {
+			if (a == EMPTY) {
 				return;
 			}
 			int len = a.length;
@@ -280,7 +269,7 @@ public class ColdTestPublisher<T> extends TestPublisher<T> {
 	@Override
 	public ColdTestPublisher<T> assertSubscribers() {
 		ColdTestPublisherSubscription<T>[] s = subscribers;
-		if (s == EMPTY || s == TERMINATED) {
+		if (s == EMPTY) {
 			throw new AssertionError("Expected subscribers");
 		}
 		return this;
