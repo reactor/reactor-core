@@ -16,7 +16,6 @@
 package reactor.test.publisher;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -42,7 +41,19 @@ import reactor.util.annotation.Nullable;
 public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T> {
 
 	/**
-	 * Create a standard {@link TestPublisher}.
+	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
+	 * subscribers. It caches the {@link #next(Object)} events and replays them to
+	 * all subscribers upon subscription.
+	 *
+	 * @param <T> the type of the publisher
+	 * @return the new {@link TestPublisher}
+	 */
+	public static <T> TestPublisher<T> createCold() {
+		return new ColdTestPublisher<>();
+	}
+
+	/**
+	 * Create a standard hot {@link TestPublisher}.
 	 *
 	 * @param <T> the type of the publisher
 	 * @return the new {@link TestPublisher}
@@ -52,7 +63,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	}
 
 	/**
-	 * Create a {@link Violation noncompliant} {@link TestPublisher}
+	 * Create a {@link Violation noncompliant} hot {@link TestPublisher}
 	 * with a given set of reactive streams spec violations that will be overlooked.
 	 *
 	 * @param first the first allowed {@link Violation}
@@ -73,20 +84,6 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * Convenience method to wrap this {@link TestPublisher} to a {@link Mono}.
 	 */
 	public abstract Mono<T> mono();
-
-	/**
-	 * Approach a "cold" {@link Publisher} semantic by defining a behavior to trigger
-	 * on each successful subscription to this {@link TestPublisher}, typically
-	 * using only signal-emitting methods. Note that this is only possible for more
-	 * than one {@link Subscriber} if the {@link Violation#CLEANUP_ON_TERMINATE} violation
-	 * is in effect (as otherwise second subscriber and later will receive a terminal
-	 * signal directly).
-	 *
-	 * @param replay a {@link Consumer} that receives this {@link TestPublisher} and
-	 * invokes signal-emitting methods on it.
-	 * @return
-	 */
-	public abstract TestPublisher<T> replayOnSubscribe(Consumer<TestPublisher<T>> replay);
 
 	/**
 	 * Assert that the current minimum request of all this publisher's subscribers
