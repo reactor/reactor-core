@@ -31,8 +31,8 @@ you'll get a nice green checkmark to the PR checks).
 
 ### Branch from `master`
 
-Master currently represents work toward Reactor 3.1. Please submit
-all pull requests there, even bug fixes and minor improvements. Backports to
+Master currently represents work toward Reactor 3.2. Please submit
+all pull requests there, even bug fixes and minor improvements. Backports to 3.1
 will be considered on a case-by-case basis.
 
 
@@ -81,7 +81,7 @@ present in the framework.
 
 ```java
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,18 +102,18 @@ package ...;
 ### Update Apache license header in modified files as necessary
 
 Always check the date range in the license header. For example, if you've
-modified a file in 2016 whose header still reads:
+modified a file in 2018 whose header still reads:
 
 ```java
 /*
  * Copyright (c) 2011-2015 Pivotal Software Inc, All Rights Reserved.
 ```
 
-Then be sure to update it to 2016 accordingly:
+Then be sure to update it to 2018 accordingly:
 
 ```java
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
 ```
 
 ### Use @since tags for newly-added public API types and methods
