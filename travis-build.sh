@@ -2,6 +2,12 @@
 
 set -ev
 
+for i in 1 2 3
+do
+    sleep 300;
+    echo "=====[ $((i * 5))min, still running ]=====";
+done &
+
 if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
     COMMIT_RANGE="FETCH_HEAD..$TRAVIS_BRANCH"
     echo "travis PR #$TRAVIS_PULL_REQUEST build, looking at files in $COMMIT_RANGE"
@@ -38,5 +44,7 @@ else
       ./gradlew :reactor-test:check
     fi
 fi
+
+kill %1
 
 exit 0;
