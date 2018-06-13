@@ -4226,8 +4226,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that attempts to continue processing on errors.
 	 */
 	public final Flux<T> errorStrategyContinue(BiConsumer<Throwable, Object> errorConsumer) {
-		//this cast is ok as only T values will be propagated in this sequence
-		BiConsumer<Throwable, Object> genericConsumer = (BiConsumer<Throwable, Object>) errorConsumer;
+		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
 		return subscriberContext(Context.of(
 				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
 				OnNextFailureStrategy.resume(genericConsumer)
@@ -6728,7 +6727,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
 	 */
 	public final Flux<T> retryBackoff(long numRetries, Duration firstBackoff) {
-		return retryBackoff(numRetries, firstBackoff, Duration.ofMillis(Long.MAX_VALUE), 0.5d);
+		return retryBackoff(numRetries, firstBackoff, FluxRetryWhen.MAX_BACKOFF, 0.5d);
 	}
 
 	/**

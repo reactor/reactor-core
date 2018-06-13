@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -481,6 +481,71 @@ public class FluxRetryWhenTest {
 				.isCloseTo(400, Percentage.withPercentage(10));
 		assertThat(elapsedList, LongAssert.class).element(4)
 				.isCloseTo(800, Percentage.withPercentage(10));
+	}
+
+	@Test
+	public void fluxRetryRandomBackoffDefaultJitter() {
+		Exception exception = new IOException("boom retry");
+		List<Long> elapsedList = new ArrayList<>();
+
+		StepVerifier.withVirtualTime(() ->
+				Flux.concat(Flux.range(0, 2), Flux.error(exception))
+				    .retryBackoff(4, Duration.ofMillis(100), Duration.ofMillis(2000))
+				    .elapsed()
+				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
+				    .map(Tuple2::getT2)
+		)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext(0, 1) //normal output
+		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Retries exhausted: 4/4")
+		                                                    .hasCause(exception));
+
+		assertThat(elapsedList).hasSize(5);
+		assertThat(elapsedList, LongAssert.class).first()
+				.isEqualTo(0L);
+		assertThat(elapsedList, LongAssert.class).element(1)
+				.isCloseTo(100, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(2)
+				.isCloseTo(200, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(3)
+				.isCloseTo(400, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(4)
+				.isCloseTo(800, Percentage.withPercentage(50));
+	}
+
+	@Test
+	public void fluxRetryRandomBackoffDefaultMaxDuration() {
+		Exception exception = new IOException("boom retry");
+		List<Long> elapsedList = new ArrayList<>();
+
+		StepVerifier.withVirtualTime(() ->
+				Flux.concat(Flux.range(0, 2), Flux.error(exception))
+				    .log()
+				    .retryBackoff(4, Duration.ofMillis(100))
+				    .elapsed()
+				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
+				    .map(Tuple2::getT2)
+		)
+		            .thenAwait(Duration.ofSeconds(3))
+		            .expectNext(0, 1) //normal output
+		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Retries exhausted: 4/4")
+		                                                    .hasCause(exception));
+
+		assertThat(elapsedList).hasSize(5);
+		assertThat(elapsedList, LongAssert.class).first()
+				.isEqualTo(0L);
+		assertThat(elapsedList, LongAssert.class).element(1)
+				.isCloseTo(100, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(2)
+				.isCloseTo(200, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(3)
+				.isCloseTo(400, Percentage.withPercentage(50));
+		assertThat(elapsedList, LongAssert.class).element(4)
+				.isCloseTo(800, Percentage.withPercentage(50));
 	}
 
 	@Test
