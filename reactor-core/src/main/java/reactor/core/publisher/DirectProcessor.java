@@ -35,7 +35,7 @@ import reactor.util.annotation.Nullable;
  * <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a> contract is
  * violated.
  * <p>
- *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/directprocessornormal.png" alt="">
+ *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/directprocessornormal.png" alt="">
  * </p>
  *
  * </br>
@@ -52,7 +52,7 @@ import reactor.util.annotation.Nullable;
  *     source through the processor to the Subscribers.
  *
  *     <p>
- *        <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/directprocessorerror.png" alt="">
+ *        <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/directprocessorerror.png" alt="">
  *     </p>
  * </p>
  *
@@ -65,7 +65,7 @@ import reactor.util.annotation.Nullable;
  *      terminal signal to late subscribers.
  *
  *      <p>
- *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/directprocessorterminal.png" alt="">
+ *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/directprocessorterminal.png" alt="">
  *      </p>
  * </p>
  *

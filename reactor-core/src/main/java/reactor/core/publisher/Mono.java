@@ -810,7 +810,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/whendelayerror.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/whendelayerror.png" alt="">
 	 * <p>
 	 *
 	 * @param sources The sources to use.
@@ -827,7 +827,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/whendelayerror.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/whendelayerror.png" alt="">
 	 * <p>
 	 * @param sources The sources to use.
 	 *
@@ -850,7 +850,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipt1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipt1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -870,7 +870,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipt1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipt1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -894,7 +894,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipt1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipt1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -917,7 +917,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipt1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipt1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -945,7 +945,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipt1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipt1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -976,7 +976,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipt1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipt1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1010,7 +1010,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipt1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipt1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1047,7 +1047,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipt1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipt1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1107,7 +1107,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * An error or <strong>empty</strong> completion of any source will cause other sources
 	 * to be cancelled and the resulting Mono to immediately error or complete, respectively.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zip1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zip1.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
 	 * @param combinator the function to transform the combined array into an arbitrary
@@ -1134,7 +1134,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If both Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/ziptdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/ziptdelayerror1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1156,7 +1156,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/ziptdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/ziptdelayerror1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1180,7 +1180,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * 	If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/ziptdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/ziptdelayerror1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1208,7 +1208,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * the resulting {@link Mono} completes empty.
 	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/ziptdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/ziptdelayerror1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1240,7 +1240,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/ziptdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/ziptdelayerror1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1275,7 +1275,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/ziptdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/ziptdelayerror1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1313,7 +1313,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/ziptdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/ziptdelayerror1.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1353,7 +1353,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * the resulting {@link Mono} completes empty.
 	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipdelayerror1.png" alt="">
 	 * <p>
 	 *
 	 * @param monos The monos to use.
@@ -1376,7 +1376,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, their exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/zipdelayerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/zipdelayerror1.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
 	 * @param combinator the function to transform the combined array into an arbitrary
@@ -3759,7 +3759,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Let this {@link Mono} complete then emit the provided value.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/thenreturn1.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenreturn1.png"
 	 * alt="">
 	 *
 	 * @param value a value to emit after termination
@@ -3776,7 +3776,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
 	 * second completion signal is replayed, or any error signal that occurs instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/thenempty.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenempty.png"
 	 * alt="">
 	 *
 	 * @param other a {@link Publisher} to wait for after this Mono's termination
@@ -3794,7 +3794,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@code Flux<V>} that will emit elements from the provided {@link Publisher}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/thenmany.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenmany.png" alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the element type of the supplied Publisher

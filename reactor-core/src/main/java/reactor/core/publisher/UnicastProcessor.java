@@ -44,7 +44,7 @@ import reactor.util.context.Context;
  * publish on different threads.
  *
  * <p>
- *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/unicastprocessornormal.png" alt="">
+ *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/unicastprocessornormal.png" alt="">
  * </p>
  *
  * </br>
@@ -67,7 +67,7 @@ import reactor.util.context.Context;
  *      {@link reactor.core.Exceptions.OverflowException}).
  *
  *      <p>
- *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/unicastprocessoroverflow.png" alt="">
+ *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/unicastprocessoroverflow.png" alt="">
  *      </p>
  * </p>
  *
@@ -79,7 +79,7 @@ import reactor.util.context.Context;
  *      case of terminal signal (completion or error signals) it will be postponed
  *      until all of the previous signals has been consumed.
  *      <p>
- *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/unicastprocessorterminal.png" alt="">
+ *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/unicastprocessorterminal.png" alt="">
  *      </p>
  * </p>
  *

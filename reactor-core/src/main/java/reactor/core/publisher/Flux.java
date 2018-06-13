@@ -385,7 +385,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Concatenates the values to the end of the {@link Flux}
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/concatwithvalues.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/concatwithvalues.png" alt="">
 	 * <p>
 	 * @param values The values to concatenate
 	 *
@@ -1278,7 +1278,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/mergeordered.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/mergeordered.png" alt="">
 	 * <p>
 	 *
 	 * @param sources {@link Publisher} sources of {@link Comparable} to merge
@@ -1299,7 +1299,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/mergeordered.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/mergeordered.png" alt="">
 	 * <p>
 	 *
 	 * @param comparator the {@link Comparator} to use to find the smallest value
@@ -1321,7 +1321,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Instead, this operator considers only one value from each source and picks the
 	 * smallest of all these values, then replenishes the slot for that picked source.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/mergeordered.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/mergeordered.png" alt="">
 	 * <p>
 	 *
 	 * @param prefetch the number of elements to prefetch from each source (avoiding too
@@ -5565,7 +5565,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
 	 * another source.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/mergeordered.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/mergeordered.png" alt="">
 	 * <p>
 	 *
 	 * @param other the {@link Publisher} to merge with
@@ -5943,7 +5943,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * choose the fallback depending on the error.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/onerrorresume.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/onerrorresume.png" alt="">
 	 * <p>
 	 * @param fallback the function to choose the fallback to an alternative {@link Publisher}
 	 *
@@ -5957,7 +5957,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Subscribe to a fallback publisher when an error matching the given type
 	 * occurs, using a function to choose the fallback depending on the error.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/onerrorresume.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/onerrorresume.png"
 	 * alt="">
 	 *
 	 * @param type the error type to match
@@ -5979,7 +5979,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Subscribe to a fallback publisher when an error matching a given predicate
 	 * occurs.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/onerrorresume.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/onerrorresume.png"
 	 * alt="">
 	 *
 	 * @param predicate the error predicate to match
@@ -7863,7 +7863,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
 	 * second completion signal is replayed, or any error signal that occurs instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/thenempty.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenempty.png"
 	 * alt="">
 	 *
 	 * @param other a {@link Publisher} to wait for after this Flux's termination
@@ -7880,7 +7880,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * In other words ignore element from this flux and transform the completion signal into a
 	 * {@code Publisher<V>} that will emit elements from the provided {@link Publisher}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/thenmany.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenmany.png" alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the element type of the supplied Publisher
