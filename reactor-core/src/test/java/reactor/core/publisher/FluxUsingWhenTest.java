@@ -143,8 +143,8 @@ public class FluxUsingWhenTest {
 		AtomicBoolean commitDone = new AtomicBoolean();
 		AtomicBoolean rollbackDone = new AtomicBoolean();
 
-		TestPublisher<String> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		testPublisher.replayOnSubscribe(tp -> tp.next("Resource").error(new IllegalStateException("boom")));
+		TestPublisher<String> testPublisher = TestPublisher.createCold();
+		testPublisher.next("Resource").error(new IllegalStateException("boom"));
 
 		Flux<String> test = Flux.usingWhen(testPublisher,
 				Mono::just,
@@ -169,8 +169,8 @@ public class FluxUsingWhenTest {
 		AtomicBoolean commitDone = new AtomicBoolean();
 		AtomicBoolean rollbackDone = new AtomicBoolean();
 
-		TestPublisher<String> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		testPublisher.replayOnSubscribe(tp -> tp.emit("Resource", "boom"));
+		TestPublisher<String> testPublisher = TestPublisher.createCold();
+		testPublisher.emit("Resource", "boom");
 
 		Flux<String> test = Flux.usingWhen(testPublisher,
 				Mono::just,

@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.test.publisher;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,16 +24,72 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher.Violation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class DefaultTestPublisherTests {
+public class ColdTestPublisherTests {
 
 	@Test
-	public void normalDisallowsNull() {
-		TestPublisher<String> publisher = TestPublisher.create();
+	public void gh1236_test() {
+		TestPublisher<String> result = TestPublisher.createCold();
+
+		assertThat(result.emit("value").mono().block()).isEqualTo("value");
+	}
+
+	@Test
+	public void coldWithSequentialSubscriptions() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		publisher.emit("A", "B", "C");
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void coldWithSequentialSubscriptionsAndTerminalSignalChanges() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		publisher.emit("A", "B", "C");
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+
+		publisher.error(new IllegalStateException("boom"));
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C")
+		            .verifyErrorMessage("boom");
+
+		publisher.emit("D");
+
+		StepVerifier.create(publisher.flux())
+		            .expectNext("A", "B", "C", "D")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void coldWithSignalEmittingWithinStepVerifier() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		StepVerifier.create(publisher)
+		            .then(() -> publisher.emit("A", "B", "C"))
+		            .expectNext("A", "B", "C")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void coldDisallowsNull() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(NullPointerException.class)
 				.isThrownBy(() -> publisher.next(null))
@@ -40,19 +97,8 @@ public class DefaultTestPublisherTests {
 	}
 
 	@Test
-	public void misbehavingAllowsNull() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.ALLOW_NULL);
-
-		StepVerifier.create(publisher)
-		            .then(() -> publisher.emit("foo", null))
-		            .expectNext("foo", null)
-		            .expectComplete()
-		            .verify();
-	}
-
-	@Test
-	public void normalDisallowsOverflow() {
-		TestPublisher<String> publisher = TestPublisher.create();
+	public void coldDisallowsOverflow() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		StepVerifier.create(publisher, 1)
 		            .then(() -> publisher.next("foo")).as("should pass")
@@ -66,23 +112,22 @@ public class DefaultTestPublisherTests {
 	}
 
 	@Test
-	public void misbehavingAllowsOverflow() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.REQUEST_OVERFLOW);
+	public void coldAllowsMultipleReplayOnSubscribe() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		publisher.emit("A", "B");
 
-		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> StepVerifier.create(publisher, 1)
-				                              .then(() -> publisher.emit("foo", "bar"))
-				                              .expectNext("foo")
-				                              .expectComplete() //n/a
-				                              .verify())
-				.withMessageContaining("expected production of at most 1;");
+		StepVerifier.create(publisher)
+		            .expectNextCount(2).as("first")
+		            .verifyComplete();
 
-		publisher.assertRequestOverflow();
+		StepVerifier.create(publisher)
+		            .expectNextCount(2).as("second")
+		            .verifyComplete();
 	}
 
 	@Test
-	public void normalIgnoresMultipleTerminations() {
-		TestPublisher<String> publisher = TestPublisher.create();
+	public void coldIgnoresMultipleTerminations() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
 		AtomicLong count = new AtomicLong();
 
 		Subscriber<String> subscriber = new CoreSubscriber<String>() {
@@ -112,45 +157,8 @@ public class DefaultTestPublisherTests {
 	}
 
 	@Test
-	public void misbehavingAllowsMultipleTerminations() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
-		AtomicLong count = new AtomicLong();
-
-		Subscriber<String> subscriber = new CoreSubscriber<String>() {
-			@Override
-			public void onSubscribe(Subscription s) {
-				s.request(Long.MAX_VALUE);
-				s.cancel();
-			}
-
-			@Override
-			public void onNext(String s) { }
-
-			@Override
-			public void onError(Throwable t) {
-				count.incrementAndGet();
-			}
-
-			@Override
-			public void onComplete() {
-				count.incrementAndGet();
-			}
-		};
-
-		publisher.subscribe(subscriber);
-
-		publisher.error(new IllegalStateException("boom"))
-		         .complete();
-
-		publisher.emit("A", "B", "C");
-
-		assertThat(count.get()).isEqualTo(3);
-		publisher.assertCancelled();
-	}
-
-	@Test
 	public void expectSubscribers() {
-		TestPublisher<String> publisher = TestPublisher.create();
+		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(publisher::assertSubscribers)
@@ -165,7 +173,7 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void expectSubscribersN() {
-		TestPublisher<String> publisher = TestPublisher.create();
+		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> publisher.assertSubscribers(1))
@@ -183,7 +191,7 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void expectCancelled() {
-		TestPublisher<Object> publisher = TestPublisher.create();
+		TestPublisher<Object> publisher = TestPublisher.createCold();
 		StepVerifier.create(publisher)
 	                .then(publisher::assertNotCancelled)
 	                .thenCancel()
@@ -199,7 +207,7 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void expectMinRequestedNormal() {
-		TestPublisher<String> publisher = TestPublisher.create();
+		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		StepVerifier.create(Flux.from(publisher).limitRate(5))
 	                .then(publisher::assertNotCancelled)
@@ -213,7 +221,7 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void expectMinRequestedFailure() {
-		TestPublisher<String> publisher = TestPublisher.create();
+		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> StepVerifier.create(Flux.from(publisher).limitRate(5))
@@ -230,7 +238,7 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void emitCompletes() {
-		TestPublisher<String> publisher = TestPublisher.create();
+		TestPublisher<String> publisher = TestPublisher.createCold();
 		StepVerifier.create(publisher)
 	                .then(() -> publisher.emit("foo", "bar"))
 	                .expectNextCount(2)
@@ -240,7 +248,7 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void nextVarargNull() {
-		TestPublisher<String> publisher = TestPublisher.create();
+		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(NullPointerException.class)
 				.isThrownBy(() -> publisher.next(null, null)) //this causes a compiler warning, on purpose
@@ -249,7 +257,7 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void emitVarargNull() {
-		TestPublisher<String> publisher = TestPublisher.create();
+		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(NullPointerException.class)
 				.isThrownBy(() -> publisher.emit(null)) //this causes a compiler warning, on purpose
@@ -258,7 +266,7 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void testError() {
-		TestPublisher<String> publisher = TestPublisher.create();
+		TestPublisher<String> publisher = TestPublisher.createCold();
 		StepVerifier.create(publisher)
 	                .then(() -> publisher.next("foo", "bar").error(new IllegalArgumentException("boom")))
 	                .expectNextCount(2)
@@ -266,11 +274,9 @@ public class DefaultTestPublisherTests {
 	                .verify();
 	}
 
-
-
 	@Test
 	public void conditionalSupport() {
-		TestPublisher<String> up = TestPublisher.create();
+		TestPublisher<String> up = TestPublisher.createCold();
 		StepVerifier.create(up.flux().filter("test"::equals), 2)
 		            .then(() -> up.next("test"))
 		            .then(() -> up.next("test2"))
