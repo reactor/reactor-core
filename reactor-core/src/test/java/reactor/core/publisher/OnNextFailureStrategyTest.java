@@ -20,14 +20,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.sun.org.apache.xpath.internal.operations.Number;
 import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.in;
 
 public class OnNextFailureStrategyTest {
 
