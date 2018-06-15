@@ -59,8 +59,7 @@ public abstract class Schedulers {
 
 	/**
 	 * Default pool size, initialized by system property `reactor.schedulers.defaultPoolSize`
-	 * and falls back to the number of processors available to the runtime
-	 * on init (but with a minimum value of 4).
+	 * and falls back to the number of processors available to the runtime on init.
 	 *
 	 * @see Runtime#availableProcessors()
 	 */
