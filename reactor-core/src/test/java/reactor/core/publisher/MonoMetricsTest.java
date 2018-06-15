@@ -30,14 +30,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.publisher.MonoMetrics.MicrometerMonoMetricsSubscriber;
 import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 import static reactor.core.publisher.FluxMetrics.*;
+import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
-public class FluxMetricsTest {
+public class MonoMetricsTest {
 
 	private MeterRegistry registry;
 
@@ -53,15 +55,15 @@ public class FluxMetricsTest {
 
 	@Test
 	public void sequenceNameFromScanUnavailable() {
-		Flux<String> delegate = Flux.just("foo");
-		Flux<String> source = new Flux<String>() {
+		Mono<String> delegate = Mono.just("foo");
+		Mono<String> source = new Mono<String>() {
 
 			@Override
 			public void subscribe(CoreSubscriber<? super String> actual) {
 				delegate.subscribe(actual);
 			}
 		};
-		FluxMetrics<String> test = new FluxMetrics<>(source, registry);
+		MonoMetrics<String> test = new MonoMetrics<>(source, registry);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan unavailable").isFalse();
@@ -70,8 +72,8 @@ public class FluxMetricsTest {
 
 	@Test
 	public void sequenceNameFromScannableNoName() {
-		Flux<String> source = Flux.just("foo");
-		FluxMetrics<String> test = new FluxMetrics<>(source, registry);
+		Mono<String> source = Mono.just("foo");
+		MonoMetrics<String> test = new MonoMetrics<>(source, registry);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan available").isTrue();
@@ -80,8 +82,8 @@ public class FluxMetricsTest {
 
 	@Test
 	public void sequenceNameFromScannableName() {
-		Flux<String> source = Flux.just("foo").name("foo").hide().hide();
-		FluxMetrics<String> test = new FluxMetrics<>(source, registry);
+		Mono<String> source = Mono.just("foo").name("foo").hide().hide();
+		MonoMetrics<String> test = new MonoMetrics<>(source, registry);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan available").isTrue();
@@ -92,24 +94,24 @@ public class FluxMetricsTest {
 	public void testUsesMicrometer() {
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
-		new FluxMetrics<>(Flux.just("foo").hide(), registry)
+		new MonoMetrics<>(Mono.just("foo").hide(), registry)
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
-		assertThat(subRef.get()).isInstanceOf(MicrometerFluxMetricsSubscriber.class);
+		assertThat(subRef.get()).isInstanceOf(MicrometerMonoMetricsSubscriber.class);
 	}
 
 	@Test
 	public void splitMetricsOnName() {
-		final Flux<Integer> unnamedSource = Flux.<Integer>error(new ArithmeticException("boom"))
+		final Mono<Integer> unnamedSource = Mono.<Integer>error(new ArithmeticException("boom"))
 				.hide();
-		final Flux<Integer> unnamed = new FluxMetrics<>(unnamedSource, registry)
+		final Mono<Integer> unnamed = new MonoMetrics<>(unnamedSource, registry)
 				.onErrorResume(e -> Mono.empty());
-		final Flux<Integer> namedSource = Flux.range(1, 40)
+		final Mono<Integer> namedSource = Mono.just(40)
 		                                      .name("foo")
 		                                      .map(i -> 100 / (40 - i))
 		                                      .hide();
-		final Flux<Integer> named = new FluxMetrics<>(namedSource, registry)
+		final Mono<Integer> named = new MonoMetrics<>(namedSource, registry)
 				.onErrorResume(e -> Mono.empty());
 
 		Mono.when(unnamed, named).block();
@@ -137,68 +139,49 @@ public class FluxMetricsTest {
 
 	@Test
 	public void usesTags() {
-		Flux<Integer> source = Flux.range(1, 8)
+		Mono<Integer> source = Mono.just(1)
 		                           .tag("tag1", "A")
 		                           .name("usesTags")
 		                           .tag("tag2", "foo")
 		                           .hide();
-		new FluxMetrics<>(source, registry)
-				.blockLast();
+		new MonoMetrics<>(source, registry)
+				.block();
 
 		Timer meter = registry
-				.find(METER_ON_NEXT_DELAY)
+				.find(METER_FLOW_DURATION)
+				.tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
 				.tag(TAG_SEQUENCE_NAME, "usesTags")
 				.tag("tag1", "A")
 				.tag("tag2", "foo")
 				.timer();
 
 		assertThat(meter).isNotNull();
-		assertThat(meter.count()).isEqualTo(8L);
+		assertThat(meter.count()).isEqualTo(1L);
 	}
 
 	@Test
-	public void onNextTimerCounts() {
-		Flux<Integer> source = Flux.range(1, 123)
+	public void noOnNextTimer() {
+		Mono<Integer> source = Mono.just(1)
 		                           .hide();
-		new FluxMetrics<>(source, registry)
-				.blockLast();
+		new MonoMetrics<>(source, registry)
+				.block();
 
 		Timer nextMeter = registry
 				.find(METER_ON_NEXT_DELAY)
 				.timer();
 
-		assertThat(nextMeter).isNotNull();
-		assertThat(nextMeter.count()).isEqualTo(123L);
-
-		Flux<Integer> source2 = Flux.range(1, 10)
-		                            .hide();
-		new FluxMetrics<>(source2, registry)
-				.take(3)
-				.blockLast();
-
-		assertThat(nextMeter.count()).isEqualTo(126L);
-
-		Flux<Integer> source3 = Flux.range(1, 1000)
-		                            .name("foo")
-		                            .hide();
-		new FluxMetrics<>(source3, registry)
-				.blockLast();
-
-		assertThat(nextMeter.count())
-				.as("notTakingNamedIntoAccount")
-				.isEqualTo(126L);
+		assertThat(nextMeter).isNull();
 	}
 
 	@Test
 	public void malformedOnNext() {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
-		Flux<Integer> source = testPublisher.flux().hide();
+		Mono<Integer> source = testPublisher.mono().hide();
 
-		new FluxMetrics<>(source, registry)
+		new MonoMetrics<>(source, registry)
 				.subscribe();
 
-		testPublisher.next(1)
-		             .complete()
+		testPublisher.complete()
 		             .next(2);
 
 		Counter malformedMeter = registry
@@ -216,13 +199,12 @@ public class FluxMetricsTest {
 		Exception dropError = new IllegalStateException("malformedOnError");
 		try {
 			TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
-			Flux<Integer> source = testPublisher.flux().hide();
+			Mono<Integer> source = testPublisher.mono().hide();
 
-			new FluxMetrics<>(source, registry)
+			new MonoMetrics<>(source, registry)
 					.subscribe();
 
-			testPublisher.next(1)
-			             .complete()
+			testPublisher.complete()
 			             .error(dropError);
 
 			Counter malformedMeter = registry
@@ -241,14 +223,13 @@ public class FluxMetricsTest {
 	@Test
 	public void malformedOnComplete() {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
-		Flux<Integer> source = testPublisher.flux().hide();
+		Mono<Integer> source = testPublisher.mono().hide();
 
-		new FluxMetrics<>(source, registry)
+		new MonoMetrics<>(source, registry)
 				.subscribe(v -> assertThat(v).isEqualTo(1),
 						e -> assertThat(e).hasMessage("malformedOnComplete"));
 
-		testPublisher.next(1)
-		             .error(new IllegalStateException("malformedOnComplete"))
+		testPublisher.error(new IllegalStateException("malformedOnComplete"))
 		             .complete();
 
 		Counter malformedMeter = registry
@@ -261,11 +242,10 @@ public class FluxMetricsTest {
 
 	@Test
 	public void subscribeToComplete() {
-		Flux<String> source = Flux.just("foo")
-		                          .delayElements(Duration.ofMillis(100))
+		Mono<Long> source = Mono.delay(Duration.ofMillis(100))
 		                          .hide();
-		new FluxMetrics<>(source, registry)
-				.blockLast();
+		new MonoMetrics<>(source, registry)
+				.block();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
 		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
@@ -294,13 +274,12 @@ public class FluxMetricsTest {
 
 	@Test
 	public void subscribeToError() {
-		Flux<Integer> source = Flux.just(1, 0)
-		                           .delayElements(Duration.ofMillis(100))
+		Mono<Long> source = Mono.delay(Duration.ofMillis(100))
 		                           .map(v -> 100 / v)
 		                           .hide();
-		new FluxMetrics<>(source, registry)
-				.onErrorReturn(-1)
-				.blockLast();
+		new MonoMetrics<>(source, registry)
+				.onErrorReturn(-1L)
+				.block();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
 		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
@@ -328,13 +307,12 @@ public class FluxMetricsTest {
 	}
 
 	@Test
-	public void subscribeToCancel() {
-		Flux<Integer> source = Flux.just(1, 0)
-		                           .delayElements(Duration.ofMillis(100))
+	public void subscribeToCancel() throws InterruptedException {
+		Mono<Long> source = Mono.delay(Duration.ofMillis(200))
 		                           .hide();
-		new FluxMetrics<>(source, registry)
-				.take(1)
-				.blockLast();
+		Disposable disposable = new MonoMetrics<>(source, registry).subscribe();
+		Thread.sleep(100);
+		disposable.dispose();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
 		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
@@ -363,9 +341,9 @@ public class FluxMetricsTest {
 
 	@Test
 	public void countsSubscriptions() {
-		Flux<Integer> source = Flux.range(1, 10)
+		Mono<Integer> source = Mono.just(1)
 		                           .hide();
-		Flux<Integer> test = new FluxMetrics<>(source, registry);
+		Mono<Integer> test = new MonoMetrics<>(source, registry);
 
 		test.subscribe();
 		Counter meter = registry.find(METER_SUBSCRIBED)
@@ -381,67 +359,23 @@ public class FluxMetricsTest {
 	}
 
 	@Test
-	public void requestTrackingDisabledIfNotNamed() {
-		Flux<Integer> source = Flux.range(1, 10)
-		                           .hide();
-		new FluxMetrics<>(source, registry)
-				.blockLast();
-
-		DistributionSummary meter = registry.find(METER_REQUESTED)
-		                                    .summary();
-
-		if (meter != null) { //meter could be null in some tests
-			assertThat(meter.count()).isZero();
-		}
-	}
-
-	@Test
-	public void requestTrackingHasMeterForNamedSequence() {
-		Flux<Integer> source = Flux.range(1, 10)
+	public void noRequestTrackingEvenForNamedSequence() {
+		Mono<Integer> source = Mono.just(10)
 		                           .name("foo")
 		                           .hide();
-		new FluxMetrics<>(source, registry)
-				.blockLast();
+		new MonoMetrics<>(source, registry)
+				.block();
 
 		DistributionSummary meter = registry.find(METER_REQUESTED)
 		                                    .summary();
 
-		assertThat(meter).as("global find").isNotNull();
+		assertThat(meter).as("global find").isNull();
 
 		meter = registry.find(METER_REQUESTED)
 		                .tag(TAG_SEQUENCE_NAME, "foo")
 		                .summary();
 
-		assertThat(meter).as("tagged find").isNotNull();
+		assertThat(meter).as("tagged find").isNull();
 	}
 
-	@Test
-	public void requestTracking() {
-		BaseSubscriber<Integer> bs = new BaseSubscriber<Integer>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				subscription.request(1);
-			}
-		};
-		Flux<Integer> source = Flux.range(1, 10)
-		                           .name("foo")
-		                           .hide();
-		new FluxMetrics<>(source, registry)
-				.subscribe(bs);
-
-		DistributionSummary meter = registry.find(METER_REQUESTED)
-		                                    .tag(TAG_SEQUENCE_NAME, "foo")
-		                                    .summary();
-
-		assertThat(meter).as("meter").isNotNull();
-		assertThat(meter.totalAmount()).isEqualTo(1);
-
-		bs.request(7);
-		assertThat(meter.totalAmount()).isEqualTo(8);
-		assertThat(meter.max()).isEqualTo(7);
-
-		bs.request(100);
-		assertThat(meter.totalAmount()).isEqualTo(108);
-		assertThat(meter.max()).isEqualTo(100);
-	}
 }

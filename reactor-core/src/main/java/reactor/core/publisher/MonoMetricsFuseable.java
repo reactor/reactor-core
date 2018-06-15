@@ -24,7 +24,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxMetrics.MicrometerMetricsFuseableSubscriber;
+import reactor.core.publisher.MonoMetrics.MicrometerMonoMetricsFuseableSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
@@ -71,8 +71,8 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 		if (registryCandidate != null) {
 			registry = registryCandidate;
 		}
-		source.subscribe(new MicrometerMetricsFuseableSubscriber<>(actual, registry,
-				Clock.SYSTEM, this.name, this.tags, true));
+		source.subscribe(new MicrometerMonoMetricsFuseableSubscriber<>(actual, registry,
+				Clock.SYSTEM, this.name, this.tags));
 	}
 
 }

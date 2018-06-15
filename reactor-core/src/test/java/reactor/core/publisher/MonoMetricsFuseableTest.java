@@ -34,13 +34,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.publisher.MonoMetrics.MicrometerMonoMetricsFuseableSubscriber;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.*;
 import static reactor.core.publisher.FluxMetrics.*;
 
-public class FluxMetricsFuseableTest {
+public class MonoMetricsFuseableTest {
 
 	private MeterRegistry registry;
 
@@ -59,8 +61,8 @@ public class FluxMetricsFuseableTest {
 	@Test
 	public void queueClearEmptySizeDelegates() {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
+		MicrometerMonoMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new MicrometerMonoMetricsFuseableSubscriber<>(testSubscriber,
 						registry, Clock.SYSTEM, "foo", Collections.emptyList());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
@@ -81,8 +83,8 @@ public class FluxMetricsFuseableTest {
 	@Test
 	public void queueClearEmptySizeWhenQueueSubscriptionNull() {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
+		MicrometerMonoMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new MicrometerMonoMetricsFuseableSubscriber<>(testSubscriber,
 						registry, Clock.SYSTEM, "foo", Collections.emptyList());
 
 		assertThat(fuseableSubscriber.size()).as("size").isEqualTo(0);
@@ -91,7 +93,7 @@ public class FluxMetricsFuseableTest {
 	}
 
 	@Test
-	public void queuePollTracksOnNext() {
+	public void queuePollDoesntTrackOnNext() {
 		//prepare registry with mock clock
 		MockClock clock = new MockClock();
 		removeRegistry();
@@ -99,8 +101,8 @@ public class FluxMetricsFuseableTest {
 		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
+		MicrometerMonoMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new MicrometerMonoMetricsFuseableSubscriber<>(testSubscriber,
 						registry, clock, "foo", Collections.emptyList());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
@@ -119,8 +121,7 @@ public class FluxMetricsFuseableTest {
 		Timer nextTimer = registry.find(METER_ON_NEXT_DELAY)
 				.timer();
 
-		assertThat(nextTimer).isNotNull();
-		assertThat(nextTimer.max(TimeUnit.MILLISECONDS)).as("onNext max delay").isEqualTo(200);
+		assertThat(nextTimer).as("no onNext delay meter for Mono").isNull();
 	}
 
 	@Test
@@ -132,8 +133,8 @@ public class FluxMetricsFuseableTest {
 		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
+		MicrometerMonoMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new MicrometerMonoMetricsFuseableSubscriber<>(testSubscriber,
 						registry, clock, "foo", Collections.emptyList());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
@@ -168,8 +169,8 @@ public class FluxMetricsFuseableTest {
 		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
+		MicrometerMonoMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new MicrometerMonoMetricsFuseableSubscriber<>(testSubscriber,
 						registry, clock, "foo", Collections.emptyList());
 
 		FluxPeekFuseableTest.AssertQueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
@@ -199,8 +200,8 @@ public class FluxMetricsFuseableTest {
 	@Test
 	public void requestFusionDelegates() {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
+		MicrometerMonoMetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new MicrometerMonoMetricsFuseableSubscriber<>(testSubscriber,
 						registry, Clock.SYSTEM, "foo", Collections.emptyList());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
@@ -216,28 +217,27 @@ public class FluxMetricsFuseableTest {
 				.as("fusion mode NONE").isEqualTo(Fuseable.NONE);
 	}
 
-	// === the following are Fuseable versions of FluxMetrics tests ===
+	// === the following are Fuseable versions of MonoMetrics tests ===
 	@Test
 	public void testUsesMicrometerFuseable() {
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
-		new FluxMetricsFuseable<>(Flux.just("foo"), registry)
+		new MonoMetricsFuseable<>(Mono.just("foo"), registry)
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
-		assertThat(subRef.get()).isInstanceOf(MicrometerFluxMetricsFuseableSubscriber.class);
+		assertThat(subRef.get()).isInstanceOf(MicrometerMonoMetricsFuseableSubscriber.class);
 	}
 
 	@Test
 	public void splitMetricsOnNameFuseable() {
-		final Flux<Integer> unnamedSource = Flux.just(0).map(v -> 100 / v);
-		final Flux<Integer> namedSource = Flux.range(1, 40)
-		                                      .map(i -> 100 / (40 - i))
+		final Mono<Integer> unnamedSource = Mono.just(0).map(v -> 100 / v);
+		final Mono<Integer> namedSource = Mono.just(0).map(v -> 100 / v)
 		                                      .name("foo");
 		
-		final Flux<Integer> unnamed = new FluxMetricsFuseable<>(unnamedSource, registry)
+		final Mono<Integer> unnamed = new MonoMetricsFuseable<>(unnamedSource, registry)
 				.onErrorResume(e -> Mono.empty());
-		final Flux<Integer> named = new FluxMetricsFuseable<>(namedSource, registry)
+		final Mono<Integer> named = new MonoMetricsFuseable<>(namedSource, registry)
 				.onErrorResume(e -> Mono.empty());
 
 		Mono.when(unnamed, named).block();
@@ -245,12 +245,14 @@ public class FluxMetricsFuseableTest {
 		Timer unnamedMeter = registry
 				.find(METER_FLOW_DURATION)
 				.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+				.tag(TAG_EXCEPTION, ArithmeticException.class.getName())
 				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
 				.timer();
 
 		Timer namedMeter = registry
 				.find(METER_FLOW_DURATION)
 				.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+				.tag(TAG_EXCEPTION, ArithmeticException.class.getName())
 				.tag(TAG_SEQUENCE_NAME, "foo")
 				.timer();
 
@@ -263,63 +265,45 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void usesTagsFuseable() {
-		Flux<Integer> source = Flux.range(1, 8)
+		Mono<Integer> source = Mono.just(8)
 		                           .tag("tag1", "A")
 		                           .name("usesTags")
 		                           .tag("tag2", "foo");
-		new FluxMetricsFuseable<>(source, registry)
-		    .blockLast();
+		new MonoMetricsFuseable<>(source, registry)
+		    .block();
 
 		Timer meter = registry
-				.find(METER_ON_NEXT_DELAY)
+				.find(METER_FLOW_DURATION)
+				.tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
 				.tag(TAG_SEQUENCE_NAME, "usesTags")
 				.tag("tag1", "A")
 				.tag("tag2", "foo")
 				.timer();
 
 		assertThat(meter).isNotNull();
-		assertThat(meter.count()).isEqualTo(8L);
+		assertThat(meter.count()).isEqualTo(1L);
 	}
 
 	@Test
-	public void onNextTimerCountsFuseable() {
-		Flux<Integer> source = Flux.range(1, 123);
-		new FluxMetricsFuseable<>(source, registry)
-		    .blockLast();
+	public void noOnNextTimerFuseable() {
+		Mono<Integer> source = Mono.just(123);
+		new MonoMetricsFuseable<>(source, registry)
+		    .block();
 
 		Timer nextMeter = registry
 				.find(METER_ON_NEXT_DELAY)
 				.timer();
 
-		assertThat(nextMeter).isNotNull();
-		assertThat(nextMeter.count()).isEqualTo(123L);
-
-		Flux<Integer> source2 = Flux.range(1, 10);
-		new FluxMetricsFuseable<>(source2, registry)
-		    .take(3)
-		    .blockLast();
-
-		assertThat(nextMeter.count()).isEqualTo(126L);
-
-		Flux<Integer> source3 = Flux.range(1, 1000)
-		    .name("foo");
-		new FluxMetricsFuseable<>(source3, registry)
-		    .blockLast();
-
-		assertThat(nextMeter.count())
-				.as("notTakingNamedIntoAccount")
-				.isEqualTo(126L);
+		assertThat(nextMeter).isNull();
 	}
 
 
 	@Test
 	public void subscribeToCompleteFuseable() {
-		//not really fuseable, goes through onComplete path, but tests FluxMetricsFuseable at least
-		Flux<String> source = Flux.just(1)
-		                          .delayElements(Duration.ofMillis(100))
+		Mono<String> source = Mono.delay(Duration.ofMillis(100))
 		                          .map(i -> "foo");
-		new FluxMetricsFuseable<>(source, registry)
-		    .blockLast();
+		new MonoMetricsFuseable<>(source, registry)
+		    .block();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
 		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
@@ -348,13 +332,11 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void subscribeToErrorFuseable() {
-		//not really fuseable, goes through onError path, but tests FluxMetricsFuseable at least
-		Flux<Long> source = Flux.just(0L)
-		                        .delayElements(Duration.ofMillis(100))
+		Mono<Long> source = Mono.delay(Duration.ofMillis(100))
 		                        .map(v -> 100 / v);
-		new FluxMetricsFuseable<>(source, registry)
+		new MonoMetricsFuseable<>(source, registry)
 		    .onErrorReturn(-1L)
-		    .blockLast();
+		    .block();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
 		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
@@ -382,9 +364,42 @@ public class FluxMetricsFuseableTest {
 	}
 
 	@Test
+	public void subscribeToCancelFuseable() throws InterruptedException {
+		Mono<String> source = Mono.delay(Duration.ofMillis(200))
+		                        .map(i -> "foo");
+		Disposable disposable = new MonoMetricsFuseable<>(source, registry).subscribe();
+		Thread.sleep(100);
+		disposable.dispose();
+
+		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
+		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .timer();
+
+		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
+		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .timer();
+
+		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
+		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .timer();
+
+		assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+				.as("subscribe to complete timer")
+				.isZero();
+
+		assertThat(stcErrorTimer)
+				.as("subscribe to error timer is lazily registered")
+				.isNull();
+
+		assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+				.as("subscribe to cancel timer")
+				.isGreaterThanOrEqualTo(100);
+	}
+
+	@Test
 	public void countsSubscriptionsFuseable() {
-		Flux<Integer> source = Flux.range(1, 10);
-		Flux<Integer> test = new FluxMetricsFuseable<>(source, registry);
+		Mono<Integer> source = Mono.just(10);
+		Mono<Integer> test = new MonoMetricsFuseable<>(source, registry);
 
 		test.subscribe();
 		Counter meter = registry.find(METER_SUBSCRIBED)
@@ -400,64 +415,21 @@ public class FluxMetricsFuseableTest {
 	}
 
 	@Test
-	public void requestTrackingDisabledIfNotNamedFuseable() {
-		Flux<Integer> source = Flux.range(1, 10);
-		new FluxMetricsFuseable<>(source, registry)
-		    .blockLast();
+	public void noRequestTrackingEvenForNamedSequence() {
+		Mono<Integer> source = Mono.just(10)
+		                           .name("foo");
+		new MonoMetricsFuseable<>(source, registry)
+				.block();
 
 		DistributionSummary meter = registry.find(METER_REQUESTED)
 		                                    .summary();
 
-		if (meter != null) { //meter could be null in some tests
-			assertThat(meter.count()).isZero();
-		}
-	}
-
-	@Test
-	public void requestTrackingHasMeterForNamedSequenceFuseable() {
-		Flux<Integer> source = Flux.range(1, 10)
-		    .name("foo");
-		new FluxMetricsFuseable<>(source, registry)
-		    .blockLast();
-
-		DistributionSummary meter = registry.find(METER_REQUESTED)
-		                                    .summary();
-
-		assertThat(meter).as("global find").isNotNull();
+		assertThat(meter).as("global find").isNull();
 
 		meter = registry.find(METER_REQUESTED)
 		                .tag(TAG_SEQUENCE_NAME, "foo")
 		                .summary();
 
-		assertThat(meter).as("tagged find").isNotNull();
-	}
-
-	@Test
-	public void requestTrackingFuseable() {
-		BaseSubscriber<Integer> bs = new BaseSubscriber<Integer>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				subscription.request(1);
-			}
-		};
-		Flux<Integer> source = Flux.range(1, 10)
-		    .name("foo");
-		new FluxMetricsFuseable<>(source, registry)
-		    .subscribe(bs);
-
-		DistributionSummary meter = registry.find(METER_REQUESTED)
-		                                    .tag(TAG_SEQUENCE_NAME, "foo")
-		                                    .summary();
-
-		assertThat(meter).as("meter").isNotNull();
-		assertThat(meter.totalAmount()).isEqualTo(1);
-
-		bs.request(7);
-		assertThat(meter.totalAmount()).isEqualTo(8);
-		assertThat(meter.max()).isEqualTo(7);
-
-		bs.request(100);
-		assertThat(meter.totalAmount()).isEqualTo(108);
-		assertThat(meter.max()).isEqualTo(100);
+		assertThat(meter).as("tagged find").isNull();
 	}
 }
