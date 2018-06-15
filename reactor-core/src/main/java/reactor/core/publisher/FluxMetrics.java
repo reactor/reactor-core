@@ -137,9 +137,9 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	static final String TAG_SEQUENCE_TYPE    = "type";
 
 	//... tag values are free-for-all
-	static final String TAGVALUE_ON_ERROR    = "onError";
-	static final String TAGVALUE_ON_COMPLETE = "onComplete";
-	static final String TAGVALUE_CANCEL      = "cancel";
+	static final String TAGVALUE_ON_ERROR    = "error";
+	static final String TAGVALUE_ON_COMPLETE = "completed";
+	static final String TAGVALUE_CANCEL      = "cancelled";
 	static final String TAGVALUE_FLUX        = "Flux";
 	static final String TAGVALUE_MONO        = "Mono";
 
