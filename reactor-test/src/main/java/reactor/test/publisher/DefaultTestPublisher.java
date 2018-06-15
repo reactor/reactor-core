@@ -281,7 +281,12 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public Mono<T> mono() {
-		return Mono.from(this);
+		if (violations.isEmpty()) {
+			return Mono.from(this);
+		}
+		else {
+			return Mono.fromDirect(this);
+		}
 	}
 
 	@Override

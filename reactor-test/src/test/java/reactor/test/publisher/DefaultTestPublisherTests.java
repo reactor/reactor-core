@@ -111,12 +111,8 @@ public class DefaultTestPublisherTests {
 		assertThat(count.get()).isEqualTo(1);
 	}
 
-	@Test
-	public void misbehavingAllowsMultipleTerminations() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
-		AtomicLong count = new AtomicLong();
-
-		Subscriber<String> subscriber = new CoreSubscriber<String>() {
+	private Subscriber<String> countingSubscriber(AtomicLong count) {
+		return new CoreSubscriber<String>() {
 			@Override
 			public void onSubscribe(Subscription s) {
 				s.request(Long.MAX_VALUE);
@@ -136,8 +132,50 @@ public class DefaultTestPublisherTests {
 				count.incrementAndGet();
 			}
 		};
+	}
+
+	@Test
+	public void misbehavingAllowsMultipleTerminations() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		AtomicLong count = new AtomicLong();
+		Subscriber<String> subscriber = countingSubscriber(count);
 
 		publisher.subscribe(subscriber);
+
+		publisher.error(new IllegalStateException("boom"))
+		         .complete();
+
+		publisher.emit("A", "B", "C");
+
+		assertThat(count.get()).isEqualTo(3);
+		publisher.assertCancelled();
+	}
+
+	@Test
+	public void misbehavingMonoAllowsMultipleTerminations() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		AtomicLong count = new AtomicLong();
+		Subscriber<String> subscriber = countingSubscriber(count);
+
+		publisher.mono().subscribe(subscriber);
+
+		publisher.error(new IllegalStateException("boom"))
+		         .complete();
+
+		publisher.emit("A", "B", "C");
+
+		assertThat(count.get()).isEqualTo(3);
+		publisher.assertCancelled();
+	}
+
+	@Test
+	public void misbehavingFluxAllowsMultipleTerminations() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		AtomicLong count = new AtomicLong();
+
+		Subscriber<String> subscriber = countingSubscriber(count);
+
+		publisher.flux().subscribe(subscriber);
 
 		publisher.error(new IllegalStateException("boom"))
 		         .complete();
