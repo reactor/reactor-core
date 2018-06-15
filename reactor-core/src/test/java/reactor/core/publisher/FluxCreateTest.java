@@ -54,7 +54,7 @@ public class FluxCreateTest {
 			e.next(Signal.next(2));
 			e.next(Signal.next(3));
 			e.next(Signal.complete());
-			System.out.println(e.isCancelled());
+			System.out.println(e.isTerminated());
 			System.out.println(e.requestedFromDownstream());
 		}).dematerialize();
 
@@ -74,7 +74,7 @@ public class FluxCreateTest {
 
 		Flux<Integer> source = Flux.create(e -> {
 			e.next(1);
-			cancelled.set(e.isCancelled());
+			cancelled.set(e.isTerminated());
 			e.next(2);
 			e.next(3);
 			e.complete();
@@ -115,7 +115,7 @@ public class FluxCreateTest {
 		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onDispose(onDispose::getAndIncrement)
+			s.onTerminate(onDispose::getAndIncrement)
 			 .onCancel(onCancel::getAndIncrement);
 			s.next("test1");
 			s.next("test2");
@@ -138,7 +138,7 @@ public class FluxCreateTest {
 		AtomicInteger cancellation = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		StepVerifier.create(Flux.create(s -> {
-			s.onDispose(cancellation::getAndIncrement);
+			s.onTerminate(cancellation::getAndIncrement);
 			s.onCancel(onCancel::getAndIncrement);
 			s.next("test1");
 			s.next("test2");
@@ -192,13 +192,13 @@ public class FluxCreateTest {
 		AtomicInteger cancel2 = new AtomicInteger();
 		AtomicInteger cancellation = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onDispose(dispose1::getAndIncrement)
+			s.onTerminate(dispose1::getAndIncrement)
 			 .onCancel(cancel1::getAndIncrement);
-			s.onDispose(dispose2::getAndIncrement);
+			s.onTerminate(dispose2::getAndIncrement);
 			assertThat(dispose2.get()).isEqualTo(1);
 			s.onCancel(cancel2::getAndIncrement);
 			assertThat(cancel2.get()).isEqualTo(1);
-			s.onDispose(cancellation::getAndIncrement);
+			s.onTerminate(cancellation::getAndIncrement);
 			assertThat(cancellation.get()).isEqualTo(1);
 			assertThat(dispose1.get()).isEqualTo(0);
 			assertThat(cancel1.get()).isEqualTo(0);
@@ -216,16 +216,16 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateBufferedCancelled() {
-		AtomicInteger onDispose = new AtomicInteger();
+		AtomicInteger onTerminate = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onDispose(() -> {
-				onDispose.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+			s.onTerminate(() -> {
+				onTerminate.getAndIncrement();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.onCancel(() -> {
 				onCancel.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.next("test1");
 			s.next("test2");
@@ -238,7 +238,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onTerminate.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -263,7 +263,7 @@ public class FluxCreateTest {
 		}
 		Flux<Integer> flux1 = Flux.create(s -> {
 			Emitter emitter = new Emitter(s);
-			s.onDispose(() -> onDispose.incrementAndGet());
+			s.onTerminate(() -> onDispose.incrementAndGet());
 			s.onCancel(() -> onCancel.incrementAndGet());
 			s.onRequest(emitter::emit);
 		});
@@ -279,7 +279,7 @@ public class FluxCreateTest {
 		Flux<Integer> flux2 = Flux.create(s -> {
 			Emitter emitter = new Emitter(s);
 			s.onRequest(emitter::emit);
-			s.onDispose(() -> onDispose.incrementAndGet());
+			s.onTerminate(() -> onDispose.incrementAndGet());
 			s.onCancel(() -> onCancel.incrementAndGet());
 		});
 		StepVerifier.create(flux2, count)
@@ -388,15 +388,15 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateSerializedCancelled() {
-		AtomicInteger onDispose = new AtomicInteger();
+		AtomicInteger onTerminate = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onDispose(onDispose::getAndIncrement)
+			s.onTerminate(onTerminate::getAndIncrement)
 			 .onCancel(onCancel::getAndIncrement);
 			s.next("test1");
 			s.next("test2");
 			s.next("test3");
-			assertThat(s.isCancelled()).isTrue();
+			assertThat(s.isTerminated()).isTrue();
 			s.complete();
 		});
 
@@ -405,7 +405,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onTerminate.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -546,16 +546,16 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateLatestCancelled() {
-		AtomicInteger onDispose = new AtomicInteger();
+		AtomicInteger onTerminate = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onDispose(() -> {
-				onDispose.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+			s.onTerminate(() -> {
+				onTerminate.getAndIncrement();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.onCancel(() -> {
 				onCancel.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.next("test1");
 			s.next("test2");
@@ -568,7 +568,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onTerminate.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -653,16 +653,16 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateDropCancelled() {
-		AtomicInteger onDispose = new AtomicInteger();
+		AtomicInteger onTerminate = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onDispose(() -> {
-				onDispose.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+			s.onTerminate(() -> {
+				onTerminate.getAndIncrement();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.onCancel(() -> {
 				onCancel.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.next("test1");
 			s.next("test2");
@@ -675,7 +675,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onTerminate.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -759,16 +759,16 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateErrorCancelled() {
-		AtomicInteger onDispose = new AtomicInteger();
+		AtomicInteger onTerminate = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onDispose(() -> {
-				onDispose.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+			s.onTerminate(() -> {
+				onTerminate.getAndIncrement();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.onCancel(() -> {
 				onCancel.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.next("test1");
 			s.next("test2");
@@ -781,7 +781,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onTerminate.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -865,16 +865,16 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateIgnoreCancelled() {
-		AtomicInteger onDispose = new AtomicInteger();
+		AtomicInteger onTerminate = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onDispose(() -> {
-				onDispose.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+			s.onTerminate(() -> {
+				onTerminate.getAndIncrement();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.onCancel(() -> {
 				onCancel.getAndIncrement();
-				assertThat(s.isCancelled()).isTrue();
+				assertThat(s.isTerminated()).isTrue();
 			});
 			s.next("test1");
 			s.next("test2");
@@ -887,7 +887,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onTerminate.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -992,7 +992,7 @@ public class FluxCreateTest {
 				queue.pushToSink();
 			});
 			assertThat(s1 instanceof SerializedSink).isTrue();
-			assertThat(s.onDispose(() -> {}) instanceof SerializedSink).isTrue();
+			assertThat(s.onTerminate(() -> {}) instanceof SerializedSink).isTrue();
 			assertThat(s.onCancel(() -> {}) instanceof SerializedSink).isTrue();
 		}, overflowStrategy);
 
@@ -1046,7 +1046,7 @@ public class FluxCreateTest {
 				queue.onRequest(r);
 				queue.generateAsync(r, slowProducer);
 			});
-			s.onDispose(() -> queue.close());
+			s.onTerminate(() -> queue.close());
 		}, overflowStrategy);
 
 		StepVerifier.create(created.take(count).publishOn(Schedulers.parallel(), 1000))

@@ -227,7 +227,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy);
 		onSubscribe(s);
 
-		if(s.isCancelled() ||
+		if(s.isTerminated() ||
 				(isSerialized() && getBufferSize() == Integer.MAX_VALUE)){
 			return s;
 		}

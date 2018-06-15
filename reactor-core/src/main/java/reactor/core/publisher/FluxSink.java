@@ -69,9 +69,20 @@ public interface FluxSink<T> {
 
 	/**
 	 * Returns true if the downstream cancelled the sequence.
+	 * @deprecated Replaced by isTerminated().
 	 * @return true if the downstream cancelled the sequence
 	 */
-	boolean isCancelled();
+	@Deprecated
+	default boolean isCancelled() {
+		return isTerminated();
+	}
+
+
+	/**
+	 * Returns true if the execution is terminated.
+	 * @return true if the execution is terminated.
+	 */
+	boolean isTerminated();
 
 	/**
 	 * Attaches a {@link LongConsumer} to this {@link FluxSink} that will be notified of
@@ -109,9 +120,23 @@ public interface FluxSink<T> {
 	 * that will be disposed on the first terminate signal which may be
 	 * a cancel, complete or error signal.
 	 * @param d the disposable callback to use
+	 * @deprecated Replaced by onTerminate(d)
 	 * @return the {@link FluxSink} with resource to be disposed on first terminate signal
 	 */
-	FluxSink<T> onDispose(Disposable d);
+	@Deprecated
+	default FluxSink<T> onDispose(Disposable d) {
+		return onTerminate(d);
+	}
+
+	/**
+	 * Associates a termination hook with this FluxSink
+	 * that will be called on the first terminate signal which may be
+	 * a cancel, complete or error signal.
+	 * @param d the termination callback to use
+	 * @return the {@link FluxSink} with resource to be terminated on first terminate
+	 * signal
+	 */
+	FluxSink<T> onTerminate(Disposable d);
 
 	/**
 	 * Enumeration for backpressure handling.

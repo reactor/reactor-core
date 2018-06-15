@@ -364,7 +364,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 			    while (true) {
 				    sink.next(i++);
 				    Thread.sleep(1);
-				    if (sink.isCancelled()) {
+				    if (sink.isTerminated()) {
 					    break;
 				    }
 			    }
