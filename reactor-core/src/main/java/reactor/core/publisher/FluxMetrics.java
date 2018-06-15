@@ -267,6 +267,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 					.description("Times the duration elapsed between a subscription and the cancellation of the sequence")
 					.register(registry);
 
+			//note that Builder ISN'T TRULY IMMUTABLE. This is ok though as there will only ever be one usage.
 			this.subscribeToErrorTimerBuilder = Timer
 					.builder(METER_FLOW_DURATION)
 					.tags(commonTags)
