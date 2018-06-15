@@ -67,7 +67,7 @@ public abstract class Schedulers {
 	public static final int DEFAULT_POOL_SIZE =
 			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultPoolSize"))
 					.map(Integer::parseInt)
-					.orElseGet(() -> Math.max(4, Runtime.getRuntime().availableProcessors()));
+					.orElseGet(() -> Runtime.getRuntime().availableProcessors());
 
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
