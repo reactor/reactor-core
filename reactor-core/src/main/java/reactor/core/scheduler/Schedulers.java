@@ -17,6 +17,7 @@
 package reactor.core.scheduler;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -57,12 +58,16 @@ import static reactor.core.Exceptions.unwrap;
 public abstract class Schedulers {
 
 	/**
-	 * Default pool size, initialized to the number of processors available to the runtime
+	 * Default pool size, initialized by system property `reactor.schedulers.defaultPoolSize`
+	 * and falls back to the number of processors available to the runtime
 	 * on init (but with a minimum value of 4).
 	 *
 	 * @see Runtime#availableProcessors()
 	 */
-	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime().availableProcessors(), 4);
+	public static final int DEFAULT_POOL_SIZE =
+			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultPoolSize"))
+					.map(Integer::parseInt)
+					.orElseGet(() -> Math.max(4, Runtime.getRuntime().availableProcessors()));
 
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
@@ -235,8 +240,7 @@ public abstract class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler newParallel(String name) {
-		return newParallel(name, Runtime.getRuntime()
-				       .availableProcessors());
+		return newParallel(name, DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -527,10 +531,8 @@ public abstract class Schedulers {
 	static final Supplier<Scheduler> ELASTIC_SUPPLIER =
 			() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true);
 
-	static final Supplier<Scheduler> PARALLEL_SUPPLIER = () -> newParallel(PARALLEL,
-			Runtime.getRuntime()
-			       .availableProcessors(),
-			true);
+	static final Supplier<Scheduler> PARALLEL_SUPPLIER =
+			() -> newParallel(PARALLEL, DEFAULT_POOL_SIZE, true);
 
 	static final Supplier<Scheduler> SINGLE_SUPPLIER = () -> newSingle(SINGLE, true);
 
