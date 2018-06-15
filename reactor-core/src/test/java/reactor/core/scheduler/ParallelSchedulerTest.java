@@ -166,7 +166,7 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 					.is(SchedulersTest.CACHED_SCHEDULER);
 			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
 					.as("default parallel()")
-					.isEqualTo("parallel(" + Runtime.getRuntime().availableProcessors() + ",\"parallel\")");
+					.isEqualTo("parallel(" + Schedulers.DEFAULT_POOL_SIZE + ",\"parallel\")");
 
 			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
 					.as("workerWithNamedFactory")

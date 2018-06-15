@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -105,7 +104,8 @@ public class EmitterProcessorTest {
 		latch.await(8, TimeUnit.SECONDS);
 
 		long count = latch.getCount();
-		org.junit.Assert.assertTrue("Count > 0 : " + count + " (" + list + ")  , Running on " + Schedulers.DEFAULT_POOL_SIZE + " CPU",
+		org.junit.Assert.assertTrue("Count > 0 : " + count + " (" + list + ")  , Running on " +
+						Schedulers.DEFAULT_POOL_SIZE + " CPU",
 				latch.getCount() == 0);
 
 	}
