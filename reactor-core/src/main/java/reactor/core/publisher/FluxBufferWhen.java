@@ -84,8 +84,8 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 
 		BufferWhenOpenSubscriber<OPEN> bos = new BufferWhenOpenSubscriber<>(main);
 		if (main.subscribers.add(bos)) {
-			source.subscribe(main);
 			start.subscribe(bos);
+			source.subscribe(main);
 		}
 	}
 
@@ -207,7 +207,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 				synchronized (this) {
 					buffers = null;
 				}
-				if (WINDOWS.getAndIncrement(this) != 0) {
+				if (WINDOWS.getAndIncrement(this) == 0) {
 					queue.clear();
 				}
 			}
