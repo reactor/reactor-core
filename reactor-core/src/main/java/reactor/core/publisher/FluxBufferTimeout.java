@@ -231,7 +231,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 					timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
 				}
 				catch (RejectedExecutionException ree) {
-					onError(Operators.onRejectedExecution(ree, this, null, value,
+					onError(Operators.onRejectedExecution(ree, subscription, null, value,
 							actual.currentContext()));
 					return;
 				}

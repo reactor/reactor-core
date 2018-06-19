@@ -18,10 +18,12 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -201,5 +203,17 @@ public class FluxBufferTimeoutTest {
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1247
+	@Test
+	public void rejectedOnNextLeadsToOnError() {
+		Scheduler scheduler = Schedulers.newSingle("rejectedOnNextLeadsToOnError");
+		scheduler.dispose();
+
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .bufferTimeout(4, Duration.ofMillis(500), scheduler))
+		            .expectError(RejectedExecutionException.class)
+		            .verify(Duration.ofSeconds(1));
 	}
 }

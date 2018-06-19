@@ -17,15 +17,18 @@
 package reactor.core.publisher;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Condition;
@@ -34,9 +37,11 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxBufferWhen.BufferWhenMainSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
@@ -353,8 +358,8 @@ public class FluxBufferWhenTest {
 	public void scanStartEndMain() {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
-		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
-				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
+				new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
 						actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -376,8 +381,8 @@ public class FluxBufferWhenTest {
 	public void scanStartEndMainCancelled() {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
-		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
-				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
+				new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
 				actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -389,8 +394,8 @@ public class FluxBufferWhenTest {
 	public void scanStartEndMainCompleted() {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
-		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
-				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
+				new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
 				actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -404,8 +409,8 @@ public class FluxBufferWhenTest {
 	@Test
 	public void scanWhenCloseSubscriber() {
 		//noinspection ConstantConditions
-		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> main =
-				new FluxBufferWhen.BufferWhenMainSubscriber<>(null,
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> main =
+				new BufferWhenMainSubscriber<>(null,
 						ArrayList::new, Queues.small(), Mono.just(1),
 						u -> Mono.just(1L));
 
@@ -428,7 +433,7 @@ public class FluxBufferWhenTest {
 	@Test
 	public void scanWhenOpenSubscriber() {
 		//noinspection ConstantConditions
-		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferWhenMainSubscriber<>(
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> main = new BufferWhenMainSubscriber<>(
 				null, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 
 		FluxBufferWhen.BufferWhenOpenSubscriber test = new FluxBufferWhen.BufferWhenOpenSubscriber<>(main);
@@ -665,5 +670,41 @@ public class FluxBufferWhenTest {
 		            .verifyThenAssertThat()
 		            .hasNotDroppedElements()
 		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void immediateOpen() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .bufferWhen(Mono.just("OPEN"), u -> Mono.delay(Duration.ofMillis(100)))
+		                        .flatMapIterable(Function.identity()))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
+	@Test(timeout = 5000)
+	public void cancelWinsOverDrain() {
+		Queue<List<Integer>> queue = Queues.<List<Integer>>small().get();
+		queue.offer(Arrays.asList(1, 2, 3));
+
+		AssertSubscriber<List<Integer>> actual = AssertSubscriber.create();
+
+		BufferWhenMainSubscriber<Integer, String, Void, List<Integer>> main =
+				new BufferWhenMainSubscriber<>(actual,
+						ArrayList::new,
+						() -> queue,
+						Mono.just("open"),
+						i -> Mono.never());
+		main.onSubscribe(Operators.emptySubscription());
+
+		RaceTestUtils.race(main,
+				m -> {
+					m.cancel();
+					m.drain();
+					return m;
+				},
+				m -> m.cancelled && m.windows == 2 && m.queue.isEmpty(),
+				(m1, m2) -> m1.queue.isEmpty());
+
+		assertThat(queue.isEmpty()).isTrue();
 	}
 }
