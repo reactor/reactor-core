@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.util.annotation.Nullable;
@@ -84,22 +85,29 @@ public interface MonoSink<T> {
 	MonoSink<T> onRequest(LongConsumer consumer);
 
 	/**
-	 * Associates a disposable resource with this MonoSink that will be disposed on
-	 * downstream.cancel().
+	 * Attach a {@link Disposable} as a callback for when this {@link MonoSink} is
+	 * cancelled. This happens only when the downstream {@link Subscription}
+	 * is {@link Subscription#cancel() cancelled}.
 	 *
-	 * @param d the disposable callback to use
-	 *
-	 * @return the {@link MonoSink} with resource to be disposed on cancel signal
+	 * @param d the {@link Disposable} to use as a callback
+	 * @return the {@link MonoSink} with a cancellation callback
+	 * @see #onCancel(Disposable) onDispose(Disposable) for a callback that covers cancellation AND terminal signals
 	 */
 	MonoSink<T> onCancel(Disposable d);
 
 	/**
-	 * Associates a disposable resource with this MonoSink that will be disposed on the
-	 * first terminate signal which may be a cancel, complete or error signal.
+	 * Attach a {@link Disposable} as a callback for when this {@link MonoSink} is effectively
+	 * disposed, that is it cannot be used anymore. This includes both having played terminal
+	 * signals (onComplete, onError) and having been cancelled (see {@link #onCancel(Disposable)}).
+	 * <p>
+	 * Note that the "dispose" term is used from the perspective of the sink. Not to
+	 * be confused with {@link Mono#subscribe()}'s {@link Disposable#dispose()} method, which
+	 * maps to disposing the {@link Subscription} (effectively, a {@link Subscription#cancel()}
+	 * signal).
 	 *
-	 * @param d the disposable callback to use
-	 *
-	 * @return the {@link MonoSink} with resource to be disposed on first terminate signal
+	 * @param d the {@link Disposable} to use as a callback
+	 * @return the {@link MonoSink} with a callback invoked on any terminal signal or on cancellation
+	 * @see #onCancel(Disposable) onCancel(Disposable) for a cancellation-only callback
 	 */
 	MonoSink<T> onDispose(Disposable d);
 }

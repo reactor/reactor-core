@@ -20,6 +20,7 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.util.context.Context;
@@ -96,20 +97,29 @@ public interface FluxSink<T> {
 	FluxSink<T> onRequest(LongConsumer consumer);
 
 	/**
-	 * Associates a disposable resource with this FluxSink
-	 * that will be disposed in case the downstream cancels the sequence
-	 * via {@link org.reactivestreams.Subscription#cancel()}.
-	 * @param d the disposable callback to use
-	 * @return the {@link FluxSink} with resource to be disposed on cancel signal
+	 * Attach a {@link Disposable} as a callback for when this {@link FluxSink} is
+	 * cancelled. This happens only when the downstream {@link Subscription}
+	 * is {@link Subscription#cancel() cancelled}.
+	 *
+	 * @param d the {@link Disposable} to use as a callback
+	 * @return the {@link FluxSink} with a cancellation callback
+	 * @see #onCancel(Disposable) onDispose(Disposable) for a callback that covers cancellation AND terminal signals
 	 */
 	FluxSink<T> onCancel(Disposable d);
 
 	/**
-	 * Associates a disposable resource with this FluxSink
-	 * that will be disposed on the first terminate signal which may be
-	 * a cancel, complete or error signal.
-	 * @param d the disposable callback to use
-	 * @return the {@link FluxSink} with resource to be disposed on first terminate signal
+	 * Attach a {@link Disposable} as a callback for when this {@link FluxSink} is effectively
+	 * disposed, that is it cannot be used anymore. This includes both having played terminal
+	 * signals (onComplete, onError) and having been cancelled (see {@link #onCancel(Disposable)}).
+	 * <p>
+	 * Note that the "dispose" term is used from the perspective of the sink. Not to
+	 * be confused with {@link Flux#subscribe()}'s {@link Disposable#dispose()} method, which
+	 * maps to disposing the {@link Subscription} (effectively, a {@link Subscription#cancel()}
+	 * signal).
+	 *
+	 * @param d the {@link Disposable} to use as a callback
+	 * @return the {@link FluxSink} with a callback invoked on any terminal signal or on cancellation
+	 * @see #onCancel(Disposable) onCancel(Disposable) for a cancellation-only callback
 	 */
 	FluxSink<T> onDispose(Disposable d);
 
