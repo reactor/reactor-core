@@ -30,6 +30,7 @@ import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -319,6 +320,7 @@ public class FluxMetricsFuseableTest {
 		                          .delayElements(Duration.ofMillis(100))
 		                          .map(i -> "foo");
 		new FluxMetricsFuseable<>(source, registry)
+				.log()
 		    .blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
@@ -333,17 +335,19 @@ public class FluxMetricsFuseableTest {
 		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
 		                               .timer();
 
-		assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+		SoftAssertions.assertSoftly(softly -> {
+			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
 				.as("subscribe to complete timer")
 				.isGreaterThanOrEqualTo(100);
 
-		assertThat(stcErrorTimer)
+			softly.assertThat(stcErrorTimer)
 				.as("subscribe to error timer lazily registered")
 				.isNull();
 
-		assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
 				.as("subscribe to cancel timer")
 				.isZero();
+		});
 	}
 
 	@Test
@@ -368,17 +372,19 @@ public class FluxMetricsFuseableTest {
 		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
 		                               .timer();
 
-		assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
-				.as("subscribe to complete timer")
-				.isZero();
+		SoftAssertions.assertSoftly(softly -> {
+			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+							.as("subscribe to complete timer")
+							.isZero();
 
-		assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
 				.as("subscribe to error timer")
 				.isGreaterThanOrEqualTo(100);
 
-		assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
 				.as("subscribe to cancel timer")
 				.isZero();
+		});
 	}
 
 	@Test

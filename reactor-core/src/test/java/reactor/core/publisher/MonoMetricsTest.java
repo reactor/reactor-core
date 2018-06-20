@@ -25,6 +25,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -293,17 +294,19 @@ public class MonoMetricsTest {
 		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
 		                               .timer();
 
-		assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
-				.as("subscribe to complete timer")
-				.isZero();
+		SoftAssertions.assertSoftly(softly -> {
+			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+					.as("subscribe to complete timer")
+					.isZero();
 
-		assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
-				.as("subscribe to error timer")
-				.isGreaterThanOrEqualTo(100);
+			softly.assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
+					.as("subscribe to error timer")
+					.isGreaterThanOrEqualTo(100);
 
-		assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
-				.as("subscribe to cancel timer")
-				.isZero();
+			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+					.as("subscribe to cancel timer")
+					.isZero();
+		});
 	}
 
 	@Test
@@ -326,17 +329,19 @@ public class MonoMetricsTest {
 		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
 		                               .timer();
 
-		assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
-				.as("subscribe to complete timer")
-				.isZero();
+		SoftAssertions.assertSoftly(softly -> {
+			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+					.as("subscribe to complete timer")
+					.isZero();
 
-		assertThat(stcErrorTimer)
-				.as("subscribe to error timer is lazily registered")
-				.isNull();
+			softly.assertThat(stcErrorTimer)
+					.as("subscribe to error timer is lazily registered")
+					.isNull();
 
-		assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
-				.as("subscribe to cancel timer")
-				.isGreaterThanOrEqualTo(100);
+			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+					.as("subscribe to cancel timer")
+					.isGreaterThanOrEqualTo(100);
+		});
 	}
 
 	@Test
