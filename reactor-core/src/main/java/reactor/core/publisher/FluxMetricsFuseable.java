@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.List;
 
 import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
@@ -72,8 +71,8 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 		if (registryCandidate != null) {
 			registry = registryCandidate;
 		}
-		source.subscribe(new FluxMetrics.MicrometerMetricsFuseableSubscriber<>(actual, registry,
-				Clock.SYSTEM, this.name, this.tags, false));
+		source.subscribe(new FluxMetrics.MicrometerFluxMetricsFuseableSubscriber<>(actual, registry,
+				Clock.SYSTEM, this.name, this.tags));
 	}
 
 }
