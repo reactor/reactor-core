@@ -39,7 +39,7 @@ public class FluxCancelOnTest {
 		Schedulers.single().schedule(() -> threadHash.set(Thread.currentThread()));
 
 		Flux.create(sink -> {
-			sink.onDispose(() -> {
+			sink.onTerminate(() -> {
 				if (threadHash.compareAndSet(Thread.currentThread(), null)) {
 					latch.countDown();
 				}

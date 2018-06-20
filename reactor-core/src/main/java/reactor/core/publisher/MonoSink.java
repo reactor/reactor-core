@@ -99,7 +99,22 @@ public interface MonoSink<T> {
 	 *
 	 * @param d the disposable callback to use
 	 *
+	 * @deprecated Replaced by onTerminate(d)
 	 * @return the {@link MonoSink} with resource to be disposed on first terminate signal
 	 */
-	MonoSink<T> onDispose(Disposable d);
+	@Deprecated
+	default MonoSink<T> onDispose(Disposable d) {
+		return onTerminate(d);
+	}
+
+	/**
+	 * Associates a termination hook with this MonoSink that will be called on the
+	 * first terminate signal which may be a cancel, complete or error signal.
+	 *
+	 * @param d the termination callback to use
+	 *
+	 * @return the {@link MonoSink} with resource to be terminated on first terminate
+	 * signal
+	 */
+	MonoSink<T> onTerminate(Disposable d);
 }
