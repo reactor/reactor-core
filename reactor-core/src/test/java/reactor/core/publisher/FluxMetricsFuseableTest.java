@@ -36,6 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.*;
@@ -315,13 +316,20 @@ public class FluxMetricsFuseableTest {
 
 	@Test
 	public void subscribeToCompleteFuseable() {
-		//not really fuseable, goes through onComplete path, but tests FluxMetricsFuseable at least
 		Flux<String> source = Flux.just(1)
-		                          .delayElements(Duration.ofMillis(100))
+		                          .doOnNext(v -> {
+			                          try {
+				                          Thread.sleep(100);
+			                          }
+			                          catch (InterruptedException e) {
+				                          e.printStackTrace();
+			                          }
+		                          })
 		                          .map(i -> "foo");
-		new FluxMetricsFuseable<>(source, registry)
-				.log()
-		    .blockLast();
+		StepVerifier.create(new FluxMetricsFuseable<>(source, registry))
+		            .expectFusion(Fuseable.SYNC) //just only supports SYNC
+		            .expectNext("foo")
+		            .verifyComplete();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
 		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
