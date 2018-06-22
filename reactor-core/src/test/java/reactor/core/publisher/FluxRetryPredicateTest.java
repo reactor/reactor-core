@@ -23,6 +23,8 @@ import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class FluxRetryPredicateTest {
 
 	final Flux<Integer> source = Flux.concat(Flux.range(1, 5),
@@ -227,4 +229,20 @@ public class FluxRetryPredicateTest {
 		            .verifyErrorMessage("test");
 	}
 
+	@Test
+	public void retryAndRetryWithNeutralPredicateAreSame() {
+		AtomicInteger subscriptionDiff = new AtomicInteger();
+
+		StepVerifier.create(Flux.error(new IllegalStateException("boom"))
+		                        .doOnSubscribe(s -> subscriptionDiff.incrementAndGet())
+		                        .retry(3))
+		            .verifyError();
+
+		StepVerifier.create(Flux.error(new IllegalStateException("boom2"))
+		                        .doOnSubscribe(s -> subscriptionDiff.decrementAndGet())
+		                        .retry(3, e -> true))
+		            .verifyError();
+
+		assertThat(subscriptionDiff).hasValue(0);
+	}
 }
