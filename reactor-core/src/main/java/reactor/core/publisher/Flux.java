@@ -5889,41 +5889,50 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly and indefinitely subscribe to the source upon completion of the
-	 * previous subscription.
+	 * Repeatedly and indefinitely subscribe to the source {@link Flux} when it completes.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeat.png" alt="">
 	 *
-	 * @return an indefinitely repeated {@link Flux} on onComplete
+	 * @return a {@link Flux} that repeats (as in re-subscribes) indefinitely on onComplete
 	 */
 	public final Flux<T> repeat() {
 		return repeat(ALWAYS_BOOLEAN_SUPPLIER);
 	}
 
 	/**
-	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+	 * Let the source play once then continuously repeat the source {@link Flux} as long as a
+	 * {@link BooleanSupplier} returns true. This is done by re-subscribing to the source
+	 * (which might thus generate a new set of data).
+	 * <p>
+	 * Unlike {@code repeat(0)}, {@code repeat(() -> false} would still result in one
+	 * complete occurrence of the original sequence.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatb.png" alt="">
 	 *
-	 * @param predicate the boolean to evaluate on onComplete.
+	 * @param booleanSupplier the {@link BooleanSupplier} used to decide if the sequence
+	 * should be repeated once it has emitted the onComplete signal.
 	 *
-	 * @return a {@link Flux} that repeats on onComplete while the predicate matches
+	 * @return a {@link Flux} that repeats (as in re-subscribes) on onComplete while the supplier returns true
 	 */
-	public final Flux<T> repeat(BooleanSupplier predicate) {
-		return onAssembly(new FluxRepeatPredicate<>(this, predicate));
+	public final Flux<T> repeat(BooleanSupplier booleanSupplier) {
+		return onAssembly(new FluxRepeatPredicate<>(this, booleanSupplier));
 	}
 
 	/**
-	 * Repeatedly subscribe to the source {@literal numRepeat} times.
+	 * Repeatedly subscribe to the source {@link Flux} {@code numRepeat} times.
+	 * This represents the total amount of times the source {@link Flux} is subscribed to.
+	 * As a consequence, {@code repeat(0)} will effectively output no value at all, as the
+	 * original {@link Flux} is never subscribed to.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatn.png" alt="">
 	 *
-	 * @param numRepeat the number of times to re-subscribe on onComplete
+	 * @param numRepeat the number of times to subscribe
 	 *
-	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
+	 * @return a {@link Flux} that subscribes to this {@link Flux} a total of {@code numRepeat}
+	 * times (as long as it completes normally)
 	 */
 	public final Flux<T> repeat(long numRepeat) {
 		if(numRepeat == 0L){
@@ -5933,20 +5942,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous
-	 * subscription. A specified maximum of repeat will limit the number of re-subscribe.
+	 * Let the source play once then continuously repeat the source sequence as long as a
+	 * {@link BooleanSupplier} returns true, but for a maximum of {@code maxRepeat} repetitions.
+	 * This is done by re-subscribing to the source (which might thus generate a new set of
+	 * data), and so there is always at least one original subscription to the source.
+	 * <p>
+	 * Unlike {@code repeat(0)}, {@code repeat(0, () -> false} would still result in one
+	 * complete occurrence of the original sequence. Unlike {@code repeat(1)}, {@code repeat(1, () -> true)}
+	 * would result in two occurrences of the original sequence.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatnb.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatb.png" alt="">
 	 *
-	 * @param numRepeat the number of times to re-subscribe on complete
-	 * @param predicate the boolean to evaluate on onComplete
+	 * @param maxRepeat the maximum number of times the {@link BooleanSupplier} is used.
+	 * @param booleanSupplier the {@link BooleanSupplier} used to decide if the sequence
+	 * should be repeated once it has emitted the onComplete signal.
 	 *
-	 * @return a {@link Flux} that repeats on onComplete while the predicate matches,
-	 * up to the specified number of repetitions
+	 * @return a {@link Flux} that repeats (as in re-subscribes) on onComplete while the
+	 * supplier returns true, with a maximum of {@code maxRepeat} repetitions (not including
+	 * the original run)
 	 */
-	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
-		return defer( () -> repeat(countingBooleanSupplier(predicate, numRepeat)));
+	public final Flux<T> repeat(long maxRepeat, BooleanSupplier booleanSupplier) {
+		return defer( () -> repeat(countingBooleanSupplier(booleanSupplier, maxRepeat)));
 	}
 
 	/**

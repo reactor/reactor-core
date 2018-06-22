@@ -16,8 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.List;
+
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxRepeatPredicateTest {
 
@@ -102,5 +107,47 @@ public class FluxRepeatPredicateTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
+	}
+
+	@Test
+	public void repeatPredicateAndMaxZero() {
+		StepVerifier.create(Flux.just(1)
+		                        .repeat(0, () -> false))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void repeatPredicateAndMaxOne() {
+		StepVerifier.create(Flux.just(1)
+				.repeat(1, () -> true))
+		            .expectNext(1, 1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void repeatPredicateAndMaxOneAndPredicateFail() {
+		StepVerifier.create(Flux.just(1)
+				.repeat(1, () -> false))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void repeatAndRepeatWithNeutralPredicateAreOffByOne() {
+		final List<Integer> simpleRepeat = Flux.just(1)
+		                                       .repeat(3)
+		                                       .collectList()
+		                                       .block();
+
+		final List<Integer> predicateRepeat = Flux.just(1)
+		                                          .repeat(3, () -> true)
+		                                          .collectList()
+		                                          .block();
+
+		assertThat(predicateRepeat)
+				.containsAll(simpleRepeat)
+				.hasSize(simpleRepeat.size() + 1)
+				.endsWith(1);
 	}
 }
