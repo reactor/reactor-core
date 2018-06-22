@@ -405,7 +405,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	static final class MicrometerFluxMetricsFuseableSubscriber<T> extends MicrometerFluxMetricsSubscriber<T>
 			implements Fuseable, Fuseable.QueueSubscription<T> {
 
-		private boolean syncFused;
+		private int fusionMode;
 
 		MicrometerFluxMetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry, Clock clock, String sequenceName, List<Tag> sequenceTags) {
@@ -413,12 +413,32 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		public void onNext(T t) {
+			if (this.fusionMode == Fuseable.ASYNC) {
+				actual.onNext(null);
+				return;
+			}
+
+			if (done) {
+				this.malformedSourceCounter.increment();
+				Operators.onNextDropped(t, actual.currentContext());
+				return;
+			}
+
+			//record the delay since previous onNext/onSubscribe. This also records the count.
+			long last = this.lastNextEventNanos;
+			this.lastNextEventNanos = clock.monotonicTime();
+			this.onNextIntervalTimer.record(lastNextEventNanos - last, TimeUnit.NANOSECONDS);
+
+			actual.onNext(t);
+		}
+
+		@Override
 		public int requestFusion(int mode) {
 			//Simply negotiate the fusion by delegating:
 			if (qs != null) {
-				int negotiated = qs.requestFusion(mode);
-				this.syncFused = negotiated == Fuseable.SYNC;
-				return negotiated;
+				this.fusionMode = qs.requestFusion(mode);
+				return fusionMode;
 			}
 			return Fuseable.NONE; //should not happen unless requestFusion called before subscribe
 		}
@@ -432,7 +452,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			try {
 				T v = qs.poll();
 
-				if (v == null && syncFused) {
+				if (v == null && fusionMode == SYNC) {
 					//this is also a complete event
 					this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
 				}

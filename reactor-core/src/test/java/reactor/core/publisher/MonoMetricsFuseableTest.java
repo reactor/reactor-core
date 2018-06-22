@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,7 +39,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.publisher.MonoMetrics.MicrometerMonoMetricsFuseableSubscriber;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.*;
 import static reactor.core.publisher.FluxMetrics.*;
@@ -301,10 +304,16 @@ public class MonoMetricsFuseableTest {
 
 	@Test
 	public void subscribeToCompleteFuseable() {
-		Mono<String> source = Mono.delay(Duration.ofMillis(100))
-		                          .map(i -> "foo");
-		new MonoMetricsFuseable<>(source, registry)
-		    .block();
+		Mono<String> source = Mono.fromCallable(() -> {
+			Thread.sleep(100);
+			return "foo";
+		});
+
+		StepVerifier.create(new MonoMetricsFuseable<>(source, registry))
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectNext("foo")
+		            .verifyComplete();
+
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
 		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)

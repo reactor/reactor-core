@@ -228,7 +228,7 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 	static final class MicrometerMonoMetricsFuseableSubscriber<T> extends MicrometerMonoMetricsSubscriber<T>
 			implements Fuseable, Fuseable.QueueSubscription<T> {
 
-		private boolean syncFused;
+		private int mode;
 
 		MicrometerMonoMetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry, Clock clock, String sequenceName, List<Tag> sequenceTags) {
@@ -236,12 +236,21 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 		}
 
 		@Override
+		public void onNext(T t) {
+//			if (this.mode == ASYNC) {
+//				actual.onNext(null);
+//			}
+//			else {
+				super.onNext(t);
+//			}
+		}
+
+		@Override
 		public int requestFusion(int mode) {
 			//Simply negotiate the fusion by delegating:
 			if (qs != null) {
-				int negotiated = qs.requestFusion(mode);
-				this.syncFused = negotiated == Fuseable.SYNC;
-				return negotiated;
+				this.mode = qs.requestFusion(mode);
+				return this.mode;
 			}
 			return Fuseable.NONE; //should not happen unless requestFusion called before subscribe
 		}
@@ -255,7 +264,7 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 			try {
 				T v = qs.poll();
 
-				if (v == null && syncFused) {
+				if (v == null && this.mode == SYNC) {
 					//this is also a complete event
 					this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
 				}
