@@ -14,8 +14,8 @@ if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
       echo "only reactor-test was touched -> selective test"
       ./gradlew :reactor-test:check
     fi
-elif [ "$TRAVIS_BRANCH" == "master" ] || [ "$TRAVIS_BRANCH" == "3.0.x" ]; then
-    echo "master or 3.0.x: this is a merge test -> full test"
+elif [ "$TRAVIS_BRANCH" == "master" ] || [ "$TRAVIS_BRANCH" == "3.0.x" ] || [ "$TRAVIS_BRANCH" == "3.1.x" ]; then
+    echo "master or 3.0.x/3.1.x: this is a merge test -> full test"
     ./gradlew check
 else
     COMMIT_RANGE=${TRAVIS_COMMIT_RANGE/.../..}
