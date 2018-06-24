@@ -26,7 +26,7 @@ public class MpscLinkedQueueTest {
 	}
 
 	@Test
-	public void shouldNormallyOffersTwoValues() {
+	public void shouldNormallyOfferTwoValues() {
 		MpscLinkedQueue<Object> q = new MpscLinkedQueue<Object>();
 		q.test(1, 2);
 
