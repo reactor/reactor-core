@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
@@ -27,77 +28,60 @@ public class FluxRepeatTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void timesInvalid() {
 		Flux.never()
-		    .repeat(-1);
+		    .repeat(-2);
+	}
+
+	@Test
+	public void minusOneRepeat() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .repeat(-1))
+		            .verifyComplete();
 	}
 
 	@Test
 	public void zeroRepeat() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.range(1, 10)
-		    .repeat(0)
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Flux.range(1, 10)
+		                        .repeat(0))
+		            .expectNextCount(10)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void oneRepeat() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.range(1, 10)
-		    .repeat(1)
-		    .subscribe(ts);
-
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Flux.range(1, 10)
+		                        .repeat(1))
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void oneRepeatBackpressured() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
-		Flux.range(1, 10)
-		    .repeat(1)
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(2);
-
-		ts.assertValues(1, 2)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(3);
-
-		ts.assertValues(1, 2, 3, 4, 5)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(10);
-
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Flux.range(1, 10)
+		                        .repeat(1),
+				0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(3)
+		            .expectNext(3, 4, 5)
+		            .thenRequest(10)
+		            .expectNext(6, 7, 8, 9, 10)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .thenRequest(100)
+		            .expectNext(6, 7, 8, 9, 10)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void twoRepeat() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.range(1, 5)
-		    .repeat(2)
-		    .subscribe(ts);
-
-		ts.assertValues(1, 2, 3, 4, 5, 1, 2, 3, 4, 5)
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Flux.range(1, 5)
+		                        .repeat(2))
+		            .expectNext(1, 2, 3, 4, 5)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .verifyComplete();
 	}
 
 	@Test
@@ -105,45 +89,26 @@ public class FluxRepeatTest {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .repeat(2)
 		                        .count())
-		            .expectNext(6L)
+		            .expectNext(9L)
 		            .expectComplete()
 		            .verify();
 	}
 
 	@Test
 	public void twoRepeatBackpressured() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
-		Flux.range(1, 5)
-		    .repeat(2)
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(2);
-
-		ts.assertValues(1, 2)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(4);
-
-		ts.assertValues(1, 2, 3, 4, 5, 1)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(2);
-
-		ts.assertValues(1, 2, 3, 4, 5, 1, 2, 3)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(10);
-		ts.assertValues(1, 2, 3, 4, 5, 1, 2, 3, 4, 5)
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Flux.range(1, 5)
+		    .repeat(2), 0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(4)
+		            .expectNext(3, 4, 5).expectNext(1)
+		            .thenRequest(2)
+		            .expectNext(2, 3)
+		            .thenRequest(10)
+		            .expectNext(4, 5).expectNext(1, 2, 3, 4, 5)
+		            .verifyComplete();
 	}
 
 	@Test

@@ -6395,18 +6395,27 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to the source {@literal numRepeat} times.
+	 * Repeatedly subscribe to the source {@code numRepeat} times. This results in
+	 * {@code numRepeat + 1} total subscriptions to the original source. As a consequence,
+	 * using 0 plays the original sequence once.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatn.png" alt="">
+	 *
+	 * <p>
+	 * Use {@code numRepeat = -1} as an escape hatch if you need to dynamically avoid subscription
+	 * at all. Any other negative value will be rejected as an invalid argument.
 	 *
 	 * @param numRepeat the number of times to re-subscribe on onComplete
 	 *
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat) {
+		if(numRepeat == -1L){
+			return Flux.empty();
+		}
 		if(numRepeat == 0L){
-			return empty();
+			return this;
 		}
 		return onAssembly(new FluxRepeat<>(this, numRepeat));
 	}
@@ -6417,6 +6426,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatnb.png" alt="">
+	 * <p>
+	 * Use {@code numRepeat = -1} as an escape hatch if you need to dynamically avoid subscription
+	 * at all. Any other negative value will be rejected as an invalid argument.
 	 *
 	 * @param numRepeat the number of times to re-subscribe on complete
 	 * @param predicate the boolean to evaluate on onComplete
@@ -6425,6 +6437,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
+		if (numRepeat == -1) {
+			return Flux.empty();
+		}
+		if (numRepeat == 0) {
+			return this;
+		}
 		return defer( () -> repeat(countingBooleanSupplier(predicate, numRepeat)));
 	}
 
