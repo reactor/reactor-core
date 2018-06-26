@@ -22,12 +22,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
-import reactor.core.ScannableTest;
 import reactor.core.publisher.MonoUsingWhen.ResourceSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -262,6 +261,20 @@ public class MonoUsingWhenTest {
 
 		testResource.commitProbe.assertWasNotSubscribed();
 		testResource.rollbackProbe.assertWasSubscribed();
+	}
+
+	@Test
+	public void resourceSupplierCanAccessContext() {
+		Mono.usingWhen(Mono.subscriberContext()
+		                   .map(ctx -> ctx.get(String.class)),
+				Mono::just,
+				Mono::just,
+				Mono::just,
+				Mono::just)
+		    .subscriberContext(Context.of(String.class, "contextual"))
+		    .as(StepVerifier::create)
+		    .expectNext("contextual")
+		    .verifyComplete();
 	}
 
 	// == scanUnsafe tests ==
