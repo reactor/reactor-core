@@ -569,7 +569,7 @@ public class FluxWindowPredicateTest extends
 	@Test
 	public void whileStartingSeveralSeparatorsEachCreateEmptyWindow() {
 		StepVerifier.create(Flux.just("#")
-		                        .repeat(10)
+		                        .repeat(9)
 		                        .concatWith(Flux.just("other", "value"))
 		                        .windowWhile(s -> !s.equals("#"))
 		                        .flatMap(Flux::count)
@@ -582,7 +582,7 @@ public class FluxWindowPredicateTest extends
 	@Test
 	public void whileOnlySeparatorsGivesSequenceOfWindows() {
 		StepVerifier.create(Flux.just("#")
-		                        .repeat(10)
+		                        .repeat(9)
 		                        .windowWhile(s -> !s.equals("#"))
 		                        .flatMap(w -> w.count()))
 		            .expectNext(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)

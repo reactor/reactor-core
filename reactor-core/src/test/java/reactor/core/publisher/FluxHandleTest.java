@@ -466,7 +466,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		                        .handle((d, s) -> s.next(s.currentContext()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
-		                        .repeat(10)
+		                        .repeat(9)
 		                        .subscriberContext(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -480,7 +480,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		                        .handle((d, s) -> s.next(s.currentContext()
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
-		                        .repeat(10)
+		                        .repeat(9)
 		                        .subscriberContext(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -494,7 +494,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .filter(d -> true)
-		                        .repeat(10)
+		                        .repeat(9)
 		                        .subscriberContext(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -507,7 +507,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .filter(d -> true)
-		                        .repeat(10)
+		                        .repeat(9)
 		                        .subscriberContext(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
