@@ -33,7 +33,7 @@ buildscript {
 plugins {
   id 'org.asciidoctor.convert' version '1.5.6'
   id "me.champeau.gradle.jmh" version "0.4.4" apply false
-  id "org.jetbrains.dokka" version "0.9.15"
+  id "org.jetbrains.dokka" version "0.9.16"
   id "me.champeau.gradle.japicmp" version "0.2.6"
 }
 
