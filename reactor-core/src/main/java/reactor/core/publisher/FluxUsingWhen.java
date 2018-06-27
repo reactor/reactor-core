@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 
@@ -175,6 +174,11 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		}
 
 		@Override
+		public Context currentContext() {
+			return actual.currentContext();
+		}
+
+		@Override
 		public void onError(Throwable throwable) {
 			if (resourceProvided) {
 				Operators.onErrorDropped(throwable, actual.currentContext());
@@ -277,14 +281,12 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 					if (asyncCancel != null) {
 						//FIXME better integration of asyncCancel?
 						Flux.from(asyncCancel.apply(resource))
-						    .subscribe(v -> {},
-								error -> Loggers.getLogger(FluxUsingWhen.class).warn("Async resource cleanup failed after cancel", error));
+						    .subscribe(new CancelInner(this));
 					}
 					else {
 						//FIXME should there be a default to the "complete" path on cancellation, or NO-OP?
 						Flux.from(asyncComplete.apply(resource))
-						    .subscribe(v -> {},
-								error -> Loggers.getLogger(FluxUsingWhen.class).warn("Async resource cleanup failed after cancel", error));
+						    .subscribe(new CancelInner(this));
 					}
 				}
 				catch (Throwable error) {
@@ -475,14 +477,12 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 						if (asyncCancel != null) {
 							//FIXME better integration of asyncCancel?
 							Flux.from(asyncCancel.apply(resource))
-							    .subscribe(v -> {},
-									    error -> Loggers.getLogger(FluxUsingWhen.class).warn("Async resource cleanup failed after cancel", error));
+							    .subscribe(new CancelInner(this));
 						}
 						else {
 							//FIXME should there be a default to the "complete" path on cancellation, or NO-OP?
 							Flux.from(asyncComplete.apply(resource))
-							    .subscribe(v -> {},
-									    error -> Loggers.getLogger(FluxUsingWhen.class).warn("Async resource cleanup failed after cancel", error));
+							    .subscribe(new CancelInner(this));
 						}
 					}
 					catch (Throwable error) {
@@ -634,14 +634,19 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 
 	static final class RollbackInner implements InnerConsumer<Object> {
 
-		final UsingWhenParent        parent;
-		final Throwable            rollbackCause;
+		final UsingWhenParent parent;
+		final Throwable       rollbackCause;
 
 		boolean done;
 
 		RollbackInner(UsingWhenParent ts, Throwable rollbackCause) {
 			this.parent = ts;
 			this.rollbackCause = rollbackCause;
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.currentContext();
 		}
 
 		@Override
@@ -690,6 +695,11 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		}
 
 		@Override
+		public Context currentContext() {
+			return parent.currentContext();
+		}
+
+		@Override
 		public void onSubscribe(Subscription s) {
 			Objects.requireNonNull(s, "Subscription cannot be null")
 			       .request(Long.MAX_VALUE);
@@ -719,6 +729,52 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.TERMINATED) return done;
+
+			return null;
+		}
+	}
+
+	/**
+	 * Used	in the cancel path to still give the generated Publisher access to the Context
+ 	 */
+	static final class CancelInner implements InnerConsumer<Object> {
+
+		final UsingWhenParent parent;
+
+		CancelInner(UsingWhenParent ts) {
+			this.parent = ts;
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.currentContext();
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			Objects.requireNonNull(s, "Subscription cannot be null")
+			       .request(Long.MAX_VALUE);
+		}
+
+		@Override
+		public void onNext(Object o) {
+			//NO-OP
+		}
+
+		@Override
+		public void onError(Throwable e) {
+			Loggers.getLogger(FluxUsingWhen.class).warn("Async resource cleanup failed after cancel", e);
+		}
+
+		@Override
+		public void onComplete() {
+			//NO-OP
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.ACTUAL) return parent.actual();
 
 			return null;
 		}
