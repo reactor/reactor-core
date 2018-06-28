@@ -28,14 +28,7 @@ public class FluxRepeatTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void timesInvalid() {
 		Flux.never()
-		    .repeat(-2);
-	}
-
-	@Test
-	public void minusOneRepeat() {
-		StepVerifier.create(Flux.range(1, 10)
-		                        .repeat(-1))
-		            .verifyComplete();
+		    .repeat(-1);
 	}
 
 	@Test

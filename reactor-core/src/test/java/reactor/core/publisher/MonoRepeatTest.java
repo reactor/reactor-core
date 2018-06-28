@@ -29,16 +29,7 @@ public class MonoRepeatTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void timesInvalid() {
 		Mono.never()
-		    .repeat(-2);
-	}
-
-	@Test
-	public void minusOneRepeat() {
-		AtomicInteger i = new AtomicInteger();
-
-		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
-		                        .repeat(-1))
-		            .verifyComplete();
+		    .repeat(-1);
 	}
 
 	@Test

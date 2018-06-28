@@ -3069,17 +3069,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatn.png" alt="">
 	 *
-	 * <p>
-	 * Use {@code numRepeat = -1} as an escape hatch if you need to dynamically avoid subscription
-	 * at all. Any other negative value will be rejected as an invalid argument.
-	 *
 	 * @param numRepeat the number of times to re-subscribe on onComplete
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat) {
-		if (numRepeat == -1) {
-			return Flux.empty();
-		}
 		if (numRepeat == 0) {
 			return this.flux();
 		}
@@ -3100,9 +3093,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
-		if (numRepeat == -1) {
-			return Flux.empty();
-		}
 		if (numRepeat == 0) {
 			return this.flux();
 		}
