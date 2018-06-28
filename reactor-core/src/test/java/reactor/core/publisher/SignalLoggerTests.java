@@ -17,12 +17,11 @@
 package reactor.core.publisher;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -48,7 +47,7 @@ public class SignalLoggerTests {
 				false, CollectionSpecialLogger::new,
 				SignalType.ON_SUBSCRIBE);
 
-		StepVerifier.create(flux.doOnSubscribe(signalLogger.onSubscribeCall()))
+		StepVerifier.create(flux.doOnSubscribe(Objects.requireNonNull(signalLogger.onSubscribeCall())))
 		            .expectSubscription()
 		            .expectNext(1, 2, 3)
 		            .expectComplete()
@@ -57,6 +56,31 @@ public class SignalLoggerTests {
 		//verify that passing the subscription directly to logger would have considered
 		// it a Collection and thus failed with this custom Logger.
 		StepVerifier.create(flux.doOnSubscribe(s -> signalLogger.log(s, "")))
+		            .expectErrorMatches(t -> t instanceof UnsupportedOperationException &&
+				            t.getMessage().equals("Operators should not use this method!"))
+		            .verify();
+	}
+
+	@Test
+	public void testLogQueueSubscriptionValue() {
+		Flux<Flux<Integer>> source = Flux.just(1, 2, 3)
+				.window(2); //windows happen to be UnicastProcessor, which implements QueueSubscription directly :o
+
+		FluxPeek<Flux<Integer>> flux = new FluxPeek<>(source, null, null, null, null, null, null, null);
+		SignalLogger<Flux<Integer>> signalLogger = new SignalLogger<>(flux,
+				"test",
+				Level.INFO,
+				false, CollectionSpecialLogger::new,
+				SignalType.ON_NEXT);
+
+		StepVerifier.create(flux.doOnNext(Objects.requireNonNull(signalLogger.onNextCall())))
+		            .expectNextCount(2)
+		            .expectComplete()
+		            .verify();
+
+		//verify that passing the QueueSubscription directly to logger would have considered
+		// it a Collection and thus failed with this custom Logger.
+		StepVerifier.create(flux.doOnNext(w -> signalLogger.log("{}", w)))
 		            .expectErrorMatches(t -> t instanceof UnsupportedOperationException &&
 				            t.getMessage().equals("Operators should not use this method!"))
 		            .verify();
