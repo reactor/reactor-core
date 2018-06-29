@@ -206,6 +206,10 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		}
 		catch (UnsupportedOperationException uoe) {
 			log(signalType, String.valueOf(signalValue));
+			if (log.isDebugEnabled()) {
+				log.debug("UnsupportedOperationException has been raised by the logging framework, does your log() placement make sense? " +
+						"eg. 'window(2).log()' instead of 'window(2).flatMap(w -> w.log())'", uoe);
+			}
 		}
 	}
 
