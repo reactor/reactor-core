@@ -19,6 +19,8 @@ package reactor.core.publisher;
 import org.junit.Test;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+
 public class MonoRepeatPredicateTest {
 
 	//these tests essentially cover the API and its escape hatches
@@ -30,9 +32,11 @@ public class MonoRepeatPredicateTest {
 
 	@Test
 	public void nMinusOne() {
-		StepVerifier.create(Mono.just(3)
-		                        .repeat(-1, () -> true))
-		            .verifyComplete();
+		Mono<Integer> source = Mono.just(3);
+
+		assertThatIllegalArgumentException()
+		          .isThrownBy(() -> source.repeat(-1, () -> true))
+		          .withMessage("numRepeat >= 0 required");
 	}
 
 	@Test

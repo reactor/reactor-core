@@ -23,6 +23,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 public class FluxRepeatPredicateTest {
 
@@ -34,9 +35,11 @@ public class FluxRepeatPredicateTest {
 
 	@Test
 	public void nMinusOne() {
-		StepVerifier.create(Flux.just(1, 2, 3)
-				.repeat(-1, () -> true))
-		            .verifyComplete();
+		Flux<Integer> source = Flux.just(1, 2, 3);
+
+		assertThatIllegalArgumentException()
+		          .isThrownBy(() -> source.repeat(-1, () -> true))
+		          .withMessage("numRepeat >= 0 required");
 	}
 
 	@Test
