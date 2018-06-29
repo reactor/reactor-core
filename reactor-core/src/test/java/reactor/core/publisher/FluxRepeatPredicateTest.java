@@ -16,8 +16,14 @@
 
 package reactor.core.publisher;
 
+import java.util.List;
+
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 public class FluxRepeatPredicateTest {
 
@@ -25,6 +31,42 @@ public class FluxRepeatPredicateTest {
 	public void predicateNull() {
 		Flux.never()
 		    .repeat(null);
+	}
+
+	@Test
+	public void nMinusOne() {
+		Flux<Integer> source = Flux.just(1, 2, 3);
+
+		assertThatIllegalArgumentException()
+		          .isThrownBy(() -> source.repeat(-1, () -> true))
+		          .withMessage("numRepeat >= 0 required");
+	}
+
+	@Test
+	public void nZero() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+				.repeat(0, () -> true))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void nOne() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+				.repeat(1, () -> true))
+		            .expectNext(1, 2, 3)
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void nTwo() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+				.repeat(2, () -> true))
+		            .expectNext(1, 2, 3)
+		            .expectNext(1, 2, 3)
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
 	}
 
 	@Test
@@ -102,5 +144,21 @@ public class FluxRepeatPredicateTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
+	}
+
+	@Test
+	public void alwaysTrueWithNSimilarToSimpleN() {
+		List<Integer> expected = Flux.just(1, 2, 3).repeat(3).collectList().block();
+		List<Integer> result = Flux.just(1, 2, 3).repeat(3, () -> true).collectList().block();
+
+		assertThat(result).containsExactlyElementsOf(expected);
+	}
+
+	@Test
+	public void alwaysFalseWithNSimilarToSimpleZero() {
+		List<Integer> expected = Flux.just(1, 2, 3).repeat(0).collectList().block();
+		List<Integer> result = Flux.just(1, 2, 3).repeat(3, () -> false).collectList().block();
+
+		assertThat(result).containsExactlyElementsOf(expected);
 	}
 }

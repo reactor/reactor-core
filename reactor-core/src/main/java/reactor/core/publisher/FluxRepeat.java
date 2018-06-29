@@ -24,7 +24,10 @@ import reactor.core.CoreSubscriber;
  * Repeatedly subscribes to the source and relays its values either
  * indefinitely or a fixed number of times.
  * <p>
- * The times == Long.MAX_VALUE is treated as infinite repeat.
+ * The times == Long.MAX_VALUE is treated as infinite repeat. Times = 1 mirrors the source
+ * (the "original" run) and then repeats it once more. Callers should take care of times =
+ * 0 and times = -1 cases, which should map to replaying the source and an empty sequence,
+ * respectively.
  *
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -43,7 +46,7 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, actual, times);
+		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, actual, times  + 1);
 
 		actual.onSubscribe(parent);
 

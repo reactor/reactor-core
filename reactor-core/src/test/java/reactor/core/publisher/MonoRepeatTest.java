@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,64 +34,45 @@ public class MonoRepeatTest {
 
 	@Test
 	public void zeroRepeat() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		AtomicInteger i = new AtomicInteger();
-		Mono.fromCallable(i::incrementAndGet)
-		    .repeat(0)
-		    .subscribe(ts);
 
-		ts.assertNoValues()
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
+		                        .repeat(0))
+		            .expectNext(1)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void oneRepeat() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		AtomicInteger i = new AtomicInteger();
-		Mono.fromCallable(i::incrementAndGet)
-		    .repeat(1)
-		    .subscribe(ts);
 
-		ts.assertValues(1)
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
+		                        .repeat(1))
+		            .expectNext(1, 2)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void oneRepeatBackpressured() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
 		AtomicInteger i = new AtomicInteger();
-		Mono.fromCallable(i::incrementAndGet)
-		    .repeat(1)
-		    .subscribe(ts);
 
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(2);
-
-		ts.assertValues(1)
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
+		                        .repeat(1), 0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(3)
+		            .expectNext(1, 2)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void twoRepeat() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		AtomicInteger i = new AtomicInteger();
-		Mono.fromCallable(i::incrementAndGet)
-		    .repeat(2)
-		    .subscribe(ts);
 
-		ts.assertValues(1, 2)
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
+		                        .repeat(2))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
 	}
 
 	@Test
@@ -100,7 +82,7 @@ public class MonoRepeatTest {
 		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
 		                        .repeat(2)
 		                        .count())
-		            .expectNext(2L)
+		            .expectNext(3L)
 		            .expectComplete()
 		            .verify();
 	}
@@ -121,28 +103,17 @@ public class MonoRepeatTest {
 
 	@Test
 	public void twoRepeatBackpressured() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
 		AtomicInteger i = new AtomicInteger();
-		Mono.fromCallable(i::incrementAndGet)
-		    .repeat(2)
-		    .subscribe(ts);
 
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(1);
-
-		ts.assertValues(1)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(1);
-
-		ts.assertValues(1, 2)
-		  .assertComplete()
-		  .assertNoError();
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
+		                        .repeat(2), 0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(3)
+		            .expectNext(3)
+		            .verifyComplete();
 	}
 
 	@Test

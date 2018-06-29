@@ -3062,18 +3062,19 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to the source {@literal numRepeat} times.
+	 * Repeatedly subscribe to the source {@literal numRepeat} times. This results in
+	 * {@code numRepeat + 1} total subscriptions to the original source. As a consequence,
+	 * using 0 plays the original sequence once.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatn.png" alt="">
 	 *
-	 * @param numRepeat the number of times to re-subscribe on onComplete
-	 *
+	 * @param numRepeat the number of times to re-subscribe on onComplete (positive, or 0 for original sequence only)
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat) {
-		if(numRepeat == 0){
-			return Flux.empty();
+		if (numRepeat == 0) {
+			return this.flux();
 		}
 		return Flux.onAssembly(new MonoRepeat<>(this, numRepeat));
 	}
@@ -3085,13 +3086,19 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatnb.png" alt="">
 	 *
-	 * @param numRepeat the number of times to re-subscribe on complete
+	 * @param numRepeat the number of times to re-subscribe on complete (positive, or 0 for original sequence only)
 	 * @param predicate the boolean to evaluate on onComplete
 	 *
 	 * @return a {@link Flux} that repeats on onComplete while the predicate matches,
 	 * up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
+		if (numRepeat < 0L) {
+			throw new IllegalArgumentException("numRepeat >= 0 required");
+		}
+		if (numRepeat == 0) {
+			return this.flux();
+		}
 		return Flux.defer(() -> repeat(Flux.countingBooleanSupplier(predicate, numRepeat)));
 	}
 
