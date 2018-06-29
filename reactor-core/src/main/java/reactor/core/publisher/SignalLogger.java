@@ -234,16 +234,18 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Nullable
 	public Consumer<? super IN> onNextCall() {
 		if ((options & ON_NEXT) == ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
-			return d -> log(SignalType.ON_NEXT, safeLog(d), source);
+			return d -> safeLog(SignalType.ON_NEXT, d, source);
 		}
 		return null;
 	}
 
-	protected Object safeLog(Object value) {
-		if (value instanceof Fuseable.QueueSubscription) {
-			return value.toString();
+	protected void safeLog(SignalType signalType, Object value, Publisher<IN> source) {
+		try {
+			log(signalType, value, source);
 		}
-		return value;
+		catch (UnsupportedOperationException uoe) {
+			log(signalType, String.valueOf(value), source);
+		}
 	}
 
 	@Override
