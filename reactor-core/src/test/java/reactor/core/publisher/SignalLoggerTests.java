@@ -55,7 +55,7 @@ public class SignalLoggerTests {
 
 		//verify that passing the subscription directly to logger would have considered
 		// it a Collection and thus failed with this custom Logger.
-		StepVerifier.create(flux.doOnSubscribe(s -> signalLogger.log(s, "")))
+		StepVerifier.create(flux.doOnSubscribe(s -> signalLogger.log(SignalType.ON_SUBSCRIBE, s)))
 		            .expectErrorMatches(t -> t instanceof UnsupportedOperationException &&
 				            t.getMessage().equals("Operators should not use this method!"))
 		            .verify();
@@ -80,7 +80,7 @@ public class SignalLoggerTests {
 
 		//verify that passing the QueueSubscription directly to logger would have considered
 		// it a Collection and thus failed with this custom Logger.
-		StepVerifier.create(flux.doOnNext(w -> signalLogger.log("{}", w)))
+		StepVerifier.create(flux.doOnNext(w -> signalLogger.log(SignalType.ON_NEXT, w)))
 		            .expectErrorMatches(t -> t instanceof UnsupportedOperationException &&
 				            t.getMessage().equals("Operators should not use this method!"))
 		            .verify();
@@ -260,7 +260,7 @@ public class SignalLoggerTests {
 		      .subscribe();
 
 		verify(mockLogger, only()).warn(anyString(), eq(SignalType.ON_NEXT),
-				eq("foo"), any());
+				eq("foo"));
 		verifyNoMoreInteractions(mockLogger);
 	}
 
@@ -275,7 +275,7 @@ public class SignalLoggerTests {
 		      .subscribe();
 
 		verify(mockLogger, only()).warn(anyString(), eq(SignalType.ON_NEXT),
-				eq("foo"), any());
+				eq("foo"));
 		verifyNoMoreInteractions(mockLogger);
 	}
 

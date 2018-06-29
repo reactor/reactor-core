@@ -86,6 +86,10 @@ public interface Fuseable {
 	 * @param <T> the value type emitted
 	 */
 	interface QueueSubscription<T> extends Queue<T>, Subscription {
+		
+		String NOT_SUPPORTED_MESSAGE = "Although QueueSubscription extends Queue it is purely internal" +
+				" and only guarantees support for poll/clear/size/isEmpty." +
+				" Instances shouldn't be used/exposed as Queue outside of Reactor operators.";
 
 		/**
 		 * Request a specific fusion mode from this QueueSubscription.
@@ -104,75 +108,76 @@ public interface Fuseable {
 		 */
 		int requestFusion(int requestedMode);
 
+		
 		@Override
 		@Nullable
 		default T peek() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException();
 		}
 
 		@Override
 		default boolean add(@Nullable T t) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default boolean offer(@Nullable T t) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default T remove() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default T element() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default boolean contains(@Nullable Object o) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default Iterator<T> iterator() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default Object[] toArray() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default <T1> T1[] toArray(T1[] a) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default boolean remove(@Nullable Object o) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default boolean containsAll(Collection<?> c) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default boolean addAll(Collection<? extends T> c) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default boolean removeAll(Collection<?> c) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
 		default boolean retainAll(Collection<?> c) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 	}
 
