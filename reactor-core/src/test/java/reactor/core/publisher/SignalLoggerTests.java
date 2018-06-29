@@ -57,7 +57,7 @@ public class SignalLoggerTests {
 		// it a Collection and thus failed with this custom Logger.
 		StepVerifier.create(flux.doOnSubscribe(s -> signalLogger.log(SignalType.ON_SUBSCRIBE, s)))
 		            .expectErrorMatches(t -> t instanceof UnsupportedOperationException &&
-				            t.getMessage().equals("Operators should not use this method!"))
+				            t.getMessage().equals(Fuseable.QueueSubscription.NOT_SUPPORTED_MESSAGE))
 		            .verify();
 	}
 
@@ -82,7 +82,7 @@ public class SignalLoggerTests {
 		// it a Collection and thus failed with this custom Logger.
 		StepVerifier.create(flux.doOnNext(w -> signalLogger.log(SignalType.ON_NEXT, w)))
 		            .expectErrorMatches(t -> t instanceof UnsupportedOperationException &&
-				            t.getMessage().equals("Operators should not use this method!"))
+				            t.getMessage().equals(Fuseable.QueueSubscription.NOT_SUPPORTED_MESSAGE))
 		            .verify();
 	}
 
