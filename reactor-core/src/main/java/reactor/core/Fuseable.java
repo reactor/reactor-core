@@ -112,7 +112,7 @@ public interface Fuseable {
 		@Override
 		@Nullable
 		default T peek() {
-			throw new UnsupportedOperationException();
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
 		}
 
 		@Override
