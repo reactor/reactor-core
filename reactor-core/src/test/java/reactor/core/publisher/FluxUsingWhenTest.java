@@ -17,9 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -28,14 +27,13 @@ import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
-import reactor.core.ScannableTest;
 import reactor.core.publisher.FluxUsingWhen.ResourceSubscriber;
-import reactor.core.publisher.FluxUsingWhen.UsingWhenFuseableSubscriber;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
@@ -46,7 +44,8 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 @RunWith(JUnitParamsRunner.class)
 public class FluxUsingWhenTest {
@@ -227,8 +226,8 @@ public class FluxUsingWhenTest {
 		Mono<String> resourcePublisher = Mono.just("Resource")
 		                                     .doOnCancel(() -> cancelled.set(true));
 
-		Mono<String> test = Mono.usingWhen(resourcePublisher,
-				Mono::just,
+		Flux<String> test = Flux.usingWhen(resourcePublisher,
+				Flux::just,
 				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
 				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)));
 
@@ -242,6 +241,82 @@ public class FluxUsingWhenTest {
 		assertThat(rollbackDone).isFalse();
 
 		assertThat(cancelled).as("resource publisher was not cancelled").isFalse();
+	}
+
+	@Test
+	public void lateFluxResourcePublisherIsCancelledOnCancel() {
+		AtomicBoolean resourceCancelled = new AtomicBoolean();
+		AtomicBoolean commitDone = new AtomicBoolean();
+		AtomicBoolean rollbackDone = new AtomicBoolean();
+		AtomicBoolean cancelDone = new AtomicBoolean();
+
+		Flux<String> resourcePublisher = Flux.<String>never()
+		                                     .doOnCancel(() -> resourceCancelled.set(true));
+
+		StepVerifier.create(Flux.usingWhen(resourcePublisher,
+				Flux::just,
+				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
+				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)),
+				tr -> Mono.fromRunnable(() -> cancelDone.set(true))))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(commitDone).as("commitDone").isFalse();
+		assertThat(rollbackDone).as("rollbackDone").isFalse();
+		assertThat(cancelDone).as("cancelDone").isFalse();
+
+		assertThat(resourceCancelled).as("resource cancelled").isTrue();
+	}
+
+	@Test
+	public void lateMonoResourcePublisherIsCancelledOnCancel() {
+		AtomicBoolean resourceCancelled = new AtomicBoolean();
+		AtomicBoolean commitDone = new AtomicBoolean();
+		AtomicBoolean rollbackDone = new AtomicBoolean();
+		AtomicBoolean cancelDone = new AtomicBoolean();
+
+		Mono<String> resourcePublisher = Mono.<String>never()
+				.doOnCancel(() -> resourceCancelled.set(true));
+
+		Mono<String> usingWhen = Mono.usingWhen(resourcePublisher,
+				Mono::just,
+				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
+				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)),
+				tr -> Mono.fromRunnable(() -> cancelDone.set(true)));
+
+		StepVerifier.create(usingWhen)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(commitDone).as("commitDone").isFalse();
+		assertThat(rollbackDone).as("rollbackDone").isFalse();
+		assertThat(cancelDone).as("cancelDone").isFalse();
+
+		assertThat(resourceCancelled).as("resource cancelled").isTrue();
+	}
+
+	@Test
+	public void blockOnNeverResourceCanBeCancelled() throws InterruptedException {
+		CountDownLatch latch = new CountDownLatch(1);
+		Disposable disposable = Flux.usingWhen(Flux.<String>never(),
+				Flux::just,
+				Flux::just,
+				Flux::just,
+				Flux::just)
+		                            .doFinally(f -> latch.countDown())
+		                            .subscribe();
+
+		assertThat(latch.await(500, TimeUnit.MILLISECONDS))
+				.as("hangs before dispose").isFalse();
+
+		disposable.dispose();
+
+		assertThat(latch.await(100, TimeUnit.MILLISECONDS))
+				.as("terminates after dispose").isTrue();
 	}
 
 	@Test
@@ -369,7 +444,7 @@ public class FluxUsingWhenTest {
 		TestResource testResource = new TestResource();
 
 		Flux<String> test = Flux
-				.usingWhen(Mono.just(testResource),
+				.usingWhen(Mono.just(testResource).hide(),
 						tr -> source,
 						TestResource::commit,
 						TestResource::rollback)
@@ -624,80 +699,18 @@ public class FluxUsingWhenTest {
 	}
 
 	@Test
-	public void normalHasNoOpQueueOperations() {
+	public void normalHasNoQueueOperations() {
 		final FluxPeekFuseableTest.AssertQueueSubscription<String> assertQueueSubscription =
 				new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		assertQueueSubscription.offer("foo");
 
 		UsingWhenSubscriber<String, String>
-				test = new UsingWhenSubscriber<>(
-				new LambdaSubscriber<>(null, null, null, null),
-				"resource", it -> Mono.empty(), it -> Mono.empty(), null);
+				test = new UsingWhenSubscriber<>(new LambdaSubscriber<>(null, null, null, null),
+				"resource", it -> Mono.empty(), it -> Mono.empty(), null, Mockito.mock(Operators.DeferredSubscription.class));
 
 		test.onSubscribe(assertQueueSubscription);
 
-		assertThat(test).isInstanceOf(Fuseable.QueueSubscription.class);
-		assertThat(test.isEmpty()).as("isEmpty").isTrue();
-		assertThat(test.size()).as("size").isZero();
-		assertThat(test.requestFusion(Fuseable.ANY)).as("requestFusion(ANY)").isZero();
-		assertThat(test.poll()).as("poll").isNull();
-		assertThatCode(test::clear).doesNotThrowAnyException();
-	}
-
-	@Test
-	public void fuseableQueueOperations() {
-		final FluxPeekFuseableTest.AssertQueueSubscription<String> assertQueueSubscription =
-				new FluxPeekFuseableTest.AssertQueueSubscription<>();
-		assertQueueSubscription.offer("foo");
-
-		UsingWhenFuseableSubscriber<String, String>
-				test = new UsingWhenFuseableSubscriber<>(
-				new LambdaSubscriber<>(null, null, null, null),
-				"resource", it -> Mono.empty(), it -> Mono.empty(), null);
-
-		test.onSubscribe(assertQueueSubscription);
-
-		assertThat(test).isInstanceOf(Fuseable.QueueSubscription.class);
-		assertThat(test.isEmpty()).as("isEmpty").isFalse();
-		assertThat(test.size()).as("size").isOne();
-		assertThat(test.requestFusion(Fuseable.ASYNC)).as("requestFusion(ASYNC)").isEqualTo(Fuseable.ASYNC);
-		assertThat(test.requestFusion(Fuseable.SYNC)).as("requestFusion(SYNC)").isEqualTo(Fuseable.SYNC);
-		assertThat(test.poll()).as("poll #1").isEqualTo("foo");
-		assertThat(test.poll()).as("poll #2").isNull();
-
-		assertQueueSubscription.offer("bar");
-		assertThat(assertQueueSubscription.size()).as("before clear").isOne();
-		test.clear();
-		assertThat(assertQueueSubscription.size()).as("after clear").isZero();
-	}
-
-	@Test
-	public void syncFusionPollRollbackErrorLogs() {
-		TestLogger testLogger = new TestLogger();
-		Loggers.useCustomLoggers(it -> testLogger);
-
-		final FluxPeekFuseableTest.AssertQueueSubscription<String> assertQueueSubscription =
-				new FluxPeekFuseableTest.AssertQueueSubscription<>();
-		assertQueueSubscription.offer("foo");
-
-		UsingWhenFuseableSubscriber<String, String>
-				test = new UsingWhenFuseableSubscriber<>(
-				new LambdaSubscriber<>(null, null, null, null),
-				"resource", it -> Mono.error(new IllegalStateException("asyncComplete error")), it -> Mono.empty(), null);
-
-		try {
-			test.onSubscribe(assertQueueSubscription);
-			test.requestFusion(Fuseable.SYNC);
-			assertThat(test.poll()).as("poll #1").isEqualTo("foo");
-			assertThat(test.poll()).as("poll #2").isNull();
-		}
-		finally {
-			Loggers.resetLoggerFactory();
-		}
-
-		assertThat(testLogger.getErrContent())
-				.contains("Async resource cleanup failed after poll")
-				.contains("java.lang.IllegalStateException: asyncComplete error");
+		assertThat(test).isNotInstanceOf(Fuseable.QueueSubscription.class);
 	}
 
 	@Test
@@ -886,7 +899,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanUsingWhenSubscriber() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenSubscriber<Integer, String> op = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
+		UsingWhenSubscriber<Integer, String> op = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just, null);
 		final Subscription parent = Operators.emptySubscription();
 		op.onSubscribe(parent);
 
@@ -902,31 +915,6 @@ public class FluxUsingWhenTest {
 		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED with error").isTrue();
 		assertThat(op.scan(Attr.ERROR)).as("ERROR").hasMessage("boom");
 
-		op.cancel();
-		assertThat(op.scan(Attr.CANCELLED)).as("CANCELLED").isTrue();
-	}
-
-	@Test
-	public void scanUsingWhenFuseableSubscriber() {
-		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenFuseableSubscriber<Integer, String> op = new UsingWhenFuseableSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
-		final Subscription parent = Operators.emptySubscription();
-		op.onSubscribe(parent);
-
-		assertThat(op.scan(Attr.PARENT)).as("PARENT").isSameAs(parent);
-		assertThat(op.scan(Attr.ACTUAL)).as("ACTUAL")
-		                                .isSameAs(actual)
-		                                .isSameAs(op.actual());
-
-		assertThat(op.scan(Attr.TERMINATED)).as("pre TERMINATED").isFalse();
-
-		op.deferredError(new IllegalStateException("boom"));
-		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED with error").isTrue();
-		assertThat(op.scan(Attr.ERROR)).as("ERROR").hasMessage("boom");
-
-		//need something different from EmptySubscription to detect cancel
-		op.qs = null;
-		assertThat(op.scan(Attr.CANCELLED)).as("pre CANCELLED").isFalse();
 		op.cancel();
 		assertThat(op.scan(Attr.CANCELLED)).as("CANCELLED").isTrue();
 	}
@@ -934,7 +922,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanCommitInner() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
+		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just, null);
 		final Subscription parent = Operators.emptySubscription();
 		up.onSubscribe(parent);
 
@@ -960,7 +948,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanRollbackInner() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
+		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just, null);
 		final Subscription parent = Operators.emptySubscription();
 		up.onSubscribe(parent);
 
@@ -984,7 +972,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanCancelInner() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just);
+		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just, null);
 		final Subscription parent = Operators.emptySubscription();
 		up.onSubscribe(parent);
 
@@ -1006,7 +994,7 @@ public class FluxUsingWhenTest {
 		PublisherProbe<Integer> rollbackProbe = PublisherProbe.empty();
 
 		TestResource() {
-			this.level = Level.INFO;
+			this.level = Level.WARNING;
 		}
 
 		TestResource(Level level) {
@@ -1018,6 +1006,7 @@ public class FluxUsingWhenTest {
 		}
 
 		public Flux<Integer> commit() {
+			System.out.println("commit");
 			this.commitProbe = PublisherProbe.of(
 					Flux.just(3, 2, 1)
 					    .log("commit method used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
