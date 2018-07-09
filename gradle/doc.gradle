@@ -21,13 +21,7 @@ configure(rootProject) {
 			include "index.asciidoc"
 		}
 		outputDir file("$buildDir/reactor-code/build/asciidoc")
-		//TODO remove once a working combination of asciidoctorj, asciidoctorj-pdf and asciidoctor-gradle-plugin is found
-		if (JavaVersion.current().isJava9Compatible()) {
-		  backends = ['html5']
-		}
-		else {
-		  backends = ['html5', 'pdf']
-		}
+	  backends = ['html5', 'pdf']
 		logDocuments = true
 		options = [
 				doctype: 'book'
