@@ -17,16 +17,18 @@ import me.champeau.gradle.japicmp.JapicmpTask
 import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 buildscript {
-  ext.kotlinVersion = '1.1.61'
+  ext.kotlinVersion = '1.2.51'
   repositories {
 	maven { url "http://repo.spring.io/plugins-release" }
   }
   dependencies {
-	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7',
-			'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE',
-			'com.github.jengelman.gradle.plugins:shadow:1.2.0',
-			'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.11',
-			"org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
+	classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
+	classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.0'
+	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+	classpath 'org.jruby:jruby-complete:9.1.17.0'
+	classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.7'
+	classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
   }
 }
 
@@ -420,8 +422,7 @@ project('reactor-core') {
 	archives sourcesJar
 	archives javadocJar
 	archives docsZip
-	if (!JavaVersion.current().isJava9Compatible())
-	  archives kdocZip
+	archives kdocZip
   }
 
   jacocoTestReport.dependsOn test
@@ -540,8 +541,7 @@ project('reactor-test') {
   }
 
   artifacts {
-	if (!JavaVersion.current().isJava9Compatible())
-	  archives kdocZip
+	archives kdocZip
   }
 
   jar.finalizedBy(japicmp)
