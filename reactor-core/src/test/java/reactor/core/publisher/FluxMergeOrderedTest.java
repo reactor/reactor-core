@@ -306,7 +306,7 @@ public class FluxMergeOrderedTest {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 
 		FluxMergeOrdered.MergeOrderedMainProducer<Integer> test =
-				new FluxMergeOrdered.MergeOrderedMainProducer<>(actual, Comparator.naturalOrder(), 123, 4);
+				new FluxMergeOrdered.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL))
 				.isSameAs(actual)
@@ -333,7 +333,7 @@ public class FluxMergeOrderedTest {
 	public void scanInner() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		FluxMergeOrdered.MergeOrderedMainProducer<Integer> main =
-				new FluxMergeOrdered.MergeOrderedMainProducer<>(actual, Comparator.naturalOrder(), 123, 4);
+				new FluxMergeOrdered.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4);
 
 		FluxMergeOrdered.MergeOrderedInnerSubscriber<Integer> test = new FluxMergeOrdered.MergeOrderedInnerSubscriber<>(
 				main, 123);
@@ -362,7 +362,7 @@ public class FluxMergeOrderedTest {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 
 		FluxMergeOrdered.MergeOrderedMainProducer<Integer> test =
-				new FluxMergeOrdered.MergeOrderedMainProducer<>(actual, Comparator.naturalOrder(), 123, 4);
+				new FluxMergeOrdered.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4);
 
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> {
@@ -377,7 +377,7 @@ public class FluxMergeOrderedTest {
 	public void innerRequestAmountIgnoredAssumedOne() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		FluxMergeOrdered.MergeOrderedMainProducer<Integer> main =
-				new FluxMergeOrdered.MergeOrderedMainProducer<>(actual, Comparator.naturalOrder(), 123, 4);
+				new FluxMergeOrdered.MergeOrderedMainProducer<Integer>(actual, Comparator.naturalOrder(), 123, 4);
 
 		FluxMergeOrdered.MergeOrderedInnerSubscriber<Integer> test = new FluxMergeOrdered.MergeOrderedInnerSubscriber<>(
 				main, 4);
