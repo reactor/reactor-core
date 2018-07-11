@@ -241,14 +241,11 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 
 		@Override
 		public void cancel() {
-			System.err.println("cancelling main sequence");
 			if (!resourceProvided) {
-			System.err.println("cancelling resource");
 				resourceSubscription.cancel();
 				super.cancel();
 			}
 			else {
-				System.err.println("cancelling closureSubscriber");
 				Operators.terminate(S, this);
 				if (closureSubscriber != null) {
 					closureSubscriber.cancel();
