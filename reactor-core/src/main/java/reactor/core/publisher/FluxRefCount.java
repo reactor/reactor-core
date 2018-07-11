@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -41,6 +42,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	final int n;
 
 	volatile RefCountMonitor<T> connection;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<FluxRefCount, RefCountMonitor> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxRefCount.class, RefCountMonitor.class, "connection");
@@ -61,21 +63,59 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		RefCountMonitor<T> state;
-		
-		for (;;) {
+
+		boolean connect = false;
+		synchronized (this) {
 			state = connection;
-			if (state == null || OperatorDisposables.isDisposed(state.disconnect)) {
-				RefCountMonitor<T> u = new RefCountMonitor<>(n, this);
-				
-				if (!CONNECTION.compareAndSet(this, state, u)) {
-					continue;
-				}
-				
-				state = u;
+			if (state == null) {
+				state = new RefCountMonitor<>(this);
+				connection = state;
 			}
-			
-			state.subscribe(actual);
-			break;
+
+			long count = state.subscribers;
+			state.subscribers = count + 1;
+			if (!connection.connected && count + 1 == n) {
+				connect = true;
+				state.connected = true;
+			}
+		}
+
+		source.subscribe(new RefCountInner<>(actual, state));
+		if (connect) {
+			source.connect(state);
+		}
+	}
+
+	void cancel(RefCountMonitor rc) {
+		synchronized (this) {
+			if (connection == null) {
+				return;
+			}
+			long c = rc.subscribers - 1;
+			rc.subscribers = c;
+			if (c != 0L || !rc.connected) {
+				return;
+			}
+
+			if (rc.subscribers == 0 && rc == connection) {
+				connection = null;
+				OperatorDisposables.dispose(RefCountMonitor.DISCONNECT, rc);
+				if (source instanceof Disposable) {
+					((Disposable)source).dispose();
+				}
+			}
+		}
+
+	}
+
+	void terminated() {
+		synchronized (this) {
+			if (connection != null) {
+				connection = null;
+				if (source instanceof Disposable) {
+					((Disposable)source).dispose();
+				}
+			}
 		}
 	}
 
@@ -90,56 +130,31 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 	static final class RefCountMonitor<T> implements Consumer<Disposable> {
 		
-		final int n;
-		
 		final FluxRefCount<? extends T> parent;
-		
-		volatile int subscribers;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<RefCountMonitor> SUBSCRIBERS =
-				AtomicIntegerFieldUpdater.newUpdater(RefCountMonitor.class, "subscribers");
-		
+
+		long subscribers;
+		boolean connected;
+
 		volatile Disposable disconnect;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<RefCountMonitor, Disposable> DISCONNECT =
 				AtomicReferenceFieldUpdater.newUpdater(RefCountMonitor.class, Disposable.class, "disconnect");
 		
-		RefCountMonitor(int n, FluxRefCount<? extends T> parent) {
-			this.n = n;
+		RefCountMonitor(FluxRefCount<? extends T> parent) {
 			this.parent = parent;
-		}
-		
-		void subscribe(CoreSubscriber<? super T> s) {
-			// FIXME think about what happens when subscribers come and go below the connection threshold concurrently
-
-			RefCountInner<T> inner = new RefCountInner<>(s, this);
-
-			int subCount = SUBSCRIBERS.incrementAndGet(this);
-			parent.source.subscribe(inner);
-
-			if (subCount == n) {
-				parent.source.connect(this);
-			}
 		}
 		
 		@Override
 		public void accept(Disposable r) {
-			if (!DISCONNECT.compareAndSet(this, null, r)) {
-				r.dispose();
-			}
+			OperatorDisposables.replace(DISCONNECT, this, r);
 		}
 
 		void innerCancelled() {
-			if (SUBSCRIBERS.decrementAndGet(this) == 0) {
-				OperatorDisposables.dispose(DISCONNECT, this);
-			}
+			parent.cancel(this);
 		}
 		
 		void upstreamFinished() {
-			Disposable a = disconnect;
-			if (a != OperatorDisposables.DISPOSED) {
-				DISCONNECT.getAndSet(this, OperatorDisposables.DISPOSED);
-			}
+			parent.terminated();
 		}
 	}
 
@@ -147,15 +162,14 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			implements QueueSubscription<T>, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
-
-		final RefCountMonitor<T> parent;
+		final RefCountMonitor<T> connection;
 
 		Subscription s;
 		QueueSubscription<T> qs;
 
-		RefCountInner(CoreSubscriber<? super T> actual, RefCountMonitor<T> parent) {
+		RefCountInner(CoreSubscriber<? super T> actual, RefCountMonitor<T> connection) {
 			this.actual = actual;
-			this.parent = parent;
+			this.connection = connection;
 		}
 
 		@Override
@@ -182,13 +196,13 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			actual.onError(t);
-			parent.upstreamFinished();
+			connection.upstreamFinished();
 		}
 
 		@Override
 		public void onComplete() {
 			actual.onComplete();
-			parent.upstreamFinished();
+			connection.upstreamFinished();
 		}
 
 		@Override
@@ -199,7 +213,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		@Override
 		public void cancel() {
 			s.cancel();
-			parent.innerCancelled();
+			connection.innerCancelled();
 		}
 
 		@Override
