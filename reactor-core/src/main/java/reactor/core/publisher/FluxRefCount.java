@@ -16,14 +16,12 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -41,11 +39,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	
 	final int n;
 
-	volatile RefCountMonitor<T> connection;
-
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<FluxRefCount, RefCountMonitor> CONNECTION =
-			AtomicReferenceFieldUpdater.newUpdater(FluxRefCount.class, RefCountMonitor.class, "connection");
+	RefCountMonitor<T> connection;
 
 	FluxRefCount(ConnectableFlux<? extends T> source, int n) {
 		if (n <= 0) {
@@ -63,8 +57,8 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		RefCountMonitor<T> state;
-
 		boolean connect = false;
+
 		synchronized (this) {
 			state = connection;
 			if (state == null) {
@@ -86,7 +80,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		}
 	}
 
-	void cancel(RefCountMonitor rc) {
+	void connectionCancel(RefCountMonitor rc) {
 		synchronized (this) {
 			if (connection == null) {
 				return;
@@ -105,10 +99,9 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				}
 			}
 		}
-
 	}
 
-	void terminated() {
+	void connectionTerminate() {
 		synchronized (this) {
 			if (connection != null) {
 				connection = null;
@@ -150,11 +143,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		}
 
 		void innerCancelled() {
-			parent.cancel(this);
+			parent.connectionCancel(this);
 		}
 		
 		void upstreamFinished() {
-			parent.terminated();
+			parent.connectionTerminate();
 		}
 	}
 
