@@ -39,6 +39,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
 import static reactor.core.Exceptions.unwrap;
@@ -385,6 +386,29 @@ public abstract class Schedulers {
 	}
 
 	/**
+	 * If Micrometer is available, set-up a decorator that will instrument any
+	 * {@link ExecutorService} that backs a {@link Scheduler}.
+	 * No-op if Micrometer isn't available.
+	 *
+	 * This instrumentation sends data to the Micrometer Global Registry.
+	 *
+	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers, which doesn't change the Factory.
+	 */
+	public static void enableMetrics() {
+		if (Metrics.isInstrumentationAvailable()) {
+			addExecutorServiceDecorator(METRICS_DECORATOR_KEY, new SchedulerMetricDecorator());
+		}
+	}
+
+	/**
+	 * If {@link #enableMetrics()} has been previously called, removes the decorator.
+	 * No-op if {@link #enableMetrics()} hasn't been called.
+	 */
+	public static void disableMetrics() {
+		removeExecutorServiceDecorator(METRICS_DECORATOR_KEY);
+	}
+
+	/**
 	 * Re-apply default factory to {@link Schedulers}
 	 */
 	public static void resetFactory(){
@@ -662,6 +686,8 @@ public abstract class Schedulers {
 
 	static final Map<String, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>>
 			DECORATORS = new LinkedHashMap<>();
+
+	static final String METRICS_DECORATOR_KEY = "reactor.metrics.decorator";
 
 	static volatile Factory factory = DEFAULT;
 
