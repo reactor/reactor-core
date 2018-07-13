@@ -53,36 +53,37 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	public int getPrefetch() {
 		return source.getPrefetch();
 	}
-	
+
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		RefCountMonitor<T> state;
-		boolean connect = false;
+		RefCountMonitor<T> conn;
 
+		boolean connect = false;
 		synchronized (this) {
-			state = connection;
-			if (state == null) {
-				state = new RefCountMonitor<>(this);
-				connection = state;
+			conn = connection;
+			if (conn == null || conn.terminated) {
+				conn = new RefCountMonitor<>(this);
+				connection = conn;
 			}
 
-			long count = state.subscribers;
-			state.subscribers = count + 1;
-			if (!connection.connected && count + 1 == n) {
+			long c = conn.subscribers;
+			conn.subscribers = c + 1;
+			if (!conn.connected && c + 1 == n) {
 				connect = true;
-				state.connected = true;
+				conn.connected = true;
 			}
 		}
 
-		source.subscribe(new RefCountInner<>(actual, state));
+		source.subscribe(new RefCountInner<>(actual, conn));
+
 		if (connect) {
-			source.connect(state);
+			source.connect(conn);
 		}
 	}
 
-	void connectionCancel(RefCountMonitor rc) {
+	void cancel(RefCountMonitor rc) {
 		synchronized (this) {
-			if (connection == null) {
+			if (rc.terminated) {
 				return;
 			}
 			long c = rc.subscribers - 1;
@@ -90,24 +91,18 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			if (c != 0L || !rc.connected) {
 				return;
 			}
-
-			if (rc.subscribers == 0 && rc == connection) {
-				connection = null;
+			if (rc == connection) {
 				OperatorDisposables.dispose(RefCountMonitor.DISCONNECT, rc);
-				if (source instanceof Disposable) {
-					((Disposable)source).dispose();
-				}
+				connection = null;
 			}
 		}
 	}
 
-	void connectionTerminate() {
+	void terminated(RefCountMonitor rc) {
 		synchronized (this) {
-			if (connection != null) {
+			if (!rc.terminated) {
+				rc.terminated = true;
 				connection = null;
-				if (source instanceof Disposable) {
-					((Disposable)source).dispose();
-				}
 			}
 		}
 	}
@@ -126,6 +121,8 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		final FluxRefCount<? extends T> parent;
 
 		long subscribers;
+
+		boolean terminated;
 		boolean connected;
 
 		volatile Disposable disconnect;
@@ -143,11 +140,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		}
 
 		void innerCancelled() {
-			parent.connectionCancel(this);
+			parent.cancel(this);
 		}
 		
 		void upstreamFinished() {
-			parent.connectionTerminate();
+			parent.terminated(this);
 		}
 	}
 

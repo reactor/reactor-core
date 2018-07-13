@@ -69,35 +69,31 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		for (; ; ) {
-			RefConnection conn;
+		RefConnection conn;
 
-			boolean connect = false;
-			synchronized (this) {
-				conn = connection;
-				if (conn == null || conn.terminated) {
-					conn = new RefConnection(this);
-					connection = conn;
-				}
-
-				long c = conn.subscriberCount;
-				if (c == 0L && conn.timer != null) {
-					conn.timer.dispose();
-				}
-				conn.subscriberCount = c + 1;
-				if (!conn.connected && c + 1 == n) {
-					connect = true;
-					conn.connected = true;
-				}
+		boolean connect = false;
+		synchronized (this) {
+			conn = connection;
+			if (conn == null || conn.terminated) {
+				conn = new RefConnection(this);
+				connection = conn;
 			}
 
-			source.subscribe(new RefCountInner<>(actual, this, conn));
-
-			if (connect) {
-				source.connect(conn);
+			long c = conn.subscriberCount;
+			if (c == 0L && conn.timer != null) {
+				conn.timer.dispose();
 			}
+			conn.subscriberCount = c + 1;
+			if (!conn.connected && c + 1 == n) {
+				connect = true;
+				conn.connected = true;
+			}
+		}
 
-			break;
+		source.subscribe(new RefCountInner<>(actual, this, conn));
+
+		if (connect) {
+			source.connect(conn);
 		}
 	}
 
@@ -136,9 +132,6 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		synchronized (this) {
 			if (rc.subscriberCount == 0 && rc == connection) {
 				OperatorDisposables.dispose(RefConnection.SOURCE_DISCONNECTOR, rc);
-				if (source instanceof Disposable) {
-					((Disposable) source).dispose();
-				}
 				connection = null;
 			}
 		}
