@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
@@ -65,6 +66,29 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 		return t2;
 	}
 
+	/**
+	 * Map the left-hand part (T1) of this {@link Tuple2} into a different value and type,
+	 * keeping the right-hand part (T2).
+	 *
+	 * @param mapper the mapping {@link Function} for the left-hand part
+	 * @param <R> the new type for the left-hand part
+	 * @return a new {@link Tuple2} with a different left (T1) value
+	 */
+	public <R> Tuple2<R, T2> mapT1(Function<T1, R> mapper) {
+		return new Tuple2<>(mapper.apply(t1), t2);
+	}
+
+	/**
+	 * Map the right-hand part (T2) of this {@link Tuple2} into a different value and type,
+	 * keeping the left-hand part (T1).
+	 *
+	 * @param mapper the mapping {@link Function} for the right-hand part
+	 * @param <R> the new type for the right-hand part
+	 * @return a new {@link Tuple2} with a different right (T2) value
+	 */
+	public <R> Tuple2<T1, R> mapT2(Function<T2, R> mapper) {
+		return new Tuple2<>(t1, mapper.apply(t2));
+	}
 
 	/**
 	 * Get the object at the given index.

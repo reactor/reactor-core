@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class Tuple2Test {
 
@@ -37,6 +38,43 @@ public class Tuple2Test {
 		assertThatExceptionOfType(NullPointerException.class)
 				.isThrownBy(() -> new Tuple2<>(1, null))
 				.withMessage("t2");
+	}
+	@Test
+	public void mapT1() {
+		Tuple2<String, Integer> base = Tuples.of("Foo", 200);
+
+		Tuple2<?,?> mapped = base.mapT1(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(2)
+		                  .containsExactly(3, base.getT2());
+	}
+
+	@Test
+	public void mapT2() {
+		Tuple2<Integer, String> base = Tuples.of(100, "Foo");
+
+		Tuple2<?,?> mapped = base.mapT2(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(2)
+		                  .containsExactly(base.getT1(), 3);
+	}
+
+	@Test
+	public void mapT1Null() {
+		assertThatNullPointerException().isThrownBy(() ->
+				Tuples.of(1, 2)
+				      .mapT1(i -> null)
+		).withMessage("t1");
+	}
+
+	@Test
+	public void mapT2Null() {
+		assertThatNullPointerException().isThrownBy(() ->
+				Tuples.of(1, 2)
+				      .mapT2(i -> null)
+		).withMessage("t2");
 	}
 
 	@Test

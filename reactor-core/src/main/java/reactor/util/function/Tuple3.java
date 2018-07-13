@@ -17,6 +17,7 @@
 package reactor.util.function;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
@@ -48,6 +49,42 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 	 */
 	public T3 getT3() {
 		return t3;
+	}
+
+	/**
+	 * Map the 1st part (T1) of this {@link Tuple3} into a different value and type,
+	 * keeping the other parts.
+	 *
+	 * @param mapper the mapping {@link Function} for the T1 part
+	 * @param <R> the new type for the T1 part
+	 * @return a new {@link Tuple3} with a different T1 value
+	 */
+	public <R> Tuple3<R, T2, T3> mapT1(Function<T1, R> mapper) {
+		return new Tuple3<>(mapper.apply(t1), t2, t3);
+	}
+
+	/**
+	 * Map the 2nd part (T2) of this {@link Tuple3} into a different value and type,
+	 * keeping the other parts.
+	 *
+	 * @param mapper the mapping {@link Function} for the T2 part
+	 * @param <R> the new type for the T2 part
+	 * @return a new {@link Tuple3} with a different T2 value
+	 */
+	public <R> Tuple3<T1, R, T3> mapT2(Function<T2, R> mapper) {
+		return new Tuple3<>(t1, mapper.apply(t2), t3);
+	}
+
+	/**
+	 * Map the 3rd part (T3) of this {@link Tuple3} into a different value and type,
+	 * keeping the other parts.
+	 *
+	 * @param mapper the mapping {@link Function} for the T3 part
+	 * @param <R> the new type for the T3 part
+	 * @return a new {@link Tuple3} with a different T3 value
+	 */
+	public <R> Tuple3<T1, T2, R> mapT3(Function<T3, R> mapper) {
+		return new Tuple3<>(t1, t2, mapper.apply(t3));
 	}
 
 	@Nullable
