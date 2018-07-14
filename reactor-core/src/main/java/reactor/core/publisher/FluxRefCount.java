@@ -82,6 +82,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 
 	void cancel(RefCountMonitor rc) {
+		boolean dispose = false;
 		synchronized (this) {
 			if (rc.terminated) {
 				return;
@@ -92,9 +93,12 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				return;
 			}
 			if (rc == connection) {
-				OperatorDisposables.dispose(RefCountMonitor.DISCONNECT, rc);
+				dispose = true;
 				connection = null;
 			}
+		}
+		if (dispose) {
+			OperatorDisposables.dispose(RefCountMonitor.DISCONNECT, rc);
 		}
 	}
 
