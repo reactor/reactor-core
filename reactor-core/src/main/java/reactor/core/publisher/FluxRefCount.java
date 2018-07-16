@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -82,7 +83,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 
 	void cancel(RefCountMonitor rc) {
-		boolean dispose = false;
+		Disposable dispose = null;
 		synchronized (this) {
 			if (rc.terminated) {
 				return;
@@ -93,12 +94,12 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				return;
 			}
 			if (rc == connection) {
-				dispose = true;
+				dispose = RefCountMonitor.DISCONNECT.getAndSet(rc, Disposables.disposed());
 				connection = null;
 			}
 		}
-		if (dispose) {
-			OperatorDisposables.dispose(RefCountMonitor.DISCONNECT, rc);
+		if (dispose != null) {
+			dispose.dispose();
 		}
 	}
 
@@ -121,7 +122,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 
 	static final class RefCountMonitor<T> implements Consumer<Disposable> {
-		
+
 		final FluxRefCount<? extends T> parent;
 
 		long subscribers;
@@ -133,11 +134,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<RefCountMonitor, Disposable> DISCONNECT =
 				AtomicReferenceFieldUpdater.newUpdater(RefCountMonitor.class, Disposable.class, "disconnect");
-		
+
 		RefCountMonitor(FluxRefCount<? extends T> parent) {
 			this.parent = parent;
 		}
-		
+
 		@Override
 		public void accept(Disposable r) {
 			OperatorDisposables.replace(DISCONNECT, this, r);

@@ -45,7 +45,7 @@ public class FluxRefCountTest {
 	public void raceSubscribeAndCancel() {
 		final Flux<String> testFlux = Flux.<String>create(fluxSink -> fluxSink.next("Test").complete())
 				.replay(1)
-				.refCount(1, Duration.ofMillis(10));
+				.refCount(1);
 
 		final AtomicInteger signalCount1 = new AtomicInteger();
 		final AtomicInteger signalCount2 = new AtomicInteger();
