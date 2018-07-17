@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class Tuple7Test {
 
@@ -31,6 +32,105 @@ public class Tuple7Test {
 		assertThatExceptionOfType(NullPointerException.class)
 				.isThrownBy(() -> new Tuple7<>(1, 2, 3, 4, 5, 6, null))
 				.withMessage("t7");
+	}
+
+	@Test
+	public void mapT1() {
+		Tuple7<String, Integer, Integer, Integer, Integer, Integer, Integer> base =
+				Tuples.of("Foo", 200, 300, 400, 500, 600, 700);
+
+		Tuple2<?,?> mapped = base.mapT1(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(7)
+		                  .containsExactly(3, base.getT2(), base.getT3(), base.getT4(),
+				                  base.getT5(), base.getT6(), base.getT7());
+	}
+
+	@Test
+	public void mapT2() {
+		Tuple7<Integer, String, Integer, Integer, Integer, Integer, Integer> base =
+				Tuples.of(100, "Foo", 300, 400, 500, 600, 700);
+
+		Tuple2<?,?> mapped = base.mapT2(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(7)
+		                  .containsExactly(base.getT1(), 3, base.getT3(), base.getT4(),
+				                  base.getT5(), base.getT6(), base.getT7());
+	}
+
+	@Test
+	public void mapT3() {
+		Tuple7<Integer, Integer, String, Integer, Integer, Integer, Integer> base =
+				Tuples.of(100, 200, "Foo", 400, 500, 600, 700);
+
+		Tuple2<?,?> mapped = base.mapT3(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(7)
+		                  .containsExactly(base.getT1(), base.getT2(), 3, base.getT4(),
+				                  base.getT5(), base.getT6(), base.getT7());
+	}
+
+	@Test
+	public void mapT4() {
+		Tuple7<Integer, Integer, Integer, String, Integer, Integer, Integer> base =
+				Tuples.of(100, 200, 300, "Foo", 500, 600, 700);
+
+		Tuple2<?,?> mapped = base.mapT4(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(7)
+		                  .containsExactly(base.getT1(), base.getT2(), base.getT3(), 3,
+				                  base.getT5(), base.getT6(), base.getT7());
+	}
+
+	@Test
+	public void mapT5() {
+		Tuple7<Integer, Integer, Integer, Integer, String, Integer, Integer> base =
+				Tuples.of(100, 200, 300, 400, "Foo", 600, 700);
+
+		Tuple2<?,?> mapped = base.mapT5(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(7)
+		                  .containsExactly(base.getT1(), base.getT2(), base.getT3(), base.getT4(),
+				                  3, base.getT6(), base.getT7());
+	}
+
+	@Test
+	public void mapT6() {
+		Tuple7<Integer, Integer, Integer, Integer, Integer, String, Integer> base =
+				Tuples.of(100, 200, 300, 400, 500, "Foo", 700);
+
+		Tuple2<?,?> mapped = base.mapT6(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(7)
+		                  .containsExactly(base.getT1(), base.getT2(), base.getT3(), base.getT4(),
+				                  base.getT5(), 3, base.getT7());
+	}
+
+	@Test
+	public void mapT7() {
+		Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, String> base =
+				Tuples.of(100, 200, 300, 400, 500, 600, "Foo");
+
+		Tuple2<?,?> mapped = base.mapT7(String::length);
+
+		assertThat(mapped).isNotSameAs(base)
+		                  .hasSize(7)
+		                  .containsExactly(base.getT1(), base.getT2(), base.getT3(), base.getT4(),
+				                  base.getT5(), base.getT6(), 3);
+	}
+
+	@Test
+	public void mapT7Null() {
+		assertThatNullPointerException().isThrownBy(() ->
+				Tuples.of(1, 2, 3, 4, 5, 6, 7)
+				      .mapT7(i -> null)
+		).withMessage("t7");
 	}
 
 	@Test
