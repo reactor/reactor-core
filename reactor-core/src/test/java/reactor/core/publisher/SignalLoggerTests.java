@@ -41,7 +41,7 @@ public class SignalLoggerTests {
 	public void testLogCollectionSubscription() {
 		Flux<Integer> source = Flux.just(1, 2, 3);
 		FluxPeekFuseable<Integer> flux = new FluxPeekFuseable<>(source, null, null, null, null, null, null, null);
-		SignalLogger<Integer> signalLogger = new SignalLogger<>(flux,
+		SignalLogger<Integer> signalLogger = new SignalLogger<>(flux, null,
 				"test",
 				Level.INFO,
 				false, CollectionSpecialLogger::new,
@@ -67,7 +67,7 @@ public class SignalLoggerTests {
 				.window(2); //windows happen to be UnicastProcessor, which implements QueueSubscription directly :o
 
 		FluxPeek<Flux<Integer>> flux = new FluxPeek<>(source, null, null, null, null, null, null, null);
-		SignalLogger<Flux<Integer>> signalLogger = new SignalLogger<>(flux,
+		SignalLogger<Flux<Integer>> signalLogger = new SignalLogger<>(flux, null,
 				"test",
 				Level.INFO,
 				false, CollectionSpecialLogger::new,
@@ -128,7 +128,7 @@ public class SignalLoggerTests {
 	@Test
 	public void scanSignalLogger() {
 		Mono<String> source = Mono.just("").map(i -> i);
-		SignalLogger<String> sl = new SignalLogger<>(source, null, Level.INFO, false);
+		SignalLogger<String> sl = new SignalLogger<>(source, null, null, Level.INFO, false);
 
 		Assertions.assertThat(sl.scan(Scannable.Attr.PARENT)).isSameAs(source);
 	}
@@ -143,7 +143,7 @@ public class SignalLoggerTests {
 		when(mockLogger.isDebugEnabled()).thenReturn(true);
 		when(mockLogger.isTraceEnabled()).thenReturn(true);
 
-		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+		SignalLogger<String> sl = new SignalLogger<>(source, null, null, level,
 				false, s -> mockLogger);
 
 		sl.onErrorCall().accept(new IllegalStateException("boom"));
@@ -166,7 +166,7 @@ public class SignalLoggerTests {
 		when(mockLogger.isDebugEnabled()).thenReturn(true);
 		when(mockLogger.isTraceEnabled()).thenReturn(true);
 
-		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+		SignalLogger<String> sl = new SignalLogger<>(source, null, null, level,
 				false, s -> mockLogger);
 
 		sl.onErrorCall().accept(new IllegalStateException("boom"));
@@ -189,7 +189,7 @@ public class SignalLoggerTests {
 		when(mockLogger.isDebugEnabled()).thenReturn(true);
 		when(mockLogger.isTraceEnabled()).thenReturn(true);
 
-		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+		SignalLogger<String> sl = new SignalLogger<>(source, null, null, level,
 				false, s -> mockLogger);
 
 		sl.onErrorCall().accept(new IllegalStateException("boom"));
@@ -212,7 +212,7 @@ public class SignalLoggerTests {
 		when(mockLogger.isDebugEnabled()).thenReturn(true);
 		when(mockLogger.isTraceEnabled()).thenReturn(true);
 
-		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+		SignalLogger<String> sl = new SignalLogger<>(source, null, null, level,
 				false, s -> mockLogger);
 
 		sl.onErrorCall().accept(new IllegalStateException("boom"));
@@ -236,7 +236,7 @@ public class SignalLoggerTests {
 		when(mockLogger.isDebugEnabled()).thenReturn(true);
 		when(mockLogger.isTraceEnabled()).thenReturn(true);
 
-		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+		SignalLogger<String> sl = new SignalLogger<>(source, null, null, level,
 				false, s -> mockLogger);
 
 		sl.onErrorCall().accept(new IllegalStateException("boom"));
@@ -276,6 +276,88 @@ public class SignalLoggerTests {
 
 		verify(mockLogger, only()).warn(anyString(), eq(SignalType.ON_NEXT),
 				eq("foo"));
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void onNextValueMapperAndLogger() {
+		Level level = Level.WARNING;
+
+		Flux<String> source = Flux.just("foo");
+		Logger mockLogger = Mockito.mock(Logger.class);
+
+		source.log(String::length, mockLogger, level)
+		      .subscribe();
+
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_SUBSCRIBE), anyString());
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.REQUEST), anyString());
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_NEXT), eq(3));
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_COMPLETE), anyString());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void onNextValueMapperError() {
+		Level level = Level.WARNING;
+
+		Flux<String> source = Flux.just("foo");
+		Logger mockLogger = Mockito.mock(Logger.class);
+		when(mockLogger.isDebugEnabled()).thenReturn(true);
+
+		source.log(s -> { throw new IllegalStateException("boom"); },
+				mockLogger, level)
+		      .subscribe();
+
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_SUBSCRIBE), anyString());
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.REQUEST), anyString());
+		//this is the fallback:
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_NEXT), eq("foo"));
+		//this is the debug trace of the mapper error:
+		verify(mockLogger, times(1)).isDebugEnabled();
+		verify(mockLogger, times(1)).debug(eq("Could not correctly process the previous element for logging, reverted to toString"),
+				any(IllegalStateException.class));
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_COMPLETE), anyString());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void monoOnNextValueMapperAndLogger() {
+		Level level = Level.WARNING;
+
+		Mono<String> source = Mono.just("foo");
+		Logger mockLogger = Mockito.mock(Logger.class);
+
+		source.log(String::length, mockLogger, level)
+		      .subscribe();
+
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_SUBSCRIBE), anyString());
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.REQUEST), anyString());
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_NEXT), eq(3));
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_COMPLETE), anyString());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void monoOnNextValueMapperError() {
+		Level level = Level.WARNING;
+
+		Mono<String> source = Mono.just("foo");
+		Logger mockLogger = Mockito.mock(Logger.class);
+		when(mockLogger.isDebugEnabled()).thenReturn(true);
+
+		source.log(s -> { throw new IllegalStateException("boom"); },
+				mockLogger, level)
+		      .subscribe();
+
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_SUBSCRIBE), anyString());
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.REQUEST), anyString());
+		//this is the fallback:
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_NEXT), eq("foo"));
+		//this is the debug trace of the mapper error:
+		verify(mockLogger, times(1)).isDebugEnabled();
+		verify(mockLogger, times(1)).debug(eq("Could not correctly process the previous element for logging, reverted to toString"),
+				any(IllegalStateException.class));
+		verify(mockLogger, times(1)).warn(anyString(), eq(SignalType.ON_COMPLETE), anyString());
 		verifyNoMoreInteractions(mockLogger);
 	}
 

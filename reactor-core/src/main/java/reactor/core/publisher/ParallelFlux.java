@@ -707,7 +707,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
-		return onAssembly(new ParallelLog<>(this, new SignalLogger<>(this, category, level, showOperatorLine, options)));
+		return onAssembly(new ParallelLog<>(this, new SignalLogger<>(this, null, category, level, showOperatorLine, options)));
 	}
 
 	/**

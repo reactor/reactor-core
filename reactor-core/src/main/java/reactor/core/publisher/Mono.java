@@ -2638,7 +2638,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
-		SignalLogger<T> log = new SignalLogger<>(this, category, level,
+		SignalLogger<T> log = new SignalLogger<>(this, null, category, level,
 				showOperatorLine, options);
 
 		if (this instanceof Fuseable) {
@@ -2646,7 +2646,6 @@ public abstract class Mono<T> implements Publisher<T> {
 		}
 		return onAssembly(new MonoLog<>(this, log));
 	}
-
 
 	/**
 	 * Observe Reactive Streams signals matching the passed filter {@code options} and
@@ -2686,10 +2685,43 @@ public abstract class Mono<T> implements Publisher<T> {
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
-		SignalLogger<T> log = new SignalLogger<>(this, "IGNORED", level,
+		SignalLogger<T> log = new SignalLogger<>(this, null, "IGNORED", level,
 				showOperatorLine,
 				s -> logger,
 				options);
+
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoLogFuseable<>(this, log));
+		}
+		return onAssembly(new MonoLog<>(this, log));
+	}
+
+	public final Mono<T> log(Function<? super T, ?> mapper) {
+		return log(mapper, (String) null, Level.INFO);
+	}
+
+	public final Mono<T> log(Function<? super T, ?> mapper, String category) {
+		return log(mapper, category, Level.INFO);
+	}
+
+	public final Mono<T> log(Function<? super T, ?> mapper, @Nullable String category, Level level) {
+		SignalLogger<T> log = new SignalLogger<>(this, mapper, category, level,
+				false);
+
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoLogFuseable<>(this, log));
+		}
+		return onAssembly(new MonoLog<>(this, log));
+	}
+
+	public final Mono<T> log(Function<? super T, ?> mapper, Logger logger) {
+		return log(mapper, logger, Level.INFO);
+	}
+
+	public final Mono<T> log(Function<? super T, ?> mapper, Logger logger, Level level) {
+		SignalLogger<T> log = new SignalLogger<>(this, mapper, "IGNORED", level,
+				false,
+				s -> logger);
 
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoLogFuseable<>(this, log));
