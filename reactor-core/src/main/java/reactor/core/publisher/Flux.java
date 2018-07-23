@@ -5512,14 +5512,72 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxLog<>(this, log));
 	}
 
+	/**
+	 * Observe Reactive Streams signals and use {@link Logger} support to trace them.
+	 * Objects emitted as onNext events are passed to a {@code mapper} {@link Function}
+	 * that lets you extract more meaningful data out of the objects. Any exception in
+	 * the mapper is swallowed (a DEBUG level trace is made) and {@link String#valueOf(Object)}
+	 * is used instead.
+	 * <p>
+	 * Logs at {@link Level#INFO INFO Level} using SLF4J is available, or java.util.logging if not.
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
+	 * alt="">
+	 *
+	 * @param mapper the {@link Function} to extract a meaningful but different value for
+	 * logging.
+	 * @return a new unaltered {@link Flux} that logs its events
+	 */
 	public final Flux<T> log(Function<? super T, ?> mapper) {
 		return log(mapper, (String) null, Level.INFO);
 	}
 
+	/**
+	 * Observe Reactive Streams signals and use {@link Logger} support to trace them, with
+	 * a user-provided {@code category}.
+	 * Objects emitted as onNext events are passed to a {@code mapper} {@link Function}
+	 * that lets you extract more meaningful data out of the objects. Any exception in
+	 * the mapper is swallowed (a DEBUG level trace is made) and {@link String#valueOf(Object)}
+	 * is used instead.
+	 * <p>
+	 * Logs at {@link Level#INFO INFO Level} using SLF4J is available, or java.util.logging if not.
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
+	 * alt="">
+	 *
+	 * @param mapper the {@link Function} to extract a meaningful but different value for
+	 * logging.
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor.", a generated operator
+	 * suffix will be added, e.g. "reactor.Flux.Map".
+	 * @return a new unaltered {@link Flux} that logs its events
+	 */
 	public final Flux<T> log(Function<? super T, ?> mapper, String category) {
 		return log(mapper, category, Level.INFO);
 	}
 
+	/**
+	 * Observe Reactive Streams signals and use {@link Logger} support to trace them, with
+	 * a user-provided {@code category} and {@link Level}.
+	 * Objects emitted as onNext events are passed to a {@code mapper} {@link Function}
+	 * that lets you extract more meaningful data out of the objects. Any exception in
+	 * the mapper is swallowed (a DEBUG level trace is made) and {@link String#valueOf(Object)}
+	 * is used instead.
+	 * <p>
+	 * Logs at provided {@link Level} using SLF4J is available, or java.util.logging if not.
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
+	 * alt="">
+	 *
+	 * @param mapper the {@link Function} to extract a meaningful but different value for
+	 * logging.
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor." or is null, a generated operator
+	 * suffix will be added, e.g. "reactor.Flux.Map".
+	 * @param level the {@link Level} to enforce for this tracing Flux (only FINEST, FINE,
+	 * INFO, WARNING and SEVERE are taken into account)
+	 * @return a new unaltered {@link Flux} that logs its events
+	 */
 	public final Flux<T> log(Function<? super T, ?> mapper, @Nullable String category, Level level) {
 		SignalLogger<T> log = new SignalLogger<>(this, mapper, category, level,
 				false);
@@ -5530,10 +5588,47 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxLog<>(this, log));
 	}
 
+	/**
+	 * Observe Reactive Streams signals and use a provided {@link Logger} to trace them.
+	 * Objects emitted as onNext events are passed to a {@code mapper} {@link Function}
+	 * that lets you extract more meaningful data out of the objects. Any exception in
+	 * the mapper is swallowed (a DEBUG level trace is made) and {@link String#valueOf(Object)}
+	 * is used instead.
+	 * <p>
+	 * Logs at {@link Level#INFO INFO Level} using SLF4J is available, or java.util.logging if not.
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
+	 * alt="">
+	 *
+	 * @param mapper the {@link Function} to extract a meaningful but different value for
+	 * logging.
+	 * @param logger the pre-instantiated, pre-configured {@link Logger} to use.
+	 * @return a new unaltered {@link Flux} that logs its events
+	 */
 	public final Flux<T> log(Function<? super T, ?> mapper, Logger logger) {
 		return log(mapper, logger, Level.INFO);
 	}
 
+	/**
+	 * Observe Reactive Streams signals and use a provided {@link Logger} to trace them,
+	 * at a specified {@link Level}.
+	 * Objects emitted as onNext events are passed to a {@code mapper} {@link Function}
+	 * that lets you extract more meaningful data out of the objects. Any exception in
+	 * the mapper is swallowed (a DEBUG level trace is made) and {@link String#valueOf(Object)}
+	 * is used instead.
+	 * <p>
+	 * Logs at the provided {@link Level} using SLF4J is available, or java.util.logging if not.
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
+	 * alt="">
+	 *
+	 * @param mapper the {@link Function} to extract a meaningful but different value for
+	 * logging.
+	 * @param logger the pre-instantiated, pre-configured {@link Logger} to use.
+	 * @param level the {@link Level} to enforce for this tracing Flux (only FINEST, FINE,
+	 * INFO, WARNING and SEVERE are taken into account)
+	 * @return a new unaltered {@link Flux} that logs its events
+	 */
 	public final Flux<T> log(Function<? super T, ?> mapper, Logger logger, Level level) {
 		SignalLogger<T> log = new SignalLogger<>(this, mapper, "IGNORED", level,
 				false,
