@@ -26,7 +26,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
+import reactor.core.Fuseable.ConditionalSubscriber;
+import reactor.core.publisher.Operators.DeferredSubscription;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -47,7 +48,7 @@ import reactor.util.context.Context;
  * @param <T> the value type streamed
  * @param <S> the resource type
  */
-final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProducer<T> {
+final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<S>                                          resourceSupplier;
 	final Function<? super S, ? extends Publisher<? extends T>> resourceClosure;
@@ -79,8 +80,15 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 					Operators.complete(actual);
 				}
 				else {
-					subscribeToResource(resource, actual, resourceClosure,
-							asyncComplete, asyncError, asyncCancel);
+					Publisher<? extends T> p = deriveFluxFromResource(resource, resourceClosure);
+					UsingWhenSubscriber<? super T, S> subscriber = prepareSubscriberForResource(resource,
+							actual,
+							asyncComplete,
+							asyncError,
+							asyncCancel,
+							null);
+
+					p.subscribe(subscriber);
 				}
 			}
 			catch (Throwable e) {
@@ -98,12 +106,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		return null; //no particular key to be represented, still useful in hooks
 	}
 
-	private static <S, T> void subscribeToResource(S resource,
-			CoreSubscriber<? super T> actual,
-			Function<? super S, ? extends Publisher<? extends T>> resourceClosure,
-			Function<? super S, ? extends Publisher<?>> asyncComplete,
-			Function<? super S, ? extends Publisher<?>> asyncError,
-			@Nullable Function<? super S, ? extends Publisher<?>> asyncCancel) {
+	private static <RESOURCE, T> Publisher<? extends T> deriveFluxFromResource(
+			RESOURCE resource,
+			Function<? super RESOURCE, ? extends Publisher<? extends T>> resourceClosure) {
 
 		Publisher<? extends T> p;
 
@@ -112,24 +117,41 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 					"The resourceClosure function returned a null value");
 		}
 		catch (Throwable e) {
-			//TODO should a closure#apply error translate to a asyncError? (for now it will)
 			p = Flux.error(e);
 		}
 
-		if (p instanceof Fuseable) {
-			Flux.from(p).subscribe(new UsingWhenFuseableSubscriber<>(actual,
-					resource, asyncComplete, asyncError, asyncCancel));
-		}
-		else if (actual instanceof ConditionalSubscriber) {
-			Flux.from(p).subscribe(new UsingWhenConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
-					resource, asyncComplete, asyncError, asyncCancel));
+		return p;
+	}
+
+	private static <RESOURCE, T> UsingWhenSubscriber<? super T, RESOURCE> prepareSubscriberForResource(
+			RESOURCE resource,
+			CoreSubscriber<? super T> actual,
+			Function<? super RESOURCE, ? extends Publisher<?>> asyncComplete,
+			Function<? super RESOURCE, ? extends Publisher<?>> asyncError,
+			@Nullable Function<? super RESOURCE, ? extends Publisher<?>> asyncCancel,
+			@Nullable DeferredSubscription arbiter) {
+		if (actual instanceof ConditionalSubscriber) {
+			@SuppressWarnings("unchecked")
+			ConditionalSubscriber<? super T> conditionalActual = (ConditionalSubscriber<? super T>) actual;
+			return new UsingWhenConditionalSubscriber<>(conditionalActual,
+					resource,
+					asyncComplete,
+					asyncError,
+					asyncCancel,
+					arbiter);
 		}
 		else {
-			Flux.from(p).subscribe(new UsingWhenSubscriber<>(actual, resource, asyncComplete, asyncError, asyncCancel));
+			return new UsingWhenSubscriber<>(actual,
+					resource,
+					asyncComplete,
+					asyncError,
+					asyncCancel,
+					arbiter);
 		}
 	}
 
-	static class ResourceSubscriber<S, T> implements InnerConsumer<S> {
+	static class ResourceSubscriber<S, T> extends DeferredSubscription
+			implements InnerConsumer<S> {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -140,8 +162,10 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		final Function<? super S, ? extends Publisher<?>>           asyncCancel;
 		final boolean                                               isMonoSource;
 
-		Subscription s;
-		boolean resourceProvided;
+		Subscription resourceSubscription;
+		boolean      resourceProvided;
+
+		UsingWhenSubscriber<? super T, S> closureSubscriber;
 
 		ResourceSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super S, ? extends Publisher<? extends T>> resourceClosure,
@@ -165,11 +189,18 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			}
 			resourceProvided = true;
 
-			FluxUsingWhen.subscribeToResource(resource, actual, resourceClosure,
-					asyncComplete, asyncError, asyncCancel);
+			final Publisher<? extends T> p = deriveFluxFromResource(resource, resourceClosure);
+			this.closureSubscriber = prepareSubscriberForResource(resource,
+					this.actual,
+					this.asyncComplete,
+					this.asyncError,
+					this.asyncCancel,
+					this);
+
+			p.subscribe(closureSubscriber);
 
 			if (!isMonoSource) {
-				s.cancel();
+				resourceSubscription.cancel();
 			}
 		}
 
@@ -184,9 +215,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 				Operators.onErrorDropped(throwable, actual.currentContext());
 				return;
 			}
-			//if no resource provided, actual.onSubscribe has not been called
-			//let's call it and immediately terminate it with the error
-			Operators.error(actual, throwable);
+			//even if no resource provided, actual.onSubscribe has been called
+			//let's immediately complete actual
+			actual.onError(throwable);
 		}
 
 		@Override
@@ -194,35 +225,51 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			if (resourceProvided) {
 				return;
 			}
-			//if no resource provided, actual.onSubscribe has not been called
-			//let's call it and immediately complete it
-			Operators.complete(actual);
+			//even if no resource provided, actual.onSubscribe has been called
+			//let's immediately complete actual
+			actual.onComplete();
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
+			if (Operators.validate(this.resourceSubscription, s)) {
+				this.resourceSubscription = s;
+				actual.onSubscribe(this);
 				s.request(Long.MAX_VALUE);
 			}
 		}
 
 		@Override
+		public void cancel() {
+			if (!resourceProvided) {
+				resourceSubscription.cancel();
+				super.cancel();
+			}
+			else {
+				Operators.terminate(S, this);
+				if (closureSubscriber != null) {
+					closureSubscriber.cancel();
+				}
+			}
+		}
+
+		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
+			if (key == Attr.PARENT) return resourceSubscription;
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.TERMINATED) return resourceProvided;
 
 			return null;
 		}
+
 	}
 
-	static class UsingWhenSubscriber<T, S> implements UsingWhenParent<T>,
-	                                                  QueueSubscription<T> {
+	static class UsingWhenSubscriber<T, S> implements UsingWhenParent<T> {
 
 		//state that differs in the different variants
 		final CoreSubscriber<? super T>                                            actual;
+
 		volatile Subscription                                                      s;
 		static final AtomicReferenceFieldUpdater<UsingWhenSubscriber, Subscription>SUBSCRIPTION =
 				AtomicReferenceFieldUpdater.newUpdater(UsingWhenSubscriber.class,
@@ -234,6 +281,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		final Function<? super S, ? extends Publisher<?>> asyncError;
 		@Nullable
 		final Function<? super S, ? extends Publisher<?>> asyncCancel;
+		@Nullable
+		final DeferredSubscription                        arbiter;
 
 		/**
 		 * Also stores the onComplete terminal state as {@link Exceptions#TERMINATED}
@@ -244,12 +293,14 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 				S resource,
 				Function<? super S, ? extends Publisher<?>> asyncComplete,
 				Function<? super S, ? extends Publisher<?>> asyncError,
-				@Nullable Function<? super S, ? extends Publisher<?>> asyncCancel) {
+				@Nullable Function<? super S, ? extends Publisher<?>> asyncCancel,
+				@Nullable DeferredSubscription arbiter) {
 			this.actual = actual;
 			this.resource = resource;
 			this.asyncComplete = asyncComplete;
 			this.asyncError = asyncError;
 			this.asyncCancel = asyncCancel;
+			this.arbiter = arbiter;
 		}
 
 		@Override
@@ -279,12 +330,10 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			if (Operators.terminate(SUBSCRIPTION, this)) {
 				try {
 					if (asyncCancel != null) {
-						//FIXME better integration of asyncCancel?
 						Flux.from(asyncCancel.apply(resource))
 						    .subscribe(new CancelInner(this));
 					}
 					else {
-						//FIXME should there be a default to the "complete" path on cancellation, or NO-OP?
 						Flux.from(asyncComplete.apply(resource))
 						    .subscribe(new CancelInner(this));
 					}
@@ -348,56 +397,34 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 			this.actual.onError(error);
 		}
 
-		// below methods have changes in the different implementations
-
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				actual.onSubscribe(this);
+				if (arbiter == null) {
+					actual.onSubscribe(this);
+				}
+				else {
+					arbiter.set(s);
+				}
 			}
 		}
 
-		@Override
-		public int requestFusion(int requestedMode) {
-			return NONE; // always reject, upstream turned out to be non-fuseable after all
-		}
-
-		@Override
-		public void clear() {
-			// ignoring fusion methods
-		}
-
-		@Override
-		public boolean isEmpty() {
-			// ignoring fusion methods
-			return true;
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			return null;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
 	}
 
 	static final class UsingWhenConditionalSubscriber<T, S>
 			extends UsingWhenSubscriber<T, S>
 			implements ConditionalSubscriber<T> {
 
-		final ConditionalSubscriber<? super T>            actual;
+		final ConditionalSubscriber<? super T> actual;
 
 		UsingWhenConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				S resource,
 				Function<? super S, ? extends Publisher<?>> asyncComplete,
 				Function<? super S, ? extends Publisher<?>> asyncError,
-				@Nullable Function<? super S, ? extends Publisher<?>> asyncCancel) {
-			super(actual, resource, asyncComplete, asyncError, asyncCancel);
+				@Nullable Function<? super S, ? extends Publisher<?>> asyncCancel,
+				@Nullable DeferredSubscription arbiter) {
+			super(actual, resource, asyncComplete, asyncError, asyncCancel, arbiter);
 			this.actual = actual;
 		}
 
@@ -405,231 +432,6 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements Fuseable, SourceProdu
 		public boolean tryOnNext(T t) {
 			return actual.tryOnNext(t);
 		}
-	}
-
-	static final class UsingWhenFuseableSubscriber<T, S> implements QueueSubscription<T>,
-	                                                                UsingWhenParent<T> {
-
-		//state that differs in the different variants
-		int mode;
-		final CoreSubscriber<? super T>                                                         actual;
-		volatile     QueueSubscription<T>                                                       qs;
-
-		static final AtomicReferenceFieldUpdater<UsingWhenFuseableSubscriber, QueueSubscription>SUBSCRIPTION =
-				AtomicReferenceFieldUpdater.newUpdater(UsingWhenFuseableSubscriber.class,
-						QueueSubscription.class, "qs");
-
-		//rest of the state is same as UsingAsyncSubscriber
-		final S                                           resource;
-		final Function<? super S, ? extends Publisher<?>> asyncComplete;
-		final Function<? super S, ? extends Publisher<?>> asyncError;
-		@Nullable
-		final Function<? super S, ? extends Publisher<?>> asyncCancel;
-
-		/**
-		 * Also stores the onComplete terminal state as {@link Exceptions#TERMINATED}
-		 */
-		Throwable error;
-
-		UsingWhenFuseableSubscriber(CoreSubscriber<? super T> actual,
-				S resource,
-				Function<? super S, ? extends Publisher<?>> asyncComplete,
-				Function<? super S, ? extends Publisher<?>> asyncError,
-				@Nullable Function<? super S, ? extends Publisher<?>> asyncCancel) {
-			this.actual = actual;
-			this.resource = resource;
-			this.asyncComplete = asyncComplete;
-			this.asyncError = asyncError;
-			this.asyncCancel = asyncCancel;
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return this.actual;
-		}
-
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED) return error != null;
-			if (key == Attr.ERROR) return (error == Exceptions.TERMINATED) ? null : error;
-			if (key == Attr.CANCELLED) return  qs == CANCELLED;
-			if (key == Attr.PARENT) return qs;
-
-			return UsingWhenParent.super.scanUnsafe(key);
-		}
-
-		@Override
-		public void request(long l) {
-			if (Operators.validate(l)) {
-				qs.request(l);
-			}
-		}
-
-		@Override
-		public void cancel() {
-			QueueSubscription a = SUBSCRIPTION.get(this);
-			if (a != CANCELLED) {
-				a = SUBSCRIPTION.getAndSet(this, CANCELLED);
-				if (a != null) {
-					a.cancel();
-
-					try {
-						if (asyncCancel != null) {
-							//FIXME better integration of asyncCancel?
-							Flux.from(asyncCancel.apply(resource))
-							    .subscribe(new CancelInner(this));
-						}
-						else {
-							//FIXME should there be a default to the "complete" path on cancellation, or NO-OP?
-							Flux.from(asyncComplete.apply(resource))
-							    .subscribe(new CancelInner(this));
-						}
-					}
-					catch (Throwable error) {
-						Loggers.getLogger(FluxUsingWhen.class).warn("Error generating async resource cleanup during onCancel", error);
-					}
-				}
-				//else already cancelled
-			}
-		}
-
-		@Override
-		public void onNext(T t) {
-			actual.onNext(t);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			Publisher<?> p;
-
-			try {
-				p = Objects.requireNonNull(asyncError.apply(resource),
-						"The asyncError returned a null Publisher");
-			}
-			catch (Throwable e) {
-				Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-				_e = Exceptions.addSuppressed(_e, t);
-				actual.onError(_e);
-				return;
-			}
-
-			p.subscribe(new RollbackInner(this, t));
-		}
-
-		@Override
-		public void onComplete() {
-			Publisher<?> p;
-
-			try {
-				p = Objects.requireNonNull(asyncComplete.apply(resource),
-						"The asyncComplete returned a null Publisher");
-			}
-			catch (Throwable e) {
-				Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-				actual.onError(_e);
-				return;
-			}
-
-			p.subscribe(new CommitInner(this));
-		}
-
-		@Override
-		public void deferredComplete() {
-			this.error = Exceptions.TERMINATED;
-			this.actual.onComplete();
-		}
-
-		@Override
-		public void deferredError(Throwable error) {
-			this.error = error;
-			this.actual.onError(error);
-		}
-
-		// below are methods differing from UsingAsyncSubscriber
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.qs, s)) {
-				//noinspection unchecked
-				this.qs = (QueueSubscription<T>) s;
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Override
-		public void clear() {
-			qs.clear();
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return qs.isEmpty();
-		}
-
-		@Override
-		public int size() {
-			return qs.size();
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			T v = qs.poll();
-
-			if (v == null && mode == SYNC) {
-				Flux.from(asyncComplete.apply(resource))
-				    .subscribe(it -> {},
-						    e -> Loggers.getLogger(FluxUsingWhen.class)
-						                .warn("Async resource cleanup failed after poll", e));
-			}
-			return v;
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			int m = qs.requestFusion(requestedMode);
-			this.mode = m;
-			return m;
-		}
-
-		private static final QueueSubscription<?> CANCELLED = new QueueSubscription<Object>() {
-			@Override
-			public void request(long l) {
-				//NO-OP
-			}
-
-			@Override
-			public void cancel() {
-				//NO-OP
-			}
-
-			@Override
-			public int size() {
-				return 0;
-			}
-
-			@Override
-			public boolean isEmpty() {
-				return false;
-			}
-
-			@Override
-			public void clear() {
-				//NO-OP
-			}
-
-			@Nullable
-			@Override
-			public Object poll() {
-				return null;
-			}
-
-			@Override
-			public int requestFusion(int requestedMode) {
-				return Fuseable.NONE;
-			}
-		};
-
 	}
 
 	static final class RollbackInner implements InnerConsumer<Object> {
