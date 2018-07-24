@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Fuseable;
 import reactor.core.Scannable.Attr;
 import reactor.core.publisher.MonoUsingWhen.ResourceSubscriber;
 import reactor.test.StepVerifier;

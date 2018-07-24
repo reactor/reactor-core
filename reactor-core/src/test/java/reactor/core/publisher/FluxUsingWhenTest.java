@@ -994,7 +994,7 @@ public class FluxUsingWhenTest {
 		PublisherProbe<Integer> rollbackProbe = PublisherProbe.empty();
 
 		TestResource() {
-			this.level = Level.WARNING;
+			this.level = Level.FINE;
 		}
 
 		TestResource(Level level) {
