@@ -907,7 +907,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.just(1, 2)
 				.hide()
 				.<Integer>concatMap(f -> null)
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -930,7 +930,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -954,7 +954,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -975,7 +975,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						throw new ArithmeticException("boom");
 					}
 				}))
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -998,7 +998,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 
 		StepVerifier.create(test)
@@ -1024,7 +1024,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 
 		StepVerifier.create(test)
@@ -1041,8 +1041,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.concatMap(f ->  Flux.range(f, 1).map(i -> 1/i).errorStrategyStop())
-				.errorStrategyContinue();
+				.concatMap(f ->  Flux.range(f, 1).map(i -> 1/i).onErrorStop())
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1058,8 +1058,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.concatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1 / i).errorStrategyStop())
-				.errorStrategyContinue();
+				.concatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1 / i).onErrorStop())
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1076,7 +1076,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.just(0, 1)
 				.hide()
 				.concatMap(f ->  Mono.just(f).map(i -> 1/i))
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1093,7 +1093,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.just(0, 1)
 				.hide()
 				.concatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i))
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
