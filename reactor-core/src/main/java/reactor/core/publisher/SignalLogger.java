@@ -57,31 +57,34 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 
 	final Publisher<IN> source;
 
-	final Logger  log;
-	final boolean fuseable;
-	final int     options;
-	final Level   level;
-	final String  operatorLine;
-	final long    id;
+	final Logger                  log;
+	final boolean                 fuseable;
+	final int                     options;
+	final Level                   level;
+	final String                  operatorLine;
+	final long                    id;
+	final Function<? super IN, ?> valueMapper;
 
 	static final String LOG_TEMPLATE          = "{}({})";
 	static final String LOG_TEMPLATE_FUSEABLE = "| {}({})";
 
 	SignalLogger(Publisher<IN> source,
+			@Nullable Function<? super IN, ?> valueMapper,
 			@Nullable String category,
 			Level level,
 			boolean correlateStack,
 			SignalType... options) {
-		this(source, category, level, correlateStack, Loggers::getLogger, options);
+		this(source, valueMapper, category, level, correlateStack, Loggers::getLogger, options);
 	}
 
 	SignalLogger(Publisher<IN> source,
+			@Nullable Function<? super IN, ?> valueMapper,
 			@Nullable String category,
 			Level level,
 			boolean correlateStack,
 			Function<String, Logger> loggerSupplier,
 			@Nullable SignalType... options) {
-
+		this.valueMapper = valueMapper;
 		this.source = Objects.requireNonNull(source, "source");
 		this.id = IDS.getAndIncrement();
 		this.fuseable = source instanceof Fuseable;
@@ -200,15 +203,25 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	 *
 	 * @see #log
 	 */
-	void safeLog(SignalType signalType, Object signalValue) {
+	void safeOnNextLog(final SignalType signalType, final IN signalValue) {
 		try {
-			log(signalType, signalValue);
+			Object toLog = signalValue;
+			if (valueMapper != null && signalType == SignalType.ON_NEXT) {
+				toLog = valueMapper.apply(signalValue);
+			}
+			log(signalType, toLog);
 		}
 		catch (UnsupportedOperationException uoe) {
 			log(signalType, String.valueOf(signalValue));
 			if (log.isDebugEnabled()) {
 				log.debug("UnsupportedOperationException has been raised by the logging framework, does your log() placement make sense? " +
 						"eg. 'window(2).log()' instead of 'window(2).flatMap(w -> w.log())'", uoe);
+			}
+		}
+		catch (Throwable t) {
+			log(signalType, String.valueOf(signalValue));
+			if (log.isDebugEnabled()) {
+				log.debug("Could not correctly process the previous element for logging, reverted to toString", t);
 			}
 		}
 	}
@@ -261,7 +274,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Nullable
 	public Consumer<? super IN> onNextCall() {
 		if ((options & ON_NEXT) == ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
-			return d -> safeLog(SignalType.ON_NEXT, d);
+			return d -> safeOnNextLog(SignalType.ON_NEXT, d);
 		}
 		return null;
 	}
