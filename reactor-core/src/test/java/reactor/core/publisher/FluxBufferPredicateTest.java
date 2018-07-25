@@ -711,4 +711,34 @@ public class FluxBufferPredicateTest {
 		test.cancel();
 		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
+
+	@Test
+	public void discardOnCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.never())
+		                        .bufferUntil(i -> i > 10))
+		            .thenAwait(Duration.ofMillis(10))
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardOnPredicateError() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+				.bufferUntil(i -> { if (i == 3) throw new IllegalStateException("boom"); else return false; }))
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardOnError() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.error(new IllegalStateException("boom")))
+		                        .bufferUntil(i -> i > 10))
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
 }

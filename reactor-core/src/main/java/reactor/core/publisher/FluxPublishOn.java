@@ -273,7 +273,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
-				queue.clear();
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 			}
 		}
 
@@ -289,7 +289,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				worker.schedule(this);
 			}
 			catch (RejectedExecutionException ree) {
-				queue.clear();
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
 						actual.currentContext()));
 			}
@@ -320,6 +320,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					}
 
 					if (cancelled) {
+						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
 						return;
 					}
 					if (v == null) {
@@ -333,6 +334,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				}
 
 				if (cancelled) {
+					Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
 					return;
 				}
 
@@ -377,7 +379,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						q.clear();
+						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
 
 						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
 						return;
@@ -429,6 +431,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			for (; ; ) {
 
 				if (cancelled) {
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+
 					return;
 				}
 
@@ -483,7 +487,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
-				queue.clear();
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				return true;
 			}
 			if (d) {
@@ -502,7 +506,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				else {
 					Throwable e = error;
 					if (e != null) {
-						queue.clear();
+						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 						doError(a, e);
 						return true;
 					}
@@ -539,7 +543,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void clear() {
-			queue.clear();
+			Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 		}
 
 		@Override
@@ -739,7 +743,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
-				queue.clear();
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 			}
 		}
 
@@ -755,7 +759,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				worker.schedule(this);
 			}
 			catch (RejectedExecutionException ree) {
-				queue.clear();
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
 						actual.currentContext()));
 			}
@@ -785,6 +789,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					}
 
 					if (cancelled) {
+						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
 						return;
 					}
 					if (v == null) {
@@ -798,6 +803,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				}
 
 				if (cancelled) {
+					Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
 					return;
 				}
 
@@ -842,7 +848,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						q.clear();
+						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
 
 						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
 						return;
@@ -895,6 +901,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			for (; ; ) {
 
 				if (cancelled) {
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 					return;
 				}
 
@@ -970,7 +977,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
-				queue.clear();
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				return true;
 			}
 			if (d) {
@@ -989,7 +996,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				else {
 					Throwable e = error;
 					if (e != null) {
-						queue.clear();
+						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 						doError(a, e);
 						return true;
 					}
@@ -1005,7 +1012,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void clear() {
-			queue.clear();
+			Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 		}
 
 		@Override

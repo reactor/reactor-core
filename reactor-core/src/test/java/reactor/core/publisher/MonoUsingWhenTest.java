@@ -17,17 +17,19 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
+import reactor.core.Disposable;
 import reactor.core.Scannable.Attr;
-import reactor.core.ScannableTest;
 import reactor.core.publisher.MonoUsingWhen.ResourceSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -228,6 +230,83 @@ public class MonoUsingWhenTest {
 		assertThat(cancelled).as("resource publisher was not cancelled").isFalse();
 	}
 
+
+	@Test
+	public void lateFluxResourcePublisherIsCancelledOnCancel() {
+		AtomicBoolean resourceCancelled = new AtomicBoolean();
+		AtomicBoolean commitDone = new AtomicBoolean();
+		AtomicBoolean rollbackDone = new AtomicBoolean();
+		AtomicBoolean cancelDone = new AtomicBoolean();
+
+		Flux<String> resourcePublisher = Flux.<String>never()
+				.doOnCancel(() -> resourceCancelled.set(true));
+
+		StepVerifier.create(Mono.usingWhen(resourcePublisher,
+				Mono::just,
+				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
+				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)),
+				tr -> Mono.fromRunnable(() -> cancelDone.set(true))))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(commitDone).as("commitDone").isFalse();
+		assertThat(rollbackDone).as("rollbackDone").isFalse();
+		assertThat(cancelDone).as("cancelDone").isFalse();
+
+		assertThat(resourceCancelled).as("resource cancelled").isTrue();
+	}
+
+	@Test
+	public void lateMonoResourcePublisherIsCancelledOnCancel() {
+		AtomicBoolean resourceCancelled = new AtomicBoolean();
+		AtomicBoolean commitDone = new AtomicBoolean();
+		AtomicBoolean rollbackDone = new AtomicBoolean();
+		AtomicBoolean cancelDone = new AtomicBoolean();
+
+		Mono<String> resourcePublisher = Mono.<String>never()
+				.doOnCancel(() -> resourceCancelled.set(true));
+
+		Mono<String> usingWhen = Mono.usingWhen(resourcePublisher,
+				Mono::just,
+				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
+				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)),
+				tr -> Mono.fromRunnable(() -> cancelDone.set(true)));
+
+		StepVerifier.create(usingWhen)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(commitDone).as("commitDone").isFalse();
+		assertThat(rollbackDone).as("rollbackDone").isFalse();
+		assertThat(cancelDone).as("cancelDone").isFalse();
+
+		assertThat(resourceCancelled).as("resource cancelled").isTrue();
+	}
+
+	@Test
+	public void blockOnNeverResourceCanBeCancelled() throws InterruptedException {
+		CountDownLatch latch = new CountDownLatch(1);
+		Disposable disposable = Mono.usingWhen(Mono.<String>never(),
+				Mono::just,
+				Flux::just,
+				Flux::just,
+				Flux::just)
+		                            .doFinally(f -> latch.countDown())
+		                            .subscribe();
+
+		assertThat(latch.await(500, TimeUnit.MILLISECONDS))
+				.as("hangs before dispose").isFalse();
+
+		disposable.dispose();
+
+		assertThat(latch.await(100, TimeUnit.MILLISECONDS))
+				.as("terminates after dispose").isTrue();
+	}
+
 	@Test
 	public void failToGenerateClosureAppliesRollback() {
 		FluxUsingWhenTest.TestResource testResource = new FluxUsingWhenTest.TestResource();
@@ -262,6 +341,20 @@ public class MonoUsingWhenTest {
 
 		testResource.commitProbe.assertWasNotSubscribed();
 		testResource.rollbackProbe.assertWasSubscribed();
+	}
+
+	@Test
+	public void resourceSupplierCanAccessContext() {
+		Mono.usingWhen(Mono.subscriberContext()
+		                   .map(ctx -> ctx.get(String.class)),
+				Mono::just,
+				Mono::just,
+				Mono::just,
+				Mono::just)
+		    .subscriberContext(Context.of(String.class, "contextual"))
+		    .as(StepVerifier::create)
+		    .expectNext("contextual")
+		    .verifyComplete();
 	}
 
 	// == scanUnsafe tests ==

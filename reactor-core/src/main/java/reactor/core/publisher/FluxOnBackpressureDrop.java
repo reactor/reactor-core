@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Drops values if the subscriber doesn't request fast enough.
@@ -33,7 +34,6 @@ import reactor.util.annotation.Nullable;
 final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 
 	static final Consumer<Object> NOOP = t -> {
-
 	};
 
 	final Consumer<? super T> onDrop;
@@ -63,6 +63,7 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 			implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context                   ctx;
 		final Consumer<? super T>   onDrop;
 
 		Subscription s;
@@ -76,6 +77,7 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 
 		DropSubscriber(CoreSubscriber<? super T> actual, Consumer<? super T> onDrop) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.onDrop = onDrop;
 		}
 
@@ -104,14 +106,14 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onNext(T t) {
-
 			if (done) {
 				try {
 					onDrop.accept(t);
 				}
 				catch (Throwable e) {
-					Operators.onErrorDropped(e, actual.currentContext());
+					Operators.onErrorDropped(e, ctx);
 				}
+				Operators.onDiscard(t, ctx);
 				return;
 			}
 
@@ -127,8 +129,9 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 					onDrop.accept(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					onError(Operators.onOperatorError(s, e, t, ctx));
 				}
+				Operators.onDiscard(t, ctx);
 			}
 		}
 

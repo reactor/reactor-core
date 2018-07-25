@@ -383,8 +383,9 @@ date but is more reliable, you could do the following:
 [source,java]
 ----
 Flux.just("key1", "key2")
-    .flatMap(k -> callExternalService(k)) // <1>
-    .onErrorResume(e -> getFromCache(k)); // <2>
+    .flatMap(k -> callExternalService(k) // <1>
+        .onErrorResume(e -> getFromCache(k)) // <2>
+    );
 ----
 <1> For each key, we asynchronously call the external service.
 <2> If the external service call fails, we fallback to the cache for that key. Note that
@@ -397,15 +398,16 @@ depending on the error encountered:
 [source,java]
 ----
 Flux.just("timeout1", "unknown", "key2")
-    .flatMap(k -> callExternalService(k))
-    .onErrorResume(error -> { // <1>
-        if (error instanceof TimeoutException) // <2>
-            return getFromCache(k);
-        else if (error instanceof UnknownKeyException)  // <3>
-            return registerNewEntry(k, "DEFAULT");
-        else
-            return Flux.error(error); // <4>
-    });
+    .flatMap(k -> callExternalService(k)
+        .onErrorResume(error -> { // <1>
+            if (error instanceof TimeoutException) // <2>
+                return getFromCache(k);
+            else if (error instanceof UnknownKeyException)  // <3>
+                return registerNewEntry(k, "DEFAULT");
+            else
+                return Flux.error(error); // <4>
+        })
+    );
 ----
 <1> The function allows dynamically choosing how to continue.
 <2> If the source times out, hit the local cache.
@@ -443,8 +445,7 @@ to how item *(4)* (Catch, wrap to a `BusinessException`, and re-throw) could be 
 Flux.just("timeout1")
     .flatMap(k -> callExternalService(k))
     .onErrorResume(original -> Flux.error(
-        new BusinessException("oops, SLA exceeded", original)
-    );
+            new BusinessException("oops, SLA exceeded", original));
 ----
 
 However, there is a more straightforward way of achieving the same with `onErrorMap`:
@@ -472,12 +473,13 @@ increment as an error side-effect.
 LongAdder failureStat = new LongAdder();
 Flux<String> flux =
 Flux.just("unknown")
-    .flatMap(k -> callExternalService(k)) // <1>
-    .doOnError(e -> {
-        failureStat.increment();
-        log("uh oh, falling back, service failed for key " + k); // <2>
-    })
-    .onErrorResume(e -> getFromCache(k)); // <3>
+    .flatMap(k -> callExternalService(k) // <1>
+        .doOnError(e -> {
+            failureStat.increment();
+            log("uh oh, falling back, service failed for key " + k); // <2>
+        })
+        .onErrorResume(e -> getFromCache(k)) // <3>
+    );
 ----
 <1> The external service call that can fail...
 <2> ...is decorated with a logging side-effect...

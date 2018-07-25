@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
@@ -25,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -314,6 +316,137 @@ public abstract class Operators {
 			}
 		}
 		return u;
+	}
+
+	@Nullable
+	private static Consumer<Object> localOrGlobalOnDiscardHook(Context context) {
+		return context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
+	}
+
+	/**
+	 * Invoke a (local or global) hook that processes elements that get discarded. This
+	 * includes elements that are dropped (for malformed sources), but also filtered out
+	 * (eg. not passing a {@code filter()} predicate).
+	 * <p>
+	 * For elements that are buffered or enqueued, but subsequently discarded due to
+	 * cancellation or error, see {@link #onDiscardMultiple(Stream, Context)} and
+	 * {@link #onDiscardQueueWithClear(Queue, Context, Function)}.
+	 *
+	 * @param element the element that is being discarded
+	 * @param context the context in which to look for a local hook
+	 * @param <T> the type of the element
+	 * @see #onDiscardMultiple(Stream, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
+	 */
+	public static <T> void onDiscard(@Nullable T element, Context context) {
+		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		if (element != null && hook != null) {
+			try {
+				hook.accept(element);
+			}
+			catch (Throwable t) {
+				log.warn("Error in discard hook", t);
+			}
+		}
+	}
+
+	/**
+	 * Invoke a (local or global) hook that processes elements that get discarded
+	 * en masse after having been enqueued, due to cancellation or error. This method
+	 * also empties the {@link Queue} (either by repeated {@link Queue#poll()} calls if
+	 * a hook is defined, or by {@link Queue#clear()} as a shortcut if no hook is defined).
+	 *
+	 * @param queue the queue that is being discarded and cleared
+	 * @param context the context in which to look for a local hook
+	 * @param extract an optional extractor method for cases where the queue doesn't
+	 * directly contain the elements to discard
+	 * @param <T> the type of the element
+	 * @see #onDiscardMultiple(Stream, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscard(Object, Context)
+	 */
+	public static <T> void onDiscardQueueWithClear(
+			@Nullable Queue<T> queue,
+			Context context,
+			@Nullable Function<T, Stream<?>> extract) {
+		if (queue == null) {
+			return;
+		}
+
+		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		if (hook == null) {
+			queue.clear();
+			return;
+		}
+
+		try {
+			for(;;) {
+				T toDiscard = queue.poll();
+				if (toDiscard == null) {
+					break;
+				}
+
+				if (extract != null) {
+					extract.apply(toDiscard)
+					       .forEach(hook);
+				}
+				else {
+					hook.accept(toDiscard);
+				}
+			}
+		}
+		catch (Throwable t) {
+			log.warn("Error in discard hook while discarding and clearing a queue", t);
+		}
+	}
+
+  /**
+   * Invoke a (local or global) hook that processes elements that get discarded en masse.
+   * This includes elements that are buffered but subsequently discarded due to
+   * cancellation or error.
+   *
+   * @param multiple the collection of elements to discard (possibly extracted from other
+   * collections/arrays/queues)
+   * @param context the {@link Context} in which to look for local hook
+   * @see #onDiscard(Object, Context)
+   * @see #onDiscardMultiple(Collection, Context)
+   * @see #onDiscardQueueWithClear(Queue, Context, Function)
+   */
+  public static void onDiscardMultiple(Stream<?> multiple, Context context) {
+		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		if (hook != null) {
+			try {
+				multiple.forEach(hook);
+			}
+			catch (Throwable t) {
+				log.warn("Error in discard hook while discarding multiple values", t);
+			}
+		}
+	}
+
+  /**
+   * Invoke a (local or global) hook that processes elements that get discarded en masse.
+   * This includes elements that are buffered but subsequently discarded due to
+   * cancellation or error.
+   *
+   * @param multiple the collection of elements to discard
+   * @param context the {@link Context} in which to look for local hook
+   * @see #onDiscard(Object, Context)
+   * @see #onDiscardMultiple(Stream, Context)
+   * @see #onDiscardQueueWithClear(Queue, Context, Function)
+   */
+	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
+		if (multiple == null) return;
+		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		if (hook != null) {
+			try {
+				multiple.forEach(hook);
+			}
+			catch (Throwable t) {
+				log.warn("Error in discard hook while discarding multiple values", t);
+			}
+		}
 	}
 
 	/**
@@ -1240,6 +1373,9 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
+			if (this.state == NO_REQUEST_HAS_VALUE) {
+				Operators.onDiscard(value, currentContext());
+			}
 			this.state = CANCELLED;
 			value = null;
 		}
@@ -1302,6 +1438,7 @@ public abstract class Operators {
 				}
 				state = this.state;
 				if (state == CANCELLED) {
+					Operators.onDiscard(value, actual.currentContext());
 					value = null;
 					return;
 				}
@@ -1805,11 +1942,17 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
+			if (once == 0) {
+				Operators.onDiscard(value, actual.currentContext());
+			}
 			ONCE.lazySet(this, 2);
 		}
 
 		@Override
 		public void clear() {
+			if (once == 0) {
+				Operators.onDiscard(value, actual.currentContext());
+			}
 			ONCE.lazySet(this, 1);
 		}
 

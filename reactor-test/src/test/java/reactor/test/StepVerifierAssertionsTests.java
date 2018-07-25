@@ -124,6 +124,77 @@ public class StepVerifierAssertionsTests {
 	}
 
 	@Test
+	public void assertDiscardedElementsAllPass() {
+		StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+		            .expectNext(2)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedElements()
+		            .hasDiscardedExactly(1, 3)
+		            .hasDiscarded(1);
+	}
+
+	@Test
+	public void assertNotDiscardedElementsFailureOneDiscarded() {
+		try {
+			StepVerifier.create(Flux.just(1, 2).filter(i -> i == 2))
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasNotDiscardedElements();
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected no discarded elements, found <[1]>.");
+		}
+	}
+
+	@Test
+	public void assertDiscardedElementsFailureNoDiscarded() {
+		try {
+			StepVerifier.create(Mono.empty())
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasNotDiscardedElements()
+			            .hasDiscardedElements();
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected discarded elements, none found.");
+		}
+	}
+
+	@Test
+	public void assertDiscardedElementsFailureOneExtra() {
+		try {
+			StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDiscarded(4);
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected discarded elements to contain <[4]>, was <[1, 3]>.");
+		}
+	}
+
+	@Test
+	public void assertDiscardedElementsFailureOneMissing() {
+		try {
+			StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDiscardedExactly(1);
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected discarded elements to contain exactly <[1]>, was <[1, 3]>.");
+		}
+	}
+
+	@Test
 	public void assertDroppedErrorAllPass() {
 		Throwable err1 = new IllegalStateException("boom1");
 		Throwable err2 = new IllegalStateException("boom2");

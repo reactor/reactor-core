@@ -124,6 +124,7 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 			implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context ctx;
 
 		volatile Subscription       main;
 
@@ -146,6 +147,7 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 
 		SkipUntilMainSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = Operators.serialize(actual);
+			this.ctx = actual.currentContext();
 		}
 
 		@Override
@@ -206,6 +208,7 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 				actual.onNext(t);
 			}
 			else {
+				Operators.onDiscard(t, ctx);
 				main.request(1);
 			}
 		}

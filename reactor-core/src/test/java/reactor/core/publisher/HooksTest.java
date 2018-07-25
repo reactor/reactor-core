@@ -59,6 +59,7 @@ public class HooksTest {
 //		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
+		Hooks.resetOnDiscard();
 	}
 
 	void simpleFlux(){
@@ -655,7 +656,7 @@ public class HooksTest {
 
 		Flux<Integer> source = Mono.just(1)
 		                           .flux()
-		                           .repeat(1000)
+		                           .repeat(999)
 		                           .publish()
 		                           .autoConnect();
 		int ncpu = Math.max(8,

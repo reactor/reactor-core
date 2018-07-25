@@ -33,6 +33,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Cut a sequence into non-overlapping windows where each window boundary is determined by
@@ -105,6 +106,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 			           InnerOperator<T, Flux<T>> {
 
 		final CoreSubscriber<? super Flux<T>> actual;
+		final Context                         ctx;
 
 		final Supplier<? extends Queue<T>> groupQueueSupplier;
 
@@ -158,6 +160,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				Predicate<? super T> predicate,
 				Mode mode) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.queue = queue;
 			this.groupQueueSupplier = groupQueueSupplier;
 			this.prefetch = prefetch;
@@ -200,7 +203,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 			WindowFlux<T> g = window;
@@ -210,7 +213,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				match = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, ctx));
 				return;
 			}
 
@@ -237,6 +240,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 			else if (mode == Mode.WHILE && !match) {
 				g.onComplete();
 				newWindowDeferred();
+				Operators.onDiscard(t, ctx);
 				//compensate for the dropped delimiter
 				s.request(1);
 			}
@@ -252,7 +256,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 					onError(Operators.onOperatorError(this,
 							Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 							signal,
-							actual.currentContext()));
+							ctx));
 					return false;
 				}
 			}
@@ -266,7 +270,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, ctx);
 			}
 		}
 
@@ -541,6 +545,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 						CoreSubscriber.class,
 						"actual");
 
+		volatile Context ctx = Context.empty();
+
 		volatile boolean cancelled;
 
 		volatile int once;
@@ -644,7 +650,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 			for (; ; ) {
 
 				if (cancelled) {
-					q.clear();
+					Operators.onDiscardQueueWithClear(q, ctx, null);
+					ctx = Context.empty();
 					actual = null;
 					return;
 				}
@@ -654,6 +661,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				a.onNext(null);
 
 				if (d) {
+					ctx = Context.empty();
 					actual = null;
 
 					Throwable ex = error;
@@ -691,12 +699,14 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
 			if (cancelled) {
-				q.clear();
+				Operators.onDiscardQueueWithClear(q, ctx, null);
+				ctx = Context.empty();
 				actual = null;
 				return true;
 			}
 			if (d && empty) {
 				Throwable e = error;
+				ctx = Context.empty();
 				actual = null;
 				if (e != null) {
 					a.onError(e);
@@ -715,7 +725,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 
 			if (!queue.offer(t)) {
 				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
-						actual.currentContext()));
+						ctx));
 				return;
 			}
 			if (enableOperatorFusion) {
@@ -756,6 +766,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 				actual.onSubscribe(this);
 				ACTUAL.lazySet(this, actual);
+				ctx = actual.currentContext();
 				drain();
 			}
 			else {
@@ -793,7 +804,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 
 			if (!enableOperatorFusion) {
 				if (WIP.getAndIncrement(this) == 0) {
-					queue.clear();
+					Operators.onDiscardQueueWithClear(queue, ctx, null);
 				}
 			}
 
@@ -831,7 +842,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 
 		@Override
 		public void clear() {
-			queue.clear();
+			Operators.onDiscardQueueWithClear(queue, ctx, null);
 		}
 
 		@Override

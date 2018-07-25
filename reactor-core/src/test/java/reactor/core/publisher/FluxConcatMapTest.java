@@ -16,9 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
@@ -35,6 +38,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
@@ -907,7 +911,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.just(1, 2)
 				.hide()
 				.<Integer>concatMap(f -> null)
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -930,7 +934,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -954,7 +958,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -975,7 +979,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						throw new ArithmeticException("boom");
 					}
 				}))
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -998,7 +1002,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 
 		StepVerifier.create(test)
@@ -1024,7 +1028,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 
 		StepVerifier.create(test)
@@ -1041,8 +1045,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.concatMap(f ->  Flux.range(f, 1).map(i -> 1/i).errorStrategyStop())
-				.errorStrategyContinue();
+				.concatMap(f ->  Flux.range(f, 1).map(i -> 1/i).onErrorStop())
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1058,8 +1062,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.concatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1 / i).errorStrategyStop())
-				.errorStrategyContinue();
+				.concatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1 / i).onErrorStop())
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1076,7 +1080,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.just(0, 1)
 				.hide()
 				.concatMap(f ->  Mono.just(f).map(i -> 1/i))
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1093,7 +1097,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.just(0, 1)
 				.hide()
 				.concatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i))
-				.errorStrategyContinue();
+				.onErrorContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1104,4 +1108,97 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.hasDroppedErrors(1);
 	}
 
+	@Test
+	public void discardOnNextQueueReject() {
+		final CoreSubscriber<Object> subscriber =
+				FluxConcatMap.subscriber(new LambdaSubscriber<>(null, e -> {}, null, null),
+						Mono::just,
+						Queues.get(0),
+						1,
+						FluxConcatMap.ErrorMode.IMMEDIATE);
+		subscriber.onSubscribe(Operators.emptySubscription());
+
+		List<Object> discarded = new ArrayList<>();
+		Hooks.onDiscard(discarded::add);
+		try {
+			subscriber.onNext(1);
+		}
+		finally {
+			Hooks.resetOnDiscard();
+		}
+
+		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void discardOnError() {
+		//also tests WeakScalar
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.error(new IllegalStateException("boom")))
+		                        .concatMap(i -> Mono.just("value" + i)),
+				0)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly("value1", 2, 3); //"value1" comes from error cancelling the only inner in flight, the 2 other values are still raw in the queue
+	}
+
+	@Test
+	public void discardOnCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatMap(i -> Mono.just("value" + i), 1),
+				0)
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardOnDrainMapperError() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+				.concatMap(i -> { throw new IllegalStateException("boom"); }))
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardDelayedOnNextQueueReject() {
+		final CoreSubscriber<Object> subscriber =
+				FluxConcatMap.subscriber(new LambdaSubscriber<>(null, e -> {}, null, null),
+						Mono::just,
+						Queues.get(0),
+						1,
+						FluxConcatMap.ErrorMode.END);
+		subscriber.onSubscribe(Operators.emptySubscription());
+
+		List<Object> discarded = new ArrayList<>();
+		Hooks.onDiscard(discarded::add);
+		try {
+			subscriber.onNext(1);
+		}
+		finally {
+			Hooks.resetOnDiscard();
+		}
+
+		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void discardDelayedOnCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatMapDelayError(i -> Mono.just("value" + i), 1),
+				0)
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardDelayedOnDrainMapperError() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatMapDelayError(i -> { throw new IllegalStateException("boom"); }))
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
 }

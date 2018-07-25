@@ -11,7 +11,10 @@ done &
 if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
     COMMIT_RANGE="FETCH_HEAD..$TRAVIS_BRANCH"
     echo "travis PR #$TRAVIS_PULL_REQUEST build, looking at files in $COMMIT_RANGE"
-    COMMIT_CONTENT=`git diff --name-only $COMMIT_RANGE`
+    COMMIT_CONTENT=`git diff --name-only $COMMIT_RANGE` || {
+      echo "travis PR range diff failed, probably on maintenance branch, falling back to full tests"
+      COMMIT_CONTENT="FULL TEST PLEASE!"
+    }
     echo "PR content: $COMMIT_CONTENT"
     if echo $COMMIT_CONTENT | grep -qv '^reactor-test/' ; then
       echo "something else than reactor-test was touched -> full test"

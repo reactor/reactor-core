@@ -486,6 +486,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignoreelements.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards the element from the source.
+	 *
 	 * @param source the {@link Publisher} to ignore
 	 * @param <T> the source type of the ignored data
 	 *
@@ -2364,6 +2367,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/filter1.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards the element if it does not match the filter. It
+	 * also discards upon cancellation or error triggered by a data signal.
+	 *
 	 * @param tester the predicate to evaluate
 	 *
 	 * @return a filtered {@link Mono}
@@ -2383,6 +2390,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * Note that only the first value of the test publisher is considered, and unless it
 	 * is a {@link Mono}, test will be cancelled after receiving that first value.
+	 *
+	 * @reactor.discard This operator discards the element if it does not match the filter. It
+	 * also discards upon cancellation or error triggered by a data signal.
 	 *
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
 	 * to filter the Mono with
@@ -2542,6 +2552,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignoreelement.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards the source element.
 	 *
 	 * @return a new empty {@link Mono} representing the completion of this {@link Mono}.
 	 */
@@ -3062,18 +3074,19 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to the source {@literal numRepeat} times.
+	 * Repeatedly subscribe to the source {@literal numRepeat} times. This results in
+	 * {@code numRepeat + 1} total subscriptions to the original source. As a consequence,
+	 * using 0 plays the original sequence once.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatn.png" alt="">
 	 *
-	 * @param numRepeat the number of times to re-subscribe on onComplete
-	 *
+	 * @param numRepeat the number of times to re-subscribe on onComplete (positive, or 0 for original sequence only)
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat) {
-		if(numRepeat == 0){
-			return Flux.empty();
+		if (numRepeat == 0) {
+			return this.flux();
 		}
 		return Flux.onAssembly(new MonoRepeat<>(this, numRepeat));
 	}
@@ -3085,13 +3098,19 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/repeatnb.png" alt="">
 	 *
-	 * @param numRepeat the number of times to re-subscribe on complete
+	 * @param numRepeat the number of times to re-subscribe on complete (positive, or 0 for original sequence only)
 	 * @param predicate the boolean to evaluate on onComplete
 	 *
 	 * @return a {@link Flux} that repeats on onComplete while the predicate matches,
 	 * up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
+		if (numRepeat < 0L) {
+			throw new IllegalArgumentException("numRepeat >= 0 required");
+		}
+		if (numRepeat == 0) {
+			return this.flux();
+		}
 		return Flux.defer(() -> repeat(Flux.countingBooleanSupplier(predicate, numRepeat)));
 	}
 
@@ -3727,6 +3746,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignorethen.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards the element from the source.
+	 *
 	 * @return a {@link Mono} ignoring its payload (actively dropping)
 	 */
 	public final Mono<Void> then() {
@@ -3742,6 +3764,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignorethen1.png" alt="">
+	 *
+	 * @reactor.discard This operator discards the element from the source.
 	 *
 	 * @param other a {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
@@ -3762,6 +3786,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenreturn1.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the element from the source.
+	 *
 	 * @param value a value to emit after termination
 	 * @param <V> the element type of the supplied value
 	 *
@@ -3779,6 +3805,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenempty.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the element from the source.
+	 *
 	 * @param other a {@link Publisher} to wait for after this Mono's termination
 	 * @return a new {@link Mono} completing when both publishers have completed in
 	 * sequence
@@ -3795,6 +3823,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenmany.png" alt="">
+	 *
+	 * @reactor.discard This operator discards the element from the source.
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the element type of the supplied Publisher

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is determined by
@@ -99,6 +100,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			implements ConditionalSubscriber<T>, InnerOperator<T, C>, BooleanSupplier {
 
 		final CoreSubscriber<? super C> actual;
+		final Context ctx;
 
 		final Supplier<C> bufferSupplier;
 
@@ -128,6 +130,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		BufferPredicateSubscriber(CoreSubscriber<? super C> actual, C initialBuffer,
 				Supplier<C> bufferSupplier, Predicate<? super T> predicate, Mode mode) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.buffer = initialBuffer;
 			this.bufferSupplier = bufferSupplier;
 			this.predicate = predicate;
@@ -166,6 +169,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		@Override
 		public void cancel() {
 			Operators.terminate(S, this);
+			Operators.onDiscardMultiple(buffer, this.ctx);
 		}
 
 		@Override
@@ -185,7 +189,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.ctx);
 				return true;
 			}
 
@@ -195,7 +199,9 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				match = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, this.ctx));
+				Operators.onDiscardMultiple(buffer, this.ctx);
+				Operators.onDiscard(t, this.ctx);
 				return true;
 			}
 
@@ -237,7 +243,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 						"The bufferSupplier returned a null buffer");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, this.ctx));
 				return null;
 			}
 
@@ -261,10 +267,11 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.ctx);
 				return;
 			}
 			done = true;
+			Operators.onDiscardMultiple(buffer, this.ctx);
 			buffer = null;
 			actual.onError(t);
 		}

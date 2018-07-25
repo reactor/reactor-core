@@ -20,17 +20,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.RejectedExecutionTest;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class FluxBufferTimeoutTest {
 
@@ -215,5 +220,53 @@ public class FluxBufferTimeoutTest {
 		                        .bufferTimeout(4, Duration.ofMillis(500), scheduler))
 		            .expectError(RejectedExecutionException.class)
 		            .verify(Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void discardOnCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.never())
+		                        .bufferTimeout(10, Duration.ofMillis(100)))
+		            .thenAwait(Duration.ofMillis(10))
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardOnFlushWithoutRequest() {
+		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.REQUEST_OVERFLOW);
+
+		StepVerifier.create(testPublisher
+						.flux()
+						.bufferTimeout(10, Duration.ofMillis(200)),
+				StepVerifierOptions.create().initialRequest(0))
+		            .then(() -> testPublisher.emit(1, 2, 3))
+		            .thenAwait(Duration.ofMillis(250))
+		            .expectErrorMatches(Exceptions::isOverflow)
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardOnTimerRejected() {
+		Scheduler scheduler = Schedulers.newSingle("discardOnTimerRejected");
+
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .doOnNext(n -> scheduler.dispose())
+		                        .bufferTimeout(10, Duration.ofMillis(100), scheduler))
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(RejectedExecutionException.class))
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardOnError() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .concatWith(Mono.error(new IllegalStateException("boom")))
+		                        .bufferTimeout(10, Duration.ofMillis(100)))
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3);
 	}
 }
