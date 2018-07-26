@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -33,6 +34,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertTrue;
 
 public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
@@ -592,5 +594,21 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+    }
+
+    @Test
+    public void syncFusion() throws Exception {
+	    CountDownLatch valueLatch = new CountDownLatch(1);
+	    CountDownLatch onCompleteLatch = new CountDownLatch(1);
+
+	    Flux.just("foo")
+	        .doOnComplete(onCompleteLatch::countDown)
+	        .doOnNext(v -> valueLatch.countDown())
+	        .publish()
+	        .connect();
+
+	    assertTrue(valueLatch.await(10, TimeUnit.SECONDS));
+
+	    assertTrue(onCompleteLatch.await(10, TimeUnit.SECONDS));
     }
 }
