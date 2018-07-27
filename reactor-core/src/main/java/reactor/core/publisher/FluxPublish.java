@@ -453,6 +453,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						}
 
 						if (empty) {
+							//async mode only needs to break but SYNC mode needs to perform terminal cleanup here...
+							if (sourceMode == Fuseable.SYNC) {
+								q.poll();
+								done = true;
+								checkTerminated(true, true);
+							}
 							break;
 						}
 
@@ -476,7 +482,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						continue;
 					}
 				}
-				else if ( sourceMode == Fuseable.SYNC ) {
+				else if (sourceMode == Fuseable.SYNC) {
 					q.poll();
 					done = true;
 					checkTerminated(true, true);
