@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 
 /**
- * An implementation of a RingBuffer backed message-passing Processor implementing
+ * An implementation of a message-passing Processor implementing
  * publish-subscribe with synchronous (thread-stealing and happen-before interactions)
  * drain loops.
  * <p>
@@ -206,7 +206,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 				if (m == Fuseable.SYNC) {
 					sourceMode = m;
 					queue = f;
-					done = true;
 					drain();
 					return;
 				}
@@ -410,6 +409,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 					}
 
 					if (empty) {
+						//async mode only needs to break but SYNC mode needs to perform terminal cleanup here...
+						if (sourceMode == Fuseable.SYNC) {
+							q.poll();
+							done = true;
+							checkTerminated(true, true);
+						}
 						break;
 					}
 
@@ -432,6 +437,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 				if (maxRequested != 0L && !empty) {
 					continue;
 				}
+			}
+			else if ( sourceMode == Fuseable.SYNC ) {
+				q.poll();
+				done = true;
+				checkTerminated(true, true);
+				return;
 			}
 
 			missed = WIP.addAndGet(this, -missed);

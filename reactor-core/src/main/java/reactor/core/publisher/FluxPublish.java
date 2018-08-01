@@ -220,7 +220,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					if (m == Fuseable.SYNC) {
 						sourceMode = m;
 						queue = f;
-						done = true;
 						drain();
 						return;
 					}
@@ -454,6 +453,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						}
 
 						if (empty) {
+							//async mode only needs to break but SYNC mode needs to perform terminal cleanup here...
+							if (sourceMode == Fuseable.SYNC) {
+								q.poll();
+								done = true;
+								checkTerminated(true, true);
+							}
 							break;
 						}
 
@@ -476,6 +481,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					if (maxRequested != 0L && !empty) {
 						continue;
 					}
+				}
+				else if (sourceMode == Fuseable.SYNC) {
+					q.poll();
+					done = true;
+					checkTerminated(true, true);
+					return;
 				}
 
 				missed = WIP.addAndGet(this, -missed);
