@@ -45,7 +45,7 @@ import reactor.util.context.Context;
  * @author Stephane Maldini
  */
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
-		implements Runnable {
+		implements Runnable, IdentityProcessor<IN> {
 
 	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer,
 			@Nullable Throwable t,
@@ -246,6 +246,16 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 					strategy,
 					this);
 		}
+	}
+
+	@Override
+	public Flux<IN> toFlux() {
+		return this;
+	}
+
+	@Override
+	public Mono<IN> toMono() {
+		return this.next();
 	}
 
 	/**

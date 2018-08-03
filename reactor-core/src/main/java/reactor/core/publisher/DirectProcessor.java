@@ -77,8 +77,11 @@ import reactor.util.annotation.Nullable;
  * </p>
  *
  * @param <T> the input and output value type
+ * @deprecated Direct use is discouraged, use {@link IdentityProcessor#direct()} or {@link StandaloneFluxSink#direct()} instead
  */
-public final class DirectProcessor<T> extends FluxProcessor<T, T> {
+@Deprecated
+public final class DirectProcessor<T> extends FluxProcessor<T, T>
+		implements IdentityProcessor<T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -109,6 +112,16 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	Throwable error;
 
 	DirectProcessor() {
+	}
+
+	@Override
+	public Flux<T> toFlux() {
+		return this;
+	}
+
+	@Override
+	public Mono<T> toMono() {
+		return this.next();
 	}
 
 	@Override

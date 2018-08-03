@@ -50,7 +50,7 @@ import reactor.util.context.Context;
  */
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
-		           Scannable,
+		           Scannable, IdentityProcessor<O>,
 		           LongSupplier {
 
 	/**
@@ -117,6 +117,16 @@ public final class MonoProcessor<O> extends Mono<O>
 		this.waitStrategy = Objects.requireNonNull(waitStrategy, "waitStrategy");
 		this.source = source;
 		SUBSCRIBERS.lazySet(this, source != null ? EMPTY_WITH_SOURCE : EMPTY);
+	}
+
+	@Override
+	public Mono<O> toMono() {
+		return this;
+	}
+
+	@Override
+	public Flux<O> toFlux() {
+		return this.flux();
 	}
 
 	@Override

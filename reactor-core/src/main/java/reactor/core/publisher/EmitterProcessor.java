@@ -51,8 +51,11 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
+ * @deprecated Direct usage of this class is discouraged, use emitter factory methods in {@link IdentityProcessor} and {@link StandaloneFluxSink} instead.
  */
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
+@Deprecated
+public final class EmitterProcessor<T> extends FluxProcessor<T, T>
+		implements IdentityProcessor<T> {
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
@@ -151,6 +154,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		this.autoCancel = autoCancel;
 		this.prefetch = prefetch;
 		SUBSCRIBERS.lazySet(this, EMPTY);
+	}
+
+	@Override
+	public Flux<T> toFlux() {
+		return this;
+	}
+
+	@Override
+	public Mono<T> toMono() {
+		return this.next();
 	}
 
 	@Override
