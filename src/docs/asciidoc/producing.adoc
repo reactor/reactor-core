@@ -242,7 +242,7 @@ Flux<String> bridge = Flux.create(sink -> {
 
 Two callbacks, `onDispose` and `onCancel`, perform any cleanup on cancellation
 or termination. `onDispose` can be used to perform cleanup when the `Flux`
-completes, errors out, or is cancelled. 'onCancel can be used to perform any
+completes, errors out, or is cancelled. `onCancel` can be used to perform any
 action specific to cancellation prior to cleanup with `onDispose`.
 
 [source,java]
