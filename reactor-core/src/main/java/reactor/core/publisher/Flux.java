@@ -693,7 +693,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux}
 	 */
 	public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
-		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_PULL));
+		return onAssembly(new FluxCreate<>(emitter, backpressure));
 	}
 
 	/**
@@ -733,7 +733,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux}
 	 */
 	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter) {
-		return onAssembly(new FluxCreate<>(emitter, OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY));
+		return onAssembly(new FluxCreatePush<>(emitter, OverflowStrategy.BUFFER));
 	}
 
 	/**
@@ -777,7 +777,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux}
 	 */
 	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
-		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_ONLY));
+		return onAssembly(new FluxCreatePush<>(emitter, backpressure));
 	}
 
 	/**

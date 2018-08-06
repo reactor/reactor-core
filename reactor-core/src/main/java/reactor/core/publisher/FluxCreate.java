@@ -38,28 +38,21 @@ import reactor.util.context.Context;
 
 /**
  * Provides a multi-valued sink API for a callback that is called for each individual
- * Subscriber.
+ * Subscriber. Serializes calls to the sink as a {@link SerializedFluxSink} suitable
+ * for multi-threaded producers.
  *
  * @param <T> the value type
  */
 final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
-	enum CreateMode {
-		PUSH_ONLY, PUSH_PULL
-	}
-
-	final Consumer<? super FluxSink<T>> source;
+	final Consumer<? super SerializedFluxSink<T>> source;
 
 	final OverflowStrategy backpressure;
 
-	final CreateMode createMode;
-
-	FluxCreate(Consumer<? super FluxSink<T>> source,
-			FluxSink.OverflowStrategy backpressure,
-			CreateMode createMode) {
+	FluxCreate(Consumer<? super SerializedFluxSink<T>> source,
+			FluxSink.OverflowStrategy backpressure) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.backpressure = Objects.requireNonNull(backpressure, "backpressure");
-		this.createMode = createMode;
 	}
 
 	static <T> BaseSink<T> createSink(CoreSubscriber<? super T> t,
@@ -89,9 +82,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		actual.onSubscribe(sink);
 		try {
-			source.accept(
-					createMode == CreateMode.PUSH_PULL ? new SerializedSink<>(sink) :
-							sink);
+			source.accept(new SerializedSink<>(sink));
 		}
 		catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
@@ -109,7 +100,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	 *
 	 * @param <T> the value type
 	 */
-	static final class SerializedSink<T> implements FluxSink<T>, Scannable {
+	static final class SerializedSink<T> implements SerializedFluxSink<T>, Scannable {
 
 		final BaseSink<T> sink;
 
@@ -124,6 +115,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<SerializedSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(SerializedSink.class, "wip");
+
+		volatile int tryNextGuard;
+		static final AtomicIntegerFieldUpdater<SerializedSink> TRYNEXT_GUARD =
+				AtomicIntegerFieldUpdater.newUpdater(SerializedSink.class, "tryNextGuard");
 
 		final Queue<T> mpscQueue;
 
@@ -146,6 +141,15 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				Operators.onNextDropped(t, sink.currentContext());
 				return this;
 			}
+
+			for(;;) {
+				//allow for reentrancy by checking if the guard is already at 2, in which
+				//case the WIP guard will go into effect
+				if (TRYNEXT_GUARD.compareAndSet(this, 0, 2) || tryNextGuard == 2) {
+					break;
+				}
+			}
+
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
 				try {
 					sink.next(t);
@@ -154,17 +158,48 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					Operators.onOperatorError(sink, ex, t, sink.currentContext());
 				}
 				if (WIP.decrementAndGet(this) == 0) {
+					TRYNEXT_GUARD.set(this, 0);
 					return this;
 				}
 			}
 			else {
 				this.mpscQueue.offer(t);
 				if (WIP.getAndIncrement(this) != 0) {
+					TRYNEXT_GUARD.set(this, 0);
 					return this;
 				}
 			}
 			drainLoop();
+			TRYNEXT_GUARD.set(this, 0);
 			return this;
+		}
+
+		@Override
+		public boolean tryNext(T t) {
+			Objects.requireNonNull(t, "t is null in sink.tryNext(t)");
+			if (sink.isCancelled() || done) {
+				return false;
+			}
+
+			if (TRYNEXT_GUARD.compareAndSet(this, 0, 1)) {
+				boolean result = false;
+				//check the request
+				long r = requestedFromDownstream();
+				if (r > 0) {
+					try {
+						sink.next(t);
+						result = true;
+					}
+					catch (Throwable ex) {
+						Operators.onOperatorError(sink, ex, t, sink.currentContext());
+					}
+				}
+				TRYNEXT_GUARD.set(this, 0);
+				return result;
+			}
+			else {
+				return false;
+			}
 		}
 
 		@Override

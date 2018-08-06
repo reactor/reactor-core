@@ -26,8 +26,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.custom.combined.CombinedParameters;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -42,8 +46,9 @@ import reactor.test.StepVerifier;
 import reactor.test.StepVerifier.Step;
 import reactor.test.subscriber.AssertSubscriber;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
+@RunWith(JUnitParamsRunner.class)
 public class FluxCreateTest {
 
 	@Test
@@ -305,22 +310,6 @@ public class FluxCreateTest {
 		            .thenAwait()
 		            .thenRequest(2)
 		            .expectNext("test2", "test3")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void fluxPush() {
-		Flux<String> created = Flux.push(s -> {
-			s.next("test1");
-			s.next("test2");
-			s.next("test3");
-			s.complete();
-		});
-
-		assertThat(created.getPrefetch()).isEqualTo(-1);
-
-		StepVerifier.create(created)
-		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 	}
 
@@ -916,35 +905,6 @@ public class FluxCreateTest {
 	}
 
 	@Test
-	public void fluxPushOnRequest() {
-		AtomicInteger index = new AtomicInteger(1);
-		AtomicInteger onRequest = new AtomicInteger();
-		Flux<Integer> created = Flux.push(s -> {
-			s.onRequest(n -> {
-				onRequest.incrementAndGet();
-				assertThat(n).isEqualTo(Long.MAX_VALUE);
-				for (int i = 0; i < 5; i++) {
-					s.next(index.getAndIncrement());
-				}
-				s.complete();
-			});
-		}, OverflowStrategy.BUFFER);
-
-		StepVerifier.create(created, 0)
-		            .expectSubscription()
-		            .thenAwait()
-		            .thenRequest(1)
-		            .expectNext(1)
-		            .thenRequest(2)
-		            .expectNext(2, 3)
-		            .thenRequest(2)
-		            .expectNext(4, 5)
-		            .expectComplete()
-		            .verify();
-		assertThat(onRequest.get()).isEqualTo(1);
-	}
-
-	@Test
 	public void fluxCreateGenerateOnRequest() {
 		AtomicInteger index = new AtomicInteger(1);
 		Flux<Integer> created = Flux.create(s -> {
@@ -967,13 +927,8 @@ public class FluxCreateTest {
 	}
 
 	@Test
-	public void fluxCreateOnRequestSingleThread() {
-		for (OverflowStrategy overflowStrategy : OverflowStrategy.values()) {
-			testFluxCreateOnRequestSingleThread(overflowStrategy);
-		}
-	}
-
-	private void testFluxCreateOnRequestSingleThread(OverflowStrategy overflowStrategy) {
+	@Parameters(source = OverflowStrategy.class)
+	public void fluxCreateOnRequestSingleThread(OverflowStrategy overflowStrategy) {
 		RequestTrackingTestQueue queue = new RequestTrackingTestQueue();
 		Flux<Integer> created = Flux.create(pushPullSink -> {
 			assertThat(pushPullSink instanceof SerializedSink).isTrue();
@@ -1016,20 +971,8 @@ public class FluxCreateTest {
 	}
 
 	@Test
-	public void fluxCreateOnRequestMultipleThreadsSlowProducer() {
-		for (OverflowStrategy overflowStrategy : OverflowStrategy.values()) {
-			testFluxCreateOnRequesMultipleThreads(overflowStrategy, true);
-		}
-	}
-
-	@Test
-	public void fluxCreateOnRequestMultipleThreadsFastProducer() {
-		for (OverflowStrategy overflowStrategy : OverflowStrategy.values()) {
-			testFluxCreateOnRequesMultipleThreads(overflowStrategy, false);
-		}
-	}
-
-	private void testFluxCreateOnRequesMultipleThreads(OverflowStrategy overflowStrategy, boolean slowProducer) {
+	@CombinedParameters({"BUFFER,DROP,IGNORE,ERROR,LATEST","true,false"})
+	public void testFluxCreateOnRequesMultipleThreads(OverflowStrategy overflowStrategy, boolean slowProducer) {
 		int count = 10_000;
 		TestQueue queue;
 		if (overflowStrategy == OverflowStrategy.ERROR || overflowStrategy == OverflowStrategy.IGNORE)
@@ -1214,19 +1157,6 @@ public class FluxCreateTest {
 	@Test
 	public void contextTest() {
 		StepVerifier.create(Flux.create(s -> IntStream.range(0, 10).forEach(i -> s.next(s
-				.currentContext()
-		                                                       .get(AtomicInteger.class)
-		                                                       .incrementAndGet())))
-		                        .take(10)
-		                        .subscriberContext(ctx -> ctx.put(AtomicInteger.class,
-				                        new AtomicInteger())))
-		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void contextTestPush() {
-		StepVerifier.create(Flux.push(s -> IntStream.range(0, 10).forEach(i -> s.next(s
 				.currentContext()
 		                                                       .get(AtomicInteger.class)
 		                                                       .incrementAndGet())))
