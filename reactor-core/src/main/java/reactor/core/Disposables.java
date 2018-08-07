@@ -18,6 +18,7 @@ package reactor.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,13 +41,25 @@ public final class Disposables {
 	private Disposables() { }
 
 	/**
+	 * Create and initialize a new {@link Disposable.Composite} with atomic guarantees on
+	 * all mutative operations, with set-like semantics (a {@link Disposable} won't be added
+	 * if it is detected as already present in the list)
+	 *
+	 * @return a pre-filled atomic {@link Disposable.Composite} set
+	 */
+	public static Disposable.Composite compositeSet(
+			Iterable<? extends Disposable> disposables) {
+		return new SetCompositeDisposable(disposables);
+	}
+
+	/**
 	 * Create a new empty {@link Disposable.Composite} with atomic guarantees on all mutative
 	 * operations.
 	 *
 	 * @return an empty atomic {@link Disposable.Composite}
 	 */
 	public static Disposable.Composite composite() {
-		return new CompositeDisposable();
+		return new ListCompositeDisposable();
 	}
 
 	/**
@@ -56,7 +69,7 @@ public final class Disposables {
 	 * @return a pre-filled atomic {@link Disposable.Composite}
 	 */
 	public static Disposable.Composite composite(Disposable... disposables) {
-		return new CompositeDisposable(disposables);
+		return new ListCompositeDisposable(disposables);
 	}
 
 	/**
@@ -67,7 +80,7 @@ public final class Disposables {
 	 */
 	public static Disposable.Composite composite(
 			Iterable<? extends Disposable> disposables) {
-		return new CompositeDisposable(disposables);
+		return new ListCompositeDisposable(disposables);
 	}
 
 	/**
@@ -118,7 +131,7 @@ public final class Disposables {
 	 * @author Stephane Maldini
 	 * @author David Karnok
 	 */
-	static final class CompositeDisposable implements Disposable.Composite, Scannable {
+	static final class SetCompositeDisposable implements Disposable.Composite, Scannable {
 
 		static final int   DEFAULT_CAPACITY    = 16;
 		static final float DEFAULT_LOAD_FACTOR = 0.75f;
@@ -132,9 +145,9 @@ public final class Disposables {
 		volatile boolean disposed;
 
 		/**
-		 * Creates an empty {@link CompositeDisposable}.
+		 * Creates an empty {@link SetCompositeDisposable}.
 		 */
-		CompositeDisposable() {
+		SetCompositeDisposable() {
 			this.loadFactor = DEFAULT_LOAD_FACTOR;
 			int c = DEFAULT_CAPACITY;
 			this.mask = c - 1;
@@ -143,10 +156,10 @@ public final class Disposables {
 		}
 
 		/**
-		 * Creates a {@link CompositeDisposable} with the given array of initial elements.
+		 * Creates a {@link SetCompositeDisposable} with the given array of initial elements.
 		 * @param disposables the array of {@link Disposable} to start with
 		 */
-		CompositeDisposable(Disposable... disposables) {
+		SetCompositeDisposable(Disposable... disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
 
 			int capacity = disposables.length + 1;
@@ -163,11 +176,11 @@ public final class Disposables {
 		}
 
 		/**
-		 * Creates a {@link CompositeDisposable} with the given {@link Iterable} sequence of
+		 * Creates a {@link SetCompositeDisposable} with the given {@link Iterable} sequence of
 		 * initial elements.
 		 * @param disposables the Iterable sequence of {@link Disposable} to start with
 		 */
-		CompositeDisposable(Iterable<? extends Disposable> disposables) {
+		SetCompositeDisposable(Iterable<? extends Disposable> disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
 			this.loadFactor = DEFAULT_LOAD_FACTOR;
 			int c = DEFAULT_CAPACITY;
@@ -421,95 +434,262 @@ public final class Disposables {
 	}
 
 	/**
-	 * Not public API. Implementation of a {@link Swap}.
-	 *
-	 * @author Simon Baslé
 	 * @author David Karnok
+	 * @author Simon Baslé
 	 */
-	static final class SwapDisposable implements Disposable.Swap {
+	static final class ListCompositeDisposable implements Disposable.Composite {
 
-		volatile Disposable inner;
-		static final AtomicReferenceFieldUpdater<SwapDisposable, Disposable>
-				INNER =
-				AtomicReferenceFieldUpdater.newUpdater(SwapDisposable.class, Disposable.class, "inner");
-
-		@Override
-		public boolean update(@Nullable Disposable next) {
-			return Disposables.set(INNER, this, next);
-		}
-
-		@Override
-		public boolean replace(@Nullable Disposable next) {
-			return Disposables.replace(INNER, this, next);
-		}
-
-		@Override
 		@Nullable
-		public Disposable get() {
-			return inner;
+		List<Disposable> resources;
+
+		volatile boolean disposed;
+
+		ListCompositeDisposable() {
+		}
+
+		ListCompositeDisposable(Disposable... resources) {
+			Objects.requireNonNull(resources, "resources is null");
+			this.resources = new LinkedList<>();
+			for (Disposable d : resources) {
+				Objects.requireNonNull(d, "Disposable item is null");
+				this.resources.add(d);
+			}
+		}
+
+		ListCompositeDisposable(Iterable<? extends Disposable> resources) {
+			Objects.requireNonNull(resources, "resources is null");
+			this.resources = new LinkedList<>();
+			for (Disposable d : resources) {
+				Objects.requireNonNull(d, "Disposable item is null");
+				this.resources.add(d);
+			}
 		}
 
 		@Override
 		public void dispose() {
-			Disposables.dispose(INNER, this);
+			if (disposed) {
+				return;
+			}
+			List<Disposable> set;
+			synchronized (this) {
+				if (disposed) {
+					return;
+				}
+				disposed = true;
+				set = resources;
+				resources = null;
+			}
+
+			dispose(set);
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return Disposables.isDisposed(INNER.get(this));
-		}
-	}
-
-	/**
-	 * A very simple {@link Disposable} that only wraps a mutable boolean for
-	 * {@link #isDisposed()}.
-	 */
-	static final class SimpleDisposable extends AtomicBoolean implements Disposable {
-
-		@Override
-		public void dispose() {
-			set(true);
+			return disposed;
 		}
 
 		@Override
-		public boolean isDisposed() {
-			return get();
-		}
-	}
-
-	/**
-	 * Immutable disposable that is always {@link #isDisposed() disposed}. Calling
-	 * {@link #dispose()} does nothing, and {@link #isDisposed()} always return true.
-	 */
-	static final class AlwaysDisposable implements Disposable {
-
-		@Override
-		public void dispose() {
-			//NO-OP
-		}
-
-		@Override
-		public boolean isDisposed() {
-			return true;
-		}
-	}
-
-	/**
-	 * Immutable disposable that is never {@link #isDisposed() disposed}. Calling
-	 * {@link #dispose()} does nothing, and {@link #isDisposed()} always return false.
-	 */
-	static final class NeverDisposable implements Disposable {
-
-		@Override
-		public void dispose() {
-			//NO-OP
-		}
-
-		@Override
-		public boolean isDisposed() {
+		public boolean add(Disposable d) {
+			Objects.requireNonNull(d, "d is null");
+			if (!disposed) {
+				synchronized (this) {
+					if (!disposed) {
+						List<Disposable> set = resources;
+						if (set == null) {
+							set = new LinkedList<>();
+							resources = set;
+						}
+						set.add(d);
+						return true;
+					}
+				}
+			}
+			d.dispose();
 			return false;
 		}
+
+		@Override
+		public boolean addAll(Collection<? extends Disposable> ds) {
+			Objects.requireNonNull(ds, "ds is null");
+			if (!disposed) {
+				synchronized (this) {
+					if (!disposed) {
+						List<Disposable> set = resources;
+						if (set == null) {
+							set = new LinkedList<>();
+							resources = set;
+						}
+						for (Disposable d : ds) {
+							Objects.requireNonNull(d, "d is null");
+							set.add(d);
+						}
+						return true;
+					}
+				}
+			}
+			for (Disposable d : ds) {
+				d.dispose();
+			}
+			return false;
+		}
+
+		@Override
+		public boolean remove(Disposable d) {
+			Objects.requireNonNull(d, "Disposable item is null");
+			if (disposed) {
+				return false;
+			}
+			synchronized (this) {
+				if (disposed) {
+					return false;
+				}
+
+				List<Disposable> set = resources;
+				if (set == null || !set.remove(d)) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		@Override
+		public int size() {
+			List<Disposable> r = resources;
+			return r == null ? 0 : r.size();
+		}
+
+		public void clear() {
+			if (disposed) {
+				return;
+			}
+			List<Disposable> set;
+			synchronized (this) {
+				if (disposed) {
+					return;
+				}
+
+				set = resources;
+				resources = null;
+			}
+
+			dispose(set);
+		}
+
+		void dispose(@Nullable List<Disposable> set) {
+			if (set == null) {
+				return;
+			}
+			List<Throwable> errors = null;
+			for (Disposable o : set) {
+				try {
+					o.dispose();
+				} catch (Throwable ex) {
+					Exceptions.throwIfFatal(ex);
+					if (errors == null) {
+						errors = new ArrayList<>();
+					}
+					errors.add(ex);
+				}
+			}
+			if (errors != null) {
+				if (errors.size() == 1) {
+					throw Exceptions.propagate(errors.get(0));
+				}
+				throw Exceptions.multiple(errors);
+			}
+		}
 	}
+
+/**
+ * Not public API. Implementation of a {@link Swap}.
+ *
+ * @author Simon Baslé
+ * @author David Karnok
+ */
+static final class SwapDisposable implements Disposable.Swap {
+
+	volatile Disposable inner;
+	static final AtomicReferenceFieldUpdater<SwapDisposable, Disposable>
+	                    INNER =
+			AtomicReferenceFieldUpdater.newUpdater(SwapDisposable.class, Disposable.class, "inner");
+
+	@Override
+	public boolean update(@Nullable Disposable next) {
+		return Disposables.set(INNER, this, next);
+	}
+
+	@Override
+	public boolean replace(@Nullable Disposable next) {
+		return Disposables.replace(INNER, this, next);
+	}
+
+	@Override
+	@Nullable
+	public Disposable get() {
+		return inner;
+	}
+
+	@Override
+	public void dispose() {
+		Disposables.dispose(INNER, this);
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return Disposables.isDisposed(INNER.get(this));
+	}
+}
+
+/**
+ * A very simple {@link Disposable} that only wraps a mutable boolean for
+ * {@link #isDisposed()}.
+ */
+static final class SimpleDisposable extends AtomicBoolean implements Disposable {
+
+	@Override
+	public void dispose() {
+		set(true);
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return get();
+	}
+}
+
+/**
+ * Immutable disposable that is always {@link #isDisposed() disposed}. Calling
+ * {@link #dispose()} does nothing, and {@link #isDisposed()} always return true.
+ */
+static final class AlwaysDisposable implements Disposable {
+
+	@Override
+	public void dispose() {
+		//NO-OP
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return true;
+	}
+}
+
+/**
+ * Immutable disposable that is never {@link #isDisposed() disposed}. Calling
+ * {@link #dispose()} does nothing, and {@link #isDisposed()} always return false.
+ */
+static final class NeverDisposable implements Disposable {
+
+	@Override
+	public void dispose() {
+		//NO-OP
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return false;
+	}
+}
 
 	//==== STATIC ATOMIC UTILS copied from Disposables ====
 
