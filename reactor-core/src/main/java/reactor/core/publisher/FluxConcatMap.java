@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -199,7 +199,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
 							(Fuseable.QueueSubscription<T>) s;
-					int m = f.requestFusion(Fuseable.ANY);
+					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					if (m == Fuseable.SYNC) {
 						sourceMode = Fuseable.SYNC;
 						queue = f;
