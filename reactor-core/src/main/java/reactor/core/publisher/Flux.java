@@ -5276,7 +5276,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux} preventing {@link Publisher} / {@link Subscription} based Reactor optimizations
 	 */
-	public final Flux<T> hide() {
+	public Flux<T> hide() {
 		return new FluxHide<>(this);
 	}
 
