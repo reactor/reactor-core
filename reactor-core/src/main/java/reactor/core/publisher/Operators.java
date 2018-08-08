@@ -1062,6 +1062,18 @@ public abstract class Operators {
 		return Context.empty();
 	}
 
+	/**
+	 * Add the amount {@code n} to the given field, capped to {@link Long#MAX_VALUE},
+	 * unless the field is already at {@link Long#MAX_VALUE} OR {@link Long#MIN_VALUE}.
+	 * Return the value before the update.
+	 *
+	 * @param updater the field to update
+	 * @param instance the instance bearing the field
+	 * @param n the value to add
+	 * @param <T> the type of the field-bearing instance
+	 *
+	 * @return the old value of the field, before update.
+	 */
 	static <T> long addCapCancellable(AtomicLongFieldUpdater<T> updater, T instance,
 			long n) {
 		for (; ; ) {
