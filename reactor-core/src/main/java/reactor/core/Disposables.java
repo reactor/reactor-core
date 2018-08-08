@@ -589,9 +589,11 @@ public final class Disposables {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return resources.stream()
-			                .filter(Objects::nonNull)
-			                .map(Scannable::from);
+			List<Disposable> r = resources;
+			if (r == null) return Stream.empty();
+			return r.stream()
+			        .filter(Objects::nonNull)
+			        .map(Scannable::from);
 		}
 
 		@Nullable
