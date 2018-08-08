@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,6 +35,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -272,6 +274,162 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
 		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void minimalInitialRequestIsHistory() {
+		List<Long> requests = new ArrayList<>();
+		BaseSubscriber<Integer> threeThenEightSubscriber = new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(3);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				if (value == 3) {
+					request(8);
+				}
+			}
+		};
+
+		ConnectableFlux<Integer> replay =
+				Flux.range(1, 5)
+				    .doOnRequest(requests::add)
+				    .replay(5);
+
+		assertThat(requests).isEmpty();
+
+		replay.subscribe(threeThenEightSubscriber);
+		replay.connect();
+
+		assertThat(requests).containsExactly(5L);
+	}
+
+	@Test
+	public void minimalInitialRequestIsMaxOfSubscribersInitialRequests() {
+		List<Long> requests = new ArrayList<>();
+		BaseSubscriber<Integer> fiveThenEightSubscriber = new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(5);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				if (value == 5) {
+					request(8);
+				}
+			}
+		};
+
+		ConnectableFlux<Integer> replay =
+				Flux.range(1, 5)
+				    .doOnRequest(requests::add)
+				    .replay(3);
+
+		assertThat(requests).isEmpty();
+
+		replay.subscribe(fiveThenEightSubscriber);
+		replay.connect();
+
+		assertThat(requests).containsExactly(5L);
+	}
+
+	@Test
+	public void minimalInitialRequestWithUnboundedSubscriber() {
+		List<Long> requests = new ArrayList<>();
+		BaseSubscriber<Integer> fiveThenEightSubscriber = new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(5);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				if (value == 5) {
+					request(8);
+				}
+			}
+		};
+
+		ConnectableFlux<Integer> replay =
+				Flux.range(1, 5)
+				    .doOnRequest(requests::add)
+				    .replay(3);
+
+		assertThat(requests).isEmpty();
+
+		replay.subscribe(fiveThenEightSubscriber);
+		replay.subscribe(); //unbounded
+		replay.connect();
+
+		assertThat(requests).containsExactly(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void minimalInitialRequestUnboundedWithFused() {
+		List<Long> requests = new ArrayList<>();
+		BaseSubscriber<Integer> fiveThenEightSubscriber = new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(5);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				if (value == 5) {
+					request(8);
+				}
+			}
+		};
+
+		ConnectableFlux<Integer> replay =
+				Flux.range(1, 5)
+				    .doOnRequest(requests::add)
+				    .replay(3);
+
+		assertThat(requests).isEmpty();
+
+		replay.subscribe(fiveThenEightSubscriber);
+		replay.subscribe(); //unbounded
+		replay.connect();
+
+		assertThat(requests).containsExactly(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void onlyInitialRequestWithLateUnboundedSubscriber() {
+		List<Long> requests = new ArrayList<>();
+		BaseSubscriber<Integer> fiveThenEightSubscriber = new BaseSubscriber<Integer>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(5);
+			}
+
+			@Override
+			protected void hookOnNext(Integer value) {
+				if (value == 5) {
+					request(8);
+				}
+			}
+		};
+
+		ConnectableFlux<Integer> replay =
+				Flux.range(1, 5)
+				    .doOnRequest(requests::add)
+				    .replay(3);
+
+		assertThat(requests).isEmpty();
+
+		replay.subscribe(fiveThenEightSubscriber);
+		replay.connect();
+
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		replay.subscribe(ts); //unbounded
+
+		assertThat(requests).containsExactly(5L);
+		ts.assertValueCount(3); //despite unbounded, as it was late it only sees the replay capacity
 	}
 
 	@Test
