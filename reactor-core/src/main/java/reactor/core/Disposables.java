@@ -425,7 +425,7 @@ public final class Disposables {
 	 * @author David Karnok
 	 * @author Simon Baslé
 	 */
-	static final class ListCompositeDisposable implements Disposable.Composite {
+	static final class ListCompositeDisposable implements Disposable.Composite, Scannable {
 
 		@Nullable
 		List<Disposable> resources;
@@ -585,6 +585,22 @@ public final class Disposables {
 				}
 				throw Exceptions.multiple(errors);
 			}
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return resources.stream()
+			                .filter(Objects::nonNull)
+			                .map(Scannable::from);
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.CANCELLED) {
+				return isDisposed();
+			}
+			return null;
 		}
 	}
 

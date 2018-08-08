@@ -18,6 +18,7 @@ package reactor.core;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.Test;
 import reactor.core.Disposables.ListCompositeDisposable;
@@ -247,6 +248,34 @@ public class ListCompositeDisposableTest {
 
 			RaceTestUtils.race(cd::size, cd::dispose, Schedulers.elastic());
 		}
+	}
+
+	@Test
+	public void inners() {
+		FakeDisposable d1 = new FakeDisposable();
+		FakeDisposable d2 = new FakeDisposable();
+		ListCompositeDisposable composite = new ListCompositeDisposable(d1, d2);
+
+		final Stream<Scannable> inners = composite.inners().map(i -> (Scannable) i);
+
+		assertThat(inners).containsExactly(d1, d2);
+	}
+
+	@Test
+	public void scan() {
+		ListCompositeDisposable composite = new ListCompositeDisposable();
+
+		assertThat(composite.scan(Scannable.Attr.CANCELLED))
+				.as("CANCELLED: not yet disposed")
+				.isFalse();
+
+		composite.dispose();
+
+		assertThat(composite.scan(Scannable.Attr.CANCELLED))
+				.as("CANCELLED: now disposed")
+				.isTrue();
+
+		assertThat(composite.scanUnsafe(Scannable.Attr.TERMINATED)).isNull();
 	}
 
 }
