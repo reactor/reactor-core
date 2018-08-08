@@ -41,18 +41,6 @@ public final class Disposables {
 	private Disposables() { }
 
 	/**
-	 * Create and initialize a new {@link Disposable.Composite} with atomic guarantees on
-	 * all mutative operations, with set-like semantics (a {@link Disposable} won't be added
-	 * if it is detected as already present in the list)
-	 *
-	 * @return a pre-filled atomic {@link Disposable.Composite} set
-	 */
-	public static Disposable.Composite compositeSet(
-			Iterable<? extends Disposable> disposables) {
-		return new SetCompositeDisposable(disposables);
-	}
-
-	/**
 	 * Create a new empty {@link Disposable.Composite} with atomic guarantees on all mutative
 	 * operations.
 	 *
