@@ -113,6 +113,11 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 */
 	public abstract void connect(Consumer<? super Disposable> cancelSupport);
 
+	@Override
+	public final ConnectableFlux<T> hide() {
+		return new ConnectableFluxHide<>(this);
+	}
+
 	/**
 	 * Connects to the upstream source when the first {@link org.reactivestreams.Subscriber} subscribes and disconnects
 	 * when all Subscribers cancelled or the upstream source completed.

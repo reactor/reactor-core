@@ -95,10 +95,13 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay()
+		                                         .hide()
 		                                         .autoConnect()
+		                                         .hide()
 		                                         .elapsed();
 
 		StepVerifier.create(source)
+		            .expectNoFusionSupport()
 		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
@@ -143,14 +146,16 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void cacheFluxTTL() {
-
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(Duration.ofMillis(2000))
+		                                         .hide()
 		                                         .autoConnect()
+		                                         .hide()
 		                                         .elapsed();
 
 		StepVerifier.create(source)
+		            .expectNoFusionSupport()
 		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
@@ -193,14 +198,16 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void cacheFluxTTLMillis() {
-
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(Duration.ofMillis(2000), vts)
+		                                         .hide()
 		                                         .autoConnect()
+		                                         .hide()
 		                                         .elapsed();
 
 		StepVerifier.create(source)
+		            .expectNoFusionSupport()
 		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
@@ -221,10 +228,13 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(2, Duration.ofMillis(2000))
+		                                         .hide()
 		                                         .autoConnect()
+		                                         .hide()
 		                                         .elapsed();
 
 		StepVerifier.create(source)
+		            .expectNoFusionSupport()
 		            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
 		            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
@@ -241,7 +251,6 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void cacheFluxHistoryTTLFused() {
-
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(2, Duration.ofMillis(2000))

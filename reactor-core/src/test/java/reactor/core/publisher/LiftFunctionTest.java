@@ -84,7 +84,8 @@ public class LiftFunctionTest {
 	@Test
 	public void liftConnectableFlux() {
 		ConnectableFlux<Integer> source = Flux.just(1)
-		                                      .publish(); //TODO hide if ConnectableFlux gets a hide function
+		                                      .publish()
+		                                      .hide();
 
 		Operators.LiftFunction<Integer, Integer> liftFunction =
 				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
