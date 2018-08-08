@@ -1145,7 +1145,12 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				s.cancel();
 			}
 			else if (Operators.setOnce(S, this, s)) {
-				s.request(Long.MAX_VALUE);
+				long max = parent.history;
+				for (ReplaySubscription<T> subscriber : subscribers) {
+					max = Math.max(subscriber.fusionMode() != Fuseable.NONE ? Long.MAX_VALUE : subscriber.requested(), max);
+					if (max == Long.MAX_VALUE) break;
+				}
+				s.request(max);
 			}
 		}
 
