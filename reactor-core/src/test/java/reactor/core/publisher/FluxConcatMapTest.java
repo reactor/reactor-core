@@ -277,6 +277,38 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		  .assertComplete();
 	}
 
+	//see https://github.com/reactor/reactor-core/issues/1302
+	@Test
+	public void boundaryFusion() {
+		Flux.range(1, 10000)
+		    .publishOn(Schedulers.single())
+		    .map(t -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + t + Thread.currentThread().getName()))
+		    .concatMap(Flux::just)
+		    .publishOn(Schedulers.elastic())
+		    .distinct()
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("single")
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(5));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1302
+	@Test
+	public void boundaryFusionDelayError() {
+		Flux.range(1, 10000)
+		    .publishOn(Schedulers.single())
+		    .map(t -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + t + Thread.currentThread().getName()))
+		    .concatMapDelayError(Flux::just)
+		    .publishOn(Schedulers.elastic())
+		    .distinct()
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("single")
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(5));
+	}
+
 	@Test
 	public void singleSubscriberOnly() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();

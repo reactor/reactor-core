@@ -201,7 +201,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
 							(Fuseable.QueueSubscription<T>) s;
-					int m = f.requestFusion(Fuseable.ANY);
+					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					if (m == Fuseable.SYNC) {
 						sourceMode = Fuseable.SYNC;
 						queue = f;
@@ -564,7 +564,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
 							(Fuseable.QueueSubscription<T>) s;
 
-					int m = f.requestFusion(Fuseable.ANY);
+					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 
 					if (m == Fuseable.SYNC) {
 						sourceMode = Fuseable.SYNC;
