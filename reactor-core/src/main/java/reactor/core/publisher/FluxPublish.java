@@ -216,7 +216,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
 							(Fuseable.QueueSubscription<T>) s;
 
-					int m = f.requestFusion(Fuseable.ANY);
+					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					if (m == Fuseable.SYNC) {
 						sourceMode = m;
 						queue = f;

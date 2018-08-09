@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -270,6 +272,38 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		ts.assertValueCount(1_000_000)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1302
+	@Test
+	public void boundaryFusion() {
+		Flux.range(1, 10000)
+		    .publishOn(Schedulers.single())
+		    .map(t -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + t + Thread.currentThread().getName()))
+		    .concatMap(Flux::just)
+		    .publishOn(Schedulers.elastic())
+		    .distinct()
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("single")
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(5));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1302
+	@Test
+	public void boundaryFusionDelayError() {
+		Flux.range(1, 10000)
+		    .publishOn(Schedulers.single())
+		    .map(t -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + t + Thread.currentThread().getName()))
+		    .concatMapDelayError(Flux::just)
+		    .publishOn(Schedulers.elastic())
+		    .distinct()
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("single")
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(5));
 	}
 
 	@Test
