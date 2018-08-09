@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -385,6 +386,22 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts2.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1302
+	@Test
+	public void boundaryFused() {
+		Flux.range(1, 10000)
+		    .publishOn(Schedulers.single())
+		    .map(v -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + v + Thread.currentThread().getName()))
+		    .share()
+		    .publishOn(Schedulers.elastic())
+		    .distinct()
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("single")
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(5));
 	}
 
 	@Test
