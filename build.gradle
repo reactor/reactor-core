@@ -67,8 +67,7 @@ ext {
 
   javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
 				  "https://docs.oracle.com/javaee/6/api/",
-				  "http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as
-		  String[]
+				  "http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
 
 
   bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
@@ -284,6 +283,10 @@ project('reactor-core') {
 		force = true
 	  }
 	}
+  }
+
+  jmh {
+	resultFormat = 'JSON'
   }
 
   task japicmp(type: JapicmpTask) {

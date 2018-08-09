@@ -17,11 +17,12 @@
 package reactor.test;
 
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 
 /**
  * @author Simon Baslé
  */
-public class FakeDisposable implements Disposable {
+public class FakeDisposable implements Disposable, Scannable {
 
 	public volatile int disposed;
 
@@ -33,5 +34,11 @@ public class FakeDisposable implements Disposable {
 	@Override
 	public void dispose() {
 		disposed++;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.BUFFERED) return disposed;
+		return null;
 	}
 }

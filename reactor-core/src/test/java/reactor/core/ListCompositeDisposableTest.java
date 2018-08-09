@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,10 @@ package reactor.core;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.Test;
-import reactor.core.Disposables.CompositeDisposable;
+import reactor.core.Disposables.ListCompositeDisposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.FakeDisposable;
 import reactor.test.util.RaceTestUtils;
@@ -28,11 +29,11 @@ import reactor.test.util.RaceTestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class CompositeDisposableTest {
+public class ListCompositeDisposableTest {
 
 	@Test
 	public void isDisposed() throws Exception {
-		Disposable.Composite cd = new CompositeDisposable();
+		Disposable.Composite cd = new ListCompositeDisposable();
 
 		assertThat(cd.isDisposed()).isFalse();
 
@@ -43,7 +44,7 @@ public class CompositeDisposableTest {
 	@Test
 	public void add() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable();
+		Disposable.Composite cd = new ListCompositeDisposable();
 
 		assertThat(cd.size()).isZero();
 
@@ -58,7 +59,7 @@ public class CompositeDisposableTest {
 	public void addAll() throws Exception {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable();
+		Disposable.Composite cd = new ListCompositeDisposable();
 
 		assertThat(cd.size()).isZero();
 
@@ -73,7 +74,7 @@ public class CompositeDisposableTest {
 	@Test
 	public void removeDoesntDispose() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable(d);
+		Disposable.Composite cd = new ListCompositeDisposable(d);
 
 		assertThat(cd.size()).isEqualTo(1);
 		assertThat(d.isDisposed()).isFalse();
@@ -89,7 +90,7 @@ public class CompositeDisposableTest {
 	public void disposeDisposesAndDisallowReuse() throws Exception {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable(d1, d2);
+		Disposable.Composite cd = new ListCompositeDisposable(d1, d2);
 
 		assertThat(cd.size()).isEqualTo(2);
 		assertThat(d1.isDisposed()).isFalse();
@@ -112,7 +113,7 @@ public class CompositeDisposableTest {
 	@Test
 	public void removeInexistant() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable();
+		Disposable.Composite cd = new ListCompositeDisposable();
 		boolean deleted = cd.remove(d);
 
 		assertThat(deleted).isFalse();
@@ -122,7 +123,7 @@ public class CompositeDisposableTest {
 	@Test
 	public void addAfterDispose() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable();
+		Disposable.Composite cd = new ListCompositeDisposable();
 		cd.dispose();
 		boolean added = cd.add(d);
 
@@ -135,7 +136,7 @@ public class CompositeDisposableTest {
 	public void addAllAfterDispose() throws Exception {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable();
+		Disposable.Composite cd = new ListCompositeDisposable();
 		cd.dispose();
 		boolean added = cd.addAll(Arrays.asList(d1, d2));
 
@@ -148,7 +149,7 @@ public class CompositeDisposableTest {
 	@Test
 	public void removeAfterDispose() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable();
+		Disposable.Composite cd = new ListCompositeDisposable();
 		cd.dispose();
 		boolean deleted = cd.remove(d);
 
@@ -160,7 +161,7 @@ public class CompositeDisposableTest {
 	@Test
 	public void disposeAfterDispose() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable(d);
+		Disposable.Composite cd = new ListCompositeDisposable(d);
 		cd.dispose();
 		cd.dispose();
 
@@ -173,7 +174,7 @@ public class CompositeDisposableTest {
 			throw new IllegalStateException("boom");
 		};
 		FakeDisposable good = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable(bad, good);
+		Disposable.Composite cd = new ListCompositeDisposable(bad, good);
 
 		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(cd::dispose)
 		                                                      .withMessage("boom");
@@ -190,7 +191,7 @@ public class CompositeDisposableTest {
 			throw new IllegalStateException("boom2");
 		};
 		FakeDisposable good = new FakeDisposable();
-		Disposable.Composite cd = new CompositeDisposable(bad1, bad2, good);
+		Disposable.Composite cd = new ListCompositeDisposable(bad1, bad2, good);
 
 		assertThatExceptionOfType(RuntimeException.class).isThrownBy(cd::dispose)
 		                                                 .withMessage(
@@ -208,7 +209,7 @@ public class CompositeDisposableTest {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
 		List<FakeDisposable> list = Arrays.asList(d1, d2);
-		Disposable.Composite cd = new CompositeDisposable(list);
+		Disposable.Composite cd = new ListCompositeDisposable(list);
 
 		assertThat(cd.size()).isEqualTo(2);
 
@@ -223,7 +224,7 @@ public class CompositeDisposableTest {
 	public void disposeConcurrent() {
 		for (int i = 0; i < 500; i++) {
 			final Disposable d1 = new FakeDisposable();
-			final Disposable.Composite cd = new CompositeDisposable(d1);
+			final Disposable.Composite cd = new ListCompositeDisposable(d1);
 
 			RaceTestUtils.race(cd::dispose, cd::dispose, Schedulers.elastic());
 		}
@@ -233,7 +234,7 @@ public class CompositeDisposableTest {
 	public void removeConcurrent() {
 		for (int i = 0; i < 500; i++) {
 			final Disposable d1 = new FakeDisposable();
-			final Disposable.Composite cd = new CompositeDisposable(d1);
+			final Disposable.Composite cd = new ListCompositeDisposable(d1);
 
 			RaceTestUtils.race(() -> cd.remove(d1), cd::dispose, Schedulers.elastic());
 		}
@@ -243,10 +244,38 @@ public class CompositeDisposableTest {
 	public void sizeConcurrent() {
 		for (int i = 0; i < 500; i++) {
 			final Disposable d1 = new FakeDisposable();
-			final Disposable.Composite cd = new CompositeDisposable(d1);
+			final Disposable.Composite cd = new ListCompositeDisposable(d1);
 
 			RaceTestUtils.race(cd::size, cd::dispose, Schedulers.elastic());
 		}
+	}
+
+	@Test
+	public void inners() {
+		FakeDisposable d1 = new FakeDisposable();
+		FakeDisposable d2 = new FakeDisposable();
+		ListCompositeDisposable composite = new ListCompositeDisposable(d1, d2);
+
+		final Stream<Scannable> inners = composite.inners().map(i -> (Scannable) i);
+
+		assertThat(inners).containsExactly(d1, d2);
+	}
+
+	@Test
+	public void scan() {
+		ListCompositeDisposable composite = new ListCompositeDisposable();
+
+		assertThat(composite.scan(Scannable.Attr.CANCELLED))
+				.as("CANCELLED: not yet disposed")
+				.isFalse();
+
+		composite.dispose();
+
+		assertThat(composite.scan(Scannable.Attr.CANCELLED))
+				.as("CANCELLED: now disposed")
+				.isTrue();
+
+		assertThat(composite.scanUnsafe(Scannable.Attr.TERMINATED)).isNull();
 	}
 
 }
