@@ -194,6 +194,8 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 	}
 
+	//use of DirectProcessor internally instead of facade, to avoid going through builder in critical path
+	@SuppressWarnings("deprecation")
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
 			implements InnerConsumer<Object> {
 

@@ -199,6 +199,8 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 		}
 	}
 
+	//use of DirectProcessor internally instead of facade, to avoid going through builder in critical path
+	@SuppressWarnings("deprecation")
 	static final class RetryWhenOtherSubscriber extends Flux<Throwable>
 	implements InnerConsumer<Object> {
 		RetryWhenMainSubscriber<?> main;

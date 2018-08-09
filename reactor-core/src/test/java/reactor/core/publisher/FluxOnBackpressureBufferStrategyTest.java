@@ -66,19 +66,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void drop() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, this, DROP_LATEST);
+				processor.asFlux(), 2, this, DROP_LATEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -94,19 +94,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropOldest() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, this, DROP_OLDEST);
+				processor.asFlux(), 2, this, DROP_OLDEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -122,19 +122,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void error() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, this, ERROR);
+				processor.asFlux(), 2, this, ERROR);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -150,20 +150,20 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropCallbackError() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
+				processor.asFlux(), 2, v -> { throw new IllegalArgumentException("boom"); },
 				DROP_LATEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -180,20 +180,20 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropOldestCallbackError() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
+				processor.asFlux(), 2, v -> { throw new IllegalArgumentException("boom"); },
 				DROP_OLDEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -210,20 +210,20 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void errorCallbackError() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
+				processor.asFlux(), 2, v -> { throw new IllegalArgumentException("boom"); },
 				ERROR);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -240,19 +240,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithErrorStrategyOnErrorImmediately() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, null, ERROR);
+				processor.asFlux(), 2, null, ERROR);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -268,19 +268,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithDropStrategyNoError() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, null, DROP_LATEST);
+				processor.asFlux(), 2, null, DROP_LATEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -296,19 +296,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithDropOldestStrategyNoError() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, null, DROP_OLDEST);
+				processor.asFlux(), 2, null, DROP_OLDEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -324,16 +324,16 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void fluxOnBackpressureBufferStrategyNoCallback() {
-		DirectProcessor<String> processor = DirectProcessor.create();
+		FluxProcessorSink<String> processor = Processors.directSink();
 
-		StepVerifier.create(processor.onBackpressureBuffer(2, DROP_OLDEST), 0)
+		StepVerifier.create(processor.asFlux().onBackpressureBuffer(2, DROP_OLDEST), 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.next("normal");
+			            processor.next("over1");
+			            processor.next("over2");
+			            processor.next("over3");
+			            processor.complete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()

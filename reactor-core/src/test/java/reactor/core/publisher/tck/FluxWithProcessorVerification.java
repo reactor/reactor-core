@@ -23,7 +23,7 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Processor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.TopicProcessor;
+import reactor.core.publisher.Processors;
 import reactor.core.publisher.WorkQueueProcessor;
 
 /**
@@ -47,6 +47,7 @@ public class FluxWithProcessorVerification extends AbstractProcessorVerification
 		cumulatedJoin.set(0);
 
 		BiFunction<Long, String, Long> combinator = (t1, t2) -> t1;
+
 		return FluxProcessor.wrap(p,
 				p.groupBy(k -> k % 2 == 0)
 				 .flatMap(stream -> stream.scan((prev, next) -> next)
@@ -60,7 +61,11 @@ public class FluxWithProcessorVerification extends AbstractProcessorVerification
 						                          otherStream,
 						                          combinator)))
 				 .doOnNext(array -> cumulatedJoin.getAndIncrement())
-				 .subscribeWith(TopicProcessor.<Long>builder().name("fluxion-raw-join").bufferSize(bufferSize).build())
+				 .subscribeWith(Processors.asyncEmitter()
+				                          .name("fluxion-raw-join")
+				                          .bufferSize(bufferSize)
+				                          .buildFacade())
+				 .asFlux()
 				 .doOnError(Throwable::printStackTrace));
 	}
 

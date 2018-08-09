@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
@@ -436,24 +437,24 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	public void multipleStreamValuesCanBeZipped() {
 //		"Multiple Stream"s values can be zipped"
 //		given: "source composables to merge, buffer and tap"
-		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
-		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
-		Flux<Integer> zippedFlux = Flux.zip(source1, source2, (t1, t2) -> t1 + t2);
+		FluxProcessorSink<Integer> source1 = Processors.emitterSink();
+		FluxProcessorSink<Integer> source2 = Processors.emitterSink();
+		Flux<Integer> zippedFlux = Flux.zip(source1.asFlux(), source2.asFlux(), (t1, t2) -> t1 + t2);
 		AtomicReference<Integer> tap = new AtomicReference<>();
 		zippedFlux.subscribe(it -> tap.set(it));
 
 //		when: "the sources accept a value"
-		source1.onNext(1);
-		source2.onNext(2);
-		source2.onNext(3);
-		source2.onNext(4);
+		source1.next(1);
+		source2.next(2);
+		source2.next(3);
+		source2.next(4);
 
 //		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).isEqualTo(3);
 
 //		when: "the sources accept the missing value"
-		source2.onNext(5);
-		source1.onNext(6);
+		source2.next(5);
+		source1.next(6);
 
 //		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).isEqualTo(9);
@@ -740,14 +741,17 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void failDoubleTerminalPublisher() {
-		DirectProcessor<Integer> d1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> d1 = Processors.directSink();
 		Hooks.onErrorDropped(e -> {
 		});
 		try {
-			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1, s -> {
-				CoreSubscriber<?> a =
-						((DirectProcessor.DirectInner) d1.inners().findFirst().get())
-								.actual;
+			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1.asFlux(), s -> {
+				Scannable d1Scannable = Scannable.from(d1);
+				assertThat(d1Scannable.isScanAvailable()).as("d1 actually scannable").isTrue();
+
+				Stream<? extends Scannable> inners = d1Scannable.inners();
+				CoreSubscriber<?> a = ((DirectProcessor.DirectInner) inners.findFirst().get())
+						.actual;
 
 				s.onSubscribe(Operators.emptySubscription());
 				s.onComplete();
@@ -834,15 +838,15 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void backpressuredAsyncFusedCancelled() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
-				up,
+				up.asFlux(),
 				Flux.just(2, 3, 5)), 0)
-		            .then(() -> up.onNext(1))
+		            .then(() -> up.next(1))
 		            .thenRequest(1)
 		            .expectNext(3)
-		            .then(() -> up.onNext(2))
+		            .then(() -> up.next(2))
 		            .thenRequest(1)
 		            .expectNext(5)
 		            .thenCancel()
@@ -851,15 +855,15 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void backpressuredAsyncFusedCancelled2() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
-				up,
+				up.asFlux(),
 				Flux.just(2, 3, 5)), 0)
-		            .then(() -> up.onNext(1))
+		            .then(() -> up.next(1))
 		            .thenRequest(3)
 		            .expectNext(3)
-		            .then(() -> up.onNext(2))
+		            .then(() -> up.next(2))
 		            .expectNext(5)
 		            .thenCancel()
 		            .verify();
@@ -871,19 +875,19 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			assertThat(c).hasMessage("test2");
 		});
 		try {
-			UnicastProcessor<Integer> up = UnicastProcessor.create();
+			FluxProcessorSink<Integer> up = Processors.unicastSink();
 			StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 					1,
-					up,
+					up.asFlux(),
 					Flux.just(2, 3, 5)), 0)
-			            .then(() -> up.onNext(1))
+			            .then(() -> up.next(1))
 			            .thenRequest(1)
 			            .expectNext(3)
-			            .then(() -> up.onNext(2))
+			            .then(() -> up.next(2))
 			            .thenRequest(1)
 			            .expectNext(5)
-			            .then(() -> up.actual.onError(new Exception("test")))
-			            .then(() -> up.actual.onError(new Exception("test2")))
+			            .then(() -> zipInnerFrom(up).onError(new Exception("test")))
+			            .then(() -> zipInnerFrom(up).onError(new Exception("test2")))
 			            .verifyErrorMessage("test");
 		}
 		finally {
@@ -896,24 +900,27 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		Hooks.onErrorDropped(c -> {
 			assertThat(c).hasMessage("test2");
 		});
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		try {
-			StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1], 1, up, s -> {
-				assertThat(((FluxZip.ZipInner) up.actual).parent.subscribers[1].done).isFalse();
-				Flux.just(2, 3, 5)
-				    .subscribe(s);
-			})
-			                        .hide(), 0)
-			            .then(() -> up.onNext(1))
+			StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1], 1,
+					up.asFlux(),
+					s -> {
+						assertThat(zipInnerFrom(up).parent.subscribers[1].done).isFalse();
+						Flux.just(2, 3, 5)
+						    .subscribe(s);
+					}
+					).hide(),
+					0)
+			            .then(() -> up.next(1))
 			            .thenRequest(1)
 			            .expectNext(3)
-			            .then(() -> up.onNext(2))
+			            .then(() -> up.next(2))
 			            .thenRequest(1)
 			            .expectNext(5)
-			            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).done).isFalse())
-			            .then(() -> up.actual.onError(new Exception("test")))
-			            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).done).isTrue())
-			            .then(() -> up.actual.onError(new Exception("test2")))
+			            .then(() -> assertThat(zipInnerFrom(up).done).isFalse())
+			            .then(() -> zipInnerFrom(up).onError(new Exception("test")))
+			            .then(() -> assertThat(zipInnerFrom(up).done).isTrue())
+			            .then(() -> zipInnerFrom(up).onError(new Exception("test2")))
 			            .verifyErrorMessage("test");
 		}
 		finally {
@@ -921,20 +928,26 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		}
 	}
 
+	private static final <T> FluxZip.ZipInner<T> zipInnerFrom(FluxProcessorSink<T> up) {
+		CoreSubscriber<T> actual = ProcessorsTestUtils.unicastActual(up);
+		assertThat(actual).isInstanceOf(FluxZip.ZipInner.class);
+		return (FluxZip.ZipInner<T>) actual;
+	}
+
 	@Test
 	public void backpressuredAsyncFusedComplete() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
-				up,
+				up.asFlux(),
 				Flux.just(2, 3, 5)), 0)
-		            .then(() -> up.onNext(1))
+		            .then(() -> up.next(1))
 		            .thenRequest(1)
 		            .expectNext(3)
-		            .then(() -> up.onNext(2))
+		            .then(() -> up.next(2))
 		            .thenRequest(1)
 		            .expectNext(5)
-		            .then(() -> up.onComplete())
+		            .then(() -> up.complete())
 		            .verifyComplete();
 	}
 
@@ -1036,10 +1049,12 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void prematureCompleteSourceEmptyDouble() {
-		DirectProcessor<Integer> d = DirectProcessor.create();
-		StepVerifier.create(Flux.zip(obj -> 0, d, s -> {
+		FluxProcessorSink<Integer> d = Processors.directSink();
+		StepVerifier.create(Flux.zip(obj -> 0, d.asFlux(), s -> {
+			Stream<? extends Scannable> inners = Scannable.from(d)
+			                                              .inners();
 			CoreSubscriber<?> a =
-					((DirectProcessor.DirectInner) d.inners().findFirst().get())
+					((DirectProcessor.DirectInner) inners.findFirst().get())
 							.actual;
 
 			Operators.complete(s);

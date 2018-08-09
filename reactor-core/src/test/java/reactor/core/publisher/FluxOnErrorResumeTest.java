@@ -155,19 +155,20 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void someFirst() {
-		EmitterProcessor<Integer> tp = EmitterProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.emitterSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		tp.onErrorResume(v -> Flux.range(11, 10))
+		tp.asFlux()
+		  .onErrorResume(v -> Flux.range(11, 10))
 		  .subscribe(ts);
 
-		tp.onNext(1);
-		tp.onNext(2);
-		tp.onNext(3);
-		tp.onNext(4);
-		tp.onNext(5);
-		tp.onError(new RuntimeException("forced failure"));
+		tp.next(1);
+		tp.next(2);
+		tp.next(3);
+		tp.next(4);
+		tp.next(5);
+		tp.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
 		  .assertNoError()
@@ -176,19 +177,20 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void someFirstBackpressured() {
-		EmitterProcessor<Integer> tp = EmitterProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.emitterSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 
-		tp.onErrorResume(v -> Flux.range(11, 10))
+		tp.asFlux()
+		  .onErrorResume(v -> Flux.range(11, 10))
 		  .subscribe(ts);
 
-		tp.onNext(1);
-		tp.onNext(2);
-		tp.onNext(3);
-		tp.onNext(4);
-		tp.onNext(5);
-		tp.onError(new RuntimeException("forced failure"));
+		tp.next(1);
+		tp.next(2);
+		tp.next(3);
+		tp.next(4);
+		tp.next(5);
+		tp.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15)
 		  .assertNotComplete()

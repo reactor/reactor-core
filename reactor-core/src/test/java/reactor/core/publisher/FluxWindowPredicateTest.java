@@ -231,8 +231,8 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalUntil() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(sp1,
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(sp1.asFlux(),
 				Queues.small(),
 				Queues.unbounded(),
 				Queues.SMALL_BUFFER_SIZE,
@@ -241,23 +241,23 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.next(1))
 		            .expectNext(Signal.next(1))
-				    .then(() -> sp1.onNext(2))
+				    .then(() -> sp1.next(2))
 		            .expectNext(Signal.next(2))
-				    .then(() -> sp1.onNext(3))
+				    .then(() -> sp1.next(3))
 		            .expectNext(Signal.next(3), Signal.complete())
-				    .then(() -> sp1.onNext(4))
+				    .then(() -> sp1.next(4))
 				    .expectNext(Signal.next(4))
-				    .then(() -> sp1.onNext(5))
+				    .then(() -> sp1.next(5))
 				    .expectNext(Signal.next(5))
-				    .then(() -> sp1.onNext(6))
+				    .then(() -> sp1.next(6))
 				    .expectNext(Signal.next(6), Signal.complete())
-				    .then(() -> sp1.onNext(7))
+				    .then(() -> sp1.next(7))
 				    .expectNext(Signal.next(7))
-				    .then(() -> sp1.onNext(8))
+				    .then(() -> sp1.next(8))
 				    .expectNext(Signal.next(8))
-				    .then(sp1::onComplete)
+				    .then(sp1::complete)
 		            .expectNext(Signal.complete())
 				    .verifyComplete();
 
@@ -298,22 +298,22 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorUntilIsPropagatedToBothWindowAndMain() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL);
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.next(1))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.next(2))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(3))
 		            .expectNext(Signal.next(3), Signal.complete())
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(4))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.error(new RuntimeException("forced failure")))
 		            //this is the error in the window:
 		            .expectNextMatches(signalErrorMessage("forced failure"))
 		            //this is the error in the main:
@@ -324,9 +324,9 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorUntil() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
@@ -334,15 +334,15 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.onNext(1))
+					.then(() -> sp1.next(1))
 					.expectNext(Signal.next(1))
-					.then(() -> sp1.onNext(2))
+					.then(() -> sp1.next(2))
 					.expectNext(Signal.next(2))
-					.then(() -> sp1.onNext(3))
+					.then(() -> sp1.next(3))
 					.expectNext(Signal.next(3), Signal.complete())
-					.then(() -> sp1.onNext(4))
+					.then(() -> sp1.next(4))
 					.expectNext(Signal.next(4))
-					.then(() -> sp1.onNext(5))
+					.then(() -> sp1.next(5))
 					//error in the window:
 					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
@@ -352,30 +352,30 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalUntilCutBefore() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1,
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1.asFlux(),
 				Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 				.expectSubscription()
-				    .then(() -> sp1.onNext(1))
+				    .then(() -> sp1.next(1))
 				    .expectNext(Signal.next(1))
-				    .then(() -> sp1.onNext(2))
+				    .then(() -> sp1.next(2))
 				    .expectNext(Signal.next(2))
-				    .then(() -> sp1.onNext(3))
+				    .then(() -> sp1.next(3))
 				    .expectNext(Signal.complete(), Signal.next(3))
-				    .then(() -> sp1.onNext(4))
+				    .then(() -> sp1.next(4))
 				    .expectNext(Signal.next(4))
-				    .then(() -> sp1.onNext(5))
+				    .then(() -> sp1.next(5))
 				    .expectNext(Signal.next(5))
-				    .then(() -> sp1.onNext(6))
+				    .then(() -> sp1.next(6))
 				    .expectNext(Signal.complete(), Signal.next(6))
-				    .then(() -> sp1.onNext(7))
+				    .then(() -> sp1.next(7))
 				    .expectNext(Signal.next(7))
-				    .then(() -> sp1.onNext(8))
+				    .then(() -> sp1.next(8))
 				    .expectNext(Signal.next(8))
-				    .then(sp1::onComplete)
+				    .then(sp1::complete)
 				    .expectNext(Signal.complete())
 				    .verifyComplete();
 		assertThat(sp1.hasDownstreams()).isFalse();
@@ -383,23 +383,23 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorUntilCutBeforeIsPropagatedToBothWindowAndMain() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
-				new FluxWindowPredicate<>(sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 						i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.next(1))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.next(2))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(3))
 		            .expectNext(Signal.complete())
 		            .expectNext(Signal.next(3))
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(4))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.error(new RuntimeException("forced failure")))
 		            //this is the error in the window:
 		            .expectNextMatches(signalErrorMessage("forced failure"))
 		            //this is the error in the main:
@@ -410,9 +410,9 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorUntilCutBefore() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
-				new FluxWindowPredicate<>(sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
@@ -420,15 +420,15 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.onNext(1))
+					.then(() -> sp1.next(1))
 					.expectNext(Signal.next(1))
-					.then(() -> sp1.onNext(2))
+					.then(() -> sp1.next(2))
 					.expectNext(Signal.next(2))
-					.then(() -> sp1.onNext(3))
+					.then(() -> sp1.next(3))
 					.expectNext(Signal.complete(), Signal.next(3))
-					.then(() -> sp1.onNext(4))
+					.then(() -> sp1.next(4))
 					.expectNext(Signal.next(4))
-					.then(() -> sp1.onNext(5))
+					.then(() -> sp1.next(5))
 					//error in the window:
 					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
@@ -444,30 +444,30 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhile() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 != 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.next(1))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.next(2))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(3))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(4))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.onNext(5))
+		            .then(() -> sp1.next(5))
 		            .expectNext(Signal.next(5))
-		            .then(() -> sp1.onNext(6))
+		            .then(() -> sp1.next(6))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(7))
+		            .then(() -> sp1.next(7))
 		            .expectNext(Signal.next(7))
-		            .then(() -> sp1.onNext(8))
+		            .then(() -> sp1.next(8))
 		            .expectNext(Signal.next(8))
-		            .then(sp1::onComplete)
+		            .then(sp1::complete)
 		            .expectNext(Signal.complete())
 		            .verifyComplete();
 		assertThat(sp1.hasDownstreams()).isFalse();
@@ -475,36 +475,36 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhileDoesntInitiallyMatch() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(1)) //closes initial, open 2nd
+		            .then(() -> sp1.next(1)) //closes initial, open 2nd
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(2)) //closes second, open 3rd
+		            .then(() -> sp1.next(2)) //closes second, open 3rd
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(3)) //emits 3
+		            .then(() -> sp1.next(3)) //emits 3
 		            .expectNext(Signal.next(3))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(4)) //closes 3rd, open 4th
+		            .then(() -> sp1.next(4)) //closes 3rd, open 4th
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(5)) //closes 4th, open 5th
+		            .then(() -> sp1.next(5)) //closes 4th, open 5th
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(6)) //emits 6
+		            .then(() -> sp1.next(6)) //emits 6
 		            .expectNext(Signal.next(6))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(7)) //closes 5th, open 6th
+		            .then(() -> sp1.next(7)) //closes 5th, open 6th
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(8)) //closes 6th, open 7th
+		            .then(() -> sp1.next(8)) //closes 6th, open 7th
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(9)) //emits 9
+		            .then(() -> sp1.next(9)) //emits 9
 		            .expectNext(Signal.next(9))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::onComplete) // completion triggers completion of the last window (7th)
+		            .then(sp1::complete) // completion triggers completion of the last window (7th)
 		            .expectNext(Signal.complete())
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
@@ -513,33 +513,33 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhileDoesntMatch() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i > 4, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.next(1))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.next(2))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(3))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(4))
 		            .expectNext(Signal.complete())
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.next(1))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.next(2))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.next(3))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(4))
 		            .expectNext(Signal.complete()) //closing window opened by 3
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::onComplete)
+		            .then(sp1::complete)
 		            //remainder window, not emitted
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
@@ -548,21 +548,21 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorWhileIsPropagatedToBothWindowAndMain() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.next(1))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.next(2))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(3)) //at this point, new window, need another data to close it
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.next(3)) //at this point, new window, need another data to close it
+		            .then(() -> sp1.next(4))
 		            .expectNext(Signal.next(3), Signal.complete())
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.error(new RuntimeException("forced failure")))
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify(Duration.ofMillis(100));
@@ -595,9 +595,9 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorWhile() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 3) return true;
 					if (i == 5) throw new IllegalStateException("predicate failure");
@@ -606,15 +606,15 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.onNext(1)) //empty window
+					.then(() -> sp1.next(1)) //empty window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.onNext(2)) //empty window
+					.then(() -> sp1.next(2)) //empty window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.onNext(3)) //window opens
+					.then(() -> sp1.next(3)) //window opens
 					.expectNext(Signal.next(3))
-					.then(() -> sp1.onNext(4)) //previous window closes, new (empty) window
+					.then(() -> sp1.next(4)) //previous window closes, new (empty) window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.onNext(5)) //fails, the empty window receives onError
+					.then(() -> sp1.next(5)) //fails, the empty window receives onError
 					//error in the window:
 					.expectErrorMessage("predicate failure")
 					.verify(Duration.ofMillis(100));

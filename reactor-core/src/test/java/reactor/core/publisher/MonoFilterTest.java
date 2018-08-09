@@ -170,11 +170,13 @@ public class MonoFilterTest {
 	@Test
 	public void filterMono() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
-		StepVerifier.create(Mono.just(2).filter(s -> s % 2 == 0).subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
+		StepVerifier.create(Mono.just(2).filter(s -> s % 2 == 0)
+		                        .subscribeWith((MonoProcessorFacade<Integer>) mp)
+		                        .asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
 		            .then(() -> assertThat(mp.isSuccess()).isTrue())
 		            .then(() -> assertThat(mp.peek()).isEqualTo(2))
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .expectNext(2)
 		            .verifyComplete();
 	}
@@ -183,11 +185,13 @@ public class MonoFilterTest {
 	@Test
 	public void filterMonoNot() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
-		StepVerifier.create(Mono.just(1).filter(s -> s % 2 == 0).subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
+		StepVerifier.create(Mono.just(1).filter(s -> s % 2 == 0)
+		                        .subscribeWith((MonoProcessorFacade<Integer>) mp)
+		                        .asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
 		            .then(() -> assertThat(mp.isSuccess()).isTrue())
 		            .then(() -> assertThat(mp.peek()).isNull())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyComplete();
 	}
 }

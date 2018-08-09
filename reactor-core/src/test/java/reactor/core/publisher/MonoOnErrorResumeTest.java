@@ -196,50 +196,58 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void mapError() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		MonoProcessorFacade<Integer> mp = Processors.first();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorMap(TestException.class, e -> new Exception("test"))
-				.subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isSuccess()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				.subscribeWith(mp)
+				.asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isTrue())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isFalse())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyErrorMessage("test");
 	}
 
 	@Test
 	public void otherwiseErrorFilter() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		MonoProcessorFacade<Integer> mp = Processors.first();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorResume(TestException.class, e -> Mono.just(1))
-				.subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				.subscribeWith(mp)
+				.asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isTrue())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .expectNext(1)
 		            .verifyComplete();
 	}
 
 	@Test
 	public void otherwiseErrorUnfilter() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		MonoProcessorFacade<Integer> mp = Processors.first();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorResume(RuntimeException.class, e -> Mono.just(1))
-				.subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isSuccess()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				.subscribeWith(mp)
+				.asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isTrue())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isFalse())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyError(TestException.class);
 	}
 
 	@Test
 	public void otherwiseReturnErrorFilter() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		MonoProcessorFacade<Integer> mp = Processors.first();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorReturn(TestException.class, 1)
-				.subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				.subscribeWith(mp)
+				.asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isTrue())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .expectNext(1)
 		            .verifyComplete();
 	}
@@ -247,38 +255,44 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void otherwiseReturnErrorFilter2() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		MonoProcessorFacade<Integer> mp = Processors.first();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorReturn(TestException.class::isInstance, 1)
-				.subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				.subscribeWith(mp)
+				.asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isFalse())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isTrue())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .expectNext(1)
 		            .verifyComplete();
 	}
 
 	@Test
 	public void otherwiseReturnErrorUnfilter() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		MonoProcessorFacade<Integer> mp = Processors.first();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorReturn(RuntimeException.class, 1)
-				.subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isSuccess()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				.subscribeWith(mp)
+				.asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isTrue())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isFalse())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyError(TestException.class);
 	}
 
 	@Test
 	public void otherwiseReturnErrorUnfilter2() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		MonoProcessorFacade<Integer> mp = Processors.first();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorReturn(RuntimeException.class::isInstance, 1)
-				.subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isSuccess()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				.subscribeWith(mp)
+				.asMono())
+		            .then(() -> assertThat(mp.isError()).as("isError").isTrue())
+		            .then(() -> assertThat(mp.isComplete()).as("isComplete").isFalse())
+		            .then(() -> assertThat(mp.isValued()).as("isValued").isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).as("isTerminated").isTrue())
 		            .verifyError(TestException.class);
 	}
 }

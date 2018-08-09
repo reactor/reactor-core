@@ -45,6 +45,8 @@ import reactor.util.concurrent.Queues;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+//use of UnicastProcessor internally instead of facade, to avoid going through builder in critical path
+@SuppressWarnings("deprecation")
 final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 
 	final Publisher<U> start;

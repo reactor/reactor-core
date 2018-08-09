@@ -30,6 +30,7 @@ import reactor.util.context.Context;
 /**
  * @author Stephane Maldini
  */
+@SuppressWarnings("deprecation")
 final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 
 	final Publisher<OUT> downstream;
@@ -73,6 +74,11 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	public void subscribe(CoreSubscriber<? super OUT> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 		downstream.subscribe(actual);
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		return getBufferSize();
 	}
 
 	@Override

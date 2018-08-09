@@ -53,24 +53,25 @@ public class FluxWindowBoundaryTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.window(sp2)
+		sp1.asFlux()
+		   .window(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertValueCount(1);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
-		sp1.onNext(3);
+		sp1.next(1);
+		sp1.next(2);
+		sp1.next(3);
 
-		sp2.onNext(1);
+		sp2.next(1);
 
-		sp1.onNext(4);
-		sp1.onNext(5);
+		sp1.next(4);
+		sp1.next(5);
 
-		sp1.onComplete();
+		sp1.complete();
 
 		ts.assertValueCount(2);
 
@@ -88,24 +89,25 @@ public class FluxWindowBoundaryTest {
 	public void normalOtherCompletes() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.window(sp2)
+		sp1.asFlux()
+		   .window(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertValueCount(1);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
-		sp1.onNext(3);
+		sp1.next(1);
+		sp1.next(2);
+		sp1.next(3);
 
-		sp2.onNext(1);
+		sp2.next(1);
 
-		sp1.onNext(4);
-		sp1.onNext(5);
+		sp1.next(4);
+		sp1.next(5);
 
-		sp2.onComplete();
+		sp2.complete();
 
 		ts.assertValueCount(2);
 
@@ -123,24 +125,25 @@ public class FluxWindowBoundaryTest {
 	public void mainError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.window(sp2)
+		sp1.asFlux()
+		   .window(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertValueCount(1);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
-		sp1.onNext(3);
+		sp1.next(1);
+		sp1.next(2);
+		sp1.next(3);
 
-		sp2.onNext(1);
+		sp2.next(1);
 
-		sp1.onNext(4);
-		sp1.onNext(5);
+		sp1.next(4);
+		sp1.next(5);
 
-		sp1.onError(new RuntimeException("forced failure"));
+		sp1.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(2);
 
@@ -164,24 +167,25 @@ public class FluxWindowBoundaryTest {
 	public void otherError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.window(sp2)
+		sp1.asFlux()
+		   .window(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertValueCount(1);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
-		sp1.onNext(3);
+		sp1.next(1);
+		sp1.next(2);
+		sp1.next(3);
 
-		sp2.onNext(1);
+		sp2.next(1);
 
-		sp1.onNext(4);
-		sp1.onNext(5);
+		sp1.next(4);
+		sp1.next(5);
 
-		sp2.onError(new RuntimeException("forced failure"));
+		sp2.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(2);
 
@@ -223,25 +227,26 @@ public class FluxWindowBoundaryTest {
 	@Test
 	public void windowWillAcumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
+		FluxProcessorSink<Integer> numbers = Processors.emitterSink();
 
 		//non overlapping buffers
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
+		FluxProcessorSink<Integer> boundaryFlux = Processors.emitterSink();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.window(boundaryFlux)
-		                                       .concatMap(Flux::buffer)
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
+		                                                .window(boundaryFlux.asFlux())
+		                                                .concatMap(Flux::buffer)
+		                                                .buffer()
+		                                                .publishNext()
+		                                                .toProcessor();
 		res.subscribe();
 
-		numbers.onNext(1);
-		numbers.onNext(2);
-		numbers.onNext(3);
-		boundaryFlux.onNext(1);
-		numbers.onNext(5);
-		numbers.onNext(6);
-		numbers.onComplete();
+		numbers.next(1);
+		numbers.next(2);
+		numbers.next(3);
+		boundaryFlux.next(1);
+		numbers.next(5);
+		numbers.next(6);
+		numbers.complete();
 
 		//"the collected lists are available"
 		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));

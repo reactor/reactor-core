@@ -42,11 +42,13 @@ public class FluxAutoConnectTest {
 	
 	@Test
 	public void connectImmediately() {
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
-		e.publish().autoConnect(0, cancel::set);
+		e.asFlux()
+		 .publish()
+		 .autoConnect(0, cancel::set);
 		
 		Assert.assertNotNull(cancel.get());
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
@@ -57,11 +59,13 @@ public class FluxAutoConnectTest {
 
 	@Test
 	public void connectAfterMany() {
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
-		Flux<Integer> p = e.publish().autoConnect(2, cancel::set);
+		Flux<Integer> p = e.asFlux()
+		                   .publish()
+		                   .autoConnect(2, cancel::set);
 		
 		Assert.assertNull(cancel.get());
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);

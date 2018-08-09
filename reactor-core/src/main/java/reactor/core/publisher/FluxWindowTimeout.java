@@ -37,6 +37,8 @@ import reactor.util.concurrent.Queues;
 /**
  * @author David Karnok
  */
+//use of UnicastProcessor internally instead of facade, to avoid going through builder in critical path
+@SuppressWarnings("deprecation")
 final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 	final int            maxSize;

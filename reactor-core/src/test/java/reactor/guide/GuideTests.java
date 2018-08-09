@@ -45,13 +45,14 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.publisher.FluxProcessorSink;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Processors;
 import reactor.core.publisher.SignalType;
-import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
@@ -201,23 +202,24 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		UnicastProcessor<String> hotSource = UnicastProcessor.create();
+		FluxProcessorSink<String> hotSource = Processors.unicastSink();
 
-		Flux<String> hotFlux = hotSource.publish()
+		Flux<String> hotFlux = hotSource.asFlux()
+		                                .publish()
 		                                .autoConnect()
 		                                .map(String::toUpperCase);
 
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
-		hotSource.onNext("blue");
-		hotSource.onNext("green");
+		hotSource.next("blue");
+		hotSource.next("green");
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
 
-		hotSource.onNext("orange");
-		hotSource.onNext("purple");
-		hotSource.onComplete();
+		hotSource.next("orange");
+		hotSource.next("purple");
+		hotSource.complete();
 	}
 
 	@Test
@@ -985,7 +987,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single ⇢ reactor.guide.GuideTests.scatterAndGather(GuideTests.java:949)\n");
+						.hasMessageEndingWith("Flux.single ⇢ reactor.guide.GuideTests.scatterAndGather(GuideTests.java:951)\n");
 			});
 		}
 	}

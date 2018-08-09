@@ -59,6 +59,8 @@ import reactor.util.context.Context;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 3.0
  */
+//use of UnicastProcessor internally instead of facade, to avoid going through builder in critical path
+@SuppressWarnings("deprecation")
 final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		extends FluxOperator<TLeft, R> {
 

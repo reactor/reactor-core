@@ -89,27 +89,28 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void someDrops() {
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		List<Integer> drops = new ArrayList<>();
 
-		tp.onBackpressureDrop(drops::add)
+		tp.asFlux()
+		  .onBackpressureDrop(drops::add)
 		  .subscribe(ts);
 
-		tp.onNext(1);
+		tp.next(1);
 
 		ts.request(2);
 
-		tp.onNext(2);
-		tp.onNext(3);
-		tp.onNext(4);
+		tp.next(2);
+		tp.next(3);
+		tp.next(4);
 
 		ts.request(1);
 
-		tp.onNext(5);
-		tp.onComplete();
+		tp.next(5);
+		tp.complete();
 
 		ts.assertValues(2, 3, 5)
 		  .assertComplete()

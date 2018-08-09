@@ -168,23 +168,24 @@ Compare the first example to the second example, shown in the following code:
 
 [source,java]
 ----
-UnicastProcessor<String> hotSource = UnicastProcessor.create();
+FluxProcessorSink<String> hotSource = Processors.unicastSink();
 
-Flux<String> hotFlux = hotSource.publish()
+Flux<String> hotFlux = hotSource.asFlux()
+                                .publish()
                                 .autoConnect()
                                 .map(String::toUpperCase);
 
 
 hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
-hotSource.onNext("blue");
-hotSource.onNext("green");
+hotSource.next("blue");
+hotSource.next("green");
 
 hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
 
-hotSource.onNext("orange");
-hotSource.onNext("purple");
-hotSource.onComplete();
+hotSource.next("orange");
+hotSource.next("purple");
+hotSource.complete();
 ----
 
 The second example produces the following output:

@@ -76,47 +76,47 @@ public class FluxBufferBoundaryTest
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.buffer(sp2)
+		sp1.asFlux().buffer(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(1);
-		sp1.onNext(2);
+		sp1.next(1);
+		sp1.next(2);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(1);
+		sp2.next(1);
 
 		ts.assertValues(Arrays.asList(1, 2))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(2);
+		sp2.next(2);
 
 		ts.assertValues(Arrays.asList(1, 2))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(3);
-		sp1.onNext(4);
+		sp1.next(3);
+		sp1.next(4);
 
-		sp2.onComplete();
+		sp2.complete();
 
 		ts.assertValues(Arrays.asList(1, 2), Arrays.asList(3, 4))
 		  .assertNoError()
 		  .assertComplete();
 
-		sp1.onNext(5);
-		sp1.onNext(6);
-		sp1.onComplete();
+		sp1.next(5);
+		sp1.next(6);
+		sp1.complete();
 
 		ts.assertValues(Arrays.asList(1, 2), Arrays.asList(3, 4))
 		  .assertNoError()
@@ -127,41 +127,41 @@ public class FluxBufferBoundaryTest
 	public void mainError() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.buffer(sp2)
+		sp1.asFlux().buffer(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(1);
-		sp1.onNext(2);
+		sp1.next(1);
+		sp1.next(2);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(1);
+		sp2.next(1);
 
 		ts.assertValues(Arrays.asList(1, 2))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onError(new RuntimeException("forced failure"));
+		sp1.error(new RuntimeException("forced failure"));
 
 		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
 
-		sp2.onNext(2);
+		sp2.next(2);
 
 		ts.assertValues(Arrays.asList(1, 2))
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		sp2.onComplete();
+		sp2.complete();
 
 		ts.assertValues(Arrays.asList(1, 2))
 		  .assertError(RuntimeException.class)
@@ -173,32 +173,32 @@ public class FluxBufferBoundaryTest
 	public void otherError() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.buffer(sp2)
+		sp1.asFlux().buffer(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(1);
-		sp1.onNext(2);
+		sp1.next(1);
+		sp1.next(2);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(1);
+		sp2.next(1);
 
 		ts.assertValues(Arrays.asList(1, 2))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(3);
+		sp1.next(3);
 
-		sp2.onError(new RuntimeException("forced failure"));
+		sp2.error(new RuntimeException("forced failure"));
 
 		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
 
@@ -207,7 +207,7 @@ public class FluxBufferBoundaryTest
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		sp2.onComplete();
+		sp2.complete();
 
 		ts.assertValues(Arrays.asList(1, 2))
 		  .assertError(RuntimeException.class)
@@ -219,10 +219,10 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierThrows() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.buffer(sp2, (Supplier<List<Integer>>) () -> {
+		sp1.asFlux().buffer(sp2.asFlux(), (Supplier<List<Integer>>) () -> {
 			throw new RuntimeException("forced failure");
 		})
 		   .subscribe(ts);
@@ -240,12 +240,12 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierThrowsLater() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
 		int count[] = {1};
 
-		sp1.buffer(sp2, (Supplier<List<Integer>>) () -> {
+		sp1.asFlux().buffer(sp2.asFlux(), (Supplier<List<Integer>>) () -> {
 			if (count[0]-- > 0) {
 				return new ArrayList<>();
 			}
@@ -253,10 +253,10 @@ public class FluxBufferBoundaryTest
 		})
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
+		sp1.next(1);
+		sp1.next(2);
 
-		sp2.onNext(1);
+		sp2.next(1);
 
 		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
 		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
@@ -271,10 +271,10 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierReturnsNUll() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.buffer(sp2, (Supplier<List<Integer>>) () -> null)
+		sp1.asFlux().buffer(sp2.asFlux(), (Supplier<List<Integer>>) () -> null)
 		   .subscribe(ts);
 
 		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
@@ -322,24 +322,25 @@ public class FluxBufferBoundaryTest
 	@Test
 	public void bufferWillAcumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
+		FluxProcessorSink<Integer> numbers = Processors.emitterSink();
 
 		//non overlapping buffers
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
+		FluxProcessorSink<Integer> boundaryFlux = Processors.emitterSink();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.buffer(boundaryFlux)
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
+		                                                .buffer(boundaryFlux.asFlux())
+		                                                .buffer()
+		                                                .publishNext()
+		                                                .toProcessor();
 		res.subscribe();
 
-		numbers.onNext(1);
-		numbers.onNext(2);
-		numbers.onNext(3);
-		boundaryFlux.onNext(1);
-		numbers.onNext(5);
-		numbers.onNext(6);
-		numbers.onComplete();
+		numbers.next(1);
+		numbers.next(2);
+		numbers.next(3);
+		boundaryFlux.next(1);
+		numbers.next(5);
+		numbers.next(6);
+		numbers.complete();
 
 		//"the collected lists are available"
 		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));

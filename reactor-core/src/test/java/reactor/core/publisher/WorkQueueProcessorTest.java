@@ -60,6 +60,7 @@ import static reactor.util.concurrent.WaitStrategy.liteBlocking;
 
 /**
  */
+@SuppressWarnings("deprecation")
 public class WorkQueueProcessorTest {
 
 	static final Logger logger = Loggers.getLogger(WorkQueueProcessorTest.class);

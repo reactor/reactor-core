@@ -281,32 +281,32 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void singleSubscriberOnly() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.directSink();
+		FluxProcessorSink<Integer> source2 = Processors.directSink();
 
-		source.concatMap(v -> v == 1 ? source1 : source2)
+		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
-		source.onNext(2);
+		source.next(1);
+		source.next(2);
 
 		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
 		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
 
-		source1.onNext(1);
-		source2.onNext(10);
+		source1.next(1);
+		source2.next(10);
 
-		source1.onComplete();
-		source.onComplete();
+		source1.complete();
+		source.complete();
 
-		source2.onNext(2);
-		source2.onComplete();
+		source2.next(2);
+		source2.complete();
 
 		ts.assertValues(1, 2)
 		  .assertNoError()
@@ -317,32 +317,32 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.directSink();
+		FluxProcessorSink<Integer> source2 = Processors.directSink();
 
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2)
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.next(1);
 
 		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
 		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
 
-		source1.onNext(1);
-		source2.onNext(10);
+		source1.next(1);
+		source2.next(10);
 
-		source1.onComplete();
-		source.onNext(2);
-		source.onComplete();
+		source1.complete();
+		source.next(2);
+		source.complete();
 
-		source2.onNext(2);
-		source2.onComplete();
+		source2.next(2);
+		source2.complete();
 
 		ts.assertValues(1, 2)
 		  .assertNoError()
@@ -356,26 +356,26 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void mainErrorsImmediate() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.directSink();
+		FluxProcessorSink<Integer> source2 = Processors.directSink();
 
-		source.concatMap(v -> v == 1 ? source1 : source2)
+		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.next(1);
 
 		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
 		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
 
-		source1.onNext(1);
+		source1.next(1);
 
-		source.onError(new RuntimeException("forced failure"));
+		source.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -390,33 +390,33 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void mainErrorsBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.directSink();
+		FluxProcessorSink<Integer> source2 = Processors.directSink();
 
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2)
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.next(1);
 
 		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
 		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
 
-		source1.onNext(1);
+		source1.next(1);
 
-		source.onError(new RuntimeException("forced failure"));
+		source.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source1.onNext(2);
-		source1.onComplete();
+		source1.next(2);
+		source1.complete();
 
 		ts.assertValues(1, 2)
 		  .assertError(RuntimeException.class)
@@ -431,26 +431,26 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void innerErrorsImmediate() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.directSink();
+		FluxProcessorSink<Integer> source2 = Processors.directSink();
 
-		source.concatMap(v -> v == 1 ? source1 : source2)
+		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.next(1);
 
 		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
 		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
 
-		source1.onNext(1);
+		source1.next(1);
 
-		source1.onError(new RuntimeException("forced failure"));
+		source1.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -465,27 +465,27 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void innerErrorsBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.directSink();
+		FluxProcessorSink<Integer> source2 = Processors.directSink();
 
 		//gh-1101: default changed from BOUNDARY to END
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2, false, Queues.XS_BUFFER_SIZE)
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), false, Queues.XS_BUFFER_SIZE)
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.next(1);
 
 		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
 		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
 
-		source1.onNext(1);
+		source1.next(1);
 
-		source1.onError(new RuntimeException("forced failure"));
+		source1.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -500,35 +500,35 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void innerErrorsEnd() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> source1 = Processors.directSink();
+		FluxProcessorSink<Integer> source2 = Processors.directSink();
 
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2, true, 32)
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), true, 32)
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.next(1);
 
 		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
 		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
 
-		source1.onNext(1);
+		source1.next(1);
 
-		source1.onError(new RuntimeException("forced failure"));
+		source1.error(new RuntimeException("forced failure"));
 
-		source.onNext(2);
+		source.next(2);
 
 		Assert.assertTrue("source2 no subscribers?", source2.hasDownstreams());
 
-		source2.onNext(2);
-		source2.onComplete();
+		source2.next(2);
+		source2.complete();
 
-		source.onComplete();
+		source.complete();
 
 		ts.assertValues(1, 2)
 		  .assertError(RuntimeException.class)
@@ -572,12 +572,13 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionMapToNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up = UnicastProcessor.create(Queues.<Integer>get(2).get());
-		up.onNext(1);
-		up.onNext(2);
-		up.onComplete();
+		FluxProcessorSink<Integer> up = Processors.unicast(Queues.<Integer>get(2).get())
+		                                          .buildSink();
+		up.next(1);
+		up.next(2);
+		up.complete();
 
-		up.map(v -> v == 2 ? null : v)
+		up.asFlux().map(v -> v == 2 ? null : v)
 		  .concatMap(Flux::just)
 		  .subscribe(ts);
 
@@ -590,13 +591,14 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionMapToNullFilter() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(Queues.<Integer>get(2).get());
-		up.onNext(1);
-		up.onNext(2);
-		up.onComplete();
+		FluxProcessorSink<Integer> up =
+				Processors.unicast(Queues.<Integer>get(2).get())
+				          .buildSink();
+		up.next(1);
+		up.next(2);
+		up.complete();
 
-		up.map(v -> v == 2 ? null : v)
+		up.asFlux().map(v -> v == 2 ? null : v)
 		  .filter(v -> true)
 		  .concatMap(Flux::just)
 		  .subscribe(ts);

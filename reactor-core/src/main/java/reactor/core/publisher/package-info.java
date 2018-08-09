@@ -26,19 +26,18 @@
  * A typed one-element at most sequence {@link org.reactivestreams.Publisher} with core reactive extensions.
  *
  * <h2>Processors</h2>
- * The following
- * {@link org.reactivestreams.Processor} extending {@link reactor.core.publisher.FluxProcessor} are available:
+ * The following {@link reactor.core.publisher.FluxProcessorSink} are available, which can
+ * be converted to {@link org.reactivestreams.Processor}:
  * <ul>
- *         <li>A synchronous/non-opinionated pub-sub replaying capable event emitter :
- *         {@link reactor.core.publisher.EmitterProcessor},
- *         {@link reactor.core.publisher.ReplayProcessor},
- *         {@link reactor.core.publisher.UnicastProcessor} and
- *         {@link reactor.core.publisher.DirectProcessor}</li>
+ *         <li>Synchronous/non-opinionated pub-sub replaying capable event emitter :
+ *         {@link reactor.core.publisher.Processors#emitter()},
+ *         {@link reactor.core.publisher.Processors#replay()},
+ *         {@link reactor.core.publisher.Processors#unicast()} and
+ *         {@link reactor.core.publisher.Processors#direct()}</li>
  *         <li>A dedicated parallel pub-sub event buffering broadcaster :
- *         {@link reactor.core.publisher.TopicProcessor}</li>
+ *         {@link reactor.core.publisher.Processors#asyncEmitter()}</li>
  *         <li>A dedicated parallel work queue distribution for slow consumers :
- *         {@link reactor.core.publisher.WorkQueueProcessor}</li>
- *         <li>{@link reactor.core.publisher.FluxProcessor} itself offers factories to build arbitrary {@link org.reactivestreams.Processor}</li>
+ *         {@link reactor.core.publisher.Processors#relaxedFanOut()}</li>
  * </ul>
  * <p>
  **

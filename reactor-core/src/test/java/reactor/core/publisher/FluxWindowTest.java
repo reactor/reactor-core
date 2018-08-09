@@ -74,8 +74,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	}
 
 	// javac can't handle these inline and fails with type inference error
-	final Supplier<Queue<Integer>>                   pqs = ConcurrentLinkedQueue::new;
-	final Supplier<Queue<UnicastProcessor<Integer>>> oqs = ConcurrentLinkedQueue::new;
+	final Supplier<Queue<Integer>>                      pqs = ConcurrentLinkedQueue::new;
+	final Supplier<Queue<UnicastProcessor<Integer>>>    oqs = ConcurrentLinkedQueue::new;
 
 	@Test(expected = NullPointerException.class)
 	public void source1Null() {
@@ -428,17 +428,17 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void exactError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp = Processors.directSink();
 
-		sp.window(2, 2)
+		sp.asFlux().window(2, 2)
 		  .subscribe(ts);
 
 		ts.assertValueCount(0)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.onNext(1);
-		sp.onError(new RuntimeException("forced failure"));
+		sp.next(1);
+		sp.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -456,17 +456,17 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void skipError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp = Processors.directSink();
 
-		sp.window(2, 3)
+		sp.asFlux().window(2, 3)
 		  .subscribe(ts);
 
 		ts.assertValueCount(0)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.onNext(1);
-		sp.onError(new RuntimeException("forced failure"));
+		sp.next(1);
+		sp.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -484,18 +484,18 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void skipInGapError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp = Processors.directSink();
 
-		sp.window(1, 3)
+		sp.asFlux().window(1, 3)
 		  .subscribe(ts);
 
 		ts.assertValueCount(0)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.onNext(1);
-		sp.onNext(2);
-		sp.onError(new RuntimeException("forced failure"));
+		sp.next(1);
+		sp.next(2);
+		sp.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -509,17 +509,17 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void overlapError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp = Processors.directSink();
 
-		sp.window(2, 1)
+		sp.asFlux().window(2, 1)
 		  .subscribe(ts);
 
 		ts.assertValueCount(0)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.onNext(1);
-		sp.onError(new RuntimeException("forced failure"));
+		sp.next(1);
+		sp.error(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()

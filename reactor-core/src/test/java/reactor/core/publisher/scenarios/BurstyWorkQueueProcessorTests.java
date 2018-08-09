@@ -20,14 +20,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
-import java.util.logging.Level;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.SignalType;
 import reactor.core.publisher.WorkQueueProcessor;
 
 import static org.testng.Assert.assertEquals;
@@ -47,6 +45,7 @@ public class BurstyWorkQueueProcessorTests {
 	public static final int BURST_SIZE              = 5;
 
 	private LongAccumulator            maxRingBufferPending;
+	@SuppressWarnings("deprecation")
 	private WorkQueueProcessor<Object> processor;
 	private ExecutorService            producerExecutor;
 	private AtomicLong                 droppedCount;
@@ -60,14 +59,19 @@ public class BurstyWorkQueueProcessorTests {
 
 	@Test
 	@Ignore
+	@SuppressWarnings("deprecation")
 	public void test() throws Exception {
-		processor = WorkQueueProcessor.builder().name("test-processor").bufferSize(RINGBUFFER_SIZE).build();
+		processor = WorkQueueProcessor.builder()
+		                              .name("test-processor")
+		                              .bufferSize(RINGBUFFER_SIZE)
+		                              .build();
 
 		Flux
 				.create((emitter) -> burstyProducer(emitter, PRODUCED_MESSAGES_COUNT, BURST_SIZE))
 				.onBackpressureDrop(this::incrementDroppedMessagesCounter)
 			//	.log("test", Level.INFO, SignalType.REQUEST)
 				.subscribeWith(processor)
+				.asFlux()
 				.map(this::complicatedCalculation)
 				.subscribe(this::logConsumedValue);
 

@@ -34,25 +34,25 @@ public class FluxSwitchMapTest {
 	public void noswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onComplete();
+		sp2.next(10);
+		sp2.next(20);
+		sp2.next(30);
+		sp2.next(40);
+		sp2.complete();
 
 		ts.assertValues(10, 20, 30, 40)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.complete();
 
 		ts.assertValues(10, 20, 30, 40)
 		  .assertNoError()
@@ -64,19 +64,19 @@ public class FluxSwitchMapTest {
 	public void noswitchBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onComplete();
+		sp2.next(10);
+		sp2.next(20);
+		sp2.next(30);
+		sp2.next(40);
+		sp2.complete();
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -88,7 +88,7 @@ public class FluxSwitchMapTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.complete();
 
 		ts.assertValues(10, 20)
 		  .assertNoError()
@@ -106,34 +106,34 @@ public class FluxSwitchMapTest {
 	public void doswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
+		FluxProcessorSink<Integer> sp3 = Processors.directSink();
 
-		sp1.switchMap(v -> v == 1 ? sp2 : sp3)
+		sp1.asFlux().switchMap(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
-		sp2.onNext(10);
-		sp2.onNext(20);
+		sp2.next(10);
+		sp2.next(20);
 
-		sp1.onNext(2);
+		sp1.next(2);
 
 		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
 
-		sp2.onNext(30);
-		sp3.onNext(300);
-		sp2.onNext(40);
-		sp3.onNext(400);
-		sp2.onComplete();
-		sp3.onComplete();
+		sp2.next(30);
+		sp3.next(300);
+		sp2.next(40);
+		sp3.next(400);
+		sp2.complete();
+		sp3.complete();
 
 		ts.assertValues(10, 20, 300, 400)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.complete();
 
 		ts.assertValues(10, 20, 300, 400)
 		  .assertNoError()
@@ -156,24 +156,24 @@ public class FluxSwitchMapTest {
 	public void mainCompletesBefore() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp1.onComplete();
+		sp1.next(1);
+		sp1.complete();
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onComplete();
+		sp2.next(10);
+		sp2.next(20);
+		sp2.next(30);
+		sp2.next(40);
+		sp2.complete();
 
 		ts.assertValues(10, 20, 30, 40)
 		  .assertNoError()
@@ -185,20 +185,20 @@ public class FluxSwitchMapTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp1.onError(new RuntimeException("forced failure"));
+		sp1.next(1);
+		sp1.error(new RuntimeException("forced failure"));
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onComplete();
+		sp2.next(10);
+		sp2.next(20);
+		sp2.next(30);
+		sp2.next(40);
+		sp2.complete();
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -210,19 +210,19 @@ public class FluxSwitchMapTest {
 	public void innerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
+		FluxProcessorSink<Integer> sp2 = Processors.directSink();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onError(new RuntimeException("forced failure"));
+		sp2.next(10);
+		sp2.next(20);
+		sp2.next(30);
+		sp2.next(40);
+		sp2.error(new RuntimeException("forced failure"));
 
 		ts.assertValues(10, 20, 30, 40)
 		  .assertError(RuntimeException.class)
@@ -237,14 +237,14 @@ public class FluxSwitchMapTest {
 	public void mapperThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 
-		sp1.switchMap(v -> {
+		sp1.asFlux().switchMap(v -> {
 			throw new RuntimeException("forced failure");
 		})
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -256,12 +256,12 @@ public class FluxSwitchMapTest {
 	public void mapperReturnsNull() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessorSink<Integer> sp1 = Processors.directSink();
 
-		sp1.switchMap(v -> null)
+		sp1.asFlux().switchMap(v -> null)
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.next(1);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
@@ -278,12 +278,12 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void switchOnNextDynamicallyOnNext() {
-		UnicastProcessor<Flux<Integer>> up = UnicastProcessor.create();
-		up.onNext(Flux.range(1, 3));
-		up.onNext(Flux.range(2, 3).concatWith(Mono.never()));
-		up.onNext(Flux.range(4, 3));
-		up.onComplete();
-		StepVerifier.create(Flux.switchOnNext(up))
+		FluxProcessorSink<Flux<Integer>> up = Processors.unicastSink();
+		up.next(Flux.range(1, 3));
+		up.next(Flux.range(2, 3).concatWith(Mono.never()));
+		up.next(Flux.range(4, 3));
+		up.complete();
+		StepVerifier.create(Flux.switchOnNext(up.asFlux()))
 		            .expectNext(1, 2, 3, 2, 3, 4, 4, 5, 6)
 		            .verifyComplete();
 	}

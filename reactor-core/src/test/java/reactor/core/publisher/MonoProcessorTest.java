@@ -36,6 +36,7 @@ import reactor.util.function.Tuple2;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+@SuppressWarnings("deprecation")
 public class MonoProcessorTest {
 
 	@Test
@@ -334,7 +335,8 @@ public class MonoProcessorTest {
 
 		StepVerifier.create(mp.<Integer>map(s -> {
 			throw new RuntimeException("test");
-		}).subscribeWith(mp2), 0)
+		}).subscribeWith((MonoProcessorFacade<Integer>) mp2)
+		  .asMono(), 0)
 		            .thenRequest(1)
 		            .then(() -> {
 			            assertThat(mp2.isTerminated()).isTrue();
@@ -367,7 +369,8 @@ public class MonoProcessorTest {
 		MonoProcessor<Tuple2<Integer, Integer>> mp3 = MonoProcessor.create();
 
 		StepVerifier.create(Mono.zip(mp, mp2)
-		                        .subscribeWith(mp3))
+		                        .subscribeWith((MonoProcessorFacade<Tuple2<Integer, Integer>>) mp3)
+		                        .asMono())
 		            .then(() -> assertThat(mp3.isPending()).isTrue())
 		            .then(() -> mp.onNext(1))
 		            .then(() -> assertThat(mp3.isPending()).isTrue())
@@ -391,7 +394,9 @@ public class MonoProcessorTest {
 		MonoProcessor<Integer> mp3 = MonoProcessor.create();
 
 		StepVerifier.create(Mono.zip(d -> (Integer)d[0], mp)
-		                        .subscribeWith(mp3))
+		                        .subscribeWith((MonoProcessorFacade<Integer>) mp3)
+		                        .asMono()
+		)
 		            .then(() -> assertThat(mp3.isPending()).isTrue())
 		            .then(() -> mp.onNext(1))
 		            .then(() -> {
@@ -411,7 +416,8 @@ public class MonoProcessorTest {
 		MonoProcessor<Tuple2<Integer, Integer>> mp3 = MonoProcessor.create();
 
 		StepVerifier.create(Mono.zip(mp, mp2)
-		                        .subscribeWith(mp3))
+		                        .subscribeWith((MonoProcessorFacade<Tuple2<Integer, Integer>>) mp3)
+		                        .asMono())
 		            .then(() -> assertThat(mp3.isPending()).isTrue())
 		            .then(() -> mp.onError(new Exception("test")))
 		            .then(() -> {
@@ -428,7 +434,9 @@ public class MonoProcessorTest {
 	public void filterMonoProcessor() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		MonoProcessor<Integer> mp2 = MonoProcessor.create();
-		StepVerifier.create(mp.filter(s -> s % 2 == 0).subscribeWith(mp2))
+		StepVerifier.create(mp.filter(s -> s % 2 == 0)
+		                      .subscribeWith((MonoProcessorFacade<Integer>) mp2)
+		                      .asMono())
 		            .then(() -> mp.onNext(2))
 		            .then(() -> assertThat(mp2.isError()).isFalse())
 		            .then(() -> assertThat(mp2.isSuccess()).isTrue())
@@ -443,7 +451,9 @@ public class MonoProcessorTest {
 	public void filterMonoProcessorNot() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		MonoProcessor<Integer> mp2 = MonoProcessor.create();
-		StepVerifier.create(mp.filter(s -> s % 2 == 0).subscribeWith(mp2))
+		StepVerifier.create(mp.filter(s -> s % 2 == 0)
+		                      .subscribeWith((MonoProcessorFacade<Integer>) mp2)
+		                      .asMono())
 		            .then(() -> mp.onNext(1))
 		            .then(() -> assertThat(mp2.isError()).isFalse())
 		            .then(() -> assertThat(mp2.isSuccess()).isTrue())
@@ -457,8 +467,8 @@ public class MonoProcessorTest {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		MonoProcessor<Integer> mp2 = MonoProcessor.create();
 		StepVerifier.create(mp.filter(s -> {throw new RuntimeException("test"); })
-					.subscribeWith
-						(mp2))
+		                      .subscribeWith((MonoProcessorFacade<Integer>) mp2)
+		                      .asMono())
 		            .then(() -> mp.onNext(2))
 		            .then(() -> assertThat(mp2.isError()).isTrue())
 		            .then(() -> assertThat(mp2.isSuccess()).isFalse())
@@ -475,8 +485,8 @@ public class MonoProcessorTest {
 
 		StepVerifier.create(mp.doOnSuccess(s -> {throw new RuntimeException("test"); })
 		                      .doOnError(ref::set)
-					.subscribeWith
-						(mp2))
+		                      .subscribeWith((MonoProcessorFacade<Integer>) mp2)
+		                      .asMono())
 		            .then(() -> mp.onNext(2))
 		            .then(() -> assertThat(mp2.isError()).isTrue())
 		            .then(() -> assertThat(ref.get()).hasMessage("test"))

@@ -185,15 +185,15 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressured() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.take(3), 0)
+		FluxProcessorSink<String> up = Processors.unicastSink();
+		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test2"))
+		            .then(() -> up.next("test"))
+		            .then(() -> up.next("test2"))
 		            .thenRequest(2)
 		            .expectNext("test", "test2")
-		            .then(() -> up.onNext("test3"))
-		            .then(() -> up.onNext("test4"))
+		            .then(() -> up.next("test3"))
+		            .then(() -> up.next("test4"))
 		            .thenRequest(1)
 		            .expectNext("test3")
 		            .thenRequest(1)
@@ -202,14 +202,14 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressuredCancelled() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.take(3).doOnSubscribe(s -> {
+		FluxProcessorSink<String> up = Processors.unicastSink();
+		StepVerifier.create(up.asFlux().take(3).doOnSubscribe(s -> {
 			assertThat(((Fuseable.QueueSubscription)s).size()).isEqualTo(0);
 		}), 0)
 		            .expectFusion()
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
+		            .then(() -> up.next("test"))
+		            .then(() -> up.next("test"))
+		            .then(() -> up.next("test"))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenCancel()
@@ -299,11 +299,11 @@ public class FluxTakeTest {
 
 	@Test
 	public void failNextIfTerminatedTakeFused() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		Hooks.onNextDropped(t -> assertThat(t).isEqualTo(1));
-		StepVerifier.create(up.take(2))
-		            .then(() -> up.actual.onComplete())
-		            .then(() -> up.actual.onNext(1))
+		StepVerifier.create(up.asFlux().take(2))
+		            .then(() -> ProcessorsTestUtils.unicastActual(up).onComplete())
+		            .then(() -> ProcessorsTestUtils.unicastActual(up).onNext(1))
 		            .verifyComplete();
 		Hooks.resetOnNextDropped();
 	}
@@ -375,12 +375,12 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.take(2))
+		FluxProcessorSink<String> up = Processors.unicastSink();
+		StepVerifier.create(up.asFlux().take(2))
 		            .expectFusion(Fuseable.ASYNC)
 		            .then(() -> {
-			            up.onNext("test");
-			            up.onNext("test2");
+			            up.next("test");
+			            up.next("test2");
 		            })
 		            .expectNext("test", "test2")
 		            .verifyComplete();
@@ -488,18 +488,18 @@ public class FluxTakeTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void failFusedDoubleError() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
-		StepVerifier.create(up
+		StepVerifier.create(up.asFlux()
 		                        .take(2))
 		            .consumeSubscriptionWith(s -> {
 			            assertTrackableBeforeOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            assertTrackableAfterOnSubscribe((InnerOperator)up.actual);
-			            up.actual.onError(new Exception("test"));
-			            assertTrackableAfterOnComplete((InnerOperator)up.actual);
-			            up.actual.onError(new Exception("test2"));
+			            assertTrackableAfterOnSubscribe((InnerOperator) ProcessorsTestUtils.unicastActual(up));
+			            ProcessorsTestUtils.unicastActual(up).onError(new Exception("test"));
+			            assertTrackableAfterOnComplete((InnerOperator) ProcessorsTestUtils.unicastActual(up));
+			            ProcessorsTestUtils.unicastActual(up).onError(new Exception("test2"));
 		            })
 		            .verifyErrorMessage("test");
 
@@ -508,17 +508,17 @@ public class FluxTakeTest {
 
 	@Test
 	public void ignoreFusedDoubleComplete() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		StepVerifier.create(up
+		FluxProcessorSink<Integer> up = Processors.unicastSink();
+		StepVerifier.create(up.asFlux()
 		                        .take(2).filter(d -> true))
 		            .consumeSubscriptionWith(s -> {
 			            assertTrackableAfterOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            assertTrackableAfterOnSubscribe((InnerOperator)up.actual);
-			            up.actual.onComplete();
-			            assertTrackableAfterOnComplete((InnerOperator)up.actual);
-			            up.actual.onComplete();
+			            assertTrackableAfterOnSubscribe((InnerOperator) ProcessorsTestUtils.unicastActual(up));
+			            ProcessorsTestUtils.unicastActual(up).onComplete();
+			            assertTrackableAfterOnComplete((InnerOperator)ProcessorsTestUtils.unicastActual(up));
+			            ProcessorsTestUtils.unicastActual(up).onComplete();
 		            })
 		            .verifyComplete();
 	}

@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -84,10 +85,13 @@ import reactor.util.context.Context;
  * </p>
  *
  * @param <T> the input and output type
+ * @deprecated instantiate through {@link Processors#unicast()} builder and use as a
+ * {@link FluxProcessorFacade}, will be removed from public API in 3.3
  */
+@Deprecated
 public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
-		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T> {
+		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>, FluxProcessorFacade<T> {
 
 	/**
 	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
@@ -96,6 +100,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create() {
 		return new UnicastProcessor<>(Queues.<E>unbounded().get());
 	}
@@ -108,6 +113,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue) {
 		return new UnicastProcessor<>(queue);
 	}
@@ -121,6 +127,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
 		return new UnicastProcessor<>(queue, endcallback);
 	}
@@ -137,6 +144,7 @@ public final class UnicastProcessor<T>
 	 *
 	 * @return a unicast {@link FluxProcessor}
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue,
 			Consumer<? super E> onOverflow,
 			Disposable endcallback) {
@@ -147,6 +155,7 @@ public final class UnicastProcessor<T>
 	final Consumer<? super T> onOverflow;
 
 	volatile Disposable onTerminate;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<UnicastProcessor, Disposable> ON_TERMINATE =
 			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Disposable.class, "onTerminate");
@@ -187,6 +196,13 @@ public final class UnicastProcessor<T>
 		this.onOverflow = null;
 	}
 
+	UnicastProcessor(Queue<T> queue,
+			Consumer<? super T> onOverflow) {
+		this.queue = Objects.requireNonNull(queue, "queue");
+		this.onOverflow = Objects.requireNonNull(onOverflow, "onOverflow");
+		this.onTerminate = null;
+	}
+
 	public UnicastProcessor(Queue<T> queue,
 			Consumer<? super T> onOverflow,
 			Disposable onTerminate) {
@@ -195,9 +211,22 @@ public final class UnicastProcessor<T>
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
 	}
 
+	/**
+	 * @deprecated use {@link ProcessorFacade#getAvailableCapacity()} instead
+	 */
 	@Override
+	@Deprecated
 	public int getBufferSize() {
 		return Queues.capacity(this.queue);
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		int cap = Queues.capacity(this.queue);
+		if (cap < 0) {
+			return Long.MAX_VALUE;
+		}
+		return cap;
 	}
 
 	@Override
@@ -488,13 +517,23 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
+	public void dispose() {
+		cancel();
+	}
+
+	@Override
 	public boolean isDisposed() {
-		return cancelled || done;
+		return cancelled;
 	}
 
 	@Override
 	public boolean isTerminated() {
 		return done;
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
 	}
 
 	@Override

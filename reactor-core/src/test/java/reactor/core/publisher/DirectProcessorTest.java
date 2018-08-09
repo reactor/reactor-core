@@ -17,7 +17,9 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -25,6 +27,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+@SuppressWarnings("deprecation")
 public class DirectProcessorTest {
 
     @Test(expected = NullPointerException.class)
@@ -45,6 +48,17 @@ public class DirectProcessorTest {
     @Test(expected = NullPointerException.class)
     public void subscribeNull() {
 	    DirectProcessor.create().subscribe((Subscriber<Object>)null);
+    }
+
+    @Test
+    public void fluxProcessorFacadeViewsAreSame() {
+	    DirectProcessor<Object> processor = DirectProcessor.create();
+
+	    assertThat(processor)
+			    .isInstanceOf(CoreSubscriber.class)
+			    .isInstanceOf(Processor.class)
+			    .isSameAs(Scannable.from(processor))
+			    .isSameAs(processor.asFlux());
     }
 
     @Test

@@ -45,6 +45,7 @@ import static org.junit.Assert.*;
 /**
  * @author Stephane Maldini
  */
+@SuppressWarnings("deprecation")
 public class TopicProcessorTest {
 
 	@Test

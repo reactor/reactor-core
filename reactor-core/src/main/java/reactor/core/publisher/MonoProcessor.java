@@ -47,11 +47,14 @@ import reactor.util.context.Context;
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
+ * @deprecated instantiate through {@link Processors#first} and use as a {@link MonoProcessorFacade}, will be removed from public API in 3.3
  */
+@Deprecated
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
 		           Scannable,
-		           LongSupplier {
+		           LongSupplier,
+		           MonoProcessorFacade<O> {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -61,6 +64,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @return A {@link MonoProcessor}.
 	 */
+	@Deprecated
 	public static <T> MonoProcessor<T> create() {
 		return new MonoProcessor<>(null);
 	}
@@ -74,6 +78,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @return A {@link MonoProcessor}.
 	 */
+	@Deprecated
 	public static <T> MonoProcessor<T> create(WaitStrategy waitStrategy) {
 		return new MonoProcessor<>(null, waitStrategy);
 	}
@@ -134,34 +139,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (s != null) {
 			s.cancel();
 		}
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public void dispose() {
-		Subscription s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription());
-		if (s == Operators.cancelledSubscription()) {
-			return;
-		}
-
-		source = null;
-		if (s != null) {
-			s.cancel();
-		}
-
-
-		NextInner<O>[] a;
-		if ((a = SUBSCRIBERS.getAndSet(this, TERMINATED)) != TERMINATED) {
-			Exception e = new CancellationException("Disposed");
-			error = e;
-			value = null;
-
-			for (NextInner<O> as : a) {
-				as.onError(e);
-			}
-		}
-
-		waitStrategy.signalAllWhenBlocking();
 	}
 
 	/**
@@ -275,59 +252,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 
 		return 0L;
-	}
-
-	/**
-	 * Return the produced {@link Throwable} error if any or null
-	 *
-	 * @return the produced {@link Throwable} error if any or null
-	 */
-	@Nullable
-	public final Throwable getError() {
-		return isTerminated() ? error : null;
-	}
-
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been interrupted via cancellation.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} is cancelled, {@code false}
-	 * otherwise.
-	 */
-	public boolean isCancelled() {
-		return subscription == Operators.cancelledSubscription() && !isTerminated();
-	}
-
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been completed with an error.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} was completed with an error, {@code false} otherwise.
-	 */
-	public final boolean isError() {
-		return getError() != null;
-	}
-
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
-	 */
-	public final boolean isSuccess() {
-		return isTerminated() && error == null;
-	}
-
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been terminated by the
-	 * source producer with a success or an error.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
-	 */
-	public final boolean isTerminated() {
-		return subscribers == TERMINATED;
-	}
-
-	@Override
-	public boolean isDisposed() {
-		return isTerminated() || isCancelled();
 	}
 
 	@Override
@@ -489,28 +413,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		return null;
 	}
 
-	final boolean isPending() {
-		return !isTerminated();
-	}
-
-	/**
-	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
-	 *
-	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
-	 */
-	public final long downstreamCount() {
-		return subscribers.length;
-	}
-
-	/**
-	 * Return true if any {@link Subscriber} is actively subscribed
-	 *
-	 * @return true if any {@link Subscriber} is actively subscribed
-	 */
-	public final boolean hasDownstreams() {
-		return downstreamCount() != 0;
-	}
-
 	boolean add(NextInner<O> ps) {
 		for (;;) {
 			NextInner<O>[] a = subscribers;
@@ -569,6 +471,136 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 		}
+	}
+
+	// === API that won't be visible anymore ===
+
+	/**
+	 * @return true if not {@link #isTerminated()} nor {@link #isCancelled()}
+	 * @deprecated will be removed from public API in 3.2.0
+	 */
+	final boolean isPending() {
+		return !isTerminated();
+	}
+
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been interrupted via cancellation.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is cancelled, {@code false}
+	 * otherwise.
+	 * @deprecated use {@link #isDisposed()}
+	 */
+	@Deprecated
+	public boolean isCancelled() {
+		return isDisposed();
+	}
+
+	// === API that overlap with MonoProcessorSink ===
+
+	@Override
+	public void dispose() {
+		Subscription s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription());
+		if (s == Operators.cancelledSubscription()) {
+			return;
+		}
+
+		source = null;
+		if (s != null) {
+			s.cancel();
+		}
+
+
+		NextInner<O>[] a;
+		//noinspection unchecked
+		if ((a = SUBSCRIBERS.getAndSet(this, TERMINATED)) != TERMINATED) {
+			Exception e = new CancellationException("Disposed");
+			error = e;
+			value = null;
+
+			for (NextInner<O> as : a) {
+				as.onError(e);
+			}
+		}
+
+		waitStrategy.signalAllWhenBlocking();
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return subscription == Operators.cancelledSubscription() && !isTerminated();
+		//TODO should it return true if terminated?
+	}
+
+	@Override
+	public Mono<O> asMono() {
+		return this;
+	}
+
+	@Override
+	@Nullable
+	public final Throwable getError() {
+		return isTerminated() ? error : null;
+	}
+
+	@Override
+	public final boolean isError() {
+		return getError() != null;
+	}
+
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+	 * @deprecated use {@link Processors#first()}'s {@link MonoProcessorSink#isComplete()} instead
+	 */
+	@Deprecated
+	public final boolean isSuccess() {
+		return isComplete();
+	}
+
+	@Override
+	public boolean isComplete() {
+		return isTerminated() && error == null;
+	}
+
+	@Override
+	public boolean isValued() {
+		return isComplete() && value != null;
+	}
+
+	@Override
+	public final boolean isTerminated() {
+		return subscribers == TERMINATED;
+	}
+
+	public long getAvailableCapacity() {
+		if (isTerminated()) {
+			return 0L;
+		}
+		return 1L;
+	}
+
+	/**
+	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
+	 *
+	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
+	 */
+	public final long downstreamCount() {
+		return subscribers.length;
+	}
+
+	/**
+	 * Return true if any {@link Subscriber} is actively subscribed
+	 *
+	 * @return true if any {@link Subscriber} is actively subscribed
+	 */
+	public final boolean hasDownstreams() {
+		return downstreamCount() != 0;
+	}
+
+	@Override
+	public boolean isSerialized() {
+		return false;
 	}
 
 	final static class NextInner<T> extends Operators.MonoSubscriber<T, T> {

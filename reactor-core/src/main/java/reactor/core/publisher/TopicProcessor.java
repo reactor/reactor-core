@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -66,7 +67,10 @@ import reactor.util.concurrent.WaitStrategy;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
+ * @deprecated instantiate through {@link Processors#asyncEmitter()} and use as a
+ * {@link FluxProcessorFacade}, will be removed from public API in 3.3
  */
+@Deprecated
 public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
@@ -77,7 +81,9 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * {@code TopicProcessor<String> processor = TopicProcessor.<String>builder().build()}
 	 *
 	 * @param <T> Type of dispatched signal
+	 * @deprecated will be superseded by {@link reactor.core.publisher.Processors.AsyncEmitterProcessorBuilder} in 3.2.0
 	 */
+	@Deprecated
 	public final static class Builder<T> {
 
 		String name;
@@ -220,6 +226,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * Create a new {@link TopicProcessor} {@link Builder} with default properties.
 	 * @return new TopicProcessor builder
 	 */
+	@Deprecated
 	public static <E> Builder<E> builder()  {
 		return new Builder<>();
 	}
@@ -231,6 +238,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> TopicProcessor<E> create() {
 		return TopicProcessor.<E>builder().build();
 	}
@@ -245,6 +253,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param <E> Type of processed signals
 	 * @return the fresh TopicProcessor instance
 	 */
+	@Deprecated
 	public static <E> TopicProcessor<E> create(String name, int bufferSize) {
 		return TopicProcessor.<E>builder().name(name).bufferSize(bufferSize).build();
 	}
@@ -264,6 +273,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> TopicProcessor<E> share(String name, int bufferSize) {
 		return TopicProcessor.<E>builder().share(true).name(name).bufferSize(bufferSize).build();
 	}
@@ -344,6 +354,8 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	@Override
+	@Deprecated
+	@SuppressWarnings("deprecation")
 	public Flux<E> drain() {
 		return coldSource(ringBuffer, null, error, minimum);
 	}

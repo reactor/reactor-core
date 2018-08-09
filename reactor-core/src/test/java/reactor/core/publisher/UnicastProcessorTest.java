@@ -24,8 +24,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import org.junit.Test;
+import org.reactivestreams.Processor;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
@@ -34,7 +36,19 @@ import reactor.util.concurrent.Queues;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
+@SuppressWarnings("deprecation")
 public class UnicastProcessorTest {
+
+	@Test
+	public void fluxProcessorFacadeViewsAreSame() {
+		UnicastProcessor<Object> processor = UnicastProcessor.create();
+
+		assertThat(processor)
+				.isInstanceOf(CoreSubscriber.class)
+				.isInstanceOf(Processor.class)
+				.isSameAs(Scannable.from(processor))
+				.isSameAs(processor.asFlux());
+	}
 
     @Test
     public void secondSubscriberRejectedProperly() {

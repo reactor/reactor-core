@@ -253,10 +253,10 @@ public class FluxFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final EmitterProcessor<Boolean> pp = EmitterProcessor.create();
+		final FluxProcessorSink<Boolean> pp = Processors.emitterSink();
 
 		StepVerifier.create(Flux.range(1, 5)
-		                        .filterWhen(v -> pp, 16))
+		                        .filterWhen(v -> pp.asFlux(), 16))
 		            .thenCancel();
 
 		assertThat(pp.hasDownstreams()).isFalse();

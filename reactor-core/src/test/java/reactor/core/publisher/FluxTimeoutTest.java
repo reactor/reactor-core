@@ -98,20 +98,21 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
+		source.asFlux()
+		      .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.onNext(0);
+		source.next(0);
 
-		tp.onNext(1);
+		tp.next(1);
 
-		source.onComplete();
+		source.complete();
 
 		Assert.assertFalse("Timeout has subscribers?", tp.hasDownstreams());
 
@@ -122,20 +123,21 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
+		source.asFlux()
+		      .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.onNext(0);
+		source.next(0);
 
-		tp.onComplete();
+		tp.complete();
 
-		source.onComplete();
+		source.complete();
 
 		Assert.assertFalse("Timeout has subscribers?", tp.hasDownstreams());
 
@@ -146,20 +148,21 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
+		source.asFlux()
+		      .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.onNext(0);
+		source.next(0);
 
-		tp.onError(new RuntimeException("forced failure"));
+		tp.error(new RuntimeException("forced failure"));
 
-		source.onComplete();
+		source.complete();
 
 		Assert.assertFalse("Timeout has subscribers?", tp.hasDownstreams());
 
@@ -231,17 +234,18 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessorSink<Integer> source = Processors.directSink();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
-		source.timeout(tp, v -> tp)
+		source.asFlux()
+		      .timeout(tp.asFlux(), v -> tp.asFlux())
 		      .subscribe(ts);
 
-		tp.onNext(1);
+		tp.next(1);
 
-		source.onNext(2);
-		source.onComplete();
+		source.next(2);
+		source.complete();
 
 		ts.assertNoValues()
 		  .assertError(TimeoutException.class)

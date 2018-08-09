@@ -53,6 +53,7 @@ import static reactor.core.Scannable.Attr;
 /**
  * @author Stephane Maldini
  */
+@SuppressWarnings("deprecation")
 public class EmitterProcessorTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1290
@@ -89,6 +90,17 @@ public class EmitterProcessorTest {
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void fluxProcessorFacadeViewsAreSame() {
+		EmitterProcessor<Object> processor = EmitterProcessor.create();
+
+		assertThat(processor)
+				.isInstanceOf(CoreSubscriber.class)
+				.isInstanceOf(Processor.class)
+				.isSameAs(Scannable.from(processor))
+				.isSameAs(processor.asFlux());
 	}
 
 	@Test
@@ -755,6 +767,21 @@ public class EmitterProcessorTest {
 		boolean autoCancel = false;
 		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize, autoCancel);
 		assertProcessor(processor, bufferSize, autoCancel);
+	}
+
+	@Test
+	public void cancelIsDisposed() {
+		FluxProcessorFacade<Integer> processor = Processors.emitter();
+		assertThat(processor).isExactlyInstanceOf(EmitterProcessor.class);
+
+		assertThat(processor.isDisposed()).as("not yet disposed").isFalse();
+
+		processor.dispose();
+
+		assertThat(processor.isDisposed()).as("disposed").isTrue();
+		assertThat(((EmitterProcessor) processor).isCancelled())
+				.as("isCancelled")
+				.isTrue();
 	}
 
 	public void assertProcessor(EmitterProcessor<Integer> processor,

@@ -37,7 +37,9 @@ import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessorSink;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Processors;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -553,15 +555,15 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyThenOnCompleteRange() {
-		DirectProcessor<Void> p = DirectProcessor.create();
+		FluxProcessorSink<Void> p = Processors.directSink();
 
 		Flux<String> flux = Flux.range(0, 3)
 		                        .map(d -> "t" + d)
-		                        .takeUntilOther(p);
+		                        .takeUntilOther(p.asFlux());
 
 		StepVerifier.create(flux, 2)
 		            .expectNext("t0", "t1")
-		            .then(p::onComplete)
+		            .then(p::complete)
 		            .expectComplete()
 		            .verify();
 
@@ -1820,12 +1822,12 @@ public class StepVerifierTests {
 
 	@Test
 	public void takeAsyncFusedBackpressured() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.take(3), 0)
+		FluxProcessorSink<String> up = Processors.unicastSink();
+		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
+		            .then(() -> up.next("test"))
+		            .then(() -> up.next("test"))
+		            .then(() -> up.next("test"))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenRequest(1)
@@ -1835,12 +1837,12 @@ public class StepVerifierTests {
 
 	@Test
 	public void cancelAsyncFusion() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.take(3), 0)
+		FluxProcessorSink<String> up = Processors.unicastSink();
+		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
+		            .then(() -> up.next("test"))
+		            .then(() -> up.next("test"))
+		            .then(() -> up.next("test"))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenCancel()
@@ -1906,14 +1908,14 @@ public class StepVerifierTests {
 	@Test
 	public void assertNextWithSubscribeOnDirectProcessor() {
 		Scheduler scheduler = Schedulers.newElastic("test");
-		DirectProcessor<Integer> processor = DirectProcessor.create();
+		FluxProcessorSink<Integer> processor = Processors.directSink();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
-		                             .doOnNext(processor::onNext)
+		                             .doOnNext(processor::next)
 		                             .subscribeOn(scheduler);
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(
-						StepVerifier.create(processor)
+						StepVerifier.create(processor.asFlux())
 						            .then(doAction::subscribe)
 						            .assertNext(v -> assertThat(v).isEqualTo(23))
 						            .thenCancel()

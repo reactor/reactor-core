@@ -42,6 +42,8 @@ import reactor.util.context.Context;
  * @param <U> the boundary publisher's type (irrelevant)
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+//use of UnicastProcessor internally instead of facade, to avoid going through builder in critical path
+@SuppressWarnings("deprecation")
 final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 	final Publisher<U> other;

@@ -105,9 +105,9 @@ public class FluxRefCountTest {
 
 	@Test
 	public void normal() {
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
-		Flux<Integer> p = e.publish().refCount();
+		Flux<Integer> p = e.asFlux().publish().refCount();
 
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 
@@ -121,14 +121,14 @@ public class FluxRefCountTest {
 
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
 
-		e.onNext(1);
-		e.onNext(2);
+		e.next(1);
+		e.next(2);
 
 		ts1.cancel();
 
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
 
-		e.onNext(3);
+		e.next(3);
 
 		ts2.cancel();
 
@@ -145,9 +145,9 @@ public class FluxRefCountTest {
 
 	@Test
 	public void normalTwoSubscribers() {
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
+		FluxProcessorSink<Integer> e = Processors.emitterSink();
 
-		Flux<Integer> p = e.publish().refCount(2);
+		Flux<Integer> p = e.asFlux().publish().refCount(2);
 
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 
@@ -161,14 +161,14 @@ public class FluxRefCountTest {
 
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
 
-		e.onNext(1);
-		e.onNext(2);
+		e.next(1);
+		e.next(2);
 
 		ts1.cancel();
 
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
 
-		e.onNext(3);
+		e.next(3);
 
 		ts2.cancel();
 
@@ -306,13 +306,14 @@ public class FluxRefCountTest {
 
 	@Test
 	public void delayElementShouldNotCancelTwice() throws Exception {
-		DirectProcessor<Long> p = DirectProcessor.create();
+		FluxProcessorSink<Long> p = Processors.directSink();
 		AtomicInteger cancellations = new AtomicInteger();
 
 		Flux<Long> publishedFlux = p
-			.publish()
-			.refCount(2)
-			.doOnCancel(() -> cancellations.incrementAndGet());
+				.asFlux()
+				.publish()
+				.refCount(2)
+				.doOnCancel(() -> cancellations.incrementAndGet());
 
 		publishedFlux.any(x -> x > 5)
 			.delayElement(Duration.ofMillis(2))
@@ -321,10 +322,10 @@ public class FluxRefCountTest {
 		CompletableFuture<List<Long>> result = publishedFlux.collectList().toFuture();
 
 		for (long i = 0; i < 10; i++) {
-			p.onNext(i);
+			p.next(i);
 			Thread.sleep(1);
 		}
-		p.onComplete();
+		p.complete();
 
 		assertThat(result.get(10, TimeUnit.MILLISECONDS).size()).isEqualTo(10);
 		assertThat(cancellations.get()).isEqualTo(2);

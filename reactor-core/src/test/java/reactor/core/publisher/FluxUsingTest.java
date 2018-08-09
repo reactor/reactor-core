@@ -262,14 +262,14 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessorSink<Integer> tp = Processors.directSink();
 
-		Flux.using(() -> 1, r -> tp, cleanup::set, true)
+		Flux.using(() -> 1, r -> tp.asFlux(), cleanup::set, true)
 		    .subscribe(ts);
 
 		Assert.assertTrue("No subscriber?", tp.hasDownstreams());
 
-		tp.onNext(1);
+		tp.next(1);
 
 		ts.assertValues(1)
 		  .assertNotComplete()
@@ -277,7 +277,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		ts.cancel();
 
-		tp.onNext(2);
+		tp.next(2);
 
 		ts.assertValues(1)
 		  .assertNotComplete()

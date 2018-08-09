@@ -498,10 +498,12 @@ public class FluxPeekFuseableTest {
 	public void asyncFusionAvailable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor.create(Queues.<Integer>get(2).get())
-		                .doOnNext(v -> {
-		                })
-		                .subscribe(ts);
+		Processors.unicast(Queues.<Integer>get(2).get())
+		          .buildSink()
+		          .asFlux()
+		          .doOnNext(v -> {
+		          })
+		          .subscribe(ts);
 
 		Subscription s = ts.upstream();
 		Assert.assertTrue("Non-fuseable upstream" + s,

@@ -38,9 +38,14 @@ import reactor.util.annotation.Nullable;
  *
  * @param <IN> the input value type
  * @param <OUT> the output value type
+ *
+ * @deprecated Discouraged, use {@link FluxProcessorFacade} and/or {@link FluxProcessorSink} unless you really need asymmetric IN and OUT types.
  */
+@Deprecated
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, CoreSubscriber<IN>, Scannable, Disposable {
+
+	boolean disposed = false;
 
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.
@@ -75,9 +80,66 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return new DelegateProcessor<>(downstream, upstream);
 	}
 
+	/**
+	 * Return the processor buffer capacity if any or {@link Integer#MAX_VALUE}
+	 *
+	 * @return processor buffer capacity if any or {@link Integer#MAX_VALUE}
+	 */
+	public int getBufferSize() {
+		return Integer.MAX_VALUE;
+	}
+
+
+	@Override
+	public Stream<? extends Scannable> inners() {
+		return Stream.empty();
+	}
+
+
+	@Override
+	@Nullable
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.TERMINATED) return isTerminated();
+		if (key == Attr.ERROR) return getError();
+		if (key == Attr.CAPACITY) return getBufferSize();
+
+		return null;
+	}
+
+	/**
+	 * Create a {@link FluxProcessor} that safely gates multi-threaded producer
+	 * {@link Subscriber#onNext(Object)}.
+	 *
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public final FluxProcessor<IN, OUT> serialize() {
+		return new DelegateProcessor<>(this, Operators.serialize(this));
+	}
+
+	/**
+	 * Returns serialization strategy. If true, {@link FluxProcessor#sink()} will always
+	 * be serialized. Otherwise sink is serialized only if {@link FluxSink#onRequest(java.util.function.LongConsumer)}
+	 * is invoked.
+	 * @return true to serialize any sink, false to delay serialization till onRequest
+	 */
+	protected boolean serializeAlways() {
+		return true;
+	}
+
+
+	//== shared API with ProcessorSink ==
+
+	public abstract long getAvailableCapacity();
+
 	@Override
 	public void dispose() {
+		this.disposed = true;
 		onError(new CancellationException("Disposed"));
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return disposed;
 	}
 
 	/**
@@ -87,15 +149,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 */
 	public long downstreamCount(){
 		return inners().count();
-	}
-
-	/**
-	 * Return the processor buffer capacity if any or {@link Integer#MAX_VALUE}
-	 *
-	 * @return processor buffer capacity if any or {@link Integer#MAX_VALUE}
-	 */
-	public int getBufferSize() {
-		return Integer.MAX_VALUE;
 	}
 
 	/**
@@ -135,11 +188,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return isTerminated() && getError() != null;
 	}
 
-	@Override
-	public Stream<? extends Scannable> inners() {
-		return Stream.empty();
-	}
-
 	/**
 	 * Has this upstream finished or "completed" / "failed" ?
 	 *
@@ -158,30 +206,10 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return false;
 	}
 
-	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
-		if (key == Attr.TERMINATED) return isTerminated();
-		if (key == Attr.ERROR) return getError();
-		if (key == Attr.CAPACITY) return getBufferSize();
-
-		return null;
-	}
-
-	/**
-	 * Create a {@link FluxProcessor} that safely gates multi-threaded producer
-	 * {@link Subscriber#onNext(Object)}.
-	 *
-	 * @return a serializing {@link FluxProcessor}
-	 */
-	public final FluxProcessor<IN, OUT> serialize() {
-		return new DelegateProcessor<>(this, Operators.serialize(this));
-	}
-
 	/**
 	 * Create a {@link FluxSink} that safely gates multi-threaded producer
-	 * {@link Subscriber#onNext(Object)}. This processor will be subscribed to 
-	 * that {@link FluxSink}, and any previous subscribers will be unsubscribed.
+	 * {@link Subscriber#onNext(Object)}. This processor will be subscribed to
+	 * said {@link FluxSink}, and any previous subscribers will be unsubscribed.
 	 *
 	 * <p> The returned {@link FluxSink} will not apply any
 	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
@@ -200,22 +228,14 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 
 	/**
 	 * Create a {@link FluxSink} that safely gates multi-threaded producer
-	 * {@link Subscriber#onNext(Object)}.  This processor will be subscribed to 
-	 * that {@link FluxSink}, and any previous subscribers will be unsubscribed.
+	 * {@link Subscriber#onNext(Object)}.  This processor will be subscribed to
+	 * said {@link FluxSink}, and any previous subscribers will be unsubscribed.
 	 *
-	 * <p> The returned {@link FluxSink} will not apply any
-	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
-	 * will behave in two possible ways depending on the Processor:
-	 * <ul>
-	 * <li> an unbounded processor will handle the overflow itself by dropping or
-	 * buffering </li>
-	 * <li> a bounded processor will block/spin on IGNORE strategy, or apply the
-	 * strategy behavior</li>
-	 * </ul>
+	 * <p> The returned {@link FluxSink} will deal with overflowing {@link FluxSink#next(Object)}
+	 * according to the selected {@link reactor.core.publisher.FluxSink.OverflowStrategy}.
 	 *
 	 * @param strategy the overflow strategy, see {@link FluxSink.OverflowStrategy}
-	 * for the
-	 * available strategies
+	 * for the available strategies
 	 * @return a serializing {@link FluxSink}
 	 */
 	public final FluxSink<IN> sink(FluxSink.OverflowStrategy strategy) {
@@ -237,13 +257,5 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 			return new FluxCreate.SerializeOnRequestSink<>(s);
 	}
 
-	/**
-	 * Returns serialization strategy. If true, {@link FluxProcessor#sink()} will always
-	 * be serialized. Otherwise sink is serialized only if {@link FluxSink#onRequest(java.util.function.LongConsumer)}
-	 * is invoked.
-	 * @return true to serialize any sink, false to delay serialization till onRequest
-	 */
-	protected boolean serializeAlways() {
-		return true;
-	}
+	//==end of shared API with ProcessorSink ==
 }

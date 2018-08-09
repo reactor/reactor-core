@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -77,8 +78,11 @@ import reactor.util.annotation.Nullable;
  * </p>
  *
  * @param <T> the input and output value type
+ * @deprecated instantiate through {@link Processors#directSink()} or {@link Processors#direct()}
+ * depending on whether you want to manually push data or push through a source. Will be removed in 3.3.
  */
-public final class DirectProcessor<T> extends FluxProcessor<T, T> {
+@Deprecated
+public final class DirectProcessor<T> extends FluxProcessor<T, T> implements FluxProcessorFacade<T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -87,6 +91,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
+	@Deprecated
 	public static <E> DirectProcessor<E> create() {
 		return new DirectProcessor<>();
 	}
@@ -126,6 +131,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 			s.cancel();
 		}
 	}
+
 
 	@Override
 	public void onNext(T t) {
@@ -273,12 +279,26 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
 	@Nullable
 	public Throwable getError() {
 		if (subscribers == TERMINATED) {
 			return error;
 		}
 		return null;
+	}
+
+	@Override
+	public long getAvailableCapacity() {
+		long cap = 0L;
+		for (DirectInner inner : subscribers) {
+			cap = Math.max(inner.requested, cap);
+		}
+		return cap;
 	}
 
 	static final class DirectInner<T> implements InnerProducer<T> {
