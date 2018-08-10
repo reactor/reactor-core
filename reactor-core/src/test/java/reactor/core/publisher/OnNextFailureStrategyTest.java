@@ -22,12 +22,25 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import reactor.test.StepVerifier;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class OnNextFailureStrategyTest {
+
+	/**
+	 * Helper for other tests to emulate resumeDrop with the public consumer-based API.
+	 */
+	public static <T> void drop(@Nullable Throwable e, @Nullable T v) {
+		if (v != null) {
+			Operators.onNextDropped(v, Context.empty());
+		}
+		if (e != null) {
+			Operators.onErrorDropped(e, Context.empty());
+		}
+	}
 
 	@Test
 	public void resumeDrop() {
@@ -532,70 +545,6 @@ public class OnNextFailureStrategyTest {
 	}
 
 	@Test
-	public void fluxApiErrorDrop() {
-		Flux<String> test = Flux.just("foo", "", "bar", "baz")
-		                        .filter(s -> 3 / s.length() == 1)
-		                        .onErrorContinue();
-
-		StepVerifier.create(test)
-		            .expectNext("foo", "bar", "baz")
-		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasDroppedExactly("")
-		            .hasDroppedErrorWithMessage("/ by zero");
-	}
-
-	@Test
-	public void fluxApiErrorDropConditional() {
-		Flux<String> test = Flux.just("foo", "", "bar", "baz")
-		                        .filter(s -> 3 / s.length() == 1)
-		                        .onErrorContinue(t -> t instanceof ArithmeticException);
-
-		StepVerifier.create(test)
-		            .expectNext("foo", "bar", "baz")
-		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasDroppedExactly("")
-		            .hasDroppedErrorWithMessage("/ by zero");
-	}
-
-	@Test
-	public void fluxApiErrorDropConditionalErrorNotMatching() {
-		Flux<String> test = Flux.just("foo", "", "bar", "baz")
-				.filter(s -> 3 / s.length() == 1)
-				.onErrorContinue(t -> t instanceof IllegalStateException);
-
-		StepVerifier.create(test)
-				.expectNext("foo")
-				.verifyError(ArithmeticException.class);
-	}
-
-	@Test
-	public void fluxApiErrorDropConditionalByClass() {
-		Flux<String> test = Flux.just("foo", "", "bar", "baz")
-				.filter(s -> 3 / s.length() == 1)
-				.onErrorContinue(ArithmeticException.class);
-
-		StepVerifier.create(test)
-				.expectNext("foo", "bar", "baz")
-				.expectComplete()
-				.verifyThenAssertThat()
-				.hasDroppedExactly("")
-				.hasDroppedErrorWithMessage("/ by zero");
-	}
-
-	@Test
-	public void fluxApiErrorDropConditionalErrorByClassNotMatching() {
-		Flux<String> test = Flux.just("foo", "", "bar", "baz")
-				.filter(s -> 3 / s.length() == 1)
-				.onErrorContinue(StackOverflowError.class);
-
-		StepVerifier.create(test)
-				.expectNext("foo")
-				.verifyError(ArithmeticException.class);
-	}
-
-	@Test
 	public void fluxApiErrorContinue() {
 		List<String> valueDropped = new ArrayList<>();
 		List<Throwable> errorDropped = new ArrayList<>();
@@ -723,7 +672,7 @@ public class OnNextFailureStrategyTest {
 		Flux<Integer> test = Flux.just(1, 2, 3)
 		                         .flatMap(i -> Flux.range(0, i + 1)
 		                                           .map(v -> 30 / v))
-		                         .onErrorContinue();
+		                         .onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 		            .expectNext(30, 30, 15, 30, 15, 10)
@@ -740,7 +689,7 @@ public class OnNextFailureStrategyTest {
 	public void monoApiWithinFlatMap() {
 		Flux<Integer> test = Flux.just(0, 1, 2, 3)
 				.flatMap(i -> Mono.just(i).map(v -> 30 / v))
-				.onErrorContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNext(30, 15, 10)
@@ -760,7 +709,7 @@ public class OnNextFailureStrategyTest {
 						.map(v -> 30 / v)
 						.onErrorReturn(100)
 						.onErrorStop())
-				.onErrorContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNext(100, 100, 100)
@@ -773,7 +722,7 @@ public class OnNextFailureStrategyTest {
 		@SuppressWarnings("divzero")
 		Flux<Integer> test = Flux.just(0, 1, 2)
 				.map(i -> i / 0)
-				.flatMap(i -> Flux.just(i).onErrorContinue());
+				.flatMap(i -> Flux.just(i).onErrorContinue(OnNextFailureStrategyTest::drop));
 
 		StepVerifier.create(test)
 				.expectError(ArithmeticException.class)
@@ -793,7 +742,7 @@ public class OnNextFailureStrategyTest {
 				})
 				.onErrorStop()
 				.map(i -> 10 / i)
-				.onErrorContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNext(10, 5)
