@@ -369,11 +369,6 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Override
-		public String operatorName() {
-			return stepName();
-		}
-
-		@Override
 		final public void onNext(T t) {
 			actual.onNext(t);
 		}

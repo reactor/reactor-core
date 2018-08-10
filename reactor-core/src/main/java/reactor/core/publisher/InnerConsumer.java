@@ -31,11 +31,6 @@ interface InnerConsumer<I>
 
 	@Override
 	default String stepName() {
-		return operatorName(); //TODO in 3.2.1 move code over from operatorName
-	}
-
-	@Override
-	default String operatorName() {
 		// /!\ this code is duplicated in `ScannableConsumer#stepName` in order to use toString instead of simple class name
 
 		/*

@@ -81,11 +81,6 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	}
 
 	@Override
-	public String operatorName() {
-		return stepName();
-	}
-
-	@Override
 	public String toString() {
 		return stacktrace.operatorAssemblyInformation();
 	}

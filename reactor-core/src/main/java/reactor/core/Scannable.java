@@ -400,21 +400,6 @@ public interface Scannable {
 	 * its chain of {@link #parents()} and {@link #actuals()}.
 	 */
 	default String stepName() {
-		//stepName defaults to calling operatorName so that old code that
-		//overrides operatorName() still work when called through stepName()
-		//TODO remove operatorName entirely in 3.2.1
-		return operatorName();
-	}
-
-	/**
-	 * Return a meaningful {@link String} representation of this {@link Scannable} in
-	 * its chain of {@link #parents()} and {@link #actuals()}.
-	 *
-	 * @deprecated replace usages and definitions of {@code operatorName} with {@link #stepName()}.
-	 * will be removed in 3.2.1
-	 */
-	@Deprecated
-	default String operatorName() {
 		// /!\ this code is duplicated in `InnerConsumer#stepName` in order to use simple class name instead of toString
 
 		/*

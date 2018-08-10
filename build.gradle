@@ -303,6 +303,7 @@ project('reactor-core') {
 	//TODO after a release, bump the gradle.properties baseline
 	//TODO after a release, remove the reactor-core exclusions below if any
 //	classExcludes = []
+	methodExcludes = ["reactor.core.Scannable#operatorName()"]
   }
 
   javadoc {

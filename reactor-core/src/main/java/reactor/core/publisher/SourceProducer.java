@@ -61,9 +61,4 @@ interface SourceProducer<O> extends Scannable, Publisher<O> {
 	default String stepName() {
 		return "source(" + getClass().getSimpleName() + ")";
 	}
-
-	@Override
-	default String operatorName() {
-		return stepName();
-	}
 }
