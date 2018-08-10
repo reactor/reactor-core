@@ -544,4 +544,70 @@ public interface IdentityProcessor<T> extends Processor<T, T> {
 		return processor;
 	}
 
+	/**
+	 * Create a new "latest" {@link IdentityProcessor} which can be later subscribed to a
+	 * {@link Publisher} source. It has {@link Mono} semantics from the perspective of
+	 * downstream subscribers, and transmits different signals to its {@link Subscriber Subscribers}
+	 * depending on <strong>when</strong> a Subscriber comes in:
+	 * <ul>
+	 *     <li>
+	 *         before the source is subscribed to / emits anything: such subscribers will
+	 *         receive the first signal emitted by the source (onNext: as soon as they request;
+	 *         onError & onComplete: immediately).
+	 *     </li>
+	 *     <li>
+	 *         after an onNext signal: such subscribers will receive said latest onNext
+	 *         signal, as soon as they request.
+	 *     </li>
+	 *     <li>
+	 *         after an onError signal: such subscribers will immediately receive the same
+	 *         onError signal.
+	 *     </li>
+	 *     <li>
+	 *         after an onComplete signal: such subscribers will receive the latest observed
+	 *         onNext value, as soon as they request. (note it is guaranteed there is such
+	 *         a value, otherwise we would be in the first case above)
+	 *     </li>
+	 * </ul>
+	 *
+	 * @param <O> the type of data emitted by the processor
+	 * @return a new "latest" {@link IdentityProcessor}
+	 */
+	static <O> IdentityProcessor<O> latest() {
+		return new LatestProcessor<>();
+	}
+
+	/**
+	 * Create a new "latest" {@link IdentityProcessor} that is directly connected to a
+	 * {@link Publisher} source. It has {@link Mono} semantics from the perspective of
+	 * downstream subscribers, and transmits different signals to its {@link Subscriber Subscribers}
+	 * depending on <strong>when</strong> a Subscriber comes in:
+	 * <ul>
+	 *     <li>
+	 *         before the source had time to emit anything: such subscribers will
+	 *         receive the first signal emitted by the source (onNext: as soon as they request;
+	 *         onError & onComplete: immediately).
+	 *     </li>
+	 *     <li>
+	 *         after an onNext signal: such subscribers will receive said latest onNext
+	 *         signal, as soon as they request.
+	 *     </li>
+	 *     <li>
+	 *         after an onError signal: such subscribers will immediately receive the same
+	 *         onError signal.
+	 *     </li>
+	 *     <li>
+	 *         after an onComplete signal: such subscribers will receive the latest observed
+	 *         onNext value, as soon as they request. (note it is guaranteed there is such
+	 *         a value, otherwise we would be in the first case above)
+	 *     </li>
+	 * </ul>
+	 *
+	 * @param <O> the type of data emitted by the processor
+	 * @return a new "latest" {@link IdentityProcessor}
+	 */
+	static <O> IdentityProcessor<O> latestOf(Publisher<? extends O> source) {
+		return LatestProcessor.latestOf(source);
+	}
+
 }
