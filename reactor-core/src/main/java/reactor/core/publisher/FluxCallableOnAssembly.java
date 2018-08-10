@@ -70,11 +70,6 @@ final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 	}
 
 	@Override
-	public String operatorName() {
-		return stepName();
-	}
-
-	@Override
 	public String toString() {
 		return stacktrace.operatorAssemblyInformation();
 	}
