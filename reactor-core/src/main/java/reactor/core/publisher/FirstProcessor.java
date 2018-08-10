@@ -36,46 +36,48 @@ import reactor.util.concurrent.WaitStrategy;
 import reactor.util.context.Context;
 
 /**
- * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
+ * A {@link FirstProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
  *
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/monoprocessor.png" alt="">
  * <p>
  *
- * Once a {@link MonoProcessor} has been resolved, newer subscribers will benefit from the cached result.
+ * Once a {@link FirstProcessor} has been resolved, newer subscribers will benefit from the cached result.
  *
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
+ * @deprecated Will be removed from public API in 3.3, prefer using {@link IdentityProcessor#first} or {@link StandaloneMonoSink}
  */
-public final class MonoProcessor<O> extends Mono<O>
+@Deprecated
+public final class FirstProcessor<O> extends Mono<O>
 		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
 		           Scannable, IdentityProcessor<O>,
 		           LongSupplier {
 
 	/**
-	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
+	 * Create a {@link FirstProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
 	 * the eventual result for 1 or N subscribers.
 	 *
 	 * @param <T> type of the expected value
 	 *
-	 * @return A {@link MonoProcessor}.
+	 * @return A {@link FirstProcessor}.
 	 */
-	public static <T> MonoProcessor<T> create() {
-		return new MonoProcessor<>(null);
+	public static <T> FirstProcessor<T> create() {
+		return new FirstProcessor<>(null);
 	}
 
 	/**
-	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
+	 * Create a {@link FirstProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
 	 * the eventual result for 1 or N subscribers.
 	 *
 	 * @param waitStrategy a {@link WaitStrategy} for blocking {@link #block} strategy
 	 * @param <T> type of the expected value
 	 *
-	 * @return A {@link MonoProcessor}.
+	 * @return A {@link FirstProcessor}.
 	 */
-	public static <T> MonoProcessor<T> create(WaitStrategy waitStrategy) {
-		return new MonoProcessor<>(null, waitStrategy);
+	public static <T> FirstProcessor<T> create(WaitStrategy waitStrategy) {
+		return new FirstProcessor<>(null, waitStrategy);
 	}
 
 	final WaitStrategy       waitStrategy;
@@ -84,8 +86,8 @@ public final class MonoProcessor<O> extends Mono<O>
 	volatile NextInner<O>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<MonoProcessor, NextInner[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(MonoProcessor.class,
+	static final AtomicReferenceFieldUpdater<FirstProcessor, NextInner[]> SUBSCRIBERS =
+			AtomicReferenceFieldUpdater.newUpdater(FirstProcessor.class,
 					NextInner[].class,
 					"subscribers");
 
@@ -104,16 +106,16 @@ public final class MonoProcessor<O> extends Mono<O>
 	O            value;
 
 
-	volatile Subscription subscription;
-	static final AtomicReferenceFieldUpdater<MonoProcessor, Subscription> UPSTREAM =
-			AtomicReferenceFieldUpdater.newUpdater(MonoProcessor.class, Subscription
+	volatile Subscription                                                  subscription;
+	static final AtomicReferenceFieldUpdater<FirstProcessor, Subscription> UPSTREAM =
+			AtomicReferenceFieldUpdater.newUpdater(FirstProcessor.class, Subscription
 					.class, "subscription");
 
-	MonoProcessor(@Nullable Publisher<? extends O> source) {
+	FirstProcessor(@Nullable Publisher<? extends O> source) {
 		this(source, WaitStrategy.sleeping());
 	}
 
-	MonoProcessor(@Nullable Publisher<? extends O> source, WaitStrategy waitStrategy) {
+	FirstProcessor(@Nullable Publisher<? extends O> source, WaitStrategy waitStrategy) {
 		this.waitStrategy = Objects.requireNonNull(waitStrategy, "waitStrategy");
 		this.source = source;
 		SUBSCRIBERS.lazySet(this, source != null ? EMPTY_WITH_SOURCE : EMPTY);
@@ -175,10 +177,10 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	/**
-	 * Block the calling thread indefinitely, waiting for the completion of this {@code MonoProcessor}. If the
-	 * {@link MonoProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
+	 * Block the calling thread indefinitely, waiting for the completion of this {@link FirstProcessor}. If the
+	 * {@link FirstProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
 	 *
-	 * @return the value of this {@code MonoProcessor}
+	 * @return the value of this {@link FirstProcessor}
 	 */
 	@Override
 	@Nullable
@@ -187,12 +189,12 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	/**
-	 * Block the calling thread for the specified time, waiting for the completion of this {@code MonoProcessor}. If the
-	 * {@link MonoProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
+	 * Block the calling thread for the specified time, waiting for the completion of this {@link FirstProcessor}. If the
+	 * {@link FirstProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
 	 *
 	 * @param timeout the timeout value as a {@link Duration}
 	 *
-	 * @return the value of this {@code MonoProcessor} or {@code null} if the timeout is reached and the {@code MonoProcessor} has
+	 * @return the value of this {@link FirstProcessor} or {@code null} if the timeout is reached and the {@link FirstProcessor} has
 	 * not completed
 	 */
 	@Override
@@ -298,9 +300,9 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	/**
-	 * Indicates whether this {@code MonoProcessor} has been interrupted via cancellation.
+	 * Indicates whether this {@link FirstProcessor} has been interrupted via cancellation.
 	 *
-	 * @return {@code true} if this {@code MonoProcessor} is cancelled, {@code false}
+	 * @return {@code true} if this {@link FirstProcessor} is cancelled, {@code false}
 	 * otherwise.
 	 */
 	public boolean isCancelled() {
@@ -308,28 +310,28 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	/**
-	 * Indicates whether this {@code MonoProcessor} has been completed with an error.
+	 * Indicates whether this {@link FirstProcessor} has been completed with an error.
 	 *
-	 * @return {@code true} if this {@code MonoProcessor} was completed with an error, {@code false} otherwise.
+	 * @return {@code true} if this {@link FirstProcessor} was completed with an error, {@code false} otherwise.
 	 */
 	public final boolean isError() {
 		return getError() != null;
 	}
 
 	/**
-	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
+	 * Indicates whether this {@link FirstProcessor} has been successfully completed a value.
 	 *
-	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+	 * @return {@code true} if this {@link FirstProcessor} is successful, {@code false} otherwise.
 	 */
 	public final boolean isSuccess() {
 		return isTerminated() && error == null;
 	}
 
 	/**
-	 * Indicates whether this {@code MonoProcessor} has been terminated by the
+	 * Indicates whether this {@link FirstProcessor} has been terminated by the
 	 * source producer with a success or an error.
 	 *
-	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+	 * @return {@code true} if this {@link FirstProcessor} is successful, {@code false} otherwise.
 	 */
 	public final boolean isTerminated() {
 		return subscribers == TERMINATED;
@@ -416,12 +418,12 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	/**
-	 * Returns the value that completed this {@link MonoProcessor}. Returns {@code null} if the {@link MonoProcessor} has not been completed. If the
-	 * {@link MonoProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
+	 * Returns the value that completed this {@link FirstProcessor}. Returns {@code null} if the {@link FirstProcessor} has not been completed. If the
+	 * {@link FirstProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
 	 *
-	 * @return the value that completed the {@link MonoProcessor}, or {@code null} if it has not been completed
+	 * @return the value that completed the {@link FirstProcessor}, or {@code null} if it has not been completed
 	 *
-	 * @throws RuntimeException if the {@link MonoProcessor} was completed with an error
+	 * @throws RuntimeException if the {@link FirstProcessor} was completed with an error
 	 */
 	@Nullable
 	public O peek() {
@@ -582,9 +584,9 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	final static class NextInner<T> extends Operators.MonoSubscriber<T, T> {
-		final MonoProcessor<T> parent;
+		final FirstProcessor<T> parent;
 
-		NextInner(CoreSubscriber<? super T> actual, MonoProcessor<T> parent) {
+		NextInner(CoreSubscriber<? super T> actual, FirstProcessor<T> parent) {
 			super(actual);
 			this.parent = parent;
 		}

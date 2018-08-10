@@ -327,10 +327,10 @@ public class FluxBufferBoundaryTest
 		//non overlapping buffers
 		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.buffer(boundaryFlux)
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		FirstProcessor<List<List<Integer>>> res = numbers.buffer(boundaryFlux)
+		                                                 .buffer()
+		                                                 .publishNext()
+		                                                 .toProcessor();
 		res.subscribe();
 
 		numbers.onNext(1);

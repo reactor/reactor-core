@@ -34,7 +34,7 @@ import reactor.util.concurrent.Queues;
 /**
  * A symmetric {@link Processor} that can be converted to a {@link Flux} or {@link Mono}.
  * <p>
- * This is a facade over the much more complex APIs of {@link FluxProcessor} and {@link MonoProcessor}.
+ * This is a facade over the much more complex APIs of {@link FluxProcessor} and {@link FirstProcessor}.
  *
  * @author Simon Baslé
  */
@@ -524,8 +524,9 @@ public interface IdentityProcessor<T> extends Processor<T, T> {
 	 * @param <O> the data type
 	 * @return a new "first" {@link IdentityProcessor}
 	 */
+	@SuppressWarnings("deprecation")
 	static <O> IdentityProcessor<O> first() {
-		return MonoProcessor.create();
+		return FirstProcessor.create();
 	}
 
 	/**
@@ -536,8 +537,9 @@ public interface IdentityProcessor<T> extends Processor<T, T> {
 	 * @param <O> the data type
 	 * @return a new "first" {@link IdentityProcessor}
 	 */
+	@SuppressWarnings("deprecation")
 	static <O> IdentityProcessor<O> firstOf(Publisher<? extends O> source) {
-		MonoProcessor<O> processor = new MonoProcessor<>(source);
+		FirstProcessor<O> processor = new FirstProcessor<>(source);
 		processor.connect();
 		return processor;
 	}

@@ -302,7 +302,8 @@ project('reactor-core') {
 
 	//TODO after a release, bump the gradle.properties baseline
 	//TODO after a release, remove the reactor-core exclusions below if any
-//	classExcludes = []
+	classExcludes = ["reactor.core.publisher.MonoProcessor"]
+	methodExcludes = ["reactor.core.publisher.Mono#toProcessor()"]
   }
 
   javadoc {

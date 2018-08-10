@@ -37,7 +37,7 @@ import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
+import reactor.core.publisher.FirstProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -255,9 +255,9 @@ public class FluxSpecTests {
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 1, 2, 2, 3));
 
 //		when:"the values are filtered and result is collected"
-		MonoProcessor<List<Integer>> tap = s.distinctUntilChanged()
-		                                    .collectList()
-		                                    .toProcessor();
+		FirstProcessor<List<Integer>> tap = s.distinctUntilChanged()
+		                                     .collectList()
+		                                     .toProcessor();
 		tap.subscribe();
 
 //		then:"collected must remove duplicates"
@@ -271,9 +271,9 @@ public class FluxSpecTests {
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(2, 4, 3, 5, 2, 5));
 
 //		when:"the values are filtered and result is collected"
-		MonoProcessor<List<Integer>> tap = s.distinctUntilChanged(it -> it % 2 == 0)
-		                                    .collectList()
-		                                    .toProcessor();
+		FirstProcessor<List<Integer>> tap = s.distinctUntilChanged(it -> it % 2 == 0)
+		                                     .collectList()
+		                                     .toProcessor();
 
 //		then:"collected must remove duplicates"
 		assertThat(tap.block()).containsExactly(2, 3, 2, 5);
@@ -286,9 +286,9 @@ public class FluxSpecTests {
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 2, 3, 1, 2, 3, 4));
 
 //		when:"the values are filtered and result is collected"
-		MonoProcessor<List<Integer>> tap = s.distinct()
-		                                    .collectList()
-		                                    .toProcessor();
+		FirstProcessor<List<Integer>> tap = s.distinct()
+		                                     .collectList()
+		                                     .toProcessor();
 		tap.subscribe();
 
 //		then:"collected should be without duplicates"
@@ -302,9 +302,9 @@ public class FluxSpecTests {
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 2, 3, 1, 2, 3, 4));
 
 //		when: "the values are filtered and result is collected"
-		MonoProcessor<List<Integer>> tap = s.distinct(it -> it % 3)
-		                                    .collectList()
-		                                    .toProcessor();
+		FirstProcessor<List<Integer>> tap = s.distinct(it -> it % 3)
+		                                     .collectList()
+		                                     .toProcessor();
 		tap.subscribe();
 
 //		then: "collected should be without duplicates"
@@ -487,8 +487,8 @@ public class FluxSpecTests {
 				.doOnError(Throwable::printStackTrace);
 
 //			when: "the source accepts a value"
-		MonoProcessor<Integer> value = mapped.next()
-		                                     .toProcessor();
+		FirstProcessor<Integer> value = mapped.next()
+		                                      .toProcessor();
 		value.subscribe();
 		source.sink().next(1);
 
@@ -675,8 +675,8 @@ public class FluxSpecTests {
 //		"Stream can be counted"
 //		given: "source composables to count and tap"
 		EmitterProcessor<Integer> source = EmitterProcessor.create();
-		MonoProcessor<Long> tap = source.count()
-		                                .subscribeWith(MonoProcessor.create());
+		FirstProcessor<Long> tap = source.count()
+		                                 .subscribeWith(FirstProcessor.create());
 
 //		when: "the sources accept a value"
 		source.onNext(1);
@@ -914,7 +914,7 @@ public class FluxSpecTests {
 //		given: "a composable that will accept 5 values and a reduce function"
 		EmitterProcessor<Integer> source = EmitterProcessor.create();
 		Mono<Integer> reduced = source.reduce(new Reduction());
-		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
+		FirstProcessor<Integer> value = reduced.subscribeWith(FirstProcessor.create());
 
 //		when: "the expected number of values is accepted"
 		source.onNext(1);
@@ -933,8 +933,8 @@ public class FluxSpecTests {
 //		"When a known number of values is being reduced, only the final value is made available"
 //		given: "a composable that will accept 2 values and a reduce function"
 		EmitterProcessor<Integer> source = EmitterProcessor.create();
-		MonoProcessor<Integer> value = source.reduce(new Reduction())
-		                                     .subscribeWith(MonoProcessor.create());
+		FirstProcessor<Integer> value = source.reduce(new Reduction())
+		                                      .subscribeWith(FirstProcessor.create());
 
 //		when: "the first value is accepted"
 		source.onNext(1);
@@ -989,7 +989,7 @@ public class FluxSpecTests {
 		FluxProcessor<Integer, Integer> source =
 				EmitterProcessor.create();
 		Mono<List<Integer>> reduced = source.collectList();
-		MonoProcessor<List<Integer>> value = reduced.toProcessor();
+		FirstProcessor<List<Integer>> value = reduced.toProcessor();
 		value.subscribe();
 
 //		when: "the first value is accepted"
@@ -1010,7 +1010,7 @@ public class FluxSpecTests {
 		                              .log()
 		                              .flatMap(it -> it.log("lol")
 		                                               .reduce(new Reduction()));
-		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
+		FirstProcessor<Integer> value = reduced.subscribeWith(FirstProcessor.create());
 
 //		when: "the first value is accepted"
 		source.onNext(1);

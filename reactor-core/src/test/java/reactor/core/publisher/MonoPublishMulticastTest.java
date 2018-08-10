@@ -21,10 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.Assertions.extractProperty;
 import static org.assertj.core.api.Fail.fail;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,7 +30,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 public class MonoPublishMulticastTest {
@@ -73,7 +69,7 @@ public class MonoPublishMulticastTest {
 	public void cancelComposes() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		MonoProcessor<Integer> sp = MonoProcessor.create();
+		FirstProcessor<Integer> sp = FirstProcessor.create();
 
 		sp.publish(o -> Mono.<Integer>never())
 		  .subscribe(ts);
@@ -89,7 +85,7 @@ public class MonoPublishMulticastTest {
 	public void cancelComposes2() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		MonoProcessor<Integer> sp = MonoProcessor.create();
+		FirstProcessor<Integer> sp = FirstProcessor.create();
 
 		sp.publish(o -> Mono.<Integer>empty())
 		  .subscribe(ts);

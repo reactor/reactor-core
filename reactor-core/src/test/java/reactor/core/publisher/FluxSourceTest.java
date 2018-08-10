@@ -16,8 +16,6 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -28,7 +26,7 @@ public class FluxSourceTest {
 
 	@Test
 	public void wrapToFlux(){
-		MonoProcessor<String> mp = MonoProcessor.create();
+		FirstProcessor<String> mp = FirstProcessor.create();
 
 		mp.onNext("test");
 		StepVerifier.create(Flux.from(mp))

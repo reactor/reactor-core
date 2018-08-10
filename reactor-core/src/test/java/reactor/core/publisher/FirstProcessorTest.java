@@ -36,7 +36,7 @@ import reactor.util.function.Tuple2;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class MonoProcessorTest {
+public class FirstProcessorTest {
 
 	@Test
 	public void noRetentionOnTermination() throws InterruptedException {
@@ -126,14 +126,14 @@ public class MonoProcessorTest {
 	}
 
 	@Test(expected = IllegalStateException.class)
-	public void MonoProcessorResultNotAvailable() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorResultNotAvailable() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		mp.block(Duration.ofMillis(1));
 	}
 
 	@Test
-	public void MonoProcessorRejectedDoOnSuccessOrError() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorRejectedDoOnSuccessOrError() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
 		mp.doOnSuccessOrError((s, f) -> ref.set(f)).subscribe();
@@ -145,8 +145,8 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorRejectedDoOnTerminate() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorRejectedDoOnTerminate() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		AtomicInteger invoked = new AtomicInteger();
 
 		mp.doOnTerminate(invoked::incrementAndGet).subscribe();
@@ -158,8 +158,8 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorRejectedSubscribeCallback() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorRejectedSubscribeCallback() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
 		mp.subscribe(v -> {}, ref::set);
@@ -171,8 +171,8 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorSuccessDoOnSuccessOrError() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorSuccessDoOnSuccessOrError() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		AtomicReference<String> ref = new AtomicReference<>();
 
 		mp.doOnSuccessOrError((s, f) -> ref.set(s)).subscribe();
@@ -184,8 +184,8 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorSuccessDoOnTerminate() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorSuccessDoOnTerminate() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		AtomicInteger invoked = new AtomicInteger();
 
 		mp.doOnTerminate(invoked::incrementAndGet).subscribe();
@@ -197,8 +197,8 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorSuccessSubscribeCallback() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorSuccessSubscribeCallback() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		AtomicReference<String> ref = new AtomicReference<>();
 
 		mp.subscribe(ref::set);
@@ -210,8 +210,8 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorRejectedDoOnError() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorRejectedDoOnError() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
 		mp.doOnError(ref::set).subscribe();
@@ -223,15 +223,15 @@ public class MonoProcessorTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void MonoProcessorRejectedSubscribeCallbackNull() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorRejectedSubscribeCallbackNull() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 
 		mp.subscribe((Subscriber<String>)null);
 	}
 
 	@Test
-	public void MonoProcessorSuccessDoOnSuccess() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorSuccessDoOnSuccess() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 		AtomicReference<String> ref = new AtomicReference<>();
 
 		mp.doOnSuccess(ref::set).subscribe();
@@ -243,9 +243,9 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorSuccessChainTogether() {
-		MonoProcessor<String> mp = MonoProcessor.create();
-		MonoProcessor<String> mp2 = MonoProcessor.create();
+	public void firstProcessorSuccessChainTogether() {
+		FirstProcessor<String> mp = FirstProcessor.create();
+		FirstProcessor<String> mp2 = FirstProcessor.create();
 		mp.subscribe(mp2);
 
 		mp.onNext("test");
@@ -256,9 +256,9 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorRejectedChainTogether() {
-		MonoProcessor<String> mp = MonoProcessor.create();
-		MonoProcessor<String> mp2 = MonoProcessor.create();
+	public void firstProcessorRejectedChainTogether() {
+		FirstProcessor<String> mp = FirstProcessor.create();
+		FirstProcessor<String> mp2 = FirstProcessor.create();
 		mp.subscribe(mp2);
 
 		mp.onError(new Exception("test"));
@@ -269,8 +269,8 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorDoubleFulfill() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorDoubleFulfill() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 
 		StepVerifier.create(mp)
 		            .then(() -> {
@@ -284,8 +284,8 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorNullFulfill() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorNullFulfill() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 
 		mp.onNext(null);
 
@@ -295,13 +295,13 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorMapFulfill() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+	public void firstProcessorMapFulfill() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
 
 		mp.onNext(1);
 
-		MonoProcessor<Integer> mp2 = mp.map(s -> s * 2)
-		                               .toProcessor();
+		FirstProcessor<Integer> mp2 = mp.map(s -> s * 2)
+		                                .toProcessor();
 		mp2.subscribe();
 
 		assertThat(mp2.isTerminated()).isTrue();
@@ -311,12 +311,12 @@ public class MonoProcessorTest {
 
 	@Test
 	public void MonoProcessoThenFulfill() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		FirstProcessor<Integer> mp = FirstProcessor.create();
 
 		mp.onNext(1);
 
-		MonoProcessor<Integer> mp2 = mp.flatMap(s -> Mono.just(s * 2))
-		                               .toProcessor();
+		FirstProcessor<Integer> mp2 = mp.flatMap(s -> Mono.just(s * 2))
+		                                .toProcessor();
 		mp2.subscribe();
 
 		assertThat(mp2.isTerminated()).isTrue();
@@ -325,12 +325,12 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorMapError() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+	public void firstProcessorMapError() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
 
 		mp.onNext(1);
 
-		MonoProcessor<Integer> mp2 = MonoProcessor.create();
+		FirstProcessor<Integer> mp2 = FirstProcessor.create();
 
 		StepVerifier.create(mp.<Integer>map(s -> {
 			throw new RuntimeException("test");
@@ -345,26 +345,26 @@ public class MonoProcessorTest {
 	}
 
 	@Test(expected = Exception.class)
-	public void MonoProcessorDoubleError() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorDoubleError() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 
 		mp.onError(new Exception("test"));
 		mp.onError(new Exception("test"));
 	}
 
 	@Test(expected = Exception.class)
-	public void MonoProcessorDoubleSignal() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	public void firstProcessorDoubleSignal() {
+		FirstProcessor<String> mp = FirstProcessor.create();
 
 		mp.onNext("test");
 		mp.onError(new Exception("test"));
 	}
 
 	@Test
-	public void zipMonoProcessor() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
-		MonoProcessor<Integer> mp2 = MonoProcessor.create();
-		MonoProcessor<Tuple2<Integer, Integer>> mp3 = MonoProcessor.create();
+	public void zipFirstProcessor() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
+		FirstProcessor<Integer> mp2 = FirstProcessor.create();
+		FirstProcessor<Tuple2<Integer, Integer>> mp3 = FirstProcessor.create();
 
 		StepVerifier.create(Mono.zip(mp, mp2)
 		                        .subscribeWith(mp3))
@@ -386,9 +386,9 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void zipMonoProcessor2() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
-		MonoProcessor<Integer> mp3 = MonoProcessor.create();
+	public void zipFirstProcessor2() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
+		FirstProcessor<Integer> mp3 = FirstProcessor.create();
 
 		StepVerifier.create(Mono.zip(d -> (Integer)d[0], mp)
 		                        .subscribeWith(mp3))
@@ -405,10 +405,10 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void zipMonoProcessorRejected() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
-		MonoProcessor<Integer> mp2 = MonoProcessor.create();
-		MonoProcessor<Tuple2<Integer, Integer>> mp3 = MonoProcessor.create();
+	public void zipFirstProcessorRejected() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
+		FirstProcessor<Integer> mp2 = FirstProcessor.create();
+		FirstProcessor<Tuple2<Integer, Integer>> mp3 = FirstProcessor.create();
 
 		StepVerifier.create(Mono.zip(mp, mp2)
 		                        .subscribeWith(mp3))
@@ -425,9 +425,9 @@ public class MonoProcessorTest {
 
 
 	@Test
-	public void filterMonoProcessor() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
-		MonoProcessor<Integer> mp2 = MonoProcessor.create();
+	public void filterFirstProcessor() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
+		FirstProcessor<Integer> mp2 = FirstProcessor.create();
 		StepVerifier.create(mp.filter(s -> s % 2 == 0).subscribeWith(mp2))
 		            .then(() -> mp.onNext(2))
 		            .then(() -> assertThat(mp2.isError()).isFalse())
@@ -440,9 +440,9 @@ public class MonoProcessorTest {
 
 
 	@Test
-	public void filterMonoProcessorNot() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
-		MonoProcessor<Integer> mp2 = MonoProcessor.create();
+	public void filterFirstProcessorNot() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
+		FirstProcessor<Integer> mp2 = FirstProcessor.create();
 		StepVerifier.create(mp.filter(s -> s % 2 == 0).subscribeWith(mp2))
 		            .then(() -> mp.onNext(1))
 		            .then(() -> assertThat(mp2.isError()).isFalse())
@@ -453,9 +453,9 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void filterMonoProcessorError() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
-		MonoProcessor<Integer> mp2 = MonoProcessor.create();
+	public void filterFirstProcessorError() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
+		FirstProcessor<Integer> mp2 = FirstProcessor.create();
 		StepVerifier.create(mp.filter(s -> {throw new RuntimeException("test"); })
 					.subscribeWith
 						(mp2))
@@ -468,9 +468,9 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void doOnSuccessMonoProcessorError() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
-		MonoProcessor<Integer> mp2 = MonoProcessor.create();
+	public void doOnSuccessFirstProcessorError() {
+		FirstProcessor<Integer> mp = FirstProcessor.create();
+		FirstProcessor<Integer> mp2 = FirstProcessor.create();
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
 		StepVerifier.create(mp.doOnSuccess(s -> {throw new RuntimeException("test"); })
@@ -487,7 +487,7 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void fluxCancelledByMonoProcessor() {
+	public void fluxCancelledByFirstProcessor() {
 		AtomicLong cancelCounter = new AtomicLong();
 		Flux.range(1, 10)
 		    .doOnCancel(cancelCounter::incrementAndGet)
@@ -498,11 +498,11 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void monoNotCancelledByMonoProcessor() {
+	public void monoNotCancelledByFirstProcessor() {
 		AtomicLong cancelCounter = new AtomicLong();
-		MonoProcessor<String> monoProcessor = Mono.just("foo")
-		                                          .doOnCancel(cancelCounter::incrementAndGet)
-		                                          .toProcessor();
+		FirstProcessor<String> monoProcessor = Mono.just("foo")
+		                                           .doOnCancel(cancelCounter::incrementAndGet)
+		                                           .toProcessor();
 		monoProcessor.subscribe();
 
 		assertThat(cancelCounter.get()).isEqualTo(0);
@@ -510,7 +510,7 @@ public class MonoProcessorTest {
 
 	@Test
 	public void scanProcessor() {
-		MonoProcessor<String> test = MonoProcessor.create();
+		FirstProcessor<String> test = FirstProcessor.create();
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
@@ -525,7 +525,7 @@ public class MonoProcessorTest {
 
 	@Test
 	public void scanProcessorCancelled() {
-		MonoProcessor<String> test = MonoProcessor.create();
+		FirstProcessor<String> test = FirstProcessor.create();
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
@@ -540,7 +540,7 @@ public class MonoProcessorTest {
 
 	@Test
 	public void scanProcessorSubscription() {
-		MonoProcessor<String> test = MonoProcessor.create();
+		FirstProcessor<String> test = FirstProcessor.create();
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
@@ -550,7 +550,7 @@ public class MonoProcessorTest {
 
 	@Test
 	public void scanProcessorError() {
-		MonoProcessor<String> test = MonoProcessor.create();
+		FirstProcessor<String> test = FirstProcessor.create();
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
@@ -562,8 +562,8 @@ public class MonoProcessorTest {
 
 	@Test
 	public void monoToProcessorReusesInstance() {
-		MonoProcessor<String> monoProcessor = Mono.just("foo")
-		                                          .toProcessor();
+		FirstProcessor<String> monoProcessor = Mono.just("foo")
+		                                           .toProcessor();
 
 		assertThat(monoProcessor)
 				.isSameAs(monoProcessor.toProcessor())
@@ -573,7 +573,7 @@ public class MonoProcessorTest {
 	@Test
 	public void monoToProcessorConnects() {
 		TestPublisher<String> tp = TestPublisher.create();
-		MonoProcessor<String> connectedProcessor = tp.mono().toProcessor();
+		FirstProcessor<String> connectedProcessor = tp.mono().toProcessor();
 
 		assertThat(connectedProcessor.subscription).isNotNull();
 	}
@@ -653,7 +653,7 @@ public class MonoProcessorTest {
 
 	@Test
 	public void disposeBeforeValueSendsCancellationException() {
-		MonoProcessor<String> processor = MonoProcessor.create();
+		FirstProcessor<String> processor = FirstProcessor.create();
 		AtomicReference<Throwable> e1 = new AtomicReference<>();
 		AtomicReference<Throwable> e2 = new AtomicReference<>();
 		AtomicReference<Throwable> e3 = new AtomicReference<>();

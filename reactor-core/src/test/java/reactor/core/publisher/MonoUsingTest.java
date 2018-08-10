@@ -204,7 +204,7 @@ public class MonoUsingTest {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		MonoProcessor<Integer> tp = MonoProcessor.create();
+		FirstProcessor<Integer> tp = FirstProcessor.create();
 
 		Mono.using(() -> 1, r -> tp, cleanup::set, true)
 		    .subscribe(ts);

@@ -22,10 +22,10 @@ import reactor.core.Disposable;
 import reactor.util.context.Context;
 
 /**
- * A stand-alone {@link MonoSink} that wraps a {@link MonoProcessor} for its downstream
+ * A stand-alone {@link MonoSink} that wraps a {@link FirstProcessor} for its downstream
  * semantics and that be converted to a {@link Flux} or {@link Mono}.
  * <p>
- * This is a facade over the much more complex API of {@link MonoProcessor} that offers
+ * This is a facade over the much more complex API of {@link FirstProcessor} that offers
  * {@link MonoSink} methods instead of relying on the {@link Subscriber} side of the
  * processor.
  *
@@ -33,8 +33,8 @@ import reactor.util.context.Context;
  */
 public final class StandaloneMonoSink<T> implements MonoSink<T> {
 
-	final MonoProcessor<T> processor;
-	final MonoSink<T> sink;
+	final FirstProcessor<T> processor;
+	final MonoSink<T>       sink;
 
 	/**
 	 * Create a standalone {@link MonoSink}
@@ -44,7 +44,7 @@ public final class StandaloneMonoSink<T> implements MonoSink<T> {
 	}
 
 	StandaloneMonoSink() {
-		this.processor = MonoProcessor.create();
+		this.processor = FirstProcessor.create();
 		this.sink = new MonoCreate.DefaultMonoSink<>(processor);
 	}
 

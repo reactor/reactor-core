@@ -185,4 +185,4 @@ number of possible subscribers, prefer doing so by using a `ThreadPoolExecutor` 
 `ForkJoinPool`. The processor can detect their capacity and throw an exception if you
 subscribe one too many times.
 
-//TODO == MonoProcessor
+//TODO == FirstProcessor

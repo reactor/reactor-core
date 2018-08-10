@@ -33,7 +33,6 @@ import java.util.logging.Level;
 import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -266,10 +265,10 @@ public class FluxBufferWhenTest {
 		//"overlapping buffers"
 		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.bufferWhen(bucketOpening, u -> boundaryFlux )
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		FirstProcessor<List<List<Integer>>> res = numbers.bufferWhen(bucketOpening, u -> boundaryFlux )
+		                                                 .buffer()
+		                                                 .publishNext()
+		                                                 .toProcessor();
 		res.subscribe();
 
 		numbers.onNext(1);

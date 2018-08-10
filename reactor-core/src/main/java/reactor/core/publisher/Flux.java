@@ -6450,7 +6450,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> publishNext() {
-		return Mono.onAssembly(new MonoProcessor<>(this));
+		return Mono.onAssembly(new FirstProcessor<>(this));
 	}
 
 	/**
