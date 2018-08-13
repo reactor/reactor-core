@@ -39,7 +39,7 @@ public final class StandaloneMonoSink<T> implements MonoSink<T> {
 	/**
 	 * Create a standalone {@link MonoSink}
 	 */
-	static <O> StandaloneMonoSink<O> create() {
+	public static final <O> StandaloneMonoSink<O> create() {
 		return new StandaloneMonoSink<>();
 	}
 
