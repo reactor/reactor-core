@@ -615,6 +615,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Programmatically create a {@link Flux} with the capability of emitting multiple
 	 * elements in a synchronous or asynchronous manner through the {@link FluxSink} API.
+	 * This includes emitting elements from multiple threads.
 	 * <p>
 	 * This Flux factory is useful if one wants to adapt some other multi-valued async API
 	 * and not worry about cancellation and backpressure (which is handled by buffering
@@ -647,6 +648,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The type of values in the sequence
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
+	 * @see #push(Consumer)
 	 */
     public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter) {
 	    return create(emitter, OverflowStrategy.BUFFER);
@@ -655,6 +657,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Programmatically create a {@link Flux} with the capability of emitting multiple
 	 * elements in a synchronous or asynchronous manner through the {@link FluxSink} API.
+	 * This includes emitting elements from multiple threads.
 	 * <p>
 	 * This Flux factory is useful if one wants to adapt some other multi-valued async API
 	 * and not worry about cancellation and backpressure (which is handled by buffering
@@ -691,6 +694,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * available backpressure modes
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
+	 * @see #push(Consumer, OverflowStrategy)
 	 */
 	public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
 		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_PULL));
@@ -698,7 +702,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Programmatically create a {@link Flux} with the capability of emitting multiple
-	 * elements from a single-threaded producer through the {@link FluxSink} API.
+	 * elements from a single-threaded producer through the {@link FluxSink} API. For
+	 * a multi-threaded capable alternative, see {@link #create(Consumer)}.
 	 * <p>
 	 * This Flux factory is useful if one wants to adapt some other single-threaded
 	 * multi-valued async API and not worry about cancellation and backpressure (which is
@@ -731,6 +736,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The type of values in the sequence
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
+	 * @see #create(Consumer)
 	 */
 	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter) {
 		return onAssembly(new FluxCreate<>(emitter, OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY));
@@ -738,7 +744,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Programmatically create a {@link Flux} with the capability of emitting multiple
-	 * elements from a single-threaded producer through the {@link FluxSink} API.
+	 * elements from a single-threaded producer through the {@link FluxSink} API. For
+	 * a multi-threaded capable alternative, see {@link #create(Consumer, OverflowStrategy)}.
 	 * <p>
 	 * This Flux factory is useful if one wants to adapt some other single-threaded
 	 * multi-valued async API and not worry about cancellation and backpressure (which is
@@ -775,6 +782,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * available backpressure modes
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
+	 * @see #create(Consumer, OverflowStrategy)
 	 */
 	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
 		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_ONLY));
