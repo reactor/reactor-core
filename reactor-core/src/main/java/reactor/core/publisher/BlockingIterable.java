@@ -34,8 +34,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -150,6 +150,9 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 		@Override
 		public boolean hasNext() {
+			if (Schedulers.isInNonBlockingThread()) {
+				throw new IllegalStateException("Iterating over a toIterable() / toStream() is blocking, which is not supported in thread " + Thread.currentThread().getName());
+			}
 			for (; ; ) {
 				boolean d = done;
 				boolean empty = queue.isEmpty();
@@ -185,6 +188,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 		@Override
 		public T next() {
+		 	// hasNext will start by checking the thread, so `next()` would be rejected on a NONBLOCKING thread
 			if (hasNext()) {
 				T v = queue.poll();
 

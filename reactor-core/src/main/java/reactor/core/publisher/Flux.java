@@ -7515,6 +7515,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/toiterable.png" alt="">
 	 * <p>
+	 * Note that iterating from within threads marked as "non-blocking only" is illegal and will
+	 * cause an {@link IllegalStateException} to be thrown, but obtaining the {@link Iterable}
+	 * itself within these threads is ok.
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
@@ -7532,6 +7535,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/toiterablen.png" alt="">
 	 * <p>
+	 * Note that iterating from within threads marked as "non-blocking only" is illegal and will
+	 * cause an {@link IllegalStateException} to be thrown, but obtaining the {@link Iterable}
+	 * itself within these threads is ok.
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
@@ -7545,6 +7551,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/toiterablen.png" alt="">
+	 * <p>
+	 * Note that iterating from within threads marked as "non-blocking only" is illegal and will
+	 * cause an {@link IllegalStateException} to be thrown, but obtaining the {@link Iterable}
+	 * itself within these threads is ok.
 	 *
 	 * @param batchSize the bounded capacity to prefetch from this {@link Flux} or
 	 * {@code Integer.MAX_VALUE} for unbounded demand
@@ -7555,9 +7565,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Iterable<T> toIterable(int batchSize, @Nullable Supplier<Queue<T>>
 			queueProvider) {
-		if (Schedulers.isInNonBlockingThread()) {
-			throw new IllegalStateException("toIterable() is blocking, which is not supported in thread " + Thread.currentThread().getName());
-		}
 		final Supplier<Queue<T>> provider;
 		if(queueProvider == null){
 			provider = Queues.get(batchSize);
@@ -7574,6 +7581,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/tostream.png" alt="">
+	 * <p>
+	 * Note that iterating from within threads marked as "non-blocking only" is illegal and will
+	 * cause an {@link IllegalStateException} to be thrown, but obtaining the {@link Stream}
+	 * itself or applying lazy intermediate operation on the stream within these threads is ok.
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
@@ -7589,13 +7600,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@code Integer.MAX_VALUE} for unbounded demand
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/tostream.png" alt="">
+	 * <p>
+	 * Note that iterating from within threads marked as "non-blocking only" is illegal and will
+	 * cause an {@link IllegalStateException} to be thrown, but obtaining the {@link Stream}
+	 * itself or applying lazy intermediate operation on the stream within these threads is ok.
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
 	public final Stream<T> toStream(int batchSize) {
-		if (Schedulers.isInNonBlockingThread()) {
-			throw new IllegalStateException("toStream() is blocking, which is not supported in thread " + Thread.currentThread().getName());
-		}
 		final Supplier<Queue<T>> provider;
 		provider = Queues.get(batchSize);
 		return new BlockingIterable<>(this, batchSize, provider).stream();
