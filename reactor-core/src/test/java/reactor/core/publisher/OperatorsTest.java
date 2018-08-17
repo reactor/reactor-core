@@ -483,6 +483,22 @@ public class OperatorsTest {
 		assertThat(Operators.unboundedOrLimit(Integer.MAX_VALUE, 110))
 				.as("smaller lowTide and MAX_VALUE")
 				.isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(Operators.unboundedOrLimit(100, 0))
+				.as("0 lowTide and 100")
+				.isEqualTo(100);
+
+		assertThat(Operators.unboundedOrLimit(Integer.MAX_VALUE, 0))
+				.as("0 lowTide and MAX_VALUE")
+				.isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(Operators.unboundedOrLimit(100, -1))
+				.as("-1 lowTide and 100")
+				.isEqualTo(100);
+
+		assertThat(Operators.unboundedOrLimit(Integer.MAX_VALUE, -1))
+				.as("-1 lowTide and MAX_VALUE")
+				.isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test

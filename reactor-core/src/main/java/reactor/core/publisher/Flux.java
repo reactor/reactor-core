@@ -5375,13 +5375,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * capped at the provided {@code prefetchRate} when propagated upstream, effectively
 	 * rate limiting the upstream {@link Publisher}.
 	 * <p>
+	 * Note that this is an upper bound, and that this operator uses a prefetch-and-replenish
+	 * strategy, requesting a replenishing amount when 75% of the prefetch amount has been
+	 * emitted.
+	 * <p>
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
 	 * with smaller requests (eg. database paging, etc...). All data is still processed,
 	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
 	 * amount.
 	 * <p>
-	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }
+	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }.
+	 * Note that the {@code prefetchRate} is an upper bound, and that this operator uses a
+	 * prefetch-and-replenish strategy, requesting a replenishing amount when 75% of the
+	 * prefetch amount has been emitted.
 	 *
 	 * @param prefetchRate the limit to apply to downstream's backpressure
 	 *
@@ -5398,6 +5405,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * capped at the provided {@code highTide} first, then replenishing at the provided
 	 * {@code lowTide}, effectively rate limiting the upstream {@link Publisher}.
 	 * <p>
+	 * Note that this is an upper bound, and that this operator uses a prefetch-and-replenish
+	 * strategy, requesting a replenishing amount when 75% of the prefetch amount has been
+	 * emitted.
+	 * <p>
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
 	 * with smaller requests (eg. database paging, etc...). All data is still processed,
@@ -5411,9 +5422,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * requests this operator could make. For example, for a global downstream
 	 * request of 14, with a highTide of 10 and a lowTide of 2, the operator would perform
 	 * 7 low tide requests, whereas with the default lowTide of 8 it would only perform one.
+	 * Using a {@code lowTide} equal to {@code highTide} reverts to the default 75% strategy,
+	 * while using a {@code lowTide} of {@literal 0} disables the lowTide, resulting in
+	 * all requests strictly adhering to the highTide.
 	 *
 	 * @param highTide the initial request amount
-	 * @param lowTide the subsequent (or replenishing) request amount
+	 * @param lowTide the subsequent (or replenishing) request amount, {@literal 0} to
+	 * disable early replenishing, {@literal highTide} to revert to a 75% replenish strategy.
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure and customizing the
 	 * replenishment request amount
