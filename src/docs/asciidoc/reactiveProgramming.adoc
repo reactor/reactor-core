@@ -13,8 +13,8 @@ As a first step in the direction of reactive programming, Microsoft created the 
 Extensions (Rx) library in the .NET ecosystem. Then RxJava implemented reactive
 programming on the JVM.  As time went on, a standardization for Java emerged through the
 *Reactive Streams* effort, a specification that defines a set of interfaces and
-interaction rules for reactive libraries on the JVM. It will be integrated into Java 9
-(with the `Flow` class).
+interaction rules for reactive libraries on the JVM. Its interfaces have been
+integrated into Java 9 under the parent `Flow` class.
 
 The reactive programming paradigm is often presented in object-oriented languages as an
 extension of the Observer design pattern. One can also compare the main reactive streams
@@ -34,8 +34,8 @@ of the computation rather than describing its exact control flow.
 In addition to pushing values, the error handling and completion aspects are also covered
 in a well defined manner. A `Publisher` can push new values to its `Subscriber` (by
 calling `onNext`) but can also signal an error (by calling `onError`) or completion (by
-calling `onComplete`). Both errors and completion terminate the sequence. The following
-descriptor shows the possibilities:
+calling `onComplete`). Both errors and completion terminate the sequence. This can
+be summed up as:
 
 [source]
 onNext x 0..N [onError | onComplete]
@@ -44,9 +44,7 @@ This approach is very flexible. The pattern supports use cases where there is no
 one value, or n values (including an infinite sequence of values, such as the continuing
 ticks of a clock).
 
-Consider why we would need such an asynchronous reactive library in the first place.
-
-//TODO flesh out, add more preamble?
+But let's first consider, why would we need such an asynchronous reactive library in the first place?
 
 == Blocking Can Be Wasteful
 Modern applications can reach huge numbers of concurrent users, and, even though the
@@ -205,7 +203,8 @@ Futures are a bit better than callbacks, but they still do not do well at compos
 despite the improvements brought in Java 8 by `CompletableFuture`. Orchestrating multiple
 futures together is doable but not easy. Also, `Future` has other problems: It is easy to
 end up with another blocking situation with `Future` objects by calling the `get()`
-method, and they lack support for multiple values and advanced error handling.
+method, they do not support lazy computation and they lack support for multiple
+values and advanced error handling.
 
 Consider another example: We get a list of IDs from which we want to fetch a name and a
 statistic and combine these pair-wise, all of it asynchronously.
@@ -383,11 +382,12 @@ that it is ready to process at most `n` elements.
 
 Intermediate operators can also change the request in-transit. Imagine a `buffer`
 operator that groups elements in batches of 10. If the subscriber requests 1 buffer, it
-is acceptable for the source to produce 10 elements. Prefetching strategies can also be
-applied, if producing the elements before they are requested is not too costly.
+is acceptable for the source to produce 10 elements. Some operators also implement
+**prefetching** strategies, which avoids `request(1)` round-trips and is beneficial
+if producing the elements before they are requested is not too costly.
 
-This transforms the push model into a push-pull hybrid where the downstream can pull n
-elements from upstream if they are readily available, but, if the elements are not ready,
+This transforms the push model into a **push-pull hybrid** where the downstream can pull n
+elements from upstream if they are readily available. But if the elements are not ready,
 they get pushed by the upstream whenever they are produced.
 
 [[reactive.hotCold]]
@@ -397,7 +397,7 @@ reactive sequences: *hot* and *cold*. This distinction mainly has to do with how
 reactive stream reacts to subscribers:
 
 - A *Cold* sequence starts anew for each `Subscriber`, including at the source of data.
-If the source wraps an HTTP call, a new HTTP request is made for each subscription.
+For example if the source wraps an HTTP call, a new HTTP request is made for each subscription.
 - A *Hot* sequence does not start from scratch for each `Subscriber`. Rather, late
 subscribers receive signals emitted _after_ they subscribed. Note, however, that some hot
 reactive streams can cache or replay the history of emissions totally or partially. From
