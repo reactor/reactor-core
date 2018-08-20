@@ -195,7 +195,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 					Publisher<? extends T> p = a[i];
 
 					if (p == null) {
-						actual.onError(new NullPointerException("The " + i + "th source Publisher is null"));
+						actual.onError(new NullPointerException("The " + (i + 1) + "th source Publisher is null"));
 						return;
 					}
 
@@ -291,7 +291,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 					Publisher<? extends T> p = a[i];
 
 					if (p == null) {
-						actual.onError(new NullPointerException("The " + i + "th source Publisher is null"));
+						actual.onError(new NullPointerException("The " + (i + 1) + "th source Publisher is null"));
 						return;
 					}
 
