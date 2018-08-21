@@ -441,9 +441,8 @@ public final class Queues {
 		public <T1> T1[] toArray(T1[] a) {
 			if (a.length > 0) {
 				a[0] = null;
-				return a;
 			}
-			return (T1[])toArray();
+			return a;
 		}
 
 		private static final long serialVersionUID = -8876883675795156827L;
