@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
@@ -1388,6 +1389,30 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		                Assertions.assertThat(tuple.getT2()).isEqualTo("b");
 	                })
 	                .verifyComplete();
+    }
+
+    @Test
+    public void limitRateDisabledLowTide() throws InterruptedException {
+	    LongAdder request = new LongAdder();
+	    CountDownLatch latch = new CountDownLatch(1);
+
+	    Flux.range(1, 99).hide()
+	        .doOnRequest(request::add)
+	        .limitRate(10, 0)
+	        .subscribe(new BaseSubscriber<Integer>() {
+		        @Override
+		        protected void hookOnSubscribe(Subscription subscription) {
+			        request(100);
+		        }
+
+		        @Override
+		        protected void hookFinally(SignalType type) {
+			        latch.countDown();
+		        }
+	        });
+
+	    Assertions.assertThat(latch.await(1, TimeUnit.SECONDS)).as("took less than 1s").isTrue();
+	    Assertions.assertThat(request.sum()).as("request not compounded").isEqualTo(100L);
     }
 
 	private static class FailNullWorkerScheduler implements Scheduler {

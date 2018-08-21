@@ -1136,6 +1136,9 @@ public abstract class Operators {
 	}
 
 	static int unboundedOrLimit(int prefetch, int lowTide) {
+		if (lowTide <= 0) {
+			return prefetch;
+		}
 		if (lowTide >= prefetch) {
 			return unboundedOrLimit(prefetch);
 		}
