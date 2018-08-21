@@ -22,10 +22,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.assertj.core.api.Assertions;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -35,7 +35,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 
 public class BlockingTests {
 
@@ -346,34 +346,106 @@ public class BlockingTests {
 	}
 
 	@Test
-	public void fluxToIterableForbidden() {
-		Function<Integer, Iterable> badMapper = v -> Flux.range(1, v)
-		                                                 .toIterable();
+	public void fluxToIterableOkButIterationForbidden() throws InterruptedException {
+		AtomicReference<Iterable<Integer>> ref = new AtomicReference<>();
+		AtomicReference<Throwable> refError = new AtomicReference<>();
+		final CountDownLatch latch1 = new CountDownLatch(1);
 
-		Mono<Iterable> forbiddenSequence = Mono.just(3)
-		                                     .publishOn(nonBlockingScheduler)
-		                                     .map(badMapper);
+		nonBlockingScheduler.schedule(() -> {
+			try {
+				ref.set(Flux.just(1, 2, 3)
+				            .toIterable());
+			}
+			catch (Throwable e) {
+				refError.set(e);
+			}
+			finally {
+				latch1.countDown();
+			}
+		});
 
-		StepVerifier.create(forbiddenSequence)
-		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(IllegalStateException.class)
-				            .hasMessageStartingWith("toIterable() is blocking, which is not supported in thread nonBlockingScheduler-"))
-		            .verify();
+		latch1.await(1, TimeUnit.SECONDS);
+
+		assertThat(ref.get()).as("iterable").isNotNull();
+		assertThat(refError.get()).as("error").isNull();
+
+		AtomicReference<Throwable> assertionRef = new AtomicReference<>();
+		final CountDownLatch latch2 = new CountDownLatch(1);
+
+		//we want to check how some operations on the iterable behave WITHIN A NONBLOCKING Thread
+		nonBlockingScheduler.schedule(() -> {
+			Iterable<Integer> iterable = ref.get();
+			try {
+				assertThatCode(iterable::iterator).as("iterator()").doesNotThrowAnyException();
+				assertThatCode(iterable::spliterator).as("spliterator()").doesNotThrowAnyException();
+
+				assertThatExceptionOfType(IllegalStateException.class)
+						.isThrownBy(() -> iterable.forEach(v -> {}))
+						.as("forEach")
+						.withMessageStartingWith("Iterating over a toIterable() / toStream() is blocking, which is not supported in thread nonBlockingScheduler-");
+			}
+			catch (Throwable e) {
+				assertionRef.set(e);
+			}
+			finally {
+				latch2.countDown();
+			}
+		});
+
+		latch2.await(1, TimeUnit.SECONDS);
+
+		assertThat(assertionRef.get()).as("assertions pass within scheduler").isNull();
 	}
 
 	@Test
-	public void fluxToStreamForbidden() {
-		Function<Integer, Stream> badMapper = v -> Flux.range(1, v)
-		                                               .toStream();
+	public void fluxToStreamOkButIterationForbidden() throws InterruptedException {
+		AtomicReference<Stream<Integer>> ref = new AtomicReference<>();
+		AtomicReference<Throwable> refError = new AtomicReference<>();
+		CountDownLatch latch = new CountDownLatch(1);
 
-		Mono<Stream> forbiddenSequence = Mono.just(3)
-		                                     .publishOn(nonBlockingScheduler)
-		                                     .map(badMapper);
+		nonBlockingScheduler.schedule(() -> {
+			try {
+				ref.set(Flux.just(1, 2, 3)
+				            .toStream());
+			}
+			catch (Throwable e) {
+				refError.set(e);
+			}
+			finally {
+				latch.countDown();
+			}
+		});
 
-		StepVerifier.create(forbiddenSequence)
-		            .expectErrorSatisfies(e -> assertThat(e)
-				            .isInstanceOf(IllegalStateException.class)
-				            .hasMessageStartingWith("toStream() is blocking, which is not supported in thread nonBlockingScheduler-"))
-		            .verify();
+		latch.await(1, TimeUnit.SECONDS);
+
+		assertThat(ref.get()).as("stream").isNotNull();
+		assertThat(refError.get()).as("error").isNull();
+
+		AtomicReference<Throwable> assertionRef = new AtomicReference<>();
+		final CountDownLatch latch2 = new CountDownLatch(1);
+
+		//we want to check how some operations on the iterable behave WITHIN A NONBLOCKING Thread
+		nonBlockingScheduler.schedule(() -> {
+			Stream<Integer> stream = ref.get();
+			try {
+				//stream can only be operator on once, so we need to store the intermediate result in the ref...
+				assertThatCode(() -> ref.set(stream.distinct())).as("intermediate operator (distinct)").doesNotThrowAnyException();
+				//...and work again from that updated ref
+				assertThatExceptionOfType(IllegalStateException.class)
+						.isThrownBy(() -> ref.get().count())
+						.as("terminal operator (count)")
+						.withMessageStartingWith("Iterating over a toIterable() / toStream() is blocking, which is not supported in thread nonBlockingScheduler-");
+			}
+			catch (Throwable e) {
+				assertionRef.set(e);
+			}
+			finally {
+				latch2.countDown();
+			}
+		});
+
+		latch2.await(1, TimeUnit.SECONDS);
+
+		assertThat(assertionRef.get()).as("assertions pass within scheduler").isNull();
 	}
 }
