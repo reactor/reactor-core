@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Spliterators;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -49,6 +50,13 @@ import reactor.util.function.Tuple2;
  */
 @FunctionalInterface
 public interface Scannable {
+
+    /**
+     * The pattern for matching words unrelated to operator name.
+     * Used to strip an operator name of various prefixes and suffixes.
+     */
+	Pattern OPERATOR_NAME_UNRELATED_WORDS_PATTERN =
+		Pattern.compile("Parallel|Flux|Mono|Publisher|Subscriber|Fuseable|Operator|Conditional");
 
 	/**
 	 * Base class for {@link Scannable} attributes, which all can define a meaningful
@@ -409,14 +417,15 @@ public interface Scannable {
 		 */
 		String name = toString();
 		if (name.contains("@") && name.contains("$")) {
-			name = name.substring(0, name.indexOf('$'));
-			name = name.substring(name.lastIndexOf('.') + 1);
+			name = name
+				.substring(0, name.indexOf('$'))
+				.substring(name.lastIndexOf('.') + 1);
 		}
-		String stripped = name
-				.replaceAll("Parallel|Flux|Mono|Publisher|Subscriber", "")
-				.replaceAll("Fuseable|Operator|Conditional", "");
+		String stripped = OPERATOR_NAME_UNRELATED_WORDS_PATTERN
+			.matcher(name)
+			.replaceAll("");
 
-		if(stripped.length() > 0) {
+		if (!stripped.isEmpty()) {
 			return stripped.substring(0, 1).toLowerCase() + stripped.substring(1);
 		}
 		return stripped;
