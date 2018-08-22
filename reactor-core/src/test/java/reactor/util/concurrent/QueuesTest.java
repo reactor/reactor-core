@@ -139,15 +139,86 @@ public class QueuesTest {
 		assertThat(q.toArray()).as("toArray").isEmpty();
 		assertThat(q.toArray(new Integer[0])).as("toArray(empty)").isEmpty();
 
-		Integer[] array = new Integer[] { -1, -2, -3 };
+		Integer[] array = new Integer[]{-1, -2, -3};
 		assertThat(q.toArray(array)).as("toArray(pre-filled)").containsExactly(null, -2, -3);
 	}
 
-	@Test	//https://github.com/reactor/reactor-core/issues/1326
+	@Test    //https://github.com/reactor/reactor-core/issues/1326
 	public void toArrayOnZeroQueueShouldNotFailAlsoOnJava9() {
 		Queue<Integer> emptyQueue = Queues.<Integer>empty().get();
 
 		assertThat(emptyQueue.toArray(new Integer[0])).as("toArray(empty)").isEmpty();
 	}
 
+	@Test    //https://github.com/reactor/reactor-core/pull/1326
+	public void emptyOneQueueShouldConvertToArrayWhenPassedZeroLengthArray() {
+		Queue<Integer> q = Queues.<Integer>one().get();
+
+		assertThat(q.toArray(new Integer[0])).isEmpty();
+	}
+
+	@Test
+	public void oneQueueWithOneElementShouldConvertToArrayWhenPassedZeroLengthArray() {
+		Queue<Integer> q = Queues.<Integer>one().get();
+		q.add(2);
+
+		assertThat(q.toArray(new Integer[0])).containsExactly(2);
+	}
+
+	@Test
+	public void emptyOneQueueShouldConvertToArrayAndPutNullMarkerAndReuseInputArrayOnWhenPassedOneLengthArray() {
+		Queue<Integer> q = Queues.<Integer>one().get();
+		//and
+		Integer[] passedArray = new Integer[1];
+		//when
+		Integer[] convertedArray = q.toArray(passedArray);
+		//then
+		assertThat(convertedArray)
+				.containsExactly((Integer)null)
+				.isSameAs(passedArray);
+	}
+
+	@Test
+	public void oneQueueWithOneElementShouldConvertToArrayAndReuseInputArrayWhenPassedOneLengthArray() {
+		Queue<Integer> q = Queues.<Integer>one().get();
+		q.add(2);
+		//and
+		Integer[] passedArray = new Integer[1];
+		//when
+		Integer[] convertedArray = q.toArray(passedArray);
+		//then
+		assertThat(convertedArray)
+				.containsExactly(2)
+				.isSameAs(passedArray);
+	}
+
+	@Test
+	public void emptyOneQueueShouldConvertToArrayAndPutNullMarkerAndReuseInputArrayWhenPassedLargerArray() {
+		//given
+		Queue<Integer> q = Queues.<Integer>one().get();
+		//and
+		Integer[] passedArray = {1, 2, 3};
+		//when
+		Integer[] convertedArray = q.toArray(passedArray);
+		//then
+		assertThat(convertedArray)
+				.hasSize(3)
+				.startsWith(null, 2, 3)
+				.isSameAs(passedArray);
+	}
+
+	@Test
+	public void oneQueueWithOneElementShouldConvertToArrayAndPutNullMarkerAndReuseInputArrayWhenPassedLargerArray() {
+		Queue<Integer> q = Queues.<Integer>one().get();
+		q.add(2);
+		//and
+		Integer[] passedArray = {1, 2, 3};
+		//given
+		Integer[] convertedArray = q.toArray(passedArray);
+		//then
+		assertThat(convertedArray)
+				.hasSize(3)
+				.startsWith(2, null, 3)
+				.isSameAs(passedArray);
+	}
 }
