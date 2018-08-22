@@ -301,6 +301,14 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<T> casted = (Mono<T>) source;
 			return casted;
 		}
+		if (source instanceof FluxSourceMono
+				|| source instanceof FluxSourceMonoFuseable) {
+			@SuppressWarnings("unchecked")
+			FluxFromMonoOperator<T, T> wrapper = (FluxFromMonoOperator<T,T>) source;
+			@SuppressWarnings("unchecked")
+			Mono<T> extracted = (Mono<T>) wrapper.source;
+			return extracted;
+		}
 		if (source instanceof Flux) {
 			@SuppressWarnings("unchecked")
 			Flux<T> casted = (Flux<T>) source;

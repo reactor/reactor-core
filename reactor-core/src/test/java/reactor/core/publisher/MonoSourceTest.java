@@ -15,14 +15,20 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import jdk.nashorn.internal.codegen.CompilerConstants;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.PublisherProbe;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.junit.Assert.assertTrue;
 
 public class MonoSourceTest {
@@ -114,6 +120,107 @@ public class MonoSourceTest {
 		StepVerifier.create(Mono.just(1).as(TestPub::new))
 	                .expectNext(1)
 	                .verifyComplete();
+	}
+
+	@Test
+	public void monoFromFluxThatIsItselfFromMono() {
+		AtomicBoolean emitted = new AtomicBoolean();
+		AtomicBoolean terminated = new AtomicBoolean();
+		AtomicBoolean cancelled = new AtomicBoolean();
+		AtomicBoolean succeeded = new AtomicBoolean();
+
+		Mono<String> withCallback = Mono.just("foo")
+		                                .doOnNext(v -> emitted.set(true));
+
+		Mono<String> original = withCallback
+				.doOnCancel(() -> cancelled.set(true))
+				.doOnSuccess(v -> succeeded.set(true))
+				.doOnTerminate(() -> terminated.set(true))
+				.hide();
+
+		assertThat(withCallback).as("withCallback is not Callable")
+		                    .isNotInstanceOf(Fuseable.ScalarCallable.class)
+		                    .isNotInstanceOf(Callable.class);
+
+		assertThat(original).as("original is not callable Mono")
+		                  .isNotInstanceOf(Fuseable.class)
+		                  .isNotInstanceOf(Fuseable.ScalarCallable.class)
+		                  .isNotInstanceOf(Callable.class);
+
+		Flux<String> firstConversion = Flux.from(original);
+		Mono<String> secondConversion = Mono.from(firstConversion);
+
+		assertThat(secondConversion.block()).isEqualTo("foo");
+
+		assertThat(emitted).as("emitted").isTrue();
+		assertThat(succeeded).as("succeeded").isTrue();
+		assertThat(cancelled).as("cancelled").isFalse();
+		assertThat(terminated).as("terminated").isTrue();
+
+		assertThat(secondConversion).as("conversions negated").isSameAs(original);
+	}
+
+	@Test
+	public void monoFromFluxThatIsItselfFromMonoFuseable() {
+		Mono<String> original = Mono.just("foo").map(v -> v + "bar");
+
+		Flux<String> firstConversion = Flux.from(original);
+		Mono<String> secondConversion = Mono.from(firstConversion);
+
+		assertThat(original).isInstanceOf(Fuseable.class);
+		assertThat(secondConversion).isInstanceOf(Fuseable.class);
+		assertThat(secondConversion.block()).isEqualTo("foobar");
+		assertThat(secondConversion).as("conversions negated").isSameAs(original);
+	}
+
+	@Test
+	public void monoFromFluxThatIsItselfFromMono_scalarCallableNotOptimized() {
+		Mono<String> original = Mono.just("foo");
+
+		Flux<String> firstConversion = Flux.from(original);
+		Mono<String> secondConversion = Mono.from(firstConversion);
+
+		assertThat(secondConversion.block()).isEqualTo("foo");
+		assertThat(secondConversion).as("conversions not negated but equivalent")
+		                            .isNotSameAs(original)
+		                            .hasSameClassAs(original);
+	}
+
+	@Test
+	public void monoFromFluxItselfMonoToFlux() {
+		Mono<String> original = Mono.just("foo").hide();
+
+		Flux<String> firstConversion = original.flux();
+		Mono<String> secondConversion = Mono.from(firstConversion);
+
+		assertThat(secondConversion.block()).isEqualTo("foo");
+		assertThat(secondConversion).as("conversions negated").isSameAs(original);
+	}
+
+	@Test
+	public void monoFromFluxItselfMonoToFlux_fuseable() {
+		Mono<String> original = Mono.just("foo").map(v -> v + "bar");
+
+		Flux<String> firstConversion = original.flux();
+		Mono<String> secondConversion = Mono.from(firstConversion);
+
+		assertThat(original).isInstanceOf(Fuseable.class);
+		assertThat(secondConversion).isInstanceOf(Fuseable.class);
+		assertThat(secondConversion.block()).isEqualTo("foobar");
+		assertThat(secondConversion).as("conversions negated").isSameAs(original);
+	}
+
+	@Test
+	public void monoFromFluxItselfMonoToFlux_scalarCallableNotOptimized() {
+		Mono<String> original = Mono.just("foo");
+
+		Flux<String> firstConversion = original.flux();
+		Mono<String> secondConversion = Mono.from(firstConversion);
+
+		assertThat(secondConversion.block()).isEqualTo("foo");
+		assertThat(secondConversion).as("conversions not negated but equivalent")
+		                            .isNotSameAs(original)
+		                            .hasSameClassAs(original);
 	}
 
 	final static class TestPubFuseable implements Publisher<Integer>, Fuseable {
