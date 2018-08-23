@@ -231,10 +231,10 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).endsWith("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
 				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)\n"
-				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n"
-				+ "Error has been observed by the following operator(s):\n"
+				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n");
+		assertThat(debugStack).endsWith("Error has been observed by the following operator(s):\n"
 				+ "\t|_\tParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n\n");
 	}
 

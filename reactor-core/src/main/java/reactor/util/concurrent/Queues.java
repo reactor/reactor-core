@@ -334,17 +334,21 @@ public final class Queues {
 		@Override
 		@SuppressWarnings("unchecked")
 		public <T1> T1[] toArray(T1[] a) {
-			if (a.length > 0) {
-				a[0] = (T1)get();
-				if (a.length > 1) {
-				    a[1] = null;
-				}
-				return a;
+			int size = size();
+			if (a.length < size) {
+				a = (T1[]) java.lang.reflect.Array.newInstance(
+						a.getClass().getComponentType(), size);
 			}
-			return (T1[])toArray();
+			if (size == 1) {
+				a[0] = (T1) get();
+			}
+			if (a.length > size) {
+				a[size] = null;
+			}
+			return a;
 		}
-		/** */
-        private static final long serialVersionUID = -6079491923525372331L;
+
+		private static final long serialVersionUID = -6079491923525372331L;
 	}
 
 	static final class ZeroQueue<T> implements Queue<T>, Serializable {
@@ -441,9 +445,8 @@ public final class Queues {
 		public <T1> T1[] toArray(T1[] a) {
 			if (a.length > 0) {
 				a[0] = null;
-				return a;
 			}
-			return (T1[])toArray();
+			return a;
 		}
 
 		private static final long serialVersionUID = -8876883675795156827L;
