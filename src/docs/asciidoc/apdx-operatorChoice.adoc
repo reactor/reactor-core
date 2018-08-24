@@ -304,7 +304,7 @@ within a `Scheduler` marked as "non-blocking only" (by default `parallel()` and 
 
 * I want to cache data from a `Publisher` and replay it to later subscribers:
 ** up to `n` elements: `cache(int)`
-** caching latest elements within a `Duration` (Time-To-Live): `cache(Duration)`
-*** ...but no more than `n` elements: `cache(int, Duration)`
+** caching latest elements seen within a `Duration` (Time-To-Live): `cache(Duration)`
+*** ...but retain no more than `n` elements: `cache(int, Duration)`
 ** but without immediately triggering the source: `Flux#replay` (returns a `ConnectableFlux`)
 
