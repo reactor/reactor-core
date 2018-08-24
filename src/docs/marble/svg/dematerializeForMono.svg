@@ -1,0 +1,677 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   viewBox="20 76.31593 686.96848 313.86219"
+   width="686.96851"
+   height="313.86218"
+   id="svg84"
+   sodipodi:docname="dematerializeMono.svg"
+   inkscape:version="0.92.3 (unknown)">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1056"
+     id="namedview86"
+     showgrid="false"
+     inkscape:zoom="0.98758288"
+     inkscape:cx="15.237942"
+     inkscape:cy="88.873175"
+     inkscape:window-x="0"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg84"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <defs
+     id="defs16">
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker"
+       stroke-miterlimit="10"
+       viewBox="-1 -6 14 12"
+       markerWidth="14"
+       markerHeight="12"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g4">
+        <path
+           d="M 12,0 0,-4.5 v 9 z"
+           id="path2"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_2"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g9">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path7"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <font-face
+       font-family="IBM Plex Sans"
+       font-size="24"
+       panose-1="2 11 9 2 3 0 4 2 2 3"
+       units-per-em="1000"
+       underline-position="-75.19531"
+       underline-thickness="49.80469"
+       slope="0"
+       x-height="501.46484"
+       cap-height="681.6406"
+       ascent="922.8516"
+       descent="-234.86328"
+       font-weight="700"
+       id="font-face12"
+       stemv="0"
+       stemh="0"
+       accent-height="0"
+       ideographic="0"
+       alphabetic="0"
+       mathematical="0"
+       hanging="0"
+       v-ideographic="0"
+       v-alphabetic="0"
+       v-mathematical="0"
+       v-hanging="0"
+       strikethrough-position="0"
+       strikethrough-thickness="0"
+       overline-position="0"
+       overline-thickness="0">
+      <font-face-src>
+        <font-face-name
+           name="IBMPlexSans-Bold" />
+      </font-face-src>
+    </font-face>
+    <font-face
+       font-family="IBM Plex Sans"
+       font-size="22"
+       panose-1="2 0 8 3 0 0 0 9 0 4"
+       units-per-em="1000"
+       underline-position="-100"
+       underline-thickness="50"
+       slope="0"
+       x-height="517"
+       cap-height="714"
+       ascent="975.0061"
+       descent="-216.99524"
+       font-weight="700"
+       id="font-face14"
+       stemv="0"
+       stemh="0"
+       accent-height="0"
+       ideographic="0"
+       alphabetic="0"
+       mathematical="0"
+       hanging="0"
+       v-ideographic="0"
+       v-alphabetic="0"
+       v-mathematical="0"
+       v-hanging="0"
+       strikethrough-position="0"
+       strikethrough-thickness="0"
+       overline-position="0"
+       overline-thickness="0">
+      <font-face-src>
+        <font-face-name
+           name="IBMPlexSans-Bold" />
+      </font-face-src>
+    </font-face>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker-3"
+       stroke-miterlimit="10"
+       viewBox="-1 -6 14 12"
+       markerWidth="14"
+       markerHeight="12"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g4-6">
+        <path
+           d="M 12,0 0,-4.5 v 9 z"
+           id="path2-75"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_2-35"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g9-62">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path7-9"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="marker1169"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g1167">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path1165"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_3"
+       stroke-miterlimit="10"
+       viewBox="-1 -6 14 12"
+       markerWidth="14"
+       markerHeight="12"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g16">
+        <path
+           d="M 12,0 0,-4.5 v 9 z"
+           id="path14"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_4"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g21">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path19"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="marker1181"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g1179">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path1177"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="marker1187"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g1185">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path1183"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="marker1193"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g1191">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path1189"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="marker1199"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g1197">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path1195"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker-1"
+       stroke-miterlimit="10"
+       viewBox="-1 -6 14 12"
+       markerWidth="14"
+       markerHeight="12"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g4-2">
+        <path
+           d="M 12,0 0,-4.5 v 9 z"
+           id="path2-7"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_3-6"
+       stroke-miterlimit="10"
+       viewBox="-1 -6 14 12"
+       markerWidth="14"
+       markerHeight="12"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g16-2">
+        <path
+           d="M 12,0 0,-4.5 v 9 z"
+           id="path14-9"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_4-5"
+       stroke-miterlimit="10"
+       viewBox="-10 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g21-3">
+        <path
+           d="M -8.4,0 0,3.15 v -6.3 z"
+           id="path19-5"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_2-3"
+       stroke-miterlimit="10"
+       viewBox="-10 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g9-6">
+        <path
+           d="M -8.4,0 0,3.15 v -6.3 z"
+           id="path7-7"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="marker1217"
+       stroke-miterlimit="10"
+       viewBox="-10 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#34302c;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g1215">
+        <path
+           d="M -8.4,0 0,3.15 v -6.3 z"
+           id="path1213"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+  </defs>
+  <metadata
+     id="metadata18"> Produced by OmniGraffle 7.7.1 
+    <dc:date>2018-07-08 21:34:36 +0000</dc:date>
+<rdf:RDF>
+  <cc:Work
+     rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type
+       rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+    <dc:title />
+  </cc:Work>
+</rdf:RDF>
+</metadata>
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#FilledArrow_Marker-3)"
+     id="line36"
+     y2="121.17027"
+     x2="407.95776"
+     y1="121.17027"
+     x1="25.089514" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2-35)"
+     id="line47"
+     y2="205.07033"
+     x2="123.7272"
+     y1="173.35432"
+     x1="123.80347" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:1.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.99999997, 5.99999989;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2-35)"
+     id="line50"
+     y2="204.02791"
+     x2="374.20587"
+     y1="149.44774"
+     x1="374.03644" />
+  <path
+     d="M 37.201482,225.17027 H 689.52344 c 0.61428,0 1.11228,0.44772 1.11228,1 v 65.12137 c 0,0.55228 -0.498,1 -1.11228,1 H 37.201482 c -0.61429,0 -1.11228,-0.44772 -1.11228,-1 v -65.12137 c 0,-0.55228 0.49799,-1 1.11228,-1 z"
+     id="path55"
+     inkscape:connector-curvature="0"
+     style="fill:#ffffff;fill-opacity:1;stroke:#34302c;stroke-width:1.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" />
+  <text
+     id="text59"
+     style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     x="79.279785"
+     y="245.57494">
+    <tspan
+       font-size="24"
+       font-weight="700"
+       x="285.49539"
+       y="267.57495"
+       id="tspan57"
+       style="font-weight:700;font-size:24px;font-family:'IBM Plex Sans';fill:#34302c">dematerialize</tspan>
+  </text>
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_3)"
+     id="line70"
+     y2="365.80994"
+     x2="409.56586"
+     y1="365.80994"
+     x1="21.014242" />
+  <ellipse
+     style="fill:#6cb33e;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse73"
+     ry="23.368183"
+     rx="23.419323"
+     cy="365.80994"
+     cx="123.47234" />
+  <ellipse
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse75"
+     ry="23.368183"
+     rx="23.419323"
+     cy="365.80994"
+     cx="123.47234" />
+  <path
+     style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path83"
+     d="m 289.86275,341.71153 h 0.2173 c 1.10455,0 2,0.89544 2,2 v 44.1968 c 0,1.10457 -0.89545,2 -2,2 h -0.2173 c -1.10455,0 -2,-0.89543 -2,-2 v -44.1968 c 0,-1.10456 0.89545,-2 2,-2 z" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_4)"
+     id="line86"
+     y2="321.84186"
+     x2="123.50407"
+     y1="294.29169"
+     x1="123.54652" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_4)"
+     id="line92"
+     y2="321.61218"
+     x2="289.8175"
+     y1="294.29169"
+     x1="289.60831" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2-35)"
+     id="line133"
+     y2="205.07076"
+     x2="288.97073"
+     y1="173.35432"
+     x1="288.74573" />
+  <path
+     style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path44"
+     d="m 373.59712,101.35805 h 0.7773 c 1.1046,0 2,0.89543 2,2 v 44.1968 c 0,1.10457 -0.8954,2 -2,2 h -0.7773 c -1.10454,0 -2,-0.89543 -2,-2 v -44.1968 c 0,-1.10457 0.89546,-2 2,-2 z" />
+  <path
+     style="fill:#ffffff;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path95"
+     d="M 195.87078,88.1384 187.0821,77.31593 H 58.140062 l -8.78867,10.82247 v 69.49125 l 8.78867,10.82247 H 187.0821 l 8.78868,-10.82247 z" />
+  <text
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="text99"
+     x="59.833961"
+     y="124.46034">
+    <tspan
+       style="font-weight:700;font-size:22px;font-family:'IBM Plex Sans';fill:#000000"
+       id="tspan97"
+       y="145.46034"
+       x="59.833961"
+       font-weight="700"
+       font-size="22">onNext</tspan>
+  </text>
+  <g
+     id="g947"
+     transform="translate(19.484422,-196.22055)">
+    <ellipse
+       cx="144.06503"
+       cy="336"
+       rx="22.720304"
+       ry="23.36647"
+       id="ellipse102"
+       style="fill:#6cb33e;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1" />
+    <ellipse
+       cx="144.06503"
+       cy="336"
+       rx="22.720304"
+       ry="23.36647"
+       id="ellipse104"
+       style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" />
+  </g>
+  <path
+     inkscape:connector-curvature="0"
+     d="m 163.38122,99.77022 h 2.27027 c 0.26757,0 0.48648,0.21891 0.48648,0.48648 v 4.21622 c 0,0.26756 -0.21891,0.48648 -0.48648,0.48648 h -2.27027 c -0.26757,0 -0.48649,-0.21892 -0.48649,-0.48648 v -4.21622 c 0,-0.26757 0.21892,-0.48648 0.48649,-0.48648 z m 4.7027,-1.45946 v 6.16216 c 0,0.26756 0.21892,0.48648 0.48649,0.48648 h 2.27027 c 0.26756,0 0.48648,-0.21892 0.48648,-0.48648 v -6.16216 c 0,-0.26757 -0.21892,-0.48649 -0.48648,-0.48649 h -2.27027 c -0.26757,0 -0.48649,0.21892 -0.48649,0.48649 z m 5.18919,-3.24325 v 9.40541 c 0,0.26756 0.21892,0.48648 0.48649,0.48648 h 2.27027 c 0.26757,0 0.48648,-0.21892 0.48648,-0.48648 v -9.40541 c 0,-0.26756 -0.21891,-0.48648 -0.48648,-0.48648 h -2.27027 c -0.26757,0 -0.48649,0.21892 -0.48649,0.48648 z m 5.18919,-4.54054 v 13.94595 c 0,0.26756 0.21892,0.48648 0.48648,0.48648 h 2.27028 c 0.26756,0 0.48648,-0.21892 0.48648,-0.48648 V 90.52697 c 0,-0.26757 -0.21892,-0.48649 -0.48648,-0.48649 h -2.27028 c -0.26756,0 -0.48648,0.21892 -0.48648,0.48649 z m 5.18919,-5.83784 v 19.78379 c 0,0.26756 0.21892,0.48648 0.48648,0.48648 h 2.27027 c 0.26757,0 0.48649,-0.21892 0.48649,-0.48648 V 84.68913 c 0,-0.26756 -0.21892,-0.48648 -0.48649,-0.48648 h -2.27027 c -0.26756,0 -0.48648,0.21892 -0.48648,0.48648 z"
+     id="path2-3"
+     style="opacity:0.5;fill:#000000;fill-opacity:1;stroke-width:1" />
+  <path
+     style="fill:#ffffff;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path963"
+     d="M 357.87077,90.1384 349.08209,79.31593 H 220.14006 l -8.78868,10.82247 v 69.49125 l 8.78868,10.82247 h 128.94203 l 8.78868,-10.82247 z" />
+  <path
+     inkscape:connector-curvature="0"
+     d="m 325.38121,101.77022 h 2.27027 c 0.26757,0 0.48648,0.21891 0.48648,0.48648 v 4.21622 c 0,0.26756 -0.21891,0.48648 -0.48648,0.48648 h -2.27027 c -0.26757,0 -0.48649,-0.21892 -0.48649,-0.48648 v -4.21622 c 0,-0.26757 0.21892,-0.48648 0.48649,-0.48648 z m 4.7027,-1.45946 v 6.16216 c 0,0.26756 0.21892,0.48648 0.48649,0.48648 h 2.27027 c 0.26756,0 0.48648,-0.21892 0.48648,-0.48648 v -6.16216 c 0,-0.26757 -0.21892,-0.48649 -0.48648,-0.48649 h -2.27027 c -0.26757,0 -0.48649,0.21892 -0.48649,0.48649 z m 5.18919,-3.24325 v 9.40541 c 0,0.26756 0.21892,0.48648 0.48649,0.48648 h 2.27027 c 0.26757,0 0.48648,-0.21892 0.48648,-0.48648 v -9.40541 c 0,-0.26756 -0.21891,-0.48648 -0.48648,-0.48648 h -2.27027 c -0.26757,0 -0.48649,0.21892 -0.48649,0.48648 z m 5.18919,-4.54054 v 13.94595 c 0,0.26756 0.21892,0.48648 0.48648,0.48648 h 2.27028 c 0.26756,0 0.48648,-0.21892 0.48648,-0.48648 V 92.52697 c 0,-0.26757 -0.21892,-0.48649 -0.48648,-0.48649 h -2.27028 c -0.26756,0 -0.48648,0.21892 -0.48648,0.48649 z m 5.18919,-5.83784 v 19.78379 c 0,0.26756 0.21892,0.48648 0.48648,0.48648 h 2.27027 c 0.26757,0 0.48649,-0.21892 0.48649,-0.48648 V 86.68913 c 0,-0.26756 -0.21892,-0.48648 -0.48649,-0.48648 h -2.27027 c -0.26756,0 -0.48648,0.21892 -0.48648,0.48648 z"
+     id="path969"
+     style="opacity:0.5;fill:#000000;fill-opacity:1;stroke-width:1" />
+  <text
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="text127"
+     x="222.71442"
+     y="123.77733">
+    <tspan
+       style="font-weight:700;font-size:21px;font-family:'IBM Plex Sans';fill:#000000"
+       id="tspan125"
+       y="143.77733"
+       x="224.84021"
+       font-weight="700"
+       font-size="21">onComplete</tspan>
+  </text>
+  <line
+     x1="457.74744"
+     y1="367.08203"
+     x2="676.61194"
+     y2="367.08203"
+     id="line971"
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#FilledArrow_Marker-1)" />
+  <path
+     d="m 645.87983,97.55605 h 0.7773 c 1.1046,0 2,0.89543 2,2 v 44.1968 c 0,1.10457 -0.8954,2 -2,2 h -0.7773 c -1.1045,0 -2,-0.89543 -2,-2 v -44.1968 c 0,-1.10457 0.8955,-2 2,-2 z"
+     id="path973"
+     inkscape:connector-curvature="0"
+     style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1" />
+  <line
+     x1="456.83307"
+     y1="119.97743"
+     x2="680.12048"
+     y2="119.97743"
+     id="line981"
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_3-6)" />
+  <line
+     x1="563.60297"
+     y1="206.66307"
+     x2="563.5144"
+     y2="169.64635"
+     id="line997"
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.00000001, 6.00000006;stroke-opacity:1;marker-start:url(#FilledArrow_Marker_4-5)" />
+  <line
+     x1="564.47253"
+     y1="341.32996"
+     x2="564.62219"
+     y2="296.30151"
+     id="line1011"
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6.00000001;stroke-opacity:1;marker-start:url(#FilledArrow_Marker_2-3)" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:1.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.99999998, 5.99999994;stroke-opacity:1;marker-start:url(#FilledArrow_Marker_2-3)"
+     id="line1015"
+     y2="129.70903"
+     x2="646.62109"
+     y1="206.46373"
+     x1="646.47131" />
+  <path
+     d="m 630.15353,88.3364 -8.7887,-10.82247 H 492.42278 L 483.6341,88.3364 v 69.49125 l 8.78868,10.82247 h 128.94205 l 8.7887,-10.82247 z"
+     id="path1033"
+     inkscape:connector-curvature="0"
+     style="fill:#ffffff;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     style="opacity:0.5;fill:#000000;fill-opacity:1;stroke-width:1"
+     id="path1035"
+     d="m 597.66393,99.96822 h 2.2703 c 0.2675,0 0.4864,0.21891 0.4864,0.48648 v 4.21622 c 0,0.26756 -0.2189,0.48648 -0.4864,0.48648 h -2.2703 c -0.2676,0 -0.4865,-0.21892 -0.4865,-0.48648 v -4.21622 c 0,-0.26757 0.2189,-0.48648 0.4865,-0.48648 z m 4.7027,-1.45946 v 6.16216 c 0,0.26756 0.2189,0.48648 0.4865,0.48648 h 2.2703 c 0.2675,0 0.4864,-0.21892 0.4864,-0.48648 v -6.16216 c 0,-0.26757 -0.2189,-0.48649 -0.4864,-0.48649 h -2.2703 c -0.2676,0 -0.4865,0.21892 -0.4865,0.48649 z m 5.1892,-3.24325 v 9.40541 c 0,0.26756 0.2189,0.48648 0.4865,0.48648 h 2.2703 c 0.2675,0 0.4864,-0.21892 0.4864,-0.48648 v -9.40541 c 0,-0.26756 -0.2189,-0.48648 -0.4864,-0.48648 h -2.2703 c -0.2676,0 -0.4865,0.21892 -0.4865,0.48648 z m 5.1892,-4.54054 v 13.94595 c 0,0.26756 0.2189,0.48648 0.4865,0.48648 h 2.2702 c 0.2676,0 0.4865,-0.21892 0.4865,-0.48648 V 90.72497 c 0,-0.26757 -0.2189,-0.48649 -0.4865,-0.48649 h -2.2702 c -0.2676,0 -0.4865,0.21892 -0.4865,0.48649 z m 5.1892,-5.83784 v 19.78379 c 0,0.26756 0.2189,0.48648 0.4865,0.48648 h 2.2702 c 0.2676,0 0.4865,-0.21892 0.4865,-0.48648 V 84.88713 c 0,-0.26756 -0.2189,-0.48648 -0.4865,-0.48648 h -2.2702 c -0.2676,0 -0.4865,0.21892 -0.4865,0.48648 z"
+     inkscape:connector-curvature="0" />
+  <text
+     y="125.10075"
+     x="495.75763"
+     id="text1039"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1">
+    <tspan
+       font-size="21"
+       font-weight="700"
+       x="497.88342"
+       y="145.10075"
+       id="tspan1037"
+       style="font-weight:700;font-size:21px;font-family:'IBM Plex Sans';fill:#000000">onError</tspan>
+  </text>
+  <path
+     d="m 582.82736,381.0106 -2.32243,2.33041 c -0.77971,0.78238 -2.04604,0.78456 -2.82843,0.005 l -31.24701,-31.14003 c -0.78238,-0.77971 -0.78456,-2.04604 -0.005,-2.82842 0,0 0,0 0,0 l 2.3224,-2.33041 c 0.7797,-0.78239 2.04604,-0.78456 2.82843,-0.005 l 31.24701,31.14 c 0.78239,0.77972 0.78456,2.04604 0.005,2.82843 0,0 0,0 0,0 z"
+     id="path47"
+     inkscape:connector-curvature="0"
+     style="fill:#ef2200;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     d="m 580.44259,346.99265 2.33041,2.32242 c 0.78236,0.77972 0.78456,2.04604 0.005,2.82843 l -31.14003,31.24701 c -0.77971,0.78239 -2.04604,0.78456 -2.82842,0.005 0,0 0,0 0,0 l -2.33041,-2.32243 c -0.78239,-0.77971 -0.78454,-2.04604 -0.005,-2.82843 l 31.14,-31.24701 c 0.7797,-0.78238 2.04604,-0.78456 2.82843,-0.005 0,0 0,0 0,0 z"
+     id="path50"
+     inkscape:connector-curvature="0"
+     style="fill:#ef2200;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     style="fill:#ef2200;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path1049"
+     d="m 615.19235,152.34117 -2.32243,2.33041 c -0.77971,0.78238 -2.04604,0.78456 -2.82843,0.005 l -31.24701,-31.14003 c -0.78238,-0.77971 -0.78456,-2.04604 -0.005,-2.82842 0,0 0,0 0,0 l 2.3224,-2.33041 c 0.7797,-0.78239 2.04604,-0.78456 2.82843,-0.005 l 31.24701,31.14 c 0.78239,0.77972 0.78456,2.04604 0.005,2.82843 0,0 0,0 0,0 z" />
+  <path
+     style="fill:#ef2200;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path1051"
+     d="m 612.80758,118.32322 2.33041,2.32242 c 0.78236,0.77972 0.78456,2.04604 0.005,2.82843 l -31.14003,31.24701 c -0.77971,0.78239 -2.04604,0.78456 -2.82842,0.005 0,0 0,0 0,0 l -2.33041,-2.32243 c -0.78239,-0.77971 -0.78454,-2.04604 -0.005,-2.82843 l 31.14,-31.24701 c 0.7797,-0.78238 2.04604,-0.78456 2.82843,-0.005 0,0 0,0 0,0 z" />
+  <path
+     style="opacity:0.3;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:5.99999995, 5.99999995;stroke-dashoffset:0;stroke-opacity:1"
+     d="M 447.3059,80.435215 V 214.70223"
+     id="path2575"
+     inkscape:connector-curvature="0" />
+  <path
+     inkscape:connector-curvature="0"
+     id="path974"
+     d="M 447.30593,306.43523 V 386.0233"
+     style="opacity:0.3;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:6.00000024, 6.00000024;stroke-dashoffset:0;stroke-opacity:1" />
+</svg>
