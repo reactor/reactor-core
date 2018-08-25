@@ -13,7 +13,7 @@ As a first step in the direction of reactive programming, Microsoft created the 
 Extensions (Rx) library in the .NET ecosystem. Then RxJava implemented reactive
 programming on the JVM.  As time went on, a standardization for Java emerged through the
 *Reactive Streams* effort, a specification that defines a set of interfaces and
-interaction rules for reactive libraries on the JVM. It will be integrated into Java 9
+interaction rules for reactive libraries on the JVM. It is integrated into Java 9
 (with the `Flow` class).
 
 The reactive programming paradigm is often presented in object-oriented languages as an
