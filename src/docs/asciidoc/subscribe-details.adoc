@@ -71,7 +71,7 @@ a handler for completion events, as shown in the following example:
 Flux<Integer> ints = Flux.range(1, 4); <1>
 ints.subscribe(i -> System.out.println(i),
     error -> System.err.println("Error " + error),
-    () -> {System.out.println("Done");}); <2>
+    () -> System.out.println("Done")); <2>
 ----
 
 <1> Set up a Flux that produces four values when a Subscriber attaches.
@@ -103,7 +103,7 @@ SampleSubscriber<Integer> ss = new SampleSubscriber<Integer>();
 Flux<Integer> ints = Flux.range(1, 4);
 ints.subscribe(i -> System.out.println(i),
     error -> System.err.println("Error " + error),
-    () -> {System.out.println("Done");},
+    () -> System.out.println("Done"),
     s -> ss.request(10));
 ints.subscribe(ss);
 ----
