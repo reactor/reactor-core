@@ -122,6 +122,8 @@ is represented in Reactor by the general-purpose `Disposable` interface.
 
 include::subscribe-details.adoc[]
 
+include::subscribe-backpressure.adoc[]
+
 //the leveloffset seems to be absolute from root
 include::producing.adoc[leveloffset=2]
 

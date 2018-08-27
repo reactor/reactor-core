@@ -212,8 +212,3 @@ NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`, 
 `hookOnComplete` methods. You may also want to implement the `hookFinally` method.
 `SampleSubscribe` is the absolute minimum implementation of a `Subscriber` _that performs
 bounded requests_.
-
-WARNING: When manipulating a request, you must be careful to produce enough demand for
-the sequence to advance or your Flux will get "stuck". That is why `BaseSubscriber`
-forces you to implement the subscription and `onNext` hooks, where you should usually
-call `request` at least once.
