@@ -230,18 +230,64 @@ subscribers are where the real work happens.
 With that knowledge, we can have a closer look at the `publishOn` and `subscribeOn`
 operators:
 
-* `publishOn` applies in the same way as any other operator, in the middle of the
+=== `publishOn`
+`publishOn` applies in the same way as any other operator, in the middle of the
 subscriber chain. It takes signals from upstream and replays them downstream while
 executing the callback on a worker from the associated `Scheduler`. Consequently, it
 *affects where the subsequent operators will execute* (until another `publishOn` is
-chained in).
-* `subscribeOn` applies to the subscription process, when that backward chain is
+chained in):
+
+ - changes the execution context to one `Thread` picked by the `Scheduler`
+ - as per the specification, `onNext` happen in sequence, so this uses up a single thread
+ - unless they work on a specific `Scheduler`, operators after `publishOn` continue execution on that same thread
+
+[source,java]
+----
+Scheduler s = Schedulers.newParallel(4); //<1>
+
+final Flux<Integer> flux = Flux
+    .range(1, 2)
+    .map(i -> 10 + i)  //<2>
+    .publishOn(s)  //<3>
+    .map(i -> "value " + i);  //<4>
+
+new Thread(() -> flux.subscribe(System.out::println));  //<5>
+----
+<1> Creates a new `Scheduler` backed by 4 `Thread`
+<2> The first `map` runs on the anonymous thread in <5>
+<3> The `publishOn` switches the whole sequence on a `Thread` picked from <1>
+<4> The second `map` runs on said `Thread` from <1>
+<5> This anonymous `Thread` is the one where the _subscription_ happens. The print happens on the latest execution context which is the one from `publishOn`
+
+=== `subscribeOn`
+`subscribeOn` applies to the subscription process, when that backward chain is
 constructed. As a consequence, no matter where you place the `subscribeOn` in the chain,
 *it always affects the context of the source emission*. However, this does not affect the
 behavior of subsequent calls to `publishOn`. They still switch the execution context for
 the part of the chain after them.
 
+ - changes the `Thread` from which the **whole chain** of operators above subscribes
+ - picks one thread from the `Scheduler`
+
 NOTE: Only the earliest `subscribeOn` call in the chain is actually taken into account.
+
+[source,java]
+----
+Scheduler s = Schedulers.newParallel(4); //<1>
+
+final Flux<Integer> flux = Flux
+    .range(1, 2)
+    .map(i -> 10 + i)  //<2>
+    .subscribeOn(s)  //<3>
+    .map(i -> "value " + i);  //<4>
+
+new Thread(() -> flux.subscribe(System.out::println));  //<5>
+----
+<1> Creates a new `Scheduler` backed by 4 `Thread`
+<2> The first `map` runs on one of these 4 threads...
+<3> ...because `subscribeOn` switches the whole sequence right from subscription time (<5>)
+<4> The second `map` also runs on same thread
+<5> This anonymous `Thread` is the one where the _subscription_ initially happens, but `subscribeOn` immediately shifts it to one of the 4 scheduler threads...
 
 
 [[error.handling]]
