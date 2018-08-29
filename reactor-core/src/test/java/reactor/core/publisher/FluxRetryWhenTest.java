@@ -23,12 +23,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.LongAssert;
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -647,5 +649,27 @@ public class FluxRetryWhenTest {
 		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).containsExactly(0L, 100L, 200L, 400L, 800L);
+	}
+
+	@Test
+	public void fluxRetryRandomBackoffNoArithmeticException() {
+		final Duration EXPLICIT_MAX = Duration.ofSeconds(100_000);
+		final Duration INIT = Duration.ofSeconds(10);
+
+		Function<Flux<Throwable>, Publisher<Long>> backoffFunction = FluxRetryWhen.randomExponentialBackoffFunction(
+				80, //with pure exponential, this amount of retries would overflow Duration's capacity
+				INIT,
+				EXPLICIT_MAX,
+				0d);
+
+		StepVerifier.withVirtualTime(() -> Flux.error(new IllegalStateException("boom"))
+		                                       .retryWhen(backoffFunction))
+		            .expectSubscription()
+		            .thenAwait(Duration.ofNanos(Long.MAX_VALUE))
+		            .expectErrorSatisfies(e -> assertThat(e).hasMessage("Retries exhausted: 80/80")
+		                                                    .isInstanceOf(IllegalStateException.class)
+		                                                    .hasCause(new IllegalStateException("boom"))
+		            )
+		            .verify();
 	}
 }
