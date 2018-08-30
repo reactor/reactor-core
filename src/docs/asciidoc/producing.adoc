@@ -7,7 +7,7 @@ trigger the events that we call a *sink*. There are actually a few sink
 variants, which we'll get to shortly.
 
 [[producing.generate]]
-== Generate
+== Synchronous `generate`
 The simplest form of programmatic creation of a `Flux` is through the `generate`
 method, which takes a generator function.
 
@@ -105,14 +105,13 @@ close the connection or  otherwise handle any tasks that should be done at the
 end of the process.
 
 [[producing.create]]
-== Create
-The more advanced form of programmatic creation of a `Flux`, `create` is suitable for
-multiple emissions per round.
+== Asynchronous & multi-threaded: `create`
+`create` is a more advanced form of programmatic creation of a `Flux` which is
+suitable for multiple emissions per round, even from multiple threads.
 
 It exposes a `FluxSink`, with its `next`, `error`, and `complete` methods.
 Contrary to `generate`, it doesn't have a state-based variant. On the other
-hand, it can trigger multiple events in the callback (even from any thread
-at a later point in time).
+hand, it can trigger multi-threaded events in the callback.
 
 TIP: `create` can be very useful to bridge an existing API with the reactive
 world - such as an asynchronous API based on listeners.
@@ -179,12 +178,12 @@ This may yield `IllegalStateException` when queues get full downstream.
 NOTE: `Mono` also has a `create` generator. The `MonoSink` of Mono's create
 doesn't allow several emissions. It will drop all signals after the first one.
 
-=== Push model
-A variant of `create` is `push`, which is suitable for processing events
-from a single producer. Similar to `create`, `push` can also be asynchronous
-and can manage backpressure using any of the overflow strategies supported
-by `create`. Only one producing thread may invoke `next`, `complete`, or
-`error` at a time.
+== Asynchronous but single-threaded: `push`
+`push` is a middle ground between `generate` and `create` which is suitable for
+processing events from a single producer. It is similar to `create` in the sense
+that it can also be asynchronous and can manage backpressure using any of the
+overflow strategies supported by `create`. However, **only one producing thread**
+may invoke `next`, `complete` or `error` at a time.
 
 [source,java]
 ----
@@ -213,15 +212,19 @@ Flux<String> bridge = Flux.push(sink -> {
 <3> `complete` event generated from the same listener thread.
 <4> `error` event also generated from the same listener thread.
 
-=== Hybrid push/pull model
-Unlike `push`, `create` may be used in `push` or `pull` mode, making it suitable
-for bridging with listener-based APIs where data may be delivered asynchronously
-at any time. An `onRequest` callback can be registered on `FluxSink` to track
-requests. The callback may be used to request more data from the source if
-required and to manage backpressure by delivering data to the sink only when
-requests are pending. This enables a hybrid push/pull model where downstream can
-pull data that is already available from upstream and upstream can push data to
-downstream when data becomes available at a later time.
+=== An hybrid push/pull model
+Most Reactor operators, like `create`, follow an hybrid **push/pull** model.
+What we mean by that is that despite most of the processing being asynchronous
+(suggesting a _push_ approach), there is a small _pull_ component to it: the
+request.
+
+The consumer _pulls_ data from the source in the sense that it won't emit anything
+until first requested. The source _pushes_ data to the consumer whenever it
+becomes available, but within the bounds of its requested amount.
+
+Note that `push()` and `create()` both allow to set up an `onRequest` consumer
+in order to manage the request amount and to ensure that data is pushed through
+the sink only when there is pending request.
 
 [source,java]
 ----
@@ -236,17 +239,18 @@ Flux<String> bridge = Flux.create(sink -> {
         }
     });
     sink.onRequest(n -> {
-        List<String> messages = myMessageProcessor.request(n); // <1>
+        List<String> messages = myMessageProcessor.getHistory(n); // <1>
         for(String s : message) {
            sink.next(s); // <2>
         }
     });
+});
 ----
 <1> Poll for messages when requests are made.
 <2> If messages are available immediately, push them to the sink.
 <3> The remaining messages that arrive asynchronously later are also delivered.
 
-=== Cleaning up
+=== Cleaning up after `push()` or `create()`
 
 Two callbacks, `onDispose` and `onCancel`, perform any cleanup on cancellation
 or termination. `onDispose` can be used to perform cleanup when the `Flux`
@@ -261,13 +265,13 @@ Flux<String> bridge = Flux.create(sink -> {
         .onDispose(() -> channel.close())  // <2>
     });
 ----
-<1> `onCancel` is invoked for cancel signal.
-<2> `onDispose` is invoked for complete, error, or cancel.
+<1> `onCancel` is invoked first, for cancel signal only.
+<2> `onDispose` is invoked for complete, error, or cancel signals.
 
 == Handle
-The `handle` method is a bit different. It is present in both `Mono` and
-`Flux`.  Also, it is an instance method, meaning that it is chained on an
-existing source (as are the common operators).
+The `handle` method is a bit different: it is an instance method, meaning that
+it is chained on an existing source (as are the common operators). It is present
+in both `Mono` and `Flux`.
 
 It is close to `generate`, in the sense that it uses a `SynchronousSink` and
 only allows one-by-one emissions. However, `handle` can be used to generate an
@@ -276,7 +280,9 @@ this way, it can serve as a combination of `map` and `filter`. The signature of
 handle is as follows:
 
 [source,java]
-handle(BiConsumer<T, SynchronousSink<R>>)
+----
+Flux<R> handle(BiConsumer<T, SynchronousSink<R>>);
+----
 
 Let's consider an example. The reactive streams specification disallows `null`
 values in a sequence. What if you want to perform a `map` but you want to use

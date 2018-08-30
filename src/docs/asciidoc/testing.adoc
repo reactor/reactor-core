@@ -31,11 +31,13 @@ dependencies {
 }
 ----
 
-The two main uses of `reactor-test` are:
+The three main uses of `reactor-test` are:
 
 * Testing that a sequence follows a given scenario, step-by-step, with `StepVerifier`.
 * Producing data in order to test the behavior of operators (including you own operators)
 downstream with `TestPublisher`.
+* In sequences that can do through several alternative `Publisher` (eg. a chain that uses
+  `switchIfEmpty`, probing such a `Publisher` to ensure it was used (as in, subscribed to).
 
 == Testing a Scenario with `StepVerifier`
 
@@ -163,7 +165,7 @@ important prerequisite is that the operator be instantiated _after_ the virtual 
 scheduler has been activated.
 
 In order to increase the chances this happens correctly, the `StepVerifier` does not take
-a simple `Flux` as input. `withVirtualTime` takes a `Supplier`, which allows for lazily
+a simple `Flux` as input. `withVirtualTime` takes a `Supplier`, which guides you into lazily
 creating the instance of the tested flux _after_ having done the scheduler set up.
 
 IMPORTANT: Take extra care to ensure the `Supplier<Publisher<T>>` can be used in a lazy
