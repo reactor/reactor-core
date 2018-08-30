@@ -71,7 +71,7 @@ a handler for completion events, as shown in the following example:
 Flux<Integer> ints = Flux.range(1, 4); <1>
 ints.subscribe(i -> System.out.println(i),
     error -> System.err.println("Error " + error),
-    () -> {System.out.println("Done");}); <2>
+    () -> System.out.println("Done")); <2>
 ----
 
 <1> Set up a Flux that produces four values when a Subscriber attaches.
@@ -81,8 +81,8 @@ Error signals and completion signals are both terminal events and are exclusive 
 another (you never get both). To make the completion consumer work, we must take care not
 to trigger an error.
 
-The completion matcher is a pair of empty parentheses because it matches the `run`
-method in the `Runnable` interface, which has no parameters. The preceding code
+The completion callback has no input, as represented by an empty pair of
+parentheses: it matches the `run` method in the `Runnable` interface. The preceding code
 produces the following output:
 
 ----
@@ -93,9 +93,55 @@ produces the following output:
 Done
 ----
 
-The last signature of the `subscribe` method includes a custom `Subscriber` (shown
-later in this section), which shows how to attach a custom `Subscriber`, as shown in the
-following example:
+The last signature of the `subscribe` method includes a `Consumer<Subscription>`.
+That variant requires you to do something with the `Subscription` (perform a
+`request(long)` on it, or `cancel()` it), otherwise the `Flux` will just hang:
+
+[source,java]
+----
+Flux<Integer> ints = Flux.range(1, 4);
+ints.subscribe(i -> System.out.println(i),
+    error -> System.err.println("Error " + error),
+    () -> System.out.println("Done"),
+    sub -> sub.request(10)); <1>
+----
+<1> When we subscribe we receive a `Subscription`. Signal that we want up to `10`
+elements from the source (which will actually emit 4 elements and complete).
+
+
+=== Cancelling a `subscribe()` with its `Disposable`
+
+All these lambda-based variants of `subscribe()` have a `Disposable` return type.
+In this case, the `Disposable` interface represents the fact that the subscription
+can be _cancelled_, by calling its `dispose()` method.
+
+For a `Flux` or `Mono`, cancellation is a signal that the source should stop
+producing elements. However, it is NOT guaranteed to be immediate: some sources
+might produce elements so fast that they could complete even before receiving the
+cancel instruction.
+
+Some utilities around `Disposable` are available in the `Disposables` class.
+Among these, `Disposables.swap()` creates a `Disposable` wrapper that allows
+you to atomically cancel and replace a concrete `Disposable`. This can be useful,
+for instance, in a UI scenario where you want to cancel a request and replace it
+with a new one whenever the user clicks on a button. Disposing the wrapper itself
+closes it, disposing the current concrete value and all future attempted replacements.
+
+Another interesting utility is `Disposables.composite(...)`. This composite
+allows to collect several `Disposable`, for instance multiple in-flight request
+associated with a service call, and dispose all of them at once later on.
+Once the composite's `dispose()` method has been called, any attempt at adding
+another `Disposable` immediately disposes it.
+
+
+=== Alternative to lambdas: `BaseSubscriber`
+
+There is an additional `subscribe` method that is more generic and takes a full-blown
+`Subscriber` rather than composing one out of lambdas. In order to help you writing
+such a `Subscriber`, we provide an extendable class called `BaseSubscriber`.
+
+Let's implement one of these, we'll call it a `SampleSubscriber`. The following
+example shows how it would be attached to a `Flux`:
 
 [source,java]
 ----
@@ -108,9 +154,8 @@ ints.subscribe(i -> System.out.println(i),
 ints.subscribe(ss);
 ----
 
-In the preceding example, we provide a custom `Subscriber` as the last argument to the
-`subscribe` method. The following example shows that custom `Subscriber` object, which is
-the simplest possible implementation of a `Subscriber`:
+Now let's have a look at what `SampleSubscriber` could look like, as a minimalistic
+implementation of a `BaseSubscriber`:
 
 [source,java]
 ----
@@ -140,10 +185,10 @@ overridden to tune the subscriber's behavior. By default, it will trigger an unb
 request and behave exactly like `subscribe()`. However, extending `BaseSubscriber` is
 much more useful when you want a custom request amount.
 
-The bare minimum implementation is to implement both `hookOnSubscribe(Subscription
-subscription)` and `hookOnNext(T value)`. In this case, the `hookOnSubscribe` method
+For custom request amount, the bare minimum is to implement `hookOnSubscribe(Subscription subscription)`
+and `hookOnNext(T value)` like we did. In our case, the `hookOnSubscribe` method
 prints a statement to standard out and makes the first request. Then the `hookOnNext`
-method prints a statement and processes each of the remaining requests, one request
+method prints a statement and performs additional requests, one request
 at a time.
 
 The `SampleSubscriber` class produces the following output:
@@ -156,9 +201,14 @@ Subscribed
 4
 ----
 
+`BaseSubscriber` also offers a `requestUnbounded()` method to switch to unbounded mode
+(equivalent to `request(Long.MAX_VALUE)`), as well as a `cancel()` method.
+
+It has additional hooks: `hookOnComplete`, `hookOnError`, `hookOnCancel`, and `hookFinally`
+(which is always called when the sequence terminates, with the type of termination passed
+in as a `SignalType` parameter)
+
 NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`, and
 `hookOnComplete` methods. You may also want to implement the `hookFinally` method.
-`SampleSubscribe` is the absolute minimum implementation of a `Subscriber` that performs
-bounded requests.
-
-We return to `BaseSubscriber` later in this guide.
+`SampleSubscribe` is the absolute minimum implementation of a `Subscriber` _that performs
+bounded requests_.

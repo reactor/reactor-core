@@ -16,11 +16,11 @@ Reactor is a fully non-blocking reactive programming foundation for the JVM, wit
 efficient demand management (in the form of managing "backpressure"). It integrates
 directly with the Java 8 functional APIs, notably `CompletableFuture`, `Stream`, and
 `Duration`. It offers composable asynchronous sequence APIs `Flux` (for [N] elements) and
-`Mono` (for [0|1] elements), extensively implementing the Reactive Extensions
+`Mono` (for [0|1] elements), extensively implementing the [Reactive Streams](http://www.reactive-streams.org/)
 specification.
 
-Reactor also supports non-blocking inter-process communication (IPC) with the
-`reactor-ipc` components. Suited for Microservices Architecture, Reactor IPC offers
+Reactor also supports non-blocking inter-process communication with the
+`reactor-netty` project. Suited for Microservices Architecture, Reactor Netty offers
 backpressure-ready network engines for HTTP (including Websockets), TCP, and UDP.
 Reactive Encoding and Decoding are fully supported.
 
@@ -44,22 +44,18 @@ case-by-case basis.
 
 [[getting-started-understanding-bom]]
 == Understanding the BOM
-Reactor 3 uses a BOM (Bill of Materials - a standard Maven artifact) model (since
-`reactor-core 3.0.4`, with the `Aluminium` release train).
+Reactor 3 uses a BOM model since `reactor-core 3.0.4`, with the `Aluminium` release train.
+This curated list groups artifacts that are meant to work well together, providing
+the relevant versions despite potentially divergent versioning schemes in these artifacts.
 
-//TODO re-state that this is a curated list of versions as opposed to generated?
-
-The BOM lets you group artifacts that are meant to work well together without having to
-wonder about the sometimes divergent versioning schemes of these artifacts.
-
-The BOM is a list of versioned artifacts that is itself versioned, using a release train
-scheme with a codename followed by a qualifier. Here are a few examples:
+The BOM (Bill of Materials) is itself versioned, using a release train scheme
+with a codename followed by a qualifier. Here are a few examples:
 [verse]
 Aluminium-RELEASE
-Carbon-BUILD-SNAPSHOT
+Californium-BUILD-SNAPSHOT
 Aluminium-SR1
 Bismuth-RELEASE
-Carbon-SR32
+Californium-SR32
 
 The codenames represent what would traditionally be the MAJOR.MINOR number. They (mostly)
 come from the https://en.wikipedia.org/wiki/Periodic_table#Overview[Periodic Table of
@@ -137,10 +133,10 @@ First, apply the plugin from the Gradle Plugin Portal:
 [source,groovy]
 ----
 plugins {
-    id "io.spring.dependency-management" version "1.0.1.RELEASE" <1>
+    id "io.spring.dependency-management" version "1.0.6.RELEASE" <1>
 }
 ----
-<1> as of this writing, 1.0.1.RELEASE is the latest version of the plugin.
+<1> as of this writing, 1.0.6.RELEASE is the latest version of the plugin.
 Check for updates.
 
 Then use it to import the BOM:

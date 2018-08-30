@@ -61,11 +61,16 @@ and `Retry` interfaces.
 Both interfaces can be used as a mutative builder AND are implementing the correct
 `Function` signature to be used in their counterpart operators.
 
+Since 3.2.0, one of the most advanced retry strategies offered by these utilities is
+also part of the `reactor-core` main artifact directly: exponential backoff is
+available as the `Flux#retryBackoff` operator.
+
 
 [[extra-schedulers]]
 == Schedulers
 
 Reactor-extra comes with several specialized schedulers:
- - `ForkJoinPoolScheduler` in package `reactor.scheduler.forkjoin`
- - `SwingScheduler` in package `reactor.swing`
- - `SwtScheduler` in package `reactor.swing`
+
+ - `ForkJoinPoolScheduler` in package `reactor.scheduler.forkjoin`: uses the Java `ForkJoinPool` to execute tasks.
+ - `SwingScheduler` in package `reactor.swing` executes tasks in the Swing UI event loop thread, the `EDT`.
+ - `SwtScheduler` in package `reactor.swing` executes tasks in the SWT UI event loop thread.

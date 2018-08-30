@@ -5,7 +5,7 @@ prefixed accordingly. Common operators have no prefix. When a specific use case
 is covered by a combination of operators, it is presented as a method call, with
 leading dot and parameters in parentheses, like this: `.methodCall(parameter)`.
 
-//TODO flux: cache, share, replay, publish, publishOn/subscribeOn/cancelOn
+//TODO flux:  publishOn/subscribeOn/cancelOn
 //compose/transform, repeatWhen, sort, startWith
 //TODO Mono.sequenceEqual
 
@@ -26,6 +26,8 @@ I want to deal with:
 * <<which.window>>
 
 * <<which.blocking>>
+
+* <<which.multicasting>>
 
 [[which.create]]
 == Creating a New Sequence...
@@ -289,3 +291,20 @@ within a `Scheduler` marked as "non-blocking only" (by default `parallel()` and 
 ** to block until I can get the value: `Mono#block`
 *** ...with a timeout: `Mono#block(Duration)`
 ** a `CompletableFuture<T>`: `Mono#toFuture`
+
+[[which.multicasting]]
+== Multicasting a `Flux` to several `Subscribers`
+
+* I want to connect multiple `Subscriber` to a `Flux`:
+** and decide when to trigger the source with `connect()`: `publish()` (returns a `ConnectableFlux`)
+** and trigger the source immediately (late subscribers see later data): `share()`
+** and permanently connect the source when enough subscribers have registered: `.publish().autoConnect(n)`
+** and automatically connect and cancel the source when subscribers go above/below the threshold: `.publish().refCount(n)`
+*** ...but giving a chance for new subscribers to come in before cancelling: `.publish().refCountGrace(n, Duration)`
+
+* I want to cache data from a `Publisher` and replay it to later subscribers:
+** up to `n` elements: `cache(int)`
+** caching latest elements seen within a `Duration` (Time-To-Live): `cache(Duration)`
+*** ...but retain no more than `n` elements: `cache(int, Duration)`
+** but without immediately triggering the source: `Flux#replay` (returns a `ConnectableFlux`)
+

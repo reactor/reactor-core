@@ -136,8 +136,6 @@ Consider two other examples. The following code shows the first example:
 [source,java]
 ----
 Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-                          .doOnNext(System.out::println)
-                          .filter(s -> s.startsWith("o"))
                           .map(String::toUpperCase);
 
 source.subscribe(d -> System.out.println("Subscriber 1: "+d));
@@ -147,16 +145,14 @@ source.subscribe(d -> System.out.println("Subscriber 2: "+d));
 This first example produces the following output:
 
 ----
-blue
-green
-orange
+Subscriber 1: BLUE
+Subscriber 1: GREEN
 Subscriber 1: ORANGE
-purple
-blue
-green
-orange
+Subscriber 1: PURPLE
+Subscriber 2: BLUE
+Subscriber 2: GREEN
 Subscriber 2: ORANGE
-purple
+Subscriber 2: PURPLE
 ----
 
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-cold.png[Replaying behavior]
@@ -168,11 +164,9 @@ Compare the first example to the second example, shown in the following code:
 
 [source,java]
 ----
-UnicastProcessor<String> hotSource = UnicastProcessor.create();
+DirectProcessor<String> hotSource = DirectProcessor.create();
 
-Flux<String> hotFlux = hotSource.publish()
-                                .autoConnect()
-                                .map(String::toUpperCase);
+Flux<String> hotFlux = hotSource.map(String::toUpperCase);
 
 
 hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
@@ -222,7 +216,7 @@ A `ConnectableFlux` offers additional methods to manage subscriptions downstream
 versus subscriptions to the original source. These additional methods include the
 following:
 
-* `connect` can be called manually once you reach enough subscriptions to the flux. That
+* `connect()` can be called manually once you reach enough subscriptions to the flux. That
 triggers the subscription to the upstream source.
 * `autoConnect(n)` can do the same job automatically once `n` subscriptions have been
 made.
@@ -340,9 +334,6 @@ continues fetching data from upstream and feeding more groups. Sometimes, these 
 constraints multiply and lead to hangs, such as when you have a high cardinality and the
 concurrency of the `flatMap` consuming the groups is too low.
 
-// We should provide sample code that produces this problem, to illustrate the
-// anti-pattern.
-
 === Windowing with `Flux<Flux<T>>`
 Windowing is the act of splitting the source `Flux<T>` into _windows_, by criteria of
 size, time, boundary-defining predicates, or boundary-defining `Publisher`.
@@ -350,11 +341,11 @@ size, time, boundary-defining predicates, or boundary-defining `Publisher`.
 The associated operators are `window`, `windowTimeout`, `windowUntil`, `windowWhile`, and
 `windowWhen`.
 
-A major difference with `groupBy` is that windows are always sequential. No
-more than 2 windows can be open at the same time.
+Contrary to `groupBy`, which randomly overlaps according to incoming keys,
+most of the time windows are opened sequentially.
 
-They *can* overlap, though. For instance, there is a variant with `maxSize` and `skip`
-parameters. The `maxSize` parameter is the number of elements after which a window
+Some variants *can* still overlap, though. For instance in `window(int maxSize, int skip)`
+the `maxSize` parameter is the number of elements after which a window
 closes, and the `skip` parameter is the number of elements in the source after which a
 new window is opened. So if `maxSize > skip`, a new window opens before the previous one
 closes and the two windows overlap.
@@ -437,6 +428,7 @@ StepVerifier.create(
 	.expectNext(Collections.singletonList(12)) // triggered by 13
 	.verifyComplete();
 ----
+
 [[advanced-parallelizing-parralelflux]]
 == Parallelizing Work with `ParallelFlux`
 
@@ -444,8 +436,8 @@ With multi-core architectures being a commodity nowadays, being able to easily
 parallelize work is important. Reactor helps with that by providing a special type,
 `ParallelFlux`, that exposes operators that are optimized for parallelized work.
 
-To obtain a `ParallelFlux`, you can use the `parallel()` operator on any `Flux`. *By
-itself, this method does not parallelize the work*. Rather, it divides
+To obtain a `ParallelFlux`, you can use the `parallel()` operator on any `Flux`.
+*By itself, this method does not parallelize the work*. Rather, it divides
 the workload into "rails" (by default, as many rails as there are CPU cores).
 
 In order to tell the resulting ParallelFlux where to execute each rail (and, by
@@ -614,6 +606,11 @@ operator as it is assembled in the chain, by returning a different `Publisher`.
 `onLastOperator` is similar, except that it is only invoked on the last operator in the
 chain before the `subscribe` call.
 
+If you want to decorate all operators with a cross-cutting `Subscriber` implementation,
+you can look into `Operators#lift*` methods to help you deal with the various
+types of Reactor `Publishers` out there (Flux, Mono, ParallelFlux, GroupedFlux, ConnectableFlux),
+as well as their `Fuseable` version.
+
 Like `onOperatorError`, these hooks are cumulative and can be identified with a key. They
 can also be reset partially or totally.
 
@@ -629,6 +626,7 @@ the old default behavior of throwing, use `onNextDroppedFail()`.
 * `onOperatorDebug()`: This method activates <<debug-activate,debug mode>>. It ties into
 the `onOperatorError` hook, so calling `resetOnOperatorError()` also resets it. It can be
 independently reset via `resetOnOperatorDebug()` as it uses a specific key internally.
+
 
 [[context]]
 == Adding a Context to a Reactive Sequence
@@ -724,13 +722,13 @@ TIP: You can also use the more advanced `subscriberContext(Function<Context, Con
 It receives the state of the `Context` from downstream and lets you put or delete values
 as you see fit, returning the new `Context` to use. You can even decide to return a
 completely different instance, although it is really not recommended (doing so might
-impact libraries that depend on the `Context`).
+impact 3rd-party libraries that depend on the `Context`).
 
 === Reading the Context
 Populating the `Context` is one aspect, but retrieving that data from it is equally
 important. Most of the time, the responsibility of putting information into the `Context`
-is on the end user's side, while exploiting that information is on the library's side,
-as the library is usually upstream of the client code.
+is on the end user's side, while exploiting that information is on the 3rd-party library's side,
+as the such libraries are usually upstream of the client code.
 
 The tool for reading data from the context is the static `Mono.subscriberContext()`
 method.
@@ -1028,7 +1026,7 @@ If that type of element needs cleanup you need to implement it in the `onOperato
 
 === The `onNextDropped` hook
 
-With malformed `Publisher`s, there could be cases where an operator receives an element when it expected none (typically, after having received the `onError` or `onComplete` signals).
+With malformed `Publishers`, there could be cases where an operator receives an element when it expected none (typically, after having received the `onError` or `onComplete` signals).
 In such cases, the unexpected element is "dropped", passed to the `onNextDropped` hook.
 If you have types that need cleanup, you must detect these in the `onNextDropped` hook and implement cleanup code there as well.
 

@@ -283,7 +283,7 @@ NOTE: When both global debugging and local `checkpoint()` are enabled, checkpoin
 snapshot stacks are appended as suppressed error output after the observing operator
 graph and following the same declarative order.
 
-== Logging a Stream
+== Logging a sequence
 In addition to stack trace debugging and analysis, another powerful tool to have in your
 toolkit is the ability to trace and log events in an asynchronous sequence.
 
@@ -302,6 +302,10 @@ The Console fallback uses `System.err` for the `WARN` and `ERROR` log levels and
 
 If you prefer a JDK `java.util.logging` fallback, as in 3.0.x, you can get it by setting
 the `reactor.logging.fallback` System property to `JDK`.
+
+In all cases, when logging in production **you should take care to configure the
+underlying logging framework to use its most asynchronous and non-blocking approach**.
+For instance, an `AsyncAppender` in logback or `AsyncLogger` in Log4j 2.
 ****
 
 For instance, suppose we have _logback_ activated and configured and a chain like
@@ -339,7 +343,7 @@ characters, the actual event gets printed. Here we get an `onSubscribe` call, an
 `onSubscribe`, we get the implementation of the `Subscriber`, which usually corresponds
 to the operator-specific implementation. Between square brackets, we get additional
 information, including whether the operator can be automatically optimized via
-synchronous or asynchronous fusion (see the appendix on <<microfusion>>).
+synchronous or asynchronous fusion.
 <2> On the second line, we can see that an unbounded request was propagated up from
 downstream.
 <3> Then the range sends three values in a row.

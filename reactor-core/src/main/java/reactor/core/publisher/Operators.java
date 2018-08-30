@@ -223,9 +223,9 @@ public abstract class Operators {
 	 * Use {@link #liftPublisher(Predicate, BiFunction)} instead for that kind of use case.
 	 *
 	 * <p>
-	 *     The function will be invoked only if the passed {@link Predicate} matches.
-	 *     Therefore the transformed type O must be the same than the input type since
-	 *     unmatched predicate will return the applied {@link Publisher}.
+	 * The function will be invoked only if the passed {@link Predicate} matches.
+	 * Therefore the transformed type O must be the same than the input type since
+	 * unmatched predicate will return the applied {@link Publisher}.
 	 *
 	 * @param filter the predicate to match taking {@link Scannable} from the applied
 	 * publisher to operate on. Assumes original is scan-compatible.
@@ -275,13 +275,13 @@ public abstract class Operators {
 	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
 	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
 	 * and works with the raw {@link Publisher} as input, which is useful if you need to
-	 * 	 * detect the precise type of the source (eg. instanceof checks to detect Mono, Flux,
-	 * 	 * true Scannable, etc...).
+	 * detect the precise type of the source (eg. instanceof checks to detect Mono, Flux,
+	 * true Scannable, etc...).
 	 *
 	 * <p>
-	 *     The function will be invoked only if the passed {@link Predicate} matches.
-	 *     Therefore the transformed type O must be the same than the input type since
-	 *     unmatched predicate will return the applied {@link Publisher}.
+	 * The function will be invoked only if the passed {@link Predicate} matches.
+	 * Therefore the transformed type O must be the same than the input type since
+	 * unmatched predicate will return the applied {@link Publisher}.
 	 *
 	 * @param filter the {@link Predicate} that the raw {@link Publisher} must pass for
 	 * the transformation to occur
