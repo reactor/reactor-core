@@ -2550,37 +2550,37 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
-	 * the returned {@link Flux} every {@code timespan}.
+	 * the returned {@link Flux} every {@code bufferingTimespan}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
 	 *
 	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
-	 * @param timespan the duration from buffer creation until a buffer is closed and emitted
+	 * @param bufferingTimespan the duration from buffer creation until a buffer is closed and emitted
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given time span
 	 */
-	public final Flux<List<T>> buffer(Duration timespan) {
-		return buffer(timespan, Schedulers.parallel());
+	public final Flux<List<T>> buffer(Duration bufferingTimespan) {
+		return buffer(bufferingTimespan, Schedulers.parallel());
 	}
 
 	/**
 	 * Collect incoming values into multiple {@link List} buffers created at a given
-	 * {@code timeshift} period. Each buffer will last until the {@code timespan} has elapsed,
+	 * {@code openBufferEvery} period. Each buffer will last until the {@code bufferingTimespan} has elapsed,
 	 * thus emitting the bucket in the resulting {@link Flux}.
 	 * <p>
-	 * When timespan < timeshift : dropping buffers
+	 * When bufferingTimespan < openBufferEvery : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timespan > timeshift : overlapping buffers
+	 * When bufferingTimespan > openBufferEvery : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timespan == timeshift : exact buffers
+	 * When bufferingTimespan == openBufferEvery : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
@@ -2589,50 +2589,50 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * It DOES NOT provide strong guarantees in the case of overlapping buffers, as elements
 	 * might get discarded too early (from the first of two overlapping buffers for instance).
 	 *
-	 * @param timespan the duration from buffer creation until a buffer is closed and emitted
-	 * @param timeshift the interval at which to create a new buffer
+	 * @param bufferingTimespan the duration from buffer creation until a buffer is closed and emitted
+	 * @param openBufferEvery the interval at which to create a new buffer
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
+	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period openBufferEvery and sized by bufferingTimespan
 	 */
-	public final Flux<List<T>> buffer(Duration timespan, Duration timeshift) {
-		return buffer(timespan, timeshift, Schedulers.parallel());
+	public final Flux<List<T>> buffer(Duration bufferingTimespan, Duration openBufferEvery) {
+		return buffer(bufferingTimespan, openBufferEvery, Schedulers.parallel());
 	}
 
 	/**
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
-	 * the returned {@link Flux} every {@code timespan}, as measured on the provided {@link Scheduler}.
+	 * the returned {@link Flux} every {@code bufferingTimespan}, as measured on the provided {@link Scheduler}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
 	 *
 	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
-	 * @param timespan the duration from buffer creation until a buffer is closed and emitted
+	 * @param bufferingTimespan the duration from buffer creation until a buffer is closed and emitted
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
 	 */
-	public final Flux<List<T>> buffer(Duration timespan, Scheduler timer) {
-		return buffer(interval(timespan, timer));
+	public final Flux<List<T>> buffer(Duration bufferingTimespan, Scheduler timer) {
+		return buffer(interval(bufferingTimespan, timer));
 	}
 
 	/**
 	 * Collect incoming values into multiple {@link List} buffers created at a given
-	 * {@code timeshift} period, as measured on the provided {@link Scheduler}. Each
-	 * buffer will last until the {@code timespan} has elapsed (also measured on the scheduler),
+	 * {@code openBufferEvery} period, as measured on the provided {@link Scheduler}. Each
+	 * buffer will last until the {@code bufferingTimespan} has elapsed (also measured on the scheduler),
 	 * thus emitting the bucket in the resulting {@link Flux}.
 	 * <p>
-	 * When timespan < timeshift : dropping buffers
+	 * When bufferingTimespan < openBufferEvery : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timespan > timeshift : overlapping buffers
+	 * When bufferingTimespan > openBufferEvery : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timespan == timeshift : exact buffers
+	 * When bufferingTimespan == openBufferEvery : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
@@ -2641,24 +2641,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * It DOES NOT provide strong guarantees in the case of overlapping buffers, as elements
 	 * might get discarded too early (from the first of two overlapping buffers for instance).
 	 *
-	 * @param timespan the duration from buffer creation until a buffer is closed and emitted
-	 * @param timeshift the interval at which to create a new buffer
+	 * @param bufferingTimespan the duration from buffer creation until a buffer is closed and emitted
+	 * @param openBufferEvery the interval at which to create a new buffer
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
+	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period openBufferEvery and sized by bufferingTimespan
 	 */
-	public final Flux<List<T>> buffer(Duration timespan, Duration timeshift, Scheduler timer) {
-		if (timespan.equals(timeshift)) {
-			return buffer(timespan, timer);
+	public final Flux<List<T>> buffer(Duration bufferingTimespan, Duration openBufferEvery, Scheduler timer) {
+		if (bufferingTimespan.equals(openBufferEvery)) {
+			return buffer(bufferingTimespan, timer);
 		}
-		return bufferWhen(interval(Duration.ZERO, timeshift, timer), aLong -> Mono
-				.delay(timespan, timer));
+		return bufferWhen(interval(Duration.ZERO, openBufferEvery, timer), aLong -> Mono
+				.delay(bufferingTimespan, timer));
 	}
 
 	/**
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted
 	 * by the returned {@link Flux} each time the buffer reaches a maximum size OR the
-	 * timespan {@link Duration} elapses.
+	 * maxTime {@link Duration} elapses.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespansize.png"
 	 * alt="">
@@ -2666,18 +2666,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the max collected size
-	 * @param timespan the timeout enforcing the release of a partial buffer
+	 * @param maxTime the timeout enforcing the release of a partial buffer
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan) {
-		return bufferTimeout(maxSize, timespan, listSupplier());
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime) {
+		return bufferTimeout(maxSize, maxTime, listSupplier());
 	}
 
 	/**
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
-	 * size OR the timespan {@link Duration} elapses.
+	 * size OR the maxTime {@link Duration} elapses.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespansize.png"
 	 * alt="">
@@ -2685,20 +2685,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the max collected size
-	 * @param timespan the timeout enforcing the release of a partial buffer
+	 * @param maxTime the timeout enforcing the release of a partial buffer
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
-	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan, Supplier<C> bufferSupplier) {
-		return bufferTimeout(maxSize, timespan, Schedulers.parallel(),
+	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime, Supplier<C> bufferSupplier) {
+		return bufferTimeout(maxSize, maxTime, Schedulers.parallel(),
 				bufferSupplier);
 	}
 
 	/**
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted
 	 * by the returned {@link Flux} each time the buffer reaches a maximum size OR the
-	 * timespan {@link Duration} elapses, as measured on the provided {@link Scheduler}.
+	 * maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespansize.png"
 	 * alt="">
@@ -2706,19 +2706,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the max collected size
-	 * @param timespan the timeout enforcing the release of a partial buffer
+	 * @param maxTime the timeout enforcing the release of a partial buffer
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan, Scheduler timer) {
-		return bufferTimeout(maxSize, timespan, timer, listSupplier());
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime, Scheduler timer) {
+		return bufferTimeout(maxSize, maxTime, timer, listSupplier());
 	}
 
 	/**
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
-	 * size OR the timespan {@link Duration} elapses, as measured on the provided {@link Scheduler}.
+	 * size OR the maxTime {@link Duration} elapses, as measured on the provided {@link Scheduler}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/buffertimespansize.png"
 	 * alt="">
@@ -2726,15 +2726,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the max collected size
-	 * @param timespan the timeout enforcing the release of a partial buffer
+	 * @param maxTime the timeout enforcing the release of a partial buffer
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
 	 * @param <C> the {@link Collection} buffer type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
-	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan,
+	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
 			Scheduler timer, Supplier<C> bufferSupplier) {
-		return onAssembly(new FluxBufferTimeout<>(this, maxSize, timespan.toMillis(), timer, bufferSupplier));
+		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toMillis(), timer, bufferSupplier));
 	}
 
 	/**
@@ -8539,7 +8539,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Split this {@link Flux} sequence into continuous, non-overlapping windows that open
-	 * for a {@code timespan} {@link Duration} (as measured on the {@link Schedulers#parallel() parallel}
+	 * for a {@code windowingTimespan} {@link Duration} (as measured on the {@link Schedulers#parallel() parallel}
 	 * Scheduler).
 	 *
 	 * <p>
@@ -8548,31 +8548,31 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
-	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
+	 * @param windowingTimespan the {@link Duration} to delimit {@link Flux} windows
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
 	 */
-	public final Flux<Flux<T>> window(Duration timespan) {
-		return window(timespan, Schedulers.parallel());
+	public final Flux<Flux<T>> window(Duration windowingTimespan) {
+		return window(windowingTimespan, Schedulers.parallel());
 	}
 
 	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that open
-	 * for a given {@code timespan} {@link Duration}, after which it closes with onComplete.
+	 * for a given {@code windowingTimespan} {@link Duration}, after which it closes with onComplete.
 	 * Each window is opened at a regular {@code timeShift} interval, starting from the
 	 * first item.
 	 * Both durations are measured on the {@link Schedulers#parallel() parallel} Scheduler.
 	 *
 	 * <p>
-	 * When timespan < timeshift : dropping windows
+	 * When windowingTimespan < openWindowEvery : dropping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When timespan > timeshift : overlapping windows
+	 * When windowingTimespan > openWindowEvery : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>
-	 * When timespan == timeshift : exact windows
+	 * When windowingTimespan == openWindowEvery : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
@@ -8580,20 +8580,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
 	 *
-	 * @param timespan the maximum {@link Flux} window {@link Duration}
-	 * @param timeshift the period of time at which to create new {@link Flux} windows
+	 * @param windowingTimespan the maximum {@link Flux} window {@link Duration}
+	 * @param openWindowEvery the period of time at which to create new {@link Flux} windows
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
 	 * closed after a {@link Duration}
 	 *
 	 */
-	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
-		return window(timespan, timeshift, Schedulers.parallel());
+	public final Flux<Flux<T>> window(Duration windowingTimespan, Duration openWindowEvery) {
+		return window(windowingTimespan, openWindowEvery, Schedulers.parallel());
 	}
 
 	/**
 	 * Split this {@link Flux} sequence into continuous, non-overlapping windows that open
-	 * for a {@code timespan} {@link Duration} (as measured on the provided {@link Scheduler}).
+	 * for a {@code windowingTimespan} {@link Duration} (as measured on the provided {@link Scheduler}).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowtimespan.png" alt="">
@@ -8601,32 +8601,32 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal.
 	 *
-	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
+	 * @param windowingTimespan the {@link Duration} to delimit {@link Flux} windows
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
 	 */
-	public final Flux<Flux<T>> window(Duration timespan, Scheduler timer) {
-		return window(interval(timespan, timer));
+	public final Flux<Flux<T>> window(Duration windowingTimespan, Scheduler timer) {
+		return window(interval(windowingTimespan, timer));
 	}
 
 	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that open
-	 * for a given {@code timespan} {@link Duration}, after which it closes with onComplete.
+	 * for a given {@code windowingTimespan} {@link Duration}, after which it closes with onComplete.
 	 * Each window is opened at a regular {@code timeShift} interval, starting from the
 	 * first item.
 	 * Both durations are measured on the provided {@link Scheduler}.
 	 *
 	 * <p>
-	 * When timespan < timeshift : dropping windows
+	 * When windowingTimespan < openWindowEvery : dropping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When timespan > timeshift : overlapping windows
+	 * When windowingTimespan > openWindowEvery : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>
-	 * When timeshift == timeshift : exact windows
+	 * When openWindowEvery == openWindowEvery : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
@@ -8634,18 +8634,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The exact window and dropping window variants bot discard elements they internally queued for backpressure
 	 * upon cancellation or error triggered by a data signal. The dropping window variant also discards elements in between windows.
 	 *
-	 * @param timespan the maximum {@link Flux} window {@link Duration}
-	 * @param timeshift the period of time at which to create new {@link Flux} windows
+	 * @param windowingTimespan the maximum {@link Flux} window {@link Duration}
+	 * @param openWindowEvery the period of time at which to create new {@link Flux} windows
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
 	 * closed after a {@link Duration}
 	 */
-	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift, Scheduler timer) {
-		if (timeshift.equals(timespan)) {
-			return window(timespan);
+	public final Flux<Flux<T>> window(Duration windowingTimespan, Duration openWindowEvery, Scheduler timer) {
+		if (openWindowEvery.equals(windowingTimespan)) {
+			return window(windowingTimespan);
 		}
-		return windowWhen(interval(Duration.ZERO, timeshift, timer), aLong -> Mono.delay(timespan, timer));
+		return windowWhen(interval(Duration.ZERO, openWindowEvery, timer), aLong -> Mono.delay(windowingTimespan, timer));
 	}
 
 	/**
@@ -8662,12 +8662,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the maximum number of items to emit in the window before closing it
-	 * @param timespan the maximum {@link Duration} since the window was opened before closing it
+	 * @param maxTime the maximum {@link Duration} since the window was opened before closing it
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
-	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan) {
-		return windowTimeout(maxSize, timespan , Schedulers.parallel());
+	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime) {
+		return windowTimeout(maxSize, maxTime , Schedulers.parallel());
 	}
 
 	/**
@@ -8684,13 +8684,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * upon cancellation or error triggered by a data signal.
 	 *
 	 * @param maxSize the maximum number of items to emit in the window before closing it
-	 * @param timespan the maximum {@link Duration} since the window was opened before closing it
+	 * @param maxTime the maximum {@link Duration} since the window was opened before closing it
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
-	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, Scheduler timer) {
-		return onAssembly(new FluxWindowTimeout<>(this, maxSize, timespan.toMillis(), timer));
+	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime, Scheduler timer) {
+		return onAssembly(new FluxWindowTimeout<>(this, maxSize, maxTime.toMillis(), timer));
 	}
 
 	/**
