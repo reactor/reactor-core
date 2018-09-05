@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoPeekTest {
 
@@ -151,5 +153,16 @@ public class MonoPeekTest {
 		Mono<String> mp = Mono.just("test");
 		mp.doOnSuccess(null)
 		  .subscribe();
+	}
+
+	@Test
+	public void testErrorWithDoOnSuccess() {
+		assertThatExceptionOfType(RuntimeException.class)
+				.isThrownBy(() ->
+						Mono.error(new NullPointerException("boom"))
+						    .doOnSuccess(aValue -> {})
+						    .subscribe())
+				.withCauseInstanceOf(NullPointerException.class)
+				.matches(Exceptions::isErrorCallbackNotImplemented, "ErrorCallbackNotImplemented");
 	}
 }
