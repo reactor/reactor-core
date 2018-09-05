@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -257,9 +257,11 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 			}
 			done = true;
 
-			if (!valued && parent.onTerminateCall != null) {
+			BiConsumer<? super T, Throwable> onTerminate = parent.onTerminateCall;
+
+			if (!valued && onTerminate != null) {
 				try {
-					parent.onTerminateCall.accept(null, t);
+					onTerminate.accept(null, t);
 				}
 				catch (Throwable e) {
 					t = Operators.onOperatorError(null, e, t, actual.currentContext());
@@ -270,7 +272,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (!Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
+				if (onTerminate == null ||
+						!Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
