@@ -103,6 +103,7 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 				return;
 			}
 			collection = null;
+			Operators.onDiscardMultiple(c, currentContext());
 			actual.onError(t);
 		}
 
@@ -119,6 +120,8 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 
 		@Override
 		public void cancel() {
+			//specific discard of the collection
+			Operators.onDiscardMultiple(collection, currentContext());
 			super.cancel();
 			s.cancel();
 		}
