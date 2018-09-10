@@ -318,6 +318,9 @@ public abstract class Hooks {
 	 * updating a context-local discard hook.
 	 */
 	static final <R> Function<Context, Context> discardLocalAdapter(Class<R> type, Consumer<? super R> discardHook) {
+		Objects.requireNonNull(type, "onDiscard must be based on a type");
+		Objects.requireNonNull(type, "onDiscard must be provided a discardHook Consumer");
+
 		final Consumer<Object> safeConsumer = obj -> {
 			if (type.isInstance(obj)) {
 				discardHook.accept(type.cast(obj));
