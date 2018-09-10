@@ -90,6 +90,44 @@ public class FluxTests extends AbstractReactorTest {
 	static final String2Integer STRING_2_INTEGER = new String2Integer();
 
 	@Test
+	public void discardLocalMultipleFilters() {
+		AtomicInteger discardNumberCount = new AtomicInteger();
+		AtomicInteger discardStringCount = new AtomicInteger();
+
+		StepVerifier.create(Flux.range(1, 12)
+		                        .hide() //hide both avoid the fuseable AND tryOnNext usage
+		                        .filter(i -> i % 2 == 0)
+		                        .map(String::valueOf)
+		                        .filter(s -> s.length() < 2)
+		                        .doOnDiscard(Number.class, i -> discardNumberCount.incrementAndGet())
+		                        .doOnDiscard(String.class, i -> discardStringCount.incrementAndGet())
+		)
+		            .expectNext("2", "4", "6", "8")
+		            .expectComplete()
+		            .verify();
+
+		Assertions.assertThat(discardNumberCount).hasValue(6); //1 3 5 7 9 11
+		Assertions.assertThat(discardStringCount).hasValue(2); //10 12
+	}
+
+	@Test
+	public void discardLocalOrder() {
+		List<String> discardOrder = Collections.synchronizedList(new ArrayList<>(2));
+
+		StepVerifier.create(Flux.range(1, 2)
+		                        .hide() //hide both avoid the fuseable AND tryOnNext usage
+		                        .filter(i -> i % 2 == 0)
+		                        .doOnDiscard(Number.class, i -> discardOrder.add("FIRST"))
+		                        .doOnDiscard(Integer.class, i -> discardOrder.add("SECOND"))
+		)
+		            .expectNext(2)
+		            .expectComplete()
+		            .verify();
+
+		Assertions.assertThat(discardOrder).containsExactly("FIRST", "SECOND");
+	}
+
+	@Test
 	public void delayErrorConcatMapVsFlatMap() {
 		Function<Integer, Flux<String>> mapFunction = i -> {
 			char c = (char) ('A' + i);
