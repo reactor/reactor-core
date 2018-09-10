@@ -47,6 +47,7 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 /**
  * @author Stephane Maldini
@@ -963,6 +964,16 @@ public class HooksTest {
 		finally {
 			Hooks.resetOnNextDropped();
 		}
+	}
+
+	@Test
+	public void discardAdapterRejectsNull() {
+		assertThatNullPointerException().isThrownBy(() -> Hooks.discardLocalAdapter(null, obj -> {}))
+		                                .as("type null check")
+		                                .withMessage("onDiscard must be based on a type");
+		assertThatNullPointerException().isThrownBy(() -> Hooks.discardLocalAdapter(String.class, null))
+		                                .as("discardHook null check")
+		                                .withMessage("onDiscard must be provided a discardHook Consumer");
 	}
 
 	@Test
