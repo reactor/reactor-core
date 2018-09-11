@@ -980,9 +980,9 @@ In very specific cases, your application may deal with types that necessitate so
 This is an advanced scenario, for example when you have _reference counted_ objects or when you're dealing with _off heap_ objects.
 Netty's `ByteBuf` is a prime example of both.
 
-In order to ensure proper cleanup of such objects, you need to accommodate for it in all of the following hooks (see <<hooks>>):
+In order to ensure proper cleanup of such objects, you need to accommodate for it on a `Flux`-by-`Flux` basis, as well as in several of the global hooks (see <<hooks>>):
 
- * The `onDiscard` hook
+ * The `doOnDiscard` `Flux`/`Mono` operator
  * The `onOperatorError` hook
  * The `onNextDropped` hook
  * Operator-specific handlers
@@ -990,21 +990,23 @@ In order to ensure proper cleanup of such objects, you need to accommodate for i
 This is needed because each hook is made with a specific subset of cleanup in mind, and users might want ie. to implement specific error handling logic in addition to cleanup logic within `onOperatorError`.
 
 Note that some operators are less adapted to dealing with objects that need cleanup.
-For example, `bufferWhen` can introduce overlapping buffers, and that means that the hooks above might see a first buffer as being discarded and cleanup an element in it that is in a second buffer _which is still valid_.
+For example, `bufferWhen` can introduce overlapping buffers, and that means that the discard "local hook" above might see a first buffer as being discarded and cleanup an element in it that is in a second buffer _which is still valid_.
 
 IMPORTANT: For the purpose of cleaning up, **all these hooks MUST be IDEMPOTENT**.
 They might on some occasions get applied several times to the same object.
-The hooks are also dealing with instances that can be any `Object`, and it is up to the user's implementation to distinguish between which instances need cleanup and which don't.
+Unlike the `doOnDiscard` operator, which performs a class `instanceOf` check, the global hooks are also dealing with instances that can be any `Object` and it is up to the user's implementation to distinguish between which instances need cleanup and which don't.
 
 
-=== The `onDiscard` hook
+=== The `doOnDiscard` operator / local hook
 
 This hook has been specifically put in place for cleanup of objects that would otherwise never be exposed to user code.
 It is intended as a cleanup hook for flows that operate under normal circumstances (ie. not malformed sources that push too many items, which is covered by `onNextDropped`).
 
+It is local, in the sense that it is activated through an operator and only applies to a given `Flux` or `Mono`.
+
 Obvious cases include operators that filter elements from upstream.
 These elements never reach the next operator (or final subscriber), but this is part of the normal path of execution.
-As such, they are passed to the `onDiscard` hook.
+As such, they are passed to the `doOnDiscard` hook.
 For example:
 
  * `filter`: items that don't match the filter are considered "discarded"
@@ -1012,12 +1014,11 @@ For example:
  * `buffer(maxSize, skip)` with `maxSize < skip`: "dropping buffer", items in between buffers are discarded
  * ...
 
-But `onDiscard` is not limited to filtering operators, and is also used by operators that internally queue data for backpressure purposes.
+But `doOnDiscard` is not limited to filtering operators, and is also used by operators that internally queue data for backpressure purposes.
 More specifically, most of the time this is important during cancellation: an operator that prefetches data from its source and later drains to its subscriber upon demand could have un-emitted data when it gets cancelled.
-Such operators use the `onDiscard` hook during cancellation to clear up their internal backpressure `Queue`.
+Such operators use the `doOnDiscard` hook during cancellation to clear up their internal backpressure `Queue`.
 
-TIP: The global hook also has a `Flux`/`Mono`-local version. By using `doOnDiscard`, specifying a `Class` to take into account, one can set up discard hook that are specific to a given sequence.
-These hooks are also additive, but only visible and used by operators upstream of the call to `onDiscard(Class, Consumer)`.
+WARNING: Each call to `doOnDiscard(Class, Consumer)` is additive with the others, to the extent that it is only visible and used by operators upstream of it.
 
 === The `onOperatorError` hook
 

@@ -51,7 +51,6 @@ public class HooksTestStaticInit {
 //		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
-		Hooks.resetOnDiscard();
 	}
 
 	@Test

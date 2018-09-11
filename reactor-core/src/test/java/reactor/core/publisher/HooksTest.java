@@ -29,7 +29,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 
-import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,9 +44,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Stephane Maldini
@@ -62,7 +59,6 @@ public class HooksTest {
 //		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
-		Hooks.resetOnDiscard();
 	}
 
 	void simpleFlux(){

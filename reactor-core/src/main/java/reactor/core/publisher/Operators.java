@@ -318,11 +318,6 @@ public abstract class Operators {
 		return u;
 	}
 
-	@Nullable
-	private static Consumer<Object> localOrGlobalOnDiscardHook(Context context) {
-		return context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
-	}
-
 	/**
 	 * Invoke a (local or global) hook that processes elements that get discarded. This
 	 * includes elements that are dropped (for malformed sources), but also filtered out
@@ -340,7 +335,7 @@ public abstract class Operators {
 	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
 	 */
 	public static <T> void onDiscard(@Nullable T element, Context context) {
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (element != null && hook != null) {
 			try {
 				hook.accept(element);
@@ -374,7 +369,7 @@ public abstract class Operators {
 			return;
 		}
 
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook == null) {
 			queue.clear();
 			return;
@@ -414,7 +409,7 @@ public abstract class Operators {
    * @see #onDiscardQueueWithClear(Queue, Context, Function)
    */
   public static void onDiscardMultiple(Stream<?> multiple, Context context) {
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
 				multiple.forEach(hook);
@@ -438,7 +433,7 @@ public abstract class Operators {
    */
 	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
 		if (multiple == null) return;
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
 				multiple.forEach(hook);
