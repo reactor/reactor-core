@@ -1016,6 +1016,9 @@ But `onDiscard` is not limited to filtering operators, and is also used by opera
 More specifically, most of the time this is important during cancellation: an operator that prefetches data from its source and later drains to its subscriber upon demand could have un-emitted data when it gets cancelled.
 Such operators use the `onDiscard` hook during cancellation to clear up their internal backpressure `Queue`.
 
+TIP: The global hook also has a `Flux`/`Mono`-local version. By using `doOnDiscard`, specifying a `Class` to take into account, one can set up discard hook that are specific to a given sequence.
+These hooks are also additive, but only visible and used by operators upstream of the call to `onDiscard(Class, Consumer)`.
+
 === The `onOperatorError` hook
 
 The `onOperatorError` hook is intended to modify errors in a transverse manner (similar to an AOP catch-and-rethrow).
