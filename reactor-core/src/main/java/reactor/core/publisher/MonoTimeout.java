@@ -22,6 +22,8 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 
+import static reactor.core.publisher.FluxTimeout.addNameToTimeoutDescription;
+
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item generated
  * Publisher source fires an item or completes before the next item arrives from the main
@@ -67,7 +69,8 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		FluxTimeout.TimeoutMainSubscriber<T, V> main =
-				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other, timeoutDescription);
+				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other,
+						addNameToTimeoutDescription(source, timeoutDescription));
 
 		serial.onSubscribe(main);
 
