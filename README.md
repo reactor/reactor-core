@@ -121,7 +121,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 
 [ParallelFlux](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/ParallelFlux.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
  tasks. Turn back into a `Flux` with `ParallelFlux#sequential()`, an unordered join or
- use abitrary merge strategies via 'groups()'.
+ use arbitrary merge strategies via 'groups()'.
 
 ```java
 Mono.fromCallable( () -> System.currentTimeMillis() )
