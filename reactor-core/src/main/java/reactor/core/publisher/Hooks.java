@@ -281,38 +281,6 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Create an adapter for local onDiscard hooks that check the element
-	 * being discarded is of a given {@link Class}. The resulting {@link Function} adds the
-	 * hook to the {@link Context}, potentially chaining it to an existing hook in the {@link Context}.
-	 *
-	 * @param type the type of elements to take into account
-	 * @param discardHook the discarding handler for this type of elements
-	 * @param <R> element type
-	 * @return a {@link Function} that can be used to modify a {@link Context}, adding or
-	 * updating a context-local discard hook.
-	 */
-	static final <R> Function<Context, Context> discardLocalAdapter(Class<R> type, Consumer<? super R> discardHook) {
-		Objects.requireNonNull(type, "onDiscard must be based on a type");
-		Objects.requireNonNull(discardHook, "onDiscard must be provided a discardHook Consumer");
-
-		final Consumer<Object> safeConsumer = obj -> {
-			if (type.isInstance(obj)) {
-				discardHook.accept(type.cast(obj));
-			}
-		};
-
-		return ctx -> {
-			Consumer<Object> consumer = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, null);
-			if (consumer == null) {
-				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer);
-			}
-			else {
-				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer.andThen(consumer));
-			}
-		};
-	}
-
-	/**
 	 * Resets {@link #resetOnNextDropped() onNextDropped hook(s)} and
 	 * apply a strategy of throwing {@link Exceptions#failWithCancel()} instead.
 	 * <p>
@@ -574,11 +542,13 @@ public abstract class Hooks {
 	 * hook in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
 	 */
 	static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
+
 	/**
 	 * A key that can be used to store a sequence-specific onDiscard(Consumer)
 	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Object&gt;}.
 	 */
-	public static final String KEY_ON_DISCARD = "reactor.onDiscard.local";
+	static final String KEY_ON_DISCARD = "reactor.onDiscard.local";
+
 	/**
 	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
 	 * hook THAT IS ONLY APPLIED TO Operators{@link Operators#onRejectedExecution(Throwable, Context) onRejectedExecution}
