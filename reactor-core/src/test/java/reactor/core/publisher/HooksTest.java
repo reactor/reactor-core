@@ -961,30 +961,4 @@ public class HooksTest {
 			Hooks.resetOnNextDropped();
 		}
 	}
-
-	@Test
-	public void discardAdapterRejectsNull() {
-		assertThatNullPointerException().isThrownBy(() -> Hooks.discardLocalAdapter(null, obj -> {}))
-		                                .as("type null check")
-		                                .withMessage("onDiscard must be based on a type");
-		assertThatNullPointerException().isThrownBy(() -> Hooks.discardLocalAdapter(String.class, null))
-		                                .as("discardHook null check")
-		                                .withMessage("onDiscard must be provided a discardHook Consumer");
-	}
-
-	@Test
-	public void discardAdapterIsAdditive() {
-		List<String> discardOrder = Collections.synchronizedList(new ArrayList<>(2));
-
-		Function<Context, Context> first = Hooks.discardLocalAdapter(Number.class, i -> discardOrder.add("FIRST"));
-		Function<Context, Context> second = Hooks.discardLocalAdapter(Integer.class, i -> discardOrder.add("SECOND"));
-
-		Context ctx = first.apply(second.apply(Context.empty()));
-		Consumer<Object> test = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, o -> {});
-
-		assertThat(test).isNotNull();
-
-		test.accept(1);
-		assertThat(discardOrder).as("consumers were combined").containsExactly("FIRST", "SECOND");
-	}
 }
