@@ -1094,60 +1094,33 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		}
 	}
 
-	@Test(timeout = 5000)
-	public void rejectedExecutionExceptionOnErrorSignalExecutorService()
-			throws InterruptedException {
-
+	@Test
+	public void rejectedExecutionExceptionOnErrorSignalExecutorService() {
 		Exception exception = new IllegalStateException();
 
-		final AtomicReference<Throwable> throwableInOnOperatorError =
-				new AtomicReference<>();
-		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+		ExecutorService executor = newCachedThreadPool();
+		CountDownLatch latch = new CountDownLatch(1);
 
-		try {
+		final Flux<Integer> flux = Flux.range(0, 5)
+		                               .publishOn(fromExecutorService(executor))
+		                               .doOnNext(s -> {
+			                               try {
+				                               latch.await();
+			                               }
+			                               catch (InterruptedException e) {
+				                               throw Exceptions.propagate(exception);
+			                               }
+		                               })
+		                               .publishOn(fromExecutorService(executor));
 
-			CountDownLatch hookLatch = new CountDownLatch(2);
-
-			Hooks.onOperatorError((t, d) -> {
-				throwableInOnOperatorError.set(t);
-				dataInOnOperatorError.set(d);
-				hookLatch.countDown();
-				return t;
-			});
-
-			ExecutorService executor = newCachedThreadPool();
-			CountDownLatch latch = new CountDownLatch(1);
-
-			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
-			Flux.range(0, 5)
-			    .publishOn(fromExecutorService(executor))
-			    .doOnNext(s -> {
-				    try {
-					    latch.await();
-				    }
-				    catch (InterruptedException e) {
-					    throw Exceptions.propagate(exception);
-				    }
-			    })
-			    .publishOn(fromExecutorService(executor))
-			    .subscribe(assertSubscriber);
-
-			executor.shutdownNow();
-
-			assertSubscriber.assertNoValues()
-			                .assertNoError()
-			                .assertNotComplete();
-
-			hookLatch.await();
-
-			Assert.assertThat(throwableInOnOperatorError.get(),
-					CoreMatchers.instanceOf(RejectedExecutionException.class));
-			Assert.assertSame(throwableInOnOperatorError.get()
-			                                            .getSuppressed()[0], exception);
-		}
-		finally {
-			Hooks.resetOnOperatorError();
-		}
+		StepVerifier.create(flux, 0)
+		            .expectSubscription()
+		            .then(executor::shutdownNow)
+		            .expectNextCount(0)
+		            .expectErrorMatches(throwable ->
+			                throwable instanceof RejectedExecutionException &&
+				            throwable.getSuppressed()[0] == exception)
+		            .verify(Duration.ofSeconds(5));
 	}
 
 	/**
