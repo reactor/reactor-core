@@ -177,7 +177,7 @@ public class MonoCollectListTest {
 	@Test
 	public void discardTryOnNextPredicateFail() {
 		List<Object> discarded = new ArrayList<>();
-		CoreSubscriber<Integer> actual = new AssertSubscriber<>(Operators.discardingContext(null, discarded::add));
+		CoreSubscriber<Integer> actual = new AssertSubscriber<>(Operators.enableOnDiscard(null, discarded::add));
 		FluxFilter.FilterSubscriber<Integer> subscriber =
 				new FluxFilter.FilterSubscriber<>(actual, i -> { throw new IllegalStateException("boom"); });
 		subscriber.onSubscribe(Operators.emptySubscription());
@@ -190,7 +190,7 @@ public class MonoCollectListTest {
 	@Test
 	public void discardTryOnNextPredicateMiss() {
 		List<Object> discarded = new ArrayList<>();
-		CoreSubscriber<Integer> actual = new AssertSubscriber<>(Operators.discardingContext(null, discarded::add));
+		CoreSubscriber<Integer> actual = new AssertSubscriber<>(Operators.enableOnDiscard(null, discarded::add));
 		FluxFilter.FilterSubscriber<Integer> subscriber =
 				new FluxFilter.FilterSubscriber<>(actual, i -> i % 2 == 0);
 		subscriber.onSubscribe(Operators.emptySubscription());
@@ -230,7 +230,7 @@ public class MonoCollectListTest {
 	public void discardConditionalTryOnNextPredicateFail() {
 		List<Object> discarded = new ArrayList<>();
 		Fuseable.ConditionalSubscriber<Integer> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<>(
-				Operators.discardingContext(null, discarded::add));
+				Operators.enableOnDiscard(null, discarded::add));
 
 		FluxFilter.FilterConditionalSubscriber<Integer> subscriber =
 				new FluxFilter.FilterConditionalSubscriber<>(actual, i -> {
@@ -247,7 +247,7 @@ public class MonoCollectListTest {
 	public void discardConditionalTryOnNextPredicateMiss() {
 		List<Object> discarded = new ArrayList<>();
 		Fuseable.ConditionalSubscriber<Integer> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<>(
-				Operators.discardingContext(null, discarded::add));
+				Operators.enableOnDiscard(null, discarded::add));
 
 		FluxFilter.FilterConditionalSubscriber<Integer> subscriber =
 				new FluxFilter.FilterConditionalSubscriber<>(actual, i -> i % 2 == 0);

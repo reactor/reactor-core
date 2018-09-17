@@ -359,7 +359,7 @@ public abstract class Operators {
 	 * @param discardConsumer
 	 * @return
 	 */
-	public static final Context discardingContext(@Nullable Context target, Consumer<?> discardConsumer) {
+	public static final Context enableOnDiscard(@Nullable Context target, Consumer<?> discardConsumer) {
 		Objects.requireNonNull(discardConsumer, "discardConsumer must be provided");
 		if (target == null) {
 			return Context.of(Hooks.KEY_ON_DISCARD, discardConsumer);

@@ -98,14 +98,14 @@ final class DefaultStepVerifierBuilder<T>
 			plugHooks();
 
 			Context userContext = verifierOptions.getInitialContext();
-			verifierOptions.withInitialContext(Operators.discardingContext(userContext, discardedElements::offer));
+			verifierOptions.withInitialContext(Operators.enableOnDiscard(userContext, discardedElements::offer));
 		}
 
 		public void plugHooksForSubscriber(DefaultVerifySubscriber<?> subscriber) {
 			plugHooks();
 
 			Context userContext = subscriber.initialContext;
-			subscriber.initialContext = Operators.discardingContext(userContext, discardedElements::offer);
+			subscriber.initialContext = Operators.enableOnDiscard(userContext, discardedElements::offer);
 		}
 
 		public void unplugHooks() {
