@@ -85,19 +85,31 @@ final class DefaultStepVerifierBuilder<T>
 		final Queue<Throwable>                                droppedErrors     = new ConcurrentLinkedQueue<>();
 		final Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors    = new ConcurrentLinkedQueue<>();
 
-		public void plugHooks() {
+		private void plugHooks() {
 			Hooks.onErrorDropped(droppedErrors::offer);
 			Hooks.onNextDropped(droppedElements::offer);
-			Hooks.onDiscard(discardedElements::offer);
 			Hooks.onOperatorError((t, d) -> {
 				operatorErrors.offer(Tuples.of(Optional.ofNullable(t), Optional.ofNullable(d)));
 				return t;
 			});
 		}
 
+		public void plugHooks(StepVerifierOptions verifierOptions) {
+			plugHooks();
+
+			Context userContext = verifierOptions.getInitialContext();
+			verifierOptions.withInitialContext(Operators.enableOnDiscard(userContext, discardedElements::offer));
+		}
+
+		public void plugHooksForSubscriber(DefaultVerifySubscriber<?> subscriber) {
+			plugHooks();
+
+			Context userContext = subscriber.initialContext;
+			subscriber.initialContext = Operators.enableOnDiscard(userContext, discardedElements::offer);
+		}
+
 		public void unplugHooks() {
 			Hooks.resetOnNextDropped();
-			Hooks.resetOnDiscard();
 			Hooks.resetOnErrorDropped();
 			Hooks.resetOnOperatorError();
 		}
@@ -740,7 +752,7 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Assertions verifyThenAssertThat(Duration duration) {
 			HookRecorder stepRecorder = new HookRecorder();
-			stepRecorder.plugHooks();
+			stepRecorder.plugHooks(parent.options);
 
 			try {
 				//trigger the verify
@@ -847,9 +859,9 @@ final class DefaultStepVerifierBuilder<T>
 		final int                           requestedFusionMode;
 		final int                           expectedFusionMode;
 		final long                          initialRequest;
-		final Context                       initialContext;
 		final VirtualTimeScheduler          virtualTimeScheduler;
 
+		Context                       initialContext;
 		@Nullable
 		Logger                        logger;
 		int                           establishedFusionMode;
@@ -1144,7 +1156,8 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Assertions verifyThenAssertThat(Duration duration) {
 			HookRecorder stepRecorder = new HookRecorder();
-			stepRecorder.plugHooks();
+			stepRecorder.plugHooksForSubscriber(this);
+
 			try {
 				//trigger the verify
 				Duration time = verify(duration);

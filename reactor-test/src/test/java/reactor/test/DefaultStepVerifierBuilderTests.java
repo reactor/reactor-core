@@ -41,7 +41,6 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 public class DefaultStepVerifierBuilderTests {
 
-
 	@Test
 	public void subscribedTwice() {
 		Flux<String> flux = Flux.just("foo", "bar");

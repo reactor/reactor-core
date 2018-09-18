@@ -29,7 +29,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 
-import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,9 +44,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Stephane Maldini
@@ -62,7 +59,6 @@ public class HooksTest {
 //		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
-		Hooks.resetOnDiscard();
 	}
 
 	void simpleFlux(){
@@ -964,31 +960,5 @@ public class HooksTest {
 		finally {
 			Hooks.resetOnNextDropped();
 		}
-	}
-
-	@Test
-	public void discardAdapterRejectsNull() {
-		assertThatNullPointerException().isThrownBy(() -> Hooks.discardLocalAdapter(null, obj -> {}))
-		                                .as("type null check")
-		                                .withMessage("onDiscard must be based on a type");
-		assertThatNullPointerException().isThrownBy(() -> Hooks.discardLocalAdapter(String.class, null))
-		                                .as("discardHook null check")
-		                                .withMessage("onDiscard must be provided a discardHook Consumer");
-	}
-
-	@Test
-	public void discardAdapterIsAdditive() {
-		List<String> discardOrder = Collections.synchronizedList(new ArrayList<>(2));
-
-		Function<Context, Context> first = Hooks.discardLocalAdapter(Number.class, i -> discardOrder.add("FIRST"));
-		Function<Context, Context> second = Hooks.discardLocalAdapter(Integer.class, i -> discardOrder.add("SECOND"));
-
-		Context ctx = first.apply(second.apply(Context.empty()));
-		Consumer<Object> test = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, o -> {});
-
-		assertThat(test).isNotNull();
-
-		test.accept(1);
-		assertThat(discardOrder).as("consumers were combined").containsExactly("FIRST", "SECOND");
 	}
 }

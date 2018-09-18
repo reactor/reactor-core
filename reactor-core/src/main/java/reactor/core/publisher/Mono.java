@@ -2011,7 +2011,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono} that cleans up matching elements that get discarded upstream of it.
 	 */
 	public final <R> Mono<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
-		return subscriberContext(Hooks.discardLocalAdapter(type, discardHook));
+		return subscriberContext(Operators.discardLocalAdapter(type, discardHook));
 	}
 
 	/**

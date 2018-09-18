@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,9 +36,9 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
@@ -1142,22 +1142,19 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void discardOnNextQueueReject() {
+		List<Object> discarded = new ArrayList<>();
+		AssertSubscriber<Object> discardSubscriber = new AssertSubscriber<>(
+				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+
 		final CoreSubscriber<Object> subscriber =
-				FluxConcatMap.subscriber(new LambdaSubscriber<>(null, e -> {}, null, null),
+				FluxConcatMap.subscriber(discardSubscriber,
 						Mono::just,
 						Queues.get(0),
 						1,
 						FluxConcatMap.ErrorMode.IMMEDIATE);
 		subscriber.onSubscribe(Operators.emptySubscription());
 
-		List<Object> discarded = new ArrayList<>();
-		Hooks.onDiscard(discarded::add);
-		try {
-			subscriber.onNext(1);
-		}
-		finally {
-			Hooks.resetOnDiscard();
-		}
+		subscriber.onNext(1);
 
 		assertThat(discarded).containsExactly(1);
 	}
@@ -1195,22 +1192,18 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void discardDelayedOnNextQueueReject() {
+		List<Object> discarded = new ArrayList<>();
+		AssertSubscriber<Object> testSubscriber = new AssertSubscriber<>(
+				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
 		final CoreSubscriber<Object> subscriber =
-				FluxConcatMap.subscriber(new LambdaSubscriber<>(null, e -> {}, null, null),
+				FluxConcatMap.subscriber(testSubscriber,
 						Mono::just,
 						Queues.get(0),
 						1,
 						FluxConcatMap.ErrorMode.END);
 		subscriber.onSubscribe(Operators.emptySubscription());
 
-		List<Object> discarded = new ArrayList<>();
-		Hooks.onDiscard(discarded::add);
-		try {
-			subscriber.onNext(1);
-		}
-		finally {
-			Hooks.resetOnDiscard();
-		}
+		subscriber.onNext(1);
 
 		assertThat(discarded).containsExactly(1);
 	}
