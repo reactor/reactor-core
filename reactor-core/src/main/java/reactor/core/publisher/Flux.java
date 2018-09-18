@@ -4108,7 +4108,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that cleans up matching elements that get discarded upstream of it.
 	 */
 	public final <R> Flux<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
-		return subscriberContext(Hooks.discardLocalAdapter(type, discardHook));
+		return subscriberContext(Operators.discardLocalAdapter(type, discardHook));
 	}
 
 	/**

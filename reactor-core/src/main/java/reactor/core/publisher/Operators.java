@@ -318,9 +318,53 @@ public abstract class Operators {
 		return u;
 	}
 
-	@Nullable
-	private static Consumer<Object> localOrGlobalOnDiscardHook(Context context) {
-		return context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
+	/**
+	 * Create an adapter for local onDiscard hooks that check the element
+	 * being discarded is of a given {@link Class}. The resulting {@link Function} adds the
+	 * hook to the {@link Context}, potentially chaining it to an existing hook in the {@link Context}.
+	 *
+	 * @param type the type of elements to take into account
+	 * @param discardHook the discarding handler for this type of elements
+	 * @param <R> element type
+	 * @return a {@link Function} that can be used to modify a {@link Context}, adding or
+	 * updating a context-local discard hook.
+	 */
+	static final <R> Function<Context, Context> discardLocalAdapter(Class<R> type, Consumer<? super R> discardHook) {
+		Objects.requireNonNull(type, "onDiscard must be based on a type");
+		Objects.requireNonNull(discardHook, "onDiscard must be provided a discardHook Consumer");
+
+		final Consumer<Object> safeConsumer = obj -> {
+			if (type.isInstance(obj)) {
+				discardHook.accept(type.cast(obj));
+			}
+		};
+
+		return ctx -> {
+			Consumer<Object> consumer = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+			if (consumer == null) {
+				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer);
+			}
+			else {
+				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer.andThen(consumer));
+			}
+		};
+	}
+
+	/**
+	 * Utility method to activate the onDiscard feature (see {@link Flux#doOnDiscard(Class, Consumer)})
+	 * in a target {@link Context}. Prefer using the {@link Flux} API, and reserve this for
+	 * testing purposes.
+	 *
+	 * @param target the original {@link Context}
+	 * @param discardConsumer
+	 * @return
+	 */
+	public static final Context enableOnDiscard(@Nullable Context target, Consumer<?> discardConsumer) {
+		Objects.requireNonNull(discardConsumer, "discardConsumer must be provided");
+		if (target == null) {
+			return Context.of(Hooks.KEY_ON_DISCARD, discardConsumer);
+		}
+		return target.put(Hooks.KEY_ON_DISCARD, discardConsumer);
 	}
 
 	/**
@@ -340,7 +384,7 @@ public abstract class Operators {
 	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
 	 */
 	public static <T> void onDiscard(@Nullable T element, Context context) {
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (element != null && hook != null) {
 			try {
 				hook.accept(element);
@@ -374,7 +418,7 @@ public abstract class Operators {
 			return;
 		}
 
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook == null) {
 			queue.clear();
 			return;
@@ -414,7 +458,7 @@ public abstract class Operators {
    * @see #onDiscardQueueWithClear(Queue, Context, Function)
    */
   public static void onDiscardMultiple(Stream<?> multiple, Context context) {
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
 				multiple.forEach(hook);
@@ -438,7 +482,7 @@ public abstract class Operators {
    */
 	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
 		if (multiple == null) return;
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
 				multiple.forEach(hook);
