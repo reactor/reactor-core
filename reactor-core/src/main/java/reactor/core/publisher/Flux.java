@@ -6540,7 +6540,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Reduce the values from this {@link Flux} sequence into an single object of the same
+	 * Reduce the values from this {@link Flux} sequence into a single object of the same
 	 * type than the emitted items. Reduction is performed using a {@link BiFunction} that
 	 * takes the intermediate result of the reduction and the current value and returns
 	 * the next intermediate value of the reduction. Note, {@link BiFunction} will not
@@ -6564,7 +6564,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Reduce the values from this {@link Flux} sequence into an single object matching the
+	 * Reduce the values from this {@link Flux} sequence into a single object matching the
 	 * type of a seed value. Reduction is performed using a {@link BiFunction} that
 	 * takes the intermediate result of the reduction and the current value and returns
 	 * the next intermediate value of the reduction. First element is paired with the seed
@@ -6585,7 +6585,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Reduce the values from this {@link Flux} sequence into an single object matching the
+	 * Reduce the values from this {@link Flux} sequence into a single object matching the
 	 * type of a lazily supplied seed value. Reduction is performed using a
 	 * {@link BiFunction} that takes the intermediate result of the reduction and the
 	 * current value and returns the next intermediate value of the reduction. First
