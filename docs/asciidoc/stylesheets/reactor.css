@@ -1220,9 +1220,12 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p {
     margin-bottom: 0;
 }
 
-.literalblock pre:not([class]), .listingblock pre:not([class]) {
-    background-color: #e6ffe6;
-}
+/*.literalblock .content pre.highlight, .listingblock .content pre.highlight {*/
+    /*background-color: #f1f8ec;*/
+/*}*/
+/*.literalblock pre:not([class]), .listingblock pre:not([class]) {*/
+    /*background-color: #f1f8ec;*/
+/*}*/
 
 .literalblock pre, .literalblock pre[class], .listingblock pre, .listingblock pre[class] {
     border-width: 1px;
@@ -1892,7 +1895,7 @@ span.icon > [class^="icon-"], span.icon > [class*=" icon-"] {
 .conum {
     display: inline-block;
     color: white !important;
-    background-color: #211306;
+    background-color: #6db33f;
     -webkit-border-radius: 100px;
     border-radius: 100px;
     text-align: center;
@@ -1959,10 +1962,6 @@ body {
     font-weight: bold;
 }
 
-.literalblock .content pre.highlight, .listingblock .content pre.highlight {
-    background-color: #e6ffe6;
-}
-
 .admonitionblock > table td.content {
     border-color: #e6dfd8;
 }
@@ -1973,7 +1972,7 @@ table.tableblock.grid-all {
 }
 
 #footer {
-    background-color: #while;
+    background-color: white;
     color: #34302d;
 }
 

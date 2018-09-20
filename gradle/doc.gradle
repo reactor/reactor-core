@@ -17,6 +17,7 @@ configure(rootProject) {
 	apply plugin: 'org.asciidoctor.convert'
 
 	asciidoctor {
+	  sourceDir "$rootDir/docs/asciidoc/"
 		sources {
 			include "index.asciidoc"
 		}
@@ -30,11 +31,13 @@ configure(rootProject) {
 				toc2: '',
 				'compat-mode': '',
 				'allow-uri-read': '',
-				imagesdir: "images",
+				imagesdir: "images/",
 				stylesdir: "stylesheets/",
 				stylesheet: 'reactor.css',
 				appversion: version,
-				'source-highlighter': 'coderay'
+				'source-highlighter': 'highlightjs',
+				'highlightjsdir': "$rootDir/docs/asciidoc/highlight/",
+				'highlightjs-theme': 'railscasts'
 
 		doLast {
 			file("$outputDir/pdf/index.pdf").renameTo ("$outputDir/pdf/reactor-core-reference-guide-${version}.pdf")
