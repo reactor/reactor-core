@@ -1624,7 +1624,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
 	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
 	 * @param ttlForEmpty the TTL-generating {@link Supplier} invoked when source is empty
-	 * @return
+	 * @return a replaying {@link Mono}
 	 */
 	public final Mono<T> cache(Function<? super T, Duration> ttlForValue,
 			Function<Throwable, Duration> ttlForError,

@@ -356,8 +356,8 @@ public abstract class Operators {
 	 * testing purposes.
 	 *
 	 * @param target the original {@link Context}
-	 * @param discardConsumer
-	 * @return
+	 * @param discardConsumer the consumer that will be used to cleanup discarded elements
+	 * @return a new {@link Context} that holds (potentially combined) cleanup {@link Consumer}
 	 */
 	public static final Context enableOnDiscard(@Nullable Context target, Consumer<?> discardConsumer) {
 		Objects.requireNonNull(discardConsumer, "discardConsumer must be provided");
