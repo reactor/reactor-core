@@ -17,9 +17,8 @@ body {
     color:#34302d;
 }
 
-
 .marble {
-    width: 500px;
+    max-width: 800px;
 }
 
 a:link, a:visited {
