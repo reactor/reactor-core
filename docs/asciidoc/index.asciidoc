@@ -1,0 +1,96 @@
+= Reactor 3 Reference Guide
+Stephane Maldini <https://twitter.com/smaldini[@smaldini]>; Simon Baslé <https://twitter.com/simonbasle[@simonbasle]>
+:appversion: 3.1.4.RELEASE
+ifndef::host-github[:ext-relative: {outfilesuffix}]
+{appversion}
+:doctype: book
+:icons: font
+:toc:
+:sectnums:
+:sectanchors:
+:linkattrs:
+
+include::aboutDoc.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/aboutDoc.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<about-doc>>"
+endif::[]
+
+include::gettingStarted.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/gettingStarted.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<getting-started>>"
+endif::[]
+
+include::reactiveProgramming.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/reactiveProgramming.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<intro-reactive>>"
+endif::[]
+
+include::coreFeatures.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/coreFeatures.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<core-features>>"
+endif::[]
+
+//TODO see other sections from consuming.adoc
+
+include::kotlin.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/kotlin.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<kotlin>>"
+endif::[]
+
+include::testing.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/testing.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<testing>>"
+endif::[]
+
+include::debugging.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/debugging.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<debugging>>"
+endif::[]
+
+include::advancedFeatures.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/advancedFeatures.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<advanced>>"
+endif::[]
+
+
+[appendix]
+include::apdx-operatorChoice.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/apdx-operatorChoice.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<which-operator>>"
+endif::[]
+
+[appendix]
+include::faq.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/faq.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<faq>>"
+endif::[]
+
+[appendix]
+include::apdx-reactorExtra.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/apdx-reactorExtra.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<reactor-extra>>"
+endif::[]
+
+//TODO later add appendices about internals, writing operators, fusion
+//[appendix]
+//include::apdx-implem.adoc[]
+//
+//[appendix]
+//include::apdx-writingOperator.adoc[]
+//[appendix]
+//include::apdx-optimizations.adoc[]
+
+//TODO later add appendix about migrating from RxJava?
+//[appendix]
+//include::apdx-migrating.adoc[]

@@ -17,7 +17,7 @@ copy contains this Copyright Notice, whether distributed in print or electronica
 The reference guide is written in
 http://asciidoctor.org/docs/asciidoc-writers-guide/[Asciidoc]
 format and sources can be found at
-https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc.
+https://github.com/reactor/reactor-core/tree/master/docs/asciidoc.
 
 If you have an improvement, we will be happy to get a pull request from you!
 
@@ -30,7 +30,7 @@ ifeval::["{backend}" == "html5"]
 TIP: To facilitate documentation edits, most sections have a link at the end that opens
 an edit UI directly on GitHub for the main source file for that section. These links are
 only present in the HTML5 version of this reference guide. They look like the following
-link:https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/aboutDoc.adoc[Suggest Edit^, role="fa fa-edit"] to <<about-doc>>.
+link:https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/aboutDoc.adoc[Suggest Edit^, role="fa fa-edit"] to <<about-doc>>.
 endif::[]
 
 == Getting Help
@@ -45,7 +45,7 @@ essential features) and http://github.com/reactor/reactor-addons/issues[reactor-
 (which covers reactor-test and adapters issues).
 
 NOTE: All of Reactor is open source,
-https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc[including this
+https://github.com/reactor/reactor-core/tree/master/docs/asciidoc[including this
 documentation]. If you find problems with the docs or if you just want to improve them,
 please https://github.com/reactor/reactor-core/blob/master/CONTRIBUTING.md[get involved].
 

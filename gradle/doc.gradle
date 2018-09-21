@@ -30,8 +30,9 @@ configure(rootProject) {
 				toc2: '',
 				'compat-mode': '',
 				'allow-uri-read': '',
+				imagesdir: "images",
 				stylesdir: "stylesheets/",
-				stylesheet: 'golo.css',
+				stylesheet: 'reactor.css',
 				appversion: version,
 				'source-highlighter': 'coderay'
 
@@ -44,7 +45,7 @@ configure(rootProject) {
 	  baseName = 'reactor-core-docs'
 	  from("$buildDir/reactor-code/build/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
 	  from("$buildDir/reactor-code/build/asciidoc/html5/index.html") { into("docs/") }
-	  from("$buildDir/reactor-code/build/asciidoc/html5/images") { into("images/") }
+	  from("$buildDir/reactor-code/build/asciidoc/html5/images") { into("docs/images/") }
 	}
 }
 
