@@ -47,8 +47,8 @@ import reactor.util.context.Context;
  *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/unicastprocessornormal.png" alt="">
  * </p>
  *
- * </br>
- * </br>
+ * <br>
+ * <br>
  *
  * <p>
  *      <b>Note: </b> UnicastProcessor does not respect the actual subscriber's
@@ -71,8 +71,8 @@ import reactor.util.context.Context;
  *      </p>
  * </p>
  *
- * </br>
- * </br>
+ * <br>
+ * <br>
  *
  * <p>
  *      <b>Note: </b> The implementation keeps the order of signals. That means that in

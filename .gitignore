@@ -21,3 +21,4 @@ exportToHtml
 .pmd
 .ruleset
 .rulesets
+svg-text-to-path/

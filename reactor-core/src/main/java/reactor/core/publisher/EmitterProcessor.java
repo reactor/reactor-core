@@ -42,11 +42,10 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * <p>
  * The default {@link #create} factories will only produce the new elements observed in
  * the parent sequence after a given {@link Subscriber} is subscribed.
+ * </p>
  * <p>
- * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/emitter.png"
- * alt="">
- * <p>
+ * <img class="marble" src="../../../../../../../src/docs/marble/optimized/emitterProcessor.svg" alt="">
+ * </p>
  *
  * @param <T> the input and output value type
  *

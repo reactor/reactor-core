@@ -37,12 +37,16 @@ import reactor.util.concurrent.WaitStrategy;
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with async event
  * loops.
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/topic.png" alt="">
+ * <img class="marble" src="../../../../../../../src/docs/marble/optimized/topicProcessorCreate.svg" alt="">
+ * </p>
  * <p>
  *  Created from {@link #share}, the {@link TopicProcessor} will authorize concurrent publishing (multi-producer)
  *  from its receiving side {@link Subscriber#onNext(Object)}.
  *  Additionally, any of the {@link TopicProcessor} will stop the event loop thread if an error occurs.
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/topics.png" alt="">
+ * </p>
+ * <p>
+ * <img class="marble" src="../../../../../../../src/docs/marble/optimized/topicProcessorShare.svg" alt="">
+ * </p>
  * <p>
  * The processor
  * respects the Reactive Streams contract and must not be signalled concurrently on any
@@ -63,6 +67,7 @@ import reactor.util.concurrent.WaitStrategy;
  * difference in processing rate between subscribers must remain. Since the sequence for
  * each subscriber will point to various ringBuffer locations, the processor knows when a
  * backlog can't override the previously occupied slot.
+ * </p>
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
@@ -75,7 +80,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * method:
 	 * <p>
 	 * {@code TopicProcessor<String> processor = TopicProcessor.<String>builder().build()}
-	 *
+	 * </p>
 	 * @param <T> Type of dispatched signal
 	 */
 	public final static class Builder<T> {
@@ -255,9 +260,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * <p>
 	 * A Shared Processor authorizes concurrent onNext calls and is suited for multi-threaded
 	 * publisher that will fan-in data.
+	 * </p>
 	 * <p>
 	 * A new Cached ThreadExecutorPool will be implicitly created and will use the passed
 	 * name to qualify the created threads.
+	 * </p>
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
@@ -387,7 +394,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	/**
 	 * Disruptor BatchEventProcessor port that deals with pending demand. <p> Convenience
 	 * class for handling the batching semantics of consuming entries from a {@link
-	 * reactor.core.publisher .rb.disruptor .RingBuffer}. <p>
+	 * reactor.core.publisher .rb.disruptor .RingBuffer}. </p>
 	 * @param <T> event implementation storing the data for sharing during exchange or
 	 * parallel coordination of an event.
 	 */
