@@ -197,7 +197,7 @@ writing our code like this:
 StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofDays(1)))
     .expectSubscription() // <1>
     .expectNoEvent(Duration.ofDays(1)) // <2>
-    .expectNext(0) // <3>
+    .expectNext(0L) // <3>
     .verifyComplete(); // <4>
 ----
 <1> See the <<tip-expectNoEvent,tip>> above.
