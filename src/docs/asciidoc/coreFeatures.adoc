@@ -243,9 +243,9 @@ chained in):
 
 [source,java]
 ----
-Scheduler s = Schedulers.newParallel(4); //<1>
+Scheduler s = Schedulers.newParallel("parallel-scheduler", 4); //<1>
 
-final Flux<Integer> flux = Flux
+final Flux<String> flux = Flux
     .range(1, 2)
     .map(i -> 10 + i)  //<2>
     .publishOn(s)  //<3>
@@ -273,9 +273,9 @@ NOTE: Only the earliest `subscribeOn` call in the chain is actually taken into a
 
 [source,java]
 ----
-Scheduler s = Schedulers.newParallel(4); //<1>
+Scheduler s = Schedulers.newParallel("parallel-scheduler", 4); //<1>
 
-final Flux<Integer> flux = Flux
+final Flux<String> flux = Flux
     .range(1, 2)
     .map(i -> 10 + i)  //<2>
     .subscribeOn(s)  //<3>
