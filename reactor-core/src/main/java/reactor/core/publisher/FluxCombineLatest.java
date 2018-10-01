@@ -155,14 +155,9 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, Scannab
 			Operators.complete(actual);
 			return;
 		}
-		if (n == 1) {
+		if (n == 1 && a[0] instanceof Fuseable) {
 			Function<T, R> f = t -> combiner.apply(new Object[]{t});
-			if (a[0] instanceof Fuseable) {
-				new FluxMapFuseable<>(from(a[0]), f).subscribe(actual);
-			}
-			else {
-				new FluxMap<>(from(a[0]), f).subscribe(actual);
-			}
+			new FluxMapFuseable<>(from(a[0]), f).subscribe(actual);
 			return;
 		}
 

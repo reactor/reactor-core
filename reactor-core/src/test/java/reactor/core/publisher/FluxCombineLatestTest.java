@@ -303,4 +303,28 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
+
+	@Test
+	public void singleSourceNormal() {
+		List<String> result = Flux.combineLatest(
+				Collections.singletonList(Flux.just(1, 2, 3).hide()),
+				(arr) -> arr[0].toString())
+		                          //the map is Fuseable and sees the combine as fuseable too
+		                          .map(x -> x + "!")
+		                          .collectList()
+		                          .block();
+		assertThat(result).containsExactly("1!", "2!", "3!");
+	}
+
+	@Test
+	public void singleSourceFused() {
+		List<String> result = Flux.combineLatest(
+				Collections.singletonList(Flux.just(1, 2, 3)),
+				(arr) -> arr[0].toString())
+		                          //the map is Fuseable and sees the combine as fuseable too
+		                          .map(x -> x + "!")
+		                          .collectList()
+		                          .block();
+		assertThat(result).containsExactly("1!", "2!", "3!");
+	}
 }
