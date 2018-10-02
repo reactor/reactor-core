@@ -22,11 +22,13 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -35,6 +37,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class FluxPublishTest extends FluxOperatorTest<String, String> {
@@ -615,33 +618,27 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
     //see https://github.com/reactor/reactor-core/issues/1290
     @Test
-    public void syncFusionSingle() throws Exception { //single value in the SYNC fusion
-	    CountDownLatch valueLatch = new CountDownLatch(1);
-	    CountDownLatch onCompleteLatch = new CountDownLatch(1);
+    public void syncFusionSingle() { //single value in the SYNC fusion
+	    final ConnectableFlux<String> publish = Flux.just("foo")
+	                                 .publish();
 
-	    Flux.just("foo")
-	        .doOnComplete(onCompleteLatch::countDown)
-	        .doOnNext(v -> valueLatch.countDown())
-	        .publish()
-	        .connect();
-
-	    assertThat(valueLatch.await(4, TimeUnit.SECONDS)).as("all values received").isTrue();
-	    assertThat(onCompleteLatch.await(4, TimeUnit.SECONDS)).as("completed").isTrue();
+		StepVerifier.create(publish)
+		            .then(publish::connect)
+		            .expectNext("foo")
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(4));
     }
 
     //see https://github.com/reactor/reactor-core/issues/1290
 	@Test
-	public void syncFusionMultiple() throws InterruptedException { //multiple values in the SYNC fusion
-		CountDownLatch valueLatch = new CountDownLatch(5);
-		CountDownLatch onCompleteLatch = new CountDownLatch(1);
+	public void syncFusionMultiple() { //multiple values in the SYNC fusion
+		final ConnectableFlux<Integer> publish = Flux.range(1, 5)
+		                                             .publish();
 
-		Flux.range(1, 5)
-		    .doOnComplete(onCompleteLatch::countDown)
-		    .doOnNext(v -> valueLatch.countDown())
-		    .publish()
-		    .connect();
-
-		assertThat(valueLatch.await(4, TimeUnit.SECONDS)).as("all values received").isTrue();
-		assertThat(onCompleteLatch.await(4, TimeUnit.SECONDS)).as("completed").isTrue();
+		StepVerifier.create(publish)
+		            .then(publish::connect)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(4));
 	}
 }

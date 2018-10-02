@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -46,15 +45,30 @@ import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static reactor.core.Scannable.Attr.CANCELLED;
-import static reactor.core.Scannable.Attr.TERMINATED;
-import static reactor.core.Scannable.Attr.*;
 import static reactor.core.Scannable.Attr;
+import static reactor.core.Scannable.Attr.*;
 
 /**
  * @author Stephane Maldini
  */
 public class EmitterProcessorTest {
+
+	//see https://github.com/reactor/reactor-core/issues/1364
+	@Test
+	public void subscribeWithSyncFusionUpstreamFirst() {
+		EmitterProcessor<String> processor = EmitterProcessor.create(16);
+
+		StepVerifier.create(
+				Mono.just("DATA")
+				    .subscribeWith(processor)
+				    .map(String::toLowerCase)
+		)
+		            .expectNext("data")
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(processor.blockFirst()).as("later subscription").isNull();
+	}
 
 	//see https://github.com/reactor/reactor-core/issues/1290
 	@Test
