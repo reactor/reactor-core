@@ -55,6 +55,7 @@ configure(rootProject) {
 	  from("$buildDir/reactor-code/build/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
 	  from("$buildDir/reactor-code/build/asciidoc/html5/index.html") { into("docs/") }
 	  from("$buildDir/reactor-code/build/asciidoc/html5/images") { into("docs/images/") }
+	  from("$buildDir/reactor-code/build/asciidoc/html5/highlight") { into("docs/highlight/") }
 	}
 }
 
