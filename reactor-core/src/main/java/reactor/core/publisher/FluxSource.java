@@ -19,7 +19,6 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
-import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -28,7 +27,6 @@ import reactor.util.annotation.Nullable;
  * @param <I> Upstream type
  */
 final class FluxSource<I> extends Flux<I> implements SourceProducer<I> {
-
 
 	final Publisher<? extends I> source;
 
@@ -44,7 +42,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I> {
 	/**
 	 * Default is simply delegating and decorating with {@link Flux} API. Note this
 	 * assumes an identity between input and output types.
-	 * @param actual
+	 * @param actual the core subscriber subscribing to this wrapper
 	 */
 	@Override
 	@SuppressWarnings("unchecked")

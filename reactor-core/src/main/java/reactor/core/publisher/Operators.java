@@ -319,6 +319,22 @@ public abstract class Operators {
 	}
 
 	/**
+	 * A way to safely extract hooks from a {@link Context}, even though said context
+	 * could be an {@link Context#unsupported(RuntimeException)} (which throws on most read
+	 * operations). The later is protected against by detecting empty contexts as a guard.
+	 *
+	 * @param context the {@link Context} in which to look for a hook
+	 * @param key the hook key
+	 * @param <HOOK> the hook type
+	 * @return the hook if any is stored in the {@link Context}
+	 */
+	@Nullable
+	static final <HOOK> HOOK safeGetHook(@Nullable Context context, Object key) {
+		if (context == null || context.isEmpty()) return null;
+		return context.getOrDefault(key, null);
+	}
+
+	/**
 	 * Create an adapter for local onDiscard hooks that check the element
 	 * being discarded is of a given {@link Class}. The resulting {@link Function} adds the
 	 * hook to the {@link Context}, potentially chaining it to an existing hook in the {@link Context}.
@@ -340,7 +356,7 @@ public abstract class Operators {
 		};
 
 		return ctx -> {
-			Consumer<Object> consumer = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+			Consumer<Object> consumer = safeGetHook(ctx, Hooks.KEY_ON_DISCARD);
 			if (consumer == null) {
 				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer);
 			}
@@ -384,7 +400,7 @@ public abstract class Operators {
 	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
 	 */
 	public static <T> void onDiscard(@Nullable T element, Context context) {
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = safeGetHook(context, Hooks.KEY_ON_DISCARD);
 		if (element != null && hook != null) {
 			try {
 				hook.accept(element);
@@ -418,7 +434,7 @@ public abstract class Operators {
 			return;
 		}
 
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = safeGetHook(context, Hooks.KEY_ON_DISCARD);
 		if (hook == null) {
 			queue.clear();
 			return;
@@ -458,7 +474,7 @@ public abstract class Operators {
    * @see #onDiscardQueueWithClear(Queue, Context, Function)
    */
   public static void onDiscardMultiple(Stream<?> multiple, Context context) {
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = safeGetHook(context, Hooks.KEY_ON_DISCARD);
 		if (hook != null) {
 			try {
 				multiple.forEach(hook);
@@ -482,7 +498,7 @@ public abstract class Operators {
    */
 	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
 		if (multiple == null) return;
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		Consumer<Object> hook = safeGetHook(context, Hooks.KEY_ON_DISCARD);
 		if (hook != null) {
 			try {
 				multiple.forEach(hook);
@@ -503,7 +519,7 @@ public abstract class Operators {
 	 * @param context a context that might hold a local error consumer
 	 */
 	public static void onErrorDropped(Throwable e, Context context) {
-		Consumer<? super Throwable> hook = context.getOrDefault(Hooks.KEY_ON_ERROR_DROPPED,null);
+		Consumer<? super Throwable> hook = safeGetHook(context, Hooks.KEY_ON_ERROR_DROPPED);
 		if (hook == null) {
 			hook = Hooks.onErrorDroppedHook;
 		}
@@ -527,7 +543,7 @@ public abstract class Operators {
 	public static <T> void onNextDropped(T t, Context context) {
 		Objects.requireNonNull(t, "onNext");
 		Objects.requireNonNull(context, "context");
-		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_NEXT_DROPPED, null);
+		Consumer<Object> hook = safeGetHook(context, Hooks.KEY_ON_NEXT_DROPPED);
 		if (hook == null) {
 			hook = Hooks.onNextDroppedHook;
 		}
@@ -598,7 +614,7 @@ public abstract class Operators {
 
 		Throwable t = Exceptions.unwrap(error);
 		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
-				context.getOrDefault(Hooks.KEY_ON_OPERATOR_ERROR, null);
+				safeGetHook(context, Hooks.KEY_ON_OPERATOR_ERROR);
 		if (hook == null) {
 			hook = Hooks.onOperatorErrorHook;
 		}
@@ -635,8 +651,8 @@ public abstract class Operators {
 	static final OnNextFailureStrategy onNextErrorStrategy(Context context) {
 		OnNextFailureStrategy strategy = null;
 
-		BiFunction<? super Throwable, Object, ? extends Throwable> fn = context.getOrDefault(
-				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, null);
+		BiFunction<? super Throwable, Object, ? extends Throwable> fn = safeGetHook(context, 
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY);
 		if (fn instanceof OnNextFailureStrategy) {
 			strategy = (OnNextFailureStrategy) fn;
 		} else if (fn != null) {

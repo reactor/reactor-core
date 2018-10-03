@@ -34,6 +34,7 @@ import reactor.util.context.Context;
 final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscription {
 
 	final Subscriber<? super T> actual;
+	final Context contextUnsupported;
 
 	volatile Subscription s;
 	@SuppressWarnings("rawtypes")
@@ -63,6 +64,7 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 
 	StrictSubscriber(Subscriber<? super T> actual) {
 		this.actual = actual;
+		this.contextUnsupported = Context.unsupported(new UnsupportedOperationException("Context is not supported by other reactive streams implementations"));
 	}
 
 	@Override
@@ -173,5 +175,10 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 		}
 
 		return null;
+	}
+
+	@Override
+	public Context currentContext() {
+		return contextUnsupported;
 	}
 }

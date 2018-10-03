@@ -136,6 +136,20 @@ public interface Context {
 	}
 
 	/**
+	 * Create a special empty {@link Context} that will reject reading operations with an
+	 * {@link UnsupportedOperationException}. Write operations are permitted and return a
+	 * new instance of {@link Context} that is now readable.
+	 *
+	 * @param errorCause a {@link RuntimeException} describing why {@link Context} read are
+	 * disallowed, used as the {@link Exception#getCause() cause} for the read operation
+	 * exceptions.
+	 * @return a {@link Context} that explicitly doesn't support any read operation.
+	 */
+	static Context unsupported(RuntimeException errorCause) {
+		return new ContextUnsupported(errorCause);
+	}
+
+	/**
 	 * Resolve a value given a key that exists within the {@link Context}, or throw
 	 * a {@link NoSuchElementException} if the key is not present.
 	 *

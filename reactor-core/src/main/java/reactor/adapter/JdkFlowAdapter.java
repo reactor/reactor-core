@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
+import reactor.util.context.Context;
 
 /**
  * Convert a Java 9+ {@literal Flow.Publisher} to/from a Reactive Streams {@link Publisher}.
@@ -90,11 +91,13 @@ public abstract class JdkFlowAdapter {
     private static class FlowSubscriber<T> implements CoreSubscriber<T>, Flow.Subscription {
 
 		private final Flow.Subscriber<? super T> subscriber;
+		private final Context                    contextUnsupported;
 
 		Subscription subscription;
 
 		public FlowSubscriber(Flow.Subscriber<? super T> subscriber) {
 			this.subscriber = subscriber;
+			this.contextUnsupported = Context.unsupported(new UnsupportedOperationException("Context Flow-to-Flux boundary"));
 		}
 
 		@Override
@@ -127,7 +130,12 @@ public abstract class JdkFlowAdapter {
 		public void cancel() {
 		    subscription.cancel();
 		}
-	}
+
+	    @Override
+	    public Context currentContext() {
+		    return contextUnsupported;
+	    }
+    }
 
 	private static class SubscriberToRS<T> implements Flow.Subscriber<T>, Subscription {
 
