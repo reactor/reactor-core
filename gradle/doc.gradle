@@ -18,10 +18,16 @@ configure(rootProject) {
 
 	asciidoctor {
 	  sourceDir "$rootDir/docs/asciidoc/"
-		sources {
-			include "index.asciidoc"
+	  sources {
+		include "index.asciidoc"
+	  }
+	  resources {
+		from(sourceDir) {
+		  include 'images/**'
+		  include 'highlight/**/*'
 		}
-		outputDir file("$buildDir/reactor-code/build/asciidoc")
+	  }
+	  outputDir file("$buildDir/reactor-code/build/asciidoc")
 	  backends = ['html5', 'pdf']
 		logDocuments = true
 		options = [
@@ -36,7 +42,7 @@ configure(rootProject) {
 				stylesheet: 'reactor.css',
 				appversion: version,
 				'source-highlighter': 'highlightjs',
-				'highlightjsdir': "$rootDir/docs/asciidoc/highlight/",
+				'highlightjsdir': "./highlight",
 				'highlightjs-theme': 'railscasts'
 
 		doLast {
