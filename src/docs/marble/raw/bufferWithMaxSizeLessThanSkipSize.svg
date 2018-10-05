@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   viewBox="20 5.901599 590.4742 351.0984"
+   width="590.4742"
+   height="351.0984"
+   id="svg187"
+   sodipodi:docname="bufferWithMaxSizeLessThanSkipSize.svg"
+   inkscape:version="0.92.3 (unknown)">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1056"
+     id="namedview189"
+     showgrid="false"
+     inkscape:zoom="1.4034977"
+     inkscape:cx="57.858969"
+     inkscape:cy="257.971"
+     inkscape:window-x="0"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg187" />
+  <defs
+     id="defs24">
+    <font-face
+       font-family="IBM Plex Sans"
+       font-size="24"
+       panose-1="2 11 9 2 3 0 4 2 2 3"
+       units-per-em="1000"
+       underline-position="-75.19531"
+       underline-thickness="49.80469"
+       slope="0"
+       x-height="501.46484"
+       cap-height="681.6406"
+       ascent="922.8516"
+       descent="-234.86328"
+       font-weight="700"
+       id="font-face2">
+      <font-face-src>
+        <font-face-name
+           name="IBMPlexSans-Bold" />
+      </font-face-src>
+    </font-face>
+    <font-face
+       font-family="IBM Plex Sans"
+       font-size="24"
+       panose-1="2 11 5 2 2 1 4 9 2 3"
+       units-per-em="1000"
+       underline-position="-75.19531"
+       underline-thickness="49.80469"
+       slope="-333.33333"
+       x-height="456.0547"
+       cap-height="686.5234"
+       ascent="909.1797"
+       descent="-229.98047"
+       font-style="italic"
+       font-weight="400"
+       id="font-face4">
+      <font-face-src>
+        <font-face-name
+           name="IBMPlexSans-Italic" />
+      </font-face-src>
+    </font-face>
+    <font-face
+       font-family="IBM Plex Sans"
+       font-size="24"
+       panose-1="2 11 5 2 2 1 4 2 2 3"
+       units-per-em="1000"
+       underline-position="-75.19531"
+       underline-thickness="49.80469"
+       slope="0"
+       x-height="449.70703"
+       cap-height="687.0117"
+       ascent="917.9688"
+       descent="-230.46875"
+       font-weight="400"
+       id="font-face6">
+      <font-face-src>
+        <font-face-name
+           name="IBMPlexSans" />
+      </font-face-src>
+    </font-face>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker"
+       stroke-linejoin="miter"
+       stroke-miterlimit="10"
+       viewBox="-1 -6 14 12"
+       markerWidth="14"
+       markerHeight="12"
+       color="#34302c">
+      <g
+         id="g10">
+        <path
+           d="M 12 0 L 0 -4.5 L 0 4.5 Z"
+           fill="currentColor"
+           stroke="currentColor"
+           stroke-width="1"
+           id="path8" />
+      </g>
+    </marker>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_2"
+       stroke-linejoin="miter"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       color="#34302c">
+      <g
+         id="g15">
+        <path
+           d="M 8.4 0 L 0 -3.15 L 0 3.15 Z"
+           fill="currentColor"
+           stroke="currentColor"
+           stroke-width="1"
+           id="path13" />
+      </g>
+    </marker>
+    <font-face
+       font-family="IBM Plex Sans"
+       font-size="16"
+       panose-1="2 11 5 2 2 1 4 2 2 3"
+       units-per-em="1000"
+       underline-position="-75.19531"
+       underline-thickness="49.80469"
+       slope="0"
+       x-height="449.70703"
+       cap-height="687.0117"
+       ascent="917.9688"
+       descent="-230.46875"
+       font-weight="400"
+       id="font-face18">
+      <font-face-src>
+        <font-face-name
+           name="IBMPlexSans" />
+      </font-face-src>
+    </font-face>
+    <font-face
+       font-family="IBM Plex Sans"
+       font-size="16"
+       panose-1="2 11 9 2 3 0 4 2 2 3"
+       units-per-em="1000"
+       underline-position="-75.19531"
+       underline-thickness="49.80469"
+       slope="0"
+       x-height="501.46484"
+       cap-height="681.6406"
+       ascent="922.8516"
+       descent="-234.86328"
+       font-weight="700"
+       id="font-face20">
+      <font-face-src>
+        <font-face-name
+           name="IBMPlexSans-Bold" />
+      </font-face-src>
+    </font-face>
+    <font-face
+       font-family="IBM Plex Sans"
+       font-size="10"
+       panose-1="2 11 6 0 4 5 2 2 2 4"
+       units-per-em="1000"
+       underline-position="-97.65625"
+       underline-thickness="48.828125"
+       slope="0"
+       x-height="530.27344"
+       cap-height="722.65625"
+       ascent="966.7969"
+       descent="-210.9375"
+       font-weight="400"
+       id="font-face22">
+      <font-face-src>
+        <font-face-name
+           name="IBMPlexSans" />
+      </font-face-src>
+    </font-face>
+    <marker
+       orient="auto"
+       overflow="visible"
+       markerUnits="strokeWidth"
+       id="FilledArrow_Marker_3-3"
+       stroke-miterlimit="10"
+       viewBox="-1 -5 11 10"
+       markerWidth="11"
+       markerHeight="10"
+       style="color:#45b8de;overflow:visible;stroke-linejoin:miter;stroke-miterlimit:10">
+      <g
+         id="g16-6">
+        <path
+           d="M 8.4,0 0,-3.15 v 6.3 z"
+           id="path14-7"
+           inkscape:connector-curvature="0"
+           style="fill:currentColor;stroke:currentColor;stroke-width:1" />
+      </g>
+    </marker>
+  </defs>
+  <metadata
+     id="metadata26"> Produced by OmniGraffle 7.7.1 
+    <dc:date>2018-07-08 21:34:36 +0000</dc:date>
+<rdf:RDF>
+  <cc:Work
+     rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type
+       rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+  </cc:Work>
+</rdf:RDF>
+</metadata>
+  <path
+     d="M 32.042105,165.51194 H 598.4321 c 0.53334,0 0.96575,0.44771 0.96575,1 v 65.12136 c 0,0.5523 -0.43241,1 -0.96575,1 H 32.042105 c -0.533372,0 -0.965754,-0.4477 -0.965754,-1 v -65.12136 c 0,-0.55229 0.432382,-1 0.965754,-1 z"
+     id="path34"
+     inkscape:connector-curvature="0"
+     style="fill:#ffffff;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#FilledArrow_Marker)"
+     id="line59"
+     y2="331"
+     x2="581.06787"
+     y1="331"
+     x1="24" />
+  <path
+     style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path62"
+     d="m 167.42075,306 h 57.39841 c 6.78941,0 12.29966,11.2 12.29966,25 0,13.8 -5.51025,25 -12.29966,25 h -57.39841 c -6.78941,0 -12.29965,-11.2 -12.29965,-25 0,-13.8 5.51024,-25 12.29965,-25 z" />
+  <path
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path64"
+     d="m 167.42075,306 h 57.39841 c 6.78941,0 12.29966,11.2 12.29966,25 0,13.8 -5.51025,25 -12.29966,25 h -57.39841 c -6.78941,0 -12.29965,-11.2 -12.29965,-25 0,-13.8 5.51024,-25 12.29965,-25 z" />
+  <path
+     style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path67"
+     d="m 498.216,306.9016 h 0.2173 c 1.10455,0 2,0.89543 2,2 v 44.1968 c 0,1.10457 -0.89545,2 -2,2 h -0.2173 c -1.1046,0 -2.00003,-0.89543 -2.00003,-2 v -44.1968 c 0,-1.10457 0.89543,-2 2.00003,-2 z" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#FilledArrow_Marker)"
+     id="line71"
+     y2="30"
+     x2="582.06787"
+     y1="30"
+     x1="25" />
+  <circle
+     style="fill:#6cb33e;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="circle74"
+     r="15.49859"
+     cy="30"
+     cx="126.16178" />
+  <circle
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="circle76"
+     r="15.49859"
+     cy="30"
+     cx="126.16178" />
+  <circle
+     style="fill:#e6ba31;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="circle79"
+     r="15.49859"
+     cy="30"
+     cx="195.72318" />
+  <circle
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="circle81"
+     r="15.49859"
+     cy="30"
+     cx="195.72318" />
+  <ellipse
+     style="fill:#45b8de;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse84"
+     ry="15.500025"
+     rx="14.500023"
+     cy="30"
+     cx="265.73099" />
+  <ellipse
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse86"
+     ry="15.500025"
+     rx="14.500023"
+     cy="30"
+     cx="265.73099" />
+  <path
+     style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path89"
+     d="m 495.3449,5.901599 h 0.2173 c 1.10457,0 2,0.89543 2,2 V 52.0984 c 0,1.10457 -0.89543,2 -2,2 h -0.2173 c -1.1046,0 -2,-0.89543 -2,-2 V 7.901599 c 0,-1.10457 0.8954,-2 2,-2 z" />
+  <ellipse
+     style="fill:#e739ce;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse92"
+     ry="15.500025"
+     rx="14.500023"
+     cy="30"
+     cx="335.20737" />
+  <ellipse
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse94"
+     ry="15.500025"
+     rx="14.500023"
+     cy="30"
+     cx="335.20737" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)"
+     id="line109"
+     y2="145.90146"
+     x2="496.56052"
+     y1="54.0984"
+     x1="495.45355" />
+  <circle
+     style="fill:#6cb33e;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="circle113"
+     r="15.49859"
+     cy="332"
+     cx="177.09869" />
+  <circle
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="circle115"
+     r="15.49859"
+     cy="332"
+     cx="177.09869" />
+  <circle
+     style="fill:#ff5a01;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="circle118"
+     r="15.49859"
+     cy="30"
+     cx="405.26331" />
+  <circle
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="circle120"
+     r="15.49859"
+     cy="30"
+     cx="405.26331" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)"
+     id="line126"
+     y2="285.39999"
+     x2="196.11658"
+     y1="232.6333"
+     x1="196.10789" />
+  <text
+     style="font-size:19.72185898px;fill:#797979;fill-opacity:1;stroke:none;stroke-width:1;stroke-dasharray:none;stroke-opacity:1"
+     id="text156"
+     x="39.229244"
+     y="152.03366">
+    <tspan
+       style="font-weight:400;font-size:10.66666698px;font-family:'IBM Plex Sans';fill:#797979;stroke-width:1"
+       id="tspan154"
+       y="211.19925"
+       x="39.229244"
+       font-weight="400"
+       font-size="10">R * skip</tspan>
+  </text>
+  <path
+     style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path159"
+     d="m 377.53403,306 h 57.39841 c 6.78941,0 12.29966,11.2 12.29966,25 0,13.8 -5.51025,25 -12.29966,25 h -57.39841 c -6.78943,0 -12.29966,-11.2 -12.29966,-25 0,-13.8 5.51023,-25 12.29966,-25 z" />
+  <path
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:connector-curvature="0"
+     id="path161"
+     d="m 377.53403,306 h 57.39841 c 6.78941,0 12.29966,11.2 12.29966,25 0,13.8 -5.51025,25 -12.29966,25 h -57.39841 c -6.78943,0 -12.29966,-11.2 -12.29966,-25 0,-13.8 5.51023,-25 12.29966,-25 z" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)"
+     id="line167"
+     y2="286.8027"
+     x2="498.11545"
+     y1="233.12137"
+     x1="497.55679" />
+  <circle
+     style="fill:#e6ba31;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="circle170"
+     r="15.49859"
+     cy="331"
+     cx="214.57916" />
+  <circle
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="circle172"
+     r="15.49859"
+     cy="331"
+     cx="214.57916" />
+  <circle
+     style="fill:#e739ce;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="circle175"
+     r="15.49859"
+     cy="331"
+     cx="388.48929" />
+  <circle
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="circle177"
+     r="15.49859"
+     cy="331"
+     cx="388.48929" />
+  <circle
+     style="fill:#ff5a01;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="circle180"
+     r="15.49859"
+     cy="331"
+     cx="423.52841" />
+  <circle
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     id="circle182"
+     r="15.49859"
+     cy="331"
+     cx="423.52841" />
+  <text
+     y="137.07184"
+     x="39.213974"
+     id="text898"
+     style="font-size:19.72185898px;fill:#797979;fill-opacity:1;stroke:none;stroke-width:1;stroke-dasharray:none;stroke-opacity:1">
+    <tspan
+       font-size="10"
+       font-weight="400"
+       x="39.213974"
+       y="196.23743"
+       id="tspan896"
+       style="font-weight:bold;font-size:10.66666698px;font-family:'IBM Plex Sans';fill:#797979;stroke-width:1">Upstream request count</tspan>
+  </text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32px;line-height:1.25;font-family:Concourse;-inkscape-font-specification:'Concourse, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="104.07566"
+     y="178.87358"
+     id="text920"><tspan
+       sodipodi:role="line"
+       id="tspan918"
+       x="104.07566"
+       y="206.61758" /></text>
+  <text
+     y="184.53662"
+     x="23.007271"
+     style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="text936">
+    <tspan
+       style="font-weight:700;font-size:24px;font-family:'IBM Plex Sans';fill:#34302c"
+       id="tspan924"
+       y="206.53662"
+       x="178.89085"
+       font-weight="700"
+       font-size="24">buffer (<tspan
+   style="font-weight:normal"
+   id="tspan938"><tspan
+   style="font-style:italic"
+   id="tspan940">maxSize</tspan>
+
+
+ = 2, <tspan
+   style="font-style:italic"
+   id="tspan942">skip</tspan>
+
+
+ = 3</tspan>
+
+
+)</tspan>
+  </text>
+  <line
+     style="fill:none;fill-opacity:1;stroke:#45b8de;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.99999998, 5.99999999;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_3-3)"
+     id="line1113"
+     y2="253.68694"
+     x2="68.507881"
+     y1="327.69528"
+     x1="68.61689" />
+  <text
+     style="fill:#45b8de;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
+     id="text91"
+     transform="rotate(-90)"
+     x="-326.71848"
+     y="46.889053">
+    <tspan
+       style="font-weight:400;font-size:14px;font-family:'IBM Plex Sans';fill:#45b8de"
+       id="tspan89"
+       y="59.889057"
+       x="-326.60617"
+       font-weight="400"
+       font-size="14">request(<tspan
+   style="font-weight:bold"
+   id="tspan1000">4</tspan>
+
+
+
+
+
+
+
+)</tspan>
+  </text>
+  <line
+     x1="68.61689"
+     y1="162.55789"
+     x2="68.507881"
+     y2="49.622288"
+     id="line1002"
+     style="fill:none;fill-opacity:1;stroke:#45b8de;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.00000002, 6.00000011;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_3-3)" />
+  <text
+     y="46.889053"
+     x="-158.71848"
+     transform="rotate(-90)"
+     id="text1008"
+     style="fill:#45b8de;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1">
+    <tspan
+       font-size="14"
+       font-weight="400"
+       x="-158.60617"
+       y="59.889057"
+       id="tspan1006"
+       style="font-weight:400;font-size:14px;font-family:'IBM Plex Sans';fill:#45b8de">request(<tspan
+   style="font-weight:bold"
+   id="tspan1010">12</tspan>
+
+
+
+
+
+
+
+)</tspan>
+  </text>
+  <line
+     x1="404.1684"
+     y1="47.68668"
+     x2="405.27536"
+     y2="145.90146"
+     id="line935"
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.00000004, 6.00000011;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.00000004, 6.00000011;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)"
+     id="line937"
+     y2="145.90146"
+     x2="335.21863"
+     y1="47.68668"
+     x1="334.11166" />
+  <line
+     x1="264.63528"
+     y1="47.68668"
+     x2="265.74225"
+     y2="145.90146"
+     id="line939"
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.00000004, 6.00000011;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)" />
+  <line
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.00000004, 6.00000011;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)"
+     id="line941"
+     y2="145.90146"
+     x2="195.73445"
+     y1="47.68668"
+     x1="194.62749" />
+  <line
+     x1="125.06609"
+     y1="47.68668"
+     x2="126.17305"
+     y2="145.90146"
+     id="line943"
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.00000004, 6.00000011;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)" />
+  <line
+     x1="406.22473"
+     y1="232.6333"
+     x2="406.2334"
+     y2="285.39999"
+     id="line945"
+     style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 6;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2)" />
+</svg>
