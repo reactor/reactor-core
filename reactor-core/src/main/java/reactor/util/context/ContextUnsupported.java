@@ -40,6 +40,16 @@ import reactor.util.annotation.Nullable;
  */
 final class ContextUnsupported implements Context {
 
+	static boolean isContextUnsupportedFatal;
+
+	static {
+		reload();
+	}
+
+	static void reload() {
+		isContextUnsupportedFatal = Boolean.parseBoolean(System.getProperty(CONTEXT_UNSUPPORTED_PROPERTY, "false")); //TODO 3.3 make fatal by default
+	}
+
 	private static final Logger LOGGER = Loggers.getLogger(ContextUnsupported.class);
 
 	private static final String ERROR_GET = "Context#get(Object) is not supported due to Context-incompatible element in the chain";

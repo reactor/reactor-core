@@ -41,8 +41,14 @@ import reactor.util.annotation.Nullable;
  */
 public interface Context {
 
+	@Deprecated
 	static boolean isContextUnsupportedFatal() {
-		return Boolean.parseBoolean(System.getProperty(CONTEXT_UNSUPPORTED_PROPERTY, "false")); //TODO 3.3 make fatal by default
+		return ContextUnsupported.isContextUnsupportedFatal;
+	}
+
+	@Deprecated
+	static void reloadFeatureFlag() {
+		ContextUnsupported.reload();
 	}
 
 	/**
@@ -149,7 +155,7 @@ public interface Context {
 	 * @return a {@link Context} that explicitly doesn't support any read operation.
 	 */
 	static Context unsupported(String reason) {
-		return new ContextUnsupported(reason, isContextUnsupportedFatal());
+		return new ContextUnsupported(reason, ContextUnsupported.isContextUnsupportedFatal);
 	}
 
 	/**

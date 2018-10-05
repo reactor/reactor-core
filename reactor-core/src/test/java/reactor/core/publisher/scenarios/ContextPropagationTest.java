@@ -42,11 +42,13 @@ public class ContextPropagationTest {
 	@Before
 	public void setFatal() {
 		System.setProperty(Context.CONTEXT_UNSUPPORTED_PROPERTY, "true");
+		Context.reloadFeatureFlag();
 	}
 
 	@After
 	public void resetFatal() {
 		System.clearProperty(Context.CONTEXT_UNSUPPORTED_PROPERTY);
+		Context.reloadFeatureFlag();
 	}
 
 	@Test
