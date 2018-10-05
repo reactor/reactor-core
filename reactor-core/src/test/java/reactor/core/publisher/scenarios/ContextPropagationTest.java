@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -37,10 +39,20 @@ import static org.assertj.core.api.Assertions.*;
 
 public class ContextPropagationTest {
 
+	@Before
+	public void setFatal() {
+		System.setProperty(Context.CONTEXT_UNSUPPORTED_PROPERTY, "true");
+	}
+
+	@After
+	public void resetFatal() {
+		System.clearProperty(Context.CONTEXT_UNSUPPORTED_PROPERTY);
+	}
+
 	@Test
 	public void operatorsHookResolutionIgnoresContextunsupported() {
-		RuntimeException cause = new RuntimeException("This simple test doesn't support Context");
-		Context unsupported = Context.unsupported(cause);
+		String message = "This simple test doesn't support Context";
+		Context unsupported = Context.unsupported(message);
 
 		assertThatCode(() -> {
 			Operators.enableOnDiscard(unsupported, v -> {});
@@ -86,7 +98,7 @@ public class ContextPropagationTest {
 		assertThat(nextRef).hasValue(null);
 		assertThat(endRef.get()).matches(Signal::isOnError);
 		assertThat(endRef.get().getThrowable()).satisfies(e -> assertThat(e)
-		                        .hasCause(new UnsupportedOperationException("Context is not supported by other reactive streams implementations"))
+		                        .hasCause(new RuntimeException("vanilla Reactive Streams Subscriber"))
 		                        .hasMessage("Context#getOrDefault is not supported due to Context-incompatible element in the chain"));
 	}
 

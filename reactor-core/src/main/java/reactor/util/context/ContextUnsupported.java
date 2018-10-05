@@ -17,11 +17,15 @@
 package reactor.util.context;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A {@link Context} that rejects ALL get operations with an error that traces back
@@ -36,11 +40,26 @@ import reactor.util.annotation.NonNull;
  */
 final class ContextUnsupported implements Context {
 
-	@NonNull
-	final RuntimeException traceback;
+	private static final Logger LOGGER = Loggers.getLogger(ContextUnsupported.class);
 
-	ContextUnsupported(@NonNull RuntimeException traceback) {
-		this.traceback = Objects.requireNonNull(traceback, "traceback required");
+	private static final String ERROR_GET = "Context#get(Object) is not supported due to Context-incompatible element in the chain";
+	private static final String ERROR_GETCLASS = "Context#get(Class) is not supported due to Context-incompatible element in the chain";
+	private static final String ERROR_GETORDEFAULT = "Context#getOrDefault is not supported due to Context-incompatible element in the chain";
+	private static final String ERROR_GETOREMPTY = "Context#getOrEmpty is not supported due to Context-incompatible element in the chain";
+	private static final String ERROR_STREAM = "Context#stream is not supported due to Context-incompatible element in the chain";
+
+	@NonNull
+	final String           reason;
+	final RuntimeException tracebackException;
+
+	ContextUnsupported(@NonNull String reason, boolean fatal) {
+		this.reason = Objects.requireNonNull(reason, "reason required");
+		if (fatal) {
+			this.tracebackException = new RuntimeException(reason);
+		}
+		else {
+			this.tracebackException = null;
+		}
 	}
 
 	@Override
@@ -55,32 +74,57 @@ final class ContextUnsupported implements Context {
 
 	@Override
 	public <T> T get(Object key) {
-		throw new UnsupportedOperationException("Context#get(Object) is not supported due to Context-incompatible element in the chain",
-				traceback);
+		if (tracebackException != null) {
+			throw new UnsupportedOperationException(ERROR_GET, tracebackException);
+		}
+		else {
+			LOGGER.error("{}: {}", ERROR_GET, reason);
+			throw new NoSuchElementException("Context is empty");
+		}
 	}
 
 	@Override
 	public <T> T get(Class<T> key) {
-		throw new UnsupportedOperationException("Context#get(Class) is not supported due to Context-incompatible element in the chain",
-				traceback);
+		if (tracebackException != null) {
+			throw new UnsupportedOperationException(ERROR_GETCLASS, tracebackException);
+		}
+		else {
+			LOGGER.error("{}: {}", ERROR_GETCLASS, reason);
+			throw new NoSuchElementException("Context does not contain a value of type "+key.getName());
+		}
 	}
 
-	@Override
-	public <T> T getOrDefault(Object key, T defaultValue) {
-		throw new UnsupportedOperationException("Context#getOrDefault is not supported due to Context-incompatible element in the chain",
-				traceback);
+	@Nullable@Override
+	public <T> T getOrDefault(Object key, @Nullable T defaultValue) {
+		if (tracebackException != null) {
+			throw new UnsupportedOperationException(ERROR_GETORDEFAULT, tracebackException);
+		}
+		else {
+			LOGGER.error("{}: {}", ERROR_GETORDEFAULT, reason);
+			return defaultValue;
+		}
 	}
 
 	@Override
 	public <T> Optional<T> getOrEmpty(Object key) {
-		throw new UnsupportedOperationException("Context#getOrEmpty is not supported due to Context-incompatible element in the chain",
-				traceback);
+		if (tracebackException != null) {
+			throw new UnsupportedOperationException(ERROR_GETOREMPTY, tracebackException);
+		}
+		else {
+			LOGGER.error("{}: {}", ERROR_GETOREMPTY, reason);
+			return Optional.empty();
+		}
 	}
 
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
-		throw new UnsupportedOperationException("Context#stream is not supported due to Context-incompatible element in the chain",
-				traceback);
+		if (tracebackException != null) {
+			throw new UnsupportedOperationException(ERROR_STREAM, tracebackException);
+		}
+		else {
+			LOGGER.error("{}: {}", ERROR_STREAM, reason);
+			return Stream.empty();
+		}
 	}
 
 	@Override

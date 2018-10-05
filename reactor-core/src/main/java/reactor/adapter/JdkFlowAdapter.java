@@ -97,7 +97,7 @@ public abstract class JdkFlowAdapter {
 
 		public FlowSubscriber(Flow.Subscriber<? super T> subscriber) {
 			this.subscriber = subscriber;
-			this.contextUnsupported = Context.unsupported(new UnsupportedOperationException("Context Flow-to-Flux boundary"));
+			this.contextUnsupported = Context.unsupported("java 8 Flow to Flux boundary");
 		}
 
 		@Override

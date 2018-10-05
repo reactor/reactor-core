@@ -64,7 +64,7 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 
 	StrictSubscriber(Subscriber<? super T> actual) {
 		this.actual = actual;
-		this.contextUnsupported = Context.unsupported(new UnsupportedOperationException("Context is not supported by other reactive streams implementations"));
+		this.contextUnsupported = Context.unsupported("vanilla Reactive Streams Subscriber");
 	}
 
 	@Override

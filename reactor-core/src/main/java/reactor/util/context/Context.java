@@ -41,6 +41,10 @@ import reactor.util.annotation.Nullable;
  */
 public interface Context {
 
+	static boolean isContextUnsupportedFatal() {
+		return Boolean.parseBoolean(System.getProperty(CONTEXT_UNSUPPORTED_PROPERTY, "false")); //TODO 3.3 make fatal by default
+	}
+
 	/**
 	 * Return an empty {@link Context}
 	 *
@@ -140,13 +144,12 @@ public interface Context {
 	 * {@link UnsupportedOperationException}. Write operations are permitted and return a
 	 * new instance of {@link Context} that is now readable.
 	 *
-	 * @param errorCause a {@link RuntimeException} describing why {@link Context} read are
-	 * disallowed, used as the {@link Exception#getCause() cause} for the read operation
-	 * exceptions.
+	 * @param reason a message describing why {@link Context} read are disallowed, used in
+	 * the {@link Exception#getCause() cause message} for the read operation exceptions.
 	 * @return a {@link Context} that explicitly doesn't support any read operation.
 	 */
-	static Context unsupported(RuntimeException errorCause) {
-		return new ContextUnsupported(errorCause);
+	static Context unsupported(String reason) {
+		return new ContextUnsupported(reason, isContextUnsupportedFatal());
 	}
 
 	/**
@@ -283,4 +286,6 @@ public interface Context {
 				            (c1, c2) -> { throw new UnsupportedOperationException("Context.putAll should not use a parallelized stream");}
 		            );
 	}
+
+	String CONTEXT_UNSUPPORTED_PROPERTY = "reactor.context.unsupported.isFatal";
 }
