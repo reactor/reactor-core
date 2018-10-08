@@ -39,10 +39,10 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
 
 /**
  * Replays all or the last N items to Subscribers.
+ *
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/emitterreplay.png"
- * alt="">
- * <p>
+ * <img class="marble" src="doc-files/marbles/replayProcessor.svg" alt="">
+ * </p>
  *
  * @param <T> the value type
  */
@@ -53,9 +53,10 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * Create a {@link ReplayProcessor} that caches the last element it has pushed,
 	 * replaying it to late subscribers. This is a buffer-based ReplayProcessor with
 	 * a history size of 1.
+	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/replaylast.png"
-	 * alt="">
+	 * <img class="marble" src="doc-files/marbles/replayProcessorCacheLast.svg" alt="">
+	 * </p>
 	 *
 	 * @param <T> the type of the pushed elements
 	 *
@@ -71,9 +72,10 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * replaying it to late subscribers. If a {@link Subscriber} comes in <b>before</b>
 	 * any value has been pushed, then the {@code defaultValue} is emitted instead. 
 	 * This is a buffer-based ReplayProcessor with a history size of 1.
+	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/replaylastd.png"
-	 * alt="">
+	 * <img class="marble" src="doc-files/marbles/replayProcessorCacheLastWithDefault.svg" alt="">
+	 * </p>
 	 *
 	 * @param value a default value to start the sequence with in case nothing has been
 	 * cached yet.
@@ -148,9 +150,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
 	 * item is then evicted by any subsequent item or termination signal, leaving the
 	 * buffer empty.
+	 * </p>
 	 * <p>
 	 * Once the processor is terminated, subscribers subscribing to it will receive items
 	 * that remained in the buffer after the terminal signal, regardless of their age.
+	 * </p>
 	 * <p>
 	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have an age less than the
@@ -158,13 +162,14 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * due to the time constraint in the mean time. In other words, once an subscriber
 	 * subscribes, it observes items without gaps in the sequence except for any outdated
 	 * items at the beginning of the sequence.
+	 * </p>
 	 * <p>
 	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
 	 * eviction as well. For example, with a max age of 5, the first item is observed at
 	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber subscribes
 	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
 	 * onCompleted} signal.
-	 *
+	 * </p>
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items
 	 *
@@ -183,9 +188,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
 	 * item is then evicted by any subsequent item or termination signal, leaving the
 	 * buffer empty.
+	 * </p>
 	 * <p>
 	 * Once the processor is terminated, subscribers subscribing to it will receive items
 	 * that remained in the buffer after the terminal signal, regardless of their age.
+	 * </p>
 	 * <p>
 	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have an age less than the
@@ -193,13 +200,14 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * due to the time constraint in the mean time. In other words, once an subscriber
 	 * subscribes, it observes items without gaps in the sequence except for any outdated
 	 * items at the beginning of the sequence.
+	 * </p>
 	 * <p>
 	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
 	 * eviction as well. For example, with a max age of 5, the first item is observed at
 	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber subscribes
 	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
 	 * onCompleted} signal.
-	 *
+	 * </p>
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items
 	 *
@@ -218,10 +226,12 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * {@code size} items in its internal buffer. It evicts items from the start of the
 	 * buffer if their age becomes less-than or equal to the supplied age in milliseconds
 	 * or the buffer reaches its {@code size} limit.
+	 * </p>
 	 * <p>
 	 * When subscribers subscribe to a terminated {@code ReplayProcessor}, they observe
 	 * the items that remained in the buffer after the terminal signal, regardless of
 	 * their age, but at most {@code size} items.
+	 * </p>
 	 * <p>
 	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have age less than the
@@ -229,13 +239,14 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * time constraint in the mean time. In other words, once an subscriber subscribes, it
 	 * observes items without gaps in the sequence except for the outdated items at the
 	 * beginning of the sequence.
+	 * </p>
 	 * <p>
 	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
 	 * eviction as well. For example, with a max age of 5, the first item is observed at
 	 * T=0, then an {@code onComplete} signal arrives at T=10. If an Subscriber subscribes
 	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
 	 * onCompleted} signal.
-	 *
+	 * </p>
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items
 	 * @param size the maximum number of buffered items
@@ -255,10 +266,12 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * {@code size} items in its internal buffer. It evicts items from the start of the
 	 * buffer if their age becomes less-than or equal to the supplied age in milliseconds
 	 * or the buffer reaches its {@code size} limit.
+	 * </p>
 	 * <p>
 	 * When subscribers subscribe to a terminated {@code ReplayProcessor}, they observe
 	 * the items that remained in the buffer after the terminal signal, regardless of
 	 * their age, but at most {@code size} items.
+	 * </p>
 	 * <p>
 	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have age less than the
@@ -266,13 +279,14 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * time constraint in the mean time. In other words, once an subscriber subscribes, it
 	 * observes items without gaps in the sequence except for the outdated items at the
 	 * beginning of the sequence.
+	 * </p>
 	 * <p>
 	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
 	 * eviction as well. For example, with a max age of 5, the first item is observed at
 	 * T=0, then an {@code onComplete} signal arrives at T=10. If an Subscriber subscribes
 	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
 	 * onCompleted} signal.
-	 *
+	 * </p>
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items in milliseconds
 	 * @param size the maximum number of buffered items

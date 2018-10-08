@@ -44,11 +44,9 @@ import reactor.util.context.Context;
  * publish on different threads.
  *
  * <p>
- *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/unicastprocessornormal.png" alt="">
+ * <img class="marble" src="doc-files/marbles/unicastProcessor.svg" alt="">
  * </p>
  *
- * </br>
- * </br>
  *
  * <p>
  *      <b>Note: </b> UnicastProcessor does not respect the actual subscriber's
@@ -66,21 +64,12 @@ import reactor.util.context.Context;
  *      UnicastProcessor will fail with signaling onError(
  *      {@link reactor.core.Exceptions.OverflowException}).
  *
- *      <p>
- *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/unicastprocessoroverflow.png" alt="">
- *      </p>
  * </p>
- *
- * </br>
- * </br>
  *
  * <p>
  *      <b>Note: </b> The implementation keeps the order of signals. That means that in
  *      case of terminal signal (completion or error signals) it will be postponed
  *      until all of the previous signals has been consumed.
- *      <p>
- *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/unicastprocessorterminal.png" alt="">
- *      </p>
  * </p>
  *
  * @param <T> the input and output type

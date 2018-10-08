@@ -917,8 +917,7 @@ public abstract class Operators {
 	 * Serialization uses thread-stealing and a potentially unbounded queue that might
 	 * starve a calling thread if races are too important and {@link Subscriber} is slower.
 	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/serialize.png" alt="">
+	 * TODO: ADD MARBLE DIAGRAM
 	 *
 	 * @param <T> the relayed type
 	 * @param subscriber the subscriber to serialize

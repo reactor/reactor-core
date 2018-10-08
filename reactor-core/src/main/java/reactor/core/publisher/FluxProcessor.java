@@ -48,7 +48,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * completed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/switchonnext.png" alt="">
+	 * <img class="marble" src="doc-files/marbles/fluxProcessorSwitchOnNext.svg" alt="">
+	 * </p>
 	 *
 	 * @param <T> the produced type
 	 * @return a {@link FluxProcessor} accepting publishers and producing T

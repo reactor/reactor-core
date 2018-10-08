@@ -35,11 +35,8 @@ import reactor.util.annotation.Nullable;
  * <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a> contract is
  * violated.
  * <p>
- *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/directprocessornormal.png" alt="">
+ * <img class="marble" src="doc-files/marbles/directProcessor.svg" alt="">
  * </p>
- *
- * </br>
- * </br>
  *
  * <p>
  *     <b>Note: </b> DirectProcessor does not coordinate backpressure between its
@@ -50,28 +47,10 @@ import reactor.util.annotation.Nullable;
  *     <i>{@link IllegalStateException}</i>.
  *     Hence in terms of interaction model, DirectProcessor only supports PUSH from the
  *     source through the processor to the Subscribers.
- *
- *     <p>
- *        <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/directprocessorerror.png" alt="">
- *     </p>
+ *     If there are no Subscribers, upstream items are dropped and only the terminal
+ *     events are retained. A terminated DirectProcessor will emit the terminal signal
+ *     to late subscribers.
  * </p>
- *
- * </br>
- * </br>
- *
- * <p>
- *      <b>Note: </b> If there are no Subscribers, upstream items are dropped and only
- *      the terminal events are retained. A terminated DirectProcessor will emit the
- *      terminal signal to late subscribers.
- *
- *      <p>
- *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/directprocessorterminal.png" alt="">
- *      </p>
- * </p>
- *
- * </br>
- * </br>
- *
  * <p>
  *      <b>Note: </b> The implementation ignores Subscriptions set via onSubscribe.
  * </p>
