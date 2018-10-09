@@ -8,8 +8,8 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
-   viewBox="20 78.80746 846.92923 445.01357"
-   width="846.9292"
+   viewBox="20 78.80746 850.71048 445.01357"
+   width="850.71045"
    height="445.01358"
    id="svg151"
    sodipodi:docname="mono.svg"
@@ -28,8 +28,8 @@
      id="namedview153"
      showgrid="false"
      inkscape:zoom="1.4034977"
-     inkscape:cx="365.00218"
-     inkscape:cy="164.54079"
+     inkscape:cx="431.97771"
+     inkscape:cy="164.54078"
      inkscape:window-x="0"
      inkscape:window-y="24"
      inkscape:window-maximized="1"
@@ -289,7 +289,7 @@
     <dc:format>image/svg+xml</dc:format>
     <dc:type
        rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-    <dc:title></dc:title>
+    <dc:title />
   </cc:Work>
 </rdf:RDF>
 </metadata>
@@ -301,7 +301,7 @@
      id="line1092"
      style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#FilledArrow_Marker-3)" />
   <path
-     d="m 291.09123,278.83619 h 319.93458 c 0.30127,0 0.54553,0.49662 0.54553,1.10925 v 72.23602 c 0,0.61264 -0.24426,1.10926 -0.54553,1.10926 H 291.09123 c -0.30128,0 -0.54551,-0.49662 -0.54551,-1.10926 v -72.23602 c 0,-0.61263 0.24423,-1.10925 0.54551,-1.10925 z"
+     d="m 291.09124,278.83619 h 319.93458 c 0.30127,0 0.54553,0.49662 0.54553,1.10925 v 72.23602 c 0,0.61264 -0.24426,1.10926 -0.54553,1.10926 H 291.09124 c -0.30128,0 -0.54551,-0.49662 -0.54551,-1.10926 v -72.23602 c 0,-0.61263 0.24423,-1.10925 0.54551,-1.10925 z"
      id="path37"
      inkscape:connector-curvature="0"
      style="fill:#ffffff;fill-opacity:1;stroke:#34302c;stroke-width:1.99999964;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1" />
@@ -316,7 +316,7 @@
      style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
      inkscape:connector-curvature="0"
      id="path70"
-     d="m 535.59756,160.69864 h 0.2173 c 1.1046,0 2,0.89544 2,2 v 44.1968 c 0,1.10457 -0.8954,2 -2,2 h -0.2173 c -1.1046,0 -2,-0.89543 -2,-2 v -44.1968 c 0,-1.10456 0.8954,-2 2,-2 z" />
+     d="m 535.59757,160.69864 h 0.2173 c 1.1046,0 2,0.89544 2,2 v 44.1968 c 0,1.10457 -0.8954,2 -2,2 h -0.2173 c -1.1046,0 -2,-0.89543 -2,-2 v -44.1968 c 0,-1.10456 0.8954,-2 2,-2 z" />
   <ellipse
      style="fill:#6cb33e;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
      id="ellipse55"
@@ -341,7 +341,7 @@
   <text
      id="text41"
      style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
-     x="113.17391"
+     x="113.17392"
      y="300.78339">
     <tspan
        font-size="24"
@@ -412,7 +412,7 @@
      style="fill:none;fill-opacity:1;stroke:#34302c;stroke-width:1.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.99999995, 5.99999985;stroke-opacity:1;marker-end:url(#FilledArrow_Marker_2-5)" />
   <text
      y="74.783401"
-     x="-92.968147"
+     x="-92.96814"
      style="fill:#34302c;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
      id="text1102">
     <tspan
@@ -434,12 +434,12 @@
      style="fill:#ef2200;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
      inkscape:connector-curvature="0"
      id="path1034"
-     d="m 424.02967,440.61354 -2.32243,2.33041 c -0.77971,0.78238 -2.04604,0.78456 -2.82843,0.005 0,0 0,0 0,0 l -31.24701,-31.14 c -0.78238,-0.77971 -0.78456,-2.04604 -0.005,-2.82842 0,0 0,0 0,0 l 2.3224,-2.33041 c 0.7797,-0.78239 2.04604,-0.78456 2.82843,-0.005 l 31.24701,31.13999 c 0.78239,0.77972 0.78456,2.04604 0.005,2.82843 z" />
+     d="m 424.02968,440.61354 -2.32243,2.33041 c -0.77971,0.78238 -2.04604,0.78456 -2.82843,0.005 0,0 0,0 0,0 l -31.24701,-31.14 c -0.78238,-0.77971 -0.78456,-2.04604 -0.005,-2.82842 0,0 0,0 0,0 l 2.3224,-2.33041 c 0.7797,-0.78239 2.04604,-0.78456 2.82843,-0.005 l 31.24701,31.13999 c 0.78239,0.77972 0.78456,2.04604 0.005,2.82843 z" />
   <path
      style="fill:#ef2200;fill-opacity:1;stroke:none;stroke-dasharray:none;stroke-opacity:1"
      inkscape:connector-curvature="0"
      id="path1036"
-     d="m 421.64475,406.59562 2.33041,2.32243 c 0.78236,0.77971 0.78456,2.04603 0.005,2.82842 l -31.14003,31.24699 c -0.77971,0.78239 -2.04604,0.78456 -2.82842,0.005 0,0 0,0 0,0 l -2.33041,-2.32243 c -0.78239,-0.77971 -0.78454,-2.04604 -0.005,-2.82843 l 31.14,-31.24699 c 0.7797,-0.78238 2.04604,-0.78456 2.82843,-0.005 0,0 0,0 0,0 z" />
+     d="m 421.64476,406.59562 2.33041,2.32243 c 0.78236,0.77971 0.78456,2.04603 0.005,2.82842 l -31.14003,31.24699 c -0.77971,0.78239 -2.04604,0.78456 -2.82842,0.005 0,0 0,0 0,0 l -2.33041,-2.32243 c -0.78239,-0.77971 -0.78454,-2.04604 -0.005,-2.82843 l 31.14,-31.24699 c 0.7797,-0.78238 2.04604,-0.78456 2.82843,-0.005 0,0 0,0 0,0 z" />
   <text
      xml:space="preserve"
      style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;line-height:1.25;font-family:'IBM Plex Sans';-inkscape-font-specification:'IBM Plex Sans';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -470,12 +470,12 @@
        x="641.99622"
        y="347.93869"
        id="tspan1210"
-       style="fill:#34302c;fill-opacity:1">The text inside thebox shows</tspan><tspan
+       style="fill:#34302c;fill-opacity:1">The text inside the box shows</tspan><tspan
        sodipodi:role="line"
        x="641.99622"
        y="367.93869"
        id="tspan1212"
-       style="fill:#34302c;fill-opacity:1">the nature of thetransformation</tspan></text>
+       style="fill:#34302c;fill-opacity:1">the nature of the transformation</tspan></text>
   <text
      id="text1226"
      y="138.519"
@@ -544,5 +544,5 @@
        x="383.08942"
        y="520.62103"
        style="text-align:start;text-anchor:start;fill:#34302c;fill-opacity:1"
-       id="tspan1200">line isreplaced by an X</tspan></text>
+       id="tspan1200">line is replaced by an X</tspan></text>
 </svg>
