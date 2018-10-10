@@ -279,6 +279,22 @@ public class SignalLoggerTests {
 		verifyNoMoreInteractions(mockLogger);
 	}
 
+	@Test(expected = UnsupportedOperationException.class)
+	public void loggingDoesNotSwallowUnhandledExceptionsInFlux() {
+		Mono
+				.error(new UnsupportedOperationException())
+//				.log()
+				.subscribe();
+	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void loggingDoesNotSwallowUnhandledExceptionsInMono() {
+		Flux
+				.error(new UnsupportedOperationException())
+//				.log()
+				.subscribe();
+	}
+
 	private void demonstrateLogError() {
 		Loggers.getLogger("logError.default")
 		       .warn("The following logs should demonstrate similar error output, but respectively at ERROR, DEBUG and TRACE levels");
