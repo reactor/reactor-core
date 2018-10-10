@@ -554,11 +554,10 @@ pattern, shown below:
 try {
   return callExternalService(k);
 }
-catch {
+catch (RuntimeException error) {
   //make a record of the error
   log("uh oh, falling back, service failed for key " + k);
-  //recover from the error
-  return getFromCache(k);
+  throw error;
 }
 ----
 
@@ -566,8 +565,8 @@ The `doOnError` operator, as well as all operators prefixed with `doOn` , are so
 referred to as a "side-effect". They let you peek inside the sequence's events without
 modifying them.
 
-Like the imperative example above, the following example ensures that when we
-fallback to the cache, we at least log that the external service had a failure.
+Like the imperative example above, the following example still propagates the error yet
+ensures that we at least log that the external service had a failure.
 We can also imagine we have statistic counters to increment as a second error side-effect.
 
 [source,java]
@@ -580,12 +579,12 @@ Flux.just("unknown")
             failureStat.increment();
             log("uh oh, falling back, service failed for key " + k); // <2>
         })
-        .onErrorResume(e -> getFromCache(k)) // <3>
+        // <3>
     );
 ----
 <1> The external service call that can fail...
 <2> ...is decorated with a logging and stats side-effect...
-<3> ...and then protected with the cache fallback.
+<3> ...after which point it will still terminate with an error, unless we use an error-recovery operator here
 
 ==== Using Resources and the Finally Block
 The last parallel to draw with imperative programming is the cleaning up that can be done
