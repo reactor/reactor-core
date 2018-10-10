@@ -630,11 +630,10 @@ public class GuideTests {
 			    if (input < 3) return "tick " + input;
 			    throw new RuntimeException("boom");
 		    })
-		    .elapsed() // <1>
-		    .retry(1);
+		    .retry(1)
+		    .elapsed(); // <1>
 
-		flux.subscribe(System.out::println,
-				System.err::println); // <2>
+		flux.subscribe(System.out::println, System.err::println); // <2>
 
 		//Thread.sleep(2100); // <3>
 
