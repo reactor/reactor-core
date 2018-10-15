@@ -209,18 +209,18 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		@Override
 		public void onError(Throwable t) {
-			actual.onError(t);
 			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
 				parent.terminated(connection);
 			}
+			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			actual.onComplete();
 			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
 				parent.terminated(connection);
 			}
+			actual.onComplete();
 		}
 
 		@Override
