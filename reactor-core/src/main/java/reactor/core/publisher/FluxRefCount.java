@@ -190,14 +190,14 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		@Override
 		public void onError(Throwable t) {
-			actual.onError(t);
 			connection.upstreamFinished();
+			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			actual.onComplete();
 			connection.upstreamFinished();
+			actual.onComplete();
 		}
 
 		@Override

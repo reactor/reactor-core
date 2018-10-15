@@ -36,9 +36,62 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class FluxRefCountTest {
+
+	//see https://github.com/reactor/reactor-core/issues/1385
+	@Test
+	public void sizeOneCanRetry() {
+		AtomicInteger subCount = new AtomicInteger();
+
+		final Flux<Object> flux = Flux
+				.generate(() -> 0, (i, sink) -> {
+					if (i == 2)
+						sink.error(new RuntimeException("boom on subscribe #" + subCount.get()));
+					else {
+						sink.next(i);
+					}
+					return i + 1;
+				})
+				//we need to test with an async boundary
+				.subscribeOn(Schedulers.parallel())
+				.doOnSubscribe(s -> subCount.incrementAndGet());
+
+		StepVerifier.create(flux.publish()
+		                        .refCount(1)
+		                        .retry(1))
+		            .expectNext(0, 1, 0, 1)
+		            .expectErrorMessage("boom on subscribe #2")
+		            .verify(Duration.ofSeconds(1));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1385
+	@Test
+	public void sizeOneCanRepeat() {
+		AtomicInteger subCount = new AtomicInteger();
+
+		final Flux<Object> flux = Flux
+				.generate(() -> 0, (i, sink) -> {
+					if (i == 2)
+						sink.complete();
+					else {
+						sink.next(i);
+					}
+					return i + 1;
+				})
+				//we need to test with an async boundary
+				.subscribeOn(Schedulers.parallel())
+				.doOnSubscribe(s -> subCount.incrementAndGet());
+
+		StepVerifier.create(flux.publish()
+		                        .refCount(1)
+		                        .repeat(1))
+		            .expectNext(0, 1, 0, 1)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(subCount).hasValue(2);
+	}
 
 	//see https://github.com/reactor/reactor-core/issues/1260
 	@Test
