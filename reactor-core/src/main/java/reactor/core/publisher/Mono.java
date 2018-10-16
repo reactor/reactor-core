@@ -44,6 +44,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.Metrics;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
@@ -2803,7 +2804,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an instrumented {@link Mono}
 	 */
 	public final Mono<T> metrics() {
-		if (!FluxMetrics.isMicrometerAvailable()) {
+		if (!Metrics.isMicrometerAvailable()) {
 			return this;
 		}
 

@@ -16,11 +16,14 @@
 
 package reactor.core;
 
+import org.assertj.core.api.Assumptions;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
@@ -31,6 +34,40 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * @author Simon Baslé
  */
 public class MetricsNoMicrometerTest {
+
+
+	@BeforeClass
+	public static void assumeNoMicrometer() {
+		Assumptions.assumeThat(Metrics.isMicrometerAvailable())
+		           .as("Micrometer on the classpath").isFalse();
+	}
+
+	@Test
+	public void isMicrometerAvailable() {
+		assertThat(Metrics.isMicrometerAvailable()).isFalse();
+	}
+
+	@Test
+	public void registerRandomRegistry() {
+		assertThat(Metrics.setRegistryCandidate("foo")).isFalse();
+	}
+
+	@Test
+	public void registerNullRegistry() {
+		assertThat(Metrics.setRegistryCandidate(null)).isTrue();
+	}
+
+	@Test
+	public void registerFooRegistryAndGetNull() {
+		assertThat(Metrics.setRegistryCandidate("foo")).isFalse();
+		assertThat(Metrics.getRegistryCandidate()).isNull();
+	}
+
+	@Test
+	public void registerNullRegistryAndGetNull() {
+		assertThat(Metrics.setRegistryCandidate(null)).isTrue();
+		assertThat(Metrics.getRegistryCandidate()).isNull();
+	}
 
 	@Test
 	public void FluxMetricsNoOp() {

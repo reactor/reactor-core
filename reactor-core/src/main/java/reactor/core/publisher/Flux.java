@@ -53,6 +53,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Metrics;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
@@ -5738,7 +5739,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an instrumented {@link Flux}
 	 */
 	public final Flux<T> metrics() {
-		if (!FluxMetrics.isMicrometerAvailable()) {
+		if (!Metrics.isMicrometerAvailable()) {
 			return this;
 		}
 

@@ -53,27 +53,6 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxMetrics.class);
 
-	private static final boolean isMicrometerAvailable;
-
-	static {
-		boolean micrometer;
-		try {
-			io.micrometer.core.instrument.Metrics.globalRegistry.getRegistries();
-			micrometer = true;
-		}
-		catch (Throwable t) {
-			micrometer = false;
-		}
-		isMicrometerAvailable = micrometer;
-	}
-
-	/**
-	 * @return true if the Micrometer instrumentation facade is available
-	 */
-	static boolean isMicrometerAvailable() {
-		return isMicrometerAvailable;
-	}
-
 	//=== Constants ===
 
 	/**
@@ -203,6 +182,10 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		Tuple2<String, List<Tag>> nameAndTags = resolveNameAndTags(flux);
 		this.name = nameAndTags.getT1();
 		this.tags = nameAndTags.getT2();
+
+		if (registry == null) {
+			registry = (MeterRegistry) reactor.core.Metrics.getRegistryCandidate();
+		}
 
 		this.registryCandidate = registry;
 	}
