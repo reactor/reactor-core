@@ -627,8 +627,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
 	 * is available, it will be used instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
-	 * alt="">
+	 * <img class="marble" src="doc-files/marbles/logForFlux.svg" alt="">
 	 * <p>
 	 * The default log category will be "reactor.*", a generated operator suffix will
 	 * complete, e.g. "reactor.Parallel.Map".
@@ -644,8 +643,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
 	 * is available, it will be used instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
-	 * alt="">
+	 * <img class="marble" src="doc-files/marbles/logForFlux.svg" alt="">
 	 * <p>
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
@@ -670,8 +668,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *     ParallelFlux.log("category", Level.INFO, SignalType.ON_NEXT,
 	 * SignalType.ON_ERROR)
 	 *
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
-	 * alt="">
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/logForFlux.svg" alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
@@ -700,8 +698,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *     ParallelFlux.log("category", Level.INFO, SignalType.ON_NEXT,
 	 * SignalType.ON_ERROR)
 	 *
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
-	 * alt="">
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/logForFlux.svg" alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
