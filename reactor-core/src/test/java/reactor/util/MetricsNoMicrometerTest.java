@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core;
+package reactor.util;
 
 import org.assertj.core.api.Assumptions;
 import org.junit.BeforeClass;

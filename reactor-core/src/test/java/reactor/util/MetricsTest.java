@@ -30,7 +30,7 @@
  * limitations under the License.
  */
 
-package reactor.core;
+package reactor.util;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.After;

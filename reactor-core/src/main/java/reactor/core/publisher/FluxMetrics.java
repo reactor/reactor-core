@@ -184,7 +184,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		this.tags = nameAndTags.getT2();
 
 		if (registry == null) {
-			registry = (MeterRegistry) reactor.core.Metrics.getRegistryCandidate();
+			registry = (MeterRegistry) reactor.util.Metrics.getRegistryCandidate();
 		}
 
 		this.registryCandidate = registry;

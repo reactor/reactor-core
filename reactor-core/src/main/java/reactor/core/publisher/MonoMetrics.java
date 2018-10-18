@@ -65,7 +65,7 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 		this.tags = nameAndTags.getT2();
 
 		if (meterRegistry == null) {
-			meterRegistry = (MeterRegistry) reactor.core.Metrics.getRegistryCandidate();
+			meterRegistry = (MeterRegistry) reactor.util.Metrics.getRegistryCandidate();
 		}
 
 		this.meterRegistry = meterRegistry;
