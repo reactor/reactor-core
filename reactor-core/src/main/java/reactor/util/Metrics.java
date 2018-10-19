@@ -25,7 +25,7 @@ import static io.micrometer.core.instrument.Metrics.globalRegistry;
  */
 public class Metrics {
 
-	private static final boolean isMicrometerAvailable;
+	static final boolean isMicrometerAvailable;
 
 	static {
 		boolean micrometer;
@@ -40,9 +40,12 @@ public class Metrics {
 	}
 
 	/**
+	 * Check if the current runtime supports metrics / instrumentation, by
+	 * verifying if Micrometer is on the classpath.
+	 *
 	 * @return true if the Micrometer instrumentation facade is available
 	 */
-	public static final boolean isMicrometerAvailable() {
+	public static final boolean isInstrumentationAvailable() {
 		return isMicrometerAvailable;
 	}
 

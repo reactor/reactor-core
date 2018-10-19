@@ -43,7 +43,7 @@ public class MetricsTest {
 
 	@Test
 	public void smokeTestMicrometerActiveInTests() {
-		assertThat(Metrics.isMicrometerAvailable()).isTrue();
+		assertThat(Metrics.isInstrumentationAvailable()).isTrue();
 	}
 
 }

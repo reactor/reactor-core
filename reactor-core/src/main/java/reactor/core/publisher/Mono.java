@@ -2804,7 +2804,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an instrumented {@link Mono}
 	 */
 	public final Mono<T> metrics() {
-		if (!Metrics.isMicrometerAvailable()) {
+		if (!Metrics.isInstrumentationAvailable()) {
 			return this;
 		}
 

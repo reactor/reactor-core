@@ -5739,7 +5739,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an instrumented {@link Flux}
 	 */
 	public final Flux<T> metrics() {
-		if (!Metrics.isMicrometerAvailable()) {
+		if (!Metrics.isInstrumentationAvailable()) {
 			return this;
 		}
 

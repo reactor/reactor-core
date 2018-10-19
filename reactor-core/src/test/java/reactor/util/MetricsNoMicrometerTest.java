@@ -38,13 +38,13 @@ public class MetricsNoMicrometerTest {
 
 	@BeforeClass
 	public static void assumeNoMicrometer() {
-		Assumptions.assumeThat(Metrics.isMicrometerAvailable())
+		Assumptions.assumeThat(Metrics.isInstrumentationAvailable())
 		           .as("Micrometer on the classpath").isFalse();
 	}
 
 	@Test
 	public void isMicrometerAvailable() {
-		assertThat(Metrics.isMicrometerAvailable()).isFalse();
+		assertThat(Metrics.isInstrumentationAvailable()).isFalse();
 	}
 
 	@Test
