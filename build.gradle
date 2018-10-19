@@ -236,10 +236,21 @@ project('reactor-core') {
   apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
   apply plugin: 'me.champeau.gradle.jmh'
 
+  sourceSets {
+	noMicrometerTest {
+	  java.srcDir 'src/test/java'
+	  resources.srcDir 'src/test/resources'
+	}
+  }
+
   configurations {
 	compileOnly.extendsFrom jsr166backport
 	testCompile.extendsFrom jsr166backport
 	baseline
+	noMicrometerTestRuntime {
+	  extendsFrom testRuntime
+	  exclude group:"io.micrometer", module:"micrometer-core"
+	}
   }
 
   dependencies {
@@ -283,6 +294,10 @@ project('reactor-core') {
 		force = true
 	  }
 	}
+
+	noMicrometerTestCompile sourceSets.main.output
+	noMicrometerTestCompile sourceSets.test.output
+	noMicrometerTestCompile configurations.testCompile
   }
 
   jmh {
@@ -410,11 +425,22 @@ project('reactor-core') {
 	}
   }
 
+  task testNoMicrometer(type: Test, group: 'verification') {
+	testClassesDirs = sourceSets.noMicrometerTest.output.classesDirs
+	classpath = sourceSets.noMicrometerTest.runtimeClasspath
+	include '**/*NoMicrometerTest.*'
+
+	doFirst {
+	  println "Additional tests without Micrometer ($includes)"
+	}
+  }
+
   //inherit basic test task + common configuration in root
   //always depend on testStaticInit, skip testNG on Travis, skip loops when not releasing
   //note that this way the tasks can be run individually
   test {
 	dependsOn testStaticInit
+	dependsOn testNoMicrometer
 	if (System.env.TRAVIS != "true") {
 	  dependsOn testNG
 	}
