@@ -16,16 +16,19 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.publisher.ReduceOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -155,6 +158,28 @@ public class MonoReduceSeedTest extends ReduceOperatorTest<String, String> {
 		  .assertError(NullPointerException.class);
 	}
 
+	@Test
+	public void onNextAndCancelRace() {
+		List<Integer> list = new ArrayList<>();
+		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+
+		MonoReduceSeed.ReduceSeedSubscriber<Integer, List<Integer>> sub =
+				new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
+						(l, next) -> {
+							l.add(next);
+							return l;
+						}, list);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		//the race alone _could_ previously produce a NPE
+		RaceTestUtils.race(() -> sub.onNext(1), sub::cancel);
+		testSubscriber.assertNoError();
+
+		//to be even more sure, we try an onNext AFTER the cancel
+		sub.onNext(2);
+		testSubscriber.assertNoError();
+	}
 
 	@Test
 	public void scanSubscriber() {
