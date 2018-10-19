@@ -16,10 +16,6 @@
 
 package reactor.util;
 
-import io.micrometer.core.instrument.MeterRegistry;
-
-import reactor.util.annotation.Nullable;
-
 import static io.micrometer.core.instrument.Metrics.globalRegistry;
 
 /**
@@ -43,65 +39,11 @@ public class Metrics {
 		isMicrometerAvailable = micrometer;
 	}
 
-	@Nullable
-	static MeterRegistry defaultRegistry;
-
 	/**
 	 * @return true if the Micrometer instrumentation facade is available
 	 */
 	public static final boolean isMicrometerAvailable() {
 		return isMicrometerAvailable;
-	}
-
-	private static final void resetRegistry() {
-		MeterRegistry old = Metrics.defaultRegistry;
-		Metrics.defaultRegistry = null;
-		if (old != null) {
-			old.close();
-		}
-	}
-
-	/**
-	 * Define a Micrometer MeterRegistry, passed as a simple {@link Object}, to be used by
-	 * instrumentation-related features of Reactor. If Micrometer is not available on the
-	 * classpath OR the passed object is not a registry, returns {@code false} and does nothing.
-	 * <p>
-	 * If you have already defined a valid default meter registry previously, said registry
-	 * will be closed on your behalf.
-	 *
-	 * @implNote The candidate registry is exposed as an Object in order to avoid a hard
-	 * dependency of Reactor on Micrometer.
-	 *
-	 * @param registryCandidate the {@link Object} that is potentially a Micrometer registry,
-	 * or null to reset to the default of using the Micrometer global registry.
-	 * @return true if the object was a registry (and thus Micrometer is available), false otherwise.
-	 */
-	public static boolean setRegistryCandidate(@Nullable Object registryCandidate) {
-		if (registryCandidate == null) {
-			resetRegistry();
-			return true;
-		}
-		if (isMicrometerAvailable && registryCandidate instanceof MeterRegistry) {
-			resetRegistry();
-			Metrics.defaultRegistry = (MeterRegistry) registryCandidate;
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Return a candidate Micrometer registry. If {@link #setRegistryCandidate(Object)} was
-	 * called with a valid registry instance, this method returns said instance. Otherwise
-	 * it returns {@code null}.
-	 *
-	 * @implNote The candidate registry is exposed as an Object in order to avoid a hard
-	 * dependency of Reactor on Micrometer.
-	 *
-	 * @return the default Micrometer registry to be used by Reactor, or null if not set / not available.
-	 */
-	@Nullable
-	public static Object getRegistryCandidate() {
-		return defaultRegistry;
 	}
 
 }

@@ -32,8 +32,6 @@
 
 package reactor.util;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.junit.After;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,58 +41,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class MetricsTest {
 
-	@After
-	public void resetRegistry() {
-		Metrics.defaultRegistry = null;
-	}
-
 	@Test
 	public void smokeTestMicrometerActiveInTests() {
 		assertThat(Metrics.isMicrometerAvailable()).isTrue();
 	}
 
-	@Test
-	public void setAndGetMeterRegistry() {
-		SimpleMeterRegistry registry = new SimpleMeterRegistry();
-		Metrics.setRegistryCandidate(registry);
-
-		assertThat(Metrics.getRegistryCandidate()).isSameAs(registry);
-	}
-
-	@Test
-	public void setMeterRegistryNullResets() {
-		SimpleMeterRegistry registry = new SimpleMeterRegistry();
-		Metrics.setRegistryCandidate(registry);
-
-		assertThat(Metrics.getRegistryCandidate()).isSameAs(registry);
-
-		Metrics.setRegistryCandidate(null);
-
-		assertThat(Metrics.getRegistryCandidate()).isNull();
-	}
-
-	@Test
-	public void setMeterRegistryNullClosesOld() {
-		SimpleMeterRegistry registry = new SimpleMeterRegistry();
-		Metrics.setRegistryCandidate(registry);
-
-		assertThat(Metrics.getRegistryCandidate()).isSameAs(registry);
-
-		Metrics.setRegistryCandidate(null);
-
-		assertThat(registry.isClosed()).as("old registry closed").isTrue();
-	}
-
-	@Test
-	public void replaceMeterRegistryClosesOld() {
-		SimpleMeterRegistry oldRegistry = new SimpleMeterRegistry();
-		SimpleMeterRegistry newRegistry = new SimpleMeterRegistry();
-
-		Metrics.setRegistryCandidate(oldRegistry);
-
-		assertThat(oldRegistry.isClosed()).as("open when set").isFalse();
-
-		Metrics.setRegistryCandidate(newRegistry);
-		assertThat(oldRegistry.isClosed()).as("closed when replaced").isTrue();
-	}
 }

@@ -48,28 +48,6 @@ public class MetricsNoMicrometerTest {
 	}
 
 	@Test
-	public void registerRandomRegistry() {
-		assertThat(Metrics.setRegistryCandidate("foo")).isFalse();
-	}
-
-	@Test
-	public void registerNullRegistry() {
-		assertThat(Metrics.setRegistryCandidate(null)).isTrue();
-	}
-
-	@Test
-	public void registerFooRegistryAndGetNull() {
-		assertThat(Metrics.setRegistryCandidate("foo")).isFalse();
-		assertThat(Metrics.getRegistryCandidate()).isNull();
-	}
-
-	@Test
-	public void registerNullRegistryAndGetNull() {
-		assertThat(Metrics.setRegistryCandidate(null)).isTrue();
-		assertThat(Metrics.getRegistryCandidate()).isNull();
-	}
-
-	@Test
 	public void FluxMetricsNoOp() {
 		assertThatCode(() -> Flux.just("foo").hide().metrics().blockLast())
 				.doesNotThrowAnyException();

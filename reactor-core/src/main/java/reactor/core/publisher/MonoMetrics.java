@@ -44,8 +44,6 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 
 	final String    name;
 	final List<Tag> tags;
-
-	@Nullable
 	final MeterRegistry meterRegistry;
 
 	MonoMetrics(Mono<? extends T> mono) {
@@ -65,19 +63,16 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 		this.tags = nameAndTags.getT2();
 
 		if (meterRegistry == null) {
-			meterRegistry = (MeterRegistry) reactor.util.Metrics.getRegistryCandidate();
+			this.meterRegistry = Metrics.globalRegistry;
 		}
-
-		this.meterRegistry = meterRegistry;
+		else {
+			this.meterRegistry = meterRegistry;
+		}
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (meterRegistry != null) {
-			registry = meterRegistry;
-		}
-		source.subscribe(new MicrometerMonoMetricsSubscriber<>(actual, registry,
+		source.subscribe(new MicrometerMonoMetricsSubscriber<>(actual, meterRegistry,
 				Clock.SYSTEM, this.name, this.tags));
 	}
 

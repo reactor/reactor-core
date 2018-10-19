@@ -163,8 +163,6 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	final String    name;
 	final List<Tag> tags;
-
-	@Nullable
 	final MeterRegistry    registryCandidate;
 
 	FluxMetrics(Flux<? extends T> flux) {
@@ -184,19 +182,17 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		this.tags = nameAndTags.getT2();
 
 		if (registry == null) {
-			registry = (MeterRegistry) reactor.util.Metrics.getRegistryCandidate();
+			this.registryCandidate = Metrics.globalRegistry;
+		}
+		else {
+			this.registryCandidate = registry;
 		}
 
-		this.registryCandidate = registry;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (registryCandidate != null) {
-			registry = registryCandidate;
-		}
-		source.subscribe(new MicrometerFluxMetricsSubscriber<>(actual, registry,
+		source.subscribe(new MicrometerFluxMetricsSubscriber<>(actual, registryCandidate,
 				Clock.SYSTEM, this.name, this.tags));
 	}
 
