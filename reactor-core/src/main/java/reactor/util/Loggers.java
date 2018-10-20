@@ -423,7 +423,8 @@ public abstract class Loggers {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
 					for (Object argument : arguments) {
-						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(argument.toString()));
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(
+								argument != null ? argument.toString() : "null"));
 					}
 				}
 				return computed;
@@ -471,7 +472,9 @@ public abstract class Loggers {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
 					for (Object argument : arguments) {
-						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(argument.toString()));
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(
+								argument != null ? argument.toString() : "null"
+						));
 					}
 				}
 				return computed;
