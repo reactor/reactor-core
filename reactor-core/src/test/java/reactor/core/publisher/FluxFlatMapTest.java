@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 import java.util.function.Function;
 
 import org.junit.Assert;
@@ -1443,7 +1442,7 @@ public class FluxFlatMapTest {
 				.just(1, 2)
 				.hide()
 				.<Integer>flatMap(f -> null)
-				.errorStrategyContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 		            .expectNoFusionSupport()
@@ -1467,7 +1466,7 @@ public class FluxFlatMapTest {
 						return Mono.just(f);
 					}
 				})
-				.errorStrategyContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1493,7 +1492,7 @@ public class FluxFlatMapTest {
 					}
 				})
 				.doOnNext(i -> i++)
-				.errorStrategyContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1514,7 +1513,7 @@ public class FluxFlatMapTest {
 						throw new ArithmeticException("boom");
 					}
 				}))
-				.errorStrategyContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1537,7 +1536,7 @@ public class FluxFlatMapTest {
 						return Mono.just(f);
 					}
 				}, Queues.SMALL_BUFFER_SIZE, Queues.XS_BUFFER_SIZE)
-				.errorStrategyContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 
 		StepVerifier.create(test)
@@ -1563,7 +1562,7 @@ public class FluxFlatMapTest {
 						return Mono.just(f);
 					}
 				}, Queues.SMALL_BUFFER_SIZE, Queues.XS_BUFFER_SIZE)
-				.errorStrategyContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 
 		StepVerifier.create(test)
@@ -1580,8 +1579,8 @@ public class FluxFlatMapTest {
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.flatMap(f ->  Flux.range(f, 1).map(i -> 1/i).errorStrategyStop())
-				.errorStrategyContinue();
+				.flatMap(f ->  Flux.range(f, 1).map(i -> 1/i).onErrorStop())
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1597,8 +1596,8 @@ public class FluxFlatMapTest {
 		Flux<Integer> test = Flux
 				.just(0, 1)
 				.hide()
-				.flatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1/i).errorStrategyStop())
-				.errorStrategyContinue();
+				.flatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1/i).onErrorStop())
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1615,7 +1614,7 @@ public class FluxFlatMapTest {
 				.just(0, 1)
 				.hide()
 				.flatMap(f ->  Mono.just(f).map(i -> 1/i))
-				.errorStrategyContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1632,7 +1631,7 @@ public class FluxFlatMapTest {
 				.just(0, 1)
 				.hide()
 				.flatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i))
-				.errorStrategyContinue();
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()

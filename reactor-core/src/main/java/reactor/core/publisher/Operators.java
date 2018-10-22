@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
@@ -25,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -221,9 +223,9 @@ public abstract class Operators {
 	 * Use {@link #liftPublisher(Predicate, BiFunction)} instead for that kind of use case.
 	 *
 	 * <p>
-	 *     The function will be invoked only if the passed {@link Predicate} matches.
-	 *     Therefore the transformed type O must be the same than the input type since
-	 *     unmatched predicate will return the applied {@link Publisher}.
+	 * The function will be invoked only if the passed {@link Predicate} matches.
+	 * Therefore the transformed type O must be the same than the input type since
+	 * unmatched predicate will return the applied {@link Publisher}.
 	 *
 	 * @param filter the predicate to match taking {@link Scannable} from the applied
 	 * publisher to operate on. Assumes original is scan-compatible.
@@ -273,13 +275,13 @@ public abstract class Operators {
 	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
 	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
 	 * and works with the raw {@link Publisher} as input, which is useful if you need to
-	 * 	 * detect the precise type of the source (eg. instanceof checks to detect Mono, Flux,
-	 * 	 * true Scannable, etc...).
+	 * detect the precise type of the source (eg. instanceof checks to detect Mono, Flux,
+	 * true Scannable, etc...).
 	 *
 	 * <p>
-	 *     The function will be invoked only if the passed {@link Predicate} matches.
-	 *     Therefore the transformed type O must be the same than the input type since
-	 *     unmatched predicate will return the applied {@link Publisher}.
+	 * The function will be invoked only if the passed {@link Predicate} matches.
+	 * Therefore the transformed type O must be the same than the input type since
+	 * unmatched predicate will return the applied {@link Publisher}.
 	 *
 	 * @param filter the {@link Predicate} that the raw {@link Publisher} must pass for
 	 * the transformation to occur
@@ -314,6 +316,181 @@ public abstract class Operators {
 			}
 		}
 		return u;
+	}
+
+	/**
+	 * Create an adapter for local onDiscard hooks that check the element
+	 * being discarded is of a given {@link Class}. The resulting {@link Function} adds the
+	 * hook to the {@link Context}, potentially chaining it to an existing hook in the {@link Context}.
+	 *
+	 * @param type the type of elements to take into account
+	 * @param discardHook the discarding handler for this type of elements
+	 * @param <R> element type
+	 * @return a {@link Function} that can be used to modify a {@link Context}, adding or
+	 * updating a context-local discard hook.
+	 */
+	static final <R> Function<Context, Context> discardLocalAdapter(Class<R> type, Consumer<? super R> discardHook) {
+		Objects.requireNonNull(type, "onDiscard must be based on a type");
+		Objects.requireNonNull(discardHook, "onDiscard must be provided a discardHook Consumer");
+
+		final Consumer<Object> safeConsumer = obj -> {
+			if (type.isInstance(obj)) {
+				discardHook.accept(type.cast(obj));
+			}
+		};
+
+		return ctx -> {
+			Consumer<Object> consumer = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+			if (consumer == null) {
+				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer);
+			}
+			else {
+				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer.andThen(consumer));
+			}
+		};
+	}
+
+	/**
+	 * Utility method to activate the onDiscard feature (see {@link Flux#doOnDiscard(Class, Consumer)})
+	 * in a target {@link Context}. Prefer using the {@link Flux} API, and reserve this for
+	 * testing purposes.
+	 *
+	 * @param target the original {@link Context}
+	 * @param discardConsumer the consumer that will be used to cleanup discarded elements
+	 * @return a new {@link Context} that holds (potentially combined) cleanup {@link Consumer}
+	 */
+	public static final Context enableOnDiscard(@Nullable Context target, Consumer<?> discardConsumer) {
+		Objects.requireNonNull(discardConsumer, "discardConsumer must be provided");
+		if (target == null) {
+			return Context.of(Hooks.KEY_ON_DISCARD, discardConsumer);
+		}
+		return target.put(Hooks.KEY_ON_DISCARD, discardConsumer);
+	}
+
+	/**
+	 * Invoke a (local or global) hook that processes elements that get discarded. This
+	 * includes elements that are dropped (for malformed sources), but also filtered out
+	 * (eg. not passing a {@code filter()} predicate).
+	 * <p>
+	 * For elements that are buffered or enqueued, but subsequently discarded due to
+	 * cancellation or error, see {@link #onDiscardMultiple(Stream, Context)} and
+	 * {@link #onDiscardQueueWithClear(Queue, Context, Function)}.
+	 *
+	 * @param element the element that is being discarded
+	 * @param context the context in which to look for a local hook
+	 * @param <T> the type of the element
+	 * @see #onDiscardMultiple(Stream, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
+	 */
+	public static <T> void onDiscard(@Nullable T element, Context context) {
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		if (element != null && hook != null) {
+			try {
+				hook.accept(element);
+			}
+			catch (Throwable t) {
+				log.warn("Error in discard hook", t);
+			}
+		}
+	}
+
+	/**
+	 * Invoke a (local or global) hook that processes elements that get discarded
+	 * en masse after having been enqueued, due to cancellation or error. This method
+	 * also empties the {@link Queue} (either by repeated {@link Queue#poll()} calls if
+	 * a hook is defined, or by {@link Queue#clear()} as a shortcut if no hook is defined).
+	 *
+	 * @param queue the queue that is being discarded and cleared
+	 * @param context the context in which to look for a local hook
+	 * @param extract an optional extractor method for cases where the queue doesn't
+	 * directly contain the elements to discard
+	 * @param <T> the type of the element
+	 * @see #onDiscardMultiple(Stream, Context)
+	 * @see #onDiscardMultiple(Collection, Context)
+	 * @see #onDiscard(Object, Context)
+	 */
+	public static <T> void onDiscardQueueWithClear(
+			@Nullable Queue<T> queue,
+			Context context,
+			@Nullable Function<T, Stream<?>> extract) {
+		if (queue == null) {
+			return;
+		}
+
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		if (hook == null) {
+			queue.clear();
+			return;
+		}
+
+		try {
+			for(;;) {
+				T toDiscard = queue.poll();
+				if (toDiscard == null) {
+					break;
+				}
+
+				if (extract != null) {
+					extract.apply(toDiscard)
+					       .forEach(hook);
+				}
+				else {
+					hook.accept(toDiscard);
+				}
+			}
+		}
+		catch (Throwable t) {
+			log.warn("Error in discard hook while discarding and clearing a queue", t);
+		}
+	}
+
+  /**
+   * Invoke a (local or global) hook that processes elements that get discarded en masse.
+   * This includes elements that are buffered but subsequently discarded due to
+   * cancellation or error.
+   *
+   * @param multiple the collection of elements to discard (possibly extracted from other
+   * collections/arrays/queues)
+   * @param context the {@link Context} in which to look for local hook
+   * @see #onDiscard(Object, Context)
+   * @see #onDiscardMultiple(Collection, Context)
+   * @see #onDiscardQueueWithClear(Queue, Context, Function)
+   */
+  public static void onDiscardMultiple(Stream<?> multiple, Context context) {
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		if (hook != null) {
+			try {
+				multiple.forEach(hook);
+			}
+			catch (Throwable t) {
+				log.warn("Error in discard hook while discarding multiple values", t);
+			}
+		}
+	}
+
+  /**
+   * Invoke a (local or global) hook that processes elements that get discarded en masse.
+   * This includes elements that are buffered but subsequently discarded due to
+   * cancellation or error.
+   *
+   * @param multiple the collection of elements to discard
+   * @param context the {@link Context} in which to look for local hook
+   * @see #onDiscard(Object, Context)
+   * @see #onDiscardMultiple(Stream, Context)
+   * @see #onDiscardQueueWithClear(Queue, Context, Function)
+   */
+	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
+		if (multiple == null) return;
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		if (hook != null) {
+			try {
+				multiple.forEach(hook);
+			}
+			catch (Throwable t) {
+				log.warn("Error in discard hook while discarding multiple values", t);
+			}
+		}
 	}
 
 	/**
@@ -1003,6 +1180,9 @@ public abstract class Operators {
 	}
 
 	static int unboundedOrLimit(int prefetch, int lowTide) {
+		if (lowTide <= 0) {
+			return prefetch;
+		}
 		if (lowTide >= prefetch) {
 			return unboundedOrLimit(prefetch);
 		}
@@ -1240,6 +1420,9 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
+			if (this.state == NO_REQUEST_HAS_VALUE) {
+				Operators.onDiscard(value, currentContext());
+			}
 			this.state = CANCELLED;
 			value = null;
 		}
@@ -1302,6 +1485,7 @@ public abstract class Operators {
 				}
 				state = this.state;
 				if (state == CANCELLED) {
+					Operators.onDiscard(value, actual.currentContext());
 					value = null;
 					return;
 				}
@@ -1805,11 +1989,17 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
+			if (once == 0) {
+				Operators.onDiscard(value, actual.currentContext());
+			}
 			ONCE.lazySet(this, 2);
 		}
 
 		@Override
 		public void clear() {
+			if (once == 0) {
+				Operators.onDiscard(value, actual.currentContext());
+			}
 			ONCE.lazySet(this, 1);
 		}
 

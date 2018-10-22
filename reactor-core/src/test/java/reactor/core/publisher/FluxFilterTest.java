@@ -16,10 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -27,10 +29,13 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.test.StepVerifier;
+import reactor.core.publisher.FluxFilter.FilterConditionalSubscriber;
+import reactor.core.publisher.FluxFilter.FilterSubscriber;
 import reactor.test.MockUtils;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -252,7 +257,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
     @Test
     public void scanSubscriber() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFilter.FilterSubscriber<String> test = new FluxFilter.FilterSubscriber<>(actual, t -> true);
+        FilterSubscriber<String> test = new FilterSubscriber<>(actual, t -> true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -268,7 +273,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
     public void scanConditionalSubscriber() {
 	    @SuppressWarnings("unchecked")
 	    Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-        FluxFilter.FilterConditionalSubscriber<String> test = new FluxFilter.FilterConditionalSubscriber<>(actual, t -> true);
+        FilterConditionalSubscriber<String> test = new FilterConditionalSubscriber<>(actual, t -> true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -364,5 +369,115 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		finally {
 			Hooks.resetOnNextError();
 		}
+	}
+
+	@Test
+	public void discardOnNextPredicateFail() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .hide() //hide both avoid the fuseable AND tryOnNext usage
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardOnNextPredicateMiss() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .hide() //hide both avoid the fuseable AND tryOnNext usage
+		                        .filter(i -> i % 2 == 0)
+		)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardTryOnNextPredicateFail() {
+		List<Object> discarded = new ArrayList<>();
+		CoreSubscriber<Integer> actual = new AssertSubscriber<>(
+				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+		FilterSubscriber<Integer> subscriber =
+				new FilterSubscriber<>(actual, i -> { throw new IllegalStateException("boom"); });
+		subscriber.onSubscribe(Operators.emptySubscription());
+
+		subscriber.tryOnNext(1);
+
+		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void discardTryOnNextPredicateMiss() {
+		List<Object> discarded = new ArrayList<>();
+		CoreSubscriber<Integer> actual = new AssertSubscriber<>(
+				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+		FilterSubscriber<Integer> subscriber =
+				new FilterSubscriber<>(actual, i -> i % 2 == 0);
+		subscriber.onSubscribe(Operators.emptySubscription());
+
+		subscriber.tryOnNext(1);
+		subscriber.tryOnNext(2);
+
+		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void discardConditionalOnNextPredicateFail() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .hide()
+		                        .filter(i -> { throw new IllegalStateException("boom"); })
+		                        .filter(i -> true)
+		)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardConditionalOnNextPredicateMiss() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .hide()
+		                        .filter(i -> i % 2 == 0)
+		                        .filter(i -> true)
+		)
+		            .expectNextCount(5)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	}
+
+	@Test
+	public void discardConditionalTryOnNextPredicateFail() {
+		List<Object> discarded = new ArrayList<>();
+		Fuseable.ConditionalSubscriber<Integer> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<>(
+						Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+
+		FilterConditionalSubscriber<Integer> subscriber =
+				new FilterConditionalSubscriber<>(actual, i -> {
+					throw new IllegalStateException("boom");
+				});
+		subscriber.onSubscribe(Operators.emptySubscription());
+
+		subscriber.tryOnNext(1);
+
+		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void discardConditionalTryOnNextPredicateMiss() {
+		List<Object> discarded = new ArrayList<>();
+		Fuseable.ConditionalSubscriber<Integer> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<>(
+				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+
+		FilterConditionalSubscriber<Integer> subscriber =
+				new FilterConditionalSubscriber<>(actual, i -> i % 2 == 0);
+		subscriber.onSubscribe(Operators.emptySubscription());
+
+		subscriber.tryOnNext(1);
+		subscriber.tryOnNext(2);
+
+		assertThat(discarded).containsExactly(1);
 	}
 }

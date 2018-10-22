@@ -1,0 +1,214 @@
+=== `subscribe` Method Examples
+
+This section contains minimal examples of each of the five signatures for the `subscribe`
+method. The following code shows an example of the basic method with no arguments:
+
+[source,java]
+----
+Flux<Integer> ints = Flux.range(1, 3); <1>
+ints.subscribe(); <2>
+----
+
+<1> Set up a `Flux` that produces three values when a subscriber attaches.
+<2> Subscribe in the simplest way.
+
+The preceding code produces no visible output, but it does work. The `Flux` produces
+three values. If we provide a lambda, we can make the values visible. The next example
+for the `subscribe` method shows one way to make the values appear:
+
+[source,java]
+----
+Flux<Integer> ints = Flux.range(1, 3); <1>
+ints.subscribe(i -> System.out.println(i)); <2>
+----
+
+<1> Set up a `Flux` that produces three values when a subscriber attaches.
+<2> Subscribe with a subscriber that will print the values.
+
+The preceding code produces the following output:
+
+----
+1
+2
+3
+----
+
+To demonstrate the next signature, we intentionally introduce an error, as
+shown in the following example:
+
+[source, java]
+----
+Flux<Integer> ints = Flux.range(1, 4) <1>
+      .map(i -> { <2>
+        if (i <= 3) return i; <3>
+        throw new RuntimeException("Got to 4"); <4>
+      });
+ints.subscribe(i -> System.out.println(i), <5>
+      error -> System.err.println("Error: " + error));
+----
+
+<1> Set up a Flux that produces four values when a subscriber attaches.
+<2> We need a map so that we can handle some values differently.
+<3> For most values, return the value.
+<4> For one value, force an error.
+<5> Subscribe with a subscriber that includes an error handler.
+
+We now have two lambda expressions: one for the content we expect and one for
+errors. The preceding code produces the following output:
+
+----
+1
+2
+3
+Error: java.lang.RuntimeException: Got to 4
+----
+
+The next signature of the `subscribe` method includes both an error handler and
+a handler for completion events, as shown in the following example:
+
+[source,java]
+----
+Flux<Integer> ints = Flux.range(1, 4); <1>
+ints.subscribe(i -> System.out.println(i),
+    error -> System.err.println("Error " + error),
+    () -> System.out.println("Done")); <2>
+----
+
+<1> Set up a Flux that produces four values when a Subscriber attaches.
+<2> Subscribe with a Subscriber that includes a handler for completion events.
+
+Error signals and completion signals are both terminal events and are exclusive of one
+another (you never get both). To make the completion consumer work, we must take care not
+to trigger an error.
+
+The completion callback has no input, as represented by an empty pair of
+parentheses: it matches the `run` method in the `Runnable` interface. The preceding code
+produces the following output:
+
+----
+1
+2
+3
+4
+Done
+----
+
+The last signature of the `subscribe` method includes a `Consumer<Subscription>`.
+That variant requires you to do something with the `Subscription` (perform a
+`request(long)` on it, or `cancel()` it), otherwise the `Flux` will just hang:
+
+[source,java]
+----
+Flux<Integer> ints = Flux.range(1, 4);
+ints.subscribe(i -> System.out.println(i),
+    error -> System.err.println("Error " + error),
+    () -> System.out.println("Done"),
+    sub -> sub.request(10)); <1>
+----
+<1> When we subscribe we receive a `Subscription`. Signal that we want up to `10`
+elements from the source (which will actually emit 4 elements and complete).
+
+
+=== Cancelling a `subscribe()` with its `Disposable`
+
+All these lambda-based variants of `subscribe()` have a `Disposable` return type.
+In this case, the `Disposable` interface represents the fact that the subscription
+can be _cancelled_, by calling its `dispose()` method.
+
+For a `Flux` or `Mono`, cancellation is a signal that the source should stop
+producing elements. However, it is NOT guaranteed to be immediate: some sources
+might produce elements so fast that they could complete even before receiving the
+cancel instruction.
+
+Some utilities around `Disposable` are available in the `Disposables` class.
+Among these, `Disposables.swap()` creates a `Disposable` wrapper that allows
+you to atomically cancel and replace a concrete `Disposable`. This can be useful,
+for instance, in a UI scenario where you want to cancel a request and replace it
+with a new one whenever the user clicks on a button. Disposing the wrapper itself
+closes it, disposing the current concrete value and all future attempted replacements.
+
+Another interesting utility is `Disposables.composite(...)`. This composite
+allows to collect several `Disposable`, for instance multiple in-flight request
+associated with a service call, and dispose all of them at once later on.
+Once the composite's `dispose()` method has been called, any attempt at adding
+another `Disposable` immediately disposes it.
+
+
+=== Alternative to lambdas: `BaseSubscriber`
+
+There is an additional `subscribe` method that is more generic and takes a full-blown
+`Subscriber` rather than composing one out of lambdas. In order to help you writing
+such a `Subscriber`, we provide an extendable class called `BaseSubscriber`.
+
+Let's implement one of these, we'll call it a `SampleSubscriber`. The following
+example shows how it would be attached to a `Flux`:
+
+[source,java]
+----
+SampleSubscriber<Integer> ss = new SampleSubscriber<Integer>();
+Flux<Integer> ints = Flux.range(1, 4);
+ints.subscribe(i -> System.out.println(i),
+    error -> System.err.println("Error " + error),
+    () -> {System.out.println("Done");},
+    s -> ss.request(10));
+ints.subscribe(ss);
+----
+
+Now let's have a look at what `SampleSubscriber` could look like, as a minimalistic
+implementation of a `BaseSubscriber`:
+
+[source,java]
+----
+package io.projectreactor.samples;
+
+import org.reactivestreams.Subscription;
+
+import reactor.core.publisher.BaseSubscriber;
+
+public class SampleSubscriber<T> extends BaseSubscriber<T> {
+
+	public void hookOnSubscribe(Subscription subscription) {
+		System.out.println("Subscribed");
+		request(1);
+	}
+
+	public void hookOnNext(T value) {
+		System.out.println(value);
+		request(1);
+	}
+}
+----
+
+The SampleSubscriber class extends `BaseSubscriber`, which is the recommended abstract
+class for user-defined `Subscribers` in Reactor. The class offers hooks that can be
+overridden to tune the subscriber's behavior. By default, it will trigger an unbounded
+request and behave exactly like `subscribe()`. However, extending `BaseSubscriber` is
+much more useful when you want a custom request amount.
+
+For custom request amount, the bare minimum is to implement `hookOnSubscribe(Subscription subscription)`
+and `hookOnNext(T value)` like we did. In our case, the `hookOnSubscribe` method
+prints a statement to standard out and makes the first request. Then the `hookOnNext`
+method prints a statement and performs additional requests, one request
+at a time.
+
+The `SampleSubscriber` class produces the following output:
+
+----
+Subscribed
+1
+2
+3
+4
+----
+
+`BaseSubscriber` also offers a `requestUnbounded()` method to switch to unbounded mode
+(equivalent to `request(Long.MAX_VALUE)`), as well as a `cancel()` method.
+
+It has additional hooks: `hookOnComplete`, `hookOnError`, `hookOnCancel`, and `hookFinally`
+(which is always called when the sequence terminates, with the type of termination passed
+in as a `SignalType` parameter)
+
+NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`, and
+`hookOnComplete` methods. You may also want to implement the `hookFinally` method.
+`SampleSubscribe` is the absolute minimum implementation of a `Subscriber` _that performs
+bounded requests_.

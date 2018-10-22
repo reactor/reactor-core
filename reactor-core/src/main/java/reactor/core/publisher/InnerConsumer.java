@@ -31,12 +31,7 @@ interface InnerConsumer<I>
 
 	@Override
 	default String stepName() {
-		return operatorName(); //TODO in 3.2.1 move code over from operatorName
-	}
-
-	@Override
-	default String operatorName() {
-		// /!\ this code is duplicated in `ScannableConsumer#stepName` in order to use toString instead of simple class name
+		// /!\ this code is duplicated in `Scannable#stepName` in order to use toString instead of simple class name
 
 		/*
 		 * Strip an operator name of various prefixes and suffixes.
@@ -45,14 +40,15 @@ interface InnerConsumer<I>
 		 */
 		String name = getClass().getSimpleName();
 		if (name.contains("@") && name.contains("$")) {
-			name = name.substring(0, name.indexOf('$'));
-			name = name.substring(name.lastIndexOf('.') + 1);
+			name = name
+				.substring(0, name.indexOf('$'))
+				.substring(name.lastIndexOf('.') + 1);
 		}
-		String stripped = name
-				.replaceAll("Parallel|Flux|Mono|Publisher|Subscriber", "")
-				.replaceAll("Fuseable|Operator|Conditional", "");
+		String stripped = OPERATOR_NAME_UNRELATED_WORDS_PATTERN
+			.matcher(name)
+			.replaceAll("");
 
-		if(stripped.length() > 0) {
+		if (!stripped.isEmpty()) {
 			return stripped.substring(0, 1).toLowerCase() + stripped.substring(1);
 		}
 		return stripped;

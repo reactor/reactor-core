@@ -34,7 +34,7 @@ import reactor.util.function.Tuple2;
 /**
  * Activate metrics gathering on a {@link Mono}, assumes Micrometer is on the classpath.
  *
- * @implNote Metrics.isMicrometerAvailable() test should be performed BEFORE instantiating
+ * @implNote Metrics.isInstrumentationAvailable() test should be performed BEFORE instantiating
  * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
  * Micrometer is not there.
  *
@@ -44,8 +44,6 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 
 	final String    name;
 	final List<Tag> tags;
-
-	@Nullable
 	final MeterRegistry meterRegistry;
 
 	MonoMetrics(Mono<? extends T> mono) {
@@ -64,16 +62,17 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 		this.name = nameAndTags.getT1();
 		this.tags = nameAndTags.getT2();
 
-		this.meterRegistry = meterRegistry;
+		if (meterRegistry == null) {
+			this.meterRegistry = Metrics.globalRegistry;
+		}
+		else {
+			this.meterRegistry = meterRegistry;
+		}
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (meterRegistry != null) {
-			registry = meterRegistry;
-		}
-		source.subscribe(new MicrometerMonoMetricsSubscriber<>(actual, registry,
+		source.subscribe(new MicrometerMonoMetricsSubscriber<>(actual, meterRegistry,
 				Clock.SYSTEM, this.name, this.tags));
 	}
 

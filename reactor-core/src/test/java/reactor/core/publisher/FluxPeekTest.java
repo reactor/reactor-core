@@ -987,7 +987,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			    v -> { throw nextError; },
 			    null, null, null, null, null)
 			    .hide()
-			    .errorStrategyContinue((t, s) -> {
+			    .onErrorContinue((t, s) -> {
 					resumedErrors.add(t);
 					resumedValues.add(s);
 				});

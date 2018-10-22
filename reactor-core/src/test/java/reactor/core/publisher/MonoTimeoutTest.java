@@ -124,12 +124,25 @@ public class MonoTimeoutTest {
 	}
 
 	@Test
-	public void timeoutDurationMessage() {
+	public void timeoutDurationMessageDefault() {
 		StepVerifier.withVirtualTime(() -> Mono.never()
 		                                       .timeout(Duration.ofHours(1)))
 		            .thenAwait(Duration.ofHours(2))
 		            .expectErrorMessage("Did not observe any item or terminal signal within " +
-				            "3600000ms (and no fallback has been configured)")
+				            "3600000ms in 'source(MonoNever)' (and no fallback has been " +
+				            "configured)")
+		            .verify();
+	}
+
+	@Test
+	public void timeoutDurationMessageWithName() {
+		StepVerifier.withVirtualTime(() -> Mono.never()
+		                                       .name("Name")
+		                                       .timeout(Duration.ofHours(1)))
+		            .thenAwait(Duration.ofHours(2))
+		            .expectErrorMessage("Did not observe any item or terminal signal within " +
+				            "3600000ms in 'Name' (and no fallback has been " +
+				            "configured)")
 		            .verify();
 	}
 
@@ -139,7 +152,8 @@ public class MonoTimeoutTest {
 		StepVerifier.create(Mono.never()
 		                        .timeout(Mono.just("immediate")))
 		            .expectErrorMessage("Did not observe any item or terminal signal within " +
-				            "first signal from a Publisher (and no fallback has been configured)")
+				            "first signal from a Publisher in 'source(MonoNever)' " +
+				            "(and no fallback has been configured)")
 		            .verify();
 	}
 }

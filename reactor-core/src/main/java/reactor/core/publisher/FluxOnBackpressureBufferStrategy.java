@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the
@@ -69,11 +70,12 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 			extends ArrayDeque<T>
 			implements InnerOperator<T, T> {
 
-		final CoreSubscriber<? super T>  actual;
-		final int                    bufferSize;
-		final Consumer<? super T>    onOverflow;
-		final boolean                delayError;
-		final BufferOverflowStrategy overflowStrategy;
+		final CoreSubscriber<? super T> actual;
+		final Context                   ctx;
+		final int                       bufferSize;
+		final Consumer<? super T>       onOverflow;
+		final boolean                   delayError;
+		final BufferOverflowStrategy    overflowStrategy;
 
 		Subscription s;
 
@@ -99,6 +101,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 				@Nullable Consumer<? super T> onOverflow,
 				BufferOverflowStrategy overflowStrategy) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.delayError = delayError;
 			this.onOverflow = onOverflow;
 			this.overflowStrategy = overflowStrategy;
@@ -132,7 +135,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 
@@ -161,21 +164,27 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 				}
 			}
 
-			if (callOnOverflow && onOverflow != null) {
-				try {
-					onOverflow.accept(overflowElement);
+			if (callOnOverflow) {
+				if (onOverflow != null) {
+					try {
+						onOverflow.accept(overflowElement);
+					}
+					catch (Throwable e) {
+						Throwable ex = Operators.onOperatorError(s, e, overflowElement, ctx);
+						onError(ex);
+						return;
+					}
+					finally {
+						Operators.onDiscard(overflowElement, ctx);
+					}
 				}
-				catch (Throwable e) {
-					Throwable ex = Operators.onOperatorError(s, e, overflowElement,
-							actual.currentContext());
-					onError(ex);
-					return;
+				else {
+					Operators.onDiscard(overflowElement, ctx);
 				}
 			}
 
 			if (callOnError) {
-				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), overflowElement,
-						actual.currentContext());
+				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), overflowElement, ctx);
 				onError(ex);
 			}
 
@@ -187,7 +196,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, ctx);
 				return;
 			}
 			error = t;
@@ -344,5 +353,10 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 			return false;
 		}
 
+		@Override
+		public void clear() {
+			Operators.onDiscardMultiple(this, ctx);
+			super.clear();
+		}
 	}
 }

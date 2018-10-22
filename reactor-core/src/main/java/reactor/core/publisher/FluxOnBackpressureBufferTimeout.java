@@ -31,6 +31,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the buffer to a
@@ -89,6 +90,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 			implements InnerOperator<T, T>, Runnable {
 
 		final CoreSubscriber<? super T> actual;
+		final Context                   ctx;
 		final Duration                  ttl;
 		final Scheduler                 ttlScheduler;
 		final Scheduler.Worker          worker;
@@ -119,6 +121,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 				int bufferSize,
 				Consumer<? super T> onBufferEviction) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.onBufferEviction = Objects.requireNonNull(onBufferEviction,
 					"buffer eviction callback must not be null");
 			this.bufferSizeDouble = bufferSize << 1;
@@ -300,6 +303,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 					}
 					Operators.onErrorDropped(ex, actual.currentContext());
 				}
+				Operators.onDiscard(evicted, actual.currentContext());
 			}
 		}
 

@@ -17,16 +17,18 @@ import me.champeau.gradle.japicmp.JapicmpTask
 import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 buildscript {
-  ext.kotlinVersion = '1.1.61'
+  ext.kotlinVersion = '1.2.51'
   repositories {
 	maven { url "http://repo.spring.io/plugins-release" }
   }
   dependencies {
-	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7',
-			'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE',
-			'com.github.jengelman.gradle.plugins:shadow:1.2.0',
-			'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.11',
-			"org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
+	classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
+	classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.0'
+	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+	classpath 'org.jruby:jruby-complete:9.1.17.0'
+	classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.7'
+	classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
   }
 }
 
@@ -65,8 +67,7 @@ ext {
 
   javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
 				  "https://docs.oracle.com/javaee/6/api/",
-				  "http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as
-		  String[]
+				  "http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
 
 
   bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
@@ -180,7 +181,7 @@ configure(subprojects) { p ->
 	include '**/*Spec.*'
   }
 
-  //all test tasks will show FAILED/PASSED for each test method,
+  //all test tasks will show FAILED for each test method,
   // common exclusions, no scanning
   p.tasks.withType(Test).all {
 	testLogging {
@@ -235,10 +236,21 @@ project('reactor-core') {
   apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
   apply plugin: 'me.champeau.gradle.jmh'
 
+  sourceSets {
+	noMicrometerTest {
+	  java.srcDir 'src/test/java'
+	  resources.srcDir 'src/test/resources'
+	}
+  }
+
   configurations {
 	compileOnly.extendsFrom jsr166backport
 	testCompile.extendsFrom jsr166backport
 	baseline
+	noMicrometerTestRuntime {
+	  extendsFrom testRuntime
+	  exclude group:"io.micrometer", module:"micrometer-core"
+	}
   }
 
   dependencies {
@@ -282,6 +294,14 @@ project('reactor-core') {
 		force = true
 	  }
 	}
+
+	noMicrometerTestCompile sourceSets.main.output
+	noMicrometerTestCompile sourceSets.test.output
+	noMicrometerTestCompile configurations.testCompile
+  }
+
+  jmh {
+	resultFormat = 'JSON'
   }
 
   task japicmp(type: JapicmpTask) {
@@ -298,6 +318,7 @@ project('reactor-core') {
 	//TODO after a release, bump the gradle.properties baseline
 	//TODO after a release, remove the reactor-core exclusions below if any
 //	classExcludes = []
+//	methodExcludes = ["reactor.core.Scannable#operatorName()"]
   }
 
   javadoc {
@@ -311,11 +332,12 @@ project('reactor-core') {
 	options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
 	options.author = true
 	options.header = "$project.name"
-	options.overview = "$rootDir/src/api/overview.html"
-	options.stylesheetFile = file("$rootDir/src/api/stylesheet.css")
+	options.overview = "$rootDir/docs/api/overview.html"
+	options.stylesheetFile = file("$rootDir/docs/api/stylesheet.css")
 	options.links(rootProject.ext.javadocLinks )
 	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-					 "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support" ]
+					 "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
+					 "reactor.discard:m:onDiscard Support"]
 
 	// In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
 	// And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
@@ -324,6 +346,15 @@ project('reactor-core') {
 
 	maxMemory = "1024m"
 	destinationDir = new File(project.buildDir, "docs/javadoc")
+
+	doLast {
+	  // work around https://github.com/gradle/gradle/issues/4046
+	  copy {
+		from('src/main/java')
+		into "$project.buildDir/docs/javadoc/"
+		include "**/doc-files/*"
+	  }
+	}
   }
 
   // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
@@ -370,6 +401,11 @@ project('reactor-core') {
 	doFirst {
 	  println "Additional tests from `testStaticInit` ($includes)"
 	}
+	afterSuite { TestDescriptor descriptor, TestResult result ->
+	    if (!(result.testCount > 0 && result.skippedTestCount == 0)) {
+			throw new GradleException("No static initialization tests were executed")
+		}
+	}
   }
 
   task loops(type: Test, group: 'verification') {
@@ -389,11 +425,22 @@ project('reactor-core') {
 	}
   }
 
+  task testNoMicrometer(type: Test, group: 'verification') {
+	testClassesDirs = sourceSets.noMicrometerTest.output.classesDirs
+	classpath = sourceSets.noMicrometerTest.runtimeClasspath
+	include '**/*NoMicrometerTest.*'
+
+	doFirst {
+	  println "Additional tests without Micrometer ($includes)"
+	}
+  }
+
   //inherit basic test task + common configuration in root
   //always depend on testStaticInit, skip testNG on Travis, skip loops when not releasing
   //note that this way the tasks can be run individually
   test {
 	dependsOn testStaticInit
+	dependsOn testNoMicrometer
 	if (System.env.TRAVIS != "true") {
 	  dependsOn testNG
 	}
@@ -420,8 +467,7 @@ project('reactor-core') {
 	archives sourcesJar
 	archives javadocJar
 	archives docsZip
-	if (!JavaVersion.current().isJava9Compatible())
-	  archives kdocZip
+	archives kdocZip
   }
 
   jacocoTestReport.dependsOn test
@@ -483,7 +529,7 @@ project('reactor-test') {
 	options.memberLevel = JavadocMemberLevel.PROTECTED
 	options.author = true
 	options.header = "$project.name"
-	options.stylesheetFile = file("$rootDir/src/api/stylesheet.css")
+	options.stylesheetFile = file("$rootDir/docs/api/stylesheet.css")
 	options.links(rootProject.ext.javadocLinks
 			.plus("http://projectreactor.io/docs/core/release/api/") as String[])
 	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
@@ -540,8 +586,7 @@ project('reactor-test') {
   }
 
   artifacts {
-	if (!JavaVersion.current().isJava9Compatible())
-	  archives kdocZip
+	archives kdocZip
   }
 
   jar.finalizedBy(japicmp)

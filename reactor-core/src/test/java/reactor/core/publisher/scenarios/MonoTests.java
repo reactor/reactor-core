@@ -17,6 +17,7 @@ package reactor.core.publisher.scenarios;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -44,6 +45,22 @@ import static org.junit.Assert.assertTrue;
  * @author Stephane Maldini
  */
 public class MonoTests {
+
+	@Test
+	public void discardLocalOrder() {
+		List<String> discardOrder = Collections.synchronizedList(new ArrayList<>(2));
+
+		StepVerifier.create(Mono.just(1)
+		                        .hide() //hide both avoid the fuseable AND tryOnNext usage
+		                        .filter(i -> i % 2 == 0)
+		                        .doOnDiscard(Number.class, i -> discardOrder.add("FIRST"))
+		                        .doOnDiscard(Integer.class, i -> discardOrder.add("SECOND"))
+		)
+		            .expectComplete()
+		            .verify();
+
+		Assertions.assertThat(discardOrder).containsExactly("FIRST", "SECOND");
+	}
 
 	@Test
 	public void testDoOnEachSignal() {

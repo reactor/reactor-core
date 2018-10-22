@@ -72,7 +72,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 
 		int i = 0;
 		while (i < subscribers.length) {
-			CoreSubscriber<? super O> actual = s[i - 1];
+			CoreSubscriber<? super O> actual = s[i];
 			CoreSubscriber<? super I> converted =
 					Objects.requireNonNull(lifter.apply(source, actual),
 							"Lifted subscriber MUST NOT be null");
@@ -85,7 +85,8 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 				converted = new FluxHide.SuppressFuseableSubscriber<>(converted);
 			}
 			//otherwise QS is not required or user already made a compatible conversion
-			subscribers[i++] = converted;
+			subscribers[i] = converted;
+			i++;
 		}
 
 		source.subscribe(subscribers);

@@ -66,6 +66,7 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 			implements MonoSink<T>, InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context                   ctx;
 
 		volatile Disposable disposable;
 		@SuppressWarnings("rawtypes")
@@ -95,11 +96,12 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 		DefaultMonoSink(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 		}
 
 		@Override
 		public Context currentContext() {
-			return actual.currentContext();
+			return this.actual.currentContext();
 		}
 
 		@Override
@@ -260,7 +262,9 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		@Override
 		public void cancel() {
 			if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
+				T old = value;
 				value = null;
+				Operators.onDiscard(old, actual.currentContext());
 				disposeResource(true);
 			}
 		}

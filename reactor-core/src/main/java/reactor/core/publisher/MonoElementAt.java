@@ -125,6 +125,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			index = i - 1;
+			Operators.onDiscard(t, actual.currentContext()); //FIXME cache currentcontext
 		}
 
 		@Override

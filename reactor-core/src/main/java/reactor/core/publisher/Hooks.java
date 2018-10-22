@@ -26,7 +26,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
 import reactor.util.Logger;
@@ -543,6 +542,13 @@ public abstract class Hooks {
 	 * hook in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
 	 */
 	static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
+
+	/**
+	 * A key that can be used to store a sequence-specific onDiscard(Consumer)
+	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Object&gt;}.
+	 */
+	static final String KEY_ON_DISCARD = "reactor.onDiscard.local";
+
 	/**
 	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
 	 * hook THAT IS ONLY APPLIED TO Operators{@link Operators#onRejectedExecution(Throwable, Context) onRejectedExecution}

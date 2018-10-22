@@ -130,11 +130,6 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	}
 
 	@Override
-	public String operatorName() {
-		return stepName();
-	}
-
-	@Override
 	public String toString() {
 		return stacktrace.operatorAssemblyInformation();
 	}

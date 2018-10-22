@@ -69,40 +69,38 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		for (; ; ) {
-			RefConnection conn;
+		RefConnection conn;
 
-			boolean connect = false;
-			synchronized (this) {
-				conn = connection;
-				if (conn == null || conn.terminated) {
-					conn = new RefConnection(this);
-					connection = conn;
-				}
-
-				long c = conn.subscriberCount;
-				if (c == 0L && conn.timer != null) {
-					conn.timer.dispose();
-				}
-				conn.subscriberCount = c + 1;
-				if (!conn.connected && c + 1 == n) {
-					connect = true;
-					conn.connected = true;
-				}
+		boolean connect = false;
+		synchronized (this) {
+			conn = connection;
+			if (conn == null || conn.terminated) {
+				conn = new RefConnection(this);
+				connection = conn;
 			}
 
-			source.subscribe(new RefCountInner<>(actual, this, conn));
-
-			if (connect) {
-				source.connect(conn);
+			long c = conn.subscriberCount;
+			if (c == 0L && conn.timer != null) {
+				conn.timer.dispose();
 			}
+			conn.subscriberCount = c + 1;
+			if (!conn.connected && c + 1 == n) {
+				connect = true;
+				conn.connected = true;
+			}
+		}
 
-			break;
+		source.subscribe(new RefCountInner<>(actual, this, conn));
+
+		if (connect) {
+			source.connect(conn);
 		}
 	}
 
 	void cancel(RefConnection rc) {
-		Disposable.Swap sd;
+		boolean replaceTimer = false;
+		Disposable dispose = null;
+		Disposable.Swap sd = null;
 		synchronized (this) {
 			if (rc.terminated) {
 				return;
@@ -112,15 +110,24 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 			if (c != 0L || !rc.connected) {
 				return;
 			}
-			if (gracePeriod.isZero()) {
-				timeout(rc);
-				return;
+			if (!gracePeriod.isZero()) {
+				sd = Disposables.swap();
+				rc.timer = sd;
+				replaceTimer = true;
 			}
-			sd = Disposables.swap();
-			rc.timer = sd;
+			else if (rc == connection) {
+				//emulate what a timeout would do without getting out of sync block
+				//capture the disposable for later disposal
+				connection = null;
+				dispose = RefConnection.SOURCE_DISCONNECTOR.getAndSet(rc, Disposables.disposed());
+			}
 		}
 
-		sd.replace(scheduler.schedule(rc, gracePeriod.toMillis(), TimeUnit.MILLISECONDS));
+		if (replaceTimer) {
+			sd.replace(scheduler.schedule(rc, gracePeriod.toMillis(), TimeUnit.MILLISECONDS));
+		} else if (dispose != null) {
+			dispose.dispose();
+		}
 	}
 
 	void terminated(RefConnection rc) {
@@ -133,14 +140,15 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	}
 
 	void timeout(RefConnection rc) {
+		Disposable dispose = null;
 		synchronized (this) {
 			if (rc.subscriberCount == 0 && rc == connection) {
-				OperatorDisposables.dispose(RefConnection.SOURCE_DISCONNECTOR, rc);
-				if (source instanceof Disposable) {
-					((Disposable) source).dispose();
-				}
 				connection = null;
+				dispose = RefConnection.SOURCE_DISCONNECTOR.getAndSet(rc, Disposables.disposed());
 			}
+		}
+		if (dispose != null) {
+			dispose.dispose();
 		}
 	}
 
@@ -201,18 +209,18 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		@Override
 		public void onError(Throwable t) {
-			actual.onError(t);
 			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
 				parent.terminated(connection);
 			}
+			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			actual.onComplete();
 			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
 				parent.terminated(connection);
 			}
+			actual.onComplete();
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Filters out values that make a filter function return false.
@@ -56,6 +57,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 			           ConditionalSubscriber<T> {
 
 		final CoreSubscriber<? super T> actual;
+		final Context                   ctx;
 
 		final Predicate<? super T> predicate;
 
@@ -68,6 +70,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		FilterFuseableSubscriber(CoreSubscriber<? super T> actual,
 				Predicate<? super T> predicate) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.predicate = predicate;
 		}
 
@@ -87,7 +90,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, actual.currentContext());
+					Operators.onNextDropped(t, this.ctx);
 					return;
 				}
 				boolean b;
@@ -96,13 +99,14 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 					b = predicate.test(t);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, this.ctx, s);
 					if (e_ != null) {
 						onError(e_);
 					}
 					else {
 						s.request(1);
 					}
+					Operators.onDiscard(t, this.ctx);
 					return;
 				}
 				if (b) {
@@ -110,6 +114,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				}
 				else {
 					s.request(1);
+					Operators.onDiscard(t, this.ctx);
 				}
 			}
 		}
@@ -117,7 +122,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.ctx);
 				return false;
 			}
 
@@ -127,23 +132,25 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				Throwable e_ = Operators.onNextError(t, e, this.ctx, s);
 				if (e_ != null) {
 					onError(e_);
 				}
+				Operators.onDiscard(t, this.ctx);
 				return false;
 			}
 			if (b) {
 				actual.onNext(t);
 				return true;
 			}
+			Operators.onDiscard(t, this.ctx);
 			return false;
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.ctx);
 				return;
 			}
 			done = true;
@@ -198,10 +205,12 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 							}
 							return v;
 						}
+						Operators.onDiscard(v, this.ctx);
 						dropped++;
 					}
 					catch (Throwable e) {
 						RuntimeException e_ = Operators.onNextPollError(v, e, currentContext());
+						Operators.onDiscard(v, this.ctx);
 						if (e_ != null) {
 							throw e_;
 						}
@@ -217,9 +226,11 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						if (v == null || predicate.test(v)) {
 							return v;
 						}
+						Operators.onDiscard(v, this.ctx);
 					}
 					catch (Throwable e) {
 						RuntimeException e_ = Operators.onNextPollError(v, e, currentContext());
+						Operators.onDiscard(v, this.ctx);
 						if (e_ != null) {
 							throw e_;
 						}
@@ -263,6 +274,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 			           QueueSubscription<T> {
 
 		final ConditionalSubscriber<? super T> actual;
+		final Context ctx;
 
 		final Predicate<? super T> predicate;
 
@@ -275,6 +287,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		FilterFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				Predicate<? super T> predicate) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.predicate = predicate;
 		}
 
@@ -295,7 +308,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t, actual.currentContext());
+					Operators.onNextDropped(t, this.ctx);
 					return;
 				}
 				boolean b;
@@ -304,13 +317,14 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 					b = predicate.test(t);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, this.ctx, s);
 					if (e_ != null) {
 						onError(e_);
 					}
 					else {
 						s.request(1);
 					}
+					Operators.onDiscard(t, this.ctx);
 					return;
 				}
 				if (b) {
@@ -318,6 +332,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				}
 				else {
 					s.request(1);
+					Operators.onDiscard(t, this.ctx);
 				}
 			}
 		}
@@ -325,7 +340,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, this.ctx);
 				return false;
 			}
 
@@ -335,19 +350,26 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				Throwable e_ = Operators.onNextError(t, e, this.ctx, s);
 				if (e_ != null) {
 					onError(e_);
 				}
+				Operators.onDiscard(t, this.ctx);
 				return false;
 			}
-			return b && actual.tryOnNext(t);
+			if (b) {
+				return actual.tryOnNext(t);
+			}
+			else {
+				Operators.onDiscard(t, this.ctx);
+				return false;
+			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, this.ctx);
 				return;
 			}
 			done = true;
@@ -401,10 +423,12 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 							}
 							return v;
 						}
+						Operators.onDiscard(v, this.ctx);
 						dropped++;
 					}
 					catch (Throwable e) {
-						RuntimeException e_ = Operators.onNextPollError(v, e, currentContext());
+						RuntimeException e_ = Operators.onNextPollError(v, e, this.ctx);
+						Operators.onDiscard(v, this.ctx);
 						if (e_ != null) {
 							throw e_;
 						}
@@ -420,9 +444,11 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						if (v == null || predicate.test(v)) {
 							return v;
 						}
+						Operators.onDiscard(v, this.ctx);
 					}
 					catch (Throwable e) {
-						RuntimeException e_ = Operators.onNextPollError(v, e, currentContext());
+						RuntimeException e_ = Operators.onNextPollError(v, e, this.ctx);
+						Operators.onDiscard(v, this.ctx);
 						if (e_ != null) {
 							throw e_;
 						}

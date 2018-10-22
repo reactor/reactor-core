@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 					"The bufferSupplier returned a null buffer");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
+			Operators.error(actual, Operators.onOperatorError(e,  actual.currentContext()));
 			return;
 		}
 
@@ -90,6 +90,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		final Supplier<C>           bufferSupplier;
 		final CoreSubscriber<? super C> actual;
+		final Context ctx;
 
 		final BufferBoundaryOther<U> other;
 
@@ -112,6 +113,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				C buffer,
 				Supplier<C> bufferSupplier) {
 			this.actual = actual;
+			this.ctx =  actual.currentContext();
 			this.buffer = buffer;
 			this.bufferSupplier = bufferSupplier;
 			this.other = new BufferBoundaryOther<>(this);
@@ -147,6 +149,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		@Override
 		public void cancel() {
 			Operators.terminate(S, this);
+			Operators.onDiscardMultiple(buffer, this.ctx);
 			other.cancel();
 		}
 
@@ -167,21 +170,24 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				}
 			}
 
-			Operators.onNextDropped(t, actual.currentContext());
+			Operators.onNextDropped(t, this.ctx);
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if(Operators.terminate(S, this)) {
+				C b;
 				synchronized (this) {
+					b = buffer;
 					buffer = null;
 				}
 
 				other.cancel();
 				actual.onError(t);
+				Operators.onDiscardMultiple(b, this.ctx);
 				return;
 			}
-			Operators.onErrorDropped(t, actual.currentContext());
+			Operators.onErrorDropped(t, this.ctx);
 		}
 
 		@Override
@@ -197,7 +203,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				if (!b.isEmpty()) {
 					if (emit(b)) {
 						actual.onComplete();
-					}
+					} //failed emit will discard buffer's elements
 				}
 				else {
 					actual.onComplete();
@@ -220,7 +226,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				if (b != null && !b.isEmpty()) {
 					if (emit(b)) {
 						actual.onComplete();
-					}
+					} //failed emit will discard buffer content
 				}
 				else {
 					actual.onComplete();
@@ -231,7 +237,9 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		void otherError(Throwable t){
 			Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 			if(s != Operators.cancelledSubscription()) {
+				C b;
 				synchronized (this) {
+					b = buffer;
 					buffer = null;
 				}
 
@@ -240,9 +248,10 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				}
 
 				actual.onError(t);
+				Operators.onDiscardMultiple(b, this.ctx);
 				return;
 			}
-			Operators.onErrorDropped(t, actual.currentContext());
+			Operators.onErrorDropped(t, this.ctx);
 		}
 
 		void otherNext() {
@@ -253,7 +262,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 						"The bufferSupplier returned a null buffer");
 			}
 			catch (Throwable e) {
-				otherError(Operators.onOperatorError(other, e, actual.currentContext()));
+				otherError(Operators.onOperatorError(other, e, this.ctx));
 				return;
 			}
 
@@ -281,8 +290,8 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			}
 			else {
 				actual.onError(Operators.onOperatorError(this, Exceptions
-						.failWithOverflow(), b, actual.currentContext()));
-
+						.failWithOverflow(), b, this.ctx));
+				Operators.onDiscardMultiple(b, this.ctx);
 				return false;
 			}
 		}

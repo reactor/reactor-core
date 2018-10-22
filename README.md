@@ -7,6 +7,8 @@
 
 [![Travis CI](https://travis-ci.org/reactor/reactor-core.svg?branch=master)](https://travis-ci.org/reactor/reactor-core)
 [![Codecov](https://img.shields.io/codecov/c/github/reactor/reactor-core.svg)]()
+[![Code Quality: Java](https://img.shields.io/lgtm/grade/java/g/reactor/reactor-core.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/reactor/reactor-core/context:java)
+[![Total Alerts](https://img.shields.io/lgtm/alerts/g/reactor/reactor-core.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/reactor/reactor-core/alerts)
 
 
 Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a [Reactive Extensions](http://reactivex.io) inspired API and efficient event streaming support.
@@ -25,10 +27,10 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.1.8.RELEASE"
-      //testCompile("io.projectreactor:reactor-test:3.1.8.RELEASE")
-      compile "io.projectreactor:reactor-core:3.2.0.M2"
-      testCompile("io.projectreactor:reactor-test:3.2.0.M2")
+      //compile "io.projectreactor:reactor-core:3.2.2.BUILD-SNAPSHOT"
+      //testCompile("io.projectreactor:reactor-test:3.2.2.BUILD-SNAPSHOT")
+      compile "io.projectreactor:reactor-core:3.2.1.RELEASE"
+      testCompile("io.projectreactor:reactor-test:3.2.1.RELEASE")
     }
 ```
 
@@ -119,7 +121,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 
 [ParallelFlux](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/ParallelFlux.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
  tasks. Turn back into a `Flux` with `ParallelFlux#sequential()`, an unordered join or
- use abitrary merge strategies via 'groups()'.
+ use arbitrary merge strategies via 'groups()'.
 
 ```java
 Mono.fromCallable( () -> System.currentTimeMillis() )

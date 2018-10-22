@@ -23,12 +23,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.LongAssert;
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -463,12 +465,13 @@ public class FluxRetryWhenTest {
 				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 				    .map(Tuple2::getT2)
 		)
-		            .thenAwait(Duration.ofSeconds(2))
+		            .thenAwait(Duration.ofMinutes(1)) //ensure whatever the jittered delay that we have time to fit 4 retries
 		            .expectNext(0, 1) //normal output
 		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
-		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
 		                                                    .hasMessage("Retries exhausted: 4/4")
-		                                                    .hasCause(exception));
+		                                                    .hasCause(exception))
+		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).hasSize(5);
 		assertThat(elapsedList, LongAssert.class).first()
@@ -495,12 +498,13 @@ public class FluxRetryWhenTest {
 				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 				    .map(Tuple2::getT2)
 		)
-		            .thenAwait(Duration.ofSeconds(2))
+		            .thenAwait(Duration.ofMinutes(1)) //ensure whatever the jittered delay that we have time to fit 4 retries
 		            .expectNext(0, 1) //normal output
 		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
-		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
 		                                                    .hasMessage("Retries exhausted: 4/4")
-		                                                    .hasCause(exception));
+		                                                    .hasCause(exception))
+		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).hasSize(5);
 		assertThat(elapsedList, LongAssert.class).first()
@@ -528,12 +532,13 @@ public class FluxRetryWhenTest {
 				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 				    .map(Tuple2::getT2)
 		)
-		            .thenAwait(Duration.ofSeconds(3))
+		            .thenAwait(Duration.ofMinutes(1)) //ensure whatever the jittered delay that we have time to fit 4 retries
 		            .expectNext(0, 1) //normal output
 		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
-		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
 		                                                    .hasMessage("Retries exhausted: 4/4")
-		                                                    .hasCause(exception));
+		                                                    .hasCause(exception))
+		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).hasSize(5);
 		assertThat(elapsedList, LongAssert.class).first()
@@ -560,12 +565,13 @@ public class FluxRetryWhenTest {
 				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 				    .map(Tuple2::getT2)
 		)
-		            .thenAwait(Duration.ofSeconds(2))
+		            .thenAwait(Duration.ofMinutes(1)) //ensure whatever the jittered delay that we have time to fit 4 retries
 		            .expectNext(0, 1) //normal output
 		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
-		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
 		                                                    .hasMessage("Retries exhausted: 4/4")
-		                                                    .hasCause(exception));
+		                                                    .hasCause(exception))
+		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).hasSize(5);
 		assertThat(elapsedList, LongAssert.class)
@@ -603,12 +609,13 @@ public class FluxRetryWhenTest {
 					    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 					    .map(Tuple2::getT2)
 			)
-			            .thenAwait(Duration.ofSeconds(2))
+			            .thenAwait(Duration.ofMinutes(1)) //ensure whatever the jittered delay that we have time to fit 4 retries
 			            .expectNext(0, 1) //normal output
 			            .expectNext(0, 1) //1 retry attempts
-			            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+			            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
 			                                                    .hasMessage("Retries exhausted: 1/1")
-			                                                    .hasCause(exception));
+			                                                    .hasCause(exception))
+			            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 			assertThat(elapsedList).hasSize(2);
 			assertThat(elapsedList, LongAssert.class)
@@ -633,13 +640,36 @@ public class FluxRetryWhenTest {
 				    .doOnNext(elapsed -> { if (elapsed.getT2() == 0) elapsedList.add(elapsed.getT1());} )
 				    .map(Tuple2::getT2)
 		)
-		            .thenAwait(Duration.ofSeconds(2))
+		            .thenAwait(Duration.ofMinutes(1)) //ensure whatever the jittered delay that we have time to fit 4 retries
 		            .expectNext(0, 1) //normal output
 		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
-		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
 		                                                    .hasMessage("Retries exhausted: 4/4")
-		                                                    .hasCause(exception));
+		                                                    .hasCause(exception))
+		            .verify(Duration.ofSeconds(1)); //vts test shouldn't even take that long
 
 		assertThat(elapsedList).containsExactly(0L, 100L, 200L, 400L, 800L);
+	}
+
+	@Test
+	public void fluxRetryRandomBackoffNoArithmeticException() {
+		final Duration EXPLICIT_MAX = Duration.ofSeconds(100_000);
+		final Duration INIT = Duration.ofSeconds(10);
+
+		Function<Flux<Throwable>, Publisher<Long>> backoffFunction = FluxRetryWhen.randomExponentialBackoffFunction(
+				80, //with pure exponential, this amount of retries would overflow Duration's capacity
+				INIT,
+				EXPLICIT_MAX,
+				0d);
+
+		StepVerifier.withVirtualTime(() -> Flux.error(new IllegalStateException("boom"))
+		                                       .retryWhen(backoffFunction))
+		            .expectSubscription()
+		            .thenAwait(Duration.ofNanos(Long.MAX_VALUE))
+		            .expectErrorSatisfies(e -> assertThat(e).hasMessage("Retries exhausted: 80/80")
+		                                                    .isInstanceOf(IllegalStateException.class)
+		                                                    .hasCause(new IllegalStateException("boom"))
+		            )
+		            .verify();
 	}
 }

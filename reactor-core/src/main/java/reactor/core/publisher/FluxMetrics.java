@@ -43,7 +43,7 @@ import reactor.util.function.Tuples;
 /**
  * Activate metrics gathering on a {@link Flux}, assuming Micrometer is on the classpath.
  *
- * @implNote Metrics.isMicrometerAvailable() test should be performed BEFORE instantiating
+ * @implNote Metrics.isInstrumentationAvailable() test should be performed BEFORE instantiating
  * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
  * Micrometer is not there.
  *
@@ -52,27 +52,6 @@ import reactor.util.function.Tuples;
 final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxMetrics.class);
-
-	private static final boolean isMicrometerAvailable;
-
-	static {
-		boolean micrometer;
-		try {
-			io.micrometer.core.instrument.Metrics.globalRegistry.getRegistries();
-			micrometer = true;
-		}
-		catch (Throwable t) {
-			micrometer = false;
-		}
-		isMicrometerAvailable = micrometer;
-	}
-
-	/**
-	 * @return true if the Micrometer instrumentation facade is available
-	 */
-	static boolean isMicrometerAvailable() {
-		return isMicrometerAvailable;
-	}
 
 	//=== Constants ===
 
@@ -184,8 +163,6 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	final String    name;
 	final List<Tag> tags;
-
-	@Nullable
 	final MeterRegistry    registryCandidate;
 
 	FluxMetrics(Flux<? extends T> flux) {
@@ -204,16 +181,18 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		this.name = nameAndTags.getT1();
 		this.tags = nameAndTags.getT2();
 
-		this.registryCandidate = registry;
+		if (registry == null) {
+			this.registryCandidate = Metrics.globalRegistry;
+		}
+		else {
+			this.registryCandidate = registry;
+		}
+
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (registryCandidate != null) {
-			registry = registryCandidate;
-		}
-		source.subscribe(new MicrometerFluxMetricsSubscriber<>(actual, registry,
+		source.subscribe(new MicrometerFluxMetricsSubscriber<>(actual, registryCandidate,
 				Clock.SYSTEM, this.name, this.tags));
 	}
 

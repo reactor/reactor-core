@@ -33,19 +33,93 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxRefCountTest {
-	/*@Test
-	public void constructors() {
-		ConstructorTestBuilder ctb = new ConstructorTestBuilder(StreamRefCount.class);
 
-		ctb.addRef("source", Flux.never().publish());
-		ctb.addInt("n", 1, Integer.MAX_VALUE);
+	//see https://github.com/reactor/reactor-core/issues/1385
+	@Test
+	public void sizeOneCanRetry() {
+		AtomicInteger subCount = new AtomicInteger();
 
-		ctb.test();
-	}*/
+		final Flux<Object> flux = Flux
+				.generate(() -> 0, (i, sink) -> {
+					if (i == 2)
+						sink.error(new RuntimeException("boom on subscribe #" + subCount.get()));
+					else {
+						sink.next(i);
+					}
+					return i + 1;
+				})
+				//we need to test with an async boundary
+				.subscribeOn(Schedulers.parallel())
+				.doOnSubscribe(s -> subCount.incrementAndGet());
+
+		StepVerifier.create(flux.publish()
+		                        .refCount(1)
+		                        .retry(1))
+		            .expectNext(0, 1, 0, 1)
+		            .expectErrorMessage("boom on subscribe #2")
+		            .verify(Duration.ofSeconds(1));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1385
+	@Test
+	public void sizeOneCanRepeat() {
+		AtomicInteger subCount = new AtomicInteger();
+
+		final Flux<Object> flux = Flux
+				.generate(() -> 0, (i, sink) -> {
+					if (i == 2)
+						sink.complete();
+					else {
+						sink.next(i);
+					}
+					return i + 1;
+				})
+				//we need to test with an async boundary
+				.subscribeOn(Schedulers.parallel())
+				.doOnSubscribe(s -> subCount.incrementAndGet());
+
+		StepVerifier.create(flux.publish()
+		                        .refCount(1)
+		                        .repeat(1))
+		            .expectNext(0, 1, 0, 1)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(subCount).hasValue(2);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1260
+	@Test
+	public void raceSubscribeAndCancel() {
+		final Flux<String> testFlux = Flux.<String>create(fluxSink -> fluxSink.next("Test").complete())
+				.replay(1)
+				.refCount(1);
+
+		final AtomicInteger signalCount1 = new AtomicInteger();
+		final AtomicInteger signalCount2 = new AtomicInteger();
+
+		final Runnable subscriber1 = () -> {
+			for (int i = 0; i < 100_000; i++) {
+				testFlux.next().doOnNext(signal -> signalCount1.incrementAndGet())
+				        .subscribe();
+			}
+		};
+		final Runnable subscriber2 = () -> {
+			for (int i = 0; i < 100_000; i++) {
+				testFlux.next().doOnNext(signal -> signalCount2.incrementAndGet())
+				        .subscribe();
+			}
+		};
+
+		RaceTestUtils.race(subscriber1, subscriber2);
+		assertThat(signalCount1).as("signalCount1").hasValue(100_000);
+		assertThat(signalCount2).as("signalCount2").hasValue(100_000);
+	}
 
 	@Test
 	public void cancelDoesntTriggerDisconnectErrorOnFirstSubscribeNoComplete() {
@@ -312,7 +386,7 @@ public class FluxRefCountTest {
 	@Test
 	public void scanMain() {
 		ConnectableFlux<Integer> parent = Flux.just(10).publish();
-		FluxRefCount<Integer> test = new FluxRefCount<Integer>(parent, 17);
+		FluxRefCount<Integer> test = new FluxRefCount<>(parent, 17);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(256);
@@ -322,7 +396,7 @@ public class FluxRefCountTest {
 	public void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxRefCount<Integer> main = new FluxRefCount<Integer>(Flux.just(10).publish(), 17);
-		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual, new FluxRefCount.RefCountMonitor<>(1, main));
+		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual, new FluxRefCount.RefCountMonitor<>(main));
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 

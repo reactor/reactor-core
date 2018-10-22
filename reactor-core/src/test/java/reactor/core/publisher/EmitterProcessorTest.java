@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -44,15 +45,66 @@ import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static reactor.core.Scannable.Attr.CANCELLED;
-import static reactor.core.Scannable.Attr.TERMINATED;
-import static reactor.core.Scannable.Attr.*;
 import static reactor.core.Scannable.Attr;
+import static reactor.core.Scannable.Attr.*;
 
 /**
  * @author Stephane Maldini
  */
 public class EmitterProcessorTest {
+
+	//see https://github.com/reactor/reactor-core/issues/1364
+	@Test
+	public void subscribeWithSyncFusionUpstreamFirst() {
+		EmitterProcessor<String> processor = EmitterProcessor.create(16);
+
+		StepVerifier.create(
+				Mono.just("DATA")
+				    .subscribeWith(processor)
+				    .map(String::toLowerCase)
+		)
+		            .expectNext("data")
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(processor.blockFirst()).as("later subscription").isNull();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1290
+	@Test
+	public void subscribeWithSyncFusionSingle() {
+		Processor<Integer, Integer> processor = EmitterProcessor.create(16);
+
+		StepVerifier.create(processor)
+		            .then(() -> Flux.just(1).subscribe(processor))
+		            .expectNext(1)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1290
+	@Test
+	public void subscribeWithSyncFusionMultiple() {
+		Processor<Integer, Integer> processor = EmitterProcessor.create(16);
+
+		StepVerifier.create(processor)
+		            .then(() -> Flux.range(1, 5).subscribe(processor))
+		            .expectNext(1, 2, 3, 4, 5)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1290
+	@Test
+	public void subscribeWithAsyncFusion() {
+		Processor<Integer, Integer> processor = EmitterProcessor.create(16);
+
+		StepVerifier.create(processor)
+		            .then(() -> Flux.range(1, 5).publishOn(Schedulers.elastic()).subscribe(processor))
+		            .expectNext(1, 2, 3, 4, 5)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+	}
 
 	@Test
 	public void testColdIdentityProcessor() throws InterruptedException {

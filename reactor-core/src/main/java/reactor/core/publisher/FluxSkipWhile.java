@@ -22,6 +22,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Skips source values while a predicate returns
@@ -47,6 +48,7 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 	static final class SkipWhileSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
+		final Context ctx;
 
 		final Predicate<? super T> predicate;
 
@@ -58,6 +60,7 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 
 		SkipWhileSubscriber(CoreSubscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
+			this.ctx = actual.currentContext();
 			this.predicate = predicate;
 		}
 
@@ -72,7 +75,7 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, ctx);
 				return;
 			}
 
@@ -86,11 +89,12 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, ctx));
 				return;
 			}
 
 			if (b) {
+				Operators.onDiscard(t, ctx);
 				s.request(1);
 				return;
 			}
@@ -102,7 +106,7 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, ctx);
 				return true;
 			}
 
@@ -116,12 +120,13 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, ctx));
 
 				return true;
 			}
 
 			if (b) {
+				Operators.onDiscard(t, ctx);
 				return false;
 			}
 
@@ -133,7 +138,7 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, ctx);
 				return;
 			}
 			done = true;

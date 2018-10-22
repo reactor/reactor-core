@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +31,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.ReduceOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -198,6 +200,24 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 			e.printStackTrace();
 		}
 		return "x" + x + "y" + y;
+	}
+
+	@Test
+	public void onNextAndCancelRace() {
+		final AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+
+		MonoReduce.ReduceSubscriber<Integer> sub =
+				new MonoReduce.ReduceSubscriber<>(testSubscriber, (current, next) -> current + next);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		//the race alone _could_ previously produce a NPE
+		RaceTestUtils.race(() -> sub.onNext(1), sub::cancel);
+		testSubscriber.assertNoError();
+
+		//to be even more sure, we try an onNext AFTER the cancel
+		sub.onNext(2);
+		testSubscriber.assertNoError();
 	}
 
 	@Test

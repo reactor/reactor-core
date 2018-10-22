@@ -80,17 +80,32 @@ final class DefaultStepVerifierBuilder<T>
 	static Duration defaultVerifyTimeout = StepVerifier.DEFAULT_VERIFY_TIMEOUT;
 
 	private static class HookRecorder {
-		final Queue<Object>                                   droppedElements = new ConcurrentLinkedQueue<>();
-		final Queue<Throwable>                                droppedErrors   = new ConcurrentLinkedQueue<>();
-		final Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors  = new ConcurrentLinkedQueue<>();
+		final Queue<Object>                                   droppedElements   = new ConcurrentLinkedQueue<>();
+		final Queue<Object>                                   discardedElements = new ConcurrentLinkedQueue<>();
+		final Queue<Throwable>                                droppedErrors     = new ConcurrentLinkedQueue<>();
+		final Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors    = new ConcurrentLinkedQueue<>();
 
-		public void plugHooks() {
+		private void plugHooks() {
 			Hooks.onErrorDropped(droppedErrors::offer);
 			Hooks.onNextDropped(droppedElements::offer);
 			Hooks.onOperatorError((t, d) -> {
 				operatorErrors.offer(Tuples.of(Optional.ofNullable(t), Optional.ofNullable(d)));
 				return t;
 			});
+		}
+
+		public void plugHooks(StepVerifierOptions verifierOptions) {
+			plugHooks();
+
+			Context userContext = verifierOptions.getInitialContext();
+			verifierOptions.withInitialContext(Operators.enableOnDiscard(userContext, discardedElements::offer));
+		}
+
+		public void plugHooksForSubscriber(DefaultVerifySubscriber<?> subscriber) {
+			plugHooks();
+
+			Context userContext = subscriber.initialContext;
+			subscriber.initialContext = Operators.enableOnDiscard(userContext, discardedElements::offer);
 		}
 
 		public void unplugHooks() {
@@ -109,6 +124,18 @@ final class DefaultStepVerifierBuilder<T>
 
 		public boolean droppedAllOf(Collection<Object> elements) {
 			return droppedElements.containsAll(elements);
+		}
+
+		public boolean hasDiscardedElements() {
+			return !discardedElements.isEmpty();
+		}
+
+		public boolean noDiscardedElements() {
+			return !hasDiscardedElements();
+		}
+
+		public boolean discardedAllOf(Collection<Object> elements) {
+			return discardedElements.containsAll(elements);
 		}
 
 		public boolean hasDroppedErrors() {
@@ -725,7 +752,7 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Assertions verifyThenAssertThat(Duration duration) {
 			HookRecorder stepRecorder = new HookRecorder();
-			stepRecorder.plugHooks();
+			stepRecorder.plugHooks(parent.options);
 
 			try {
 				//trigger the verify
@@ -832,9 +859,9 @@ final class DefaultStepVerifierBuilder<T>
 		final int                           requestedFusionMode;
 		final int                           expectedFusionMode;
 		final long                          initialRequest;
-		final Context                       initialContext;
 		final VirtualTimeScheduler          virtualTimeScheduler;
 
+		Context                       initialContext;
 		@Nullable
 		Logger                        logger;
 		int                           establishedFusionMode;
@@ -1129,7 +1156,8 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Assertions verifyThenAssertThat(Duration duration) {
 			HookRecorder stepRecorder = new HookRecorder();
-			stepRecorder.plugHooks();
+			stepRecorder.plugHooksForSubscriber(this);
+
 			try {
 				//trigger the verify
 				Duration time = verify(duration);
@@ -1746,6 +1774,42 @@ final class DefaultStepVerifierBuilder<T>
 					() -> String.format(
 							"Expected dropped elements to contain exactly <%s>, was <%s>.",
 							valuesList, hookRecorder.droppedElements));
+		}
+
+		@Override
+		public StepVerifier.Assertions hasDiscardedElements() {
+			return satisfies(hookRecorder::hasDiscardedElements,
+					() -> "Expected discarded elements, none found.");
+		}
+
+		@Override
+		public StepVerifier.Assertions hasNotDiscardedElements() {
+			return satisfies(hookRecorder::noDiscardedElements,
+					() -> String.format("Expected no discarded elements, found <%s>.", hookRecorder.discardedElements));
+		}
+
+		@Override
+		public StepVerifier.Assertions hasDiscarded(Object... values) {
+			//noinspection ConstantConditions
+			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
+			List<Object> valuesList = Arrays.asList(values);
+			return satisfies(() -> hookRecorder.discardedAllOf(valuesList),
+					() -> String.format(
+							"Expected discarded elements to contain <%s>, was <%s>.",
+							valuesList, hookRecorder.discardedElements));
+		}
+
+		@Override
+		public StepVerifier.Assertions hasDiscardedExactly(Object... values) {
+			//noinspection ConstantConditions
+			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
+			List<Object> valuesList = Arrays.asList(values);
+			return satisfies(
+					() -> hookRecorder.discardedAllOf(valuesList)
+							&& hookRecorder.discardedElements.size() == valuesList.size(),
+					() -> String.format(
+							"Expected discarded elements to contain exactly <%s>, was <%s>.",
+							valuesList, hookRecorder.discardedElements));
 		}
 
 		@Override

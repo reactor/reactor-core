@@ -16,6 +16,8 @@
 package reactor.test;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -23,9 +25,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 
 public class StepVerifierAssertionsTests {
 
@@ -120,6 +120,77 @@ public class StepVerifierAssertionsTests {
 		}
 		catch (AssertionError ae) {
 			assertThat(ae).hasMessage("Expected dropped elements to contain exactly <[baz]>, was <[bar, baz]>.");
+		}
+	}
+
+	@Test
+	public void assertDiscardedElementsAllPass() {
+		StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+		            .expectNext(2)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedElements()
+		            .hasDiscardedExactly(1, 3)
+		            .hasDiscarded(1);
+	}
+
+	@Test
+	public void assertNotDiscardedElementsFailureOneDiscarded() {
+		try {
+			StepVerifier.create(Flux.just(1, 2).filter(i -> i == 2))
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasNotDiscardedElements();
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected no discarded elements, found <[1]>.");
+		}
+	}
+
+	@Test
+	public void assertDiscardedElementsFailureNoDiscarded() {
+		try {
+			StepVerifier.create(Mono.empty())
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasNotDiscardedElements()
+			            .hasDiscardedElements();
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected discarded elements, none found.");
+		}
+	}
+
+	@Test
+	public void assertDiscardedElementsFailureOneExtra() {
+		try {
+			StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDiscarded(4);
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected discarded elements to contain <[4]>, was <[1, 3]>.");
+		}
+	}
+
+	@Test
+	public void assertDiscardedElementsFailureOneMissing() {
+		try {
+			StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDiscardedExactly(1);
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected discarded elements to contain exactly <[1]>, was <[1, 3]>.");
 		}
 	}
 
@@ -591,6 +662,40 @@ public class StepVerifierAssertionsTests {
 		catch (AssertionError ae) {
 			assertThat(ae).hasMessage("Expected exactly one operator error with an actual throwable content, no throwable found.");
 		}
+	}
+
+	@Test
+	public void contextDiscardCaptureWithNoInitialContext() {
+		StepVerifier.create(Mono.subscriberContext()
+		                        .flatMapIterable(ctx -> ctx.stream()
+		                                                   .map(Map.Entry::getKey)
+		                                                   .map(String::valueOf)
+		                                                   .collect(Collectors.toList())
+		                        ).concatWithValues("A", "B")
+		                        .filter(s -> s.length() > 1)
+		)
+		            .expectNext("reactor.onDiscard.local")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly("A", "B");
+	}
+
+	@Test
+	public void contextDiscardCaptureWithInitialContext() {
+		Context initial = Context.of("foo", "bar");
+		StepVerifier.create(Mono.subscriberContext()
+				.flatMapIterable(ctx -> ctx.stream()
+				                           .map(Map.Entry::getKey)
+				                           .map(String::valueOf)
+				                           .collect(Collectors.toList())
+		                        ).concatWithValues("A", "B")
+		                        .filter(s -> s.length() > 1)
+				, StepVerifierOptions.create().withInitialContext(initial))
+		            .expectNext("foo")
+		            .expectNext("reactor.onDiscard.local")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly("A", "B");
 	}
 
 }

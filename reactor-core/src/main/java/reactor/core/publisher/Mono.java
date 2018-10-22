@@ -44,6 +44,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.util.Metrics;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
@@ -326,6 +327,14 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<T> casted = (Mono<T>) source;
 			return casted;
 		}
+		if (source instanceof FluxSourceMono
+				|| source instanceof FluxSourceMonoFuseable) {
+			@SuppressWarnings("unchecked")
+			FluxFromMonoOperator<T, T> wrapper = (FluxFromMonoOperator<T,T>) source;
+			@SuppressWarnings("unchecked")
+			Mono<T> extracted = (Mono<T>) wrapper.source;
+			return extracted;
+		}
 		if (source instanceof Flux) {
 			@SuppressWarnings("unchecked")
 			Flux<T> casted = (Flux<T>) source;
@@ -486,6 +495,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignoreelements.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards the element from the source.
+	 *
 	 * @param source the {@link Publisher} to ignore
 	 * @param <T> the source type of the ignored data
 	 *
@@ -1613,7 +1625,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
 	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
 	 * @param ttlForEmpty the TTL-generating {@link Supplier} invoked when source is empty
-	 * @return
+	 * @return a replaying {@link Mono}
 	 */
 	public final Mono<T> cache(Function<? super T, Duration> ttlForValue,
 			Function<Throwable, Duration> ttlForError,
@@ -1976,6 +1988,32 @@ public abstract class Mono<T> implements Publisher<T> {
 		return doOnSignal(this, null, null, null, null, null, onCancel);
 	}
 
+	/**
+	 * Modify the behavior of the <i>whole chain</i> of operators upstream of this one to
+	 * conditionally clean up elements that get <i>discarded</i> by these operators.
+	 * <p>
+	 * The {@code discardHook} must be idempotent and safe to use on any instance of the desired
+	 * type.
+	 * Calls to this method are additive, and the order of invocation of the {@code discardHook}
+	 * is the same as the order of declaration (calling {@code .filter(...).doOnDiscard(first).doOnDiscard(second)}
+	 * will let the filter invoke {@code first} then {@code second} handlers).
+	 * <p>
+	 * Two main categories of discarding operators exist:
+	 * <ul>
+	 *     <li>filtering operators, dropping some source elements as part of their designed behavior</li>
+	 *     <li>operators that prefetch a few elements and keep them around pending a request, but get cancelled/in error</li>
+	 * </ul>
+	 * These operators are identified in the javadoc by the presence of an {@code onDiscard Support} section.
+	 *
+	 * @param type the {@link Class} of elements in the upstream chain of operators that
+	 * this cleanup hook should take into account.
+	 * @param discardHook a {@link Consumer} of elements in the upstream chain of operators
+	 * that performs the cleanup.
+	 * @return a {@link Mono} that cleans up matching elements that get discarded upstream of it.
+	 */
+	public final <R> Mono<T> doOnDiscard(final Class<R> type, final Consumer<? super R> discardHook) {
+		return subscriberContext(Operators.discardLocalAdapter(type, discardHook));
+	}
 
 	/**
 	 * Add behavior triggered when the {@link Mono} emits a data successfully.
@@ -2364,6 +2402,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/filter1.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards the element if it does not match the filter. It
+	 * also discards upon cancellation or error triggered by a data signal.
+	 *
 	 * @param tester the predicate to evaluate
 	 *
 	 * @return a filtered {@link Mono}
@@ -2383,6 +2425,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * Note that only the first value of the test publisher is considered, and unless it
 	 * is a {@link Mono}, test will be cancelled after receiving that first value.
+	 *
+	 * @reactor.discard This operator discards the element if it does not match the filter. It
+	 * also discards upon cancellation or error triggered by a data signal.
 	 *
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
 	 * to filter the Mono with
@@ -2542,6 +2587,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignoreelement.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards the source element.
 	 *
 	 * @return a new empty {@link Mono} representing the completion of this {@link Mono}.
 	 */
@@ -2757,7 +2804,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an instrumented {@link Mono}
 	 */
 	public final Mono<T> metrics() {
-		if (!FluxMetrics.isMicrometerAvailable()) {
+		if (!Metrics.isInstrumentationAvailable()) {
 			return this;
 		}
 
@@ -3734,6 +3781,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignorethen.png" alt="">
 	 * <p>
+	 *
+	 * @reactor.discard This operator discards the element from the source.
+	 *
 	 * @return a {@link Mono} ignoring its payload (actively dropping)
 	 */
 	public final Mono<Void> then() {
@@ -3749,6 +3799,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/ignorethen1.png" alt="">
+	 *
+	 * @reactor.discard This operator discards the element from the source.
 	 *
 	 * @param other a {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
@@ -3769,6 +3821,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenreturn1.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the element from the source.
+	 *
 	 * @param value a value to emit after termination
 	 * @param <V> the element type of the supplied value
 	 *
@@ -3786,6 +3840,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenempty.png"
 	 * alt="">
 	 *
+	 * @reactor.discard This operator discards the element from the source.
+	 *
 	 * @param other a {@link Publisher} to wait for after this Mono's termination
 	 * @return a new {@link Mono} completing when both publishers have completed in
 	 * sequence
@@ -3802,6 +3858,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/thenmany.png" alt="">
+	 *
+	 * @reactor.discard This operator discards the element from the source.
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the element type of the supplied Publisher
