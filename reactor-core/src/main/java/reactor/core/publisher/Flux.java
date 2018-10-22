@@ -6551,6 +6551,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/aggregate.png" alt="">
 	 *
+	 * @reactor.discard This operator discards the internally accumulated value upon error, but NOT cancellation.
+	 *
 	 * @param aggregator the reducing {@link BiFunction}
 	 *
 	 * @return a reduced {@link Flux}
@@ -6574,6 +6576,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/reduce.png" alt="">
 	 *
+	 * @reactor.discard This operator discards the internally accumulated value upon cancellation or error.
+	 *
 	 * @param accumulator the reducing {@link BiFunction}
 	 * @param initial the seed, the initial leftmost argument to pass to the reducing {@link BiFunction}
 	 * @param <A> the type of the seed and the reduced object
@@ -6594,6 +6598,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/reduce.png" alt="">
+	 *
+	 * @reactor.discard This operator discards the internally accumulated value upon cancellation or error.
 	 *
 	 * @param accumulator the reducing {@link BiFunction}
 	 * @param initial a {@link Supplier} of the seed, called on subscription and passed to the the reducing {@link BiFunction}

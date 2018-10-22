@@ -128,6 +128,8 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 					return;
 				}
 				value = accumulated;
+			} else {
+				Operators.onDiscard(t, actual.currentContext());
 			}
 		}
 
@@ -138,6 +140,8 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
+			Operators.onDiscard(value, actual.currentContext());
+			value = null;
 
 			actual.onError(t);
 		}
@@ -150,6 +154,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			done = true;
 
 			complete(value);
+			//we DON'T null out the value, complete will do that once there's been a request
 		}
 	}
 }

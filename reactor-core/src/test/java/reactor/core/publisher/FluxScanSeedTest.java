@@ -16,16 +16,23 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
+import reactor.util.context.Context;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 
@@ -159,6 +166,68 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 		ts.assertValues(0)
 		  .assertNotComplete()
 		  .assertError(NullPointerException.class);
+	}
+
+	@Test
+	public void onNextAndCancelRaceDontPassNullToAccumulator() {
+		AtomicBoolean accumulatorCheck = new AtomicBoolean(true);
+		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+
+		FluxScanSeed.ScanSeedSubscriber<Integer, Integer> sub =
+				new FluxScanSeed.ScanSeedSubscriber<>(testSubscriber,
+						(accumulated, next) -> {
+							if (accumulated == null || next == null) accumulatorCheck.set(false);
+							return next;
+						}, 0);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		for (int i = 0; i < 1000; i++) {
+			RaceTestUtils.race(sub::cancel, () -> sub.onNext(1));
+
+			testSubscriber.assertNoError();
+			assertThat(accumulatorCheck).as("no NPE due to onNext/cancel race in round " + i).isTrue();
+		}
+	}
+
+	@Test
+	public void noRetainValueOnComplete() {
+		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+
+		FluxScanSeed.ScanSeedSubscriber<Integer, Integer> sub =
+				new FluxScanSeed.ScanSeedSubscriber<>(testSubscriber,
+						(current, next) -> current + next, 0);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		sub.onNext(1);
+		sub.onNext(2);
+		assertThat(sub.value).isEqualTo(3);
+
+		sub.onComplete();
+		assertThat(sub.value).isNull();
+
+		testSubscriber.assertNoError();
+	}
+
+	@Test
+	public void noRetainValueOnError() {
+		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+
+		FluxScanSeed.ScanSeedSubscriber<Integer, Integer> sub =
+				new FluxScanSeed.ScanSeedSubscriber<>(testSubscriber,
+						(current, next) -> current + next, 0);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		sub.onNext(1);
+		sub.onNext(2);
+		assertThat(sub.value).isEqualTo(3);
+
+		sub.onError(new RuntimeException("boom"));
+		assertThat(sub.value).isNull();
+
+		testSubscriber.assertErrorMessage("boom");
 	}
 
 	@Test

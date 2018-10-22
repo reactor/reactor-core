@@ -111,6 +111,7 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
+			value = null;
 			actual.onError(t);
 		}
 
@@ -120,6 +121,7 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
+			value = null;
 			actual.onComplete();
 		}
 
@@ -146,6 +148,8 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			s.cancel();
+			//unless we want to pay a volatile, cancel() nulling out might race with onNext
+			//and result in re-setting value, retaining it. So we don't null out, nor discard.
 		}
 	}
 }
