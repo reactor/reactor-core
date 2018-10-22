@@ -204,15 +204,10 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 	@Test
 	public void onNextAndCancelRace() {
-		List<Integer> list = new ArrayList<>();
-		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+		final AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 
-		MonoReduceSeed.ReduceSeedSubscriber<Integer, List<Integer>> sub =
-				new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
-						(l, next) -> {
-							l.add(next);
-							return l;
-						}, list);
+		MonoReduce.ReduceSubscriber<Integer> sub =
+				new MonoReduce.ReduceSubscriber<>(testSubscriber, (current, next) -> current + next);
 
 		sub.onSubscribe(Operators.emptySubscription());
 
