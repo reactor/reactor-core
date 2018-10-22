@@ -7328,7 +7328,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param defaultValue  a single fallback item if this {@link Flux} is empty
 	 *
 	 * @return a {@link Mono} with the expected single item, the supplied default value or
-	 * and error signal
+	 * an error signal
 	 */
     public final Mono<T> single(T defaultValue) {
         if (this instanceof Callable) {
