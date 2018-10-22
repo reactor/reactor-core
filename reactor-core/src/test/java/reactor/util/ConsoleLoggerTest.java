@@ -78,6 +78,17 @@ public class ConsoleLoggerTest {
 	}
 
 	@Test
+	public void traceNulls() {
+		logger.trace("vararg {} is {}", (Object[]) null);
+		logger.trace("param {} is {}", null, null);
+
+		assertThat(errContent.size()).isZero();
+		assertThat(outContent.toString())
+				.contains("vararg {} is {}")
+				.contains("param null is null");
+	}
+
+	@Test
 	public void isDebugEnabled() throws Exception {
 		assertThat(logger.isDebugEnabled()).isTrue();
 	}
@@ -110,6 +121,17 @@ public class ConsoleLoggerTest {
 	}
 
 	@Test
+	public void debugNulls() {
+		logger.debug("vararg {} is {}", (Object[]) null);
+		logger.debug("param {} is {}", null, null);
+
+		assertThat(errContent.size()).isZero();
+		assertThat(outContent.toString())
+				.contains("vararg {} is {}")
+				.contains("param null is null");
+	}
+
+	@Test
 	public void isInfoEnabled() throws Exception {
 		assertThat(logger.isInfoEnabled()).isTrue();
 	}
@@ -139,6 +161,17 @@ public class ConsoleLoggerTest {
 				.startsWith("[ INFO] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
+	}
+
+	@Test
+	public void infoNulls() {
+		logger.info("vararg {} is {}", (Object[]) null);
+		logger.info("param {} is {}", null, null);
+
+		assertThat(errContent.size()).isZero();
+		assertThat(outContent.toString())
+				.contains("vararg {} is {}")
+				.contains("param null is null");
 	}
 
 	@Test
@@ -175,6 +208,17 @@ public class ConsoleLoggerTest {
 	}
 
 	@Test
+	public void warnNulls() {
+		logger.warn("vararg {} is {}", (Object[]) null);
+		logger.warn("param {} is {}", null, null);
+
+		assertThat(errContent.toString())
+				.contains("vararg {} is {}")
+				.contains("param null is null");
+		assertThat(outContent.size()).isZero();
+	}
+
+	@Test
 	public void isErrorEnabled() throws Exception {
 		assertThat(logger.isErrorEnabled()).isTrue();
 	}
@@ -204,6 +248,26 @@ public class ConsoleLoggerTest {
 				.startsWith("[ERROR] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
+	}
+
+	@Test
+	public void errorNulls() {
+		logger.error("vararg {} is {}", (Object[]) null);
+		logger.error("param {} is {}", null, null);
+
+		assertThat(errContent.toString())
+				.contains("vararg {} is {}")
+				.contains("param null is null");
+		assertThat(outContent.size()).isZero();
+	}
+
+	@Test
+	public void formatNull() {
+		logger.info(null, null, null);
+
+		assertThat(errContent.size()).isZero();
+		assertThat(outContent.toString())
+				.isEqualTo("[ INFO] (" + Thread.currentThread().getName() + ") null\n");
 	}
 
 }
