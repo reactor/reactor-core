@@ -23,6 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Aggregates the source items with an aggregator function and returns the last result.
@@ -96,8 +97,11 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 							"The aggregator returned a null value");
 				}
 				catch (Throwable ex) {
-					result = null;
 					done = true;
+					Context ctx = actual.currentContext();
+					Operators.onDiscard(t, ctx);
+					Operators.onDiscard(result, ctx);
+					result = null;
 					actual.onError(Operators.onOperatorError(s, ex, t,
 							actual.currentContext()));
 					return;
@@ -114,6 +118,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			done = true;
+			Operators.onDiscard(result, actual.currentContext());
 			result = null;
 			actual.onError(t);
 		}
@@ -125,6 +130,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 			}
 			done = true;
 			T r = result;
+			result = null; //nulling out the result, NOT the this.value (which can be read later if no current request)
 			if (r != null) {
 				complete(r);
 			}

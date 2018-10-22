@@ -1420,7 +1420,7 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
-			if (this.state == NO_REQUEST_HAS_VALUE) {
+			if (this.state <= HAS_REQUEST_NO_VALUE) {
 				Operators.onDiscard(value, currentContext());
 			}
 			this.state = CANCELLED;

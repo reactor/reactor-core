@@ -29,6 +29,7 @@ import reactor.core.Scannable;
 import reactor.test.publisher.ReduceOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -179,6 +180,109 @@ public class MonoReduceSeedTest extends ReduceOperatorTest<String, String> {
 		//to be even more sure, we try an onNext AFTER the cancel
 		sub.onNext(2);
 		testSubscriber.assertNoError();
+	}
+
+	@Test
+	public void discardAccumulatedOnCancel() {
+		final List<Object> discarded = new ArrayList<>();
+		final AssertSubscriber<Object> testSubscriber = new AssertSubscriber<>(
+				Operators.enableOnDiscard(Context.empty(), discarded::add));
+
+		MonoReduceSeed.ReduceSeedSubscriber<Integer, Integer> sub =
+				new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
+						(current, next) -> current + next, 0);
+
+		sub.onSubscribe(Operators. emptySubscription());
+
+		sub.onNext(1);
+		assertThat(sub.value).isEqualTo(1);
+
+		sub.cancel();
+		testSubscriber.assertNoError();
+		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void discardOnNextAfterCancel() {
+		final List<Object> discarded = new ArrayList<>();
+		final AssertSubscriber<Object> testSubscriber = new AssertSubscriber<>(
+				Operators.enableOnDiscard(Context.empty(), discarded::add));
+
+		MonoReduceSeed.ReduceSeedSubscriber<Integer, Integer> sub =
+				new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
+						(current, next) -> current + next, 0);
+
+		sub.onSubscribe(Operators. emptySubscription());
+
+		sub.cancel(); //discards seed
+
+		assertThat(sub.value).isNull();
+
+		sub.onNext(1); //discards passed value since cancelled
+
+		testSubscriber.assertNoError();
+		assertThat(discarded).containsExactly(0, 1);
+		assertThat(sub.value).isNull();
+	}
+
+	@Test
+	public void discardOnError() {
+		final List<Object> discarded = new ArrayList<>();
+		final AssertSubscriber<Object> testSubscriber = new AssertSubscriber<>(
+				Operators.enableOnDiscard(Context.empty(), discarded::add));
+
+		MonoReduceSeed.ReduceSeedSubscriber<Integer, Integer> sub =
+				new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
+						(current, next) -> current + next, 0);
+
+		sub.onSubscribe(Operators. emptySubscription());
+
+		sub.onNext(1);
+		assertThat(sub.value).isEqualTo(1);
+
+		sub.onError(new RuntimeException("boom"));
+		testSubscriber.assertErrorMessage("boom");
+		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void noRetainValueOnCancel() {
+		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+
+		MonoReduceSeed.ReduceSeedSubscriber<Integer, Integer> sub =
+				new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
+						(current, next) -> current + next, 0);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		sub.onNext(1);
+		sub.onNext(2);
+		assertThat(sub.value).isEqualTo(3);
+
+		sub.cancel();
+		assertThat(sub.value).isNull();
+
+		testSubscriber.assertNoError();
+	}
+
+	@Test
+	public void noRetainValueOnError() {
+		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+
+		MonoReduceSeed.ReduceSeedSubscriber<Integer, Integer> sub =
+				new MonoReduceSeed.ReduceSeedSubscriber<>(testSubscriber,
+						(current, next) -> current + next, 0);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		sub.onNext(1);
+		sub.onNext(2);
+		assertThat(sub.value).isEqualTo(3);
+
+		sub.onError(new RuntimeException("boom"));
+		assertThat(sub.value).isNull();
+
+		testSubscriber.assertErrorMessage("boom");
 	}
 
 	@Test
