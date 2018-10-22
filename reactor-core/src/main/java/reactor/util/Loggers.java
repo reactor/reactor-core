@@ -304,7 +304,7 @@ public abstract class Loggers {
 	/**
 	 * Wrapper over JDK logger
 	 */
-	private static class JdkLogger implements Logger {
+	static final class JdkLogger implements Logger {
 
 		private final java.util.logging.Logger logger;
 
@@ -418,12 +418,12 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object... arguments){
+		final String format(@Nullable String from, @Nullable Object... arguments){
 			if(from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
 					for (Object argument : arguments) {
-						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(argument.toString()));
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(argument)));
 					}
 				}
 				return computed;
@@ -444,7 +444,7 @@ public abstract class Loggers {
 	 * A {@link Logger} that has all levels enabled. error and warn log to System.err
 	 * while all other levels log to System.out (printstreams can be changed via constructor).
 	 */
-	static class ConsoleLogger implements Logger {
+	static final class ConsoleLogger implements Logger {
 
 		private final String name;
 		private final PrintStream err;
@@ -466,12 +466,12 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object... arguments){
+		final String format(@Nullable String from, @Nullable Object... arguments){
 			if(from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
 					for (Object argument : arguments) {
-						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(argument.toString()));
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(String.valueOf(argument)));
 					}
 				}
 				return computed;
