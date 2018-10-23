@@ -783,7 +783,7 @@ public class EmitterProcessorTest {
 	}
 
 	/**
-	 * Concurrent substraction bound to 0 and Long.MAX_VALUE.
+	 * Concurrent subtraction bound to 0 and Long.MAX_VALUE.
 	 * Any concurrent write will "happen" before this operation.
 	 *
 	 * @param sequence current atomic to update

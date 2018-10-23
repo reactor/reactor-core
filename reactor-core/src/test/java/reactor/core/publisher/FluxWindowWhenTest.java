@@ -260,7 +260,7 @@ public class FluxWindowWhenTest {
 
 
 	@Test
-	public void windowWillAcumulateMultipleListsOfValuesOverlap() {
+	public void windowWillAccumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
 		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
 		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.create();

@@ -310,7 +310,7 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessoThenFulfill() {
+	public void MonoProcessorThenFulfill() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 
 		mp.onNext(1);

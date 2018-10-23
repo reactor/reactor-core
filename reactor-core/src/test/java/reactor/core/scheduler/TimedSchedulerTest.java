@@ -50,7 +50,7 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
                 w1.schedule(() -> { });
                 Assert.fail("Failed to reject task");
             } catch (Throwable ex) {
-                // ingoring
+                // ignoring
             }
             
             w2.schedule(cdl::countDown);

@@ -119,7 +119,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Mono.&lt;String&gt;create(sink -&gt; {
 	 *     HttpListener listener = event -&gt; {
 	 *         if (event.getResponseCode() >= 400) {
-	 *             sink.error(new RuntimeExeption("Failed"));
+	 *             sink.error(new RuntimeException("Failed"));
 	 *         } else {
 	 *             String body = event.getBody();
 	 *             if (body.isEmpty()) {
