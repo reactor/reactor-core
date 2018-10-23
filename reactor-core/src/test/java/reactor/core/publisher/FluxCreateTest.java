@@ -1018,14 +1018,14 @@ public class FluxCreateTest {
 	@Test
 	public void fluxCreateOnRequestMultipleThreadsSlowProducer() {
 		for (OverflowStrategy overflowStrategy : OverflowStrategy.values()) {
-			testFluxCreateOnRequesMultipleThreads(overflowStrategy, true);
+			testFluxCreateOnRequestMultipleThreads(overflowStrategy, true);
 		}
 	}
 
 	@Test
 	public void fluxCreateOnRequestMultipleThreadsFastProducer() {
 		for (OverflowStrategy overflowStrategy : OverflowStrategy.values()) {
-			testFluxCreateOnRequesMultipleThreads(overflowStrategy, false);
+			testFluxCreateOnRequestMultipleThreads(overflowStrategy, false);
 		}
 	}
 
