@@ -191,6 +191,12 @@ configure(subprojects) { p ->
 	  stackTraceFilters "ENTRY_POINT"
 	  maxGranularity 3
 	}
+
+	if (JavaVersion.current().isJava9Compatible()) {
+	  println "Java 9+: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
+	  jvmArgs = ["-XX:MaxGCPauseMillis=20"]
+	}
+
 	systemProperty("java.awt.headless", "true")
 	systemProperty("reactor.trace.cancel", "true")
 	systemProperty("reactor.trace.nocapacity", "true")
