@@ -1,19 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="24 27 590 150" width="590" height="150" id="svg39">
-  <defs id="defs9">
-    <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 9 2 3 0 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="501" cap-height="682" ascent="923" descent="-235" font-weight="700" id="font-face2">
-      <font-face-src>
-        <font-face-name name="Tahoma-Bold"/>
-      </font-face-src>
-    </font-face>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#34302c">
-      <g id="g6">
-        <path d="M12 0L0-4v9z" fill="currentColor" stroke="currentColor" stroke-width="1" id="path4"/>
-      </g>
-    </marker>
-  </defs>
-  <path d="M34 28h569l1 1v65l-1 1H34l-1-1V29l1-1z" id="path19" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
-  <text id="text23" x="30" y="48" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-    <tspan font-size="24" font-weight="700" x="284" y="70" id="tspan21" font-family="'Tahoma','Nimbus Sans L'" fill="#34302c">never</tspan>
-  </text>
-  <path id="line34" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker)" d="M27 167h557"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="24 27 362 162" width="362" height="162" id="svg39">
+ <defs id="defs9">
+  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 9 2 3 0 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="501" cap-height="682" ascent="923" descent="-235" font-weight="700" id="font-face2" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma-Bold"/>
+   </font-face-src>
+  </font-face>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#34302c" stroke-linejoin="miter">
+   <g id="g6">
+    <path d="M12 0L0-4v9z" id="path4" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+ </defs>
+ <path d="M34 33h331v67H34V34z" id="path19" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <text id="text23" x="-89" y="53" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <tspan font-size="24" font-weight="700" x="165" y="75" id="tspan21" font-family="Tahoma,'Nimbus Sans L'" fill="#34302c">never</tspan>
+ </text>
+ <path id="line34" d="M30 172h324" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker)"/>
 </svg>

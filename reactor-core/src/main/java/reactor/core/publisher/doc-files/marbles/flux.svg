@@ -1,115 +1,103 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="20 79 889 445" width="889" height="445" id="svg151">
-  <defs id="defs16">
-    <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 5 2 2 1 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="450" cap-height="687" ascent="918" descent="-230" font-weight="400" id="font-face2" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
-      <font-face-src>
-        <font-face-name name="Tahoma"/>
-      </font-face-src>
-    </font-face>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
-      <g id="g6">
-        <path d="M8 0L0-3v6z" id="path4" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-    <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 9 2 3 0 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="501" cap-height="682" ascent="923" descent="-235" font-weight="700" id="font-face9" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
-      <font-face-src>
-        <font-face-name name="Tahoma-Bold"/>
-      </font-face-src>
-    </font-face>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_2" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#34302c" stroke-linejoin="miter">
-      <g id="g13">
-        <path d="M12 0L0-4v9z" id="path11" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker-3" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#34302c" stroke-linejoin="miter">
-      <g id="g6-6">
-        <path d="M12 0L0-4v9z" id="path4-7" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_2-5" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
-      <g id="g11">
-        <path d="M8 0L0-3v6z" id="path9" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1339" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
-      <g id="g1337">
-        <path d="M8 0L0-3v6z" id="path1335" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1345" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
-      <g id="g1343">
-        <path d="M8 0L0-3v6z" id="path1341" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1351" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
-      <g id="g1349">
-        <path d="M8 0L0-3v6z" id="path1347" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1357" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
-      <g id="g1355">
-        <path d="M8 0L0-3v6z" id="path1353" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1363" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
-      <g id="g1361">
-        <path d="M8 0L0-3v6z" id="path1359" fill="currentColor" stroke="currentColor" stroke-width="1"/>
-      </g>
-    </marker>
-  </defs>
-  <path id="line1092" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker-3)" d="M257 185h383"/>
-  <path d="M271 279h378l1 1v72l-1 1H271l-1-1v-72l1-1z" id="path37" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
-  <path id="line52" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker-3)" d="M257 425h382"/>
-  <path id="path70" d="M614 161l2 2v44l-2 2-2-2v-44l2-2z" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
-  <ellipse id="ellipse55" ry="23" rx="23" cy="185" cx="344" fill="#6cb33e" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
-  <ellipse id="ellipse57" ry="23" rx="23" cy="185" cx="344" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
-  <path id="line73" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999995,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)" d="M345 210l-1 47"/>
-  <ellipse id="ellipse60" ry="23" rx="23" cy="185" cx="442" fill="#e6ba31" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
-  <ellipse id="ellipse62" ry="23" rx="23" cy="185" cx="442" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
-  <ellipse id="ellipse65" ry="23" rx="23" cy="185" cx="539" fill="#45b8de" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
-  <ellipse id="ellipse67" ry="23" rx="23" cy="185" cx="539" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
-  <text id="text41" x="122" y="301" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-    <tspan font-size="24" font-weight="700" x="382" y="323" id="tspan39" font-family="'Tahoma','Nimbus Sans L'" fill="#34302c">operator (</tspan>
-  </text>
-  <text y="302" x="270" id="text896" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-    <tspan id="tspan894" y="324" x="530" font-weight="700" font-size="24" font-family="'Tahoma','Nimbus Sans L'" fill="#34302c">)</tspan>
-  </text>
-  <text id="text977" x="312" y="295" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-    <tspan font-size="19" font-weight="400" x="497" y="317" id="tspan975" font-style="normal" font-family="'Tahoma','Nimbus Sans L'" fill="#34302c">.</tspan>
-  </text>
-  <text y="295" x="336" id="text981" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-    <tspan id="tspan979" y="317" x="521" font-weight="400" font-size="19" font-style="normal" font-family="'Tahoma','Nimbus Sans L'" fill="#34302c">.</tspan>
-  </text>
-  <text id="text1178" x="324" y="295" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-    <tspan font-size="19" font-weight="400" x="509" y="317" id="tspan1176" font-style="normal" font-family="'Tahoma','Nimbus Sans L'" fill="#34302c">.</tspan>
-  </text>
-  <path id="line1094" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999995,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)" d="M442 210v47"/>
-  <path id="line1096" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999995,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)" d="M540 210l-1 47"/>
-  <path id="line1098" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999995,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)" d="M615 210l-1 47"/>
-  <text y="75" x="-22" id="text1102" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
-    <tspan id="tspan1100" y="97" x="237" font-weight="700" font-size="24" font-family="'Tahoma','Nimbus Sans L'" fill="#34302c">These are the items emitted by the Flux</tspan>
-  </text>
-  <ellipse cx="344" cy="425" rx="23" ry="23" id="ellipse1144" fill="#6cb33e" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
-  <ellipse cx="344" cy="425" rx="23" ry="23" id="ellipse1146" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
-  <ellipse cx="442" cy="425" rx="23" ry="23" id="ellipse1148" fill="#e6ba31" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
-  <ellipse cx="442" cy="425" rx="23" ry="23" id="ellipse1150" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
-  <path id="line1152" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999994,5.99999983" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)" d="M345 356l-1 24"/>
-  <path id="line1154" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999994,5.99999983" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)" d="M442 356v24"/>
-  <path id="line1156" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999992,5.99999978" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)" d="M540 357l-1 40"/>
-  <path id="path1034" d="M557 441l-2 2h-3l-31-31v-3l2-2h3l31 31v3z" fill="#ef2200" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
-  <path id="path1036" d="M555 407l2 2v3l-31 31h-3l-2-2v-3l31-31h3z" fill="#ef2200" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
-  <text xml:space="preserve" style="line-height:1.25;-inkscape-font-specification:'Tahoma';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" x="680" y="268" id="text1193" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" font-family="'Tahoma','Nimbus Sans L'" letter-spacing="0" word-spacing="0" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
-    <tspan x="680" y="268" id="tspan1197" fill="#34302c" fill-opacity="1">These dotted lines and this box</tspan><tspan x="680" y="288" id="tspan1204" fill="#34302c" fill-opacity="1">indicate that a transformation</tspan><tspan x="680" y="308" id="tspan1206" fill="#34302c" fill-opacity="1">is being applied to the Flux</tspan><tspan x="680" y="348" id="tspan1210" fill="#34302c" fill-opacity="1">The text inside the box shows</tspan><tspan x="680" y="368" id="tspan1212" fill="#34302c" fill-opacity="1">the nature of the transformation</tspan>
-  </text>
-  <text id="text1226" y="139" x="620" style="line-height:1.25;-inkscape-font-specification:'Tahoma';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" xml:space="preserve" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" font-family="'Tahoma','Nimbus Sans L'" letter-spacing="0" word-spacing="0" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
-    <tspan id="tspan1224" y="139" x="620" fill="#34302c" fill-opacity="1">This vertical line indicates that</tspan><tspan y="159" x="620" id="tspan1248" fill="#34302c" fill-opacity="1">the Flux has completed successfully</tspan>
-  </text>
-  <text xml:space="preserve" style="line-height:1.25;-inkscape-font-specification:'Tahoma';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" x="234" y="179" id="text1265" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" font-family="'Tahoma','Nimbus Sans L'" letter-spacing="0" word-spacing="0" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
-    <tspan id="tspan1263" x="234" y="179" style="text-align:end" text-anchor="end" fill="#34302c" fill-opacity="1">This is the timeline of the Flux</tspan><tspan x="234" y="199" style="text-align:end" id="tspan1269" text-anchor="end" fill="#34302c" fill-opacity="1">Time flows from left to right</tspan>
-  </text>
-  <text id="text1275" y="421" x="234" style="line-height:1.25;-inkscape-font-specification:'Tahoma';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" xml:space="preserve" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" font-family="'Tahoma','Nimbus Sans L'" letter-spacing="0" word-spacing="0" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
-    <tspan id="tspan1273" style="text-align:end" y="421" x="234" text-anchor="end" fill="#34302c" fill-opacity="1">This Flux is the result</tspan><tspan style="text-align:end" y="441" x="234" id="tspan1279" text-anchor="end" fill="#34302c" fill-opacity="1">of the transformation</tspan>
-  </text>
-  <text xml:space="preserve" style="line-height:1.25;-inkscape-font-specification:'Tahoma';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" x="518" y="481" id="text1285" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" font-family="'Tahoma','Nimbus Sans L'" letter-spacing="0" word-spacing="0" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
-    <tspan x="518" y="481" style="text-align:start" id="tspan1289" text-anchor="start" fill="#34302c" fill-opacity="1">If for some reason the Flux terminates</tspan><tspan x="518" y="501" style="text-align:start" id="tspan1293" text-anchor="start" fill="#34302c" fill-opacity="1">abnormally, with an error, the vertical</tspan><tspan x="518" y="521" style="text-align:start" id="tspan1295" text-anchor="start" fill="#34302c" fill-opacity="1">line is replaced by an X</tspan>
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="20 79 907 417" width="907" height="417" id="svg151">
+ <defs id="defs16">
+  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 5 2 2 1 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="450" cap-height="687" ascent="918" descent="-230" font-weight="400" id="font-face2" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma"/>
+   </font-face-src>
+  </font-face>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
+   <g id="g6">
+    <path d="M8 0L0-3v6z" id="path4" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 9 2 3 0 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="501" cap-height="682" ascent="923" descent="-235" font-weight="700" id="font-face9" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma-Bold"/>
+   </font-face-src>
+  </font-face>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_2" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#34302c" stroke-linejoin="miter">
+   <g id="g13">
+    <path d="M12 0L0-4v9z" id="path11" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker-3" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#34302c" stroke-linejoin="miter">
+   <g id="g6-6">
+    <path d="M12 0L0-4v9z" id="path4-7" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_2-5" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
+   <g id="g11">
+    <path d="M8 0L0-3v6z" id="path9" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1339" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
+   <g id="g1337">
+    <path d="M8 0L0-3v6z" id="path1335" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1345" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
+   <g id="g1343">
+    <path d="M8 0L0-3v6z" id="path1341" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1351" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
+   <g id="g1349">
+    <path d="M8 0L0-3v6z" id="path1347" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1357" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
+   <g id="g1355">
+    <path d="M8 0L0-3v6z" id="path1353" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker1363" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#34302c" stroke-linejoin="miter">
+   <g id="g1361">
+    <path d="M8 0L0-3v6z" id="path1359" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+ </defs>
+ <path id="line1092" d="M267 147h383" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker-3)"/>
+ <path d="M281 241h378l1 1v72l-1 1H281l-1-1v-72z" id="path37" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="line52" d="M267 387h382" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker-3)"/>
+ <path id="path70" d="M624 123l2 2v44l-2 2-2-2v-44z" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle id="ellipse55" cy="147" cx="354" r="23" fill="#6cb33e" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle id="ellipse57" cy="147" cx="354" r="23" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="line73" d="M355 172l-1 47" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999995,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
+ <circle id="ellipse60" cy="147" cx="452" r="23" fill="#e6ba31" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle id="ellipse62" cy="147" cx="452" r="23" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle id="ellipse65" cy="147" cx="549" r="23" fill="#45b8de" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle id="ellipse67" cy="147" cx="549" r="23" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <text id="text41" x="132" y="263" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <tspan font-size="24" font-weight="700" x="392" y="285" id="tspan39" font-family="Tahoma,'Nimbus Sans L'" fill="#34302c">operator (...)</tspan>
+ </text>
+ <path id="line1094" d="M452 172v47" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999995,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
+ <path id="line1096" d="M550 172l-1 47" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999995,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
+ <path id="line1098" d="M625 172l-1 47" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999995,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
+ <text y="92" x="49" id="text1102" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan1100" y="114" x="308" font-weight="400" font-size="16" style="-inkscape-font-specification:'Tahoma, Nimbus Sans L, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" font-style="normal" font-variant="normal" font-stretch="normal" font-family="Tahoma,'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#34302c">These are the items emitted by the Flux</tspan>
+ </text>
+ <circle cx="354" cy="387" id="ellipse1144" r="23" fill="#6cb33e" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle cx="354" cy="387" id="ellipse1146" r="23" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle cx="452" cy="387" id="ellipse1148" r="23" fill="#e6ba31" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle cx="452" cy="387" id="ellipse1150" r="23" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="line1152" d="M355 318l-1 24" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999994,5.99999983" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
+ <path id="line1154" d="M452 318v24" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999994,5.99999983" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
+ <path id="line1156" d="M550 319l-1 40" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999992,5.99999978" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-5)"/>
+ <path id="path1034" d="M567 403l-2 2h-3l-31-31v-3l2-2h3l31 31z" fill="#ef2200" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="path1036" d="M565 369l2 2v3l-31 31h-3l-2-2v-3l31-31z" fill="#ef2200" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <text xml:space="preserve" style="line-height:1.25;-inkscape-font-specification:Tahoma;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" x="674" y="230" id="text1193" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" letter-spacing="0" word-spacing="0" font-family="Tahoma,'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+  <tspan x="674" y="230" id="tspan1197" fill="#34302c" fill-opacity="1">These dotted lines and this box</tspan><tspan x="674" y="250" id="tspan1204" fill="#34302c" fill-opacity="1">indicate that a transformation</tspan><tspan x="674" y="270" id="tspan1206" fill="#34302c" fill-opacity="1">is being applied to the Flux</tspan><tspan x="674" y="310" id="tspan1210" fill="#34302c" fill-opacity="1">The text inside the box shows</tspan><tspan x="674" y="330" id="tspan1212" fill="#34302c" fill-opacity="1">the nature of the transformation</tspan>
+ </text>
+ <text id="text1226" y="101" x="618" style="line-height:1.25;-inkscape-font-specification:Tahoma;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" xml:space="preserve" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" letter-spacing="0" word-spacing="0" font-family="Tahoma,'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+  <tspan id="tspan1224" y="101" x="618" fill="#34302c" fill-opacity="1">This vertical line indicates that</tspan><tspan y="121" x="618" id="tspan1248" fill="#34302c" fill-opacity="1">the Flux has completed successfully</tspan>
+ </text>
+ <text xml:space="preserve" style="line-height:1.25;-inkscape-font-specification:Tahoma;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" x="244" y="141" id="text1265" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" letter-spacing="0" word-spacing="0" font-family="Tahoma,'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+  <tspan id="tspan1263" x="244" y="141" style="text-align:end" text-anchor="end" fill="#34302c" fill-opacity="1">This is the timeline of the Flux</tspan><tspan x="244" y="161" style="text-align:end" id="tspan1269" text-anchor="end" fill="#34302c" fill-opacity="1">Time flows from left to right</tspan>
+ </text>
+ <text id="text1275" y="383" x="244" style="line-height:1.25;-inkscape-font-specification:Tahoma;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" xml:space="preserve" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" letter-spacing="0" word-spacing="0" font-family="Tahoma,'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+  <tspan id="tspan1273" style="text-align:end" y="383" x="244" text-anchor="end" fill="#34302c" fill-opacity="1">This Flux is the result</tspan><tspan style="text-align:end" y="403" x="244" id="tspan1279" text-anchor="end" fill="#34302c" fill-opacity="1">of the transformation</tspan>
+ </text>
+ <text xml:space="preserve" style="line-height:1.25;-inkscape-font-specification:Tahoma;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start" x="528" y="443" id="text1285" font-style="normal" font-variant="normal" font-weight="400" font-stretch="normal" font-size="16" letter-spacing="0" word-spacing="0" font-family="Tahoma,'Nimbus Sans L'" writing-mode="lr-tb" text-anchor="start" fill="#000" fill-opacity="1" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1">
+  <tspan x="528" y="443" style="text-align:start" id="tspan1289" text-anchor="start" fill="#34302c" fill-opacity="1">If for some reason the Flux terminates</tspan><tspan x="528" y="463" style="text-align:start" id="tspan1293" text-anchor="start" fill="#34302c" fill-opacity="1">abnormally, with an error, the vertical</tspan><tspan x="528" y="483" style="text-align:start" id="tspan1295" text-anchor="start" fill="#34302c" fill-opacity="1">line is replaced by an X</tspan>
+ </text>
 </svg>

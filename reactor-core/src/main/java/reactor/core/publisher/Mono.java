@@ -282,7 +282,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * and replay that signal, effectively behaving like the fastest of these competing
 	 * sources.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstVarSourcesForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstForMono.svg" alt="">
 	 * <p>
 	 * @param monos The deferred monos to use.
 	 * @param <T> The type of the function result.
@@ -298,7 +298,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Pick the first available result coming from any of the given monos and populate a new {@literal Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstIterableSourcesForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstForMono.svg" alt="">
 	 * <p>
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
@@ -668,7 +668,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <ul> <li>Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup
 	 * Consumer may override the terminal event.</li> <li>Non-eager cleanup will drop any exception.</li> </ul>
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/usingWithCleanupAndEagerFormMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/usingForMono.svg" alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to create the resource
 	 * @param sourceSupplier a {@link Mono} factory to create the Mono depending on the created resource
@@ -695,7 +695,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup Consumer
 	 * may override the terminal event.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/usingWithCleanupForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/usingForMono.svg" alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to create the resource
 	 * @param sourceSupplier a {@link Mono} factory to create the Mono depending on the created resource
@@ -719,6 +719,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * main sequence. Instead it just defers the termination (unless it errors, in which case
 	 * the error suppresses the original termination signal).
 	 * <p>
+	 * <img class="marble" src="doc-files/marbles/usingWhenSuccessForMono.svg" alt="">
+	 * <p>
+	 * Individual cleanups can also be associated with mono cancellation and
+	 * error terminations:
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/usingWhenFailureForMono.svg" alt="">
+	 * <p>
 	 * Note that if the resource supplying {@link Publisher} emits more than one resource, the
 	 * subsequent resources are dropped ({@link Operators#onNextDropped(Object, Context)}). If
 	 * the publisher errors AFTER having emitted one resource, the error is also silently dropped
@@ -726,8 +733,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * An empty completion or error without at least one onNext signal triggers a short-circuit
 	 * of the main sequence with the same terminal signal (no resource is established, no
 	 * cleanup is invoked).
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/usingWhenWithAsyncCompleteAndErrorForMono.svg" alt="">
 	 *
 	 * @param resourceSupplier a {@link Publisher} that "generates" the resource,
 	 * subscribed for each subscription to the main sequence
@@ -756,6 +761,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * main sequence. Instead it just defers the termination (unless it errors, in which case
 	 * the error suppresses the original termination signal).
 	 * <p>
+	 * <img class="marble" src="doc-files/marbles/usingWhenSuccessForMono.svg" alt="">
+	 * <p>
+	 * Individual cleanups can also be associated with mono cancellation and
+	 * error terminations:
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/usingWhenFailureForMono.svg" alt="">
+	 * <p>
 	 * Note that if the resource supplying {@link Publisher} emits more than one resource, the
 	 * subsequent resources are dropped ({@link Operators#onNextDropped(Object, Context)}). If
 	 * the publisher errors AFTER having emitted one resource, the error is also silently dropped
@@ -763,8 +775,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * An empty completion or error without at least one onNext signal triggers a short-circuit
 	 * of the main sequence with the same terminal signal (no resource is established, no
 	 * cleanup is invoked).
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/usingWhenAllForMono.svg" alt="">
 	 *
 	 * @param resourceSupplier a {@link Publisher} that "generates" the resource,
 	 * subscribed for each subscription to the main sequence
@@ -818,7 +828,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to the returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/whenIterable.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/when.svg" alt="">
 	 * <p>
 	 *
 	 * @param sources The sources to use.
@@ -837,7 +847,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/whenDelayErrorIterable.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/whenDelayError.svg" alt="">
 	 * <p>
 	 *
 	 * @param sources The sources to use.
@@ -3427,7 +3437,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/retryBackoffWithLimitAndFirstBackoffForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/retryBackoffForMono.svg" alt="">
 	 *
 	 * @param numRetries the maximum number of attempts before an {@link IllegalStateException}
 	 * is raised (having the original retry-triggering exception as cause).
@@ -3462,7 +3472,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/retryBackoffWithLimitAndFirstBackoffAndMaxBackoffForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/retryBackoffForMono.svg" alt="">
 	 *
 	 * @param numRetries the maximum number of attempts before an {@link IllegalStateException}
 	 * is raised (having the original retry-triggering exception as cause).
@@ -3993,7 +4003,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If the fallback {@link Mono} is null, signal a {@link TimeoutException} instead.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/timeoutWithPeriodAndFallbackForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/timeoutFallbackForMono.svg" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 * @param fallback the fallback {@link Mono} to subscribe to when a timeout occurs
@@ -4027,7 +4037,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p> If the given {@link Mono} is null, signal a {@link TimeoutException}.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/timeoutWithPeriodAndFallbackForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/timeoutFallbackForMono.svg" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
@@ -4050,7 +4060,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * not been emitted before the given {@link Publisher} emits.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/timeoutWithFirstValueTimeoutForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/timeoutPublisher.svg" alt="">
 	 *
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Mono}
 	 * @param <U> the element type of the timeout Publisher
@@ -4067,7 +4077,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * not been emitted before the given {@link Publisher} emits.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/timeoutWithFirstAndFallbackMonoForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/timeoutPublisherAndFallbackForMono.svg" alt="">
 	 *
 	 * @param firstTimeout the timeout
 	 * {@link Publisher} that must not emit before the first signal from this {@link Mono}
@@ -4129,9 +4139,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Wrap this {@link Mono} into a {@link MonoProcessor} (turning it hot and allowing to block,
 	 * cancel, as well as many other operations). Note that the {@link MonoProcessor}
 	 * is subscribed to its parent source if any.
-	 *
-	 * <p>
-	 * <img class="marble" src="doc-files/marbles/toProcessor.svg" alt="">
 	 *
 	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
 	 */
