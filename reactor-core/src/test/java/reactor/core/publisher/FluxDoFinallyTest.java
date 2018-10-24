@@ -472,7 +472,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	//see https://github.com/reactor/reactor-core/issues/951
-	public void gh951_whithoutDoOnError() {
+	public void gh951_withoutDoOnError() {
 		List<String> events = new ArrayList<>();
 
 		Assertions.assertThatExceptionOfType(UnsupportedOperationException.class)
@@ -483,7 +483,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		          .withMessage("java.lang.IllegalStateException: boom");
 
 		Assertions.assertThat(events)
-		          .as("whithoutDoOnError")
+		          .as("withoutDoOnError")
 		          .containsExactly("doFinally onError");
 	}
 

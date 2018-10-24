@@ -1137,7 +1137,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		final Object consumerLock = new Object();
 
 		final CountDownLatch internalLatch = new CountDownLatch(COUNT);
-		final CountDownLatch counsumerLatch = new CountDownLatch(COUNT);
+		final CountDownLatch consumerLatch = new CountDownLatch(COUNT);
 
 		final AtomicInteger internalCounter = new AtomicInteger(0);
 		final AtomicInteger consumerCounter = new AtomicInteger(0);
@@ -1191,7 +1191,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 					                            fail();
 				                            }
 
-				                            counsumerLatch.countDown();
+				                            consumerLatch.countDown();
 			                            }
 		                            }));
 
@@ -1201,7 +1201,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		internalLatch.await(5, TimeUnit.SECONDS);
 		assertEquals(COUNT, internalCounter.get());
-		counsumerLatch.await(5, TimeUnit.SECONDS);
+		consumerLatch.await(5, TimeUnit.SECONDS);
 		assertEquals(COUNT, consumerCounter.get());
 	}
 

@@ -151,7 +151,7 @@ public interface Disposable {
 		 * <p>
 		 * It becomes the responsibility of the caller to dispose the value themselves,
 		 * which they can do by a simple call to {@link Disposable#dispose()} on said
-		 * value (probaby guarded by a check that this method returned true, meaning the
+		 * value (probably guarded by a check that this method returned true, meaning the
 		 * disposable was actually in the container).
 		 *
 		 * @param d the {@link Disposable} to remove.

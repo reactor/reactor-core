@@ -580,7 +580,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void distinctDefaulWithHashcodeCollisions() {
+	public void distinctDefaultWithHashcodeCollisions() {
 		Object foo = new Object() {
 			@Override
 			public int hashCode() {

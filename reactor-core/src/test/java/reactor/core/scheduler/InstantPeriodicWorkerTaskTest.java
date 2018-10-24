@@ -38,11 +38,11 @@ public class InstantPeriodicWorkerTaskTest {
     @Test
     public void taskCrash() {
         ExecutorService exec = Executors.newSingleThreadExecutor();
-        Disposable.Composite composit = Disposables.composite();
+        Disposable.Composite composite = Disposables.composite();
         List<Throwable> throwables = prepareErrorHook();
 
         try {
-            InstantPeriodicWorkerTask task = new InstantPeriodicWorkerTask(errorRunnable, exec, composit);
+            InstantPeriodicWorkerTask task = new InstantPeriodicWorkerTask(errorRunnable, exec, composite);
 
             assertThat(task.call()).isNull();
             assertThat(throwables).containsOnly(exception);

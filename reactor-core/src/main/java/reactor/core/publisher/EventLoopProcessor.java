@@ -162,7 +162,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	/**
-	 * Concurrent substraction bound to 0 and Long.MAX_VALUE. Any concurrent write will
+	 * Concurrent subtraction bound to 0 and Long.MAX_VALUE. Any concurrent write will
 	 * "happen" before this operation.
 	 *
 	 * @param sequence current sequence to update

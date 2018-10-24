@@ -282,7 +282,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	}
 
 	/**
-	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@code
+	 * Get the current cursor value for the ring buffer.  The actual value received will depend on the type of {@code
 	 * RingBufferProducer} that is being used.
 	 * <p>
      * See {@code MultiProducerRingBuffer}.
@@ -371,7 +371,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 
 	/**
-	 * Return {@code true} if {@code sun.misc.Unsafe} was found on the classpath and can be used for acclerated
+	 * Return {@code true} if {@code sun.misc.Unsafe} was found on the classpath and can be used for accelerated
 	 * direct memory access.
 	 * @return true if unsafe is present
 	 */

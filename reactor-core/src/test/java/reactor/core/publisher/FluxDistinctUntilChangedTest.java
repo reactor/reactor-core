@@ -118,7 +118,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 	}
 
 	@Test
-	public void someRepetiton() {
+	public void someRepetition() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1, 1, 2, 2, 1, 1, 2, 2, 1, 2, 3, 3)
@@ -269,7 +269,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 	}
 
 	@Test
-	public void distinctUntilChangedDefaulWithHashcodeCollisions() {
+	public void distinctUntilChangedDefaultWithHashcodeCollisions() {
 		Object foo = new Object() {
 			@Override
 			public int hashCode() {

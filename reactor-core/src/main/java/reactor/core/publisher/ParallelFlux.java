@@ -1118,7 +1118,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @param <R> the result type
 	 * @param mapper the function to map each rail's value into a Publisher
-	 * @param delayUntilEnd true if delayed until all sources are concated
+	 * @param delayUntilEnd true if delayed until all sources are concatenated
 	 * @param prefetch the number of items to prefetch from each inner Publisher
 	 * source and the inner Publishers (immediate, boundary, end)
 	 *

@@ -47,7 +47,7 @@ in the reference guide.
 
 New to Reactive Programming or bored of reading already ? Try the [Introduction to Reactor Core hands-on](https://github.com/reactor/lite-rx-api-hands-on) !
 
-If you are familiar with RxJava or if you want to check more detailled introduction, be sure to check 
+If you are familiar with RxJava or if you want to check more detailed introduction, be sure to check 
 https://www.infoq.com/articles/reactor-by-example !
 
 ## Flux

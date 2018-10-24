@@ -221,7 +221,7 @@ public class FluxWindowBoundaryTest {
 	}
 
 	@Test
-	public void windowWillAcumulateMultipleListsOfValues() {
+	public void windowWillAccumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
 		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
 
