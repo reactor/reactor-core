@@ -296,7 +296,7 @@ without triggering an `IllegalStateException`.
 * `CLEANUP_ON_TERMINATE`: Allows termination signals to be sent several times in a row.
 This includes `complete()`, `error()` and `emit()`.
 * `DEFER_CANCELLATION`: Allow the `TestPublisher` to ignore cancellation signals and continue
-emitting signals as if the cancellation lost race agains said signals.This include `cancel()`.
+emitting signals as if the cancellation lost race against said signals.
 
 Finally, the `TestPublisher` keeps track of internal state after subscription, which can
 be asserted through its various `assert*` methods.
