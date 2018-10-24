@@ -30,6 +30,8 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxDistinctTest.DistinctDefault;
 import reactor.core.publisher.FluxDistinctTest.DistinctDefaultCancel;
 import reactor.core.publisher.FluxDistinctTest.DistinctDefaultError;
+import reactor.test.MemoryUtils;
+import reactor.test.MemoryUtils.RetainedDetector;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -293,9 +295,9 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test
 	public void distinctUntilChangedDefaultDoesntRetainObjects() throws InterruptedException {
-		DistinctDefault.finalized.set(0);
+		RetainedDetector retainedDetector = new RetainedDetector();
 		Flux<DistinctDefault> test = Flux.range(1, 100)
-		                                                  .map(DistinctDefault::new)
+		                                                  .map(i -> retainedDetector.tracked(new DistinctDefault(i)))
 		                                                  .distinctUntilChanged();
 
 		StepVerifier.create(test)
@@ -305,16 +307,16 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(DistinctDefault.finalized.longValue())
+		assertThat(retainedDetector.finalizedCount())
 				.as("none retained")
 				.isEqualTo(100);
 	}
 
 	@Test
 	public void distinctUntilChangedDefaultErrorDoesntRetainObjects() throws InterruptedException {
-		DistinctDefaultError.finalized.set(0);
+		RetainedDetector retainedDetector = new RetainedDetector();
 		Flux<DistinctDefaultError> test = Flux.range(1, 100)
-		                                                  .map(DistinctDefaultError::new)
+		                                                  .map(i -> retainedDetector.tracked(new DistinctDefaultError(i)))
 		                                                  .concatWith(Mono.error(new IllegalStateException("boom")))
 		                                                  .distinctUntilChanged();
 
@@ -325,16 +327,16 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(DistinctDefaultError.finalized.longValue())
+		assertThat(retainedDetector.finalizedCount())
 				.as("none retained after error")
 				.isEqualTo(100);
 	}
 
 	@Test
 	public void distinctUntilChangedDefaultCancelDoesntRetainObjects() throws InterruptedException {
-		DistinctDefaultCancel.finalized.set(0);
+		RetainedDetector retainedDetector = new RetainedDetector();
 		Flux<DistinctDefaultCancel> test = Flux.range(1, 100)
-		                                                  .map(DistinctDefaultCancel::new)
+		                                                  .map(i -> retainedDetector.tracked(new DistinctDefaultCancel(i)))
 		                                                  .concatWith(Mono.error(new IllegalStateException("boom")))
 		                                                  .distinctUntilChanged()
 		                                                  .take(50);
@@ -346,7 +348,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(FluxDistinctTest.DistinctDefaultCancel.finalized.longValue())
+		assertThat(retainedDetector.finalizedCount())
 				.as("none retained after cancel")
 				.isEqualTo(50);
 	}

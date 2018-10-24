@@ -38,6 +38,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferWhen.BufferWhenMainSubscriber;
+import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -95,7 +96,7 @@ public class FluxBufferWhenTest {
 	@Test
 	public void timedOutBuffersDontLeak() throws InterruptedException {
 		LongAdder created = new LongAdder();
-		LongAdder finalized = new LongAdder();
+		MemoryUtils.RetainedDetector retainedDetector = new MemoryUtils.RetainedDetector();
 		class Wrapper {
 
 			final int i;
@@ -109,11 +110,6 @@ public class FluxBufferWhenTest {
 			public String toString() {
 				return "{i=" + i + '}';
 			}
-
-			@Override
-			protected void finalize() {
-				finalized.increment();
-			}
 		}
 
 		final CountDownLatch latch = new CountDownLatch(1);
@@ -121,7 +117,7 @@ public class FluxBufferWhenTest {
 
 		Flux<Integer> emitter = Flux.range(1, 200)
 		                            .delayElements(Duration.ofMillis(25))
-		                            .doOnNext(i -> processor.onNext(new Wrapper(i)))
+		                            .doOnNext(i -> processor.onNext(retainedDetector.tracked(new Wrapper(i))))
 		                            .doOnError(processor::onError)
 		                            .doOnComplete(processor::onComplete);
 
@@ -134,7 +130,7 @@ public class FluxBufferWhenTest {
 				         .map(t2 -> Tuples.of(t2.getT1(),
 						         String.format("from %s to %s", t2.getT2().get(0),
 								         t2.getT2().get(t2.getT2().size() - 1)),
-						         finalized.longValue()))
+						         retainedDetector.finalizedCount()))
 				         .doOnNext(v -> LOGGER.debug(v.toString()))
 				         .doOnComplete(latch::countDown)
 				         .collectList();
@@ -153,7 +149,7 @@ public class FluxBufferWhenTest {
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(finalized.longValue())
+		assertThat(retainedDetector.finalizedCount())
 				.as("final GC collects all")
 				.isEqualTo(created.longValue());
 	}
