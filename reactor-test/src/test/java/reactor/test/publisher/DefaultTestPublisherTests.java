@@ -187,6 +187,30 @@ public class DefaultTestPublisherTests {
 	}
 
 	@Test
+	public void misbehavingFluxIgnoresCancellation() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.DEFER_CANCELLATION);
+		AtomicLong emitCount = new AtomicLong();
+
+		publisher.flux().subscribe(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(Long.MAX_VALUE);
+				subscription.cancel();
+			}
+
+			@Override
+			protected void hookOnNext(String value) {
+				emitCount.incrementAndGet();
+			}
+		});
+
+		publisher.emit("A", "B", "C");
+
+		publisher.assertCancelled();
+		assertThat(emitCount.get()).isEqualTo(3);
+	}
+
+	@Test
 	public void expectSubscribers() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
