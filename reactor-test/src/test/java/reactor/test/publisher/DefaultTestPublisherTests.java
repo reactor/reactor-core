@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher.Violation;
@@ -184,6 +185,30 @@ public class DefaultTestPublisherTests {
 
 		assertThat(count.get()).isEqualTo(3);
 		publisher.assertCancelled();
+	}
+
+	@Test
+	public void misbehavingFluxIgnoresCancellation() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.DEFER_CANCELLATION);
+		AtomicLong emitCount = new AtomicLong();
+
+		publisher.flux().subscribe(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(Long.MAX_VALUE);
+				subscription.cancel();
+			}
+
+			@Override
+			protected void hookOnNext(String value) {
+				emitCount.incrementAndGet();
+			}
+		});
+
+		publisher.emit("A", "B", "C");
+
+		publisher.assertCancelled();
+		assertThat(emitCount.get()).isEqualTo(3);
 	}
 
 	@Test

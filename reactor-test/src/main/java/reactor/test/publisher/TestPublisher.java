@@ -242,7 +242,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 		CLEANUP_ON_TERMINATE,
 		/**
 		 * Allow the {@link TestPublisher} to ignore cancellation signals and continue
-		 * emitting signals as if the cancellation lost race agains said signals.
+		 * emitting signals as if the cancellation lost race against said signals.
 		 */
 		DEFER_CANCELLATION
 	}

@@ -207,7 +207,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		public void cancel() {
 			if (!cancelled) {
 				DefaultTestPublisher.CANCEL_COUNT.incrementAndGet(parent);
-				if (parent.violations.contains(Violation.CLEANUP_ON_TERMINATE)) {
+				if (parent.violations.contains(Violation.CLEANUP_ON_TERMINATE)||parent.violations.contains(Violation.DEFER_CANCELLATION)) {
 					return;
 				}
 				cancelled = true;
