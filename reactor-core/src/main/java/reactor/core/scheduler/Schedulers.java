@@ -16,8 +16,10 @@
 
 package reactor.core.scheduler;
 
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
@@ -37,6 +40,8 @@ import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static reactor.core.Exceptions.unwrap;
 
@@ -408,6 +413,46 @@ public abstract class Schedulers {
 	}
 
 	/**
+	 * Set up an additional {@link ScheduledExecutorService} decorator if it is not
+	 * already present. Note that the {@link Factory}'s legacy {@link Factory#decorateExecutorService(String, Supplier)}
+	 * method will always be invoked first before applying the decorators added via this
+	 * method.
+	 * <p>
+	 * The decorator is a {@link BiFunction} taking a {@link Tuple2} (that represents the
+	 * {@link Scheduler} type and a description of the source, as {@link String Strings})
+	 * and the backing {@link ScheduledExecutorService} as second argument. It returns the
+	 * decorated {@link ScheduledExecutorService}.
+	 * <p>
+	 * Since the only way to deactivate the decorator is to {@link #removeExecutorServiceDecorator(BiFunction) remove}
+	 * the same instance that was added, a reference to that instance should be kept around
+	 * by the callers in case such removal is needed.
+	 *
+	 * @param decorator the executor service decorator to add, if not already present.
+	 * @see #removeExecutorServiceDecorator(BiFunction)
+	 */
+	public static void addExecutorServiceDecorator(BiFunction<Tuple2<String, String>, ScheduledExecutorService, ScheduledExecutorService> decorator) {
+		synchronized (DECORATORS) {
+			DECORATORS.add(decorator);
+		}
+	}
+
+	/**
+	 * Remove an existing {@link ScheduledExecutorService} decorator if it has been set up
+	 * via {@link #addExecutorServiceDecorator(BiFunction)}. Note that the {@link Factory}'s
+	 * legacy {@link Factory#decorateExecutorService(String, Supplier)} method is always
+	 * applied first, even if all other decorators have been removed via this method.
+	 *
+	 * @param decorator the executor service decorator to remove, the same instance that was
+	 * passed to {@link #addExecutorServiceDecorator(BiFunction)}
+	 * @see #addExecutorServiceDecorator(BiFunction)
+	 */
+	public static boolean removeExecutorServiceDecorator(BiFunction<Tuple2<String, String>, ScheduledExecutorService, ScheduledExecutorService> decorator) {
+		synchronized (DECORATORS) {
+			return DECORATORS.remove(decorator);
+		}
+	}
+
+	/**
 	 * Clear any cached {@link Scheduler} and call dispose on them.
 	 */
 	public static void shutdownNow() {
@@ -462,7 +507,12 @@ public abstract class Schedulers {
 		 * @param actual the default backing implementation, provided lazily as a Supplier
 		 * so that you can bypass instantiation completely if you want to replace it.
 		 * @return the internal {@link ScheduledExecutorService} instance to use.
+		 * @deprecated use {@link Schedulers#addExecutorServiceDecorator(BiFunction)} and
+		 * {@link Schedulers#removeExecutorServiceDecorator(BiFunction)} instead, to compose
+		 * multiple decorators in addition to the one from the current
+		 * {@link Schedulers#setFactory(Factory) Factory}
 		 */
+		@Deprecated
 		default ScheduledExecutorService decorateExecutorService(String schedulerType,
 				Supplier<? extends ScheduledExecutorService> actual) {
 			return actual.get();
@@ -513,6 +563,19 @@ public abstract class Schedulers {
 		}
 	}
 
+	static ScheduledExecutorService decorateExecutorService(String schedulerType,
+			String description, Supplier<? extends ScheduledExecutorService> supplier) {
+		final Tuple2<String, String> metadata = Tuples.of(schedulerType, description);
+		ScheduledExecutorService result = factory.decorateExecutorService(schedulerType, supplier);
+
+		synchronized (DECORATORS) {
+			for (BiFunction<Tuple2<String, String>, ScheduledExecutorService, ScheduledExecutorService> decorator : DECORATORS) {
+				result = decorator.apply(metadata, result);
+			}
+		}
+		return result;
+	}
+
 	// Internals
 	static final String ELASTIC               = "elastic"; // IO stuff
 	static final String PARALLEL              = "parallel"; //scale up common tasks
@@ -535,8 +598,9 @@ public abstract class Schedulers {
 
 	static final Supplier<Scheduler> SINGLE_SUPPLIER = () -> newSingle(SINGLE, true);
 
-	static final Factory DEFAULT = new Factory() {
-	};
+	static final Factory DEFAULT = new Factory() { };
+
+	static final Set<BiFunction<Tuple2<String, String>, ScheduledExecutorService, ScheduledExecutorService>> DECORATORS = new LinkedHashSet<>();
 
 	static volatile Factory factory = DEFAULT;
 
@@ -783,12 +847,6 @@ public abstract class Schedulers {
 		}
 
 		return sr;
-	}
-
-
-	static ScheduledExecutorService decorateExecutorService(String schedulerType,
-			Supplier<? extends ScheduledExecutorService> actual) {
-		return factory.decorateExecutorService(schedulerType, actual);
 	}
 
 	/**

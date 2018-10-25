@@ -72,7 +72,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	private void init() {
 		EXECUTORS.lazySet(this,
-				Schedulers.decorateExecutorService(Schedulers.SINGLE, this));
+				Schedulers.decorateExecutorService(Schedulers.SINGLE, this.toString(), this));
 	}
 
 	@Override
@@ -94,7 +94,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 
 			if (b == null) {
-				b = Schedulers.decorateExecutorService(Schedulers.SINGLE, this);
+				b = Schedulers.decorateExecutorService(Schedulers.SINGLE, this.toString(), this);
 			}
 
 			if (EXECUTORS.compareAndSet(this, a, b)) {

@@ -237,7 +237,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 			this.parent = parent;
 			if (parent != null) {
 				this.exec =
-						Schedulers.decorateExecutorService(Schedulers.ELASTIC, parent);
+						Schedulers.decorateExecutorService(Schedulers.ELASTIC, parent.toString(), parent);
 			}
 			else {
 				this.exec = Executors.newSingleThreadScheduledExecutor();
