@@ -34,7 +34,7 @@ buildscript {
 
 plugins {
   id 'org.asciidoctor.convert' version '1.5.6'
-  id "me.champeau.gradle.jmh" version "0.4.4" apply false
+  id "me.champeau.gradle.jmh" version "0.4.7" apply false
   id "org.jetbrains.dokka" version "0.9.16"
   id "me.champeau.gradle.japicmp" version "0.2.6"
 }
@@ -61,8 +61,8 @@ ext {
   logbackVersion = '1.1.2'
 
   // Testing
-  assertJVersion = '3.9.0'
-  mockitoVersion = '2.10.0'
+  assertJVersion = '3.11.1'
+  mockitoVersion = '2.23.0'
   jUnitParamsVersion = '1.1.1'
 
   javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
@@ -115,7 +115,7 @@ configure(subprojects) { p ->
   }
 
   jacoco {
-	toolVersion = '0.7.9'
+	toolVersion = '0.8.2'
   }
 
   jacocoTestReport {
@@ -191,6 +191,12 @@ configure(subprojects) { p ->
 	  stackTraceFilters "ENTRY_POINT"
 	  maxGranularity 3
 	}
+
+	if (JavaVersion.current().isJava9Compatible()) {
+	  println "Java 9+: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
+	  jvmArgs = ["-XX:MaxGCPauseMillis=20"]
+	}
+
 	systemProperty("java.awt.headless", "true")
 	systemProperty("reactor.trace.cancel", "true")
 	systemProperty("reactor.trace.nocapacity", "true")
