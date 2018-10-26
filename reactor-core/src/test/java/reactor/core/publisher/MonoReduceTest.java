@@ -223,7 +223,6 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 	}
 
 	@Test
-	@Ignore("need to get rid of result in favor of cancel before this is possible")
 	public void discardAccumulatedOnCancel() {
 		final List<Object> discarded = new ArrayList<>();
 		final AssertSubscriber<Object> testSubscriber = new AssertSubscriber<>(
@@ -236,7 +235,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 		sub.onSubscribe(Operators. emptySubscription());
 
 		sub.onNext(1);
-		assertThat(sub.result).isEqualTo(1);
+		assertThat(sub.value).isEqualTo(1);
 
 		sub.cancel();
 		testSubscriber.assertNoError();
@@ -257,7 +256,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 		sub.onSubscribe(Operators. emptySubscription());
 
 		sub.onNext(1);
-		assertThat(sub.result).isEqualTo(1);
+		assertThat(sub.value).isEqualTo(1);
 
 		sub.onError(new RuntimeException("boom"));
 		testSubscriber.assertErrorMessage("boom");
@@ -276,10 +275,11 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 		sub.onNext(1);
 		sub.onNext(2);
-		assertThat(sub.result).isEqualTo(3);
+		assertThat(sub.value).isEqualTo(3);
 
+		sub.request(1);
 		sub.onComplete();
-		assertThat(sub.result).isNull();
+		assertThat(sub.value).isNull();
 
 		testSubscriber.assertNoError();
 	}
@@ -296,10 +296,10 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 		sub.onNext(1);
 		sub.onNext(2);
-		assertThat(sub.result).isEqualTo(3);
+		assertThat(sub.value).isEqualTo(3);
 
 		sub.onError(new RuntimeException("boom"));
-		assertThat(sub.result).isNull();
+		assertThat(sub.value).isNull();
 
 		testSubscriber.assertErrorMessage("boom");
 	}

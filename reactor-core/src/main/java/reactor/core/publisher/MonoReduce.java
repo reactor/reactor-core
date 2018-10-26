@@ -53,8 +53,6 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 
 		Subscription s;
 
-		T result;
-
 		boolean done;
 
 		ReduceSubscriber(CoreSubscriber<? super T> actual,
@@ -87,9 +85,9 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			T r = result;
+			T r = value;
 			if (r == null) {
-				result = t;
+				value = t;
 			}
 			else {
 				try {
@@ -100,14 +98,14 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 					done = true;
 					Context ctx = actual.currentContext();
 					Operators.onDiscard(t, ctx);
-					Operators.onDiscard(result, ctx);
-					result = null;
+					Operators.onDiscard(value, ctx);
+					value = null;
 					actual.onError(Operators.onOperatorError(s, ex, t,
 							actual.currentContext()));
 					return;
 				}
 
-				result = r;
+				value = r;
 			}
 		}
 
@@ -118,8 +116,8 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			done = true;
-			Operators.onDiscard(result, actual.currentContext());
-			result = null;
+			Operators.onDiscard(value, actual.currentContext());
+			value = null;
 			actual.onError(t);
 		}
 
@@ -129,8 +127,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 				return;
 			}
 			done = true;
-			T r = result;
-			result = null; //nulling out the result, NOT the this.value (which can be read later if no current request)
+			T r = value;
 			if (r != null) {
 				complete(r);
 			}
