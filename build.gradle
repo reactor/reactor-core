@@ -402,7 +402,7 @@ project('reactor-core') {
 	  println "Additional tests from `testStaticInit` ($includes)"
 	}
 	afterSuite { TestDescriptor descriptor, TestResult result ->
-	    if (!(result.testCount > 0 && result.skippedTestCount == 0)) {
+	    if (result.testCount > 0 && (result.skippedTestCount + result.failedTestCount + result.successfulTestCount == 0)) {
 			throw new GradleException("No static initialization tests were executed")
 		}
 	}
