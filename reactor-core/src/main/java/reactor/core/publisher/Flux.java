@@ -6551,7 +6551,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/aggregate.png" alt="">
 	 *
-	 * @reactor.discard This operator discards the internally accumulated value upon error, but NOT cancellation.
+	 * @reactor.discard This operator discards the internally accumulated value upon cancellation or error.
 	 *
 	 * @param aggregator the reducing {@link BiFunction}
 	 *

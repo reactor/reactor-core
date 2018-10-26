@@ -1440,7 +1440,7 @@ public abstract class Operators {
 		@Override
 		public final void clear() {
 			STATE.lazySet(this, FUSED_CONSUMED);
-			value = null;
+			this.value = null;
 		}
 
 		/**
@@ -1474,6 +1474,7 @@ public abstract class Operators {
 					STATE.lazySet(this, HAS_REQUEST_HAS_VALUE);
 					Subscriber<? super O> a = actual;
 					a.onNext(v);
+					this.value = null;
 					if (this.state != CANCELLED) {
 						a.onComplete();
 					}
@@ -1486,7 +1487,7 @@ public abstract class Operators {
 				state = this.state;
 				if (state == CANCELLED) {
 					Operators.onDiscard(value, actual.currentContext());
-					value = null;
+					this.value = null;
 					return;
 				}
 			}
