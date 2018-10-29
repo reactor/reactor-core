@@ -738,6 +738,9 @@ public abstract class Schedulers {
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
 					new InstantPeriodicWorkerTask(task, exec, tasks);
+			if (!tasks.add(isr)) {
+			  throw Exceptions.failWithRejected();
+			}
 			try {
 				Future<?> f;
 				if (initialDelay <= 0L) {

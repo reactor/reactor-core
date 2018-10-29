@@ -1079,6 +1079,23 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void testWorkerScheduleRejectedWithDisposedParent() {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			Disposable.Composite tasks = Disposables.composite();
+			tasks.dispose();
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {},
+							1000, 0, TimeUnit.MILLISECONDS))
+					.withMessage(Exceptions.failWithRejected().getMessage());
+
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {},
+							1000, 1000, TimeUnit.MILLISECONDS))
+					.withMessage(Exceptions.failWithRejected().getMessage());
+		}
+	}
+
+	@Test
 	public void testWorkerScheduleSupportZeroPeriodWithDelayPeriod() {
 		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
 			Disposable.Composite tasks = Disposables.composite();
