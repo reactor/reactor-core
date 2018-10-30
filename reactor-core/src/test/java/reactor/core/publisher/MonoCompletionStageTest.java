@@ -20,13 +20,74 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.junit.Test;
+
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoCompletionStageTest {
 
+	@Test
+	public void cancelFutureImmediatelyCancelledLoop() {
+		for (int i = 0; i < 10000; i++) {
+			CompletableFuture<Integer> future = new CompletableFuture<>();
+			Mono<Integer> mono = Mono
+					.fromFuture(future)
+					.doFinally(sig -> {
+						if (sig == SignalType.CANCEL) future.cancel(false);
+					});
+
+			StepVerifier.create(mono)
+			            .expectSubscription()
+			            .thenCancel()
+			            .verifyThenAssertThat()
+			            .hasNotDroppedErrors();
+
+			assertThat(future).isCancelled();
+		}
+	}
+
+	@Test
+	public void cancelFutureDelayedCancelledLoop() {
+		for (int i = 0; i < 500; i++) {
+			CompletableFuture<Integer> future = new CompletableFuture<>();
+			Mono<Integer> mono = Mono
+					.fromFuture(future)
+					.doFinally(sig -> {
+						if (sig == SignalType.CANCEL) future.cancel(false);
+					});
+
+			StepVerifier.create(mono)
+			            .expectSubscription()
+			            .thenAwait(Duration.ofMillis(10))
+			            .thenCancel()
+			            .verifyThenAssertThat()
+			            .hasNotDroppedErrors();
+
+			assertThat(future).isCancelled();
+		}
+	}
+
+	@Test
+	public void cancelFutureTimeoutCancelledLoop() {
+		for (int i = 0; i < 500; i++) {
+			CompletableFuture<Integer> future = new CompletableFuture<>();
+			Mono<Integer> mono = Mono
+					.fromFuture(future)
+					.doFinally(sig -> {
+						if (sig == SignalType.CANCEL) future.cancel(false);
+					});
+
+			StepVerifier.create(mono.timeout(Duration.ofMillis(10)))
+			            .expectSubscription()
+			            .expectErrorSatisfies(e ->
+					            assertThat(e).hasMessageStartingWith("Did not observe any item or terminal signal within 10ms"))
+			            .verifyThenAssertThat()
+			            .hasNotDroppedErrors();
+
+			assertThat(future).isCancelled();
+		}
+	}
 
 	@Test
 	public void fromCompletableFuture(){

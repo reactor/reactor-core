@@ -56,6 +56,12 @@ final class MonoCompletionStage<T> extends Mono<T>
         }
 
         future.whenComplete((v, e) -> {
+            if (sds.isCancelled()) {
+                //nobody is interested in the Mono anymore, don't risk dropping errors
+                //and discard any potential value
+                Operators.onDiscard(v, sds.currentContext());
+                return;
+            }
             try {
                 if (e != null) {
                     actual.onError(e);

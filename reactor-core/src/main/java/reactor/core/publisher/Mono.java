@@ -365,6 +365,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/fromfuture.png" alt="">
 	 * <p>
+	 * Note that the completion stage is not cancelled when that Mono is cancelled, but
+	 * that behavior can be obtained by using {@link #doFinally(Consumer)} that checks
+	 * for a {@link SignalType#CANCEL} and calls eg.
+	 * {@link CompletionStage#toCompletableFuture() .toCompletableFuture().cancel(false)}.
+	 *
 	 * @param completionStage {@link CompletionStage} that will produce a value (or a null to
 	 * complete immediately)
 	 * @param <T> type of the expected value
@@ -381,6 +386,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/fromfuture.png" alt="">
 	 * <p>
+	 * Note that the completion stage is not cancelled when that Mono is cancelled, but
+	 * that behavior can be obtained by using {@link #doFinally(Consumer)} that checks
+	 * for a {@link SignalType#CANCEL} and calls eg.
+	 * {@link CompletionStage#toCompletableFuture() .toCompletableFuture().cancel(false)}.
+	 *
 	 * @param stageSupplier The {@link Supplier} of a {@link CompletionStage} that will produce a value (or a null to
 	 * complete immediately). This allows lazy triggering of CompletionStage-based APIs.
 	 * @param <T> type of the expected value
@@ -428,6 +438,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/fromfuture.png" alt="">
 	 * <p>
+	 * Note that the future is not cancelled when that Mono is cancelled, but that behavior
+	 * can be obtained by using a {@link #doFinally(Consumer)} that checks
+	 * for a {@link SignalType#CANCEL} and calls {@link CompletableFuture#cancel(boolean)}.
+	 *
 	 * @param future {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately)
 	 * @param <T> type of the expected value
@@ -445,6 +459,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/fromfuture.png" alt="">
 	 * <p>
+	 * Note that the future is not cancelled when that Mono is cancelled, but that behavior
+	 * can be obtained by using a {@link #doFinally(Consumer)} that checks
+	 * for a {@link SignalType#CANCEL} and calls {@link CompletableFuture#cancel(boolean)}.
+	 *
 	 * @param futureSupplier The {@link Supplier} of a {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately). This allows lazy triggering of future-based APIs.
 	 * @param <T> type of the expected value
