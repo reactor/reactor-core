@@ -3319,7 +3319,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * In case of error, retry this {@link Flux} up to {@code numRetries} times using a
+	 * In case of error, retry this {@link Mono} up to {@code numRetries} times using a
 	 * randomized exponential backoff strategy (jitter). The jitter factor is {@code 50%}
 	 * but the effective backoff delay cannot be less than {@code firstBackoff}.
 	 <p>
@@ -3343,14 +3343,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * is raised (having the original retry-triggering exception as cause).
 	 * @param firstBackoff the first backoff delay to apply then grow exponentially. Also
 	 * minimum delay even taking jitter into account.
-	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
+	 * @return a {@link Mono} that retries on onError with exponentially growing randomized delays between retries.
 	 */
 	public final Mono<T> retryBackoff(long numRetries, Duration firstBackoff) {
 		return retryBackoff(numRetries, firstBackoff, Duration.ofMillis(Long.MAX_VALUE), 0.5d);
 	}
 
 	/**
-	 * In case of error, retry this {@link Flux} up to {@code numRetries} times using a
+	 * In case of error, retry this {@link Mono} up to {@code numRetries} times using a
 	 * randomized exponential backoff strategy. The jitter factor is {@code 50%}
 	 * but the effective backoff delay cannot be less than {@code firstBackoff} nor more
 	 * than {@code maxBackoff}.
@@ -3376,14 +3376,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param firstBackoff the first backoff delay to apply then grow exponentially. Also
 	 * minimum delay even taking jitter into account.
 	 * @param maxBackoff the maximum delay to apply despite exponential growth and jitter.
-	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
+	 * @return a {@link Mono} that retries on onError with exponentially growing randomized delays between retries.
 	 */
 	public final Mono<T> retryBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff) {
 		return retryBackoff(numRetries, firstBackoff, maxBackoff, 0.5d);
 	}
 
 	/**
-	 * In case of error, retry this {@link Flux} up to {@code numRetries} times using a
+	 * In case of error, retry this {@link Mono} up to {@code numRetries} times using a
 	 * randomized exponential backoff strategy, randomized with a user-provided jitter
 	 * factor between {@code 0.d} (no jitter) and {@code 1.0} (default is {@code 0.5}).
 	 * Even with the jitter, the effective backoff delay cannot be less than
@@ -3411,7 +3411,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * minimum delay even taking jitter into account.
 	 * @param maxBackoff the maximum delay to apply despite exponential growth and jitter.
 	 * @param jitterFactor the jitter percentage (as a double between 0.0 and 1.0).
-	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
+	 * @return a {@link Mono} that retries on onError with exponentially growing randomized delays between retries.
 	 */
 	public final Mono<T> retryBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff, double jitterFactor) {
 		return retryWhen(FluxRetryWhen.randomExponentialBackoffFunction(numRetries, firstBackoff, maxBackoff, jitterFactor));
