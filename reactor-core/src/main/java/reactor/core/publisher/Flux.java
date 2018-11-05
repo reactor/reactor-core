@@ -7899,6 +7899,10 @@ public abstract class Flux<T> implements Publisher<T> {
 		return subscriber;
 	}
 
+	public final <V> Flux<V> switchOnFirst(BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends V>> transformer) {
+		return onAssembly(new FluxSwitchOnFirst<>(this, transformer));
+	}
+
 	/**
 	 * Switch to an alternative {@link Publisher} if this sequence is completed without any data.
 	 * <p>
