@@ -36,7 +36,7 @@ The three main uses of `reactor-test` are:
 * Testing that a sequence follows a given scenario, step-by-step, with `StepVerifier`.
 * Producing data in order to test the behavior of operators (including you own operators)
 downstream with `TestPublisher`.
-* In sequences that can do through several alternative `Publisher` (eg. a chain that uses
+* In sequences that can go through several alternative `Publisher` (eg. a chain that uses
   `switchIfEmpty`, probing such a `Publisher` to ensure it was used (as in, subscribed to).
 
 == Testing a Scenario with `StepVerifier`
