@@ -457,7 +457,7 @@ public class FluxMetricsTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1425
 	@Test
-	public void commonTagSet() {
+	public void flowDurationTagsConsistency() {
 		Flux<Integer> source1 = Flux.just(1)
 		                            .name("normal")
 		                            .hide();

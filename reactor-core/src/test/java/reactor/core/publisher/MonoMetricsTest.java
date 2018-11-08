@@ -388,7 +388,7 @@ public class MonoMetricsTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1425
 	@Test
-	public void commonTagSet() {
+	public void flowDurationTagsConsistency() {
 		Mono<Integer> source1 = Mono.just(1)
 		                            .name("normal")
 		                            .hide();
