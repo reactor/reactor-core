@@ -236,14 +236,14 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 					.builder(METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
-					.tag(FluxMetrics.TAG_EXCEPTION, "")
+					.tag(TAG_EXCEPTION, "")
 					.description("Times the duration elapsed between a subscription and the onComplete termination of the sequence")
 					.register(registry);
 			this.subscribeToCancelTimer = Timer
 					.builder(METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(TAG_STATUS, TAGVALUE_CANCEL)
-					.tag(FluxMetrics.TAG_EXCEPTION, "")
+					.tag(TAG_EXCEPTION, "")
 					.description("Times the duration elapsed between a subscription and the cancellation of the sequence")
 					.register(registry);
 
