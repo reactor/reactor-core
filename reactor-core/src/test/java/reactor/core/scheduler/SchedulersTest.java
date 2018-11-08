@@ -1191,6 +1191,15 @@ public class SchedulersTest {
 			return true;
 		}
 
+		boolean isAllTasksCancelledOrDone() {
+			for(RunnableScheduledFuture<?> task: tasks) {
+				if (!task.isCancelled() && !task.isDone()) {
+					return false;
+				}
+			}
+			return true;
+		}
+
 		@Override
 		public void close() {
 			shutdown();
