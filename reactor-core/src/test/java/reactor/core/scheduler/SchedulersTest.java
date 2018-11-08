@@ -1065,16 +1065,37 @@ public class SchedulersTest {
 	@Test
 	public void testWorkerSchedulePeriodicallyCancelsSchedulerTask() throws Exception {
 		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
-			CountDownLatch latch = new CountDownLatch(2);
+			AtomicInteger zeroDelayZeroPeriod = new AtomicInteger();
+			AtomicInteger zeroPeriod = new AtomicInteger();
+			AtomicInteger zeroDelayPeriodic = new AtomicInteger();
+			AtomicInteger periodic = new AtomicInteger();
+
 			Disposable.Composite tasks = Disposables.composite();
-			Disposable disposable = Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {
-				latch.countDown();
-			}, 0, 10, TimeUnit.MILLISECONDS);
-			latch.await();
 
-			disposable.dispose();
+			Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> zeroDelayZeroPeriod.incrementAndGet(), 0, 0, TimeUnit.MINUTES);
 
-			assertThat(executorService.isAllTasksCancelled()).isTrue();
+			Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> zeroPeriod.incrementAndGet(), 1, 0, TimeUnit.MINUTES);
+
+			Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> zeroDelayPeriodic.incrementAndGet(), 0, 1, TimeUnit.MINUTES);
+
+			Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> periodic.incrementAndGet(), 1, 1, TimeUnit.MINUTES);
+
+			Thread.sleep(100);
+			tasks.dispose();
+
+			assertThat(executorService.isAllTasksCancelledOrDone())
+					.as("all tasks cancelled or done").isTrue();
+
+			//when no initial delay, the periodic task(s) have time to be schedule. A 0 period results in a lot of schedules
+			assertThat(zeroDelayZeroPeriod).as("zeroDelayZeroPeriod").hasPositiveValue();
+			assertThat(zeroDelayPeriodic).as("zeroDelayPeriodic").hasValue(1);
+			//the below have initial delays and as such shouldn't have had time to schedule
+			assertThat(zeroPeriod).as("zeroDelayPeriodic").hasValue(0);
+			assertThat(periodic).as("periodic").hasValue(0);
 		}
 	}
 
@@ -1083,15 +1104,24 @@ public class SchedulersTest {
 		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
 			Disposable.Composite tasks = Disposables.composite();
 			tasks.dispose();
-			assertThatExceptionOfType(RejectedExecutionException.class)
-					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {},
-							1000, 0, TimeUnit.MILLISECONDS))
-					.withMessage(Exceptions.failWithRejected().getMessage());
 
 			assertThatExceptionOfType(RejectedExecutionException.class)
-					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {},
-							1000, 1000, TimeUnit.MILLISECONDS))
-					.withMessage(Exceptions.failWithRejected().getMessage());
+					.as("zero period, zero delay")
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {}, 0, 0, TimeUnit.MILLISECONDS));
+
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.as("zero period, some delay")
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {}, 10, 0, TimeUnit.MILLISECONDS));
+
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.as("periodic, zero delay")
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {}, 0, 10, TimeUnit.MILLISECONDS));
+
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.as("periodic, some delay")
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {}, 10, 10, TimeUnit.MILLISECONDS));
+
+			assertThat(executorService.tasks).isEmpty();
 		}
 	}
 
