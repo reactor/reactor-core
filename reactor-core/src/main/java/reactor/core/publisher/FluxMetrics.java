@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Clock;
@@ -199,7 +200,6 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	static class MicrometerFluxMetricsSubscriber<T> implements InnerOperator<T,T> {
 
 		final CoreSubscriber<? super T> actual;
-		final MeterRegistry             registry;
 		final Clock                     clock;
 
 		final Counter             malformedSourceCounter;
@@ -216,7 +216,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 		final Timer         onNextIntervalTimer;
 		final Timer         subscribeToCompleteTimer;
-		final Timer.Builder subscribeToErrorTimerBuilder;
+		final Function<Throwable, Timer> subscribeToErrorTimerFactory;
 		final Timer         subscribeToCancelTimer;
 
 		MicrometerFluxMetricsSubscriber(CoreSubscriber<? super T> actual,
@@ -225,12 +225,12 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				String sequenceName,
 				List<Tag> sequenceTags) {
 			this.actual = actual;
-			this.registry = registry;
 			this.clock = clock;
 
 			List<Tag> commonTags = new ArrayList<>();
 			commonTags.add(Tag.of(TAG_SEQUENCE_NAME, sequenceName));
 			commonTags.add(Tag.of(TAG_SEQUENCE_TYPE, TAGVALUE_FLUX));
+			commonTags.add(Tag.of(TAG_EXCEPTION, ""));
 			commonTags.addAll(sequenceTags);
 
 			this.subscribeToCompleteTimer = Timer
@@ -247,11 +247,16 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 					.register(registry);
 
 			//note that Builder ISN'T TRULY IMMUTABLE. This is ok though as there will only ever be one usage.
-			this.subscribeToErrorTimerBuilder = Timer
+			Timer.Builder subscribeToErrorTimerBuilder = Timer
 					.builder(METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
 					.description("Times the duration elapsed between a subscription and the onError termination of the sequence, with the exception name as a tag");
+			this.subscribeToErrorTimerFactory = e -> {
+				return subscribeToErrorTimerBuilder
+						.tag(TAG_EXCEPTION, e.getClass().getName())
+						.register(registry);
+			};
 
 			this.onNextIntervalTimer = Timer
 					.builder(METER_ON_NEXT_DELAY)
@@ -314,9 +319,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			// because it would skew the onNext count by one
 
 			//register a timer for that particular exception
-			Timer timer = subscribeToErrorTimerBuilder
-					.tag(FluxMetrics.TAG_EXCEPTION, e.getClass().getName())
-					.register(registry);
+			Timer timer = subscribeToErrorTimerFactory.apply(e);
 			//record error termination
 			this.subscribeToTerminateSample.stop(timer);
 
@@ -341,7 +344,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.subscribedCounter.increment();
-				this.subscribeToTerminateSample = Timer.start(registry);
+				this.subscribeToTerminateSample = Timer.start(clock);
 				this.lastNextEventNanos = clock.monotonicTime();
 
 				if (s instanceof Fuseable.QueueSubscription) {
@@ -445,9 +448,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				return v;
 			} catch (Throwable e) {
 				//register a timer for that particular exception
-				Timer timer = subscribeToErrorTimerBuilder
-						.tag(FluxMetrics.TAG_EXCEPTION, e.getClass().getName())
-						.register(registry);
+				Timer timer = subscribeToErrorTimerFactory.apply(e);
 				//record error termination
 				this.subscribeToTerminateSample.stop(timer);
 				throw e;

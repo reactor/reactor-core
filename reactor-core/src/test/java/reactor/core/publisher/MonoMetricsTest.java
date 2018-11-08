@@ -17,12 +17,15 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.assertj.core.api.SoftAssertions;
@@ -381,6 +384,25 @@ public class MonoMetricsTest {
 		                .summary();
 
 		assertThat(meter).as("tagged find").isNull();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1425
+	@Test
+	public void commonTagSet() {
+		new MonoMetrics<>(Mono.just(1).name("normal"), registry).block();
+		new MonoMetrics<>(Mono.error(new IllegalStateException("dummy")).name("error"), registry)
+				.onErrorReturn(0)
+				.block();
+
+		Set<Set<String>> uniqueTagKeySets = registry
+				.find(METER_FLOW_DURATION)
+				.meters()
+				.stream()
+				.map(it -> it.getId().getTags())
+				.map(it -> it.stream().map(Tag::getKey).collect(Collectors.toSet()))
+				.collect(Collectors.toSet());
+
+		assertThat(uniqueTagKeySets).hasSize(1);
 	}
 
 }
