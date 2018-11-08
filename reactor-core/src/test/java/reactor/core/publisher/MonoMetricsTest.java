@@ -389,8 +389,16 @@ public class MonoMetricsTest {
 	//see https://github.com/reactor/reactor-core/issues/1425
 	@Test
 	public void commonTagSet() {
-		new MonoMetrics<>(Mono.just(1).name("normal"), registry).block();
-		new MonoMetrics<>(Mono.error(new IllegalStateException("dummy")).name("error"), registry)
+		Mono<Integer> source1 = Mono.just(1)
+		                            .name("normal")
+		                            .hide();
+		Mono<Object> source2 = Mono.error(new IllegalStateException("dummy"))
+		                           .name("error")
+		                           .hide();
+
+		new MonoMetrics<>(source1, registry)
+				.block();
+		new MonoMetrics<>(source2, registry)
 				.onErrorReturn(0)
 				.block();
 

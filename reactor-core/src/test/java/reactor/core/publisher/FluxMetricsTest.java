@@ -38,8 +38,8 @@ import reactor.core.Scannable;
 import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 import static reactor.core.publisher.FluxMetrics.*;
+import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
 public class FluxMetricsTest {
 
@@ -458,8 +458,16 @@ public class FluxMetricsTest {
 	//see https://github.com/reactor/reactor-core/issues/1425
 	@Test
 	public void commonTagSet() {
-		new FluxMetrics<>(Flux.just(1).name("normal"), registry).blockLast();
-		new FluxMetrics<>(Flux.error(new IllegalStateException("dummy")).name("error"), registry)
+		Flux<Integer> source1 = Flux.just(1)
+		                            .name("normal")
+		                            .hide();
+		Flux<Object> source2 = Flux.error(new IllegalStateException("dummy"))
+		                           .name("error")
+		                           .hide();
+
+		new FluxMetrics<>(source1, registry)
+				.blockLast();
+		new FluxMetrics<>(source2, registry)
 				.onErrorReturn(0)
 				.blockLast();
 
