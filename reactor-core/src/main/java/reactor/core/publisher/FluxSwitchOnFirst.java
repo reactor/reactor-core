@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,11 @@ import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+/**
+ * @author Oleh Dokuka
+ * @param <T>
+ * @param <R>
+ */
 final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
     final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
