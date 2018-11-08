@@ -107,19 +107,20 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 			List<Tag> commonTags = new ArrayList<>();
 			commonTags.add(Tag.of(FluxMetrics.TAG_SEQUENCE_NAME, sequenceName));
 			commonTags.add(Tag.of(FluxMetrics.TAG_SEQUENCE_TYPE, FluxMetrics.TAGVALUE_MONO));
-			commonTags.add(Tag.of(FluxMetrics.TAG_EXCEPTION, ""));
 			commonTags.addAll(sequenceTags);
 
 			this.subscribeToCompleteTimer = Timer
 					.builder(FluxMetrics.METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(FluxMetrics.TAG_STATUS, FluxMetrics.TAGVALUE_ON_COMPLETE)
+					.tag(FluxMetrics.TAG_EXCEPTION, "")
 					.description("Times the duration elapsed between a subscription and the onComplete termination of the sequence")
 					.register(registry);
 			this.subscribeToCancelTimer = Timer
 					.builder(FluxMetrics.METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(FluxMetrics.TAG_STATUS, FluxMetrics.TAGVALUE_CANCEL)
+					.tag(FluxMetrics.TAG_EXCEPTION, "")
 					.description("Times the duration elapsed between a subscription and the cancellation of the sequence")
 					.register(registry);
 

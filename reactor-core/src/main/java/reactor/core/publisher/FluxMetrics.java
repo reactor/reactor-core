@@ -230,19 +230,20 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			List<Tag> commonTags = new ArrayList<>();
 			commonTags.add(Tag.of(TAG_SEQUENCE_NAME, sequenceName));
 			commonTags.add(Tag.of(TAG_SEQUENCE_TYPE, TAGVALUE_FLUX));
-			commonTags.add(Tag.of(TAG_EXCEPTION, ""));
 			commonTags.addAll(sequenceTags);
 
 			this.subscribeToCompleteTimer = Timer
 					.builder(METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+					.tag(FluxMetrics.TAG_EXCEPTION, "")
 					.description("Times the duration elapsed between a subscription and the onComplete termination of the sequence")
 					.register(registry);
 			this.subscribeToCancelTimer = Timer
 					.builder(METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(TAG_STATUS, TAGVALUE_CANCEL)
+					.tag(FluxMetrics.TAG_EXCEPTION, "")
 					.description("Times the duration elapsed between a subscription and the cancellation of the sequence")
 					.register(registry);
 
@@ -372,7 +373,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 			//we don't record the time between last onNext and cancel,
 			// because it would skew the onNext count by one
 			this.subscribeToTerminateSample.stop(subscribeToCancelTimer);
-			
+
 			s.cancel();
 		}
 	}
