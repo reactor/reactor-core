@@ -1105,7 +1105,7 @@ public abstract class Operators {
 
 		Fuseable.ConditionalSubscriber<? super T> _actual;
 
-		if (actual instanceof Fuseable.ConditionalSubscriber){
+		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			_actual = (Fuseable.ConditionalSubscriber<? super T>) actual;
 		}
 		else {
