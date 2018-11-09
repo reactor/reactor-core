@@ -292,7 +292,8 @@ project('reactor-core') {
 			"org.assertj:assertj-core:$assertJVersion",
 			"org.mockito:mockito-core:$mockitoVersion",
 			"org.openjdk.jol:jol-core:0.9",
-			"pl.pragmatists:JUnitParams:$jUnitParamsVersion"
+			"pl.pragmatists:JUnitParams:$jUnitParamsVersion",
+			"org.awaitility:awaitility:3.1.2"
 
 	if ("$compatibleVersion" != "SKIP") {
 	  baseline("io.projectreactor:reactor-core:$compatibleVersion") {
