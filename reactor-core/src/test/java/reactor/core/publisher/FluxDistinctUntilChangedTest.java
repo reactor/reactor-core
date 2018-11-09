@@ -30,7 +30,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxDistinctTest.DistinctDefault;
 import reactor.core.publisher.FluxDistinctTest.DistinctDefaultCancel;
 import reactor.core.publisher.FluxDistinctTest.DistinctDefaultError;
-import reactor.test.MemoryUtils;
 import reactor.test.MemoryUtils.RetainedDetector;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
@@ -38,6 +37,7 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, String> {
 
@@ -305,11 +305,11 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		            .verifyComplete();
 
 		System.gc();
-		Thread.sleep(500);
-
-		assertThat(retainedDetector.finalizedCount())
-				.as("none retained")
-				.isEqualTo(100);
+		await().untilAsserted(() -> {
+			assertThat(retainedDetector.finalizedCount())
+					.as("none retained")
+					.isEqualTo(100);
+		});
 	}
 
 	@Test
@@ -325,11 +325,11 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		            .verifyErrorMessage("boom");
 
 		System.gc();
-		Thread.sleep(500);
-
-		assertThat(retainedDetector.finalizedCount())
-				.as("none retained after error")
-				.isEqualTo(100);
+		await().untilAsserted(() -> {
+			assertThat(retainedDetector.finalizedCount())
+					.as("none retained after error")
+					.isEqualTo(100);
+		});
 	}
 
 	@Test
@@ -346,11 +346,11 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		            .verifyComplete();
 
 		System.gc();
-		Thread.sleep(500);
-
-		assertThat(retainedDetector.finalizedCount())
-				.as("none retained after cancel")
-				.isEqualTo(50);
+		await().untilAsserted(() -> {
+			assertThat(retainedDetector.finalizedCount())
+					.as("none retained after cancel")
+					.isEqualTo(50);
+		});
 	}
 
 }
