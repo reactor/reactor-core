@@ -17,12 +17,15 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.assertj.core.api.SoftAssertions;
@@ -35,8 +38,8 @@ import reactor.core.Scannable;
 import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 import static reactor.core.publisher.FluxMetrics.*;
+import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
 public class FluxMetricsTest {
 
@@ -450,5 +453,32 @@ public class FluxMetricsTest {
 		bs.request(100);
 		assertThat(meter.totalAmount()).isEqualTo(108);
 		assertThat(meter.max()).isEqualTo(100);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1425
+	@Test
+	public void flowDurationTagsConsistency() {
+		Flux<Integer> source1 = Flux.just(1)
+		                            .name("normal")
+		                            .hide();
+		Flux<Object> source2 = Flux.error(new IllegalStateException("dummy"))
+		                           .name("error")
+		                           .hide();
+
+		new FluxMetrics<>(source1, registry)
+				.blockLast();
+		new FluxMetrics<>(source2, registry)
+				.onErrorReturn(0)
+				.blockLast();
+
+		Set<Set<String>> uniqueTagKeySets = registry
+				.find(METER_FLOW_DURATION)
+				.meters()
+				.stream()
+				.map(it -> it.getId().getTags())
+				.map(it -> it.stream().map(Tag::getKey).collect(Collectors.toSet()))
+				.collect(Collectors.toSet());
+
+		assertThat(uniqueTagKeySets).hasSize(1);
 	}
 }

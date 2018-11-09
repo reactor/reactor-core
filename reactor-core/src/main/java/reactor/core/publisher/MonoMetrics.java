@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
@@ -79,7 +80,6 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 	static class MicrometerMonoMetricsSubscriber<T> implements InnerOperator<T,T> {
 
 		final CoreSubscriber<? super T> actual;
-		final MeterRegistry             registry;
 		final Clock                     clock;
 
 		final Counter             malformedSourceCounter;
@@ -93,8 +93,8 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 		Subscription s;
 
 		final Timer         subscribeToCompleteTimer;
-		final Timer.Builder subscribeToErrorTimerBuilder;
 		final Timer         subscribeToCancelTimer;
+		final Function<Throwable, Timer> subscribeToErrorTimerFactory;
 
 		MicrometerMonoMetricsSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry,
@@ -102,7 +102,6 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 				String sequenceName,
 				List<Tag> sequenceTags) {
 			this.actual = actual;
-			this.registry = registry;
 			this.clock = clock;
 
 			List<Tag> commonTags = new ArrayList<>();
@@ -114,21 +113,28 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 					.builder(FluxMetrics.METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(FluxMetrics.TAG_STATUS, FluxMetrics.TAGVALUE_ON_COMPLETE)
+					.tag(FluxMetrics.TAG_EXCEPTION, "")
 					.description("Times the duration elapsed between a subscription and the onComplete termination of the sequence")
 					.register(registry);
 			this.subscribeToCancelTimer = Timer
 					.builder(FluxMetrics.METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(FluxMetrics.TAG_STATUS, FluxMetrics.TAGVALUE_CANCEL)
+					.tag(FluxMetrics.TAG_EXCEPTION, "")
 					.description("Times the duration elapsed between a subscription and the cancellation of the sequence")
 					.register(registry);
 
 			//note that Builder ISN'T TRULY IMMUTABLE. This is ok though as there will only ever be one usage.
-			this.subscribeToErrorTimerBuilder = Timer
+			Timer.Builder subscribeToErrorTimerBuilder = Timer
 					.builder(FluxMetrics.METER_FLOW_DURATION)
 					.tags(commonTags)
 					.tag(FluxMetrics.TAG_STATUS, FluxMetrics.TAGVALUE_ON_ERROR)
 					.description("Times the duration elapsed between a subscription and the onError termination of the sequence, with the exception name as a tag.");
+			this.subscribeToErrorTimerFactory = e -> {
+				return subscribeToErrorTimerBuilder
+						.tag(FluxMetrics.TAG_EXCEPTION, e.getClass().getName())
+						.register(registry);
+			};
 
 			this.subscribedCounter = Counter
 					.builder(FluxMetrics.METER_SUBSCRIBED)
@@ -165,9 +171,7 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 			}
 			done = true;
 			//register a timer for that particular exception
-			Timer timer = subscribeToErrorTimerBuilder
-					.tag(FluxMetrics.TAG_EXCEPTION, e.getClass().getName())
-					.register(registry);
+			Timer timer = subscribeToErrorTimerFactory.apply(e);
 			//record error termination
 			this.subscribeToTerminateSample.stop(timer);
 
@@ -190,7 +194,7 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.subscribedCounter.increment();
-				this.subscribeToTerminateSample = Timer.start(registry);
+				this.subscribeToTerminateSample = Timer.start(clock);
 
 				if (s instanceof Fuseable.QueueSubscription) {
 					//noinspection unchecked
@@ -270,9 +274,7 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 				return v;
 			} catch (Throwable e) {
 				//register a timer for that particular exception
-				Timer timer = subscribeToErrorTimerBuilder
-						.tag(FluxMetrics.TAG_EXCEPTION, e.getClass().getName())
-						.register(registry);
+				Timer timer = subscribeToErrorTimerFactory.apply(e);
 				//record error termination
 				this.subscribeToTerminateSample.stop(timer);
 				throw e;
