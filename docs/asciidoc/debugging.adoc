@@ -99,7 +99,7 @@ bit of experience, we can see that it is not ideal by itself in more advanced ca
 Fortunately, Reactor comes with a debugging-oriented capability of
 *assembly-time instrumentation*.
 
-This is done by customizing the `Hook.onOperator` hook *at application start* (or at
+This is done by customizing the `Hooks.onOperator` hook *at application start* (or at
 least before the incriminated `Flux` or `Mono` can be instantiated), as follows:
 [source,java]
 ----
