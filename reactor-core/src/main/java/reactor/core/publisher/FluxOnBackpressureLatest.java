@@ -183,7 +183,7 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 				}
 
 				if (e != 0L && r != Long.MAX_VALUE) {
-					Operators.produced(REQUESTED, this, 1);
+					Operators.produced(REQUESTED, this, e);
 				}
 
 				missed = WIP.addAndGet(this, -missed);
