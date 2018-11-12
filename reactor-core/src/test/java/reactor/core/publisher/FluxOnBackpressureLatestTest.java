@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +39,28 @@ public class FluxOnBackpressureLatestTest {
 		Flux.range(1, 10).onBackpressureLatest().subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void backpressuredComplex() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Flux.range(1, 10000000)
+		    .subscribeOn(Schedulers.parallel())
+		    .onBackpressureLatest()
+		    .publishOn(Schedulers.single())
+		    .concatMap(Mono::just, 1)
+		    .subscribe(ts);
+
+		for (int i = 0; i < 1000000; i++) {
+			ts.request(10);
+		}
+
+		ts.await();
+
+		ts
 		  .assertNoError()
 		  .assertComplete();
 	}
