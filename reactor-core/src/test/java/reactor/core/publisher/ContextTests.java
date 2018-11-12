@@ -263,6 +263,7 @@ public class ContextTests {
 		            .expectAccessibleContext()
 		            .contains("foo", "bar")
 		            .then()
+		            .expectNext(1)
 		            .verifyComplete();
 	}
 }
