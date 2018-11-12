@@ -53,6 +53,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -2411,8 +2412,11 @@ final class DefaultStepVerifierBuilder<T>
 
 				Context c = Flux.fromStream(verifierSubscriber.parents())
 						.ofType(CoreSubscriber.class)
+		                .takeLast(1)
+		                .singleOrEmpty()
+		                .switchIfEmpty(Mono.just(verifierSubscriber).ofType(CoreSubscriber.class))
 						.map(CoreSubscriber::currentContext)
-						.blockLast();
+						.block();
 
 				this.contextExpectations.accept(c);
 			});
