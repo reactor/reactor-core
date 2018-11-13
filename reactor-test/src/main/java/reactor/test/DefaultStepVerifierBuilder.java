@@ -2406,13 +2406,36 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public StepVerifier.Step<T> then() {
 			return step.consumeSubscriptionWith(s -> {
+				//the current subscription
 				Scannable lowest = Scannable.from(s);
-				Scannable verifierSubscriber = Scannable.from(lowest.scan(Scannable.Attr.ACTUAL));
 
-				Context c = Flux.fromStream(verifierSubscriber.parents())
+				//if it is not Scannable, then we have an alien Publisher probably
+				if (!lowest.isScanAvailable()) {
+					this.contextExpectations.accept(null);
+					return;
+				}
+
+				//attempt to go back to the leftmost parent to check the Context from its perspective
+				Context c = Flux.<Scannable>
+						fromStream(lowest.parents())
+						.takeLast(1)
+						.singleOrEmpty()
+						//no parent? must be a ScalaSubscription or similar source
+						.defaultIfEmpty(lowest)
+						//unless it is directly a CoreSubscriber, let's try to scan the leftmost, see if it has an ACTUAL
+						.map(sc -> {
+							if (sc instanceof CoreSubscriber) {
+								return sc;
+							}
+							else {
+								return sc.scanOrDefault(Scannable.Attr.ACTUAL, Scannable.from(null));
+							}
+						})
+						//we are ultimately only interested in CoreSubscribers' Context
 						.ofType(CoreSubscriber.class)
 						.map(CoreSubscriber::currentContext)
-						.blockLast();
+						//if it wasn't a CoreSubscriber (eg. custom or vanilla Subscriber) there won't be a Context
+						.block();
 
 				this.contextExpectations.accept(c);
 			});
