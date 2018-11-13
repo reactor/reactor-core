@@ -265,4 +265,31 @@ public class ContextTests {
 		            .expectNext(1)
 		            .verifyComplete();
 	}
+
+	@Test
+	public void contextAccessibleWithEmptySubscriptionAndOperator1() {
+		StepVerifier.create(Flux.empty()
+		                        .subscriberContext(Context.of("a", "b")))
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextAccessibleWithEmptySubscriptionAndOperator2() {
+		StepVerifier.create(Flux.empty()
+		                        .map(i -> i), StepVerifierOptions.create().withInitialContext(Context.of("a", "b")))
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextNotAccessibleWithEmptySubscriptionOnly() {
+		StepVerifier.create(Flux.empty(), StepVerifierOptions.create().withInitialContext(Context.of("a", "b")))
+		            .expectNoAccessibleContext()
+		            .verifyComplete();
+	}
 }
