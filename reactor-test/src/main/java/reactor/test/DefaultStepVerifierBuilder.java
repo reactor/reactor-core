@@ -53,6 +53,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -2406,13 +2407,28 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public StepVerifier.Step<T> then() {
 			return step.consumeSubscriptionWith(s -> {
+				//the current subscription
 				Scannable lowest = Scannable.from(s);
-				Scannable verifierSubscriber = Scannable.from(lowest.scan(Scannable.Attr.ACTUAL));
 
-				Context c = Flux.fromStream(verifierSubscriber.parents())
+				//attempt to go back to the leftmost parent to check the Context from its perspective
+				Context c = Flux.<Scannable>
+						fromStream(lowest.parents())
 						.ofType(CoreSubscriber.class)
+						.takeLast(1)
+						.singleOrEmpty()
+						//no parent? must be a ScalaSubscription or similar source
+						.switchIfEmpty(
+								Mono.just(lowest)
+								    //unless it is directly a CoreSubscriber, let's try to scan the leftmost, see if it has an ACTUAL
+								    .map(sc -> (sc instanceof CoreSubscriber) ?
+										    sc :
+										    sc.scanOrDefault(Scannable.Attr.ACTUAL, Scannable.from(null)))
+								    //we are ultimately only interested in CoreSubscribers' Context
+								    .ofType(CoreSubscriber.class)
+						)
 						.map(CoreSubscriber::currentContext)
-						.blockLast();
+						//if it wasn't a CoreSubscriber (eg. custom or vanilla Subscriber) there won't be a Context
+						.block();
 
 				this.contextExpectations.accept(c);
 			});
