@@ -47,7 +47,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 
 	DelegateServiceScheduler(ExecutorService executorService) {
 			ScheduledExecutorService exec = convert(executorService);
-			this.executor = Schedulers.decorateExecutorService("ExecutorService", "delegateServiceScheduler", exec);
+			this.executor = Schedulers.decorateExecutorService(this, exec);
 	}
 
 	@Override

@@ -19,19 +19,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.Scannable;
 
 /**
  * Provides an abstract asynchronous boundary to operators.
  * <p>
  * Implementations that use an underlying {@link ExecutorService} or
- * {@link ScheduledExecutorService} should instantiate it through a {@link Supplier}
- * passed through the relevant {@link Schedulers} hook
- * ({@link Schedulers#decorateExecutorService(String, Supplier)}.
+ * {@link ScheduledExecutorService} should decorate it with the relevant {@link Schedulers} hook
+ * ({@link Schedulers#decorateExecutorService(Scheduler, ScheduledExecutorService)}.
  *
  * @author Stephane Maldini
  * @author Simon Baslé

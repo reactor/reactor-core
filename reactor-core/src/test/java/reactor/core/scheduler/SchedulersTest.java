@@ -32,9 +32,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -44,7 +42,6 @@ import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -54,8 +51,6 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import reactor.util.function.TriFunction;
-import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.fail;
@@ -104,15 +99,15 @@ public class SchedulersTest {
 	@Test
 	public void schedulerDecoratorIsAdditive() throws InterruptedException {
 		AtomicInteger tracker = new AtomicInteger();
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (type, desc, serv) -> {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> {
 			tracker.addAndGet(1);
 			return serv;
 		};
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (type, desc, serv) -> {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> {
 			tracker.addAndGet(10);
 			return serv;
 		};
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (type, desc, serv) -> {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (scheduler, serv) -> {
 			tracker.addAndGet(100);
 			return serv;
 		};
@@ -130,7 +125,7 @@ public class SchedulersTest {
 	@Test
 	public void schedulerDecoratorAddsSameIfDifferentKeys() {
 		AtomicInteger tracker = new AtomicInteger();
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator = (type, desc, serv) -> {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator = (scheduler, serv) -> {
 			tracker.addAndGet(1);
 			return serv;
 		};
@@ -149,11 +144,11 @@ public class SchedulersTest {
 	@Test
 	public void schedulerDecoratorAddsOnceIfSameKey() {
 		AtomicInteger tracker = new AtomicInteger();
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (type, desc, serv) -> {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> {
 			tracker.addAndGet(1);
 			return serv;
 		};
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (type, desc, serv) -> {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> {
 			tracker.addAndGet(10);
 			return serv;
 		};
@@ -196,9 +191,9 @@ public class SchedulersTest {
 
 	@Test
 	public void schedulerDecoratorRemovesKnown() {
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (type, desc, serv) -> serv;
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (type, desc, serv) -> serv;
-		TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (type, desc, serv) -> serv;
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> serv;
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> serv;
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (scheduler, serv) -> serv;
 
 		Schedulers.DECORATORS.put("k1", decorator1);
 		Schedulers.DECORATORS.put("k2", decorator2);

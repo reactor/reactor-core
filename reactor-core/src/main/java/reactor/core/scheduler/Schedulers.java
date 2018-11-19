@@ -17,11 +17,9 @@
 package reactor.core.scheduler;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -42,9 +40,6 @@ import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
-import reactor.util.function.TriFunction;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import static reactor.core.Exceptions.unwrap;
 
@@ -416,45 +411,44 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Set up an additional {@link ScheduledExecutorService} decorator for a given key if
-	 * it that key is not already present. Note that the {@link Factory}'s legacy
+	 * Set up an additional {@link ScheduledExecutorService} decorator for a given key
+	 * only if that key is not already present. Note that the {@link Factory}'s legacy
 	 * {@link Factory#decorateExecutorService(String, Supplier)} method will always be
 	 * invoked last after applying the decorators added via this method.
 	 * <p>
-	 * The decorator is a {@link TriFunction} taking the Scheduler type {@link String},
-	 * as {@link String} description of the source and the backing
-	 * {@link ScheduledExecutorService} as third argument. It returns the
+	 * The decorator is a {@link BiFunction} taking the Scheduler and the backing
+	 * {@link ScheduledExecutorService} as second argument. It returns the
 	 * decorated {@link ScheduledExecutorService}.
 	 *
 	 * @param key the key under which to set up the decorator
 	 * @param decorator the executor service decorator to add, if key not already present.
 	 * @return true if the decorator was added, false if a decorator was already present
 	 * for this key.
-	 * @see #setExecutorServiceDecorator(String, TriFunction)
+	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
 	 */
-	public static boolean addExecutorServiceDecorator(String key, TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator) {
+	public static boolean addExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
 			return DECORATORS.putIfAbsent(key, decorator) == null;
 		}
 	}
+
 	/**
 	 * Set up an additional {@link ScheduledExecutorService} decorator for a given key,
-	 * even if it that key is already present. Note that the {@link Factory}'s legacy
+	 * even if that key is already present. Note that the {@link Factory}'s legacy
 	 * {@link Factory#decorateExecutorService(String, Supplier)} method will always be
 	 * invoked last after applying the decorators added via this method.
 	 * <p>
-	 * The decorator is a {@link TriFunction} taking the Scheduler type {@link String},
-	 * as {@link String} description of the source and the backing
-	 * {@link ScheduledExecutorService} as third argument. It returns the
+	 * The decorator is a {@link BiFunction} taking the Scheduler and the backing
+	 * {@link ScheduledExecutorService} as second argument. It returns the
 	 * decorated {@link ScheduledExecutorService}.
 	 *
 	 * @param key the key under which to set up the decorator
 	 * @param decorator the executor service decorator to add, if key not already present.
-	 * @see #addExecutorServiceDecorator(String, TriFunction)
+	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
 	 */
-	public static void setExecutorServiceDecorator(String key, TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator) {
+	public static void setExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
 			DECORATORS.put(key, decorator);
 		}
@@ -462,16 +456,16 @@ public abstract class Schedulers {
 
 	/**
 	 * Remove an existing {@link ScheduledExecutorService} decorator if it has been set up
-	 * via {@link #addExecutorServiceDecorator(String, TriFunction)}. Note that the {@link Factory}'s
+	 * via {@link #addExecutorServiceDecorator(String, BiFunction)}. Note that the {@link Factory}'s
 	 * legacy {@link Factory#decorateExecutorService(String, Supplier)} method is always
 	 * applied last, even if all other decorators have been removed via this method.
 	 *
 	 * @param key the key for the executor service decorator to remove
 	 * @return the removed decorator, or null if none was set for that key
-	 * @see #addExecutorServiceDecorator(String, TriFunction)
-	 * @see #setExecutorServiceDecorator(String, TriFunction)
+	 * @see #addExecutorServiceDecorator(String, BiFunction)
+	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 */
-	public static TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> removeExecutorServiceDecorator(String key) {
+	public static BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removeExecutorServiceDecorator(String key) {
 		synchronized (DECORATORS) {
 			return DECORATORS.remove(key);
 		}
@@ -483,27 +477,43 @@ public abstract class Schedulers {
 	 * decorated (ie. for instrumentation purposes).
 	 * <p>
 	 * It <strong>applies</strong> the decorators added via
-	 * {@link #addExecutorServiceDecorator(String, TriFunction)}, so it shouldn't be added
+	 * {@link #addExecutorServiceDecorator(String, BiFunction)}, so it shouldn't be added
 	 * as a decorator.
 	 *
-	 * @param schedulerType a {@link String} identifying the custom type of {@link Scheduler}
-	 * @param description a description of the {@link Scheduler} that would typically reflect
-	 * how it was constructed (eg. {@code parallel("foo", 3)})
+	 * @param owner a {@link Scheduler} that owns the {@link ScheduledExecutorService}
 	 * @param original the {@link ScheduledExecutorService} that the {@link Scheduler}
 	 * wants to use originally
 	 * @return the decorated {@link ScheduledExecutorService}, or the original if no decorator is set up
-	 * @see #addExecutorServiceDecorator(String, TriFunction)
+	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
 	 */
-	public static ScheduledExecutorService decorateExecutorService(String schedulerType,
-			String description, ScheduledExecutorService original) {
+	public static ScheduledExecutorService decorateExecutorService(Scheduler owner, ScheduledExecutorService original) {
 		synchronized (DECORATORS) {
-			for (TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService> decorator : DECORATORS.values()) {
-				original = decorator.apply(schedulerType, description, original);
+			for (BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator : DECORATORS.values()) {
+				original = decorator.apply(owner, original);
 			}
 		}
 
 		final ScheduledExecutorService beforeFactory = original;
+
+		// Backward compatibility
+		final String schedulerType;
+		if (owner instanceof SingleScheduler) {
+			schedulerType = Schedulers.SINGLE;
+		}
+		else if (owner instanceof ParallelScheduler) {
+			schedulerType = Schedulers.PARALLEL;
+		}
+		else if (owner instanceof ElasticScheduler) {
+			schedulerType = Schedulers.ELASTIC;
+		}
+		else if (owner instanceof DelegateServiceScheduler) {
+			schedulerType = "ExecutorService";
+		}
+		else {
+			schedulerType = owner.getClass().getName();
+		}
+
 		return factory.decorateExecutorService(schedulerType, () -> beforeFactory);
 	}
 
@@ -562,7 +572,7 @@ public abstract class Schedulers {
 		 * @param actual the default backing implementation, provided lazily as a Supplier
 		 * so that you can bypass instantiation completely if you want to replace it.
 		 * @return the internal {@link ScheduledExecutorService} instance to use.
-		 * @deprecated use {@link Schedulers#addExecutorServiceDecorator(String, TriFunction)} and
+		 * @deprecated use {@link Schedulers#addExecutorServiceDecorator(String, BiFunction)} and
 		 * {@link Schedulers#removeExecutorServiceDecorator(String)} instead, to compose
 		 * multiple decorators in addition to the one from the current
 		 * {@link Schedulers#setFactory(Factory) Factory}
@@ -642,7 +652,7 @@ public abstract class Schedulers {
 
 	static final Factory DEFAULT = new Factory() { };
 
-	static final Map<String, TriFunction<String, String, ScheduledExecutorService, ScheduledExecutorService>>
+	static final Map<String, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>>
 			DECORATORS = new LinkedHashMap<>();
 
 	static volatile Factory factory = DEFAULT;
