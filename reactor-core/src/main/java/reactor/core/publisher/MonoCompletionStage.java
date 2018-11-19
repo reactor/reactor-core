@@ -59,14 +59,17 @@ final class MonoCompletionStage<T> extends Mono<T>
 
         future.whenComplete((v, e) -> {
             if (sds.isCancelled()) {
-                Context ctx = sds.currentContext();
                 //nobody is interested in the Mono anymore, don't risk dropping errors
-                //and discard any potential value
-                Operators.onDiscard(v, ctx);
-
-                //we still want to keep track of a non-CancellationException
-                if (e != null && !(e instanceof CancellationException)) {
+                Context ctx = sds.currentContext();
+                if (e == null || e instanceof CancellationException) {
+                    //we discard any potential value and ignore Future cancellations
+                    Operators.onDiscard(v, ctx);
+                }
+                else {
+                    //we make sure we keep _some_ track of a Future failure AFTER the Mono cancellation
                     Operators.onErrorDropped(e, ctx);
+                    //and we discard any potential value just in case both e and v are not null
+                    Operators.onDiscard(v, ctx);
                 }
 
                 return;

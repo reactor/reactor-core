@@ -43,6 +43,7 @@ public class MonoCompletionStageTest {
 		            .then(() -> {
 		            	subRef.get().cancel();
 		            	future.completeExceptionally(new IllegalStateException("boom"));
+		            	future.complete(1);
 		            })
 		            .thenCancel()//already cancelled but need to get to verification
 		            .verifyThenAssertThat()
