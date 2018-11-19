@@ -18,14 +18,36 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
 
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoCompletionStageTest {
+
+	@Test
+	public void cancelThenFutureFails() {
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+
+		Mono<Integer> mono = Mono
+				.fromFuture(future)
+				.doOnSubscribe(subRef::set);
+
+		StepVerifier.create(mono)
+		            .expectSubscription()
+		            .then(() -> {
+		            	subRef.get().cancel();
+		            	future.completeExceptionally(new IllegalStateException("boom"));
+		            })
+		            .thenCancel()//already cancelled but need to get to verification
+		            .verifyThenAssertThat()
+		            .hasDroppedErrorWithMessage("boom");
+	}
 
 	@Test
 	public void cancelFutureImmediatelyCancelledLoop() {

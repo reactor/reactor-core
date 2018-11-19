@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionStage;
 
 import reactor.core.CoreSubscriber;
@@ -24,6 +25,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.context.Context;
 
 /**
  * Emits the value or error produced by the wrapped CompletionStage.
@@ -57,9 +59,16 @@ final class MonoCompletionStage<T> extends Mono<T>
 
         future.whenComplete((v, e) -> {
             if (sds.isCancelled()) {
+                Context ctx = sds.currentContext();
                 //nobody is interested in the Mono anymore, don't risk dropping errors
                 //and discard any potential value
-                Operators.onDiscard(v, sds.currentContext());
+                Operators.onDiscard(v, ctx);
+
+                //we still want to keep track of a non-CancellationException
+                if (e != null && !(e instanceof CancellationException)) {
+                    Operators.onErrorDropped(e, ctx);
+                }
+
                 return;
             }
             try {
