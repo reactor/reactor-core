@@ -110,12 +110,12 @@ public interface Scheduler extends Disposable {
 	 * <p>Tasks scheduled with this worker are not guaranteed to run in FIFO order and
 	 * strictly non-concurrently.
 	 *
-	 * In its simplest form, worker will purely delegate schedule(Runnable)
-	 * to the {@link ExecutorService#execute} method.
+	 * It depends on the implementation, but Scheduler Workers should usually run tasks in
+	 * FIFO order. Some implementations may entirely delegate the scheduling to an
+	 * underlying structure (like an {@link ExecutorService}`).
 	 *
 	 * If FIFO order is desired, use trampoline parameter of {@link Schedulers#fromExecutor(Executor, boolean)}
 	 *
-	 * 
 	 * @return the Worker instance.
 	 */
 	Worker createWorker();
@@ -146,8 +146,7 @@ public interface Scheduler extends Disposable {
 	}
 
 	/**
-	 * A worker representing an asynchronous boundary that executes tasks in
-	 * a FIFO order, guaranteed non-concurrently with respect to each other.
+	 * A worker representing an asynchronous boundary that executes tasks.
 	 *
 	 * @author Stephane Maldini
 	 * @author Simon Baslé
