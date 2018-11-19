@@ -86,6 +86,10 @@ public abstract class Schedulers {
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
 	 * Runnables for async operators.
 	 *
+	 * Trampolining here means tasks submitted in a burst are queued by the Worker itself,
+	 * which acts as a sole task from the perspective of the {@link ExecutorService},
+	 * so no reordering (but also no threading).
+	 *
 	 * @param executor an {@link Executor}
 	 * @param trampoline set to false if this {@link Scheduler} is used by "operators"
 	 * that already conflate {@link Runnable} executions (publishOn, subscribeOn...)
