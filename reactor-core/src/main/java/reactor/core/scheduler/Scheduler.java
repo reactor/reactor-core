@@ -112,7 +112,7 @@ public interface Scheduler extends Disposable {
 	 *
 	 * It depends on the implementation, but Scheduler Workers should usually run tasks in
 	 * FIFO order. Some implementations may entirely delegate the scheduling to an
-	 * underlying structure (like an {@link ExecutorService}`).
+	 * underlying structure (like an {@link ExecutorService}).
 	 *
 	 * If FIFO order is desired, use trampoline parameter of {@link Schedulers#fromExecutor(Executor, boolean)}
 	 *
