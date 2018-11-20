@@ -26,7 +26,7 @@ final class SchedulerMetricDecorator
 	@Override
 	public synchronized ScheduledExecutorService apply(Scheduler scheduler, ScheduledExecutorService service) {
 		//this is equivalent to `toString`, a detailed name like `parallel("foo", 3)`
-		String schedulerDesc = Scannable
+		String schedulerName = Scannable
 				.from(scheduler)
 				.scanOrDefault(Attr.NAME, scheduler.getClass().getName());
 
@@ -34,11 +34,11 @@ final class SchedulerMetricDecorator
 		String schedulerId =
 				SEEN_SCHEDULERS.computeIfAbsent(scheduler, s -> {
 					int schedulerDifferentiator = SCHEDULER_DIFFERENTIATOR
-							.computeIfAbsent(schedulerDesc, k -> new AtomicInteger(0))
+							.computeIfAbsent(schedulerName, k -> new AtomicInteger(0))
 							.getAndIncrement();
 
-					return (schedulerDifferentiator == 0) ? schedulerDesc
-							: schedulerDesc + "#" + schedulerDifferentiator;
+					return (schedulerDifferentiator == 0) ? schedulerName
+							: schedulerName + "#" + schedulerDifferentiator;
 				});
 
 		//we now want an executorId unique to a given scheduler
