@@ -33,13 +33,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -90,6 +93,127 @@ public class SchedulersTest {
 	@After
 	public void resetSchedulers() {
 		Schedulers.resetFactory();
+		Schedulers.DECORATORS.clear();
+	}
+
+	@Test
+	public void schedulerDecoratorIsAdditive() throws InterruptedException {
+		AtomicInteger tracker = new AtomicInteger();
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> {
+			tracker.addAndGet(1);
+			return serv;
+		};
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> {
+			tracker.addAndGet(10);
+			return serv;
+		};
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (scheduler, serv) -> {
+			tracker.addAndGet(100);
+			return serv;
+		};
+		//decorators are cleared after test
+		Schedulers.addExecutorServiceDecorator("k1", decorator1);
+		Schedulers.addExecutorServiceDecorator("k2", decorator2);
+		Schedulers.addExecutorServiceDecorator("k3", decorator3);
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(tracker).as("3 decorators invoked").hasValue(111);
+	}
+
+	@Test
+	public void schedulerDecoratorAddsSameIfDifferentKeys() {
+		AtomicInteger tracker = new AtomicInteger();
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator = (scheduler, serv) -> {
+			tracker.addAndGet(1);
+			return serv;
+		};
+
+		//decorators are cleared after test
+		Schedulers.addExecutorServiceDecorator("k1", decorator);
+		Schedulers.addExecutorServiceDecorator("k2", decorator);
+		Schedulers.addExecutorServiceDecorator("k3", decorator);
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(tracker).as("decorator invoked three times").hasValue(3);
+	}
+
+	@Test
+	public void schedulerDecoratorAddsOnceIfSameKey() {
+		AtomicInteger tracker = new AtomicInteger();
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> {
+			tracker.addAndGet(1);
+			return serv;
+		};
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> {
+			tracker.addAndGet(10);
+			return serv;
+		};
+
+		//decorators are cleared after test
+		Schedulers.addExecutorServiceDecorator("k1", decorator1);
+		Schedulers.addExecutorServiceDecorator("k1", decorator2);
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(tracker).as("decorator invoked once").hasValue(1);
+	}
+
+	@Test
+	public void schedulerDecoratorEmptyDecorators() {
+		assertThat(Schedulers.DECORATORS).isEmpty();
+		assertThatCode(() -> Schedulers.newSingle("foo").dispose())
+				.doesNotThrowAnyException();
+	}
+
+	@Test
+	@SuppressWarnings("deprecated")
+	public void schedulerDecoratorEmptyDecoratorsButCustomFactory() {
+		AtomicInteger factoryDecoratorCounter = new AtomicInteger();
+		Schedulers.setFactory(new Schedulers.Factory() {
+			@Override
+			public ScheduledExecutorService decorateExecutorService(String schedulerType,
+					Supplier<? extends ScheduledExecutorService> actual) {
+				factoryDecoratorCounter.incrementAndGet();
+				return actual.get();
+			}
+		});
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(factoryDecoratorCounter).hasValue(1);
+	}
+
+	@Test
+	public void schedulerDecoratorRemovesKnown() {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> serv;
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> serv;
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (scheduler, serv) -> serv;
+
+		Schedulers.DECORATORS.put("k1", decorator1);
+		Schedulers.DECORATORS.put("k2", decorator2);
+		Schedulers.DECORATORS.put("k3", decorator3);
+
+		assertThat(Schedulers.DECORATORS).hasSize(3);
+
+		assertThat(Schedulers.removeExecutorServiceDecorator("k1")).as("decorator1 when present").isSameAs(decorator1);
+		assertThat(Schedulers.removeExecutorServiceDecorator("k1")).as("decorator1 once removed").isNull();
+		assertThat(Schedulers.removeExecutorServiceDecorator("k2")).as("decorator2").isSameAs(decorator2);
+		assertThat(Schedulers.removeExecutorServiceDecorator("k3")).as("decorator3").isSameAs(decorator3);
+
+		assertThat(Schedulers.DECORATORS).isEmpty();
+	}
+
+	@Test
+	public void schedulerDecoratorRemoveUnknownIgnored() {
+		assertThat(Schedulers.removeExecutorServiceDecorator("keyfoo"))
+				.as("unknown decorator ignored")
+				.isNull();
 	}
 
 	@Test
