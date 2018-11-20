@@ -77,6 +77,10 @@ public abstract class Schedulers {
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
 	 * Runnables for async operators.
 	 *
+	 * <p>Tasks scheduled with workers of this Scheduler are not guaranteed to run in FIFO
+	 * order and strictly non-concurrently.
+	 * If FIFO order is desired, use trampoline parameter of {@link Schedulers#fromExecutor(Executor, boolean)}
+	 *
 	 * @param executor an {@link Executor}
 	 *
 	 * @return a new {@link Scheduler}
@@ -88,6 +92,10 @@ public abstract class Schedulers {
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
 	 * Runnables for async operators.
+	 *
+	 * Trampolining here means tasks submitted in a burst are queued by the Worker itself,
+	 * which acts as a sole task from the perspective of the {@link ExecutorService},
+	 * so no reordering (but also no threading).
 	 *
 	 * @param executor an {@link Executor}
 	 * @param trampoline set to false if this {@link Scheduler} is used by "operators"

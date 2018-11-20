@@ -15,6 +15,7 @@
  */
 package reactor.core.scheduler;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -98,16 +99,15 @@ public interface Scheduler extends Disposable {
 	}
 	
 	/**
-	 * Creates a worker of this Scheduler that executed task in a strict
-	 * FIFO order, guaranteed non-concurrently with each other.
+	 * Creates a worker of this Scheduler.
 	 * <p>
 	 * Once the Worker is no longer in use, one should call dispose() on it to
 	 * release any resources the particular Scheduler may have used.
-	 * 
-	 * <p>Tasks scheduled with this worker run in FIFO order and strictly non-concurrently, but
-	 * there are no ordering guarantees between different Workers created from the same
-	 * Scheduler.
-	 * 
+	 *
+	 * It depends on the implementation, but Scheduler Workers should usually run tasks in
+	 * FIFO order. Some implementations may entirely delegate the scheduling to an
+	 * underlying structure (like an {@link ExecutorService}).
+	 *
 	 * @return the Worker instance.
 	 */
 	Worker createWorker();
@@ -138,8 +138,7 @@ public interface Scheduler extends Disposable {
 	}
 
 	/**
-	 * A worker representing an asynchronous boundary that executes tasks in
-	 * a FIFO order, guaranteed non-concurrently with respect to each other.
+	 * A worker representing an asynchronous boundary that executes tasks.
 	 *
 	 * @author Stephane Maldini
 	 * @author Simon Baslé
