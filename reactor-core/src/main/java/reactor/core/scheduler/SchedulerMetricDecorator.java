@@ -9,6 +9,7 @@ import java.util.function.BiFunction;
 
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+
 import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
 
@@ -17,48 +18,39 @@ import static io.micrometer.core.instrument.Metrics.globalRegistry;
 final class SchedulerMetricDecorator
 			implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> {
 
-	final Map<String, AtomicInteger>                                  SCHEDULERS_NAME_COUNTER = new HashMap<>();
-	final Map<String, WeakHashMap<Scheduler, String>>                 UNIQUE_SCHEDULER_NAMES = new HashMap<>();
 
-	final Map<String, AtomicInteger>                                  EXECUTORS_NAME_COUNTER = new HashMap<>();
-	final Map<String, WeakHashMap<ScheduledExecutorService, String>>  EXECUTOR_LOCAL_IDS     = new HashMap<>();
+	final WeakHashMap<Scheduler, String>        SEEN_SCHEDULERS          = new WeakHashMap<>();
+	final Map<String, AtomicInteger>            SCHEDULER_DIFFERENTIATOR = new HashMap<>();
+	final WeakHashMap<Scheduler, AtomicInteger> EXECUTOR_DIFFERENTIATOR  = new WeakHashMap<>();
 
 	@Override
 	public synchronized ScheduledExecutorService apply(Scheduler scheduler, ScheduledExecutorService service) {
-		String schedulerName = Scannable
+		//this is equivalent to `toString`, a detailed name like `parallel("foo", 3)`
+		String schedulerDesc = Scannable
 				.from(scheduler)
 				.scanOrDefault(Attr.NAME, scheduler.getClass().getName());
 
-		String schedulerId = UNIQUE_SCHEDULER_NAMES
-				.computeIfAbsent(schedulerName, key -> new WeakHashMap<>())
-				.computeIfAbsent(scheduler, key -> {
-					int seqNum = SCHEDULERS_NAME_COUNTER
-							.computeIfAbsent(schedulerName, nameKey -> new AtomicInteger())
-	                        .getAndIncrement();
+		//we hope that each NAME is unique enough, but we'll differentiate by Scheduler
+		String schedulerId =
+				SEEN_SCHEDULERS.computeIfAbsent(scheduler, s -> {
+					int schedulerDifferentiator = SCHEDULER_DIFFERENTIATOR
+							.computeIfAbsent(schedulerDesc, k -> new AtomicInteger(0))
+							.getAndIncrement();
 
-					if (seqNum > 0) {
-						// If we got a name clash, append a sequential number to the name
-						return schedulerName + "#" + seqNum;
-					}
-					else {
-						return schedulerName;
-					}
+					return (schedulerDifferentiator == 0) ? schedulerDesc
+							: schedulerDesc + "#" + schedulerDifferentiator;
 				});
 
-		String executorName = EXECUTOR_LOCAL_IDS
-				.computeIfAbsent(schedulerId, key -> new WeakHashMap<>())
-				.computeIfAbsent(service, key -> {
-					int seqNum = EXECUTORS_NAME_COUNTER
-							.computeIfAbsent(schedulerId, nameKey -> new AtomicInteger())
-                            .getAndIncrement();
+		//we now want an executorId unique to a given scheduler
+		String executorId = schedulerId + "-" +
+				EXECUTOR_DIFFERENTIATOR.computeIfAbsent(scheduler, key -> new AtomicInteger(0))
+						.getAndIncrement();
 
-					return schedulerId + "-" + seqNum;
-				});
 
 		// TODO return the result of ExecutorServiceMetrics#monitor
 		//  once ScheduledExecutorService gets supported by Micrometer
 		//  See https://github.com/micrometer-metrics/micrometer/issues/1021
-		ExecutorServiceMetrics.monitor(globalRegistry, service, executorName,
+		ExecutorServiceMetrics.monitor(globalRegistry, service, executorId,
 				Tag.of("scheduler.id", schedulerId));
 
 		return service;
