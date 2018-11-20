@@ -74,6 +74,10 @@ public abstract class Schedulers {
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
 	 * Runnables for async operators.
 	 *
+	 * <p>Tasks scheduled with workers of this Scheduler are not guaranteed to run in FIFO
+	 * order and strictly non-concurrently.
+	 * If FIFO order is desired, use trampoline parameter of {@link Schedulers#fromExecutor(Executor, boolean)}
+	 *
 	 * @param executor an {@link Executor}
 	 *
 	 * @return a new {@link Scheduler}

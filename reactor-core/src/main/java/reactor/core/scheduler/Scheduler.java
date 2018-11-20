@@ -106,15 +106,10 @@ public interface Scheduler extends Disposable {
 	 * <p>
 	 * Once the Worker is no longer in use, one should call dispose() on it to
 	 * release any resources the particular Scheduler may have used.
-	 * 
-	 * <p>Tasks scheduled with this worker are not guaranteed to run in FIFO order and
-	 * strictly non-concurrently.
 	 *
 	 * It depends on the implementation, but Scheduler Workers should usually run tasks in
 	 * FIFO order. Some implementations may entirely delegate the scheduling to an
 	 * underlying structure (like an {@link ExecutorService}).
-	 *
-	 * If FIFO order is desired, use trampoline parameter of {@link Schedulers#fromExecutor(Executor, boolean)}
 	 *
 	 * @return the Worker instance.
 	 */
