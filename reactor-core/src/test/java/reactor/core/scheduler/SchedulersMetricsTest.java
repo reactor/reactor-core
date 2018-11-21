@@ -1,5 +1,8 @@
 package reactor.core.scheduler;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.After;
@@ -82,6 +85,25 @@ public class SchedulersMetricsTest {
 						"parallel(1,\"A\")-0",
 						"parallel(1,\"A\")#1-0",
 						"parallel(1,\"A\")#2-0"
+				);
+	}
+
+	@Test
+	public void decorateTwiceWithSameSchedulerInstance() {
+		Scheduler instance = Schedulers.newElastic("TWICE", 1);
+
+		ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+
+		Schedulers.decorateExecutorService(instance, service);
+		Schedulers.decorateExecutorService(instance, service);
+
+		assertThat(simpleMeterRegistry.getMeters()
+		                              .stream()
+		                              .map(m -> m.getId().getTag("name"))
+		                              .distinct())
+				.containsOnly(
+						"elastic(\"TWICE\")-0",
+						"elastic(\"TWICE\")-1"
 				);
 	}
 }
