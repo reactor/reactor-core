@@ -39,6 +39,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
 import static reactor.core.Exceptions.unwrap;
@@ -385,6 +386,29 @@ public abstract class Schedulers {
 	}
 
 	/**
+	 * If Micrometer is available, set-up a decorator that will instrument any
+	 * {@link ExecutorService} that backs a {@link Scheduler}.
+	 * No-op if Micrometer isn't available.
+	 *
+	 * This instrumentation sends data to the Micrometer Global Registry.
+	 *
+	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers, which doesn't change the Factory.
+	 */
+	public static void enableMetrics() {
+		if (Metrics.isInstrumentationAvailable()) {
+			addExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY, new SchedulerMetricDecorator());
+		}
+	}
+
+	/**
+	 * If {@link #enableMetrics()} has been previously called, removes the decorator.
+	 * No-op if {@link #enableMetrics()} hasn't been called.
+	 */
+	public static void disableMetrics() {
+		removeExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY);
+	}
+
+	/**
 	 * Re-apply default factory to {@link Schedulers}
 	 */
 	public static void resetFactory(){
@@ -467,6 +491,9 @@ public abstract class Schedulers {
 	 * via {@link #addExecutorServiceDecorator(String, BiFunction)}. Note that the {@link Factory}'s
 	 * legacy {@link Factory#decorateExecutorService(String, Supplier)} method is always
 	 * applied last, even if all other decorators have been removed via this method.
+	 * <p>
+	 * In case the decorator implements {@link Disposable}, it is also
+	 * {@link Disposable#dispose() disposed}.
 	 *
 	 * @param key the key for the executor service decorator to remove
 	 * @return the removed decorator, or null if none was set for that key
@@ -474,9 +501,14 @@ public abstract class Schedulers {
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 */
 	public static BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removeExecutorServiceDecorator(String key) {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removed;
 		synchronized (DECORATORS) {
-			return DECORATORS.remove(key);
+			removed = DECORATORS.remove(key);
 		}
+		if (removed instanceof Disposable) {
+			((Disposable) removed).dispose();
+		}
+		return removed;
 	}
 
 	/**
@@ -486,7 +518,8 @@ public abstract class Schedulers {
 	 * <p>
 	 * It <strong>applies</strong> the decorators added via
 	 * {@link #addExecutorServiceDecorator(String, BiFunction)}, so it shouldn't be added
-	 * as a decorator.
+	 * as a decorator. Note also that decorators are not guaranteed to be idempotent, so
+	 * this method should be called only once per executor.
 	 *
 	 * @param owner a {@link Scheduler} that owns the {@link ScheduledExecutorService}
 	 * @param original the {@link ScheduledExecutorService} that the {@link Scheduler}
