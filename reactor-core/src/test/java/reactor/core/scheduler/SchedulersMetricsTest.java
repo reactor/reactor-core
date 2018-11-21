@@ -25,7 +25,6 @@ public class SchedulersMetricsTest {
 	@After
 	public void tearDown() {
 		Schedulers.disableMetrics();
-		Metrics.globalRegistry.forEachMeter(Metrics.globalRegistry::remove);
 		Metrics.removeRegistry(simpleMeterRegistry);
 	}
 
