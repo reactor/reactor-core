@@ -164,6 +164,38 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void schedulerDecoratorDisposedWhenRemoved() {
+		AtomicBoolean disposeTracker = new AtomicBoolean();
+
+		class DisposableDecorator implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>,
+		                                     Disposable {
+
+			@Override
+			public ScheduledExecutorService apply(Scheduler scheduler,
+					ScheduledExecutorService service) {
+				return service;
+			}
+
+			@Override
+			public void dispose() {
+				disposeTracker.set(true);
+			}
+		}
+
+		DisposableDecorator decorator = new DisposableDecorator();
+
+		Schedulers.addExecutorServiceDecorator("k1", decorator);
+
+		assertThat(Schedulers.removeExecutorServiceDecorator("k1"))
+				.as("decorator removed")
+				.isTrue();
+
+		assertThat(disposeTracker)
+				.as("decorator disposed")
+				.isTrue();
+	}
+
+	@Test
 	public void schedulerDecoratorEmptyDecorators() {
 		assertThat(Schedulers.DECORATORS).isEmpty();
 		assertThatCode(() -> Schedulers.newSingle("foo").dispose())

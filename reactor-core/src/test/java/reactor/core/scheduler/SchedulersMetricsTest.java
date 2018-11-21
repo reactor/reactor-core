@@ -3,6 +3,7 @@ package reactor.core.scheduler;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.After;
@@ -57,7 +58,7 @@ public class SchedulersMetricsTest {
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()
-		                              .map(m -> m.getId().getTag("scheduler.id"))
+		                              .map(m -> m.getId().getTag(SchedulerMetricDecorator.TAG_SCHEDULER_ID))
 		                              .distinct())
 				.containsOnly(
 						"parallel(4,\"A\")",
@@ -105,5 +106,22 @@ public class SchedulersMetricsTest {
 						"elastic(\"TWICE\")-0",
 						"elastic(\"TWICE\")-1"
 				);
+	}
+
+	@Test
+	public void disablingMetricsRemovesSchedulerMeters() {
+		Schedulers.newParallel("A", 1);
+		Schedulers.newParallel("A", 1);
+		Schedulers.newParallel("A", 1);
+
+		Metrics.globalRegistry.counter("foo", "tagged", "bar");
+
+		Schedulers.disableMetrics();
+
+		assertThat(simpleMeterRegistry.getMeters()
+		                              .stream()
+		                              .map(m -> m.getId().getName())
+		                              .distinct())
+				.containsExactly("foo");
 	}
 }
