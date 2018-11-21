@@ -396,7 +396,7 @@ public abstract class Schedulers {
 	 */
 	public static void enableMetrics() {
 		if (Metrics.isInstrumentationAvailable()) {
-			addExecutorServiceDecorator(METRICS_DECORATOR_KEY, new SchedulerMetricDecorator());
+			addExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY, new SchedulerMetricDecorator());
 		}
 	}
 
@@ -405,7 +405,7 @@ public abstract class Schedulers {
 	 * No-op if {@link #enableMetrics()} hasn't been called.
 	 */
 	public static void disableMetrics() {
-		removeExecutorServiceDecorator(METRICS_DECORATOR_KEY);
+		removeExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY);
 	}
 
 	/**
@@ -496,11 +496,11 @@ public abstract class Schedulers {
 	 * {@link Disposable#dispose() disposed}.
 	 *
 	 * @param key the key for the executor service decorator to remove
-	 * @return true if a decorator was removed, or false if none was set for that key
+	 * @return the removed decorator, or null if none was set for that key
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 */
-	public static boolean removeExecutorServiceDecorator(String key) {
+	public static BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removeExecutorServiceDecorator(String key) {
 		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removed;
 		synchronized (DECORATORS) {
 			removed = DECORATORS.remove(key);
@@ -508,7 +508,7 @@ public abstract class Schedulers {
 		if (removed instanceof Disposable) {
 			((Disposable) removed).dispose();
 		}
-		return removed != null;
+		return removed;
 	}
 
 	/**
@@ -695,8 +695,6 @@ public abstract class Schedulers {
 
 	static final Map<String, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>>
 			DECORATORS = new LinkedHashMap<>();
-
-	static final String METRICS_DECORATOR_KEY = "reactor.metrics.decorator";
 
 	static volatile Factory factory = DEFAULT;
 

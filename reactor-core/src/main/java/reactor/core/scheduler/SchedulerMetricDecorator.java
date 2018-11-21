@@ -7,7 +7,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.core.instrument.search.Search;
@@ -23,6 +22,7 @@ final class SchedulerMetricDecorator
 			           Disposable {
 
 	static final String TAG_SCHEDULER_ID = "reactor.scheduler.id";
+	static final String METRICS_DECORATOR_KEY = "reactor.metrics.decorator";
 
 	final WeakHashMap<Scheduler, String>        seenSchedulers          = new WeakHashMap<>();
 	final Map<String, AtomicInteger>            schedulerDifferentiator = new HashMap<>();

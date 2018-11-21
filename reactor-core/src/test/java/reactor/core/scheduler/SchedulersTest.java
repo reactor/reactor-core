@@ -188,7 +188,7 @@ public class SchedulersTest {
 
 		assertThat(Schedulers.removeExecutorServiceDecorator("k1"))
 				.as("decorator removed")
-				.isTrue();
+				.isSameAs(decorator);
 
 		assertThat(disposeTracker)
 				.as("decorator disposed")
@@ -233,10 +233,10 @@ public class SchedulersTest {
 
 		assertThat(Schedulers.DECORATORS).hasSize(3);
 
-		assertThat(Schedulers.removeExecutorServiceDecorator("k1")).as("decorator1 when present").isTrue();
-		assertThat(Schedulers.removeExecutorServiceDecorator("k1")).as("decorator1 once removed").isFalse();
-		assertThat(Schedulers.removeExecutorServiceDecorator("k2")).as("decorator2").isTrue();
-		assertThat(Schedulers.removeExecutorServiceDecorator("k3")).as("decorator3").isTrue();
+		assertThat(Schedulers.removeExecutorServiceDecorator("k1")).as("decorator1 when present").isSameAs(decorator1);
+		assertThat(Schedulers.removeExecutorServiceDecorator("k1")).as("decorator1 once removed").isNull();
+		assertThat(Schedulers.removeExecutorServiceDecorator("k2")).as("decorator2").isSameAs(decorator2);
+		assertThat(Schedulers.removeExecutorServiceDecorator("k3")).as("decorator3").isSameAs(decorator3);
 
 		assertThat(Schedulers.DECORATORS).isEmpty();
 	}
@@ -245,7 +245,7 @@ public class SchedulersTest {
 	public void schedulerDecoratorRemoveUnknownIgnored() {
 		assertThat(Schedulers.removeExecutorServiceDecorator("keyfoo"))
 				.as("unknown decorator ignored")
-				.isFalse();
+				.isNull();
 	}
 
 	@Test
