@@ -77,13 +77,10 @@ final class SchedulerMetricDecorator
 		      .meters()
 		      .forEach(globalRegistry::remove);
 
+		//note default isDisposed (returning false) is good enough, since the cleared
+		//collections can always be reused even though they probably won't
 		this.seenSchedulers.clear();
 		this.schedulerDifferentiator.clear();
 		this.executorDifferentiator.clear();
-	}
-
-	@Override
-	public boolean isDisposed() {
-		return false; //never really disposed
 	}
 }
