@@ -2240,7 +2240,8 @@ final class DefaultStepVerifierBuilder<T>
 				parent.monitorSignal = false;
 				if (parent.terminalError != null && !parent.isCancelled()) {
 					Throwable terminalError = parent.terminalError.getThrowable();
-					throw parent.errorFormatter.assertionError("Unexpected error during a no-event expectation: " + terminalError, terminalError);				}
+					throw parent.errorFormatter.assertionError("Unexpected error during a no-event expectation: " + terminalError, terminalError);				
+				}
 				else if (parent.isTerminated() && !parent.isCancelled()) {
 					throw parent.errorFormatter.assertionError("Unexpected completion during a no-event expectation");
 				}
