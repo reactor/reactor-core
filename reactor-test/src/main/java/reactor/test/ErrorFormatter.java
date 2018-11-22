@@ -114,8 +114,8 @@ final class ErrorFormatter {
 	 * @return an {@link AssertionError} with a cause and a standardized message
 	 * potentially prefixed with the associated scenario name
 	 */
-	AssertionError assertionError(String msg, Throwable cause) {
-		return new AssertionError(scenarioPrefix + msg, cause);
+	AssertionError assertionError(String msg, @Nullable Throwable cause) {
+		return new AssertionError(scenarioPrefix + msg, cause); //null cause is ok
 	}
 
 	/**

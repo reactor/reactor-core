@@ -885,6 +885,11 @@ final class DefaultStepVerifierBuilder<T>
 
 		volatile boolean monitorSignal;
 
+		/**
+		 * used to keep track of the terminal error, if any
+		 */
+		volatile Signal<T> terminalError;
+
 		/** The constructor used for verification, where a VirtualTimeScheduler can be
 		 * passed */
 		@SuppressWarnings("unchecked")
@@ -1021,7 +1026,8 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public void onError(Throwable t) {
-			onExpectation(Signal.error(t));
+			this.terminalError = Signal.error(t);
+			onExpectation(terminalError);
 			this.completeLatch.countDown();
 		}
 
@@ -2232,8 +2238,12 @@ final class DefaultStepVerifierBuilder<T>
 				parent.monitorSignal = true;
 				virtualOrRealWait(duration.minus(Duration.ofNanos(1)), parent);
 				parent.monitorSignal = false;
-				if(parent.isTerminated() && !parent.isCancelled()){
-					throw parent.errorFormatter.assertionError("unexpected end during a no-event expectation");
+				if (parent.terminalError != null && !parent.isCancelled()) {
+					Throwable terminalError = parent.terminalError.getThrowable();
+					throw parent.errorFormatter.assertionError("Unexpected error during a no-event expectation: " + terminalError, terminalError);
+				}
+				else if (parent.isTerminated() && !parent.isCancelled()) {
+					throw parent.errorFormatter.assertionError("Unexpected completion during a no-event expectation");
 				}
 				virtualOrRealWait(Duration.ofNanos(1), parent);
 			}
@@ -2241,8 +2251,12 @@ final class DefaultStepVerifierBuilder<T>
 				parent.monitorSignal = true;
 				virtualOrRealWait(duration, parent);
 				parent.monitorSignal = false;
-				if(parent.isTerminated() && !parent.isCancelled()){
-					throw parent.errorFormatter.assertionError("unexpected end during a no-event expectation");
+				if (parent.terminalError != null && !parent.isCancelled()) {
+					Throwable terminalError = parent.terminalError.getThrowable();
+					throw parent.errorFormatter.assertionError("Unexpected error during a no-event expectation: " + terminalError, terminalError);
+				}
+				else if (parent.isTerminated() && !parent.isCancelled()) {
+					throw parent.errorFormatter.assertionError("Unexpected completion during a no-event expectation");
 				}
 			}
 		}

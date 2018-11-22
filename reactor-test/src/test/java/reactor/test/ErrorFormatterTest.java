@@ -128,15 +128,22 @@ public class ErrorFormatterTest {
 				.hasMessage("plain")
 				.hasCause(cause);
 	}
-	
+
+	@Test
+	public void noScenarioAssertionErrorWithNullCause() {
+		assertThat(noScenario.assertionError("plain", null))
+				.hasMessage("plain")
+				.hasNoCause();
+	}
+
 	@Test
 	public void noScenarioIllegalStateException() {
 		assertThat(noScenario.<Throwable>error(IllegalStateException::new, "plain"))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("plain");
 	}
-	
-	
+
+
 	// === Tests with a scenario name ===
 	static final ErrorFormatter withScenario = new ErrorFormatter("ErrorFormatterTest");
 
@@ -221,7 +228,14 @@ public class ErrorFormatterTest {
 				.hasMessage("[ErrorFormatterTest] plain")
 				.hasCause(cause);
 	}
-	
+
+	@Test
+	public void withScenarioAssertionErrorWithNullCause() {
+		assertThat(withScenario.assertionError("plain", null))
+				.hasMessage("[ErrorFormatterTest] plain")
+				.hasNoCause();
+	}
+
 	@Test
 	public void withScenarioIllegalStateException() {
 		assertThat(withScenario.<Throwable>error(IllegalStateException::new, "plain"))
