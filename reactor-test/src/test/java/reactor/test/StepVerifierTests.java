@@ -956,7 +956,7 @@ public class StepVerifierTests {
 		            .expectNoEvent(Duration.ofDays(2))
 		            .expectComplete()
 		            .verify())
-				.withMessage("unexpected end during a no-event expectation");
+				.withMessage("Unexpected completion during a no-event expectation");
 	}
 
 	@Test
@@ -2054,5 +2054,51 @@ public class StepVerifierTests {
 		            .expectNextCount(12)
 		            .expectComplete()
 		            .verify(Duration.ofMillis(500));
+	}
+
+	@Test
+	public void noEventExpectationButComplete() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(Flux.empty().hide())
+				                        .expectSubscription()
+				                        .expectNoEvent(Duration.ofMillis(50))
+				                        .expectComplete()
+						::verify)
+				.withMessage("Unexpected completion during a no-event expectation");
+	}
+
+	@Test
+	public void noEventExpectationButError() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(Flux.error(new IllegalStateException("boom")).hide())
+				                        .expectSubscription()
+				                        .expectNoEvent(Duration.ofMillis(50))
+				                        .expectComplete()
+						::verify)
+				.withMessage("Unexpected error during a no-event expectation: java.lang.IllegalStateException: boom")
+				.withCause(new IllegalStateException("boom"));
+	}
+
+	@Test
+	public void virtualTimeNoEventExpectationButComplete() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.withVirtualTime(() -> Flux.empty().hide())
+				                        .expectSubscription()
+				                        .expectNoEvent(Duration.ofMillis(50))
+				                        .expectComplete()
+						::verify)
+				.withMessage("Unexpected completion during a no-event expectation");
+	}
+
+	@Test
+	public void virtualTimeNoEventExpectationButError() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.withVirtualTime(() -> Flux.error(new IllegalStateException("boom")).hide())
+				                        .expectSubscription()
+				                        .expectNoEvent(Duration.ofMillis(50))
+				                        .expectComplete()
+						::verify)
+				.withMessage("Unexpected error during a no-event expectation: java.lang.IllegalStateException: boom")
+				.withCause(new IllegalStateException("boom"));
 	}
 }
