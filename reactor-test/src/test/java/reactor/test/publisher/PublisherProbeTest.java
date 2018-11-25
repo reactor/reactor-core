@@ -134,7 +134,21 @@ public class PublisherProbeTest {
 
 		assertThat(probe.wasSubscribed()).isTrue();
 	}
-	
+
+	@Test
+	public void wasSubscribedNumberMono() {
+		PublisherProbe<Void> probe = PublisherProbe.empty();
+		Mono<Void> mono = probe.mono();
+
+		assertThat(probe.subscribeCount()).isEqualTo(0);
+
+		mono.subscribe();
+		assertThat(probe.subscribeCount()).isEqualTo(1);
+
+		mono.subscribe();
+		assertThat(probe.subscribeCount()).isEqualTo(2);
+	}
+
 	@Test
 	public void assertWasSubscribedMono() {
 		PublisherProbe<Void> probe = PublisherProbe.empty();
@@ -254,7 +268,21 @@ public class PublisherProbeTest {
 
 		assertThat(probe.wasSubscribed()).isTrue();
 	}
-	
+
+	@Test
+	public void wasSubscribedNumberFlux() {
+		PublisherProbe<Void> probe = PublisherProbe.empty();
+		Flux<Void> mono = probe.flux();
+
+		assertThat(probe.subscribeCount()).isEqualTo(0);
+
+		mono.subscribe();
+		assertThat(probe.subscribeCount()).isEqualTo(1);
+
+		mono.subscribe();
+		assertThat(probe.subscribeCount()).isEqualTo(2);
+	}
+
 	@Test
 	public void assertWasSubscribedFlux() {
 		PublisherProbe<Void> probe = PublisherProbe.empty();
