@@ -21,6 +21,8 @@ The recommended workflow for editing or contributing new SVG marble diagrams is 
 All `*.svg` marble diagrams are found in `/reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/` folder.
 This same folder will be embedded in the `-sources.jar` and `-javadoc.jar` artifacts.
 
+Note that there is a `conventions.svg` document that regroups the different graphical conventions for representing recurrent elements of marbles (static operator vs method operator, blocking, timeouts, lambdas, etc...).
+
 ### Optimizing the SVG files
 
 We want the SVG size to be kept as small and clutter-free as possible, as the images are embedded in the source and javadoc jars.
@@ -37,7 +39,7 @@ So the recommended configuration for optimizing is as follows:
  - Use the following command from the repo root to maintain arrowheads and pretty printing while optimizing the SVGs correctly:
  
 ```sh
-svgo --input="reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/reduce.svg" --multipass --pretty --indent=2 --precision=0 --disable={cleanupIDs,removeNonInheritableGroupAttrs}
+svgo --input="reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/reduce.svg" --multipass --pretty --indent=1 --precision=2 --disable={cleanupIDs,removeNonInheritableGroupAttrs,removeViewBox,convertShapeToPath}
 ```
 
 TIP: you can use git to stage the file pre-optimization, check it renders correctly post-optimization and revert using `git checkout path/to/file.svg` if that is not the case.
@@ -45,7 +47,7 @@ TIP: you can use git to stage the file pre-optimization, check it renders correc
 Alternatively, to optimize a whole folder into a temporary folder for comparison, use the `--folder` and `--output` options:
 
 ```sh
-svgo --folder="reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/" --multipass --pretty --indent=2 --precision=0 --disable={cleanupIDs,removeNonInheritableGroupAttrs} --output=/tmp/svg/ --quiet
+svgo --folder="reactor-core/src/main/java/reactor/core/publisher/doc-files/marbles/" --multipass --pretty --indent=1 --precision=2 --disable={cleanupIDs,removeNonInheritableGroupAttrs,removeViewBox,convertShapeToPath} --output=/tmp/svg/ --quiet
 ```
 
 ### Optimization Tips and Tricks
@@ -65,3 +67,8 @@ This needs a re-login and has the unfortunate effect that the menu bar will now 
 #### Inkscape is slow as hell to open and close documents
  - Try closing all but one document, then close every tool dialog and restart Inkscape
  - In Preferences, you can try playing with `Rendering` options: number of thread, cache size, display filters quality.
+
+### How to reduce a rounded rectangle (buffers)
+Double click on the rectangle and select the top left corner (square handle).
+Hold Ctrl (or Cmd) to only move horizontally, and move the handler closer to where you want it.
+Repeat the same operation with the bottom-right handle.
