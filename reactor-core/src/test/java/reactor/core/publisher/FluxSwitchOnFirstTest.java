@@ -184,6 +184,47 @@ public class FluxSwitchOnFirstTest {
         Assert.assertEquals(1L, (long) first[0].get());
     }
 
+
+    @Test
+    public void shouldSendOnNextAsyncSignal() {
+        Signal<? extends Long>[] first = new Signal[1];
+
+        StepVerifier.create(Flux.just(1L)
+                                .switchOnFirst((s, f) -> {
+                                    first[0] = s;
+
+                                    return f.subscribeOn(Schedulers.elastic());
+                                }))
+                    .expectSubscription()
+                    .expectNext(1L)
+                    .expectComplete()
+                    .verify();
+
+
+        Assert.assertEquals(1L, (long) first[0].get());
+    }
+
+    @Test
+    public void shouldSendOnNextAsyncSignalConditional() {
+        Signal<? extends Long>[] first = new Signal[1];
+
+        StepVerifier.create(Flux.just(1L)
+                                .switchOnFirst((s, f) -> {
+                                    first[0] = s;
+
+                                    return f.subscribeOn(Schedulers.elastic());
+                                })
+                                .filter(p -> true)
+                    )
+                    .expectSubscription()
+                    .expectNext(1L)
+                    .expectComplete()
+                    .verify();
+
+
+        Assert.assertEquals(1L, (long) first[0].get());
+    }
+
     @Test
     public void shouldRequestExpectedAmountOfElements() throws InterruptedException {
         TestPublisher<Long> publisher = TestPublisher.createCold();
@@ -434,6 +475,18 @@ public class FluxSwitchOnFirstTest {
                                              .switchOnFirst((first, innerFlux) -> innerFlux.map(String::valueOf));
 
         StepVerifier.create(switchTransformed)
+                    .expectComplete()
+                    .verify(Duration.ofSeconds(10));
+    }
+
+    @Test
+    public void shouldPropagateOnCompleteWithMergedElementsCorrectly() {
+        Flux<String> switchTransformed = Flux.empty()
+                                             .switchOnFirst((first, innerFlux) -> innerFlux.map(String::valueOf)
+                                                                                           .mergeWith(Flux.just("1", "2", "3")));
+
+        StepVerifier.create(switchTransformed)
+                    .expectNext("1", "2", "3")
                     .expectComplete()
                     .verify(Duration.ofSeconds(10));
     }

@@ -62,7 +62,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
     static final class SwitchOnFirstInner<T, R> extends Flux<T>
             implements InnerOperator<T, R> {
 
-        final CoreSubscriber<? super R>                      outer;
+        final CoreSubscriber<? super R>                                        outer;
         final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
         Subscription s;
@@ -140,7 +140,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         @Override
         public void subscribe(CoreSubscriber<? super T> actual) {
             if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-                if (done) {
+                if (first == null && done) {
                     if (throwable != null) {
                         Operators.error(actual, throwable);
                     }
@@ -208,8 +208,9 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             throwable = t;
             done = true;
             CoreSubscriber<? super T> i = inner;
+            T f = first;
 
-            if (i == null) {
+            if (f == null && i == null) {
                 Publisher<? extends R> result;
                 CoreSubscriber<? super R> o = outer;
 
@@ -229,7 +230,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
                 return;
             }
 
-            if (first == null) {
+            if (f == null) {
                 drainRegular();
             }
         }
@@ -242,8 +243,9 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
             done = true;
             CoreSubscriber<? super T> i = inner;
+            T f = first;
 
-            if (i == null) {
+            if (f == null && i == null) {
                 Publisher<? extends R> result;
                 CoreSubscriber<? super R> o = outer;
 
@@ -263,7 +265,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
                 return;
             }
 
-            if (first == null) {
+            if (f == null) {
                 drainRegular();
             }
         }
@@ -335,7 +337,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
     static final class SwitchOnFirstConditionalInner<T, R> extends Flux<T>
             implements Fuseable.ConditionalSubscriber<T>, InnerOperator<T, R> {
 
-        final Fuseable.ConditionalSubscriber<? super R>      outer;
+        final Fuseable.ConditionalSubscriber<? super R>                        outer;
         final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
         Subscription s;
@@ -413,7 +415,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         @Override
         public void subscribe(CoreSubscriber<? super T> actual) {
             if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-                if (done) {
+                if (first == null && done) {
                     if (throwable != null) {
                         Operators.error(actual, throwable);
                     }
@@ -514,8 +516,9 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             throwable = t;
             done = true;
             CoreSubscriber<? super T> i = inner;
+            T f = first;
 
-            if (i == null) {
+            if (f == null && i == null) {
                 Publisher<? extends R> result;
                 CoreSubscriber<? super R> o = outer;
 
@@ -535,7 +538,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
                 return;
             }
 
-            if (first == null) {
+            if (f == null) {
                 drainRegular();
             }
         }
@@ -548,8 +551,9 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
             done = true;
             CoreSubscriber<? super T> i = inner;
+            T f = first;
 
-            if (i == null) {
+            if (f == null && i == null) {
                 Publisher<? extends R> result;
                 CoreSubscriber<? super R> o = outer;
 
@@ -569,7 +573,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
                 return;
             }
 
-            if (first == null) {
+            if (f == null) {
                 drainRegular();
             }
         }
