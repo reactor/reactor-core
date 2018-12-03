@@ -48,7 +48,6 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	Throwable     error;
 
 	volatile boolean wasRequested;
-	volatile boolean wasSubscribed;
 
 	@SuppressWarnings("unchecked")
 	volatile ColdTestPublisherSubscription<T>[] subscribers = EMPTY;
@@ -56,6 +55,10 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	volatile int cancelCount;
 	static final AtomicIntegerFieldUpdater<ColdTestPublisher> CANCEL_COUNT =
 			AtomicIntegerFieldUpdater.newUpdater(ColdTestPublisher.class, "cancelCount");
+
+	volatile long subscribeCount;
+	static final AtomicLongFieldUpdater<ColdTestPublisher> SUBSCRIBED_COUNT =
+			AtomicLongFieldUpdater.newUpdater(ColdTestPublisher.class, "subscribeCount");
 
 	ColdTestPublisher() {
 		this.values = Collections.synchronizedList(new ArrayList<>());
@@ -72,7 +75,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			if (p.cancelled) {
 				remove(p);
 			}
-			wasSubscribed = true;
+			ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
 
 			for (T value : values) {
 				p.onNext(value);
@@ -232,7 +235,12 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public boolean wasSubscribed() {
-		return wasSubscribed;
+		return subscribeCount > 0;
+	}
+
+	@Override
+	public long subscribeCount() {
+		return subscribeCount;
 	}
 
 	@Override

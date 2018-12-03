@@ -54,7 +54,10 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	volatile boolean hasOverflown;
 	volatile boolean wasRequested;
-	volatile boolean wasSubscribed;
+
+	volatile long subscribeCount;
+	static final AtomicLongFieldUpdater<DefaultTestPublisher> SUBSCRIBED_COUNT =
+			AtomicLongFieldUpdater.newUpdater(DefaultTestPublisher.class, "subscribeCount");
 
 	final EnumSet<Violation> violations;
 
@@ -80,12 +83,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		TestPublisherSubscription<T>
 				p = new TestPublisherSubscription<>(s, this);
 		s.onSubscribe(p);
-
 		if (add(p)) {
 			if (p.cancelled) {
 				remove(p);
 			}
-			wasSubscribed = true;
+			DefaultTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
 
 			if (replayOnSubscribe != null) {
 				replayOnSubscribe.accept(this);
@@ -266,10 +268,15 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public boolean wasSubscribed() {
-		return wasSubscribed;
+		return subscribeCount > 0;
 	}
 
-	@Override
+    @Override
+    public long subscribeCount() {
+        return subscribeCount;
+    }
+
+    @Override
 	public boolean wasCancelled() {
 		return cancelCount > 0;
 	}
