@@ -90,7 +90,7 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 			long i = this.index;
 			try {
 				I typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
-						"indexMapper returned a null value at raw index " + i +
+						() -> "indexMapper returned a null value at raw index " + i +
 								" for value " + t);
 				this.index = i + 1L;
 				actual.onNext(typedIndex);
@@ -183,7 +183,7 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 			long i = this.index;
 			try {
 				typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
-						"indexMapper returned a null value at raw index " + i +
+						() -> "indexMapper returned a null value at raw index " + i +
 								" for value " + t);
 				this.index = i + 1L;
 			}
@@ -205,7 +205,7 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 			long i = this.index;
 			try {
 				I typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
-						"indexMapper returned a null value at raw index " + i +
+						() -> "indexMapper returned a null value at raw index " + i +
 								" for value " + t);
 				this.index = i + 1L;
 				actual.onNext(typedIndex);
