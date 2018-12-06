@@ -41,7 +41,8 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 	FluxIndex(Flux<T> source,
 			BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 		super(source);
-		this.indexMapper = Objects.requireNonNull(indexMapper, "indexMapper must be non null");
+		this.indexMapper = new NullSafeIndexMapper(Objects.requireNonNull(indexMapper,
+				"indexMapper must be non null"));
 	}
 
 	@Override
@@ -89,9 +90,7 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 
 			long i = this.index;
 			try {
-				I typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
-						"indexMapper returned a null value at raw index " + i +
-								" for value " + t);
+				I typedIndex = indexMapper.apply(i, t);
 				this.index = i + 1L;
 				actual.onNext(typedIndex);
 			}
@@ -182,9 +181,7 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 			I typedIndex;
 			long i = this.index;
 			try {
-				typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
-						"indexMapper returned a null value at raw index " + i +
-								" for value " + t);
+				typedIndex = indexMapper.apply(i, t);
 				this.index = i + 1L;
 			}
 			catch (Throwable e) {
@@ -204,9 +201,7 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 
 			long i = this.index;
 			try {
-				I typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
-						"indexMapper returned a null value at raw index " + i +
-								" for value " + t);
+				I typedIndex = indexMapper.apply(i, t);
 				this.index = i + 1L;
 				actual.onNext(typedIndex);
 			}
@@ -262,4 +257,22 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 		}
 	}
 
+	private class NullSafeIndexMapper implements BiFunction<Long, T, I> {
+
+		private final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
+
+		public NullSafeIndexMapper(BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
+			this.indexMapper = indexMapper;
+		}
+
+		@Override
+		public I apply(Long i, T t) {
+			I typedIndex = indexMapper.apply(i, t);
+			if (typedIndex == null) {
+				throw new NullPointerException("indexMapper returned a null value" +
+						" at raw index " + i + " for value " + t);
+			}
+			return typedIndex;
+		}
+	}
 }
