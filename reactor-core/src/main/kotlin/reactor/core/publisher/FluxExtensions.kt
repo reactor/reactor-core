@@ -202,3 +202,12 @@ fun <T : Any, E : Throwable> Flux<T>.onErrorReturn(exceptionType: KClass<E>, val
  * @since 3.1
  */
 fun <T : Any> Flux<out Iterable<T>>.split(): Flux<T> = this.flatMapIterable { it }
+
+/**
+ * Extension for [Flux.switchIfEmpty] accepting a function providing a Publisher. This allows having a deferred execution with
+ * the [switchIfEmpty] operator
+ *
+ * @author Kevin Davin
+ * @since 3.2
+ */
+fun <T> Flux<T>.switchIfEmpty(s: () -> Publisher<T>): Flux<T> = this.switchIfEmpty(Flux.defer { s() })
