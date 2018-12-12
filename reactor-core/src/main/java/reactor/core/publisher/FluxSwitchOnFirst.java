@@ -35,6 +35,10 @@ import reactor.util.context.Context;
  */
 final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
+    static final int STATE_INIT            = 0;
+    static final int STATE_SUBSCRIBED_ONCE = 1;
+    static final int STATE_REQUESTED_ONCE  = 2;
+
     final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
 
     FluxSwitchOnFirst(
@@ -82,10 +86,10 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         static final AtomicIntegerFieldUpdater<SwitchOnFirstInner> WIP =
                 AtomicIntegerFieldUpdater.newUpdater(SwitchOnFirstInner.class, "wip");
 
-        volatile int once;
+        volatile int state;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<SwitchOnFirstInner> ONCE =
-                AtomicIntegerFieldUpdater.newUpdater(SwitchOnFirstInner.class, "once");
+        static final AtomicIntegerFieldUpdater<SwitchOnFirstInner> STATE =
+                AtomicIntegerFieldUpdater.newUpdater(SwitchOnFirstInner.class, "state");
 
         SwitchOnFirstInner(
                 CoreSubscriber<? super R> outer,
@@ -139,7 +143,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
         @Override
         public void subscribe(CoreSubscriber<? super T> actual) {
-            if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
+            if (state == STATE_INIT && STATE.compareAndSet(this, STATE_INIT, STATE_SUBSCRIBED_ONCE)) {
                 if (first == null && done) {
                     if (throwable != null) {
                         Operators.error(actual, throwable);
@@ -273,7 +277,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         @Override
         public void request(long n) {
             if (Operators.validate(n)) {
-                if (once == 1 && ONCE.compareAndSet(this, 1, 2)) {
+                if (state == STATE_SUBSCRIBED_ONCE && STATE.compareAndSet(this, STATE_SUBSCRIBED_ONCE, STATE_REQUESTED_ONCE)) {
                     if (first != null) {
                         drainRegular();
                     }
@@ -357,10 +361,10 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         static final AtomicIntegerFieldUpdater<SwitchOnFirstConditionalInner> WIP =
                 AtomicIntegerFieldUpdater.newUpdater(SwitchOnFirstConditionalInner.class, "wip");
 
-        volatile int once;
+        volatile int state;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<SwitchOnFirstConditionalInner> ONCE =
-                AtomicIntegerFieldUpdater.newUpdater(SwitchOnFirstConditionalInner.class, "once");
+        static final AtomicIntegerFieldUpdater<SwitchOnFirstConditionalInner> STATE =
+                AtomicIntegerFieldUpdater.newUpdater(SwitchOnFirstConditionalInner.class, "state");
 
         SwitchOnFirstConditionalInner(
                 Fuseable.ConditionalSubscriber<? super R> outer,
@@ -414,7 +418,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
         @Override
         public void subscribe(CoreSubscriber<? super T> actual) {
-            if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
+            if (state == STATE_INIT && STATE.compareAndSet(this, STATE_INIT, STATE_SUBSCRIBED_ONCE)) {
                 if (first == null && done) {
                     if (throwable != null) {
                         Operators.error(actual, throwable);
@@ -581,7 +585,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         @Override
         public void request(long n) {
             if (Operators.validate(n)) {
-                if (once == 1 && ONCE.compareAndSet(this, 1, 2)) {
+                if (state == STATE_SUBSCRIBED_ONCE && STATE.compareAndSet(this, STATE_SUBSCRIBED_ONCE, STATE_REQUESTED_ONCE)) {
                     boolean sent = false;
 
                     if (first != null) {
@@ -608,7 +612,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             boolean sent = false;
             Fuseable.ConditionalSubscriber<? super T> a = inner;
 
-            for (; ; ) {
+            for (;;) {
                 if (f != null) {
                     first = null;
 
