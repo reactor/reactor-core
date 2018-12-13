@@ -6046,7 +6046,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
-	 * Only errors matching the {@link Predicate} are recovered from.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
