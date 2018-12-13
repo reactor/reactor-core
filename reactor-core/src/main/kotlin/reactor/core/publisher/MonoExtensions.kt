@@ -124,3 +124,12 @@ fun <T : Any, E : Throwable> Mono<T>.onErrorResume(exceptionType: KClass<E>, fal
  */
 fun <T : Any, E : Throwable> Mono<T>.onErrorReturn(exceptionType: KClass<E>, value: T): Mono<T> =
         onErrorReturn(exceptionType.java, value)
+
+/**
+ * Extension for [Mono.switchIfEmpty] accepting a function providing a Mono. This allows having a deferred execution with
+ * the [switchIfEmpty] operator
+ *
+ * @author Kevin Davin
+ * @since 3.2
+ */
+fun <T> Mono<T>.switchIfEmpty(s: () -> Mono<T>): Mono<T> = this.switchIfEmpty(Mono.defer { s() })

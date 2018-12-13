@@ -223,4 +223,15 @@ class FluxExtensionsTests {
                 .verifyComplete()
     }
 
+    @Test
+    fun `switchIfEmpty with defer execution`() {
+        val flux: Flux<Int> = listOf(1, 2, 3)
+                .toFlux()
+                .switchIfEmpty { throw RuntimeException("error which should not happen due to defered execution") }
+
+        StepVerifier
+                .create(flux)
+                .expectNext(1, 2, 3)
+                .verifyComplete()
+    }
 }
