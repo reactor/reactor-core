@@ -20,10 +20,10 @@ import java.util.List;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
@@ -53,25 +53,26 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 	/**
 	 * For testing purposes.
 	 *
-	 * @param candidate the registry to use, as a plain {@link Object} to avoid leaking dependency
+	 * @param registry the registry to use, as a plain {@link Object} to avoid leaking dependency
 	 */
-	FluxMetricsFuseable(Flux<? extends T> flux, @Nullable MeterRegistry candidate) {
+	FluxMetricsFuseable(Flux<? extends T> flux, @Nullable MeterRegistry registry) {
 		super(flux);
 
 		Tuple2<String, List<Tag>> nameAndTags = resolveNameAndTags(flux);
 		this.name = nameAndTags.getT1();
 		this.tags = nameAndTags.getT2();
 
-		this.registryCandidate = candidate;
+		if (registry == null) {
+			this.registryCandidate = (MeterRegistry) Metrics.getUnsafeRegistry();
+		}
+		else {
+			this.registryCandidate = registry;
+		}
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (registryCandidate != null) {
-			registry = registryCandidate;
-		}
-		source.subscribe(new FluxMetrics.MicrometerFluxMetricsFuseableSubscriber<>(actual, registry,
+		source.subscribe(new FluxMetrics.MicrometerFluxMetricsFuseableSubscriber<>(actual, registryCandidate,
 				Clock.SYSTEM, this.name, this.tags));
 	}
 

@@ -92,4 +92,11 @@ public class MetricsNoMicrometerTest {
 		}
 	}
 
+	@Test
+	public void setUnsafeRegistryAndGetRegistry() {
+		assertThat(Metrics.setUnsafeRegistry("foo")).isFalse();
+
+		assertThat(Metrics.getUnsafeRegistry()).isNull();
+	}
+
 }

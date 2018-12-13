@@ -10,6 +10,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import reactor.core.publisher.Mono;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SchedulersMetricsTest {
@@ -27,6 +29,29 @@ public class SchedulersMetricsTest {
 		Schedulers.disableMetrics();
 		Metrics.globalRegistry.forEachMeter(Metrics.globalRegistry::remove);
 		Metrics.removeRegistry(simpleMeterRegistry);
+	}
+
+	@Test
+	public void testUsesCustomizedDefaultRegistry() {
+		Schedulers.disableMetrics();
+		SimpleMeterRegistry otherRegistry = new SimpleMeterRegistry();
+		reactor.util.Metrics.setUnsafeRegistry(otherRegistry);
+		Schedulers.enableMetrics();
+
+		try {
+			assertThat(otherRegistry.getMeters()).isEmpty();
+
+			Schedulers.newParallel("A", 1);
+
+			Metrics.globalRegistry.getMeters().stream().map(m -> m.getId().getName())
+					.forEach(System.out::println);
+
+			assertThat(otherRegistry.getMeters()).as("registered meters on default registry").isNotEmpty();
+		}
+		finally {
+			reactor.util.Metrics.setUnsafeRegistry(null);
+			otherRegistry.close();
+		}
 	}
 
 	@Test

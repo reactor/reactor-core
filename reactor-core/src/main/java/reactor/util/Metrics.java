@@ -16,6 +16,10 @@
 
 package reactor.util;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
+import reactor.util.annotation.Nullable;
+
 import static io.micrometer.core.instrument.Metrics.globalRegistry;
 
 /**
@@ -24,6 +28,7 @@ import static io.micrometer.core.instrument.Metrics.globalRegistry;
  * @author Simon Baslé
  */
 public class Metrics {
+
 
 	static final boolean isMicrometerAvailable;
 
@@ -39,6 +44,9 @@ public class Metrics {
 		isMicrometerAvailable = micrometer;
 	}
 
+	@Nullable
+	private static MeterRegistry defaultRegistry;
+
 	/**
 	 * Check if the current runtime supports metrics / instrumentation, by
 	 * verifying if Micrometer is on the classpath.
@@ -49,4 +57,21 @@ public class Metrics {
 		return isMicrometerAvailable;
 	}
 
+	public static final boolean setUnsafeRegistry(@Nullable Object registryCandidate) {
+		if (isMicrometerAvailable) {
+			if (registryCandidate == null || registryCandidate instanceof MeterRegistry) {
+				defaultRegistry = (MeterRegistry) registryCandidate;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Nullable
+	public static final Object getUnsafeRegistry() {
+		if (isMicrometerAvailable) {
+			return defaultRegistry == null ? globalRegistry : defaultRegistry;
+		}
+		return null;
+	}
 }

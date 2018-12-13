@@ -234,6 +234,25 @@ public class MonoMetricsFuseableTest {
 	}
 
 	@Test
+	public void testUsesCustomizedDefaultRegistryFuseable() {
+		SimpleMeterRegistry otherRegistry = new SimpleMeterRegistry();
+		reactor.util.Metrics.setUnsafeRegistry(otherRegistry);
+		try {
+			assertThat(otherRegistry.getMeters()).isEmpty();
+
+			Mono.just(1)
+			    .metrics()
+			    .subscribe();
+
+			assertThat(otherRegistry.getMeters()).as("registered meters on default registry").isNotEmpty();
+		}
+		finally {
+			reactor.util.Metrics.setUnsafeRegistry(null);
+			otherRegistry.close();
+		}
+	}
+
+	@Test
 	public void splitMetricsOnNameFuseable() {
 		final Mono<Integer> unnamedSource = Mono.just(0).map(v -> 100 / v);
 		final Mono<Integer> namedSource = Mono.just(0).map(v -> 100 / v)

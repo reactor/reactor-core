@@ -38,6 +38,7 @@ import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.MonoMetrics.MicrometerMonoMetricsSubscriber;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.Metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.FluxMetrics.*;
@@ -103,6 +104,26 @@ public class MonoMetricsTest {
 				.subscribe();
 
 		assertThat(subRef.get()).isInstanceOf(MicrometerMonoMetricsSubscriber.class);
+	}
+
+	@Test
+	public void testUsesCustomizedDefaultRegistry() {
+		SimpleMeterRegistry otherRegistry = new SimpleMeterRegistry();
+		Metrics.setUnsafeRegistry(otherRegistry);
+		try {
+			assertThat(otherRegistry.getMeters()).isEmpty();
+
+			Mono.just(1)
+			    .hide()
+			    .metrics()
+			    .subscribe();
+
+			assertThat(otherRegistry.getMeters()).as("registered meters on default registry").isNotEmpty();
+		}
+		finally {
+			Metrics.setUnsafeRegistry(null);
+			otherRegistry.close();
+		}
 	}
 
 	@Test

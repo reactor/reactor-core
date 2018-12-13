@@ -23,12 +23,12 @@ import java.util.function.Function;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
@@ -43,9 +43,9 @@ import reactor.util.function.Tuple2;
  */
 final class MonoMetrics<T> extends MonoOperator<T, T> {
 
-	final String    name;
-	final List<Tag> tags;
-	final MeterRegistry meterRegistry;
+	final String        name;
+	final List<Tag>     tags;
+	final MeterRegistry registryCandidate;
 
 	MonoMetrics(Mono<? extends T> mono) {
 		this(mono, null);
@@ -54,26 +54,26 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 	/**
 	 * For testing purposes.
 	 *
-	 * @param meterRegistry the registry to use
+	 * @param registry the registry to use
 	 */
-	MonoMetrics(Mono<? extends T> mono, @Nullable MeterRegistry meterRegistry) {
+	MonoMetrics(Mono<? extends T> mono, @Nullable MeterRegistry registry) {
 		super(mono);
 
 		Tuple2<String, List<Tag>> nameAndTags = FluxMetrics.resolveNameAndTags(mono);
 		this.name = nameAndTags.getT1();
 		this.tags = nameAndTags.getT2();
 
-		if (meterRegistry == null) {
-			this.meterRegistry = Metrics.globalRegistry;
+		if (registry == null) {
+			this.registryCandidate = (MeterRegistry) Metrics.getUnsafeRegistry();
 		}
 		else {
-			this.meterRegistry = meterRegistry;
+			this.registryCandidate = registry;
 		}
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MicrometerMonoMetricsSubscriber<>(actual, meterRegistry,
+		source.subscribe(new MicrometerMonoMetricsSubscriber<>(actual, registryCandidate,
 				Clock.SYSTEM, this.name, this.tags));
 	}
 

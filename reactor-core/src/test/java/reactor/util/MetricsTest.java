@@ -32,6 +32,7 @@
 
 package reactor.util;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +45,22 @@ public class MetricsTest {
 	@Test
 	public void smokeTestMicrometerActiveInTests() {
 		assertThat(Metrics.isInstrumentationAvailable()).isTrue();
+	}
+
+	@Test
+	public void setUnsafeRegistryAndGetRegistry() {
+		SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
+
+		assertThat(Metrics.setUnsafeRegistry("foo")).as("string candidate").isFalse();
+		assertThat(Metrics.setUnsafeRegistry(simpleMeterRegistry)).as("registry candidate").isTrue();
+
+		assertThat(Metrics.getUnsafeRegistry()).as("get before clear")
+		                                       .isSameAs(simpleMeterRegistry);
+
+		assertThat(Metrics.setUnsafeRegistry(null)).as("null candidate")
+		                                           .isTrue();
+		assertThat(Metrics.getUnsafeRegistry()).as("null candidate cleared")
+		                                       .isSameAs(io.micrometer.core.instrument.Metrics.globalRegistry);
 	}
 
 }

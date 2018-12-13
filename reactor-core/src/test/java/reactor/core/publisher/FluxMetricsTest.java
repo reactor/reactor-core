@@ -104,6 +104,26 @@ public class FluxMetricsTest {
 	}
 
 	@Test
+	public void testUsesCustomizedDefaultRegistry() {
+		SimpleMeterRegistry otherRegistry = new SimpleMeterRegistry();
+		reactor.util.Metrics.setUnsafeRegistry(otherRegistry);
+		try {
+			assertThat(otherRegistry.getMeters()).isEmpty();
+
+			Flux.just(1, 2)
+			    .hide()
+			    .metrics()
+			    .subscribe();
+
+			assertThat(otherRegistry.getMeters()).as("registered meters on default registry").isNotEmpty();
+		}
+		finally {
+			reactor.util.Metrics.setUnsafeRegistry(null);
+			otherRegistry.close();
+		}
+	}
+
+	@Test
 	public void splitMetricsOnName() {
 		final Flux<Integer> unnamedSource = Flux.<Integer>error(new ArithmeticException("boom"))
 				.hide();

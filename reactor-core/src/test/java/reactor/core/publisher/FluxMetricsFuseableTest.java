@@ -231,6 +231,25 @@ public class FluxMetricsFuseableTest {
 	}
 
 	@Test
+	public void testUsesCustomizedDefaultRegistryFuseable() {
+		SimpleMeterRegistry otherRegistry = new SimpleMeterRegistry();
+		reactor.util.Metrics.setUnsafeRegistry(otherRegistry);
+		try {
+			assertThat(otherRegistry.getMeters()).isEmpty();
+
+			Flux.just(1, 2)
+			    .metrics()
+			    .subscribe();
+
+			assertThat(otherRegistry.getMeters()).as("registered meters on default registry").isNotEmpty();
+		}
+		finally {
+			reactor.util.Metrics.setUnsafeRegistry(null);
+			otherRegistry.close();
+		}
+	}
+
+	@Test
 	public void splitMetricsOnNameFuseable() {
 		final Flux<Integer> unnamedSource = Flux.just(0).map(v -> 100 / v);
 		final Flux<Integer> namedSource = Flux.range(1, 40)

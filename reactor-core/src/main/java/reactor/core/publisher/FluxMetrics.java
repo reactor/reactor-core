@@ -27,16 +27,17 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -183,7 +184,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		this.tags = nameAndTags.getT2();
 
 		if (registry == null) {
-			this.registryCandidate = Metrics.globalRegistry;
+			this.registryCandidate = (MeterRegistry) Metrics.getUnsafeRegistry();
 		}
 		else {
 			this.registryCandidate = registry;

@@ -20,11 +20,12 @@ import java.util.List;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.MonoMetrics.MicrometerMonoMetricsFuseableSubscriber;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
@@ -53,25 +54,26 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 	/**
 	 * For testing purposes.
 	 *
-	 * @param registryCandidate the registry to use, as a plain {@link Object} to avoid leaking dependency
+	 * @param registry the registry to use, as a plain {@link Object} to avoid leaking dependency
 	 */
-	MonoMetricsFuseable(Mono<? extends T> mono, @Nullable MeterRegistry registryCandidate) {
+	MonoMetricsFuseable(Mono<? extends T> mono, @Nullable MeterRegistry registry) {
 		super(mono);
 
 		Tuple2<String, List<Tag>> nameAndTags = FluxMetrics.resolveNameAndTags(mono);
 		this.name = nameAndTags.getT1();
 		this.tags = nameAndTags.getT2();
 
-		this.registryCandidate = registryCandidate;
+		if (registry == null) {
+			this.registryCandidate = (MeterRegistry) Metrics.getUnsafeRegistry();
+		}
+		else {
+			this.registryCandidate = registry;
+		}
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (registryCandidate != null) {
-			registry = registryCandidate;
-		}
-		source.subscribe(new MicrometerMonoMetricsFuseableSubscriber<>(actual, registry,
+		source.subscribe(new MicrometerMonoMetricsFuseableSubscriber<>(actual, registryCandidate,
 				Clock.SYSTEM, this.name, this.tags));
 	}
 

@@ -22,6 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.core.instrument.search.Search;
@@ -29,8 +30,7 @@ import io.micrometer.core.instrument.search.Search;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
-
-import static io.micrometer.core.instrument.Metrics.globalRegistry;
+import reactor.util.Metrics;
 
 final class SchedulerMetricDecorator
 			implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>,
@@ -42,6 +42,8 @@ final class SchedulerMetricDecorator
 	final WeakHashMap<Scheduler, String>        seenSchedulers          = new WeakHashMap<>();
 	final Map<String, AtomicInteger>            schedulerDifferentiator = new HashMap<>();
 	final WeakHashMap<Scheduler, AtomicInteger> executorDifferentiator  = new WeakHashMap<>();
+
+	final MeterRegistry registry = (MeterRegistry) Metrics.getUnsafeRegistry();
 
 	@Override
 	public synchronized ScheduledExecutorService apply(Scheduler scheduler, ScheduledExecutorService service) {
@@ -79,7 +81,7 @@ final class SchedulerMetricDecorator
 		// TODO return the result of ExecutorServiceMetrics#monitor
 		//  once ScheduledExecutorService gets supported by Micrometer
 		//  See https://github.com/micrometer-metrics/micrometer/issues/1021
-		ExecutorServiceMetrics.monitor(globalRegistry, service, executorId,
+		ExecutorServiceMetrics.monitor(this.registry, service, executorId,
 				Tag.of(TAG_SCHEDULER_ID, schedulerId));
 
 		return service;
@@ -87,10 +89,10 @@ final class SchedulerMetricDecorator
 
 	@Override
 	public void dispose() {
-		Search.in(globalRegistry)
+		Search.in(this.registry)
 		      .tagKeys(TAG_SCHEDULER_ID)
 		      .meters()
-		      .forEach(globalRegistry::remove);
+		      .forEach(this.registry::remove);
 
 		//note default isDisposed (returning false) is good enough, since the cleared
 		//collections can always be reused even though they probably won't
