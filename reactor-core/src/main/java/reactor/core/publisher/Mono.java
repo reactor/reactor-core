@@ -2883,6 +2883,65 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 *
+	 * @return a {@link Mono} that attempts to continue processing on errors.
+	 */
+	public final Mono<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
+		BiConsumer<Throwable, Object> genericConsumer = errorConsumer;
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resume(genericConsumer)
+		));
+	}
+
+	/**
+	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * Only errors matching the specified {@code type} are recovered from.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 *
+	 * @return a {@link Mono} that attempts to continue processing on some errors.
+	 */
+	public final <E extends Throwable> Mono<T> onErrorContinue(Class<E> type, BiConsumer<Throwable, Object> errorConsumer) {
+		return onErrorContinue(type::isInstance, errorConsumer);
+	}
+
+	/**
+	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * Only errors matching the {@link Predicate} are recovered from.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 *
+	 * @return a {@link Mono} that attempts to continue processing on some errors.
+	 */
+	public final <E extends Throwable> Mono<T> onErrorContinue(Predicate<E> errorPredicate,
+			BiConsumer<Throwable, Object> errorConsumer) {
+		//this cast is ok as only T values will be propagated in this sequence
+		@SuppressWarnings("unchecked")
+		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
+		BiConsumer<Throwable, Object> genericErrorConsumer = errorConsumer;
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
+		));
+	}
+
+	/**
 	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
 	 * to it if the error matches the given predicate. Otherwise let the error pass through.
 	 * <p>
