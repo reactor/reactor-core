@@ -29,7 +29,9 @@ import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -701,5 +703,31 @@ public class OperatorsTest {
 
 		test.accept(1);
 		assertThat(discardOrder).as("consumers were combined").containsExactly("FIRST", "SECOND");
+	}
+
+	@Test
+	public void convertNonConditionalToConditionalSubscriberTest() {
+		Object elementToSend = new Object();
+		ArrayList<Object> captured = new ArrayList<>();
+		BaseSubscriber<Object> actual = new BaseSubscriber<Object>() {
+			@Override
+			protected void hookOnNext(Object value) {
+				captured.add(value);
+			}
+		};
+		Fuseable.ConditionalSubscriber<? super Object> conditionalSubscriber =
+			Operators.toConditionalSubscriber(actual);
+
+		Assertions.assertThat(conditionalSubscriber).isNotEqualTo(actual);
+		Assertions.assertThat(conditionalSubscriber.tryOnNext(elementToSend)).isTrue();
+		Assertions.assertThat(captured).containsExactly(elementToSend);
+	}
+
+	@Test
+	public void convertConditionalToConditionalShouldReturnTheSameInstance() {
+		Fuseable.ConditionalSubscriber original = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+
+		Assertions.assertThat(Operators.toConditionalSubscriber(original))
+		          .isEqualTo(original);
 	}
 }
