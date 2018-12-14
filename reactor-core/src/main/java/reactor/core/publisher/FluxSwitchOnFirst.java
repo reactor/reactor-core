@@ -282,8 +282,12 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
                         drainRegular();
                     }
 
-                    if (n != Long.MAX_VALUE && --n > 0) {
-                        s.request(n);
+                    if (n != Long.MAX_VALUE) {
+                        if (--n > 0) {
+                            s.request(n);
+                            return;
+                        }
+
                         return;
                     }
                 }
@@ -592,8 +596,12 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
                         sent = drainRegular();
                     }
 
-                    if (sent && n != Long.MAX_VALUE && --n > 0) {
-                        s.request(n);
+                    if (sent && n != Long.MAX_VALUE) {
+                        if (--n > 0) {
+                            s.request(n);
+                            return;
+                        }
+
                         return;
                     }
                 }

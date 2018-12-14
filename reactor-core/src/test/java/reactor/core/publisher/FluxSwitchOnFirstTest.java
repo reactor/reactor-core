@@ -47,11 +47,11 @@ public class FluxSwitchOnFirstTest {
                         () -> f.subscribe(__ -> {}, t -> {
                             throwables[0] = t;
                             latch.countDown();
-                        },   latch::countDown),
+                        },  latch::countDown),
                         () -> f.subscribe(__ -> {}, t -> {
                             throwables[0] = t;
                             latch.countDown();
-                        },   latch::countDown)
+                        },  latch::countDown)
                     );
 
                     return Flux.empty();
@@ -76,11 +76,11 @@ public class FluxSwitchOnFirstTest {
                                             () -> f.subscribe(__ -> {}, t -> {
                                                 throwables[0] = t;
                                                 latch.countDown();
-                                            },   latch::countDown),
+                                            },  latch::countDown),
                                             () -> f.subscribe(__ -> {}, t -> {
                                                 throwables[0] = t;
                                                 latch.countDown();
-                                            },   latch::countDown)
+                                            },  latch::countDown)
                                     );
 
                                     return Flux.empty();
@@ -279,6 +279,113 @@ public class FluxSwitchOnFirstTest {
 
         Assertions.assertThat(capture.get()).isEqualTo(1L);
         Assertions.assertThat(requested.get()).isEqualTo(20000L);
+    }
+
+    @Test
+    public void shouldNeverSendIncorrectRequestSizeToUpstream() throws InterruptedException {
+        TestPublisher<Long> publisher = TestPublisher.createCold();
+        AtomicLong capture = new AtomicLong();
+        ArrayList<Long> requested = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Flux<Long> switchTransformed = publisher.flux()
+                                                .doOnRequest(requested::add)
+                                                .switchOnFirst((first, innerFlux) -> innerFlux);
+
+        publisher.next(1L);
+        publisher.complete();
+
+        switchTransformed.subscribe(capture::set, __ -> {}, latch::countDown, s -> s.request(1));
+
+        latch.await(5, TimeUnit.SECONDS);
+
+        Assertions.assertThat(capture.get()).isEqualTo(1L);
+        Assertions.assertThat(requested).containsExactly(1L);
+    }
+
+    @Test
+    public void shouldNeverSendIncorrectRequestSizeToUpstreamConditional() throws InterruptedException {
+        TestPublisher<Long> publisher = TestPublisher.createCold();
+        AtomicLong capture = new AtomicLong();
+        ArrayList<Long> requested = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Flux<Long> switchTransformed = publisher.flux()
+                                                .doOnRequest(requested::add)
+                                                .switchOnFirst((first, innerFlux) -> innerFlux)
+                                                .filter(e -> true);
+
+        publisher.next(1L);
+        publisher.complete();
+
+        switchTransformed.subscribe(capture::set, __ -> {}, latch::countDown, s -> s.request(1));
+
+        latch.await(5, TimeUnit.SECONDS);
+
+        Assertions.assertThat(capture.get()).isEqualTo(1L);
+        Assertions.assertThat(requested).containsExactly(1L);
+    }
+
+    @Test
+    public void shouldBeRequestedOneFromUpstreamTwiceInCaseOfConditional() throws InterruptedException {
+        TestPublisher<Long> publisher = TestPublisher.createCold();
+        ArrayList<Long> capture = new ArrayList<>();
+        ArrayList<Long> requested = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Flux<Long> switchTransformed = publisher.flux()
+                                                .doOnRequest(requested::add)
+                                                .switchOnFirst((first, innerFlux) -> innerFlux)
+                                                .filter(e -> false);
+
+        publisher.next(1L);
+        publisher.complete();
+
+        switchTransformed.subscribe(capture::add, __ -> {}, latch::countDown, s -> s.request(1));
+
+        latch.await(5, TimeUnit.SECONDS);
+
+        Assertions.assertThat(capture).isEmpty();
+        Assertions.assertThat(requested).containsExactly(1L, 1L);
+    }
+
+    @Test
+    public void shouldBeRequestedExactlyOneAndThenLongMaxValue() throws InterruptedException {
+        TestPublisher<Long> publisher = TestPublisher.createCold();
+        ArrayList<Long> capture = new ArrayList<>();
+        ArrayList<Long> requested = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Flux<Long> switchTransformed = publisher.flux()
+                                                .doOnRequest(requested::add)
+                                                .switchOnFirst((first, innerFlux) -> innerFlux);
+
+        publisher.next(1L);
+        publisher.complete();
+
+        switchTransformed.subscribe(capture::add, __ -> {}, latch::countDown, s -> s.request(Long.MAX_VALUE));
+
+        latch.await(5, TimeUnit.SECONDS);
+
+        Assertions.assertThat(capture).containsExactly(1L);
+        Assertions.assertThat(requested).containsExactly(1L, Long.MAX_VALUE);
+    }
+
+    @Test
+    public void shouldBeRequestedExactlyOneAndThenLongMaxValueConditional() throws InterruptedException {
+        TestPublisher<Long> publisher = TestPublisher.createCold();
+        ArrayList<Long> capture = new ArrayList<>();
+        ArrayList<Long> requested = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Flux<Long> switchTransformed = publisher.flux()
+                                                .doOnRequest(requested::add)
+                                                .switchOnFirst((first, innerFlux) -> innerFlux);
+
+        publisher.next(1L);
+        publisher.complete();
+
+        switchTransformed.subscribe(capture::add, __ -> {}, latch::countDown, s -> s.request(Long.MAX_VALUE));
+
+        latch.await(5, TimeUnit.SECONDS);
+
+        Assertions.assertThat(capture).containsExactly(1L);
+        Assertions.assertThat(requested).containsExactly(1L, Long.MAX_VALUE);
     }
 
     @Test
@@ -655,8 +762,7 @@ public class FluxSwitchOnFirstTest {
                 publisher.next(1L);
 
                 switchTransformed.subscribe(captureElement::set,
-                        __ -> {
-                        },
+                        __ -> { },
                         () -> captureCompletion.set(true),
                         s -> new Thread(() -> RaceTestUtils.race(publisher::complete,
                                 () -> RaceTestUtils.race(s::cancel,
