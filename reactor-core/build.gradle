@@ -44,6 +44,10 @@ if (JavaVersion.current().java9Compatible) {
 	classpath = sourceSets.java9.output + files(it.classpath)
   }
 
+  tasks.withType(Javadoc).all {
+	excludes = ["reactor/core/publisher/Tracer.java"]
+  }
+
   dependencies {
 	compileOnly sourceSets.java8.output
   }
