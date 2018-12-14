@@ -548,6 +548,54 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
+    public void shouldBeAbleToBeCancelledProperly2() {
+        TestPublisher<Integer> publisher = TestPublisher.createCold();
+        Flux<String> switchTransformed = publisher.flux()
+                                                  .switchOnFirst((first, innerFlux) ->
+                                                      innerFlux
+                                                          .map(String::valueOf)
+                                                          .take(1)
+                                                  );
+
+        publisher.next(1);
+        publisher.next(2);
+        publisher.next(3);
+        publisher.next(4);
+
+        StepVerifier.create(switchTransformed, 1)
+                    .expectNext("1")
+                    .expectComplete()
+                    .verify(Duration.ofSeconds(10));
+
+        publisher.assertCancelled();
+        publisher.assertWasRequested();
+    }
+
+    @Test
+    public void shouldBeAbleToBeCancelledProperly3() {
+        TestPublisher<Integer> publisher = TestPublisher.createCold();
+        Flux<String> switchTransformed = publisher.flux()
+                                                  .switchOnFirst((first, innerFlux) ->
+                                                          innerFlux
+                                                                  .map(String::valueOf)
+                                                  )
+                                                  .take(1);
+
+        publisher.next(1);
+        publisher.next(2);
+        publisher.next(3);
+        publisher.next(4);
+
+        StepVerifier.create(switchTransformed, 1)
+                    .expectNext("1")
+                    .expectComplete()
+                    .verify(Duration.ofSeconds(10));
+
+        publisher.assertCancelled();
+        publisher.assertWasRequested();
+    }
+
+    @Test
     public void shouldBeAbleToCatchDiscardedElement() {
         TestPublisher<Integer> publisher = TestPublisher.createCold();
         Integer[] discarded = new Integer[1];
