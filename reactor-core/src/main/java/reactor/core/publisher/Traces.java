@@ -44,29 +44,8 @@ import java.util.stream.Stream;
 final class Traces {
 
 	/**
-	 * Transform the {@link StackTraceElement} array from an exception into a {@link String}
-	 * representation, each element being prepended with a tabulation and appended with a
-	 * newline. No sanitation is performed.
-	 *
-	 * @param stackTraceElements the array of {@link StackTraceElement} to convert to {@link String}
-	 * @return the string version of the stacktrace.
-	 */
-	static String stackTraceToString(StackTraceElement[] stackTraceElements) {
-		StringBuilder sb = new StringBuilder();
-		for (StackTraceElement e : stackTraceElements) {
-			String row = e.toString();
-			sb.append("\t")
-			  .append(row)
-			  .append("\n");
-		}
-
-		return sb.toString();
-
-	}
-
-	/**
 	 * Return true for strings (usually from a stack trace element) that should be
-	 * sanitized out by {@link #stackTraceToSanitizedString(StackTraceElement[])}.
+	 * sanitized out by {@link Tracer#callSiteSupplier(boolean)}.
 	 *
 	 * @param stackTraceRow the row to check
 	 * @return true if it should be sanitized out, false if it should be kept
@@ -99,36 +78,8 @@ final class Traces {
 	}
 
 	/**
-	 * Transform the {@link StackTraceElement} array from an exception into a {@link String}
-	 * representation, each element being prepended with a tabulation and appended with a
-	 * newline, unless they don't pass the {@link #shouldSanitize(String) sanitation filter}.
-	 *
-	 * @param stackTraceElements the array of {@link StackTraceElement} to convert to {@link String}
-	 * @return the string version of the stacktrace.
-	 */
-	static String stackTraceToSanitizedString(StackTraceElement[] stackTraceElements) {
-		StringBuilder sb = new StringBuilder();
-		for (StackTraceElement e : stackTraceElements) {
-			String row = e.toString();
-
-			if (e.getLineNumber() <= 1) {
-				continue;
-			}
-			if (shouldSanitize(row)) {
-				continue;
-			}
-
-			sb.append("\t")
-			  .append(row)
-			  .append("\n");
-		}
-
-		return sb.toString();
-	}
-
-	/**
 	 * Extract operator information out of an assembly stack trace in {@link String} form
-	 * (see {@link #stackTraceToSanitizedString(StackTraceElement[])}).
+	 * (see {@link Tracer#callSiteSupplier(boolean)}).
 	 * <p>
 	 * Most operators will result in a line of the form {@code "Flux.map ⇢ user.code.Class.method(Class.java:123)"},
 	 * that is:
@@ -151,9 +102,13 @@ final class Traces {
 		return extractOperatorAssemblyInformation(source, false);
 	}
 
+	static boolean isUserCode(String line) {
+		return !line.startsWith("reactor.core.publisher") || line.contains("Test");
+	}
+
 	/**
 	 * Extract operator information out of an assembly stack trace in {@link String} form
-	 * (see {@link #stackTraceToSanitizedString(StackTraceElement[])}) which potentially
+	 * (see {@link Tracer#callSiteSupplier(boolean)}) which potentially
 	 * has a header line that one can skip by setting {@code skipFirst} to {@code true}.
 	 * <p>
 	 * Most operators will result in a line of the form {@code "Flux.map ⇢ user.code.Class.method(Class.java:123)"},
@@ -186,7 +141,7 @@ final class Traces {
 		}
 
 		int i = 0;
-		while (i < traces.size() && traces.get(i).startsWith("reactor.core.publisher") && !traces.get(i).contains("Test")) {
+		while (i < traces.size() && !isUserCode(traces.get(i))) {
 			i++;
 		}
 

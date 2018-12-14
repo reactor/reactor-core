@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +35,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceEmpty() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshotException e = new AssemblySnapshotException();
+		AssemblySnapshot e = new AssemblySnapshot();
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -46,7 +46,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescriptionNull() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshotException e = new AssemblySnapshotException(null);
+		AssemblySnapshot e = new AssemblySnapshot(null);
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -57,7 +57,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescription() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshotException e = new AssemblySnapshotException("1234");
+		AssemblySnapshot e = new AssemblySnapshot("1234");
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -270,7 +270,7 @@ public class FluxOnAssemblyTest {
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxOnAssembly.OnAssemblySubscriber<Integer> test =
-        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, new AssemblySnapshotException(), Flux.just(1));
+        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, new AssemblySnapshot(), Flux.just(1));
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 

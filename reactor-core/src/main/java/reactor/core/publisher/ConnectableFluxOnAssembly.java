@@ -21,7 +21,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -48,11 +48,11 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 
 	final ConnectableFlux<T> source;
 
-	final AssemblySnapshotException stacktrace;
+	final AssemblySnapshot stacktrace;
 
 	ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
 		this.source = source;
-		this.stacktrace = new AssemblySnapshotException();
+		this.stacktrace = new AssemblySnapshot();
 	}
 	
 	@Override

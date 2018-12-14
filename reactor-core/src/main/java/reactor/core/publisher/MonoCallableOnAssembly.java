@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -42,11 +42,11 @@ import reactor.util.annotation.Nullable;
 final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 		implements Callable<T>, AssemblyOp {
 
-	final AssemblySnapshotException stacktrace;
+	final AssemblySnapshot stacktrace;
 
 	MonoCallableOnAssembly(Mono<? extends T> source) {
 		super(source);
-		this.stacktrace = new AssemblySnapshotException();
+		this.stacktrace = new AssemblySnapshot();
 	}
 
 	@Override
