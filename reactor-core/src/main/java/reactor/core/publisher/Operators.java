@@ -1099,6 +1099,17 @@ public abstract class Operators {
 		return _actual;
 	}
 
+	/**
+	 * If the actual {@link CoreSubscriber} is not {@link Fuseable.ConditionalSubscriber},
+	 * it will apply a {@link ConditionalSubscriberAdapter} which directly maps all
+	 * {@link Fuseable.ConditionalSubscriber#tryOnNext(T)} to {@link CoreSubscriber#onNext(T)}
+	 * and always returns true as the result
+	 *
+	 * @param <T> passed subscriber type
+	 *
+	 * @param actual the {@link Subscriber} to apply hook on
+	 * @return an eventually transformed {@link Subscriber}
+	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Fuseable.ConditionalSubscriber<? super  T> toConditionalSubscriber(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "actual");
@@ -2107,6 +2118,13 @@ public abstract class Operators {
 		}
 	}
 
+	/**
+	 * This class wraps any non-conditional {@link CoreSubscriber<T>} so the delegate
+	 * can have an emulation of {@link reactor.core.Fuseable.ConditionalSubscriber<T>}
+	 * behaviors
+	 *
+	 * @param <T> passed subscriber type
+	 */
 	final static class ConditionalSubscriberAdapter<T> implements Fuseable.ConditionalSubscriber<T> {
 
 		final CoreSubscriber<T> delegate;
