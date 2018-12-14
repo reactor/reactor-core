@@ -25,9 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.assertj.core.api.Assertions;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Assume;
+import org.assertj.core.api.Assumptions;
 import org.junit.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Schedulers;
@@ -36,9 +34,6 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
 
 public class FluxSwitchOnFirstTest {
 
@@ -66,7 +61,40 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
 
-        Assert.assertThat(throwables[0], Matchers.instanceOf(IllegalStateException.class));
+        Assertions.assertThat(throwables[0])
+                  .isInstanceOf(IllegalStateException.class)
+                  .hasMessage("FluxSwitchOnFirst allows only one Subscriber");
+    }
+
+    @Test
+    public void shouldNotSubscribeTwiceConditional() {
+        Throwable[] throwables = new Throwable[1];
+        CountDownLatch latch = new CountDownLatch(1);
+        StepVerifier.create(Flux.just(1L)
+                                .switchOnFirst((s, f) -> {
+                                    RaceTestUtils.race(
+                                            () -> f.subscribe(__ -> {}, t -> {
+                                                throwables[0] = t;
+                                                latch.countDown();
+                                            },   latch::countDown),
+                                            () -> f.subscribe(__ -> {}, t -> {
+                                                throwables[0] = t;
+                                                latch.countDown();
+                                            },   latch::countDown)
+                                    );
+
+                                    return Flux.empty();
+                                })
+                                .filter(e -> true)
+                    )
+                    .expectSubscription()
+                    .expectComplete()
+                    .verify();
+
+
+        Assertions.assertThat(throwables[0])
+                  .isInstanceOf(IllegalStateException.class)
+                  .hasMessage("FluxSwitchOnFirst allows only one Subscriber");
     }
 
     @Test
@@ -87,7 +115,7 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
 
-        Assert.assertEquals(Signal.error(error), first[0]);
+        Assertions.assertThat(first).containsExactly(Signal.error(error));
     }
 
     @Test
@@ -99,14 +127,16 @@ public class FluxSwitchOnFirstTest {
                                     first[0] = s;
 
                                     return f;
-                                }))
+                                })
+                                .filter(e -> true)
+                    )
                     .expectSubscription()
                     .expectNext(1L)
                     .expectComplete()
                     .verify();
 
 
-        Assert.assertEquals(1L, (long) first[0].get());
+        Assertions.assertThat((long) first[0].get()).isEqualTo(1L);
     }
 
     @Test
@@ -125,7 +155,7 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
 
-        Assert.assertEquals(Signal.error(error), first[0]);
+        Assertions.assertThat(first).containsExactly(Signal.error(error));
     }
 
     @Test
@@ -143,7 +173,7 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
 
-        Assert.assertEquals(Signal.complete(), first[0]);
+        Assertions.assertThat(first).containsExactly(Signal.complete());
     }
 
     @Test
@@ -162,7 +192,7 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
 
-        Assert.assertEquals(Signal.error(error), first[0]);
+        Assertions.assertThat(first).containsExactly(Signal.error(error));
     }
 
     @Test
@@ -181,7 +211,7 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
 
-        Assert.assertEquals(1L, (long) first[0].get());
+        Assertions.assertThat((long) first[0].get()).isEqualTo(1L);
     }
 
 
@@ -201,7 +231,7 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
 
-        Assert.assertEquals(1L, (long) first[0].get());
+        Assertions.assertThat((long) first[0].get()).isEqualTo(1L);
     }
 
     @Test
@@ -222,7 +252,7 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
 
-        Assert.assertEquals(1L, (long) first[0].get());
+        Assertions.assertThat((long) first[0].get()).isEqualTo(1L);
     }
 
     @Test
@@ -247,8 +277,8 @@ public class FluxSwitchOnFirstTest {
 
         latch.await(5, TimeUnit.SECONDS);
 
-        Assert.assertEquals(capture.get(), 1L);
-        Assert.assertEquals(requested.get(), 20000L);
+        Assertions.assertThat(capture.get()).isEqualTo(1L);
+        Assertions.assertThat(requested.get()).isEqualTo(20000L);
     }
 
     @Test
@@ -273,7 +303,7 @@ public class FluxSwitchOnFirstTest {
                     .expectComplete()
                     .verify();
 
-        Assert.assertEquals(Signal.complete(Context.of("a", "c").put("c", "d")), first[0]);
+        Assertions.assertThat(first).containsExactly(Signal.complete(Context.of("a", "c").put("c", "d")));
     }
 
     @Test
@@ -307,9 +337,6 @@ public class FluxSwitchOnFirstTest {
         publisher.assertWasRequested();
         publisher.assertNoRequestOverflow();
     }
-
-    //    @Test
-    //    public void shouldNotFailOnIncorrePu
 
     @Test
     public void shouldBeAbleToAccessUpstreamContext() {
@@ -392,7 +419,7 @@ public class FluxSwitchOnFirstTest {
         publisher.assertWasRequested();
         publisher.assertNoRequestOverflow();
 
-        Assert.assertEquals(2L, requested.get());
+        Assertions.assertThat(requested.get()).isEqualTo(2L);
     }
 
     @Test
@@ -409,7 +436,7 @@ public class FluxSwitchOnFirstTest {
                     .expectComplete()
                     .verify(Duration.ofSeconds(10));
 
-        Assert.assertEquals(2L, requested.get());
+        Assertions.assertThat(requested.get()).isEqualTo(2L);
 
     }
 
@@ -428,7 +455,7 @@ public class FluxSwitchOnFirstTest {
                     .expectComplete()
                     .verify(Duration.ofSeconds(10));
 
-        Assert.assertEquals(10001L, requested.get());
+        Assertions.assertThat(requested.get()).isEqualTo(10001L);
     }
 
     @Test
@@ -446,7 +473,7 @@ public class FluxSwitchOnFirstTest {
                     .expectComplete()
                     .verify(Duration.ofSeconds(10));
 
-        Assert.assertEquals(10001L, requested.get());
+        Assertions.assertThat(requested.get()).isEqualTo(10001L);
     }
 
     @Test
@@ -537,7 +564,7 @@ public class FluxSwitchOnFirstTest {
         publisher.assertCancelled();
         publisher.assertWasRequested();
 
-        Assert.assertArrayEquals(new Integer[]{1}, discarded);
+        Assertions.assertThat(discarded).containsExactly(1);
     }
 
     @Test
@@ -558,7 +585,7 @@ public class FluxSwitchOnFirstTest {
         publisher.assertCancelled();
         publisher.assertWasRequested();
 
-        Assert.assertArrayEquals(new Integer[]{1}, discarded);
+        Assertions.assertThat(discarded).contains(1);
     }
 
     @Test
@@ -589,14 +616,15 @@ public class FluxSwitchOnFirstTest {
                                         Schedulers.parallel()),
                                 Schedulers.parallel())).start());
 
-                Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-                Assert.assertThat(requested.get(), equalTo(1L));
+                Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+                Assertions.assertThat(requested.get()).isEqualTo(1L);
                 capturedElements.add(captureElement.get());
                 capturedCompletions.add(captureCompletion.get());
             }
 
-            Assume.assumeThat(capturedElements, hasItem(equalTo(0L)));
-            Assume.assumeThat(capturedCompletions, hasItem(equalTo(false)));
+
+            Assumptions.assumeThat(capturedElements).contains(0L);
+            Assumptions.assumeThat(capturedCompletions).contains(false);
         }
     }
 
@@ -621,7 +649,7 @@ public class FluxSwitchOnFirstTest {
                     );
 
 
-        Assert.assertEquals(1L, (long) first[0].get());
+        Assertions.assertThat((long) first[0].get()).isEqualTo(1L);
     }
 
     @Test
@@ -649,7 +677,7 @@ public class FluxSwitchOnFirstTest {
                     });
 
 
-        Assert.assertEquals(Signal.error(error), first[0]);
+        Assertions.assertThat(first).containsExactly(Signal.error(error));
     }
 
     @Test
@@ -672,6 +700,6 @@ public class FluxSwitchOnFirstTest {
                     });
 
 
-        Assert.assertEquals(Signal.complete(), first[0]);
+        Assertions.assertThat(first).containsExactly(Signal.complete());
     }
 }
