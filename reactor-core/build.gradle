@@ -34,10 +34,7 @@ if (JavaVersion.current().java9Compatible) {
   }
 
   [jar, jmhJar]*.each {
-	it.manifest.attributes('Multi-Release': 'true')
-	it.into('META-INF/versions/9') {
-	  from sourceSets.java9.output
-	}
+	it.from sourceSets.java9.output
   }
 
   tasks.withType(Test).all {

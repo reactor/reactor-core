@@ -58,6 +58,7 @@ final class Traces {
 				|| stackTraceRow.contains("reactor.core.publisher.ParallelFlux.onAssembly")
 				|| stackTraceRow.contains("reactor.core.publisher.SignalLogger")
 				|| stackTraceRow.contains("FluxOnAssembly.")
+				|| stackTraceRow.contains("FluxOnAssembly$AssemblySnapshot")
 				|| stackTraceRow.contains("MonoOnAssembly.")
 				|| stackTraceRow.contains("MonoCallableOnAssembly.")
 				|| stackTraceRow.contains("FluxCallableOnAssembly.")

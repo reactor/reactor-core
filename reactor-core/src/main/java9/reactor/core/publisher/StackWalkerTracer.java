@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.lang.StackWalker.StackFrame;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -24,7 +25,8 @@ import java.util.function.Supplier;
  *
  * @author Sergei Egorov
  */
-final class Tracer {
+@SuppressWarnings("unused")
+final class StackWalkerTracer implements Function<Boolean, Supplier<String>> {
 
 	/**
 	 * Transform the current stack trace into a {@link String} representation,
@@ -34,11 +36,12 @@ final class Tracer {
 	 * @param full include all frames if true, sanitize the output otherwise
 	 * @return the string version of the stacktrace.
 	 */
-	static Supplier<String> callSiteSupplier(boolean full) {
+	@Override
+	public Supplier<String> apply(Boolean full) {
 		StackFrame[] frames  = StackWalker.getInstance().walk(stack -> {
 			StackFrame[] previous = new StackFrame[2];
 			stack
-					.skip(2) // callSiteSupplier + AssemblySnapshotException.<init>
+					.skip(3) // apply + callSiteSupplier + AssemblySnapshot.<init>
 					.filter(frame -> {
 						if (!full && frame.isNativeMethod()) {
 							return false;

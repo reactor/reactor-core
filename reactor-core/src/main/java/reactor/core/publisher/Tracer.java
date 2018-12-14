@@ -16,7 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import sun.misc.JavaLangAccess;
 import sun.misc.SharedSecrets;
@@ -29,7 +31,31 @@ import sun.misc.SharedSecrets;
  */
 final class Tracer {
 
-	private static final JavaLangAccess javaLangAccess = SharedSecrets.getJavaLangAccess();
+	private static Function<Boolean, Supplier<String>> callSiteSupplierFactory;
+
+	static {
+		String[] strategyClasses = {
+				Tracer.class.getPackage().getName() + ".StackWalkerTracer",
+				Tracer.class.getName() + "$SharedSecretsCallSiteSupplierFactory",
+				Tracer.class.getName() + "$ExceptionCallSiteSupplierFactory",
+		};
+		callSiteSupplierFactory = Stream
+				.of(strategyClasses)
+				.flatMap(className -> {
+					try {
+						Class<?> clazz = Class.forName(className);
+						@SuppressWarnings("unchecked")
+						Function<Boolean, Supplier<String>> function = (Function) clazz.getDeclaredConstructor()
+						                             .newInstance();
+						return Stream.of(function);
+					}
+					catch (Throwable e) {
+						return Stream.empty();
+					}
+				})
+				.findFirst()
+				.orElseThrow(() -> new IllegalStateException("Valid strategy not found"));
+	}
 
 	/**
 	 * Transform the current stack trace into a {@link String} representation,
@@ -40,43 +66,123 @@ final class Tracer {
 	 * @return the string version of the call-site.
 	 */
 	static Supplier<String> callSiteSupplier(boolean full) {
-		Throwable throwable = new Throwable();
-		return () -> {
-			int stackTraceDepth = javaLangAccess.getStackTraceDepth(throwable);
+		return callSiteSupplierFactory.apply(full);
+	}
 
-			StackTraceElement previousElement = null;
-			StackTraceElement userElement = null;
-			for (int i = 0; i < stackTraceDepth; i++) {
-				StackTraceElement e = javaLangAccess.getStackTraceElement(throwable, i);
+	@SuppressWarnings("unused")
+	static class SharedSecretsCallSiteSupplierFactory implements Function<Boolean, Supplier<String>> {
 
-				if (!full && e.getLineNumber() <= 1) {
-					continue;
-				}
+		@Override
+		public Supplier<String> apply(Boolean full) {
+			return new TracingException(full);
+		}
 
-				String classAndMethod = e.getClassName() + "." + e.getMethodName();
-				if (!full && Traces.shouldSanitize(classAndMethod)) {
-					continue;
-				}
+		static class TracingException extends Throwable implements Supplier<String> {
 
-				if (Traces.isUserCode(classAndMethod)) {
-					userElement = e;
-					break;
-				}
-				else {
-					previousElement = e;
-				}
+			static final JavaLangAccess javaLangAccess = SharedSecrets.getJavaLangAccess();
+
+			final boolean full;
+
+			TracingException(boolean full) {
+				this.full = full;
 			}
 
-			StringBuilder sb = new StringBuilder();
+			@Override
+			public String get() {
+				int stackTraceDepth = javaLangAccess.getStackTraceDepth(this);
 
-			if (previousElement != null) {
-				sb.append("\t").append(previousElement.toString()).append("\n");
+				StackTraceElement previousElement = null;
+				StackTraceElement userElement = null;
+				// 3 because: apply + callSiteSupplier + AssemblySnapshot.<init>
+				for (int i = 3; i < stackTraceDepth; i++) {
+					StackTraceElement e = javaLangAccess.getStackTraceElement(this, i);
+
+					if (!full && e.getLineNumber() <= 1) {
+						continue;
+					}
+
+					String classAndMethod = e.getClassName() + "." + e.getMethodName();
+					if (!full && Traces.shouldSanitize(classAndMethod)) {
+						continue;
+					}
+
+					if (Traces.isUserCode(classAndMethod)) {
+						userElement = e;
+						break;
+					}
+					else {
+						previousElement = e;
+					}
+				}
+
+				StringBuilder sb = new StringBuilder();
+
+				if (previousElement != null) {
+					sb.append("\t").append(previousElement.toString()).append("\n");
+				}
+				if (userElement != null) {
+					sb.append("\t").append(userElement.toString()).append("\n");
+				}
+
+				return sb.toString();
 			}
-			if (userElement != null) {
-				sb.append("\t").append(userElement.toString()).append("\n");
+		}
+	}
+
+	@SuppressWarnings("unused")
+	static class ExceptionCallSiteSupplierFactory implements Function<Boolean, Supplier<String>> {
+
+		@Override
+		public Supplier<String> apply(Boolean full) {
+			return new TracingException(full);
+		}
+
+		static class TracingException extends Throwable implements Supplier<String> {
+
+			final boolean full;
+
+			TracingException(boolean full) {
+				this.full = full;
 			}
 
-			return sb.toString();
-		};
+			@Override
+			public String get() {
+				StackTraceElement previousElement = null;
+				StackTraceElement userElement = null;
+				StackTraceElement[] stackTrace = getStackTrace();
+				// 3 because: apply + callSiteSupplier + AssemblySnapshot.<init>
+				for (int i = 3; i < stackTrace.length; i++) {
+					StackTraceElement e = stackTrace[i];
+
+					if (!full && e.getLineNumber() <= 1) {
+						continue;
+					}
+
+					String classAndMethod = e.getClassName() + "." + e.getMethodName();
+					if (!full && Traces.shouldSanitize(classAndMethod)) {
+						continue;
+					}
+
+					if (Traces.isUserCode(classAndMethod)) {
+						userElement = e;
+						break;
+					}
+					else {
+						previousElement = e;
+					}
+				}
+
+				StringBuilder sb = new StringBuilder();
+
+				if (previousElement != null) {
+					sb.append("\t").append(previousElement.toString()).append("\n");
+				}
+				if (userElement != null) {
+					sb.append("\t").append(userElement.toString()).append("\n");
+				}
+
+				return sb.toString();
+			}
+		}
 	}
 }
