@@ -596,7 +596,11 @@ public class FluxSwitchOnFirstTest {
                     .thenRequest(1)
                     .expectNext("1")
                     .then(() -> publisher.next(2L))
-                    .expectError()
+                    .expectErrorSatisfies(t -> Assertions
+                        .assertThat(t)
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessage("Can't deliver value due to lack of requests")
+                    )
                     .verify(Duration.ofSeconds(10));
 
         publisher.assertWasRequested();
