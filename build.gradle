@@ -308,7 +308,6 @@ project('reactor-core') {
   }
 
   jmh {
-	include = ["reactor.AssemblyTraceBenchmark.*"]
 	resultFormat = 'JSON'
   }
 
