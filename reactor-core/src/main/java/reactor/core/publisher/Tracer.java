@@ -42,10 +42,10 @@ final class Tracer {
 	static Supplier<String> callSiteSupplier(boolean full) {
 		Throwable throwable = new Throwable();
 		return () -> {
-			StringBuilder sb = new StringBuilder();
 			int stackTraceDepth = javaLangAccess.getStackTraceDepth(throwable);
 
-			StackTraceElement previous = null;
+			StackTraceElement previousElement = null;
+			StackTraceElement userElement = null;
 			for (int i = 0; i < stackTraceDepth; i++) {
 				StackTraceElement e = javaLangAccess.getStackTraceElement(throwable, i);
 
@@ -59,15 +59,21 @@ final class Tracer {
 				}
 
 				if (Traces.isUserCode(classAndMethod)) {
-					if (previous != null) {
-						sb.append("\t").append(previous.toString()).append("\n");
-					}
-					sb.append("\t").append(e.toString()).append("\n");
+					userElement = e;
 					break;
 				}
 				else {
-					previous = e;
+					previousElement = e;
 				}
+			}
+
+			StringBuilder sb = new StringBuilder();
+
+			if (previousElement != null) {
+				sb.append("\t").append(previousElement.toString()).append("\n");
+			}
+			if (userElement != null) {
+				sb.append("\t").append(userElement.toString()).append("\n");
 			}
 
 			return sb.toString();
