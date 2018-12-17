@@ -871,4 +871,28 @@ public class FluxSwitchOnFirstTest {
 
         Assertions.assertThat(subCount).hasValue(1);
     }
+
+    @Test
+    public void checkHotSource() {
+        ReplayProcessor<Long> processor = ReplayProcessor.create(1);
+
+        processor.onNext(1L);
+        processor.onNext(2L);
+        processor.onNext(3L);
+
+
+        StepVerifier.create(processor.switchOnFirst((s, f) -> f.filter(v -> v % s.get() == 0)))
+                    .expectNext(3L)
+                    .then(() -> {
+                        processor.onNext(4L);
+                        processor.onNext(5L);
+                        processor.onNext(6L);
+                        processor.onNext(7L);
+                        processor.onNext(8L);
+                        processor.onNext(9L);
+                        processor.onComplete();
+                    })
+                    .expectNext(6L, 9L)
+                    .verifyComplete();
+    }
 }
