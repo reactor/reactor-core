@@ -176,24 +176,8 @@ public class TracesTest {
 		assertThat(Traces.shouldSanitize("reactor.core.publisher.Flux.onAssembly")).isTrue();
 		assertThat(Traces.shouldSanitize("reactor.core.publisher.ParallelFlux.onAssembly")).isTrue();
 		assertThat(Traces.shouldSanitize("reactor.core.publisher.SignalLogger")).isTrue();
-		assertThat(Traces.shouldSanitize("FluxOnAssembly.")).isTrue();
-		assertThat(Traces.shouldSanitize("MonoOnAssembly.")).isTrue();
-		assertThat(Traces.shouldSanitize("MonoCallableOnAssembly.")).isTrue();
-		assertThat(Traces.shouldSanitize("FluxCallableOnAssembly.")).isTrue();
-		assertThat(Traces.shouldSanitize("OnOperatorDebug")).isTrue();
 		assertThat(Traces.shouldSanitize("reactor.core.publisher.Hooks")).isTrue();
-		assertThat(Traces.shouldSanitize(".junit.runner")).isTrue();
-		assertThat(Traces.shouldSanitize(".junit4.runner")).isTrue();
-		assertThat(Traces.shouldSanitize(".junit.internal")).isTrue();
-		assertThat(Traces.shouldSanitize("org.gradle.api.internal")).isTrue();
-		assertThat(Traces.shouldSanitize("org.gradle.internal.something")).isTrue();
 		assertThat(Traces.shouldSanitize("sun.reflect")).isTrue();
-		assertThat(Traces.shouldSanitize("useTraceAssembly")).isTrue();
-		assertThat(Traces.shouldSanitize("java.lang.Thread.")).isTrue();
-		assertThat(Traces.shouldSanitize("ThreadPoolExecutor")).isTrue();
-		assertThat(Traces.shouldSanitize("org.apache.catalina.")).isTrue();
-		assertThat(Traces.shouldSanitize("org.apache.tomcat.")).isTrue();
-		assertThat(Traces.shouldSanitize("com.intellij.")).isTrue();
 		assertThat(Traces.shouldSanitize("java.lang.reflect")).isTrue();
 	}
 

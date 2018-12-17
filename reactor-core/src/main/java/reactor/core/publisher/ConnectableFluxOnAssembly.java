@@ -50,9 +50,9 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 
 	final AssemblySnapshot stacktrace;
 
-	ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
+	ConnectableFluxOnAssembly(ConnectableFlux<T> source, AssemblySnapshot stacktrace) {
 		this.source = source;
-		this.stacktrace = new AssemblySnapshot();
+		this.stacktrace = stacktrace;
 	}
 	
 	@Override

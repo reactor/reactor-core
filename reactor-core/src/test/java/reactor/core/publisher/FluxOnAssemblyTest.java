@@ -35,7 +35,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceEmpty() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot();
+		AssemblySnapshot e = new AssemblySnapshot(null);
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -232,7 +232,7 @@ public class FluxOnAssemblyTest {
 		String debugStack = sw.toString();
 
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
-				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)\n"
+				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:222)\n"
 				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n");
 		assertThat(debugStack).endsWith("Error has been observed by the following operator(s):\n"
 				+ "\t|_\tParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n\n");
@@ -270,7 +270,7 @@ public class FluxOnAssemblyTest {
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxOnAssembly.OnAssemblySubscriber<Integer> test =
-        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, new AssemblySnapshot(), Flux.just(1));
+        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, new AssemblySnapshot(null), Flux.just(1));
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -281,7 +281,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		Flux<?> source = Flux.empty();
-		FluxOnAssembly<?> test = new FluxOnAssembly<>(source);
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(source, new AssemblySnapshot(null));
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
@@ -290,7 +290,7 @@ public class FluxOnAssemblyTest {
 
 	@Test
 	public void stepNameAndToString() {
-		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty());
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null));
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())

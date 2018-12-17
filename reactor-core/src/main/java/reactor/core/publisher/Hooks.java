@@ -28,6 +28,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -593,22 +594,23 @@ public abstract class Hooks {
 		@Override
 		@SuppressWarnings("unchecked")
 		public Publisher<T> apply(Publisher<T> publisher) {
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null);
 			if (publisher instanceof Callable) {
 				if (publisher instanceof Mono) {
-					return new MonoCallableOnAssembly<>((Mono<T>) publisher);
+					return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
 				}
-				return new FluxCallableOnAssembly<>((Flux<T>) publisher);
+				return new FluxCallableOnAssembly<>((Flux<T>) publisher, stacktrace);
 			}
 			if (publisher instanceof Mono) {
-				return new MonoOnAssembly<>((Mono<T>) publisher);
+				return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace);
 			}
 			if (publisher instanceof ParallelFlux) {
-				return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher);
+				return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher, stacktrace);
 			}
 			if (publisher instanceof ConnectableFlux) {
-				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher);
+				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher, stacktrace);
 			}
-			return new FluxOnAssembly<>((Flux<T>) publisher);
+			return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
 		}
 	}
 

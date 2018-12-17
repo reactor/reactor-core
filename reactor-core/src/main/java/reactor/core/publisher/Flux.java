@@ -53,6 +53,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.Metrics;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
@@ -3093,7 +3095,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link Flux}.
 	 */
 	public final Flux<T> checkpoint(@Nullable String description, boolean forceStackTrace) {
-		return new FluxOnAssembly<>(this, description, !forceStackTrace);
+		final AssemblySnapshot stacktrace;
+		if (!forceStackTrace) {
+			stacktrace = new AssemblyLightSnapshot(description);
+		}
+		else {
+			stacktrace = new AssemblySnapshot(description);
+		}
+
+		return new FluxOnAssembly<>(this, stacktrace);
 	}
 
 	/**

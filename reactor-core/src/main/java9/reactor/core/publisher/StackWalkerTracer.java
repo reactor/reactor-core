@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.lang.StackWalker.StackFrame;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -26,55 +25,59 @@ import java.util.function.Supplier;
  * @author Sergei Egorov
  */
 @SuppressWarnings("unused")
-final class StackWalkerTracer implements Function<Boolean, Supplier<String>> {
+final class StackWalkerTracer implements Supplier<Supplier<String>> {
 
 	/**
 	 * Transform the current stack trace into a {@link String} representation,
 	 * each element being prepended with a tabulation and appended with a
 	 * newline.
 	 *
-	 * @param full include all frames if true, sanitize the output otherwise
 	 * @return the string version of the stacktrace.
 	 */
 	@Override
-	public Supplier<String> apply(Boolean full) {
-		StackFrame[] frames  = StackWalker.getInstance().walk(stack -> {
-			StackFrame[] previous = new StackFrame[2];
-			stack
-					.skip(3) // apply + callSiteSupplier + AssemblySnapshot.<init>
-					.filter(frame -> {
-						if (!full && frame.isNativeMethod()) {
-							return false;
-						}
-
-						String classAndMethod = frame.getClassName() + "." + frame.getMethodName();
-						if (!full && Traces.shouldSanitize(classAndMethod)) {
-							return false;
-						}
-
-						boolean userCode = Traces.isUserCode(classAndMethod);
-						if (userCode) {
-							previous[1] = frame;
-						}
-						else {
-							previous[0] = frame;
-						}
-						return userCode;
-					})
-					.findFirst();
-
-			return previous;
+	public Supplier<String> get() {
+		StackFrame[] stack = StackWalker.getInstance().walk(s -> {
+			return s
+					.limit(10)
+					// get + AssemblySnapshot.<init>
+			        .skip(2)
+			        .toArray(StackFrame[]::new);
 		});
 
 		return () -> {
-			StringBuilder sb = new StringBuilder();
-			if (frames[0] != null) {
-				sb.append("\t").append(frames[0].toString()).append("\n");
+			for (int i = 0, length = stack.length; i < length; i++) {
+				StackFrame frame = stack[i];
+				if (frame.isNativeMethod()) {
+					continue;
+				}
+
+				if (Traces.isUserCode(frame.getClassName())) {
+					StringBuilder sb = new StringBuilder();
+					for (int j = i - 1; j > 0; j--) {
+						StackFrame previous = stack[j];
+
+						if (!Tracer.full) {
+							if (previous.isNativeMethod()) {
+								continue;
+							}
+
+							String previousRow = previous.getClassName() + "." + previous.getMethodName();
+							if (Traces.shouldSanitize(previousRow)) {
+								continue;
+							}
+						}
+						sb.append("\t")
+						  .append(previous.toString())
+						  .append("\n");
+						break;
+					}
+					sb.append("\t")
+					  .append(frame.toString())
+					  .append("\n");
+					return sb.toString();
+				}
 			}
-			if (frames[1] != null) {
-				sb.append("\t").append(frames[1].toString()).append("\n");
-			}
-			return sb.toString();
+			return "";
 		};
 	}
 }

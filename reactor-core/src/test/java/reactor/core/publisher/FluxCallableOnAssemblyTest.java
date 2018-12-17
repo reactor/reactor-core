@@ -34,6 +34,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,17 +42,17 @@ public class FluxCallableOnAssemblyTest {
 
 	@Test
 	public void scanOperator() {
-		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty());
+		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), new AssemblySnapshot(null));
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
 
 	@Test
 	public void stepNameAndToString() {
-		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty());
+		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), new AssemblySnapshot(null));
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
-				.isEqualTo("reactor.core.publisher.FluxCallableOnAssemblyTest.stepNameAndToString(FluxCallableOnAssemblyTest.java:51)");
+				.startsWith("reactor.core.publisher.FluxCallableOnAssemblyTest.stepNameAndToString(FluxCallableOnAssemblyTest.java:");
 	}
 }

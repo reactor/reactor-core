@@ -40,6 +40,8 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
@@ -162,7 +164,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint() {
-		return new ParallelFluxOnAssembly<>(this, null);
+		return new ParallelFluxOnAssembly<>(this, new AssemblySnapshot(null));
 	}
 
 	/**
@@ -182,7 +184,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint(String description) {
-		return new ParallelFluxOnAssembly<>(this, description, true);
+		return new ParallelFluxOnAssembly<>(this, new AssemblyLightSnapshot(description));
 	}
 
 	/**
@@ -212,7 +214,15 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link ParallelFlux}.
 	 */
 	public final ParallelFlux<T> checkpoint(String description, boolean forceStackTrace) {
-		return new ParallelFluxOnAssembly<>(this, description, !forceStackTrace);
+		final AssemblySnapshot stacktrace;
+		if (!forceStackTrace) {
+			stacktrace = new AssemblyLightSnapshot(description);
+		}
+		else {
+			stacktrace = new AssemblySnapshot(description);
+		}
+
+		return new ParallelFluxOnAssembly<>(this, stacktrace);
 	}
 
 	/**

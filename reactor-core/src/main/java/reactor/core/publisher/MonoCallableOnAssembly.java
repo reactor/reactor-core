@@ -44,9 +44,9 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 
 	final AssemblySnapshot stacktrace;
 
-	MonoCallableOnAssembly(Mono<? extends T> source) {
+	MonoCallableOnAssembly(Mono<? extends T> source, AssemblySnapshot stacktrace) {
 		super(source);
-		this.stacktrace = new AssemblySnapshot();
+		this.stacktrace = stacktrace;
 	}
 
 	@Override

@@ -40,9 +40,9 @@ final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 
 	final AssemblySnapshot stacktrace;
 
-	FluxCallableOnAssembly(Flux<? extends T> source) {
+	FluxCallableOnAssembly(Flux<? extends T> source, AssemblySnapshot stacktrace) {
 		super(source);
-		this.stacktrace = new AssemblySnapshot();
+		this.stacktrace = stacktrace;
 	}
 
 	@Override

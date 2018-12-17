@@ -53,34 +53,11 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	final AssemblySnapshot snapshotStack;
 
 	/**
-	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
-	 * instead of the sanitized version.
-	 */
-	static final boolean fullStackTrace = Boolean.parseBoolean(System.getProperty(
-			"reactor.trace.assembly.fullstacktrace",
-			"false"));
-
-	/**
 	 * Create an assembly trace decorated as a {@link Flux}.
 	 */
-	FluxOnAssembly(Flux<? extends T> source) {
+	FluxOnAssembly(Flux<? extends T> source, AssemblySnapshot snapshotStack) {
 		super(source);
-		this.snapshotStack = new AssemblySnapshot();
-	}
-
-	/**
-	 * If light, create an assembly marker that has no trace but just shows a custom
-	 * description (eg. a name for a Flux or a wider correlation ID) and exposed as a
-	 * {@link Flux}.
-	 */
-	FluxOnAssembly(Flux<? extends T> source, @Nullable String description, boolean light) {
-		super(source);
-		if (light) {
-			this.snapshotStack = new AssemblyLightSnapshot(description);
-		}
-		else {
-			this.snapshotStack = new AssemblySnapshot(description);
-		}
+		this.snapshotStack = snapshotStack;
 	}
 
 	@Override
@@ -166,27 +143,21 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	static class AssemblySnapshot {
 
 		final boolean  checkpointed;
+		final String description;
 		final Supplier<String> assemblyInformationSupplier;
 		String cached;
-		String description;
-
-		AssemblySnapshot() {
-			this.checkpointed = false;
-			this.assemblyInformationSupplier = createAssemblyInformationSupplier();
-		}
 
 		/**
 		 * @param description a description for the assembly traceback.
-		 * Use {@link #AssemblySnapshot()} rather than null if not relevant.
 		 */
 		AssemblySnapshot(@Nullable String description) {
-			this.description = description;
-			this.checkpointed = true;
-			this.assemblyInformationSupplier = createAssemblyInformationSupplier();
+			this(description != null, description, Tracer.callSiteSupplierFactory.get());
 		}
 
-		Supplier<String> createAssemblyInformationSupplier() {
-			return Tracer.callSiteSupplier(fullStackTrace);
+		public AssemblySnapshot(boolean checkpointed, @Nullable String description, Supplier<String> assemblyInformationSupplier) {
+			this.checkpointed = checkpointed;
+			this.description = description;
+			this.assemblyInformationSupplier = assemblyInformationSupplier;
 		}
 
 		public String getMessage() {
@@ -212,13 +183,8 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	static final class AssemblyLightSnapshot extends AssemblySnapshot {
 
 		AssemblyLightSnapshot(@Nullable String description) {
-			super(description);
-			cached = "checkpoint(\""+description+"\")";
-		}
-
-		@Override
-		Supplier<String> createAssemblyInformationSupplier() {
-			return () -> "";
+			super(true, description, () -> "");
+			cached = "checkpoint(\"" + description + "\")";
 		}
 
 		@Override

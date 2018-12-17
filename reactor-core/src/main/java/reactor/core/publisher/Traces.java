@@ -45,42 +45,31 @@ final class Traces {
 
 	/**
 	 * Return true for strings (usually from a stack trace element) that should be
-	 * sanitized out by {@link Tracer#callSiteSupplier(boolean)}.
+	 * sanitized out by {@link Tracer#callSiteSupplierFactory}.
 	 *
 	 * @param stackTraceRow the row to check
 	 * @return true if it should be sanitized out, false if it should be kept
 	 */
 	static boolean shouldSanitize(String stackTraceRow) {
-		return stackTraceRow.trim().isEmpty()
-				|| stackTraceRow.contains("java.util.function")
-				|| stackTraceRow.contains("reactor.core.publisher.Mono.onAssembly")
-				|| stackTraceRow.contains("reactor.core.publisher.Flux.onAssembly")
-				|| stackTraceRow.contains("reactor.core.publisher.ParallelFlux.onAssembly")
-				|| stackTraceRow.contains("reactor.core.publisher.SignalLogger")
-				|| stackTraceRow.contains("FluxOnAssembly.")
-				|| stackTraceRow.contains("FluxOnAssembly$AssemblySnapshot")
-				|| stackTraceRow.contains("MonoOnAssembly.")
-				|| stackTraceRow.contains("MonoCallableOnAssembly.")
-				|| stackTraceRow.contains("FluxCallableOnAssembly.")
-				|| stackTraceRow.contains("OnOperatorDebug")
-				|| stackTraceRow.contains("reactor.core.publisher.Hooks")
-				|| stackTraceRow.contains(".junit.runner")
-				|| stackTraceRow.contains(".junit4.runner")
-				|| stackTraceRow.contains(".junit.internal")
-				|| stackTraceRow.contains("org.gradle.")
-				|| stackTraceRow.contains("sun.reflect")
-				|| stackTraceRow.contains("useTraceAssembly")
-				|| stackTraceRow.contains("java.lang.Thread.")
-				|| stackTraceRow.contains("ThreadPoolExecutor")
-				|| stackTraceRow.contains("org.apache.catalina.")
-				|| stackTraceRow.contains("org.apache.tomcat.")
-				|| stackTraceRow.contains("com.intellij.")
-				|| stackTraceRow.contains("java.lang.reflect");
+		return stackTraceRow.startsWith("java.util.function")
+				|| stackTraceRow.startsWith("reactor.core.publisher.Mono.onAssembly")
+				|| stackTraceRow.equals("reactor.core.publisher.Mono.onAssembly")
+				|| stackTraceRow.equals("reactor.core.publisher.Flux.onAssembly")
+				|| stackTraceRow.equals("reactor.core.publisher.ParallelFlux.onAssembly")
+				|| stackTraceRow.startsWith("reactor.core.publisher.SignalLogger")
+				|| stackTraceRow.startsWith("reactor.core.publisher.FluxOnAssembly")
+				|| stackTraceRow.startsWith("reactor.core.publisher.MonoOnAssembly.")
+				|| stackTraceRow.startsWith("reactor.core.publisher.MonoCallableOnAssembly.")
+				|| stackTraceRow.startsWith("reactor.core.publisher.FluxCallableOnAssembly.")
+				|| stackTraceRow.startsWith("reactor.core.publisher.Hooks")
+				|| stackTraceRow.startsWith("sun.reflect")
+				|| stackTraceRow.startsWith("java.util.concurrent.ThreadPoolExecutor")
+				|| stackTraceRow.startsWith("java.lang.reflect");
 	}
 
 	/**
 	 * Extract operator information out of an assembly stack trace in {@link String} form
-	 * (see {@link Tracer#callSiteSupplier(boolean)}).
+	 * (see {@link Tracer#callSiteSupplierFactory}).
 	 * <p>
 	 * Most operators will result in a line of the form {@code "Flux.map ⇢ user.code.Class.method(Class.java:123)"},
 	 * that is:
@@ -109,7 +98,7 @@ final class Traces {
 
 	/**
 	 * Extract operator information out of an assembly stack trace in {@link String} form
-	 * (see {@link Tracer#callSiteSupplier(boolean)}) which potentially
+	 * (see {@link Tracer#callSiteSupplierFactory}) which potentially
 	 * has a header line that one can skip by setting {@code skipFirst} to {@code true}.
 	 * <p>
 	 * Most operators will result in a line of the form {@code "Flux.map ⇢ user.code.Class.method(Class.java:123)"},

@@ -43,24 +43,9 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
 	/**
 	 * Create an assembly trace exposed as a {@link Mono}.
 	 */
-	MonoOnAssembly(Mono<? extends T> source) {
+	MonoOnAssembly(Mono<? extends T> source, AssemblySnapshot stacktrace) {
 		super(source);
-		this.stacktrace = new AssemblySnapshot();
-	}
-
-	/**
-	 * Create a potentially light assembly trace augmented with a description (that must
-	 * be unique enough to identify the assembly site in case of light mode),
-	 * wrapping a {@link ParallelFlux}.
-	 */
-	MonoOnAssembly(Mono<? extends T> source, @Nullable String description, boolean light) {
-		super(source);
-		if (light) {
-			this.stacktrace = new FluxOnAssembly.AssemblyLightSnapshot(description);
-		}
-		else {
-			this.stacktrace = new AssemblySnapshot(description);
-		}
+		this.stacktrace = stacktrace;
 	}
 
 	@Override

@@ -46,33 +46,9 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	/**
 	 * Create an assembly trace wrapping a {@link ParallelFlux}.
 	 */
-	ParallelFluxOnAssembly(ParallelFlux<T> source) {
+	ParallelFluxOnAssembly(ParallelFlux<T> source, AssemblySnapshot stacktrace) {
 		this.source = source;
-		this.stacktrace = new AssemblySnapshot();
-	}
-
-	/**
-	 * Create an assembly trace augmented with a custom description (eg. a name for a
-	 * ParallelFlux or a wider correlation ID), wrapping a {@link ParallelFlux}.
-	 */
-	ParallelFluxOnAssembly(ParallelFlux<T> source, @Nullable String description) {
-		this.source = source;
-		this.stacktrace = new AssemblySnapshot(description);
-	}
-
-	/**
-	 * Create a potentially light assembly trace augmented with a description (that must
-	 * be unique enough to identify the assembly site in case of light mode),
-	 * wrapping a {@link ParallelFlux}.
-	 */
-	ParallelFluxOnAssembly(ParallelFlux<T> source, String description, boolean light) {
-		this.source = source;
-		if (light) {
-			 this.stacktrace = new AssemblyLightSnapshot(description);
-		}
-		else {
-			this.stacktrace = new AssemblySnapshot(description);
-		}
+		this.stacktrace = stacktrace;
 	}
 
 	@Override

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +27,7 @@ public class ParallelFluxOnAssemblyTest {
 	@Test
 	public void parallelism() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source);
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, new AssemblySnapshot(null));
 
 		assertThat(test.parallelism())
 				.isEqualTo(3)
@@ -35,7 +36,7 @@ public class ParallelFluxOnAssemblyTest {
 
 	@Test
 	public void scanUnsafe() {
-		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty());
+		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), new AssemblySnapshot(null));
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
@@ -43,17 +44,17 @@ public class ParallelFluxOnAssemblyTest {
 	@Test
 	public void stepNameAndToString() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, "foo");
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, new AssemblySnapshot("foo"));
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
-				.isEqualTo("reactor.core.publisher.ParallelFluxOnAssemblyTest.stepNameAndToString(ParallelFluxOnAssemblyTest.java:46)");
+				.startsWith("reactor.core.publisher.ParallelFluxOnAssemblyTest.stepNameAndToString(ParallelFluxOnAssemblyTest.java:");
 	}
 
 	@Test
 	public void scanOperator() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source);
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, new AssemblySnapshot(null));
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH))
