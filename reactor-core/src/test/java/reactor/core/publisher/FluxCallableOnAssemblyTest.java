@@ -42,14 +42,16 @@ public class FluxCallableOnAssemblyTest {
 
 	@Test
 	public void scanOperator() {
-		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
 
 	@Test
 	public void stepNameAndToString() {
-		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), stacktrace);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())

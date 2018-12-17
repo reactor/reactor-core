@@ -27,7 +27,8 @@ public class ParallelFluxOnAssemblyTest {
 	@Test
 	public void parallelism() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.parallelism())
 				.isEqualTo(3)
@@ -36,7 +37,8 @@ public class ParallelFluxOnAssemblyTest {
 
 	@Test
 	public void scanUnsafe() {
-		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
@@ -44,7 +46,8 @@ public class ParallelFluxOnAssemblyTest {
 	@Test
 	public void stepNameAndToString() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, new AssemblySnapshot("foo"));
+		AssemblySnapshot stacktrace = new AssemblySnapshot("foo", Tracer.callSiteSupplierFactory.get());
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
@@ -54,7 +57,8 @@ public class ParallelFluxOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH))

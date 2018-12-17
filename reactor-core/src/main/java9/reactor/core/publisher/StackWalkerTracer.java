@@ -17,6 +17,9 @@
 package reactor.core.publisher;
 
 import java.lang.StackWalker.StackFrame;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -37,47 +40,66 @@ final class StackWalkerTracer implements Supplier<Supplier<String>> {
 	@Override
 	public Supplier<String> get() {
 		StackFrame[] stack = StackWalker.getInstance().walk(s -> {
-			return s
-					.limit(10)
-					// get + AssemblySnapshot.<init>
-			        .skip(2)
-			        .toArray(StackFrame[]::new);
-		});
+			StackFrame[] result = new StackFrame[10];
+			Iterator<StackFrame> iterator = s.iterator();
+			iterator.next(); // .get
 
-		return () -> {
-			for (int i = 0, length = stack.length; i < length; i++) {
-				StackFrame frame = stack[i];
-				if (frame.isNativeMethod()) {
-					continue;
+			int i = 0;
+			while (iterator.hasNext()) {
+				StackFrame frame = iterator.next();
+
+				if (i >= result.length) {
+					return new StackFrame[0];
 				}
+
+				result[i++] = frame;
 
 				if (Traces.isUserCode(frame.getClassName())) {
-					StringBuilder sb = new StringBuilder();
-					for (int j = i - 1; j > 0; j--) {
-						StackFrame previous = stack[j];
-
-						if (!Tracer.full) {
-							if (previous.isNativeMethod()) {
-								continue;
-							}
-
-							String previousRow = previous.getClassName() + "." + previous.getMethodName();
-							if (Traces.shouldSanitize(previousRow)) {
-								continue;
-							}
-						}
-						sb.append("\t")
-						  .append(previous.toString())
-						  .append("\n");
-						break;
-					}
-					sb.append("\t")
-					  .append(frame.toString())
-					  .append("\n");
-					return sb.toString();
+					break;
 				}
 			}
-			return "";
+			StackFrame[] copy = new StackFrame[i];
+			System.arraycopy(result, 0, copy, 0, i);
+			return copy;
+		});
+
+		if (stack.length == 0) {
+			return () -> "";
+		}
+
+		if (stack.length == 1) {
+			return () -> "\t" + stack[0].toString() + "\n";
+		}
+
+		return () -> {
+			StringBuilder sb = new StringBuilder();
+
+			for (int j = stack.length - 2; j > 0; j--) {
+				StackFrame previous = stack[j];
+
+				if (!Tracer.full) {
+					if (previous.isNativeMethod()) {
+						continue;
+					}
+
+					String previousRow = previous.getClassName() + "." + previous.getMethodName();
+					if (Traces.shouldSanitize(previousRow)) {
+						continue;
+					}
+				}
+				sb.append("\t")
+				  .append(previous.toString())
+				  .append("\n");
+				break;
+			}
+
+			sb.append("\t")
+			  .append(stack[stack.length - 1].toString())
+			  .append("\n");
+
+			return sb.toString();
 		};
 	}
+
+	public static final Set<StackWalker.Option> EMPTY_SET = Collections.emptySet();
 }

@@ -35,7 +35,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceEmpty() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot(null);
+		AssemblySnapshot e = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -46,7 +46,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescriptionNull() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot(null);
+		AssemblySnapshot e = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -57,7 +57,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescription() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot("1234");
+		AssemblySnapshot e = new AssemblySnapshot("1234", Tracer.callSiteSupplierFactory.get());
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -232,7 +232,7 @@ public class FluxOnAssemblyTest {
 		String debugStack = sw.toString();
 
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
-				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:222)\n"
+				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:223)\n"
 				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n");
 		assertThat(debugStack).endsWith("Error has been observed by the following operator(s):\n"
 				+ "\t|_\tParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n\n");
@@ -269,8 +269,9 @@ public class FluxOnAssemblyTest {
 	@Test
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxOnAssembly.OnAssemblySubscriber<Integer> test =
-        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, new AssemblySnapshot(null), Flux.just(1));
+		AssemblySnapshot snapshot = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		FluxOnAssembly.OnAssemblySubscriber<Integer> test =
+        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, snapshot, Flux.just(1));
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -281,7 +282,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		Flux<?> source = Flux.empty();
-		FluxOnAssembly<?> test = new FluxOnAssembly<>(source, new AssemblySnapshot(null));
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(source, new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get()));
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
@@ -290,10 +291,10 @@ public class FluxOnAssemblyTest {
 
 	@Test
 	public void stepNameAndToString() {
-		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null));
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get()));
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
-				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.stepNameAndToString(FluxOnAssemblyTest.java:293)");
+				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.stepNameAndToString(FluxOnAssemblyTest.java:294)");
 	}
 }

@@ -142,24 +142,27 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	 */
 	static class AssemblySnapshot {
 
-		final boolean  checkpointed;
-		final String description;
+		final boolean          checkpointed;
+		@Nullable
+		final String           description;
 		final Supplier<String> assemblyInformationSupplier;
 		String cached;
 
 		/**
 		 * @param description a description for the assembly traceback.
+		 * @param assemblyInformationSupplier a callSite supplier.
 		 */
-		AssemblySnapshot(@Nullable String description) {
-			this(description != null, description, Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot(@Nullable String description, Supplier<String> assemblyInformationSupplier) {
+			this(description != null, description, assemblyInformationSupplier);
 		}
 
-		public AssemblySnapshot(boolean checkpointed, @Nullable String description, Supplier<String> assemblyInformationSupplier) {
+		private AssemblySnapshot(boolean checkpointed, @Nullable String description, Supplier<String> assemblyInformationSupplier) {
 			this.checkpointed = checkpointed;
 			this.description = description;
 			this.assemblyInformationSupplier = assemblyInformationSupplier;
 		}
 
+		@Nullable
 		public String getMessage() {
 			return description;
 		}

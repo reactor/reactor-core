@@ -87,7 +87,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		this.fuseable = source instanceof Fuseable;
 
 		if (correlateStack) {
-			operatorLine = new AssemblySnapshot(null).operatorAssemblyInformation();
+			operatorLine = Traces.extractOperatorAssemblyInformation(Tracer.callSiteSupplierFactory.get().get());
 		}
 		else {
 			operatorLine = null;

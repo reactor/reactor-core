@@ -164,7 +164,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint() {
-		return new ParallelFluxOnAssembly<>(this, new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		return new ParallelFluxOnAssembly<>(this, stacktrace);
 	}
 
 	/**
@@ -219,7 +220,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			stacktrace = new AssemblyLightSnapshot(description);
 		}
 		else {
-			stacktrace = new AssemblySnapshot(description);
+			stacktrace = new AssemblySnapshot(description, Tracer.callSiteSupplierFactory.get());
 		}
 
 		return new ParallelFluxOnAssembly<>(this, stacktrace);
@@ -1179,10 +1180,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	protected static <T> ParallelFlux<T> onAssembly(ParallelFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
-		if (hook == null) {
-			return source;
+		if(hook != null) {
+			source = (ParallelFlux<T>)hook.apply(source);
 		}
-		return (ParallelFlux<T>) hook.apply(source);
+		if (Hooks.GLOBAL_TRACE) {
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+			source = (ParallelFlux<T>) Hooks.addAssemblyInfo(source, stacktrace);
+		}
+		return source;
 	}
 
 	/**

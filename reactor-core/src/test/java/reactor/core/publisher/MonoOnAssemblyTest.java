@@ -42,14 +42,16 @@ public class MonoOnAssemblyTest {
 
 	@Test
 	public void scanOperator() {
-		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
 
 	@Test
 	public void stepNameAndToString() {
-		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), stacktrace);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())

@@ -42,14 +42,16 @@ public class MonoCallableOnAssemblyTest {
 
 	@Test
 	public void scanOperator() {
-		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty(), new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty(), stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
 
 	@Test
 	public void stepNameAndToString() {
-		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty(), new AssemblySnapshot(null));
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty(), stacktrace);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
