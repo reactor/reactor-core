@@ -7899,6 +7899,47 @@ public abstract class Flux<T> implements Publisher<T> {
 		return subscriber;
 	}
 
+	/**
+	 * Provide current {@link Flux<T>} transformation when the first available signal
+     * appears in the upstream. To make this transformation possible, the switch on the
+     * first operator proactively requests the first element from the upstream. It does
+     * not mean that upstream is always mandated to return an element, but free to be
+     * empty or error stream, so the given in transform bi-function {@link Signal} can be
+     * either onNext, onError or onComplete.
+     *
+     * Note that any given signal will be propagated to the downstream regardless the
+     * type of the signal. Typically, this operator could be used to provide stream
+     * transformation depends on the first signal in the stream.
+     *
+     * For example, it could be used to define the stream routing, depends on the first
+     * element, which could contain informational metadata, or so.
+	 *
+	 * <blockquote><pre>
+	 * {@code
+	 *  flux.switchOnFirst((signal, flux) -> {
+	 *      if (signal.hasValue()) {
+	 *          if (signal.get() ...) {
+	 *              return flux.map(...).filter(...).flatMap(...).transform(...)
+	 *          } else if (signal.get() ...) {
+	 *              ...
+	 *          }
+	 *      }
+	 *
+	 *      return Flux.empty();
+	 *  })
+	 * }
+	 * </pre></blockquote>
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/docs/marble/switchonfirst.png" alt="">
+	 * <p>
+	 *
+	 * @param transformer function transformer. Is executed once the first signal is
+     * available. Must return a flux instance as a return type
+	 * @param <V> the item type in the returned {@link Flux}
+     *
+	 * @return a new {@link Flux} that transform the upstream once a signal is available
+	 */
 	public final <V> Flux<V> switchOnFirst(BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends V>> transformer) {
 		return onAssembly(new FluxSwitchOnFirst<>(this, transformer));
 	}
