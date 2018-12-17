@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.assertj.core.api.Assertions;
@@ -855,5 +856,19 @@ public class FluxSwitchOnFirstTest {
 
 
         Assertions.assertThat(first).containsExactly(Signal.complete());
+    }
+
+    @Test
+    public void sourceSubscribedOnce() {
+        AtomicInteger subCount = new AtomicInteger();
+        Flux<Integer> source = Flux.range(1, 10)
+                                   .hide()
+                                   .doOnSubscribe(subscription -> subCount.incrementAndGet());
+
+        StepVerifier.create(source.switchOnFirst((s, f) -> f.filter(v -> v % 2 == s.get())))
+                    .expectNext(1, 3, 5, 7, 9)
+                    .verifyComplete();
+
+        Assertions.assertThat(subCount).hasValue(1);
     }
 }
