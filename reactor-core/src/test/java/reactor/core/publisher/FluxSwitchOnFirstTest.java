@@ -20,12 +20,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.Assumptions;
 import org.junit.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Schedulers;
@@ -749,30 +749,27 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldBeAbleToCancelSubscription() throws InterruptedException {
-        for (int j = 0; j < 10; j++) {
+        Flux<Long> publisher = Flux.just(1L);
+        for (int j = 0; j < 100; j++) {
             ArrayList<Long> capturedElements = new ArrayList<>();
             ArrayList<Boolean> capturedCompletions = new ArrayList<>();
             for (int i = 0; i < 1000; i++) {
-                TestPublisher<Long> publisher = TestPublisher.createCold();
                 AtomicLong captureElement = new AtomicLong(0L);
                 AtomicBoolean captureCompletion = new AtomicBoolean(false);
                 AtomicLong requested = new AtomicLong();
                 CountDownLatch latch = new CountDownLatch(1);
-                Flux<Long> switchTransformed = publisher.flux()
-                                                        .doOnRequest(requested::addAndGet)
+                Flux<Long> switchTransformed = publisher.doOnRequest(requested::addAndGet)
                                                         .doOnCancel(latch::countDown)
                                                         .switchOnFirst((first, innerFlux) -> innerFlux);
 
-                publisher.next(1L);
-
-                switchTransformed.subscribe(captureElement::set,
-                        __ -> { },
-                        () -> captureCompletion.set(true),
-                        s -> new Thread(() -> RaceTestUtils.race(publisher::complete,
-                                () -> RaceTestUtils.race(s::cancel,
-                                        () -> s.request(1),
-                                        Schedulers.parallel()),
-                                Schedulers.parallel())).start());
+                switchTransformed.subscribe(
+                    captureElement::set,
+                    __ -> { },
+                    () -> captureCompletion.set(true),
+                    s -> ForkJoinPool.commonPool().execute(() ->
+                        RaceTestUtils.race(s::cancel, () -> s.request(1), Schedulers.parallel())
+                    )
+                );
 
                 Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
                 Assertions.assertThat(requested.get()).isEqualTo(1L);
@@ -780,9 +777,8 @@ public class FluxSwitchOnFirstTest {
                 capturedCompletions.add(captureCompletion.get());
             }
 
-
-            Assumptions.assumeThat(capturedElements).contains(0L);
-            Assumptions.assumeThat(capturedCompletions).contains(false);
+            Assertions.assertThat(capturedElements).contains(0L);
+            Assertions.assertThat(capturedCompletions).contains(false);
         }
     }
 
