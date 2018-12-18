@@ -296,4 +296,30 @@ public class ContextNTest {
 		assertThat(put).isSameAs(c);
 	}
 
+	@Test
+	public void putNonNullWithNull() {
+		int expectedSize = c.size();
+		Context put = c.putNonNull("putNonNull", null);
+
+		assertThat(put).isSameAs(c);
+		assertThat(put.size()).isEqualTo(expectedSize);
+	}
+
+	@Test
+	public void putNonNullWithValue() {
+		int expectedSize = c.size() + 1;
+		Context put = c.putNonNull("putNonNull", "value");
+
+		assertThat(put).isNotSameAs(c);
+		assertThat(put.getOrEmpty("putNonNull")).contains("value");
+		assertThat(put.size()).isEqualTo(expectedSize);
+	}
+
+	@Test
+	public void contextSize() { //renamed to allow import of size() Condition from ContextTest
+		assertThat(c.size()).isEqualTo(6);
+
+		assertThat(c.put("sizeGrows", "yes").size()).isEqualTo(7);
+	}
+
 }

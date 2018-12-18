@@ -67,8 +67,6 @@ final class Context2 implements Context {
 		return this;
 	}
 
-
-
 	@Override
 	public boolean hasKey(Object key) {
 		return this.key1.equals(key) || this.key2.equals(key);
@@ -84,6 +82,11 @@ final class Context2 implements Context {
 			return (T)this.value2;
 		}
 		throw new NoSuchElementException("Context does not contain key: "+key);
+	}
+
+	@Override
+	public int size() {
+		return 2;
 	}
 
 	@Override

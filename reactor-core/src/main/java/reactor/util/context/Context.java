@@ -234,6 +234,23 @@ public interface Context {
 	Context put(Object key, Object value);
 
 	/**
+	 * Create a new {@link Context} that contains all current key/value pairs plus the
+	 * given key/value pair <strong>only if the value is not {@literal null}</strong>. If that key existed in the
+	 * current Context, its associated value is replaced in the resulting {@link Context}.
+	 *
+	 * @param key the key to add/update in the new {@link Context}
+	 * @param valueOrNull the value to associate to the key in the new {@link Context}, null to ignore the operation
+	 *
+	 * @return a new {@link Context} including the provided key/value, or the same {@link Context} if value is null
+	 */
+	default Context putNonNull(Object key, @Nullable Object valueOrNull) {
+		if (valueOrNull != null) {
+			return put(key, valueOrNull);
+		}
+		return this;
+	}
+
+	/**
 	 * Return a new {@link Context} that will resolve all existing keys except the
 	 * removed one, {@code key}.
 	 * <p>
@@ -244,6 +261,13 @@ public interface Context {
 	 * @return a new {@link Context} that doesn't include the provided key
 	 */
 	Context delete(Object key);
+
+	/**
+	 * Return the size of this {@link Context}, the number of immutable key/value pairs stored inside it.
+	 *
+	 * @return the size of the {@link Context}
+	 */
+	int size();
 
 	/**
 	 * Stream key/value pairs from this {@link Context}
