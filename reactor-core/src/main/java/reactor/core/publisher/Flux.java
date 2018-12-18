@@ -7900,19 +7900,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Provide current {@link Flux<T>} transformation when the first available signal
-     * appears in the upstream. To make this transformation possible, the switch on the
-     * first operator proactively requests the first element from the upstream. It does
-     * not mean that upstream is always mandated to return an element, but free to be
-     * empty or error stream, so the given in transform bi-function {@link Signal} can be
-     * either onNext, onError or onComplete.
+	 * Transform the current {@link Flux<T>} once it emits its first element, making a
+	 * conditional transformation possible. This operator first requests one element
+	 * from the source then applies a transformation derived from a {@link Signal}.
+	 *
+	 * Note that the source might complete or error immediately instead of emitting,
+	 * in which case the {@link Signal} would be onComplete or onError. It is NOT
+	 * necessarily an onNext Signal, and must be checked accordingly.
      *
-     * Note that any given signal will be propagated to the downstream regardless the
-     * type of the signal. Typically, this operator could be used to provide stream
-     * transformation depends on the first signal in the stream.
-     *
-     * For example, it could be used to define the stream routing, depends on the first
-     * element, which could contain informational metadata, or so.
+	 * For example, this operator could be used to define a form of routing, depending on
+	 * the first element (which could contain routing metadata for instance):
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -7930,12 +7927,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/docs/marble/switchonfirst.png" alt="">
-	 * <p>
 	 *
-	 * @param transformer A {@link BiFunction} executed once the first signal is available and used to transform it conditionally.
-     * available. Must return a flux instance as a return type
+	 * @param transformer A {@link BiFunction} executed once the first signal is
+	 * available and used to transform it conditionally.
 	 * @param <V> the item type in the returned {@link Flux}
      *
 	 * @return a new {@link Flux} that transform the upstream once a signal is available
