@@ -16,7 +16,7 @@
 
 if (JavaVersion.current().java9Compatible) {
   sourceSets {
-	java8.java.srcDirs = ['src/main/java8']
+	java8stubs.java.srcDirs = ['src/main/java8stubs']
 	java9 {
 	  compileClasspath += main.output
 	  java.srcDirs = ['src/main/java9']
@@ -46,6 +46,6 @@ if (JavaVersion.current().java9Compatible) {
   }
 
   dependencies {
-	compileOnly sourceSets.java8.output
+	compileOnly sourceSets.java8stubs.output
   }
 }
