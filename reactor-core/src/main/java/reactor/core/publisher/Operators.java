@@ -1108,7 +1108,7 @@ public abstract class Operators {
 	 * @param <T> passed subscriber type
 	 *
 	 * @param actual the {@link Subscriber} to apply hook on
-	 * @return an eventually transformed {@link Subscriber}
+	 * @return a potentially adapted {@link Fuseable.ConditionalSubscriber}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Fuseable.ConditionalSubscriber<? super  T> toConditionalSubscriber(CoreSubscriber<? super T> actual) {
