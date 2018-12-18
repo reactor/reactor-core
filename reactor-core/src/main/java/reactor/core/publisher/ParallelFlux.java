@@ -1181,7 +1181,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	protected static <T> ParallelFlux<T> onAssembly(ParallelFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook != null) {
-			source = (ParallelFlux<T>)hook.apply(source);
+			source = (ParallelFlux<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
 			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());

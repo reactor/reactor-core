@@ -83,7 +83,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			sb.append("\nAssembly site of producer [")
 			  .append(sourceClass.getName())
 			  .append("] is identified by light checkpoint [")
-			  .append(ase.getMessage())
+			  .append(ase.getDescription())
 			  .append("].");
 			return;
 		}
@@ -92,9 +92,9 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		  .append(sourceClass.getName())
 		  .append("]");
 
-		if (ase.getMessage() != null) {
+		if (ase.getDescription() != null) {
 			sb.append(", described as [")
-			  .append(ase.getMessage())
+			  .append(ase.getDescription())
 			  .append("]");
 		}
 		sb.append(" :\n");
@@ -135,10 +135,8 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	/**
-	 * The exception that captures assembly context, possibly with a user-readable
-	 * description or a wider correlation ID (which serves as the exception's
-	 * {@link #getMessage() message}). Use the empty constructor if the later is not
-	 * relevant.
+	 * A snapshot of current assembly traceback, possibly with a user-readable
+	 * description or a wider correlation ID.
 	 */
 	static class AssemblySnapshot {
 
@@ -163,7 +161,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Nullable
-		public String getMessage() {
+		public String getDescription() {
 			return description;
 		}
 
@@ -400,7 +398,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				t = Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, sb.toString()));
 			}
 			else if(snapshotStack.checkpointed) {
-				t = Exceptions.addSuppressed(t, new SnapshotStackException(snapshotStack.getMessage()));
+				t = Exceptions.addSuppressed(t, new SnapshotStackException(snapshotStack.getDescription()));
 			}
 			return t;
 		}

@@ -17,9 +17,7 @@
 package reactor.core.publisher;
 
 import java.lang.StackWalker.StackFrame;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -100,6 +98,4 @@ final class StackWalkerTracer implements Supplier<Supplier<String>> {
 			return sb.toString();
 		};
 	}
-
-	public static final Set<StackWalker.Option> EMPTY_SET = Collections.emptySet();
 }

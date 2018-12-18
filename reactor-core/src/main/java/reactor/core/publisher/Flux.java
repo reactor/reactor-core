@@ -9103,7 +9103,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	protected static <T> Flux<T> onAssembly(Flux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook != null) {
-			source = (Flux<T>)hook.apply(source);
+			source = (Flux<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
 			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
@@ -9147,7 +9147,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	protected static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook != null) {
-			source = (ConnectableFlux<T>)hook.apply(source);
+			source = (ConnectableFlux<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
 			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());

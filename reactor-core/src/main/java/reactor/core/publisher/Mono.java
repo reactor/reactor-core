@@ -4205,7 +4205,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	protected static <T> Mono<T> onAssembly(Mono<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook != null) {
-			source = (Mono<T>)hook.apply(source);
+			source = (Mono<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
 			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
