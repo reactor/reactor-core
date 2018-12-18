@@ -1101,7 +1101,7 @@ public abstract class Operators {
 
 	/**
 	 * If the actual {@link CoreSubscriber} is not {@link Fuseable.ConditionalSubscriber},
-	 * it will apply a {@link ConditionalSubscriberAdapter} which directly maps all
+	 * it will apply an adapter which directly maps all
 	 * {@link Fuseable.ConditionalSubscriber#tryOnNext(T)} to {@link CoreSubscriber#onNext(T)}
 	 * and always returns true as the result
 	 *
