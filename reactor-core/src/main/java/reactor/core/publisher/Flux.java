@@ -7934,7 +7934,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/docs/marble/switchonfirst.png" alt="">
 	 * <p>
 	 *
-	 * @param transformer function transformer. Is executed once the first signal is
+	 * @param transformer A {@link BiFunction} executed once the first signal is available and used to transform it conditionally.
      * available. Must return a flux instance as a return type
 	 * @param <V> the item type in the returned {@link Flux}
      *
