@@ -148,4 +148,23 @@ public class Context1Test {
 		assertThat(put).isSameAs(c);
 	}
 
+	@Test
+	public void putNonNullWithNull() {
+		Context put = c.putNonNull("putNonNull", null);
+
+		assertThat(put).isSameAs(c);
+	}
+
+	@Test
+	public void putNonNullWithValue() {
+		Context put = c.putNonNull("putNonNull", "value");
+
+		assertThat(put.getOrEmpty("putNonNull")).contains("value");
+	}
+
+	@Test
+	public void size() {
+		assertThat(c.size()).isOne();
+	}
+
 }
