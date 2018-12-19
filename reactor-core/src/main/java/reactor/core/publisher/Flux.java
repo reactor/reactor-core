@@ -7899,6 +7899,45 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform the current {@link Flux<T>} once it emits its first element, making a
+	 * conditional transformation possible. This operator first requests one element
+	 * from the source then applies a transformation derived from a {@link Signal}.
+	 *
+	 * Note that the source might complete or error immediately instead of emitting,
+	 * in which case the {@link Signal} would be onComplete or onError. It is NOT
+	 * necessarily an onNext Signal, and must be checked accordingly.
+     *
+	 * For example, this operator could be used to define a form of routing, depending on
+	 * the first element (which could contain routing metadata for instance):
+	 *
+	 * <blockquote><pre>
+	 * {@code
+	 *  flux.switchOnFirst((signal, flux) -> {
+	 *      if (signal.hasValue()) {
+	 *          if (signal.get() ...) {
+	 *              return flux.map(...).filter(...).flatMap(...).transform(...)
+	 *          } else if (signal.get() ...) {
+	 *              ...
+	 *          }
+	 *      }
+	 *
+	 *      return Flux.empty();
+	 *  })
+	 * }
+	 * </pre></blockquote>
+	 *
+	 *
+	 * @param transformer A {@link BiFunction} executed once the first signal is
+	 * available and used to transform it conditionally.
+	 * @param <V> the item type in the returned {@link Flux}
+     *
+	 * @return a new {@link Flux} that transform the upstream once a signal is available
+	 */
+	public final <V> Flux<V> switchOnFirst(BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends V>> transformer) {
+		return onAssembly(new FluxSwitchOnFirst<>(this, transformer));
+	}
+
+	/**
 	 * Switch to an alternative {@link Publisher} if this sequence is completed without any data.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/switchifempty.png" alt="">
