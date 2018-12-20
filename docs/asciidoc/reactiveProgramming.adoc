@@ -217,27 +217,27 @@ CompletableFuture<List<String>> ids = ifhIds(); // <1>
 CompletableFuture<List<String>> result = ids.thenComposeAsync(l -> { // <2>
 	Stream<CompletableFuture<String>> zip =
 			l.stream().map(i -> { // <3>
-						 CompletableFuture<String> nameTask = ifhName(i); // <4>
-						 CompletableFuture<Integer> statTask = ifhStat(i); // <5>
+				CompletableFuture<String> nameTask = ifhName(i); // <4>
+				CompletableFuture<Integer> statTask = ifhStat(i); // <5>
 
-						 return nameTask.thenCombineAsync(statTask, (name, stat) -> "Name " + name + " has stats " + stat); // <6>
-					 });
+				return nameTask.thenCombineAsync(statTask, (name, stat) -> "Name " + name + " has stats " + stat); // <6>
+			});
 	List<CompletableFuture<String>> combinationList = zip.collect(Collectors.toList()); // <7>
 	CompletableFuture<String>[] combinationArray = combinationList.toArray(new CompletableFuture[combinationList.size()]);
 
 	CompletableFuture<Void> allDone = CompletableFuture.allOf(combinationArray); // <8>
 	return allDone.thenApply(v -> combinationList.stream()
-												 .map(CompletableFuture::join) // <9>
-												 .collect(Collectors.toList()));
+			.map(CompletableFuture::join) // <9>
+			.collect(Collectors.toList()));
 });
 
 List<String> results = result.join(); // <10>
 assertThat(results).contains(
-				"Name NameJoe has stats 103",
-				"Name NameBart has stats 104",
-				"Name NameHenry has stats 105",
-				"Name NameNicole has stats 106",
-				"Name NameABSLAJNFOAJNFOANFANSF has stats 121");
+		"Name NameJoe has stats 103",
+		"Name NameBart has stats 104",
+		"Name NameHenry has stats 105",
+		"Name NameNicole has stats 106",
+		"Name NameABSLAJNFOAJNFOANFANSF has stats 121");
 ----
 <1> We start off with a future that gives us a list of `id` values to process.
 <2> We want to start some deeper asynchronous processing once we get the list.
