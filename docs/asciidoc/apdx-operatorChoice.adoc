@@ -123,8 +123,7 @@ I want to deal with:
 ** ...and I want to switch to a `Flux` at the end: `thenMany`
 
 * I have a Mono for which I want to defer completion...
-** ...only when 1-N other publishers have all emitted (or completed): `Mono#delayUntilOther`
-*** ...and deriving these publishers from the Mono value: `Mono#delayUntil(Function)`
+** ...until another publisher, which is derived from this value, has completed: `Mono#delayUntil(Function)`
 
 * I want to expand elements recursively into a graph of sequences and emit the combination...
 ** ...expanding the graph breadth first: `expand(Function)`
