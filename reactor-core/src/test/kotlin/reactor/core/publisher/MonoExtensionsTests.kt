@@ -21,6 +21,7 @@ import org.junit.Assert
 import org.junit.Test
 import org.reactivestreams.Publisher
 import reactor.test.StepVerifier
+import reactor.test.publisher.TestPublisher
 import reactor.test.test
 import reactor.test.verifyError
 import java.io.IOException
@@ -215,4 +216,28 @@ class MonoExtensionsTests {
                 .expectNext("foo")
                 .verifyComplete()
     }
+
+    @Test
+    fun `whenComplete on an Iterable of void Publishers`() {
+        val publishers = Array(3) { TestPublisher.create<Void>() }
+        publishers.forEach { it.complete() }
+        StepVerifier.create(publishers.asIterable().whenComplete())
+                .verifyComplete()
+    }
+
+    @Test
+    fun `zip with an Iterable of Mono + and a combinator`() {
+        StepVerifier.create(listOf("foo1".toMono(), "foo2".toMono(), "foo3".toMono())
+                .zip { it.reduce { acc, s -> acc + s }})
+                .expectNext("foo1foo2foo3")
+                .verifyComplete()
+    }
+
+    @Test
+    fun `zip on an Iterable of Monos with combinator`() {
+        StepVerifier.create(listOf("foo1", "foo2", "foo3").map { it.toMono() }.zip { it.joinToString() })
+                .expectNext("foo1, foo2, foo3")
+                .verifyComplete()
+    }
+    
 }

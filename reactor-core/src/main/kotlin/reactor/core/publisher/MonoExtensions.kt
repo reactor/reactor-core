@@ -133,3 +133,23 @@ fun <T : Any, E : Throwable> Mono<T>.onErrorReturn(exceptionType: KClass<E>, val
  * @since 3.2
  */
 fun <T> Mono<T>.switchIfEmpty(s: () -> Mono<T>): Mono<T> = this.switchIfEmpty(Mono.defer { s() })
+
+/**
+ * Aggregates this [Iterable] of void [Publisher]s into a new [Mono].
+ * An alias for a corresponding [Mono.when] to avoid use of `when`, which is a keyword in Kotlin.
+ *
+ * @author DoHyung Kim
+ * @since 3.1
+ */
+fun Iterable<Publisher<Void>>.whenComplete(): Mono<Void> = Mono.`when`(this)
+
+/**
+ * Merges this [Iterable] of [Mono]s into a new [Mono] by combining them
+ * with [combinator].
+ *
+ * @author DoHyung Kim
+ * @since 3.1
+ */
+@Suppress("UNCHECKED_CAST")
+inline fun <T, R> Iterable<Mono<T>>.zip(crossinline combinator: (List<T>) -> R): Mono<R> =
+        Mono.zip(this) { combinator(it.asList() as List<T>) }
