@@ -17,7 +17,6 @@
 package reactor.core.publisher
 
 import org.reactivestreams.Publisher
-import reactor.util.function.*
 
 /**
  * Aggregates this [Iterable] of void [Publisher]s into a new [Mono].

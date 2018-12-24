@@ -166,9 +166,9 @@ class MonoExtensionsTests {
     fun doOnError() {
         val monoOnError: Mono<Any> = IllegalStateException().toMono()
         var invoked = false
-        monoOnError.doOnError(IllegalStateException::class, {
+        monoOnError.doOnError(IllegalStateException::class) {
             invoked = true
-        }).subscribe()
+        }.subscribe()
         Assert.assertTrue(invoked)
     }
 
@@ -190,7 +190,7 @@ class MonoExtensionsTests {
     fun onErrorResume() {
         StepVerifier.create(IOException()
                 .toMono<String>()
-                .onErrorResume(IOException::class, { "foo".toMono() }))
+                .onErrorResume(IOException::class) { "foo".toMono() })
                 .expectNext("foo")
                 .verifyComplete()
     }

@@ -84,7 +84,7 @@ class MonoWhenFunctionsTests {
 
     @Test
     fun `whenComplete on an Iterable of void Publishers`() {
-        val publishers = Array(3, { TestPublisher.create<Void>() })
+        val publishers = Array(3) { TestPublisher.create<Void>() }
         publishers.forEach { it.complete() }
         StepVerifier.create(publishers.asIterable().whenComplete())
                 .verifyComplete()
@@ -106,7 +106,7 @@ class MonoWhenFunctionsTests {
 
     @Test
     fun `whenComplete with void Publishers`() {
-        val publishers = Array(3, { TestPublisher.create<Void>() })
+        val publishers = Array(3) { TestPublisher.create<Void>() }
         publishers.forEach { it.complete() }
         StepVerifier.create(whenComplete(*publishers))
                 .verifyComplete()

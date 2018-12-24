@@ -88,7 +88,7 @@ inline fun <reified T : Any> Mono<*>.cast(): Mono<T> = cast(T::class.java)
  * @since 3.1
  */
 fun <T, E : Throwable> Mono<T>.doOnError(exceptionType: KClass<E>, onError: (E) -> Unit): Mono<T> =
-        doOnError(exceptionType.java, { onError(it) })
+        doOnError(exceptionType.java) { onError(it) }
 
 /**
  * Extension for [Mono.onErrorMap] providing a [KClass] based variant.
@@ -97,7 +97,7 @@ fun <T, E : Throwable> Mono<T>.doOnError(exceptionType: KClass<E>, onError: (E) 
  * @since 3.1
  */
 fun <T, E : Throwable> Mono<T>.onErrorMap(exceptionType: KClass<E>, mapper: (E) -> Throwable): Mono<T> =
-        onErrorMap(exceptionType.java, { mapper(it) })
+        onErrorMap(exceptionType.java) { mapper(it) }
 
 /**
  * Extension for [Mono.ofType] providing a `ofType<Foo>()` variant.
@@ -114,7 +114,7 @@ inline fun <reified T : Any> Mono<*>.ofType(): Mono<T> = ofType(T::class.java)
  * @since 3.1
  */
 fun <T : Any, E : Throwable> Mono<T>.onErrorResume(exceptionType: KClass<E>, fallback: (E) -> Mono<T>): Mono<T> =
-        onErrorResume(exceptionType.java, { fallback(it) })
+        onErrorResume(exceptionType.java) { fallback(it) }
 
 /**
  * Extension for [Mono.onErrorReturn] providing a [KClass] based variant.

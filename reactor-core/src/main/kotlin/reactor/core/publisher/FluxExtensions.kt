@@ -158,7 +158,7 @@ inline fun <reified T : Any> Flux<*>.cast(): Flux<T> = cast(T::class.java)
  * @since 3.1
  */
 fun <T, E : Throwable> Flux<T>.doOnError(exceptionType: KClass<E>, onError: (E) -> Unit): Flux<T> =
-        doOnError(exceptionType.java, { onError(it) })
+        doOnError(exceptionType.java) { onError(it) }
 
 /**
  * Extension for [Flux.onErrorMap] providing a [KClass] based variant.
@@ -167,7 +167,7 @@ fun <T, E : Throwable> Flux<T>.doOnError(exceptionType: KClass<E>, onError: (E) 
  * @since 3.1
  */
 fun <T, E : Throwable> Flux<T>.onErrorMap(exceptionType: KClass<E>, mapper: (E) -> Throwable): Flux<T> =
-        onErrorMap(exceptionType.java, { mapper(it) })
+        onErrorMap(exceptionType.java) { mapper(it) }
 
 /**
  * Extension for [Flux.ofType] providing a `ofType<Foo>()` variant.
@@ -184,7 +184,7 @@ inline fun <reified T : Any> Flux<*>.ofType(): Flux<T> = ofType(T::class.java)
  * @since 3.1
  */
 fun <T : Any, E : Throwable> Flux<T>.onErrorResume(exceptionType: KClass<E>, fallback: (E) -> Publisher<T>): Flux<T> =
-        onErrorResume(exceptionType.java, { fallback(it) })
+        onErrorResume(exceptionType.java) { fallback(it) }
 
 /**
  * Extension for [Flux.onErrorReturn] providing a [KClass] based variant.
