@@ -139,9 +139,10 @@ fun <T> Mono<T>.switchIfEmpty(s: () -> Mono<T>): Mono<T> = this.switchIfEmpty(Mo
  * An alias for a corresponding [Mono.when] to avoid use of `when`, which is a keyword in Kotlin.
  *
  * @author DoHyung Kim
+ * @author Sebastien Deleuze
  * @since 3.1
  */
-fun Iterable<Publisher<Void>>.whenComplete(): Mono<Void> = Mono.`when`(this)
+fun Iterable<Publisher<*>>.whenComplete(): Mono<Void> = Mono.`when`(this)
 
 /**
  * Merges this [Iterable] of [Mono]s into a new [Mono] by combining them

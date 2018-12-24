@@ -35,7 +35,7 @@ final class MonoBridges {
         return Mono.zip(combinator, monos);
     }
 
-    static Mono<Void> when(Publisher<Void>[] sources) {
+    static Mono<Void> when(Publisher<?>[] sources) {
         return Mono.when(sources);
     }
 }

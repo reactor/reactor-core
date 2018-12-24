@@ -24,9 +24,10 @@ import org.reactivestreams.Publisher
  * An alias for a corresponding [Mono.when] to avoid use of `when`, which is a keyword in Kotlin.
  *
  * @author DoHyung Kim
+ * @author Sebastien Deleuze
  * @since 3.1
  */
-fun whenComplete(vararg sources: Publisher<Void>): Mono<Void> = MonoBridges.`when`(sources)
+fun whenComplete(vararg sources: Publisher<*>): Mono<Void> = MonoBridges.`when`(sources)
 
 /**
  * Aggregates the given [Mono]s into a new [Mono].

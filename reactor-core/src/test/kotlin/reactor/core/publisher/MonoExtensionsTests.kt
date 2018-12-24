@@ -226,6 +226,14 @@ class MonoExtensionsTests {
     }
 
     @Test
+    fun `whenComplete on an Iterable of String Publishers`() {
+        val publishers = Array(3) { TestPublisher.create<String>() }
+        publishers.forEach { it.complete() }
+        StepVerifier.create(publishers.asIterable().whenComplete())
+                .verifyComplete()
+    }
+
+    @Test
     fun `zip with an Iterable of Mono + and a combinator`() {
         StepVerifier.create(listOf("foo1".toMono(), "foo2".toMono(), "foo3".toMono())
                 .zip { it.reduce { acc, s -> acc + s }})
@@ -239,5 +247,5 @@ class MonoExtensionsTests {
                 .expectNext("foo1, foo2, foo3")
                 .verifyComplete()
     }
-    
+
 }
