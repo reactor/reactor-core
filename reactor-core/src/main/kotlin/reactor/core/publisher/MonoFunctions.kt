@@ -14,10 +14,35 @@
  * limitations under the License.
  */
 
+@file:JvmName("MonoWhenFunctionsKt") // TODO Remove in next major version
 package reactor.core.publisher
 
 import org.reactivestreams.Publisher
 
+/**
+ * Aggregates this [Iterable] of void [Publisher]s into a new [Mono].
+ * An alias for a corresponding [Mono.when] to avoid use of `when`, which is a keyword in Kotlin.
+ *
+ * TODO Move to MonoExtensions.kt in next major version
+ *
+ * @author DoHyung Kim
+ * @author Sebastien Deleuze
+ * @since 3.1
+ */
+fun Iterable<Publisher<*>>.whenComplete(): Mono<Void> = Mono.`when`(this)
+
+/**
+ * Merges this [Iterable] of [Mono]s into a new [Mono] by combining them
+ * with [combinator].
+ *
+ * TODO Move to MonoExtensions.kt in next major version
+ *
+ * @author DoHyung Kim
+ * @since 3.1
+ */
+@Suppress("UNCHECKED_CAST")
+inline fun <T, R> Iterable<Mono<T>>.zip(crossinline combinator: (List<T>) -> R): Mono<R> =
+        Mono.zip(this) { combinator(it.asList() as List<T>) }
 
 /**
  * Aggregates the given void [Publisher]s into a new void [Mono].
