@@ -38,7 +38,8 @@ class MonoFunctionsTests {
 
     @Test
     fun `zip with Monos and combinator`() {
-        StepVerifier.create(zip("foo1".toMono(), "foo2".toMono(), "foo3".toMono()) { it.joinToString() })
+        val mono = zip("foo1".toMono(), "foo2".toMono(), "foo3".toMono()) { it.joinToString() }
+        StepVerifier.create(mono)
                 .expectNext("foo1, foo2, foo3")
                 .verifyComplete()
     }

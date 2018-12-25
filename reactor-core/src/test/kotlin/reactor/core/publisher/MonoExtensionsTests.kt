@@ -189,9 +189,8 @@ class MonoExtensionsTests {
 
     @Test
     fun onErrorResume() {
-        StepVerifier.create(IOException()
-                .toMono<String>()
-                .onErrorResume(IOException::class) { "foo".toMono() })
+        val mono = IOException().toMono<String>().onErrorResume(IOException::class) { "foo".toMono() }
+        StepVerifier.create(mono)
                 .expectNext("foo")
                 .verifyComplete()
     }
