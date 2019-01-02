@@ -26,7 +26,7 @@ import java.util.function.Supplier;
  * @author Sergei Egorov
  */
 @SuppressWarnings("unused")
-final class StackWalkerTracer implements Supplier<Supplier<String>> {
+final class StackWalkerCallSiteSupplierFactory implements Supplier<Supplier<String>> {
 
 	/**
 	 * Transform the current stack trace into a {@link String} representation,
