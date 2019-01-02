@@ -26,11 +26,6 @@ buildscript {
 	classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
 	classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.0'
 	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
-	classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.9.2'
-	classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16', {
-	  exclude group: 'org.asciidoctor', module: 'asciidoctorj'
-	  exclude group: 'org.jruby', module: 'jruby-complete'
-	}
   }
 }
 
