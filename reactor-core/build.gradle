@@ -42,7 +42,7 @@ if (JavaVersion.current().java9Compatible) {
   }
 
   tasks.withType(Javadoc).all {
-	excludes = ["reactor/core/publisher/Tracer.java"]
+	excludes = ["reactor/core/publisher/Traces.java"]
   }
 
   dependencies {
