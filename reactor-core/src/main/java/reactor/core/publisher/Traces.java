@@ -65,7 +65,7 @@ final class Traces {
 
 	static {
 		String[] strategyClasses = {
-				Traces.class.getPackage().getName() + ".StackWalkerTracer",
+				Traces.class.getPackage().getName() + ".StackWalkerCallSiteSupplierFactory",
 				Traces.class.getName() + "$SharedSecretsCallSiteSupplierFactory",
 				Traces.class.getName() + "$ExceptionCallSiteSupplierFactory",
 		};
