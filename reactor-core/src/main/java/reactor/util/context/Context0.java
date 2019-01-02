@@ -47,6 +47,11 @@ final class Context0 implements Context {
 	}
 
 	@Override
+	public int size() {
+		return 0;
+	}
+
+	@Override
 	public String toString() {
 		return "Context0{}";
 	}

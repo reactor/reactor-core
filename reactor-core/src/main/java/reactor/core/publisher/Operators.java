@@ -1099,6 +1099,35 @@ public abstract class Operators {
 		return _actual;
 	}
 
+	/**
+	 * If the actual {@link CoreSubscriber} is not {@link Fuseable.ConditionalSubscriber},
+	 * it will apply an adapter which directly maps all
+	 * {@link Fuseable.ConditionalSubscriber#tryOnNext(T)} to {@link CoreSubscriber#onNext(T)}
+	 * and always returns true as the result
+	 *
+	 * @param <T> passed subscriber type
+	 *
+	 * @param actual the {@link Subscriber} to adapt
+	 * @return a potentially adapted {@link Fuseable.ConditionalSubscriber}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Fuseable.ConditionalSubscriber<? super  T> toConditionalSubscriber(CoreSubscriber<? super T> actual) {
+		Objects.requireNonNull(actual, "actual");
+
+		Fuseable.ConditionalSubscriber<? super T> _actual;
+
+		if (actual instanceof Fuseable.ConditionalSubscriber) {
+			_actual = (Fuseable.ConditionalSubscriber<? super T>) actual;
+		}
+		else {
+			_actual = new ConditionalSubscriberAdapter<>(actual);
+		}
+
+		return _actual;
+	}
+
+
+
 	static Context multiSubscribersContext(InnerProducer<?>[] subscribers){
 		if (subscribers.length > 0){
 			return subscribers[0].actual().currentContext();
@@ -2086,6 +2115,53 @@ public abstract class Operators {
 		@Override
 		public void onComplete() {
 
+		}
+	}
+
+	/**
+	 * This class wraps any non-conditional {@link CoreSubscriber<T>} so the delegate
+	 * can have an emulation of {@link reactor.core.Fuseable.ConditionalSubscriber<T>}
+	 * behaviors
+	 *
+	 * @param <T> passed subscriber type
+	 */
+	final static class ConditionalSubscriberAdapter<T> implements Fuseable.ConditionalSubscriber<T> {
+
+		final CoreSubscriber<T> delegate;
+
+		ConditionalSubscriberAdapter(CoreSubscriber<T> delegate) {
+			this.delegate = delegate;
+		}
+
+		@Override
+		public Context currentContext() {
+			return delegate.currentContext();
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			delegate.onSubscribe(s);
+		}
+
+		@Override
+		public void onNext(T t) {
+			delegate.onNext(t);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			delegate.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			delegate.onComplete();
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			delegate.onNext(t);
+			return true;
 		}
 	}
 

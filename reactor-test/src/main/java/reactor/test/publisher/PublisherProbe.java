@@ -131,6 +131,12 @@ public interface PublisherProbe<T> {
 	 * @return true if the probe was subscribed to at least once.
 	 */
 	boolean wasSubscribed();
+
+	/**
+	 * @return how many times probe was subscribed
+	 */
+	long subscribeCount();
+
 	/**
 	 * @return true if the probe was cancelled to at least once.
 	 */
@@ -201,6 +207,11 @@ public interface PublisherProbe<T> {
 		@Override
 		public boolean wasSubscribed() {
 			return get(SUBSCRIBED) > 0;
+		}
+
+		@Override
+		public long subscribeCount() {
+			return get(SUBSCRIBED);
 		}
 
 		@Override

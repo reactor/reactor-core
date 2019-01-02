@@ -204,4 +204,15 @@ class MonoExtensionsTests {
                 .verifyComplete()
     }
 
+    @Test
+    fun `switchIfEmpty with defer execution`() {
+        val mono: Mono<String> = "foo"
+                .toMono()
+                .switchIfEmpty { throw RuntimeException("error which should not happen due to defered execution") }
+
+        StepVerifier
+                .create(mono)
+                .expectNext("foo")
+                .verifyComplete()
+    }
 }

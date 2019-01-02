@@ -51,10 +51,7 @@ configure(rootProject) {
 	}
 
 	dependencies {
-	  asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16', {
-		exclude group: 'org.asciidoctor', module: 'asciidoctorj'
-		exclude group: 'org.jruby', module: 'jruby-complete'
-	  }
+	  asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
 	}
 
 	task docsZip(type: Zip, dependsOn: asciidoctor) {
