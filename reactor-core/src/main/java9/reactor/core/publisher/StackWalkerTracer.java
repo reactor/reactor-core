@@ -75,7 +75,7 @@ final class StackWalkerTracer implements Supplier<Supplier<String>> {
 			for (int j = stack.length - 2; j > 0; j--) {
 				StackFrame previous = stack[j];
 
-				if (!Tracer.full) {
+				if (!Traces.full) {
 					if (previous.isNativeMethod()) {
 						continue;
 					}

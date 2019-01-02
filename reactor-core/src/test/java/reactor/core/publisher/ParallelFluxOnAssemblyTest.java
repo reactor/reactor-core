@@ -27,7 +27,7 @@ public class ParallelFluxOnAssemblyTest {
 	@Test
 	public void parallelism() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.parallelism())
@@ -37,7 +37,7 @@ public class ParallelFluxOnAssemblyTest {
 
 	@Test
 	public void scanUnsafe() {
-		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
@@ -46,7 +46,7 @@ public class ParallelFluxOnAssemblyTest {
 	@Test
 	public void stepNameAndToString() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		AssemblySnapshot stacktrace = new AssemblySnapshot("foo", Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot stacktrace = new AssemblySnapshot("foo", Traces.callSiteSupplierFactory.get());
 		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.toString())
@@ -57,7 +57,7 @@ public class ParallelFluxOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 		ParallelFluxOnAssembly<Integer> test = new ParallelFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);

@@ -35,7 +35,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceEmpty() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot e = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -46,7 +46,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescriptionNull() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot e = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -57,7 +57,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescription() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot("1234", Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot e = new AssemblySnapshot("1234", Traces.callSiteSupplierFactory.get());
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -269,7 +269,7 @@ public class FluxOnAssemblyTest {
 	@Test
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		AssemblySnapshot snapshot = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+		AssemblySnapshot snapshot = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 		FluxOnAssembly.OnAssemblySubscriber<Integer> test =
         		new FluxOnAssembly.OnAssemblySubscriber<>(actual, snapshot, Flux.just(1));
         Subscription parent = Operators.emptySubscription();
@@ -282,7 +282,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		Flux<?> source = Flux.empty();
-		FluxOnAssembly<?> test = new FluxOnAssembly<>(source, new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get()));
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(source, new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()));
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
@@ -291,7 +291,7 @@ public class FluxOnAssemblyTest {
 
 	@Test
 	public void stepNameAndToString() {
-		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get()));
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()));
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())

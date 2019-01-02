@@ -1734,7 +1734,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			stacktrace = new AssemblyLightSnapshot(description);
 		}
 		else {
-			stacktrace = new AssemblySnapshot(description, Tracer.callSiteSupplierFactory.get());
+			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
 		}
 
 		return new MonoOnAssembly<>(this, stacktrace);
@@ -4208,7 +4208,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			source = (Mono<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
-			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 			source = (Mono<T>) Hooks.addAssemblyInfo(source, stacktrace);
 		}
 		return source;

@@ -33,19 +33,158 @@
 package reactor.core.publisher;
 
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import sun.misc.JavaLangAccess;
+import sun.misc.SharedSecrets;
 
 /**
  * Utilities around manipulating stack traces and displaying assembly traces.
  *
  * @author Simon Baslé
+ * @author Sergei Egorov
  */
 final class Traces {
 
 	/**
+	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
+	 * instead of the sanitized version.
+	 */
+	static final boolean full = Boolean.parseBoolean(System.getProperty(
+			"reactor.trace.assembly.fullstacktrace",
+			"false"));
+
+	/**
+	 * Transform the current stack trace into a {@link String} representation,
+	 * each element being prepended with a tabulation and appended with a
+	 * newline.
+	 */
+	static Supplier<Supplier<String>> callSiteSupplierFactory;
+
+	static {
+		String[] strategyClasses = {
+				Traces.class.getPackage().getName() + ".StackWalkerTracer",
+				Traces.class.getName() + "$SharedSecretsCallSiteSupplierFactory",
+				Traces.class.getName() + "$ExceptionCallSiteSupplierFactory",
+		};
+		callSiteSupplierFactory = Stream
+				.of(strategyClasses)
+				.flatMap(className -> {
+					try {
+						Class<?> clazz = Class.forName(className);
+						@SuppressWarnings("unchecked")
+						Supplier<Supplier<String>> function = (Supplier) clazz.getDeclaredConstructor()
+						                                                      .newInstance();
+						return Stream.of(function);
+					}
+					catch (Throwable e) {
+						return Stream.empty();
+					}
+				})
+				.findFirst()
+				.orElseThrow(() -> new IllegalStateException("Valid strategy not found"));
+	}
+
+	@SuppressWarnings("unused")
+	static class SharedSecretsCallSiteSupplierFactory implements Supplier<Supplier<String>> {
+
+		@Override
+		public Supplier<String> get() {
+			return new TracingException();
+		}
+
+		static class TracingException extends Throwable implements Supplier<String> {
+
+			static final JavaLangAccess javaLangAccess = SharedSecrets.getJavaLangAccess();
+
+			@Override
+			public String get() {
+				int stackTraceDepth = javaLangAccess.getStackTraceDepth(this);
+
+				StackTraceElement previousElement = null;
+				// Skip get()
+				for (int i = 2; i < stackTraceDepth; i++) {
+					StackTraceElement e = javaLangAccess.getStackTraceElement(this, i);
+
+					String className = e.getClassName();
+					if (isUserCode(className)) {
+						StringBuilder sb = new StringBuilder();
+
+						if (previousElement != null) {
+							sb.append("\t").append(previousElement.toString()).append("\n");
+						}
+						sb.append("\t").append(e.toString()).append("\n");
+						return sb.toString();
+					}
+					else {
+						if (!full && e.getLineNumber() <= 1) {
+							continue;
+						}
+
+						String classAndMethod = className + "." + e.getMethodName();
+						if (!full && shouldSanitize(classAndMethod)) {
+							continue;
+						}
+						previousElement = e;
+					}
+				}
+
+				return "";
+			}
+		}
+	}
+
+	@SuppressWarnings("unused")
+	static class ExceptionCallSiteSupplierFactory implements Supplier<Supplier<String>> {
+
+		@Override
+		public Supplier<String> get() {
+			return new TracingException();
+		}
+
+		static class TracingException extends Throwable implements Supplier<String> {
+
+			@Override
+			public String get() {
+				StackTraceElement previousElement = null;
+				StackTraceElement[] stackTrace = getStackTrace();
+				// Skip get()
+				for (int i = 2; i < stackTrace.length; i++) {
+					StackTraceElement e = stackTrace[i];
+
+					String className = e.getClassName();
+					if (isUserCode(className)) {
+						StringBuilder sb = new StringBuilder();
+
+						if (previousElement != null) {
+							sb.append("\t").append(previousElement.toString()).append("\n");
+						}
+						sb.append("\t").append(e.toString()).append("\n");
+						return sb.toString();
+					}
+					else {
+						if (!full && e.getLineNumber() <= 1) {
+							continue;
+						}
+
+						String classAndMethod = className + "." + e.getMethodName();
+						if (!full && shouldSanitize(classAndMethod)) {
+							continue;
+						}
+						previousElement = e;
+					}
+				}
+
+				return "";
+			}
+		}
+	}
+
+	/**
 	 * Return true for strings (usually from a stack trace element) that should be
-	 * sanitized out by {@link Tracer#callSiteSupplierFactory}.
+	 * sanitized out by {@link Traces#callSiteSupplierFactory}.
 	 *
 	 * @param stackTraceRow the row to check
 	 * @return true if it should be sanitized out, false if it should be kept
@@ -69,7 +208,7 @@ final class Traces {
 
 	/**
 	 * Extract operator information out of an assembly stack trace in {@link String} form
-	 * (see {@link Tracer#callSiteSupplierFactory}).
+	 * (see {@link Traces#callSiteSupplierFactory}).
 	 * <p>
 	 * Most operators will result in a line of the form {@code "Flux.map ⇢ user.code.Class.method(Class.java:123)"},
 	 * that is:
@@ -98,7 +237,7 @@ final class Traces {
 
 	/**
 	 * Extract operator information out of an assembly stack trace in {@link String} form
-	 * (see {@link Tracer#callSiteSupplierFactory}) which potentially
+	 * (see {@link Traces#callSiteSupplierFactory}) which potentially
 	 * has a header line that one can skip by setting {@code skipFirst} to {@code true}.
 	 * <p>
 	 * Most operators will result in a line of the form {@code "Flux.map ⇢ user.code.Class.method(Class.java:123)"},

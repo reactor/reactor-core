@@ -3100,7 +3100,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			stacktrace = new AssemblyLightSnapshot(description);
 		}
 		else {
-			stacktrace = new AssemblySnapshot(description, Tracer.callSiteSupplierFactory.get());
+			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
 		}
 
 		return new FluxOnAssembly<>(this, stacktrace);
@@ -9106,7 +9106,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			source = (Flux<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
-			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 			source = (Flux<T>) Hooks.addAssemblyInfo(source, stacktrace);
 		}
 		return source;
@@ -9150,7 +9150,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			source = (ConnectableFlux<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
-			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Tracer.callSiteSupplierFactory.get());
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 			source = (ConnectableFlux<T>) Hooks.addAssemblyInfo(source, stacktrace);
 		}
 		return source;
