@@ -28,6 +28,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -305,14 +306,14 @@ public abstract class Hooks {
 	 */
 	public static void onOperatorDebug() {
 		log.debug("Enabling stacktrace debugging via onOperatorDebug");
-		onEachOperator(ON_OPERATOR_DEBUG_KEY, OnOperatorDebug.instance());
+		GLOBAL_TRACE = true;
 	}
 
 	/**
 	 * Reset global operator debug.
 	 */
 	public static void resetOnOperatorDebug() {
-		resetOnEachOperator(ON_OPERATOR_DEBUG_KEY);
+		GLOBAL_TRACE = false;
 	}
 
 	/**
@@ -556,60 +557,36 @@ public abstract class Hooks {
 	 */
 	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
 
-	/**
-	 * A key used by {@link #onOperatorDebug()} to hook the debug handler, augmenting
-	 * every single operator with an assembly traceback.
-	 */
-	static final String ON_OPERATOR_DEBUG_KEY = "onOperatorDebug";
+	static boolean GLOBAL_TRACE =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
+					"false"));
 
 	static {
 		onEachOperatorHooks = new LinkedHashMap<>(1);
 		onLastOperatorHooks = new LinkedHashMap<>(1);
 		onOperatorErrorHooks = new LinkedHashMap<>(1);
-
-		boolean globalTrace =
-				Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
-						"false"));
-
-		if (globalTrace) {
-			onEachOperator(ON_OPERATOR_DEBUG_KEY, OnOperatorDebug.instance());
-		}
 	}
 
 	Hooks() {
 	}
 
-	final static class OnOperatorDebug<T>
-			implements Function<Publisher<T>, Publisher<T>> {
-
-		static final OnOperatorDebug INSTANCE = new OnOperatorDebug<>();
-
-
-		@SuppressWarnings("unchecked")
-		static <T> OnOperatorDebug<T> instance(){
-			return (OnOperatorDebug<T>)INSTANCE;
-		}
-
-		@Override
-		@SuppressWarnings("unchecked")
-		public Publisher<T> apply(Publisher<T> publisher) {
-			if (publisher instanceof Callable) {
-				if (publisher instanceof Mono) {
-					return new MonoCallableOnAssembly<>((Mono<T>) publisher);
-				}
-				return new FluxCallableOnAssembly<>((Flux<T>) publisher);
-			}
+	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
+		if (publisher instanceof Callable) {
 			if (publisher instanceof Mono) {
-				return new MonoOnAssembly<>((Mono<T>) publisher);
+				return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
 			}
-			if (publisher instanceof ParallelFlux) {
-				return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher);
-			}
-			if (publisher instanceof ConnectableFlux) {
-				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher);
-			}
-			return new FluxOnAssembly<>((Flux<T>) publisher);
+			return new FluxCallableOnAssembly<>((Flux<T>) publisher, stacktrace);
 		}
+		if (publisher instanceof Mono) {
+			return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace);
+		}
+		if (publisher instanceof ParallelFlux) {
+			return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher, stacktrace);
+		}
+		if (publisher instanceof ConnectableFlux) {
+			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher, stacktrace);
+		}
+		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
 	}
 
 }

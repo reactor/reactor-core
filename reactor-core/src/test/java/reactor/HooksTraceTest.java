@@ -181,7 +181,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux.flatMap ⇢ reactor.HooksTraceTest.testTraceComposed2(HooksTraceTest.java:"));
+			assertThat(e.getSuppressed()[0].getMessage()).contains("|_\tFlux.flatMap ⇢ reactor.HooksTraceTest.testTraceComposed2(HooksTraceTest.java:");
 			return;
 		}
 		finally {

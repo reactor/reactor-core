@@ -56,7 +56,7 @@ public class HooksTest {
 		Hooks.resetOnOperatorError();
 		Hooks.resetOnNextDropped();
 		Hooks.resetOnErrorDropped();
-//		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
+		Hooks.resetOnOperatorDebug();
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
 	}
@@ -230,25 +230,6 @@ public class HooksTest {
 
 		assertThat(Hooks.onEachOperatorHook).isNull();
 		assertThat(Hooks.getOnEachOperatorHooks()).isEmpty();
-	}
-
-	@Test
-	public void resetDebugDoesntResetOtherHooksInComposite() {
-		Hooks.onEachOperator(p -> p);
-		Hooks.onEachOperator("other", p -> p);
-		Hooks.onOperatorDebug();
-
-		assertThat(Hooks.getOnEachOperatorHooks())
-				.hasSize(3)
-				.containsKey("other")
-				.containsKey(Hooks.ON_OPERATOR_DEBUG_KEY);
-
-		Hooks.resetOnOperatorDebug();
-
-		assertThat(Hooks.getOnEachOperatorHooks())
-				.hasSize(2)
-				.containsKey("other")
-				.doesNotContainKey(Hooks.ON_OPERATOR_DEBUG_KEY);
 	}
 
 	@Test

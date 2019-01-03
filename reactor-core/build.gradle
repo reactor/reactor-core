@@ -1,0 +1,51 @@
+/*
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+if (JavaVersion.current().java9Compatible) {
+  sourceSets {
+	java8stubs.java.srcDirs = ['src/main/java8stubs']
+	java9 {
+	  compileClasspath += main.output
+	  java.srcDirs = ['src/main/java9']
+	}
+  }
+
+  tasks.withType(JavaCompile).all {
+	if (it == compileJava9Java) {
+	  sourceCompatibility = targetCompatibility = 9
+	  options.compilerArgs.addAll(['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED'])
+	}
+	else {
+	  sourceCompatibility = targetCompatibility = 8
+	}
+  }
+
+  [jar, jmhJar]*.each {
+	it.from sourceSets.java9.output
+  }
+
+  tasks.withType(Test).all {
+	classpath = sourceSets.java9.output + files(it.classpath)
+  }
+
+  tasks.withType(Javadoc).all {
+	excludes = ["reactor/core/publisher/Traces.java"]
+  }
+
+  dependencies {
+	compileOnly sourceSets.java8stubs.output
+  }
+}

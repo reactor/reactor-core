@@ -48,7 +48,7 @@ public class HooksTestStaticInit {
 		Hooks.resetOnOperatorError();
 		Hooks.resetOnNextDropped();
 		Hooks.resetOnErrorDropped();
-//		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
+		Hooks.resetOnOperatorDebug();
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
 	}
@@ -60,9 +60,7 @@ public class HooksTestStaticInit {
 				.as("Skipping test as 'reactor.trace.operatorStacktrace' is not set to true (e.g. ran from IDE)")
 				.isEqualTo("true");
 
-		assertThat(Hooks.getOnEachOperatorHooks())
-				.as("debug hook activated")
-				.containsKey(Hooks.ON_OPERATOR_DEBUG_KEY);
+		assertThat(Hooks.GLOBAL_TRACE).isTrue();
 		//would throw NPE due to https://github.com/reactor/reactor-core/issues/985
 		Mono.just("hello").subscribe();
 	}

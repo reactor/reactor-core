@@ -40,6 +40,8 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
@@ -162,7 +164,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint() {
-		return new ParallelFluxOnAssembly<>(this, null);
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+		return new ParallelFluxOnAssembly<>(this, stacktrace);
 	}
 
 	/**
@@ -182,7 +185,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint(String description) {
-		return new ParallelFluxOnAssembly<>(this, description, true);
+		return new ParallelFluxOnAssembly<>(this, new AssemblyLightSnapshot(description));
 	}
 
 	/**
@@ -212,7 +215,15 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link ParallelFlux}.
 	 */
 	public final ParallelFlux<T> checkpoint(String description, boolean forceStackTrace) {
-		return new ParallelFluxOnAssembly<>(this, description, !forceStackTrace);
+		final AssemblySnapshot stacktrace;
+		if (!forceStackTrace) {
+			stacktrace = new AssemblyLightSnapshot(description);
+		}
+		else {
+			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
+		}
+
+		return new ParallelFluxOnAssembly<>(this, stacktrace);
 	}
 
 	/**
@@ -1169,10 +1180,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	protected static <T> ParallelFlux<T> onAssembly(ParallelFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
-		if (hook == null) {
-			return source;
+		if(hook != null) {
+			source = (ParallelFlux<T>) hook.apply(source);
 		}
-		return (ParallelFlux<T>) hook.apply(source);
+		if (Hooks.GLOBAL_TRACE) {
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+			source = (ParallelFlux<T>) Hooks.addAssemblyInfo(source, stacktrace);
+		}
+		return source;
 	}
 
 	/**

@@ -44,6 +44,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.Metrics;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -1727,7 +1729,15 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the assembly marked {@link Mono}.
 	 */
 	public final Mono<T> checkpoint(@Nullable String description, boolean forceStackTrace) {
-		return new MonoOnAssembly<>(this, description, !forceStackTrace);
+		final AssemblySnapshot stacktrace;
+		if (!forceStackTrace) {
+			stacktrace = new AssemblyLightSnapshot(description);
+		}
+		else {
+			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
+		}
+
+		return new MonoOnAssembly<>(this, stacktrace);
 	}
 
 	/**
@@ -4253,10 +4263,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	protected static <T> Mono<T> onAssembly(Mono<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
-		if(hook == null) {
-			return source;
+		if(hook != null) {
+			source = (Mono<T>) hook.apply(source);
 		}
-		return (Mono<T>)hook.apply(source);
+		if (Hooks.GLOBAL_TRACE) {
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+			source = (Mono<T>) Hooks.addAssemblyInfo(source, stacktrace);
+		}
+		return source;
 	}
 
 	/**

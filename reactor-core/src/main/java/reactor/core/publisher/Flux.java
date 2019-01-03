@@ -53,6 +53,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.Metrics;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
@@ -3093,7 +3095,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link Flux}.
 	 */
 	public final Flux<T> checkpoint(@Nullable String description, boolean forceStackTrace) {
-		return new FluxOnAssembly<>(this, description, !forceStackTrace);
+		final AssemblySnapshot stacktrace;
+		if (!forceStackTrace) {
+			stacktrace = new AssemblyLightSnapshot(description);
+		}
+		else {
+			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
+		}
+
+		return new FluxOnAssembly<>(this, stacktrace);
 	}
 
 	/**
@@ -9130,10 +9140,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	protected static <T> Flux<T> onAssembly(Flux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
-		if(hook == null) {
-			return source;
+		if(hook != null) {
+			source = (Flux<T>) hook.apply(source);
 		}
-		return (Flux<T>)hook.apply(source);
+		if (Hooks.GLOBAL_TRACE) {
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+			source = (Flux<T>) Hooks.addAssemblyInfo(source, stacktrace);
+		}
+		return source;
 	}
 
 	/**
@@ -9170,10 +9184,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	protected static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
-		if(hook == null) {
-			return source;
+		if(hook != null) {
+			source = (ConnectableFlux<T>) hook.apply(source);
 		}
-		return (ConnectableFlux<T>)hook.apply(source);
+		if (Hooks.GLOBAL_TRACE) {
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+			source = (ConnectableFlux<T>) Hooks.addAssemblyInfo(source, stacktrace);
+		}
+		return source;
 	}
 
 	@Override
