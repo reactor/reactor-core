@@ -135,9 +135,9 @@ class FluxExtensionsTests {
     fun doOnError() {
         val fluxOnError: Flux<Any> = IllegalStateException().toFlux()
         var invoked = false
-        fluxOnError.doOnError(IllegalStateException::class, {
+        fluxOnError.doOnError(IllegalStateException::class) {
             invoked = true
-        }).subscribe()
+        }.subscribe()
         Assert.assertTrue(invoked)
     }
 
@@ -159,10 +159,9 @@ class FluxExtensionsTests {
 
     @Test
     fun onErrorResume() {
+        val flux = IOException().toFlux<String>().onErrorResume(IOException::class) { "foo".toMono() }
         StepVerifier
-                .create(IOException()
-                        .toFlux<String>()
-                        .onErrorResume(IOException::class, { "foo".toMono() }))
+                .create(flux)
                 .expectNext("foo")
                 .verifyComplete()
     }

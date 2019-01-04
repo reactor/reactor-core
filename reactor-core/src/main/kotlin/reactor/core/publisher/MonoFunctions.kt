@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
+@file:JvmName("MonoWhenFunctionsKt") // TODO Remove in next major version
 package reactor.core.publisher
 
 import org.reactivestreams.Publisher
-import reactor.util.function.*
 
 /**
  * Aggregates this [Iterable] of void [Publisher]s into a new [Mono].
  * An alias for a corresponding [Mono.when] to avoid use of `when`, which is a keyword in Kotlin.
  *
+ * TODO Move to MonoExtensions.kt in next major version
+ *
  * @author DoHyung Kim
+ * @author Sebastien Deleuze
  * @since 3.1
  */
-fun Iterable<Publisher<Void>>.whenComplete(): Mono<Void> = Mono.`when`(this)
+fun Iterable<Publisher<*>>.whenComplete(): Mono<Void> = Mono.`when`(this)
 
 /**
  * Merges this [Iterable] of [Mono]s into a new [Mono] by combining them
  * with [combinator].
+ *
+ * TODO Move to MonoExtensions.kt in next major version
  *
  * @author DoHyung Kim
  * @since 3.1
@@ -44,9 +49,10 @@ inline fun <T, R> Iterable<Mono<T>>.zip(crossinline combinator: (List<T>) -> R):
  * An alias for a corresponding [Mono.when] to avoid use of `when`, which is a keyword in Kotlin.
  *
  * @author DoHyung Kim
+ * @author Sebastien Deleuze
  * @since 3.1
  */
-fun whenComplete(vararg sources: Publisher<Void>): Mono<Void> = MonoBridges.`when`(sources)
+fun whenComplete(vararg sources: Publisher<*>): Mono<Void> = MonoBridges.`when`(sources)
 
 /**
  * Aggregates the given [Mono]s into a new [Mono].
