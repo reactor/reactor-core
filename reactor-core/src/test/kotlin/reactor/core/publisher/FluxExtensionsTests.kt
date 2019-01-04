@@ -159,9 +159,9 @@ class FluxExtensionsTests {
 
     @Test
     fun onErrorResume() {
-        val mono = IOException().toFlux<String>().onErrorResume(IOException::class) { "foo".toMono() })
+        val flux = IOException().toFlux<String>().onErrorResume(IOException::class) { "foo".toMono() }
         StepVerifier
-                .create(mono)
+                .create(flux)
                 .expectNext("foo")
                 .verifyComplete()
     }
