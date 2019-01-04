@@ -465,6 +465,61 @@ public abstract class Hooks {
 		}
 	}
 
+	public static void addTracer(String key, Tracer tracer) {
+		synchronized (log) {
+			boolean wasEmpty = tracers.isEmpty();
+			tracers.put(key, tracer);
+			if (wasEmpty) {
+				installTracing();
+			}
+		}
+	}
+
+	public static boolean removeTracer(String key) {
+		synchronized (log) {
+			boolean removed = tracers.remove(key) != null;
+			if (removed) {
+				if (tracers.isEmpty()) {
+					uninstallTracing();
+				}
+			}
+			return removed;
+		}
+	}
+
+	static void installTracing() {
+		synchronized (log) {
+			onEachOperator(KEY_TRACING, Operators.liftPublisher((p, sub) -> {
+				Context context = sub.currentContext();
+
+				Tracer.Span root = context.getOrDefault(Tracer.Span.class, Tracer.Span.CURRENT.get());
+				Collection<Tracer> allTracers = tracers.values();
+				if (root == null) {
+					for (Tracer tracer : allTracers) {
+						if (tracer.shouldTrace()) {
+							root = new Tracer.Span();
+							context = context.put(Tracer.Span.class, root);
+							tracer.onSpanCreated(root);
+							break;
+						}
+					}
+				}
+
+				if (root == null) {
+					return sub; // no need to trace
+				}
+
+				return new ScopePassingSpanSubscriber<>(sub, context, allTracers, root);
+			}));
+		}
+	}
+
+	static void uninstallTracing() {
+		synchronized (log) {
+			resetOnEachOperator(KEY_TRACING);
+		}
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -508,12 +563,13 @@ public abstract class Hooks {
 	//Special hook that is between the two (strategy can be transformative, but not named)
 	static volatile OnNextFailureStrategy onNextErrorHook;
 
-
 	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order
 	//internal use only as it relies on external synchronization
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onEachOperatorHooks;
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
+
+	private static final LinkedHashMap<String, Tracer> tracers;
 
 	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
@@ -524,6 +580,10 @@ public abstract class Hooks {
 	}
 	static final Map<String, BiFunction<? super Throwable, Object, ? extends Throwable>> getOnOperatorErrorHooks() {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
+	}
+
+	static final Map<String, Tracer> getTracers() {
+		return Collections.unmodifiableMap(tracers);
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);
@@ -557,6 +617,8 @@ public abstract class Hooks {
 	 */
 	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
 
+	static final String KEY_TRACING = "reactor.tracing";
+
 	static boolean GLOBAL_TRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
 					"false"));
@@ -565,6 +627,7 @@ public abstract class Hooks {
 		onEachOperatorHooks = new LinkedHashMap<>(1);
 		onLastOperatorHooks = new LinkedHashMap<>(1);
 		onOperatorErrorHooks = new LinkedHashMap<>(1);
+		tracers = new LinkedHashMap<>(1);
 	}
 
 	Hooks() {
