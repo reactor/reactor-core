@@ -13,6 +13,250 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import me.champeau.gradle.japicmp.JapicmpTask
+
+apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
+apply plugin: 'me.champeau.gradle.jmh'
+
+sourceSets {
+  noMicrometerTest {
+	java.srcDir 'src/test/java'
+	resources.srcDir 'src/test/resources'
+  }
+}
+
+configurations {
+  compileOnly.extendsFrom jsr166backport
+  testCompile.extendsFrom jsr166backport
+  baseline
+  noMicrometerTestRuntime {
+	extendsFrom testRuntime
+	exclude group:"io.micrometer", module:"micrometer-core"
+  }
+}
+
+dependencies {
+  // Reactive Streams
+  compile "org.reactivestreams:reactive-streams:1.0.2"
+  testCompile "org.reactivestreams:reactive-streams-tck:1.0.2"
+
+  // JSR-305 annotations
+  optional "com.google.code.findbugs:jsr305:3.0.2"
+
+  //Optional Logging Operator
+  optional "org.slf4j:slf4j-api:$slf4jVersion"
+
+  //Optional Metrics
+  optional "io.micrometer:micrometer-core:$micrometerVersion"
+
+  optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
+
+  //Optional JDK 9 Converter
+  jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
+
+  testCompile 'junit:junit:4.12'
+
+  testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+  testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
+  // Testing
+  testCompile(project(":reactor-test")) {
+	exclude module: 'reactor-core'
+  }
+
+  testCompile "org.hamcrest:hamcrest-library:1.3",
+		  "org.testng:testng:6.8.5",
+		  "org.assertj:assertj-core:$assertJVersion",
+		  "org.mockito:mockito-core:$mockitoVersion",
+		  "org.openjdk.jol:jol-core:0.9",
+		  "pl.pragmatists:JUnitParams:$jUnitParamsVersion",
+		  "org.awaitility:awaitility:3.1.2"
+
+  if ("$compatibleVersion" != "SKIP") {
+	baseline("io.projectreactor:reactor-core:$compatibleVersion") {
+	  transitive = false
+	  force = true
+	}
+  }
+
+  noMicrometerTestCompile sourceSets.main.output
+  noMicrometerTestCompile sourceSets.test.output
+  noMicrometerTestCompile configurations.testCompile
+}
+
+jmh {
+  include = ["reactor.AssemblyTraceBenchmark.*"]
+  resultFormat = 'JSON'
+}
+
+task japicmp(type: JapicmpTask) {
+  onlyIf { "$compatibleVersion" != "SKIP" }
+  oldClasspath = configurations.baseline
+  newClasspath = files(jar.archivePath)
+  onlyBinaryIncompatibleModified = true
+  failOnModification = true
+  failOnSourceIncompatibility = true
+  txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+  ignoreMissingClasses = true
+  includeSynthetic = true
+
+  //TODO after a release, bump the gradle.properties baseline
+  //TODO after a release, remove the reactor-core exclusions below if any
+//	classExcludes = []
+//	methodExcludes = ["reactor.core.Scannable#operatorName()"]
+}
+
+javadoc {
+  dependsOn jar
+  group = "documentation"
+  description = "Generates aggregated Javadoc API documentation."
+  title = "Reactor Core $version"
+
+  options.addStringOption('charSet', 'UTF-8')
+
+  options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+  options.author = true
+  options.header = "$project.name"
+  options.overview = "$rootDir/docs/api/overview.html"
+  options.stylesheetFile = file("$rootDir/docs/api/stylesheet.css")
+  options.links(rootProject.ext.javadocLinks )
+  options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
+				   "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
+				   "reactor.discard:m:onDiscard Support"]
+
+  // In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
+  // And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
+  classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
+  classpath += sourceSets.main.compileClasspath
+
+  maxMemory = "1024m"
+  destinationDir = new File(project.buildDir, "docs/javadoc")
+
+  doLast {
+	// work around https://github.com/gradle/gradle/issues/4046
+	copy {
+	  from('src/main/java')
+	  into "$project.buildDir/docs/javadoc/"
+	  include "**/doc-files/*"
+	}
+  }
+}
+
+// Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
+task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
+  dependsOn jar
+  group = "documentation"
+  description = "Generates Kotlin API documentation."
+  moduleName = "reactor-core"
+  jdkVersion = 8
+
+  outputFormat = "html"
+  outputDirectory = new File(project.buildDir, "docs/kdoc")
+
+  //this is needed so that links to java classes are resolved
+  doFirst {
+	classpath += project.jar.outputs.files.getFiles()
+	classpath += project.sourceSets.main.compileClasspath
+  }
+  //this is needed so that the kdoc only generates for kotlin classes
+  //(default kotlinTasks sourceSet also includes java)
+  kotlinTasks {
+
+  }
+  processConfigurations = []
+  sourceDirs = files("src/main/kotlin")
+
+  externalDocumentationLink {
+	url = new URL("http://projectreactor.io/docs/core/release/api/")
+  }
+  externalDocumentationLink {
+	url = new URL("http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+  }
+}
+
+task kdocZip(type: Zip, dependsOn: dokka) {
+  //ends up similar to javadoc jar: reactor-core-xxxx.RELEASE-kdoc.zip
+  classifier = 'kdoc'
+  from("${project.buildDir}/docs/kdoc")
+}
+
+task testStaticInit(type: Test, group: 'verification') {
+  systemProperty 'reactor.trace.operatorStacktrace', 'true'
+  include '**/*TestStaticInit.*'
+  doFirst {
+	println "Additional tests from `testStaticInit` ($includes)"
+  }
+  afterSuite { TestDescriptor descriptor, TestResult result ->
+	if (result.testCount > 0 && (result.skippedTestCount + result.failedTestCount + result.successfulTestCount == 0)) {
+	  throw new GradleException("No static initialization tests were executed")
+	}
+  }
+}
+
+task loops(type: Test, group: 'verification') {
+  mustRunAfter testStaticInit
+  include '**/*Loop.*'
+  doFirst {
+	println "Additional tests from `loops` ($includes)"
+  }
+}
+
+task testNG(type: Test, group: 'verification') {
+  mustRunAfter testStaticInit
+  useTestNG()
+  include '**/*Verification.*'
+  doFirst {
+	println "Additional tests from `testNG` ($includes)"
+  }
+}
+
+task testNoMicrometer(type: Test, group: 'verification') {
+  testClassesDirs = sourceSets.noMicrometerTest.output.classesDirs
+  classpath = sourceSets.noMicrometerTest.runtimeClasspath
+  include '**/*NoMicrometerTest.*'
+
+  doFirst {
+	println "Additional tests without Micrometer ($includes)"
+  }
+}
+
+//inherit basic test task + common configuration in root
+//always depend on testStaticInit, skip testNG on Travis, skip loops when not releasing
+//note that this way the tasks can be run individually
+test {
+  dependsOn testStaticInit
+  dependsOn testNoMicrometer
+  if (System.env.TRAVIS != "true") {
+	dependsOn testNG
+  }
+  if (!version.endsWith('BUILD-SNAPSHOT')) {
+	dependsOn loops
+  }
+}
+
+if (!JavaVersion.current().isJava9Compatible()) {
+  test {
+	jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
+  }
+}
+
+jar {
+  manifest {
+	attributes 'Implementation-Title': 'reactor-core',
+			'Implementation-Version': version
+	instruction 'Import-Package', bundleImportPackages.join(',')
+  }
+}
+
+artifacts {
+  archives sourcesJar
+  archives javadocJar
+  archives rootProject.tasks.docsZip
+  archives kdocZip
+}
+
+jacocoTestReport.dependsOn test
+check.dependsOn jacocoTestReport
+jar.finalizedBy(japicmp)
 
 if (JavaVersion.current().java9Compatible) {
   sourceSets {
