@@ -30,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
@@ -44,6 +45,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowPredicateTest extends
                                      FluxOperatorTest<String, Flux<String>> {
+
+	@Test
+	public void windowWhileOperatorShouldPropagateCancellation() {
+		final EmitterProcessor<String> processor = EmitterProcessor.create();
+		final FluxSink<String> sink = processor.sink();
+
+		sink.next("0").next("#");
+
+		final Disposable disposable = processor
+				.windowWhile(next -> !"#".equals(next))
+				.as(Flux::merge)
+				.subscribe();
+
+		disposable.dispose();
+
+		assertThat(sink.isCancelled()).isTrue();
+	}
 
 	@Test
 	public void windowWhileNoEmptyWindows() {

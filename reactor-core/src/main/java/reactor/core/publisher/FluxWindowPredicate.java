@@ -348,6 +348,9 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 						}
 
 						if (WIP.decrementAndGet(this) == 0) {
+							if (!done) {
+								s.cancel();
+							}
 							return;
 						}
 
