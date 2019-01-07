@@ -293,3 +293,12 @@ if (JavaVersion.current().java9Compatible) {
 	compileOnly sourceSets.java8stubs.output
   }
 }
+else {
+  sourceSets {
+	java9stubs.java.srcDirs = ['src/main/java9stubs']
+  }
+
+  dependencies {
+	compileOnly sourceSets.java9stubs.output
+  }
+}

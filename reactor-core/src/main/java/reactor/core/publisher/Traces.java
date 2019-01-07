@@ -32,6 +32,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -65,7 +66,7 @@ final class Traces {
 
 	static {
 		String[] strategyClasses = {
-				Traces.class.getPackage().getName() + ".StackWalkerCallSiteSupplierFactory",
+				Traces.class.getName() + "$StackWalkerCallSiteSupplierFactory",
 				Traces.class.getName() + "$SharedSecretsCallSiteSupplierFactory",
 				Traces.class.getName() + "$ExceptionCallSiteSupplierFactory",
 		};
@@ -85,6 +86,90 @@ final class Traces {
 				})
 				.findFirst()
 				.orElseThrow(() -> new IllegalStateException("Valid strategy not found"));
+	}
+
+	/**
+	 * Utility class for the call-site extracting on Java 9+.
+	 *
+	 */
+	@SuppressWarnings("unused")
+	static final class StackWalkerCallSiteSupplierFactory implements Supplier<Supplier<String>> {
+
+		static {
+			// Trigger eager StackWalker class loading.
+			StackWalker.getInstance();
+		}
+
+		/**
+		 * Transform the current stack trace into a {@link String} representation,
+		 * each element being prepended with a tabulation and appended with a
+		 * newline.
+		 *
+		 * @return the string version of the stacktrace.
+		 */
+		@Override
+		public Supplier<String> get() {
+			StackWalker.StackFrame[] stack = StackWalker.getInstance().walk(s -> {
+				StackWalker.StackFrame[] result = new StackWalker.StackFrame[10];
+				Iterator<StackWalker.StackFrame> iterator = s.iterator();
+				iterator.next(); // .get
+
+				int i = 0;
+				while (iterator.hasNext()) {
+					StackWalker.StackFrame frame = iterator.next();
+
+					if (i >= result.length) {
+						return new StackWalker.StackFrame[0];
+					}
+
+					result[i++] = frame;
+
+					if (isUserCode(frame.getClassName())) {
+						break;
+					}
+				}
+				StackWalker.StackFrame[] copy = new StackWalker.StackFrame[i];
+				System.arraycopy(result, 0, copy, 0, i);
+				return copy;
+			});
+
+			if (stack.length == 0) {
+				return () -> "";
+			}
+
+			if (stack.length == 1) {
+				return () -> "\t" + stack[0].toString() + "\n";
+			}
+
+			return () -> {
+				StringBuilder sb = new StringBuilder();
+
+				for (int j = stack.length - 2; j > 0; j--) {
+					StackWalker.StackFrame previous = stack[j];
+
+					if (!full) {
+						if (previous.isNativeMethod()) {
+							continue;
+						}
+
+						String previousRow = previous.getClassName() + "." + previous.getMethodName();
+						if (shouldSanitize(previousRow)) {
+							continue;
+						}
+					}
+					sb.append("\t")
+					  .append(previous.toString())
+					  .append("\n");
+					break;
+				}
+
+				sb.append("\t")
+				  .append(stack[stack.length - 1].toString())
+				  .append("\n");
+
+				return sb.toString();
+			};
+		}
 	}
 
 	@SuppressWarnings("unused")
@@ -303,5 +388,4 @@ final class Traces {
 
 		return apiLine + " ⇢ " + userCodeLine;
 	}
-
 }
