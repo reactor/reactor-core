@@ -40,6 +40,11 @@ configure(rootProject) {
 		}
 	}
 
+	dependencies {
+	  asciidoctor 'org.jruby:jruby-complete:9.2.5.0'
+	  asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
+	}
+
 	task docsZip(type: Zip, dependsOn: asciidoctor) {
 	  baseName = 'reactor-core-docs'
 	  from("$buildDir/reactor-code/build/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }

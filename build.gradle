@@ -26,15 +26,12 @@ buildscript {
 	classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
 	classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.0'
 	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
-	classpath 'org.jruby:jruby-complete:9.1.17.0'
-	classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.7'
-	classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
   }
 }
 
 plugins {
-  id 'org.asciidoctor.convert' version '1.5.6'
-  id "me.champeau.gradle.jmh" version "0.4.4" apply false
+  id 'org.asciidoctor.convert' version '1.5.9.2'
+  id "me.champeau.gradle.jmh" version "0.4.7" apply false
   id "org.jetbrains.dokka" version "0.9.16"
   id "me.champeau.gradle.japicmp" version "0.2.6"
 }
@@ -58,8 +55,8 @@ ext {
   logbackVersion = '1.1.2'
 
   // Testing
-  assertJVersion = '3.9.0'
-  mockitoVersion = '2.10.0'
+  assertJVersion = '3.11.1'
+  mockitoVersion = '2.23.0'
 
   javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
 				  "https://docs.oracle.com/javaee/6/api/",
@@ -112,7 +109,7 @@ configure(subprojects) { p ->
   }
 
   jacoco {
-	toolVersion = '0.7.9'
+	toolVersion = '0.8.2'
   }
 
   jacocoTestReport {
