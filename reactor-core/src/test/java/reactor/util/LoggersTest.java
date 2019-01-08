@@ -64,6 +64,19 @@ public class LoggersTest {
 	}
 
 	@Test
+	public void useVerboseConsoleLoggers() throws Exception {
+		try {
+			Loggers.useVerboseConsoleLoggers();
+			Logger l = Loggers.getLogger("test");
+
+			assertThat(l.getClass().getSimpleName()).isEqualTo("ConsoleLogger");
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+		}
+	}
+
+	@Test
 	public void useJdkLoggers() throws Exception {
 		try {
 			Loggers.useJdkLoggers();
