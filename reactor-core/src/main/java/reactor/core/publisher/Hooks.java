@@ -25,10 +25,16 @@ import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -465,21 +471,21 @@ public abstract class Hooks {
 		}
 	}
 
-	public static void addTracer(String key, Tracer tracer) {
+	public static void addTracker(String key, Tracker tracker) {
 		synchronized (log) {
-			boolean wasEmpty = tracers.isEmpty();
-			tracers.put(key, tracer);
+			boolean wasEmpty = trackers.isEmpty();
+			trackers.put(key, tracker);
 			if (wasEmpty) {
 				installTracing();
 			}
 		}
 	}
 
-	public static boolean removeTracer(String key) {
+	public static boolean removeTracker(String key) {
 		synchronized (log) {
-			boolean removed = tracers.remove(key) != null;
+			boolean removed = trackers.remove(key) != null;
 			if (removed) {
-				if (tracers.isEmpty()) {
+				if (trackers.isEmpty()) {
 					uninstallTracing();
 				}
 			}
@@ -489,34 +495,241 @@ public abstract class Hooks {
 
 	static void installTracing() {
 		synchronized (log) {
-			onEachOperator(KEY_TRACING, Operators.liftPublisher((p, sub) -> {
-				Context context = sub.currentContext();
-
-				Tracer.Span root = context.getOrDefault(Tracer.Span.class, Tracer.Span.CURRENT.get());
-				Collection<Tracer> allTracers = tracers.values();
-				if (root == null) {
-					for (Tracer tracer : allTracers) {
-						if (tracer.shouldTrace()) {
-							root = new Tracer.Span();
-							context = context.put(Tracer.Span.class, root);
-							tracer.onSpanCreated(root);
-							break;
-						}
+			onLastOperator(KEY_TRACKING, publisher -> {
+				Supplier<Disposable> onSubscribe = () -> {
+					Collection<Tracker> allTrackers = trackers.values();
+					if (allTrackers.stream().noneMatch(Tracker::shouldCreateMarker)) {
+						return Disposables.disposed();
 					}
-				}
 
-				if (root == null) {
-					return sub; // no need to trace
-				}
+					Tracker.Marker parent = Tracker.Marker.CURRENT.get();
 
-				return new ScopePassingSpanSubscriber<>(sub, context, allTracers, root);
+					Tracker.Marker current = new Tracker.Marker(parent);
+					Tracker.Marker.CURRENT.set(current);
+
+					for (Tracker tracker : allTrackers) {
+						tracker.onMarkerCreated(current);
+					}
+
+					return () -> Tracker.Marker.CURRENT.set(parent);
+				};
+
+				BiFunction<Publisher, CoreSubscriber<? super Object>, CoreSubscriber<? super Object>> lifter = (p, sub) -> sub;
+
+				// FIXME X_X
+				if (publisher instanceof Fuseable) {
+					if (publisher instanceof Mono) {
+						return new MonoLiftFuseable<Object, Object>(publisher, lifter) {
+							@Override
+							public void subscribe(CoreSubscriber<? super Object> actual) {
+								Disposable disposable = onSubscribe.get();
+								try {
+									super.subscribe(actual);
+								}
+								finally {
+									disposable.dispose();
+								}
+							}
+						};
+					}
+					if (publisher instanceof ParallelFlux) {
+						return new ParallelLiftFuseable<Object, Object>((ParallelFlux<Object>) publisher, lifter) {
+							@Override
+							protected void subscribe(CoreSubscriber<? super Object>[] actuals) {
+								Disposable disposable = onSubscribe.get();
+								try {
+									super.subscribe(actuals);
+								}
+								finally {
+									disposable.dispose();
+								}
+							}
+						};
+					}
+					if (publisher instanceof ConnectableFlux) {
+						return new ConnectableLiftFuseable<Object, Object>((ConnectableFlux<Object>) publisher, lifter) {
+							@Override
+							public void subscribe(CoreSubscriber<? super Object> actual) {
+								Disposable disposable = onSubscribe.get();
+								try {
+									super.subscribe(actual);
+								}
+								finally {
+									disposable.dispose();
+								}
+							}
+						};
+					}
+					if (publisher instanceof GroupedFlux) {
+						return new GroupedLiftFuseable<Object, Object, Object>((GroupedFlux<Object, Object>) publisher, lifter) {
+							@Override
+							public void subscribe(CoreSubscriber<? super Object> actual) {
+								Disposable disposable = onSubscribe.get();
+								try {
+									super.subscribe(actual);
+								}
+								finally {
+									disposable.dispose();
+								}
+							}
+						};
+					}
+					return new FluxLiftFuseable<Object, Object>(publisher, lifter) {
+						@Override
+						public void subscribe(CoreSubscriber<? super Object> actual) {
+							Disposable disposable = onSubscribe.get();
+							try {
+								super.subscribe(actual);
+							}
+							finally {
+								disposable.dispose();
+							}
+						}
+					};
+				}
+				else {
+					if (publisher instanceof Mono) {
+						return new MonoLift<Object, Object>(publisher, lifter) {
+							@Override
+							public void subscribe(CoreSubscriber<? super Object> actual) {
+								Disposable disposable = onSubscribe.get();
+								try {
+									super.subscribe(actual);
+								}
+								finally {
+									disposable.dispose();
+								}
+							}
+						};
+					}
+					if (publisher instanceof ParallelFlux) {
+						return new ParallelLift<Object, Object>((ParallelFlux<Object>) publisher, lifter) {
+							@Override
+							public void subscribe(CoreSubscriber<? super Object>[] actuals) {
+								Disposable disposable = onSubscribe.get();
+								try {
+									super.subscribe(actuals);
+								}
+								finally {
+									disposable.dispose();
+								}
+							}
+						};
+					}
+					if (publisher instanceof ConnectableFlux) {
+						return new ConnectableLift<Object, Object>((ConnectableFlux<Object>) publisher, lifter) {
+							@Override
+							public void subscribe(CoreSubscriber<? super Object> actual) {
+								Disposable disposable = onSubscribe.get();
+								try {
+									super.subscribe(actual);
+								}
+								finally {
+									disposable.dispose();
+								}
+							}
+						};
+					}
+					if (publisher instanceof GroupedFlux) {
+						return new GroupedLift<Object, Object, Object>((GroupedFlux<Object, Object>) publisher, lifter) {
+							@Override
+							public void subscribe(CoreSubscriber<? super Object> actual) {
+								Disposable disposable = onSubscribe.get();
+								try {
+									super.subscribe(actual);
+								}
+								finally {
+									disposable.dispose();
+								}
+							}
+						};
+					}
+					return new FluxLift<Object, Object>(publisher, lifter) {
+						@Override
+						public void subscribe(CoreSubscriber<? super Object> actual) {
+							Disposable disposable = onSubscribe.get();
+							try {
+								super.subscribe(actual);
+							}
+							finally {
+								disposable.dispose();
+							}
+						}
+					};
+				}
+			});
+
+			Schedulers.addExecutorServiceDecorator(KEY_TRACKING, ((scheduler, service) -> {
+				return new TaskWrappingScheduledExecutorService(service) {
+
+					@Override
+					protected Runnable wrap(Runnable runnable) {
+						Tracker.Marker marker = Tracker.Marker.CURRENT.get();
+						if (marker == null) {
+							return runnable;
+						}
+
+						return () -> {
+							Tracker.Marker.CURRENT.set(marker);
+							try {
+								Disposable.Composite composite = Disposables.composite();
+
+								for (Tracker tracker : trackers.values()) {
+									Disposable disposable = tracker.onScopePassing(marker);
+									composite.add(disposable);
+								}
+
+								try {
+									runnable.run();
+								}
+								finally {
+									composite.dispose();
+								}
+							}
+							finally {
+								Tracker.Marker.CURRENT.remove();
+							}
+						};
+					}
+
+					@Override
+					protected <V> Callable<V> wrap(Callable<V> callable) {
+						Tracker.Marker marker = Tracker.Marker.CURRENT.get();
+						if (marker == null) {
+							return callable;
+						}
+
+						return () -> {
+							Tracker.Marker.CURRENT.set(marker);
+							try {
+								Disposable.Composite composite = Disposables.composite();
+
+								for (Tracker tracker : trackers.values()) {
+									Disposable disposable = tracker.onScopePassing(marker);
+									composite.add(disposable);
+								}
+
+								try {
+									return callable.call();
+								}
+								finally {
+									composite.dispose();
+								}
+							}
+							finally {
+								Tracker.Marker.CURRENT.remove();
+							}
+						};
+					}
+				};
 			}));
 		}
 	}
 
 	static void uninstallTracing() {
 		synchronized (log) {
-			resetOnEachOperator(KEY_TRACING);
+			Schedulers.removeExecutorServiceDecorator(KEY_TRACKING);
+			resetOnLastOperator(KEY_TRACKING);
 		}
 	}
 
@@ -569,7 +782,7 @@ public abstract class Hooks {
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
 
-	private static final LinkedHashMap<String, Tracer> tracers;
+	private static final LinkedHashMap<String, Tracker> trackers;
 
 	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
@@ -582,8 +795,8 @@ public abstract class Hooks {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
 	}
 
-	static final Map<String, Tracer> getTracers() {
-		return Collections.unmodifiableMap(tracers);
+	static final Map<String, Tracker> getTrackers() {
+		return Collections.unmodifiableMap(trackers);
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);
@@ -617,7 +830,7 @@ public abstract class Hooks {
 	 */
 	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
 
-	static final String KEY_TRACING = "reactor.tracing";
+	static final String KEY_TRACKING = "reactor.tracking";
 
 	static boolean GLOBAL_TRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
@@ -627,7 +840,7 @@ public abstract class Hooks {
 		onEachOperatorHooks = new LinkedHashMap<>(1);
 		onLastOperatorHooks = new LinkedHashMap<>(1);
 		onOperatorErrorHooks = new LinkedHashMap<>(1);
-		tracers = new LinkedHashMap<>(1);
+		trackers = new LinkedHashMap<>(1);
 	}
 
 	Hooks() {

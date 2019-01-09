@@ -28,7 +28,7 @@ import reactor.core.Scannable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-final class MonoLiftFuseable<I, O> extends MonoOperator<I, O>
+class MonoLiftFuseable<I, O> extends MonoOperator<I, O>
 		implements Fuseable {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
