@@ -125,7 +125,14 @@ public class TrackingTest {
 		assertThat(tracer.getMarkersRecorded())
 				.hasSize(7);
 
-		Tracker.Marker root = tracer.getMarkersRecorded().get(0);
+		Tracker.Marker root = tracer
+				.getMarkersRecorded()
+				.stream()
+				.filter(it -> it.getParent() == null)
+				.findFirst()
+				.orElseThrow(() -> {
+					return new AssertionError("Parentless marker is missing");
+				});
 
 		assertThat(tracer.getMarkersRecorded().subList(1, 7)).allSatisfy(marker -> {
 			Tracker.Marker parent = marker;
