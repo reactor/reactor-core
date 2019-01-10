@@ -109,8 +109,7 @@ public class TrackingTest {
 			    return Mono.delay(Duration.ofMillis(1), Schedulers.elastic())
 			               .doOnNext(__ -> {
 				               Tracker.Marker currentMarker = tracer.getCurrentMarker();
-				               assertThat(currentMarker)
-						               .isNotNull();
+				               assertThat(currentMarker).isNotNull();
 			               });
 		    })
 		    .publishOn(Schedulers.parallel())
@@ -118,35 +117,24 @@ public class TrackingTest {
 			    return Mono.delay(Duration.ofMillis(1), Schedulers.elastic())
 			               .doOnNext(__ -> {
 				               Tracker.Marker currentMarker = tracer.getCurrentMarker();
-				               assertThat(currentMarker)
-						               .isNotNull();
+				               assertThat(currentMarker).isNotNull();
 			               });
 		    })
-				.blockLast();
+		    .blockLast();
 
 		assertThat(tracer.getMarkersRecorded())
 				.hasSize(7);
 
-		// 0 <- 1 <- 2 <- 4
-		assertThat(tracer.getMarkersRecorded().get(1).getParent())
-				.isEqualTo(tracer.getMarkersRecorded().get(0));
+		Tracker.Marker root = tracer.getMarkersRecorded().get(0);
 
-		assertThat(tracer.getMarkersRecorded().get(2).getParent())
-				.isEqualTo(tracer.getMarkersRecorded().get(1));
+		assertThat(tracer.getMarkersRecorded().subList(1, 7)).allSatisfy(marker -> {
+			Tracker.Marker parent = marker;
+			while (parent.getParent() != null) {
+				parent = parent.getParent();
+			}
 
-		assertThat(tracer.getMarkersRecorded().get(4).getParent())
-				.isEqualTo(tracer.getMarkersRecorded().get(2));
-
-		/////////////////////////////////////////////////////////////
-		// 0 <- 1 <- 3 <- 5 <- 6
-		assertThat(tracer.getMarkersRecorded().get(3).getParent())
-				.isEqualTo(tracer.getMarkersRecorded().get(1));
-
-		assertThat(tracer.getMarkersRecorded().get(5).getParent())
-				.isEqualTo(tracer.getMarkersRecorded().get(3));
-
-		assertThat(tracer.getMarkersRecorded().get(6).getParent())
-				.isEqualTo(tracer.getMarkersRecorded().get(5));
+			assertThat(parent).as("parent of " + marker).isEqualTo(root);
+		});
 	}
 
 	private static class TestTracker implements Tracker {
