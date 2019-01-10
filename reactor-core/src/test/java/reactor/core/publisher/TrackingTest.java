@@ -134,7 +134,7 @@ public class TrackingTest {
 					return new AssertionError("Parentless marker is missing");
 				});
 
-		assertThat(tracer.getMarkersRecorded().subList(1, 7)).allSatisfy(marker -> {
+		assertThat(tracer.getMarkersRecorded()).allSatisfy(marker -> {
 			Tracker.Marker parent = marker;
 			while (parent.getParent() != null) {
 				parent = parent.getParent();
