@@ -945,7 +945,7 @@ public class FluxUsingWhenTest {
 		});
 
 		Flux<String> flux = Flux.usingWhen(Mono.just("foo"), v -> badPublisher,
-				s -> Mono.fromRunnable(() -> cleanupCount.add(10)).log(), //10 for completion
+				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
 				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
 				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
 		);
