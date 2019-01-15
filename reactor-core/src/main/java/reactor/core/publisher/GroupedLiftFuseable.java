@@ -28,7 +28,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Simon Baslé
  */
-class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
+final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 		implements Scannable, Fuseable {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>

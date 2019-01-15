@@ -30,7 +30,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Simon Baslé
  */
-class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
+final class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
 		implements Scannable, Fuseable {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>

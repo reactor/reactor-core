@@ -24,7 +24,7 @@ import reactor.core.CoreSubscriber;
 /**
  * @author Stephane Maldini
  */
-class MonoLift<I, O> extends MonoOperator<I, O> {
+final class MonoLift<I, O> extends MonoOperator<I, O> {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;

@@ -65,7 +65,7 @@ import reactor.util.concurrent.Queues;
  *
  * @param <T> the value type
  */
-public abstract class ParallelFlux<T> implements Publisher<T> {
+public abstract class ParallelFlux<T> implements CorePublisher<T> {
 
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (one per CPU core)
@@ -1002,6 +1002,16 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return subscribe(onNext, onError, onComplete, null);
 	}
 
+	@Override
+	public final void subscribe(CoreSubscriber<? super T> subscriber) {
+		if (subscriber instanceof MultiSubscriber) {
+			subscribe(((MultiSubscriber<? super T>) subscriber).getSubscribers());
+		}
+		else {
+			subscribe((Subscriber<? super T>) subscriber);
+		}
+	}
+
 	/**
 	 * Subscribes to this {@link ParallelFlux} by providing an onNext, onError,
 	 * onComplete and onSubscribe callback and triggers the execution chain for all
@@ -1027,7 +1037,9 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
 		}
 
-		onLastAssembly(this).subscribe(subscribers);
+		@SuppressWarnings("unchecked")
+		MultiSubscriber<T> multiSubscriber = new MultiSubscriber<>((CoreSubscriber<T>[]) subscribers);
+		Hooks.onLastOperator(this).subscribe(multiSubscriber);
 		return Disposables.composite(subscribers);
 	}
 
@@ -1040,7 +1052,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> s) {
-		Flux.onLastAssembly(sequential())
+		Hooks.onLastOperator(sequential())
 		    .subscribe(new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s)));
 	}
 
@@ -1196,8 +1208,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param source the source to wrap
 	 *
 	 * @return the potentially wrapped source
+	 * @deprecated use {@link Hooks#onLastOperator(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	protected static <T> ParallelFlux<T> onLastAssembly(ParallelFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if (hook == null) {
@@ -1266,6 +1280,39 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		}
 
 		return both;
+	}
+
+	private static class MultiSubscriber<T> implements CoreSubscriber<T> {
+
+		final CoreSubscriber<T>[] subscribers;
+
+		private MultiSubscriber(CoreSubscriber<T>[] subscribers) {
+			this.subscribers = subscribers;
+		}
+
+		public CoreSubscriber<T>[] getSubscribers() {
+			return subscribers;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			throw new IllegalStateException("Not implemented");
+		}
+
+		@Override
+		public void onNext(T t) {
+			throw new IllegalStateException("Not implemented");
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			throw new IllegalStateException("Not implemented");
+		}
+
+		@Override
+		public void onComplete() {
+			throw new IllegalStateException("Not implemented");
+		}
 	}
 
 }

@@ -38,7 +38,7 @@ public interface Tracker {
 
 		@Override
 		public String toString() {
-			return "Marker{id=" + id + "}";
+			return "Marker{id=" + id + ", parent=" + parent + "}";
 		}
 	}
 

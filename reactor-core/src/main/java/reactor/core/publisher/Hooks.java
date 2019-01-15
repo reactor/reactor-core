@@ -25,14 +25,13 @@ import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
@@ -496,167 +495,39 @@ public abstract class Hooks {
 	static void installTracing() {
 		synchronized (log) {
 			onLastOperator(KEY_TRACKING, publisher -> {
-				Supplier<Disposable> onSubscribe = () -> {
-					Collection<Tracker> allTrackers = trackers.values();
-					if (allTrackers.stream().noneMatch(Tracker::shouldCreateMarker)) {
-						return Disposables.disposed();
+				return new CorePublisher<Object>() {
+					@Override
+					public void subscribe(CoreSubscriber<? super Object> subscriber) {
+						CorePublisher<Object> corePublisher = (CorePublisher<Object>) publisher;
+
+						Collection<Tracker> allTrackers = trackers.values();
+						if (allTrackers.stream().noneMatch(Tracker::shouldCreateMarker)) {
+							corePublisher.subscribe(subscriber);
+							return;
+						}
+
+						Tracker.Marker parent = Tracker.Marker.CURRENT.get();
+
+						Tracker.Marker current = new Tracker.Marker(parent);
+						Tracker.Marker.CURRENT.set(current);
+
+						for (Tracker tracker : allTrackers) {
+							tracker.onMarkerCreated(current);
+						}
+
+						try  {
+							corePublisher.subscribe(subscriber);
+						}
+						finally {
+							Tracker.Marker.CURRENT.set(parent);
+						}
 					}
 
-					Tracker.Marker parent = Tracker.Marker.CURRENT.get();
-
-					Tracker.Marker current = new Tracker.Marker(parent);
-					Tracker.Marker.CURRENT.set(current);
-
-					for (Tracker tracker : allTrackers) {
-						tracker.onMarkerCreated(current);
+					@Override
+					public void subscribe(Subscriber<? super Object> s) {
+						publisher.subscribe(s);
 					}
-
-					return () -> Tracker.Marker.CURRENT.set(parent);
 				};
-
-				BiFunction<Publisher, CoreSubscriber<? super Object>, CoreSubscriber<? super Object>> lifter = (p, sub) -> sub;
-
-				// FIXME X_X
-				if (publisher instanceof Fuseable) {
-					if (publisher instanceof Mono) {
-						return new MonoLiftFuseable<Object, Object>(publisher, lifter) {
-							@Override
-							public void subscribe(CoreSubscriber<? super Object> actual) {
-								Disposable disposable = onSubscribe.get();
-								try {
-									super.subscribe(actual);
-								}
-								finally {
-									disposable.dispose();
-								}
-							}
-						};
-					}
-					if (publisher instanceof ParallelFlux) {
-						return new ParallelLiftFuseable<Object, Object>((ParallelFlux<Object>) publisher, lifter) {
-							@Override
-							protected void subscribe(CoreSubscriber<? super Object>[] actuals) {
-								Disposable disposable = onSubscribe.get();
-								try {
-									super.subscribe(actuals);
-								}
-								finally {
-									disposable.dispose();
-								}
-							}
-						};
-					}
-					if (publisher instanceof ConnectableFlux) {
-						return new ConnectableLiftFuseable<Object, Object>((ConnectableFlux<Object>) publisher, lifter) {
-							@Override
-							public void subscribe(CoreSubscriber<? super Object> actual) {
-								Disposable disposable = onSubscribe.get();
-								try {
-									super.subscribe(actual);
-								}
-								finally {
-									disposable.dispose();
-								}
-							}
-						};
-					}
-					if (publisher instanceof GroupedFlux) {
-						return new GroupedLiftFuseable<Object, Object, Object>((GroupedFlux<Object, Object>) publisher, lifter) {
-							@Override
-							public void subscribe(CoreSubscriber<? super Object> actual) {
-								Disposable disposable = onSubscribe.get();
-								try {
-									super.subscribe(actual);
-								}
-								finally {
-									disposable.dispose();
-								}
-							}
-						};
-					}
-					return new FluxLiftFuseable<Object, Object>(publisher, lifter) {
-						@Override
-						public void subscribe(CoreSubscriber<? super Object> actual) {
-							Disposable disposable = onSubscribe.get();
-							try {
-								super.subscribe(actual);
-							}
-							finally {
-								disposable.dispose();
-							}
-						}
-					};
-				}
-				else {
-					if (publisher instanceof Mono) {
-						return new MonoLift<Object, Object>(publisher, lifter) {
-							@Override
-							public void subscribe(CoreSubscriber<? super Object> actual) {
-								Disposable disposable = onSubscribe.get();
-								try {
-									super.subscribe(actual);
-								}
-								finally {
-									disposable.dispose();
-								}
-							}
-						};
-					}
-					if (publisher instanceof ParallelFlux) {
-						return new ParallelLift<Object, Object>((ParallelFlux<Object>) publisher, lifter) {
-							@Override
-							public void subscribe(CoreSubscriber<? super Object>[] actuals) {
-								Disposable disposable = onSubscribe.get();
-								try {
-									super.subscribe(actuals);
-								}
-								finally {
-									disposable.dispose();
-								}
-							}
-						};
-					}
-					if (publisher instanceof ConnectableFlux) {
-						return new ConnectableLift<Object, Object>((ConnectableFlux<Object>) publisher, lifter) {
-							@Override
-							public void subscribe(CoreSubscriber<? super Object> actual) {
-								Disposable disposable = onSubscribe.get();
-								try {
-									super.subscribe(actual);
-								}
-								finally {
-									disposable.dispose();
-								}
-							}
-						};
-					}
-					if (publisher instanceof GroupedFlux) {
-						return new GroupedLift<Object, Object, Object>((GroupedFlux<Object, Object>) publisher, lifter) {
-							@Override
-							public void subscribe(CoreSubscriber<? super Object> actual) {
-								Disposable disposable = onSubscribe.get();
-								try {
-									super.subscribe(actual);
-								}
-								finally {
-									disposable.dispose();
-								}
-							}
-						};
-					}
-					return new FluxLift<Object, Object>(publisher, lifter) {
-						@Override
-						public void subscribe(CoreSubscriber<? super Object> actual) {
-							Disposable disposable = onSubscribe.get();
-							try {
-								super.subscribe(actual);
-							}
-							finally {
-								disposable.dispose();
-							}
-						}
-					};
-				}
 			});
 
 			Schedulers.addExecutorServiceDecorator(KEY_TRACKING, ((scheduler, service) -> {
@@ -730,6 +601,31 @@ public abstract class Hooks {
 		synchronized (log) {
 			Schedulers.removeExecutorServiceDecorator(KEY_TRACKING);
 			resetOnLastOperator(KEY_TRACKING);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> CorePublisher<T> onLastOperator(CorePublisher<T> source) {
+		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
+		if (hook == null) {
+			return source;
+		}
+		Publisher publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
+		if (publisher instanceof CorePublisher) {
+			return (CorePublisher<T>) publisher;
+		}
+		else {
+			return new CorePublisher<T>() {
+				@Override
+				public void subscribe(CoreSubscriber<? super T> subscriber) {
+					publisher.subscribe(subscriber);
+				}
+
+				@Override
+				public void subscribe(Subscriber<? super T> s) {
+					publisher.subscribe(s);
+				}
+			};
 		}
 	}
 

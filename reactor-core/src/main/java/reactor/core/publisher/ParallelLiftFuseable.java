@@ -28,7 +28,7 @@ import reactor.util.annotation.Nullable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
+final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 		implements Scannable, Fuseable {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
