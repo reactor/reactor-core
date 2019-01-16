@@ -494,40 +494,97 @@ public abstract class Hooks {
 
 	static void installTracing() {
 		synchronized (log) {
-			onLastOperator(KEY_TRACKING, publisher -> {
-				return new CorePublisher<Object>() {
-					@Override
-					public void subscribe(CoreSubscriber<? super Object> subscriber) {
-						CorePublisher<Object> corePublisher = (CorePublisher<Object>) publisher;
+			onLastOperator(KEY_TRACKING, new ReactorPublisherTransformer() {
 
-						Collection<Tracker> allTrackers = trackers.values();
-						if (allTrackers.stream().noneMatch(Tracker::shouldCreateMarker)) {
-							corePublisher.subscribe(subscriber);
-							return;
-						}
-
-						Tracker.Marker parent = Tracker.Marker.CURRENT.get();
-
-						Tracker.Marker current = new Tracker.Marker(parent);
-						Tracker.Marker.CURRENT.set(current);
-
-						for (Tracker tracker : allTrackers) {
-							tracker.onMarkerCreated(current);
-						}
-
-						try  {
-							corePublisher.subscribe(subscriber);
-						}
-						finally {
-							Tracker.Marker.CURRENT.set(parent);
-						}
+				private Disposable onSubscribe() {
+					Collection<Tracker> allTrackers = trackers.values();
+					if (allTrackers.stream().noneMatch(Tracker::shouldCreateMarker)) {
+						return Disposables.disposed();
 					}
 
-					@Override
-					public void subscribe(Subscriber<? super Object> s) {
-						publisher.subscribe(s);
+					Tracker.Marker parent = Tracker.Marker.CURRENT.get();
+
+					Tracker.Marker current = new Tracker.Marker(parent);
+					Tracker.Marker.CURRENT.set(current);
+
+					for (Tracker tracker : allTrackers) {
+						tracker.onMarkerCreated(current);
 					}
-				};
+
+					return () -> Tracker.Marker.CURRENT.set(parent);
+				}
+
+				@Override
+				public Mono<Object> transform(Mono<Object> source) {
+					return new MonoOperator<Object, Object>(source) {
+
+						@Override
+						public void subscribe(CoreSubscriber<? super Object> actual) {
+							Disposable wrap = onSubscribe();
+							try {
+								source.subscribe(actual);
+							}
+							finally {
+								wrap.dispose();
+							}
+						}
+					};
+				}
+
+				@Override
+				public Flux<Object> transform(Flux<Object> source) {
+					return new FluxOperator<Object, Object>(source) {
+
+						@Override
+						public void subscribe(CoreSubscriber<? super Object> actual) {
+							Disposable wrap = onSubscribe();
+							try {
+								source.subscribe(actual);
+							}
+							finally {
+								wrap.dispose();
+							}
+						}
+					};
+				}
+
+				@Override
+				public ParallelFlux<Object> transform(ParallelFlux<Object> source) {
+					return new ParallelFlux<Object>() {
+
+						@Override
+						public int parallelism() {
+							return source.parallelism();
+						}
+
+						@Override
+						protected void subscribe(CoreSubscriber<? super Object>[] subscribers) {
+							Disposable wrap = onSubscribe();
+							try {
+								source.subscribe(subscribers);
+							}
+							finally {
+								wrap.dispose();
+							}
+						}
+					};
+				}
+
+				@Override
+				public Publisher<Object> transform(Publisher<Object> source) {
+					return new Publisher<Object>() {
+						@Override
+						public void subscribe(Subscriber<? super Object> s) {
+							Disposable wrap = onSubscribe();
+							try {
+								source.subscribe(s);
+							}
+							finally {
+								wrap.dispose();
+							}
+						}
+					};
+				}
 			});
 
 			Schedulers.addExecutorServiceDecorator(KEY_TRACKING, ((scheduler, service) -> {
@@ -601,31 +658,6 @@ public abstract class Hooks {
 		synchronized (log) {
 			Schedulers.removeExecutorServiceDecorator(KEY_TRACKING);
 			resetOnLastOperator(KEY_TRACKING);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	static <T> CorePublisher<T> onLastOperator(CorePublisher<T> source) {
-		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
-		if (hook == null) {
-			return source;
-		}
-		Publisher publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
-		if (publisher instanceof CorePublisher) {
-			return (CorePublisher<T>) publisher;
-		}
-		else {
-			return new CorePublisher<T>() {
-				@Override
-				public void subscribe(CoreSubscriber<? super T> subscriber) {
-					publisher.subscribe(subscriber);
-				}
-
-				@Override
-				public void subscribe(Subscriber<? super T> s) {
-					publisher.subscribe(s);
-				}
-			};
 		}
 	}
 

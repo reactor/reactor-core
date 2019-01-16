@@ -98,7 +98,7 @@ import reactor.util.function.Tuples;
  * @author Simon Baslé
  * @see Flux
  */
-public abstract class Mono<T> implements CorePublisher<T> {
+public abstract class Mono<T> implements Publisher<T> {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -1496,7 +1496,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Nullable
 	public T block() {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1520,7 +1520,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Nullable
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -1541,7 +1541,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public Optional<T> blockOptional() {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1566,7 +1566,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public Optional<T> blockOptional(Duration timeout) {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -3692,7 +3692,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(actual));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
 	/**
@@ -4299,10 +4299,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param source the source to apply assembly hooks onto
 	 *
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
-	 * @deprecated use {@link Hooks#onLastOperator(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
-	@Deprecated
 	protected static <T> Mono<T> onLastAssembly(Mono<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if(hook == null) {
