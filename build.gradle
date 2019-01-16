@@ -62,8 +62,13 @@ ext {
   mockitoVersion = '2.23.0'
   jUnitParamsVersion = '1.1.1'
 
-  javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
-				  "https://docs.oracle.com/javaee/6/api/",
+  jdk = JavaVersion.current().majorVersion
+  jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"
+  if (JavaVersion.current().isJava11Compatible()) {
+	jdkJavadoc = "https://docs.oracle.com/en/java/javase/$jdk/docs/api/"
+  }
+
+  javadocLinks = [jdkJavadoc,
 				  "http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
 
 
