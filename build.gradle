@@ -33,6 +33,7 @@ plugins {
   id "me.champeau.gradle.jmh" version "0.4.7" apply false
   id "org.jetbrains.dokka" version "0.9.16"
   id "me.champeau.gradle.japicmp" version "0.2.6"
+  id "de.undercouch.download" version "3.4.3"
 }
 
 apply from: "gradle/doc.gradle"
