@@ -27,6 +27,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.CorePublisher;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.scheduler.Schedulers;
@@ -490,8 +493,10 @@ public abstract class Hooks {
 
 	static void installTracing() {
 		synchronized (log) {
-			onLastOperator(KEY_TRACKING, new TrackingReactorPublisherTransformer());
-			Schedulers.addExecutorServiceDecorator(KEY_TRACKING, new TrackingExecutorServiceDecorator());
+			Collection<Tracker> trackersView = Collections.unmodifiableCollection(trackers.values());
+
+			onLastOperator(KEY_TRACKING, source -> new TrackingPublisher(source, trackersView));
+			Schedulers.addExecutorServiceDecorator(KEY_TRACKING, new TrackingExecutorServiceDecorator(trackersView));
 		}
 	}
 
@@ -499,6 +504,35 @@ public abstract class Hooks {
 		synchronized (log) {
 			Schedulers.removeExecutorServiceDecorator(KEY_TRACKING);
 			resetOnLastOperator(KEY_TRACKING);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> CorePublisher<T> onLastOperator(CorePublisher<T> source) {
+		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
+		final Publisher<T> publisher;
+		if (hook == null) {
+			publisher = source;
+		}
+		else {
+			publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
+		}
+
+		if (publisher instanceof CorePublisher) {
+			return (CorePublisher<T>) publisher;
+		}
+		else {
+			return new CorePublisher<T>() {
+				@Override
+				public void subscribe(CoreSubscriber<? super T> subscriber) {
+					publisher.subscribe(subscriber);
+				}
+
+				@Override
+				public void subscribe(Subscriber<? super T> s) {
+					publisher.subscribe(s);
+				}
+			};
 		}
 	}
 

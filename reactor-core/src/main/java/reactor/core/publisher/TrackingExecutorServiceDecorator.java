@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiFunction;
@@ -24,7 +25,14 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.scheduler.Scheduler;
 
-class TrackingExecutorServiceDecorator implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> {
+class TrackingExecutorServiceDecorator
+		implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> {
+
+	private final Collection<Tracker> trackers;
+
+	TrackingExecutorServiceDecorator(Collection<Tracker> trackers) {
+		this.trackers = trackers;
+	}
 
 	@Override
 	public ScheduledExecutorService apply(Scheduler scheduler, ScheduledExecutorService service) {
@@ -42,7 +50,7 @@ class TrackingExecutorServiceDecorator implements BiFunction<Scheduler, Schedule
 					try {
 						Disposable.Composite composite = Disposables.composite();
 
-						for (Tracker tracker : Hooks.getTrackers().values()) {
+						for (Tracker tracker : trackers) {
 							Disposable disposable = tracker.onScopePassing(marker);
 							composite.add(disposable);
 						}
@@ -72,7 +80,7 @@ class TrackingExecutorServiceDecorator implements BiFunction<Scheduler, Schedule
 					try {
 						Disposable.Composite composite = Disposables.composite();
 
-						for (Tracker tracker : Hooks.getTrackers().values()) {
+						for (Tracker tracker : trackers) {
 							Disposable disposable = tracker.onScopePassing(marker);
 							composite.add(disposable);
 						}
