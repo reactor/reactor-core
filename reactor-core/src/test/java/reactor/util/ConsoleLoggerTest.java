@@ -90,22 +90,15 @@ public class ConsoleLoggerTest {
 
 	@Test
 	public void traceDismissedInNonVerboseMode() {
-		PrintStream out = System.out;
-		Logger log = new Loggers.ConsoleLogger("test", false);
-		System.setOut(new PrintStream(outContent));
-		try {
-			log.trace("foo");
-			log.trace("foo", new IllegalArgumentException("foo"));
-			log.trace("foo {}", "foo");
+		Logger log = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent), false);
+		log.trace("foo");
+		log.trace("foo", new IllegalArgumentException("foo"));
+		log.trace("foo {}", "foo");
 
-			assertThat(outContent.toString()).doesNotContain("foo");
-			assertThat(errContent.toString()).doesNotContain("foo");
+		assertThat(outContent.toString()).doesNotContain("foo");
+		assertThat(errContent.toString()).doesNotContain("foo");
 
-			assertThat(log.isTraceEnabled()).as("isTraceEnabled").isFalse();
-		}
-		finally {
-			System.setOut(out);
-		}
+		assertThat(log.isTraceEnabled()).as("isTraceEnabled").isFalse();
 	}
 
 	@Test
@@ -153,22 +146,15 @@ public class ConsoleLoggerTest {
 
 	@Test
 	public void debugDismissedInNonVerboseMode() {
-		PrintStream out = System.out;
-		Logger log = new Loggers.ConsoleLogger("test", false);
-		System.setOut(new PrintStream(outContent));
-		try {
-			log.debug("foo");
-			log.debug("foo", new IllegalArgumentException("foo"));
-			log.debug("foo {}", "foo");
+		Logger log = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent), false);
+		log.debug("foo");
+		log.debug("foo", new IllegalArgumentException("foo"));
+		log.debug("foo {}", "foo");
 
-			assertThat(outContent.toString()).doesNotContain("foo");
-			assertThat(errContent.toString()).doesNotContain("foo");
+		assertThat(outContent.toString()).doesNotContain("foo");
+		assertThat(errContent.toString()).doesNotContain("foo");
 
-			assertThat(log.isDebugEnabled()).as("isDebugEnabled").isFalse();
-		}
-		finally {
-			System.setOut(out);
-		}
+		assertThat(log.isDebugEnabled()).as("isDebugEnabled").isFalse();
 	}
 
 	@Test
