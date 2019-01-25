@@ -182,8 +182,8 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 		Disposable newPeriod() {
 			try {
-				ConsumerIndexHolder r = new ConsumerIndexHolder(producerIndex, this, actual.currentContext());
-				return worker.schedulePeriodically(r, timespan, timespan, TimeUnit.MILLISECONDS);
+				return worker.schedulePeriodically(new ConsumerIndexHolder(producerIndex,
+						this), timespan, timespan, TimeUnit.MILLISECONDS);
 			}
 			catch (Exception e) {
 				actual.onError(Operators.onRejectedExecution(e, s, null, null, actual.currentContext()));
@@ -419,19 +419,15 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
 			final long                       index;
 			final WindowTimeoutSubscriber<?> parent;
-			final Context                    context;
 
-			ConsumerIndexHolder(long index,
-					WindowTimeoutSubscriber<?> parent,
-					Context context) {
+			ConsumerIndexHolder(long index, WindowTimeoutSubscriber<?> parent) {
 				this.index = index;
 				this.parent = parent;
-				this.context = context;
 			}
 
 			@Override
 			public Context currentContext() {
-				return context;
+				return parent.currentContext();
 			}
 
 			@Override

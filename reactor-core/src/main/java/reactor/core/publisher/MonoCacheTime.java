@@ -43,7 +43,6 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Scheduler.ContextRu
 
 	final Function<? super Signal<T>, Duration> ttlGenerator;
 	final Scheduler                             clock;
-	final Context                               context;
 
 	volatile Signal<T> state;
 	static final AtomicReferenceFieldUpdater<MonoCacheTime, Signal> STATE =
@@ -51,24 +50,19 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Scheduler.ContextRu
 
 	static final Signal<?> EMPTY = new ImmutableSignal<>(Context.empty(), SignalType.ON_NEXT, null, null, null);
 
-	MonoCacheTime(Mono<? extends T> source,
-			Duration ttl,
-			Scheduler clock,
-			Context context) {
+	MonoCacheTime(Mono<? extends T> source, Duration ttl, Scheduler clock) {
 		super(source);
 		this.ttlGenerator = ignoredSignal -> ttl;
 		this.clock = clock;
-		this.context = context;
 		//noinspection unchecked
 		this.state = (Signal<T>) EMPTY;
 	}
 
 	MonoCacheTime(Mono<? extends T> source, Function<? super Signal<T>, Duration> ttlGenerator,
-			Scheduler clock, Context context) {
+			Scheduler clock) {
 		super(source);
 		this.ttlGenerator = ttlGenerator;
 		this.clock = clock;
-		this.context = context;
 		//noinspection unchecked
 		this.state = (Signal<T>) EMPTY;
 	}
@@ -77,9 +71,8 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Scheduler.ContextRu
 			Function<? super T, Duration> valueTtlGenerator,
 			Function<Throwable, Duration> errorTtlGenerator,
 			Supplier<Duration> emptyTtlGenerator,
-			Scheduler clock, Context context) {
+			Scheduler clock) {
 		super(source);
-		this.context = context;
 		this.ttlGenerator = sig -> {
 			if (sig.isOnNext()) return valueTtlGenerator.apply(sig.get());
 			if (sig.isOnError()) return errorTtlGenerator.apply(sig.getThrowable());
@@ -93,7 +86,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Scheduler.ContextRu
 
 	@Override
 	public Context currentContext() {
-		return null;
+		return Context.empty();
 	}
 
 	public void run() {

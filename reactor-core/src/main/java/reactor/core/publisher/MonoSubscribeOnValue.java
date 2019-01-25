@@ -46,7 +46,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> implements Scannable {
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		T v = value;
 		if (v == null) {
-			ScheduledEmpty parent = new ScheduledEmpty(actual, actual.currentContext());
+			ScheduledEmpty parent = new ScheduledEmpty(actual);
 			actual.onSubscribe(parent);
 			try {
 				parent.setFuture(scheduler.schedule(parent));

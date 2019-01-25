@@ -21,7 +21,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -53,7 +52,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		T v = value;
 		if (v == null) {
-			ScheduledEmpty parent = new ScheduledEmpty(actual, actual.currentContext());
+			ScheduledEmpty parent = new ScheduledEmpty(actual);
 			actual.onSubscribe(parent);
 			try {
 				parent.setFuture(scheduler.schedule(parent));
@@ -228,15 +227,13 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 	static final class ScheduledEmpty implements QueueSubscription<Void>,
 	                                             Scheduler.ContextRunnable {
 
-		final Subscriber<?> actual;
-
-		final Context context;
+		final CoreSubscriber<?> actual;
 
 		volatile Disposable future;
 
 		@Override
 		public Context currentContext() {
-			return context;
+			return actual.currentContext();
 		}
 
 		static final AtomicReferenceFieldUpdater<ScheduledEmpty, Disposable> FUTURE =
@@ -246,9 +243,8 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 
 		static final Disposable FINISHED = Disposables.disposed();
 
-		ScheduledEmpty(Subscriber<?> actual, Context context) {
+		ScheduledEmpty(CoreSubscriber<?> actual) {
 			this.actual = actual;
-			this.context = context;
 		}
 
 		@Override
