@@ -1219,6 +1219,21 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void testDirectScheduleZeroPeriodicallyCancelsSchedulerTask() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(2);
+			Disposable disposable = Schedulers.directSchedulePeriodically(executorService, () -> {
+				latch.countDown();
+			}, 0, 0, TimeUnit.MILLISECONDS);
+			latch.await();
+
+			disposable.dispose();
+
+			assertThat(executorService.isAllTasksCancelledOrDone()).isTrue();
+		}
+	}
+
+	@Test
 	public void testWorkerSchedulePeriodicallyCancelsSchedulerTask() throws Exception {
 		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
 			AtomicInteger zeroDelayZeroPeriod = new AtomicInteger();

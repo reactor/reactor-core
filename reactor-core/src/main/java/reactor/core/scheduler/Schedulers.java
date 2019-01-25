@@ -851,7 +851,7 @@ public abstract class Schedulers {
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
-					new InstantPeriodicWorkerTask(task, exec, Disposables.composite());
+					new InstantPeriodicWorkerTask(task, exec);
 			Future<?> f;
 			if (initialDelay <= 0L) {
 				f = exec.submit(isr);
