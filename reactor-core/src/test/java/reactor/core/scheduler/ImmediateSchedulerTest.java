@@ -80,6 +80,14 @@ public class ImmediateSchedulerTest extends AbstractSchedulerTest {
 		}
 	}
 
+	@Override
+	@Test
+	public void scheduleInstantTaskTest() {}
+
+	@Override
+	@Test
+	public void scheduleInstantTaskWithDelayTest() {}
+
 	@Test
 	public void scanScheduler() {
 		ImmediateScheduler s = (ImmediateScheduler) Schedulers.immediate();

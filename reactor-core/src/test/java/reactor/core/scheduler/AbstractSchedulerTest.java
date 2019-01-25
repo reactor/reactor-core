@@ -365,7 +365,7 @@ public abstract class AbstractSchedulerTest {
 	}
 
 	@Test(timeout = 10000)
-	final public void scheduleInstantTaskTest() throws Exception {
+	public void scheduleInstantTaskTest() throws Exception {
 		Scheduler s = scheduler();
 
 		try {
@@ -381,7 +381,7 @@ public abstract class AbstractSchedulerTest {
 	}
 
 	@Test(timeout = 10000)
-	final public void scheduleInstantTaskWithDelayTest() throws Exception {
+	public void scheduleInstantTaskWithDelayTest() throws Exception {
 		Scheduler s = scheduler();
 
 		try {

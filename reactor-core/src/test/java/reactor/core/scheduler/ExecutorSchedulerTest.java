@@ -365,4 +365,12 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 			worker.dispose();
 		}
 	}
+
+	@Override
+	@Test
+	public void scheduleInstantTaskTest() {}
+
+	@Override
+	@Test
+	public void scheduleInstantTaskWithDelayTest() {}
 }

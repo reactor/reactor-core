@@ -77,4 +77,12 @@ public class SingleWorkerSchedulerTest extends AbstractSchedulerTest {
 			workerWithBasicFactory.dispose();
 		}
 	}
+
+	@Override
+	@Test
+	public void scheduleInstantTaskTest() {}
+
+	@Override
+	@Test
+	public void scheduleInstantTaskWithDelayTest() {}
 }
