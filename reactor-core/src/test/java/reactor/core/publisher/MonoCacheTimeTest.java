@@ -49,7 +49,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 						return Duration.ofMillis(100 * sig.get());
 					}
 					return Duration.ZERO;
-				}, Schedulers.parallel(), Context.empty());
+				}, Schedulers.parallel());
 
 		cached.block();
 		cached.block();
@@ -95,7 +95,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 				v -> { onNextTtl.incrementAndGet(); return Duration.ofMillis(100 * v);},
 				e -> { onErrorTtl.incrementAndGet(); return Duration.ofMillis(300);},
 				() -> { onEmptyTtl.incrementAndGet(); return Duration.ZERO;} ,
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 
 		cached.block();
 		cached.block();
@@ -145,7 +145,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 				v -> { onNextTtl.incrementAndGet(); return Duration.ofMillis(100 * v);},
 				e -> { onErrorTtl.incrementAndGet(); return Duration.ofMillis(4000);},
 				() -> { onEmptyTtl.incrementAndGet(); return Duration.ofMillis(300);} ,
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 
 		assertThat(cached.block())
 				.as("1 immediate")
@@ -188,7 +188,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 				v -> Duration.ofMillis(400 / v),
 				t -> Duration.ZERO,
 				() -> Duration.ZERO,
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 
 		StepVerifier.create(cached)
 		            .expectErrorSatisfies(e -> assertThat(e)
@@ -205,7 +205,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 				Duration::ofSeconds,
 				t -> Duration.ofSeconds(10),
 				() -> { throw new IllegalStateException("boom"); },
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 
 		StepVerifier.create(cached)
 		            .expectErrorSatisfies(e -> assertThat(e)
@@ -224,7 +224,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 				Duration::ofSeconds,
 				t -> { throw new IllegalStateException("boom"); },
 				() -> Duration.ZERO,
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 
 		StepVerifier.create(cached)
 		            .expectErrorSatisfies(e -> assertThat(e)
@@ -247,7 +247,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 				},
 				t -> Duration.ofSeconds(10),
 				() -> Duration.ofSeconds(10),
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 
 		StepVerifier.create(cached)
 		            .expectErrorSatisfies(e -> assertThat(e)
@@ -284,7 +284,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 					if (count.incrementAndGet() == 1) throw new IllegalStateException("transient");
 					return Duration.ofMillis(100);
 				},
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 
 		StepVerifier.create(cached)
 		            .expectErrorSatisfies(e -> assertThat(e)
@@ -321,7 +321,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 					return Duration.ofMillis(100);
 				},
 				() -> Duration.ofSeconds(10),
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 
 		StepVerifier.create(cached)
 		            .expectErrorSatisfies(e -> assertThat(e)
@@ -532,7 +532,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	public void sourceCachedNoCoordinatorLeak() {
 		TestPublisher<Integer> source = TestPublisher.create();
 		MonoCacheTime<Integer> cached = new MonoCacheTime<>(source.mono(), Duration.ofSeconds(2),
-				Schedulers.parallel(), Context.empty());
+				Schedulers.parallel());
 		cached.subscribe();
 		WeakReference<Signal<Integer>> refCoordinator = new WeakReference<>(cached.state);
 
@@ -550,8 +550,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
 		MonoCacheTime<Integer> cached = new MonoCacheTime<>(source.mono(),
 				Duration.ofMillis(100), //short cache TTL should trigger state change if source is not never
-				Schedulers.parallel(),
-				Context.empty());
+				Schedulers.parallel());
 
 		Disposable d1 = cached.subscribe();
 		cached.subscribe();
@@ -574,8 +573,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
 		MonoCacheTime<Integer> cached = new MonoCacheTime<>(source.mono(),
 				Duration.ofMillis(100), //short cache TTL should trigger state change if source is not never
-				Schedulers.parallel(),
-				Context.empty());
+				Schedulers.parallel());
 
 		Disposable d1 = cached.subscribe();
 		cached.subscribe();
@@ -599,8 +597,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
 		MonoCacheTime<Integer> cached = new MonoCacheTime<>(source.mono(),
 				Duration.ofMillis(100), //short cache TTL should trigger state change if source is not never
-				Schedulers.parallel(),
-				Context.empty());
+				Schedulers.parallel());
 
 		cached.subscribe();
 		cached.subscribe();
@@ -622,7 +619,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		AtomicInteger contextFillCount = new AtomicInteger();
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		Mono<Context> cached = Mono.subscriberContext()
-		                           .as(m -> new MonoCacheTime<>(m, Duration.ofMillis(500), vts, Context.empty()))
+		                           .as(m -> new MonoCacheTime<>(m, Duration.ofMillis(500), vts))
 		                           .subscriberContext(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
 
 		//at first pass, the context is captured
