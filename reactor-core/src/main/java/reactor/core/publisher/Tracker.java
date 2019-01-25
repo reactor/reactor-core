@@ -20,8 +20,6 @@ public interface Tracker {
 
 		static final AtomicLong COUNTER = new AtomicLong();
 
-		static final ThreadLocal<Marker> CURRENT = new ThreadLocal<>();
-
 		@Nullable
 		private final Marker parent;
 

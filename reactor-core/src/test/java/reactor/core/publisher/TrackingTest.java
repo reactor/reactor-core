@@ -29,6 +29,8 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 
@@ -146,6 +148,8 @@ public class TrackingTest {
 
 	private static class TestTracker implements Tracker {
 
+		static final Logger log = LoggerFactory.getLogger(TestTracker.class);
+
 		final List<Marker>        markersRecorded = new ArrayList<>();
 		final ThreadLocal<Marker> currentMarker   = new ThreadLocal<>();
 
@@ -166,13 +170,19 @@ public class TrackingTest {
 
 		@Override
 		public void onMarkerCreated(Marker marker) {
+			log.info("onMarkerCreated(" + marker + ")");
 			markersRecorded.add(marker);
+			currentMarker.set(marker);
 		}
 
 		@Override
 		public Disposable onScopePassing(Marker marker) {
+			log.info("onScopePassing(" + marker + ")");
 			currentMarker.set(marker);
-			return () -> currentMarker.set(null);
+			return () -> {
+				log.info("onScopePassingCleanup(" + marker + ")");
+				currentMarker.set(null);
+			};
 		}
 	}
 }
