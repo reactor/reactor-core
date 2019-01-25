@@ -35,6 +35,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.Logger;
@@ -848,12 +849,26 @@ public abstract class Schedulers {
 			long period,
 			TimeUnit unit) {
 
-		PeriodicSchedulerTask sr = new PeriodicSchedulerTask(task);
+		if (period <= 0L) {
+			InstantPeriodicWorkerTask isr =
+					new InstantPeriodicWorkerTask(task, exec, Disposables.composite());
+			Future<?> f;
+			if (initialDelay <= 0L) {
+				f = exec.submit(isr);
+			}
+			else {
+				f = exec.schedule(isr, initialDelay, unit);
+			}
+			isr.setFirst(f);
 
-		Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
-		sr.setFuture(f);
+			return isr;
+		} else {
+			PeriodicSchedulerTask sr = new PeriodicSchedulerTask(task);
+			Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
+			sr.setFuture(f);
 
-		return sr;
+			return sr;
+		}
 	}
 
 	static Disposable workerSchedule(ScheduledExecutorService exec,

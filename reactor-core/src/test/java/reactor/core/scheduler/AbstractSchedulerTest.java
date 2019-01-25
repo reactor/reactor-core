@@ -365,6 +365,38 @@ public abstract class AbstractSchedulerTest {
 	}
 
 	@Test(timeout = 10000)
+	final public void scheduleInstantTaskTest() throws Exception {
+		Scheduler s = scheduler();
+
+		try {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			s.schedulePeriodically(latch::countDown, 0, 0, TimeUnit.MILLISECONDS);
+
+			assertThat(latch.await(100, TimeUnit.MILLISECONDS)).isTrue();
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	@Test(timeout = 10000)
+	final public void scheduleInstantTaskWithDelayTest() throws Exception {
+		Scheduler s = scheduler();
+
+		try {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			s.schedulePeriodically(latch::countDown, 50, 0, TimeUnit.MILLISECONDS);
+
+			assertThat(latch.await(100, TimeUnit.MILLISECONDS)).isTrue();
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	@Test(timeout = 10000)
 	final public void workerScheduleAndDisposePeriod() throws Exception {
 		Scheduler s = scheduler();
 		Scheduler.Worker w = s.createWorker();

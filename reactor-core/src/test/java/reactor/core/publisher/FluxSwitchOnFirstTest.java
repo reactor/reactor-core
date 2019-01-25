@@ -29,6 +29,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -96,6 +99,110 @@ public class FluxSwitchOnFirstTest {
         Assertions.assertThat(throwables[0])
                   .isInstanceOf(IllegalStateException.class)
                   .hasMessage("FluxSwitchOnFirst allows only one Subscriber");
+    }
+
+    @Test
+    public void shouldNotSubscribeTwiceWhenCanceled() {
+        Schedulers.parallel().start();
+        Schedulers.single().start();
+        StepVerifier.create(Flux.just(1L)
+                                .doOnComplete(() -> {
+                                    try {
+                                        Thread.sleep(200);
+                                    }
+                                    catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                })
+                                .hide()
+                                .publishOn(Schedulers.parallel())
+                                .cancelOn(new Scheduler() {
+                                    @Override
+                                    public Disposable schedule(Runnable task) {
+                                        return Disposables.composite();
+                                    }
+
+                                    @Override
+                                    public Worker createWorker() {
+                                        return new Worker() {
+                                            @Override
+                                            public Disposable schedule(Runnable task) {
+                                                return Disposables.composite();
+                                            }
+
+                                            @Override
+                                            public void dispose() {
+
+                                            }
+                                        };
+                                    }
+                                })
+                                .switchOnFirst((s, f) -> f)
+                                .doOnSubscribe(s ->
+                                    Schedulers
+                                        .single()
+                                        .schedulePeriodically(s::cancel, 10, 0, TimeUnit.MILLISECONDS)
+                                )
+        )
+                    .expectSubscription()
+                    .expectNext(1L)
+                    .expectNoEvent(Duration.ofSeconds(1))
+                    .thenCancel()
+                    .verifyThenAssertThat()
+                    .hasNotDroppedErrors();
+    }
+
+    @Test
+    public void shouldNotSubscribeTwiceConditionalWhenCanceled() {
+        Schedulers.parallel().start();
+        Schedulers.single().start();
+        StepVerifier.create(Flux.just(1L)
+                                .doOnComplete(() -> {
+                                    try {
+                                        Thread.sleep(200);
+                                    }
+                                    catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                })
+                                .hide()
+                                .publishOn(Schedulers.parallel())
+                                .cancelOn(new Scheduler() {
+                                    @Override
+                                    public Disposable schedule(Runnable task) {
+                                        return Disposables.composite();
+                                    }
+
+                                    @Override
+                                    public Worker createWorker() {
+                                        return new Worker() {
+                                            @Override
+                                            public Disposable schedule(Runnable task) {
+                                                return Disposables.composite();
+                                            }
+
+                                            @Override
+                                            public void dispose() {
+
+                                            }
+                                        };
+                                    }
+                                })
+                                .filter(e -> true)
+                                .switchOnFirst((s, f) -> f)
+                                .filter(e -> true)
+                                .doOnSubscribe(s ->
+                                        Schedulers
+                                                .single()
+                                                .schedulePeriodically(s::cancel, 10, 0, TimeUnit.MILLISECONDS)
+                                )
+        )
+                    .expectSubscription()
+                    .expectNext(1L)
+                    .expectNoEvent(Duration.ofSeconds(1))
+                    .thenCancel()
+                    .verifyThenAssertThat()
+                    .hasNotDroppedErrors();
     }
 
     @Test
