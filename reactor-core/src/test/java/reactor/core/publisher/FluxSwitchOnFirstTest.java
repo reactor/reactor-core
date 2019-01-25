@@ -986,7 +986,7 @@ public class FluxSwitchOnFirstTest {
 
             @Override
             public Disposable schedule(Runnable task) {
-                return Disposables.composite();
+                return Disposables.never();
             }
 
             @Override
