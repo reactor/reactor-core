@@ -862,7 +862,8 @@ public abstract class Schedulers {
 			isr.setFirst(f);
 
 			return isr;
-		} else {
+		}
+		else {
 			PeriodicSchedulerTask sr = new PeriodicSchedulerTask(task);
 			Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
 			sr.setFuture(f);
