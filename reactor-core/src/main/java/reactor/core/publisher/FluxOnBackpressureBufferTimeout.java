@@ -87,7 +87,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 	}
 
 	static final class BackpressureBufferTimeoutSubscriber<T> extends ArrayDeque<Object>
-			implements InnerOperator<T, T>, Runnable {
+			implements InnerOperator<T, T>, Scheduler.ContextRunnable {
 
 		final CoreSubscriber<? super T> actual;
 		final Context                   ctx;

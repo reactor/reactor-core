@@ -29,6 +29,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -52,7 +53,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		T v = value;
 		if (v == null) {
-			ScheduledEmpty parent = new ScheduledEmpty(actual);
+			ScheduledEmpty parent = new ScheduledEmpty(actual, actual.currentContext());
 			actual.onSubscribe(parent);
 			try {
 				parent.setFuture(scheduler.schedule(parent));
@@ -77,7 +78,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 	}
 
 	static final class ScheduledScalar<T>
-			implements QueueSubscription<T>, InnerProducer<T>, Runnable {
+			implements QueueSubscription<T>, InnerProducer<T>, Scheduler.ContextRunnable {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -86,6 +87,12 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 		final Scheduler scheduler;
 
 		volatile int once;
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ScheduledScalar> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ScheduledScalar.class, "once");
@@ -218,11 +225,20 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 		}
 	}
 
-	static final class ScheduledEmpty implements QueueSubscription<Void>, Runnable {
+	static final class ScheduledEmpty implements QueueSubscription<Void>,
+	                                             Scheduler.ContextRunnable {
 
 		final Subscriber<?> actual;
 
+		final Context context;
+
 		volatile Disposable future;
+
+		@Override
+		public Context currentContext() {
+			return context;
+		}
+
 		static final AtomicReferenceFieldUpdater<ScheduledEmpty, Disposable> FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledEmpty.class,
 						Disposable.class,
@@ -230,8 +246,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 
 		static final Disposable FINISHED = Disposables.disposed();
 
-		ScheduledEmpty(Subscriber<?> actual) {
+		ScheduledEmpty(Subscriber<?> actual, Context context) {
 			this.actual = actual;
+			this.context = context;
 		}
 
 		@Override

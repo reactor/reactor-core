@@ -30,10 +30,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Dynamically creates ScheduledExecutorService-based Workers and caches the thread pools, reusing
@@ -275,7 +277,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		}
 	}
 
-	static final class DirectScheduleTask implements Runnable {
+	static final class DirectScheduleTask implements ContextRunnable {
 
 		final Runnable      delegate;
 		final CachedService cached;
@@ -283,6 +285,11 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		DirectScheduleTask(Runnable delegate, CachedService cached) {
 			this.delegate = delegate;
 			this.cached = cached;
+		}
+
+		@Override
+		public Context currentContext() {
+			return delegate instanceof ContextAware ? ((ContextAware) delegate).currentContext() : Context.empty();
 		}
 
 		@Override

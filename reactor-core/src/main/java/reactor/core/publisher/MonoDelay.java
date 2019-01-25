@@ -27,6 +27,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -72,10 +73,16 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 		return null;
 	}
 
-	static final class MonoDelayRunnable implements Runnable, InnerProducer<Long> {
+	static final class MonoDelayRunnable implements Scheduler.ContextRunnable, InnerProducer<Long> {
 		final CoreSubscriber<? super Long> actual;
 
 		volatile Disposable cancel;
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
+		}
+
 		static final AtomicReferenceFieldUpdater<MonoDelayRunnable, Disposable> CANCEL =
 				AtomicReferenceFieldUpdater.newUpdater(MonoDelayRunnable.class,
 						Disposable.class,

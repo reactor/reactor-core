@@ -1629,7 +1629,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	* @return a replaying {@link Mono}
 	*/
 	public final Mono<T> cache(Duration ttl, Scheduler timer) {
-		return onAssembly(new MonoCacheTime<>(this, ttl, timer));
+		return onAssembly(new MonoCacheTime<>(this, ttl, timer, Context.empty()));
 	}
 
 	/**
@@ -1655,7 +1655,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			Supplier<Duration> ttlForEmpty) {
 		return onAssembly(new MonoCacheTime<>(this,
 				ttlForValue, ttlForError, ttlForEmpty,
-				Schedulers.parallel()));
+				Schedulers.parallel(), Context.empty()));
 	}
 
 	/**

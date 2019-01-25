@@ -47,7 +47,7 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 	}
 
 	static final class CancelSubscriber<T>
-			implements InnerOperator<T, T>, Runnable {
+			implements InnerOperator<T, T>, Scheduler.ContextRunnable {
 
 		final CoreSubscriber<? super T> actual;
 		final Scheduler             scheduler;

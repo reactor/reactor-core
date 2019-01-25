@@ -21,8 +21,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A runnable task for {@link Scheduler} Workers that are time-capable (implementing a
@@ -34,7 +36,7 @@ import reactor.util.annotation.Nullable;
  * @author Simon Baslé
  * @author David Karnok
  */
-final class WorkerTask implements Runnable, Disposable, Callable<Void> {
+final class WorkerTask implements Scheduler.ContextRunnable, Disposable, Callable<Void> {
 
 	final Runnable task;
 
@@ -73,6 +75,11 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 	WorkerTask(Runnable task, Composite parent) {
 		this.task = task;
 		PARENT.lazySet(this, parent);
+	}
+
+	@Override
+	public Context currentContext() {
+		return task instanceof ContextAware ? ((ContextAware) task).currentContext() : Context.empty();
 	}
 
 	@Override

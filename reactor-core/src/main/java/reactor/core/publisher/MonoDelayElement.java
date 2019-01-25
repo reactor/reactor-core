@@ -25,6 +25,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Emits the first value emitted by a given source publisher, delayed by some time amount
@@ -120,7 +121,18 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 			}
 			this.done = true;
 			try {
-				this.task = scheduler.schedule(() -> complete(t), delay, unit);
+				Scheduler.ContextRunnable runnable = new Scheduler.ContextRunnable() {
+					@Override
+					public void run() {
+						complete(t);
+					}
+
+					@Override
+					public Context currentContext() {
+						return actual.currentContext();
+					}
+				};
+				this.task = scheduler.schedule(runnable, delay, unit);
 			}
 			catch (RejectedExecutionException ree) {
 				throw Operators.onRejectedExecution(ree, this, null, t,

@@ -15,12 +15,12 @@
  */
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 
@@ -48,7 +48,12 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} instance that let's one cancel this particular task.
 	 * If the {@link Scheduler} has been shut down, throw a {@link RejectedExecutionException}.
 	 */
+	@Deprecated
 	Disposable schedule(Runnable task);
+
+	default Disposable schedule(ContextRunnable task) {
+		return schedule((Runnable) task);
+	}
 
 	/**
 	 * Schedules the execution of the given task with the given delay amount.
@@ -63,8 +68,13 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
+	@Deprecated
 	default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		throw Exceptions.failWithRejectedNotTimeCapable();
+	}
+
+	default Disposable schedule(ContextRunnable task, long delay, TimeUnit unit) {
+		return schedule((Runnable) task, delay, unit);
 	}
 
 	/**
@@ -85,8 +95,13 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
+	@Deprecated
 	default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 		throw Exceptions.failWithRejectedNotTimeCapable();
+	}
+
+	default Disposable schedulePeriodically(ContextRunnable task, long initialDelay, long period, TimeUnit unit) {
+		return schedulePeriodically((Runnable) task, initialDelay, period, unit);
 	}
 
 	/**
@@ -137,6 +152,10 @@ public interface Scheduler extends Disposable {
 	default void start() {
 	}
 
+	interface ContextRunnable extends Runnable, ContextAware {
+
+	}
+
 	/**
 	 * A worker representing an asynchronous boundary that executes tasks.
 	 *
@@ -152,6 +171,10 @@ public interface Scheduler extends Disposable {
 		 * If the Scheduler has been shut down, a {@link RejectedExecutionException} is thrown.
 		 */
 		Disposable schedule(Runnable task);
+
+		default Disposable schedule(ContextRunnable task) {
+			return schedule((Runnable) task);
+		}
 
 		/**
 		 * Schedules the execution of the given task with the given delay amount.
@@ -170,6 +193,10 @@ public interface Scheduler extends Disposable {
 		 */
 		default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			throw Exceptions.failWithRejectedNotTimeCapable();
+		}
+
+		default Disposable schedule(ContextRunnable task, long delay, TimeUnit unit) {
+			return schedule((Runnable) task, delay, unit);
 		}
 
 		/**
@@ -191,6 +218,10 @@ public interface Scheduler extends Disposable {
 		 */
 		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 			throw Exceptions.failWithRejectedNotTimeCapable();
+		}
+
+		default Disposable schedulePeriodically(ContextRunnable task, long initialDelay, long period, TimeUnit unit) {
+			return schedulePeriodically((Runnable) task, initialDelay, period, unit);
 		}
 
 	}
