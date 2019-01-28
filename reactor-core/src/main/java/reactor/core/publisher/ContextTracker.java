@@ -54,7 +54,9 @@ public interface ContextTracker {
 	 * {@link ContextTracker} implementors receive this callback before
 	 * the {@link reactor.core.scheduler.Scheduler}s execute scheduled {@link Runnable}s.
 	 * <p>
-	 * Consider implementing it if your tracking relies on {@link ThreadLocal}s.
+	 * The method would extract tracking information from {@link Context} populated in {@link #onSubscribe(Context)}
+	 * and put it in appropriate {@link ThreadLocal} variables,
+	 * then return a {@link Disposable} that clears said {@link ThreadLocal}s.
 	 *
 	 * @param context the current {@link Context}
 	 * @return {@link Disposable} to be disposed after the scheduled {@link Runnable}
