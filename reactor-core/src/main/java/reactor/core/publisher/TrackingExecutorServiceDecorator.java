@@ -21,9 +21,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiFunction;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
 
 class TrackingExecutorServiceDecorator
 		implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> {
@@ -40,14 +42,25 @@ class TrackingExecutorServiceDecorator
 
 			@Override
 			protected Runnable wrap(Runnable runnable) {
-				Tracker.Marker marker = Tracker.Marker.CURRENT.get();
+				if (!(runnable instanceof ContextAware)) {
+					return runnable;
+				}
+				Context context = ((ContextAware) runnable).currentContext();
+				Tracker.Marker marker = context.getOrDefault(Tracker.Marker.class, null);
+
 				if (marker == null) {
 					return runnable;
 				}
 
-				return () -> {
-					Tracker.Marker.CURRENT.set(marker);
-					try {
+				return new Scheduler.ContextRunnable() {
+
+					@Override
+					public Context currentContext() {
+						return context;
+					}
+
+					@Override
+					public void run() {
 						Disposable.Composite composite = Disposables.composite();
 
 						for (Tracker tracker : trackers) {
@@ -62,41 +75,60 @@ class TrackingExecutorServiceDecorator
 							composite.dispose();
 						}
 					}
-					finally {
-						Tracker.Marker.CURRENT.remove();
-					}
 				};
 			}
 
 			@Override
 			protected <V> Callable<V> wrap(Callable<V> callable) {
-				Tracker.Marker marker = Tracker.Marker.CURRENT.get();
+				if (!(callable instanceof ContextAware)) {
+					return callable;
+				}
+				Context context = ((ContextAware) callable).currentContext();
+				Tracker.Marker marker = context.getOrDefault(Tracker.Marker.class, null);
+
 				if (marker == null) {
 					return callable;
 				}
 
-				return () -> {
-					Tracker.Marker.CURRENT.set(marker);
-					try {
-						Disposable.Composite composite = Disposables.composite();
-
-						for (Tracker tracker : trackers) {
-							Disposable disposable = tracker.onScopePassing(marker);
-							composite.add(disposable);
-						}
-
-						try {
-							return callable.call();
-						}
-						finally {
-							composite.dispose();
-						}
-					}
-					finally {
-						Tracker.Marker.CURRENT.remove();
-					}
-				};
+				return new ContextAwareCallable<>(marker, callable, context);
 			}
 		};
+	}
+
+	private class ContextAwareCallable<V> implements Callable<V>, ContextAware {
+
+		private final Tracker.Marker marker;
+		private final Callable<V> callable;
+		private final Context context;
+
+		public ContextAwareCallable(Tracker.Marker marker,
+				Callable<V> callable,
+				Context context) {
+			this.marker = marker;
+			this.callable = callable;
+			this.context = context;
+		}
+
+		@Override
+		public V call() throws Exception {
+			Disposable.Composite composite = Disposables.composite();
+
+			for (Tracker tracker : trackers) {
+				Disposable disposable = tracker.onScopePassing(marker);
+				composite.add(disposable);
+			}
+
+			try {
+				return callable.call();
+			}
+			finally {
+				composite.dispose();
+			}
+		}
+
+		@Override
+		public Context currentContext() {
+			return context;
+		}
 	}
 }

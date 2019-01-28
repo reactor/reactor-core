@@ -29,6 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.ContextRunnable;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
 
@@ -115,7 +116,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	static final class PublishOnSubscriber<T>
-			implements QueueSubscription<T>, Runnable, InnerOperator<T, T> {
+			implements QueueSubscription<T>, ContextRunnable, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -584,7 +585,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	static final class PublishOnConditionalSubscriber<T>
-			implements QueueSubscription<T>, Runnable, InnerOperator<T, T> {
+			implements QueueSubscription<T>, ContextRunnable, InnerOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actual;
 

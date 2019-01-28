@@ -30,6 +30,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * @author Simon Baslé
@@ -75,7 +76,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		synchronized (this) {
 			conn = connection;
 			if (conn == null || conn.terminated) {
-				conn = new RefConnection(this);
+				conn = new RefConnection(this, actual.currentContext());
 				connection = conn;
 			}
 
@@ -152,9 +153,10 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		}
 	}
 
-	static final class RefConnection implements Runnable, Consumer<Disposable> {
+	static final class RefConnection implements Scheduler.ContextRunnable, Consumer<Disposable> {
 
 		final FluxRefCountGrace<?> parent;
+		final Context              context;
 
 		Disposable timer;
 		long       subscriberCount;
@@ -162,11 +164,18 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		boolean    terminated;
 
 		volatile Disposable sourceDisconnector;
+
+		@Override
+		public Context currentContext() {
+			return context;
+		}
+
 		static final AtomicReferenceFieldUpdater<RefConnection, Disposable> SOURCE_DISCONNECTOR =
 				AtomicReferenceFieldUpdater.newUpdater(RefConnection.class, Disposable.class, "sourceDisconnector");
 
-		RefConnection(FluxRefCountGrace<?> parent) {
+		RefConnection(FluxRefCountGrace<?> parent, Context context) {
 			this.parent = parent;
+			this.context = context;
 		}
 
 		@Override

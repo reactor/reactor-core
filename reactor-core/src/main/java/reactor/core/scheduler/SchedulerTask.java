@@ -21,10 +21,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
-final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
+final class SchedulerTask implements Scheduler.ContextRunnable, Disposable, Callable<Void> {
 
 	final Runnable task;
 
@@ -39,6 +41,11 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 
 	SchedulerTask(Runnable task) {
 		this.task = task;
+	}
+
+	@Override
+	public Context currentContext() {
+		return task instanceof ContextAware ? ((ContextAware) task).currentContext() : Context.empty();
 	}
 
 	@Override

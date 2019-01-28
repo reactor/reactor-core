@@ -22,6 +22,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.publisher.FluxContextStart.ContextStartSubscriber;
+import reactor.util.context.Context;
 
 class TrackingPublisher implements CorePublisher<Object> {
 
@@ -46,25 +48,21 @@ class TrackingPublisher implements CorePublisher<Object> {
 			return;
 		}
 
-		Tracker.Marker parent = Tracker.Marker.CURRENT.get();
+		Context context = subscriber.currentContext();
+		Tracker.Marker parent = context.getOrDefault(Tracker.Marker.class, null);
 
 		Tracker.Marker current = new Tracker.Marker(parent);
-		Tracker.Marker.CURRENT.set(current);
+		context = context.put(Tracker.Marker.class, current);
 
 		for (Tracker tracker : trackers) {
 			tracker.onMarkerCreated(current);
 		}
 
-		try  {
-			if (source instanceof CorePublisher) {
-				((CorePublisher<Object>) source).subscribe(subscriber);
-			}
-			else {
-				source.subscribe(subscriber);
-			}
+		if (source instanceof CorePublisher) {
+			((CorePublisher<Object>) source).subscribe(new ContextStartSubscriber<>(subscriber, context));
 		}
-		finally {
-			Tracker.Marker.CURRENT.set(parent);
+		else {
+			source.subscribe(new ContextStartSubscriber<>(subscriber, context));
 		}
 	}
 
