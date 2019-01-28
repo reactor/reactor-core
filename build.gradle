@@ -33,6 +33,7 @@ plugins {
   id "me.champeau.gradle.jmh" version "0.4.7" apply false
   id "org.jetbrains.dokka" version "0.9.16"
   id "me.champeau.gradle.japicmp" version "0.2.6"
+  id "de.undercouch.download" version "3.4.3"
 }
 
 apply from: "gradle/doc.gradle"
@@ -61,8 +62,13 @@ ext {
   mockitoVersion = '2.23.0'
   jUnitParamsVersion = '1.1.1'
 
-  javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
-				  "https://docs.oracle.com/javaee/6/api/",
+  jdk = JavaVersion.current().majorVersion
+  jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"
+  if (JavaVersion.current().isJava11Compatible()) {
+	jdkJavadoc = "https://docs.oracle.com/en/java/javase/$jdk/docs/api/"
+  }
+
+  javadocLinks = [jdkJavadoc,
 				  "http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
 
 

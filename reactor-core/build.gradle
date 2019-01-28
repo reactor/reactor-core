@@ -28,7 +28,6 @@ sourceSets {
 configurations {
   compileOnly.extendsFrom jsr166backport
   testCompile.extendsFrom jsr166backport
-  baseline
   noMicrometerTestRuntime {
 	extendsFrom testRuntime
 	exclude group:"io.micrometer", module:"micrometer-core"
@@ -71,13 +70,6 @@ dependencies {
 		  "pl.pragmatists:JUnitParams:$jUnitParamsVersion",
 		  "org.awaitility:awaitility:3.1.2"
 
-  if ("$compatibleVersion" != "SKIP") {
-	baseline("io.projectreactor:reactor-core:$compatibleVersion") {
-	  transitive = false
-	  force = true
-	}
-  }
-
   noMicrometerTestCompile sourceSets.main.output
   noMicrometerTestCompile sourceSets.test.output
   noMicrometerTestCompile configurations.testCompile
@@ -88,9 +80,15 @@ jmh {
   resultFormat = 'JSON'
 }
 
+task downloadBaseline(type: Download) {
+  onlyIf { "$compatibleVersion" != "SKIP" }
+  src "${repositories.mavenCentral().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
+  dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
+}
+
 task japicmp(type: JapicmpTask) {
   onlyIf { "$compatibleVersion" != "SKIP" }
-  oldClasspath = configurations.baseline
+  oldClasspath = files("${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar")
   newClasspath = files(jar.archivePath)
   onlyBinaryIncompatibleModified = true
   failOnModification = true
@@ -256,7 +254,8 @@ artifacts {
 
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
-jar.finalizedBy(japicmp)
+jar.finalizedBy(downloadBaseline)
+downloadBaseline.finalizedBy(japicmp)
 
 if (JavaVersion.current().java9Compatible) {
   sourceSets {
@@ -291,5 +290,14 @@ if (JavaVersion.current().java9Compatible) {
 
   dependencies {
 	compileOnly sourceSets.java8stubs.output
+  }
+}
+else {
+  sourceSets {
+	java9stubs.java.srcDirs = ['src/main/java9stubs']
+  }
+
+  dependencies {
+	compileOnly sourceSets.java9stubs.output
   }
 }
