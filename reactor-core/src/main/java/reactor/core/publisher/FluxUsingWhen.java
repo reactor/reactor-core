@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 
@@ -284,6 +285,9 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		@Nullable
 		final DeferredSubscription                        arbiter;
 
+		volatile int callbackApplied;
+		static final AtomicIntegerFieldUpdater<UsingWhenSubscriber> CALLBACK_APPLIED = AtomicIntegerFieldUpdater.newUpdater(UsingWhenSubscriber.class, "callbackApplied");
+
 		/**
 		 * Also stores the onComplete terminal state as {@link Exceptions#TERMINATED}
 		 */
@@ -327,19 +331,21 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void cancel() {
-			if (Operators.terminate(SUBSCRIPTION, this)) {
-				try {
-					if (asyncCancel != null) {
-						Flux.from(asyncCancel.apply(resource))
-						    .subscribe(new CancelInner(this));
+			if (CALLBACK_APPLIED.compareAndSet(this, 0, 1)) {
+				if (Operators.terminate(SUBSCRIPTION, this)) {
+					try {
+						if (asyncCancel != null) {
+							Flux.from(asyncCancel.apply(resource))
+							    .subscribe(new CancelInner(this));
+						}
+						else {
+							Flux.from(asyncComplete.apply(resource))
+							    .subscribe(new CancelInner(this));
+						}
 					}
-					else {
-						Flux.from(asyncComplete.apply(resource))
-						    .subscribe(new CancelInner(this));
+					catch (Throwable error) {
+						Loggers.getLogger(FluxUsingWhen.class).warn("Error generating async resource cleanup during onCancel", error);
 					}
-				}
-				catch (Throwable error) {
-					Loggers.getLogger(FluxUsingWhen.class).warn("Error generating async resource cleanup during onCancel", error);
 				}
 			}
 		}
@@ -351,37 +357,41 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void onError(Throwable t) {
-			Publisher<?> p;
+			if (CALLBACK_APPLIED.compareAndSet(this, 0, 1)) {
+				Publisher<?> p;
 
-			try {
-				p = Objects.requireNonNull(asyncError.apply(resource),
-						"The asyncError returned a null Publisher");
-			}
-			catch (Throwable e) {
-				Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-				_e = Exceptions.addSuppressed(_e, t);
-				actual.onError(_e);
-				return;
-			}
+				try {
+					p = Objects.requireNonNull(asyncError.apply(resource),
+							"The asyncError returned a null Publisher");
+				}
+				catch (Throwable e) {
+					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
+					_e = Exceptions.addSuppressed(_e, t);
+					actual.onError(_e);
+					return;
+				}
 
-			p.subscribe(new RollbackInner(this, t));
+				p.subscribe(new RollbackInner(this, t));
+			}
 		}
 
 		@Override
 		public void onComplete() {
-			Publisher<?> p;
+			if (CALLBACK_APPLIED.compareAndSet(this, 0, 1)) {
+				Publisher<?> p;
 
-			try {
-				p = Objects.requireNonNull(asyncComplete.apply(resource),
-						"The asyncComplete returned a null Publisher");
-			}
-			catch (Throwable e) {
-				Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-				actual.onError(_e);
-				return;
-			}
+				try {
+					p = Objects.requireNonNull(asyncComplete.apply(resource),
+							"The asyncComplete returned a null Publisher");
+				}
+				catch (Throwable e) {
+					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
+					actual.onError(_e);
+					return;
+				}
 
-			p.subscribe(new CommitInner(this));
+				p.subscribe(new CommitInner(this));
+			}
 		}
 
 

@@ -16,6 +16,14 @@
 configure(rootProject) {
 	apply plugin: 'org.asciidoctor.convert'
 
+  configure(subprojects) { p ->
+	p.tasks.withType(Javadoc).all {
+	  afterEvaluate {
+		println "JDK Javadoc link for ${p.name} is ${rootProject.jdkJavadoc}"
+	  }
+	}
+  }
+
 	asciidoctor {
 	  sourceDir "$rootDir/docs/asciidoc/"
 	  sources {

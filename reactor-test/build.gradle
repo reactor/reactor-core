@@ -17,10 +17,6 @@ import me.champeau.gradle.japicmp.JapicmpTask
 
 description = 'Reactor Test support'
 
-configurations {
-  baseline
-}
-
 dependencies {
   compile project(":reactor-core")
 
@@ -31,18 +27,17 @@ dependencies {
   testCompile "org.hamcrest:hamcrest-library:1.3",
 		  "org.assertj:assertj-core:$assertJVersion",
 		  "org.mockito:mockito-core:$mockitoVersion"
+}
 
-  if ("$compatibleVersion" != "SKIP") {
-	baseline("io.projectreactor:reactor-test:$compatibleVersion") {
-	  transitive = false
-	  force = true
-	}
-  }
+task downloadBaseline(type: Download) {
+  onlyIf { "$compatibleVersion" != "SKIP" }
+  src "${repositories.mavenCentral().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
+  dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
 }
 
 task japicmp(type: JapicmpTask) {
   onlyIf { "$compatibleVersion" != "SKIP" }
-  oldClasspath = configurations.baseline
+  oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
   newClasspath = files(jar.archivePath)
   onlyBinaryIncompatibleModified = true
   failOnModification = true
@@ -125,4 +120,5 @@ artifacts {
   archives kdocZip
 }
 
-jar.finalizedBy(japicmp)
+jar.finalizedBy(downloadBaseline)
+downloadBaseline.finalizedBy(japicmp)
