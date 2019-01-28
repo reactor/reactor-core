@@ -25,44 +25,38 @@ import reactor.core.CoreSubscriber;
 import reactor.core.publisher.FluxContextStart.ContextStartSubscriber;
 import reactor.util.context.Context;
 
-class TrackingPublisher implements CorePublisher<Object> {
+class ContextTrackingPublisher implements CorePublisher<Object> {
 
 	private final Publisher<Object> source;
 
-	final Collection<Tracker> trackers;
+	final Collection<ContextTracker> trackers;
 
-	TrackingPublisher(Publisher<Object> source, Collection<Tracker> trackers) {
+	ContextTrackingPublisher(Publisher<Object> source, Collection<ContextTracker> trackers) {
 		this.source = source;
 		this.trackers = trackers;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super Object> subscriber) {
-		if (trackers.stream().noneMatch(Tracker::shouldCreateMarker)) {
-			if (source instanceof CorePublisher) {
-				((CorePublisher<Object>) source).subscribe(subscriber);
-			}
-			else {
-				source.subscribe(subscriber);
-			}
-			return;
+		Context originalContext = subscriber.currentContext();
+		Context context = originalContext;
+
+		for (ContextTracker tracker : trackers) {
+			context = tracker.onSubscribe(context);
 		}
 
-		Context context = subscriber.currentContext();
-		Tracker.Marker parent = context.getOrDefault(Tracker.Marker.class, null);
-
-		Tracker.Marker current = new Tracker.Marker(parent);
-		context = context.put(Tracker.Marker.class, current);
-
-		for (Tracker tracker : trackers) {
-			tracker.onMarkerCreated(current);
+		if (context != originalContext) {
+			if (!context.hasKey(Hooks.KEY_CONTEXT_TRACKING)) {
+				context = context.put(Hooks.KEY_CONTEXT_TRACKING, true);
+			}
+			subscriber = new ContextStartSubscriber<>(subscriber, context);
 		}
 
 		if (source instanceof CorePublisher) {
-			((CorePublisher<Object>) source).subscribe(new ContextStartSubscriber<>(subscriber, context));
+			((CorePublisher<Object>) source).subscribe(subscriber);
 		}
 		else {
-			source.subscribe(new ContextStartSubscriber<>(subscriber, context));
+			source.subscribe(subscriber);
 		}
 	}
 
