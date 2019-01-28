@@ -47,7 +47,6 @@ public interface Scheduler extends Disposable {
 	 *
 	 * @return the {@link Disposable} instance that let's one cancel this particular task.
 	 * If the {@link Scheduler} has been shut down, throw a {@link RejectedExecutionException}.
-	 *
 	 * @deprecated use {@link #schedule(ContextRunnable)}  to preserve the context.
 	 */
 	@Deprecated
@@ -61,7 +60,6 @@ public interface Scheduler extends Disposable {
 	 * ordering guarantees between tasks.
 	 *
 	 * @param task the task to execute
-	 *
 	 * @return the {@link Disposable} instance that let's one cancel this particular task.
 	 * If the {@link Scheduler} has been shut down, throw a {@link RejectedExecutionException}.
 	 */
@@ -81,7 +79,6 @@ public interface Scheduler extends Disposable {
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
-	 *
 	 * @deprecated use {@link #schedule(ContextRunnable, long, TimeUnit)} to preserve the context.
 	 */
 	@Deprecated
@@ -123,7 +120,6 @@ public interface Scheduler extends Disposable {
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
-	 *
 	 * @deprecated use {@link #schedulePeriodically(ContextRunnable, long, long, TimeUnit)} to preserve the context.
 	 */
 	@Deprecated
@@ -252,7 +248,6 @@ public interface Scheduler extends Disposable {
 		 * @param unit the unit of measure of the delay amount
 		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling with delay.
-		 *
 		 * @deprecated use {@link #schedule(ContextRunnable, long, TimeUnit)} to preserve the context.
 		 */
 		@Deprecated
@@ -295,7 +290,6 @@ public interface Scheduler extends Disposable {
 		 * @param unit the unit of measure of the delay amount
 		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling periodically.
-		 *
 		 * @deprecated use {@link #schedulePeriodically(ContextRunnable, long, long, TimeUnit)} to preserve the context.
 		 */
 		@Deprecated
