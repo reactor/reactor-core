@@ -90,10 +90,10 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		final static int TERMINATED_WITH_ERROR   = 2;
 		final static int TERMINATED_WITH_CANCEL  = 3;
 
-		final int                       batchSize;
-		final long                      timespan;
-		final Scheduler.Worker          timer;
-		final ContextRunnable flushTask;
+		final int              batchSize;
+		final long             timespan;
+		final Scheduler.Worker timer;
+		final ContextRunnable  flushTask;
 
 		protected Subscription subscription;
 
