@@ -27,12 +27,12 @@ import reactor.core.Disposables;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.context.Context;
 
-class TrackingExecutorServiceDecorator
+class ContextTrackingExecutorServiceDecorator
 		implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> {
 
-	private final Collection<Tracker> trackers;
+	private final Collection<ContextTracker> trackers;
 
-	TrackingExecutorServiceDecorator(Collection<Tracker> trackers) {
+	ContextTrackingExecutorServiceDecorator(Collection<ContextTracker> trackers) {
 		this.trackers = trackers;
 	}
 
@@ -46,9 +46,8 @@ class TrackingExecutorServiceDecorator
 					return runnable;
 				}
 				Context context = ((ContextAware) runnable).currentContext();
-				Tracker.Marker marker = context.getOrDefault(Tracker.Marker.class, null);
 
-				if (marker == null) {
+				if (!context.hasKey(Hooks.KEY_CONTEXT_TRACKING)) {
 					return runnable;
 				}
 
@@ -63,8 +62,8 @@ class TrackingExecutorServiceDecorator
 					public void run() {
 						Disposable.Composite composite = Disposables.composite();
 
-						for (Tracker tracker : trackers) {
-							Disposable disposable = tracker.onScopePassing(marker);
+						for (ContextTracker tracker : trackers) {
+							Disposable disposable = tracker.onContextPassing(context);
 							composite.add(disposable);
 						}
 
@@ -84,27 +83,22 @@ class TrackingExecutorServiceDecorator
 					return callable;
 				}
 				Context context = ((ContextAware) callable).currentContext();
-				Tracker.Marker marker = context.getOrDefault(Tracker.Marker.class, null);
 
-				if (marker == null) {
+				if (!context.hasKey(Hooks.KEY_CONTEXT_TRACKING)) {
 					return callable;
 				}
 
-				return new ContextAwareCallable<>(marker, callable, context);
+				return new ContextAwareCallable<>(callable, context);
 			}
 		};
 	}
 
 	private class ContextAwareCallable<V> implements Callable<V>, ContextAware {
 
-		private final Tracker.Marker marker;
 		private final Callable<V> callable;
 		private final Context context;
 
-		public ContextAwareCallable(Tracker.Marker marker,
-				Callable<V> callable,
-				Context context) {
-			this.marker = marker;
+		public ContextAwareCallable(Callable<V> callable, Context context) {
 			this.callable = callable;
 			this.context = context;
 		}
@@ -113,8 +107,8 @@ class TrackingExecutorServiceDecorator
 		public V call() throws Exception {
 			Disposable.Composite composite = Disposables.composite();
 
-			for (Tracker tracker : trackers) {
-				Disposable disposable = tracker.onScopePassing(marker);
+			for (ContextTracker contextTracker : trackers) {
+				Disposable disposable = contextTracker.onContextPassing(context);
 				composite.add(disposable);
 			}
 

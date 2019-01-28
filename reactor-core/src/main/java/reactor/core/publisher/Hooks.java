@@ -469,41 +469,41 @@ public abstract class Hooks {
 		}
 	}
 
-	public static void addTracker(String key, Tracker tracker) {
+	public static void addContextTracker(String key, ContextTracker contextTracker) {
 		synchronized (log) {
-			boolean wasEmpty = trackers.isEmpty();
-			trackers.put(key, tracker);
+			boolean wasEmpty = contextTrackers.isEmpty();
+			contextTrackers.put(key, contextTracker);
 			if (wasEmpty) {
-				installTracing();
+				installContextTracing();
 			}
 		}
 	}
 
-	public static boolean removeTracker(String key) {
+	public static boolean removeContextTracker(String key) {
 		synchronized (log) {
-			boolean removed = trackers.remove(key) != null;
+			boolean removed = contextTrackers.remove(key) != null;
 			if (removed) {
-				if (trackers.isEmpty()) {
-					uninstallTracing();
+				if (contextTrackers.isEmpty()) {
+					uninstallContextTracing();
 				}
 			}
 			return removed;
 		}
 	}
 
-	static void installTracing() {
+	static void installContextTracing() {
 		synchronized (log) {
-			Collection<Tracker> trackersView = Collections.unmodifiableCollection(trackers.values());
+			Collection<ContextTracker> trackersView = Collections.unmodifiableCollection(contextTrackers.values());
 
-			onLastOperator(KEY_TRACKING, source -> new TrackingPublisher(source, trackersView));
-			Schedulers.addExecutorServiceDecorator(KEY_TRACKING, new TrackingExecutorServiceDecorator(trackersView));
+			onLastOperator(KEY_CONTEXT_TRACKING, source -> new ContextTrackingPublisher(source, trackersView));
+			Schedulers.addExecutorServiceDecorator(KEY_CONTEXT_TRACKING, new ContextTrackingExecutorServiceDecorator(trackersView));
 		}
 	}
 
-	static void uninstallTracing() {
+	static void uninstallContextTracing() {
 		synchronized (log) {
-			Schedulers.removeExecutorServiceDecorator(KEY_TRACKING);
-			resetOnLastOperator(KEY_TRACKING);
+			Schedulers.removeExecutorServiceDecorator(KEY_CONTEXT_TRACKING);
+			resetOnLastOperator(KEY_CONTEXT_TRACKING);
 		}
 	}
 
@@ -585,7 +585,7 @@ public abstract class Hooks {
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
 
-	private static final LinkedHashMap<String, Tracker> trackers;
+	private static final LinkedHashMap<String, ContextTracker> contextTrackers;
 
 	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
@@ -598,8 +598,8 @@ public abstract class Hooks {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
 	}
 
-	static final Map<String, Tracker> getTrackers() {
-		return Collections.unmodifiableMap(trackers);
+	static final Map<String, ContextTracker> getContextTrackers() {
+		return Collections.unmodifiableMap(contextTrackers);
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);
@@ -633,7 +633,7 @@ public abstract class Hooks {
 	 */
 	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
 
-	static final String KEY_TRACKING = "reactor.tracking";
+	static final String KEY_CONTEXT_TRACKING = "reactor.context.tracking";
 
 	static boolean GLOBAL_TRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
@@ -643,7 +643,7 @@ public abstract class Hooks {
 		onEachOperatorHooks = new LinkedHashMap<>(1);
 		onLastOperatorHooks = new LinkedHashMap<>(1);
 		onOperatorErrorHooks = new LinkedHashMap<>(1);
-		trackers = new LinkedHashMap<>(1);
+		contextTrackers = new LinkedHashMap<>(1);
 	}
 
 	Hooks() {

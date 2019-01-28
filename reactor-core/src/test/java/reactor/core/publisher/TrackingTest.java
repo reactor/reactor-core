@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -33,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,14 +46,14 @@ public class TrackingTest {
 
 	@After
 	public void tearDown() {
-		new HashSet<>(Hooks.getTrackers().keySet()).forEach(Hooks::removeTracker);
-		Tracker.Marker.COUNTER.set(0);
+		new HashSet<>(Hooks.getContextTrackers().keySet()).forEach(Hooks::removeContextTracker);
+		TestContextTracker.Marker.COUNTER.set(0);
 	}
 
 	@Test
 	public void shouldCreateMarker() {
-		TestTracker tracker = new TestTracker();
-		Hooks.addTracker(testName.getMethodName(), tracker);
+		TestContextTracker tracker = new TestContextTracker();
+		Hooks.addContextTracker(testName.getMethodName(), tracker);
 
 		Flux.just(1).blockLast();
 
@@ -59,8 +62,8 @@ public class TrackingTest {
 
 	@Test
 	public void shouldCreateMarkerFromThread() throws InterruptedException {
-		TestTracker tracer = new TestTracker();
-		Hooks.addTracker(testName.getMethodName(), tracer);
+		TestContextTracker tracer = new TestContextTracker();
+		Hooks.addContextTracker(testName.getMethodName(), tracer);
 
 		CountDownLatch latch = new CountDownLatch(1);
 		Flux
@@ -68,7 +71,7 @@ public class TrackingTest {
 			.flatMap(it -> {
 				return Mono.delay(Duration.ofMillis(1), Schedulers.elastic())
 				           .doOnNext(__ -> {
-					           Tracker.Marker currentMarker = tracer.getCurrentMarker();
+					           TestContextTracker.Marker currentMarker = tracer.getCurrentMarker();
 					           assertThat(currentMarker).isNotNull();
 				           });
 			})
@@ -102,15 +105,15 @@ public class TrackingTest {
 
 	@Test
 	public void shouldPropagateMarkerToThreads() {
-		TestTracker tracer = new TestTracker();
-		Hooks.addTracker(testName.getMethodName(), tracer);
+		TestContextTracker tracer = new TestContextTracker();
+		Hooks.addContextTracker(testName.getMethodName(), tracer);
 
 		Flux.just(1, 2, 3)
 		    .publishOn(Schedulers.parallel())
 		    .concatMap(it -> {
 			    return Mono.delay(Duration.ofMillis(1), Schedulers.elastic())
 			               .doOnNext(__ -> {
-				               Tracker.Marker currentMarker = tracer.getCurrentMarker();
+				               TestContextTracker.Marker currentMarker = tracer.getCurrentMarker();
 				               assertThat(currentMarker).isNotNull();
 			               });
 		    })
@@ -118,7 +121,7 @@ public class TrackingTest {
 		    .concatMap(it -> {
 			    return Mono.delay(Duration.ofMillis(1), Schedulers.elastic())
 			               .doOnNext(__ -> {
-				               Tracker.Marker currentMarker = tracer.getCurrentMarker();
+				               TestContextTracker.Marker currentMarker = tracer.getCurrentMarker();
 				               assertThat(currentMarker).isNotNull();
 			               });
 		    })
@@ -127,7 +130,7 @@ public class TrackingTest {
 		assertThat(tracer.getMarkersRecorded())
 				.hasSize(7);
 
-		Tracker.Marker root = tracer
+		TestContextTracker.Marker root = tracer
 				.getMarkersRecorded()
 				.stream()
 				.filter(it -> it.getParent() == null)
@@ -137,7 +140,7 @@ public class TrackingTest {
 				});
 
 		assertThat(tracer.getMarkersRecorded()).allSatisfy(marker -> {
-			Tracker.Marker parent = marker;
+			TestContextTracker.Marker parent = marker;
 			while (parent.getParent() != null) {
 				parent = parent.getParent();
 			}
@@ -146,14 +149,12 @@ public class TrackingTest {
 		});
 	}
 
-	private static class TestTracker implements Tracker {
+	private static class TestContextTracker implements ContextTracker {
 
-		static final Logger log = LoggerFactory.getLogger(TestTracker.class);
+		static final Logger log = LoggerFactory.getLogger(TestContextTracker.class);
 
 		final List<Marker>        markersRecorded = new ArrayList<>();
 		final ThreadLocal<Marker> currentMarker   = new ThreadLocal<>();
-
-		boolean shouldTrace = true;
 
 		List<Marker> getMarkersRecorded() {
 			return markersRecorded;
@@ -164,25 +165,48 @@ public class TrackingTest {
 		}
 
 		@Override
-		public boolean shouldCreateMarker() {
-			return shouldTrace;
-		}
-
-		@Override
-		public void onMarkerCreated(Marker marker) {
-			log.info("onMarkerCreated(" + marker + ")");
+		public Context onSubscribe(Context context) {
+			Marker parent = context.getOrDefault(Marker.class, null);
+			Marker marker = new Marker(parent);
 			markersRecorded.add(marker);
 			currentMarker.set(marker);
+			return context.put(Marker.class, marker);
 		}
 
 		@Override
-		public Disposable onScopePassing(Marker marker) {
-			log.info("onScopePassing(" + marker + ")");
+		public Disposable onContextPassing(Context context) {
+			Marker marker = context.get(Marker.class);
+
+			log.info("onContextPassing(" + marker + ")");
 			currentMarker.set(marker);
 			return () -> {
-				log.info("onScopePassingCleanup(" + marker + ")");
+				log.info("onContextPassingCleanup(" + marker + ")");
 				currentMarker.set(null);
 			};
+		}
+
+		static final class Marker {
+
+			static final AtomicLong COUNTER = new AtomicLong();
+
+			@Nullable
+			private final Marker parent;
+
+			private final long id = COUNTER.getAndIncrement();
+
+			Marker(@Nullable Marker parent) {
+				this.parent = parent;
+			}
+
+			@Nullable
+			public Marker getParent() {
+				return parent;
+			}
+
+			@Override
+			public String toString() {
+				return "Marker{id=" + id + ", parent=" + parent + "}";
+			}
 		}
 	}
 }
