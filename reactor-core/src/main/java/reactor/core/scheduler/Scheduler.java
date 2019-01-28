@@ -63,6 +63,7 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} instance that let's one cancel this particular task.
 	 * If the {@link Scheduler} has been shut down, throw a {@link RejectedExecutionException}.
 	 */
+	@SuppressWarnings("deprecation")
 	default Disposable schedule(ContextRunnable task) {
 		return schedule((Runnable) task);
 	}
@@ -99,6 +100,7 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
+	@SuppressWarnings("deprecation")
 	default Disposable schedule(ContextRunnable task, long delay, TimeUnit unit) {
 		return schedule((Runnable) task, delay, unit);
 	}
@@ -145,6 +147,7 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
+	@SuppressWarnings("deprecation")
 	default Disposable schedulePeriodically(ContextRunnable task, long initialDelay, long period, TimeUnit unit) {
 		return schedulePeriodically((Runnable) task, initialDelay, period, unit);
 	}
@@ -230,6 +233,7 @@ public interface Scheduler extends Disposable {
 		 * @return the {@link Disposable} instance that let's one cancel this particular task.
 		 * If the Scheduler has been shut down, a {@link RejectedExecutionException} is thrown.
 		 */
+		@SuppressWarnings("deprecation")
 		default Disposable schedule(ContextRunnable task) {
 			return schedule((Runnable) task);
 		}
@@ -270,6 +274,7 @@ public interface Scheduler extends Disposable {
 		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling with delay.
 		 */
+		@SuppressWarnings("deprecation")
 		default Disposable schedule(ContextRunnable task, long delay, TimeUnit unit) {
 			return schedule((Runnable) task, delay, unit);
 		}
@@ -314,6 +319,7 @@ public interface Scheduler extends Disposable {
 		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling periodically.
 		 */
+		@SuppressWarnings("deprecation")
 		default Disposable schedulePeriodically(ContextRunnable task, long initialDelay, long period, TimeUnit unit) {
 			return schedulePeriodically((Runnable) task, initialDelay, period, unit);
 		}

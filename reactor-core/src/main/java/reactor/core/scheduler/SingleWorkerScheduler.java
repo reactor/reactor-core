@@ -43,22 +43,26 @@ final class SingleWorkerScheduler implements Scheduler, Executor, Scannable {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Disposable schedule(Runnable task) {
         return main.schedule(task);
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
         return main.schedule(task, delay, unit);
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Disposable schedulePeriodically(Runnable task, long initialDelay,
             long period, TimeUnit unit) {
         return main.schedulePeriodically(task, initialDelay, period, unit);
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void execute(Runnable command) {
         main.schedule(command);
     }
