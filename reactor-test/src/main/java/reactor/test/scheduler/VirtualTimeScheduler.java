@@ -254,7 +254,6 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		if (shutdown) {
 			throw Exceptions.failWithRejected();
@@ -283,7 +282,6 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedulePeriodically(Runnable task,
 			long initialDelay,
 			long period, TimeUnit unit) {
