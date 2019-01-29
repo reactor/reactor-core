@@ -781,7 +781,6 @@ public class FluxMergeSequentialTest {
 		merge.subscribe().dispose();
 
 		assertThat(cancelCounter).as("cancellation remaining").hasValue(0);
-		// Cancelling 1 is never printed
 	}
 
 	@Test
@@ -795,7 +794,6 @@ public class FluxMergeSequentialTest {
 		merge.subscribe().dispose();
 
 		assertThat(cancelCounter).as("cancellation remaining").hasValue(0);
-		// Cancelling 1 is never printed
 	}
 
     @Test
