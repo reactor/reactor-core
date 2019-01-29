@@ -343,17 +343,36 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 					if (WIP.getAndIncrement(this) == 0) {
 						// remove queued up but unobservable groups from the mapping
 						Flux<T> g;
+						WindowFlux<T> w = window;
 						while ((g = queue.poll()) != null) {
 							((WindowFlux<T>) g).cancel();
 						}
+						if (w != null && w.deferred) {
+							w.cancel();
+						}
 
 						if (WIP.decrementAndGet(this) == 0) {
+							if (!done && WINDOW_COUNT.get(this) == 0) {
+								s.cancel();
+							}
+							else {
+								CANCELLED.set(this, 2);
+							}
 							return;
 						}
+
+						CANCELLED.set(this, 2); //in flight windows might get cancelled still
 
 						drainLoop();
 					}
 				}
+			}
+			else if (CANCELLED.get(this) == 2) {
+				//no new window should have been created
+				if (WINDOW_COUNT.get(this) == 0) {
+					s.cancel();
+				}
+				//next one to call cancel in state 2 that decrements to 0 will cancel outer
 			}
 		}
 
