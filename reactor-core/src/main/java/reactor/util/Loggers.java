@@ -15,6 +15,7 @@
  */
 package reactor.util;
 
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.function.Function;
@@ -32,10 +33,10 @@ import reactor.util.annotation.Nullable;
  * {@link System#setProperty(String, String) System property} to "{@code JDK}".
  * <p>
  * One can also force the implementation by using the "useXXX" static methods:
- * {@link #useConsoleLoggers()}, {@link #useJdkLoggers()} and {@link #useSl4jLoggers()}
- * (which may throw an Exception if the library isn't on the classpath). Note that the
- * system property method above is preferred, as no cleanup of the logger factory initialized
- * at startup is attempted by the useXXX methods.
+ * {@link #useConsoleLoggers()}, {@link #useVerboseConsoleLoggers()}, {@link #useJdkLoggers()}
+ * and {@link #useSl4jLoggers()} (which may throw an Exception if the library isn't on the
+ * classpath). Note that the system property method above is preferred, as no cleanup of
+ * the logger factory initialized at startup is attempted by the useXXX methods.
  */
 public abstract class Loggers {
 
@@ -61,6 +62,7 @@ public abstract class Loggers {
 	 *
 	 * @see #useJdkLoggers()
 	 * @see #useConsoleLoggers()
+	 * @see #useVerboseConsoleLoggers()
 	 */
 	public static final void resetLoggerFactory() {
 		try {
@@ -91,15 +93,32 @@ public abstract class Loggers {
 	 * Force the usage of Console-based {@link Logger Loggers}, even if SLF4J is available
 	 * on the classpath. Console loggers will output {@link Logger#error(String) ERROR} and
 	 * {@link Logger#warn(String) WARN} levels to {@link System#err} and levels below to
-	 * {@link System#out}. All levels are considered enabled.
+	 * {@link System#out}. All levels <strong>except TRACE and DEBUG</strong> are
+	 * considered enabled. TRACE and DEBUG are omitted.
 	 * <p>
 	 * The previously active logger factory is simply replaced without
 	 * any particular clean-up.
 	 */
 	public static final void useConsoleLoggers() {
 		String name = LoggerFactory.class.getName();
-		LoggerFactory loggerFactory = new ConsoleLoggerFactory();
+		LoggerFactory loggerFactory = new ConsoleLoggerFactory(false);
 		loggerFactory.getLogger(name).debug("Using Console logging");
+		LOGGER_FACTORY = loggerFactory;
+	}
+
+	/**
+	 * Force the usage of Console-based {@link Logger Loggers}, even if SLF4J is available
+	 * on the classpath. Console loggers will output {@link Logger#error(String) ERROR} and
+	 * {@link Logger#warn(String) WARN} levels to {@link System#err} and levels below to
+	 * {@link System#out}. All levels (including TRACE and DEBUG) are considered enabled.
+	 * <p>
+	 * The previously active logger factory is simply replaced without
+	 * any particular clean-up.
+	 */
+	public static final void useVerboseConsoleLoggers() {
+		String name = LoggerFactory.class.getName();
+		LoggerFactory loggerFactory = new ConsoleLoggerFactory(true);
+		loggerFactory.getLogger(name).debug("Using Verbose Console logging");
 		LOGGER_FACTORY = loggerFactory;
 	}
 
@@ -449,15 +468,17 @@ public abstract class Loggers {
 		private final String name;
 		private final PrintStream err;
 		private final PrintStream log;
+		private final boolean verbose;
 
-		ConsoleLogger(String name, PrintStream log, PrintStream err) {
+		ConsoleLogger(String name, PrintStream log, PrintStream err, boolean verbose) {
 			this.name = name;
 			this.log = log;
 			this.err = err;
+			this.verbose = verbose;
 		}
 
-		ConsoleLogger(String name) {
-			this(name, System.out, System.err);
+		ConsoleLogger(String name, boolean verbose) {
+			this(name, System.out, System.err, verbose);
 		}
 
 		@Override
@@ -481,41 +502,59 @@ public abstract class Loggers {
 
 		@Override
 		public boolean isTraceEnabled() {
-			return true;
+			return verbose;
 		}
 
 		@Override
 		public synchronized void trace(String msg) {
+			if (!verbose) {
+				return;
+			}
 			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), msg);
 		}
 
 		@Override
 		public synchronized void trace(String format, Object... arguments) {
+			if (!verbose) {
+				return;
+			}
 			this.log.format("[TRACE] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
 		}
 		@Override
 		public synchronized void trace(String msg, Throwable t) {
+			if (!verbose) {
+				return;
+			}
 			this.log.format("[TRACE] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 			t.printStackTrace(this.log);
 		}
 
 		@Override
 		public boolean isDebugEnabled() {
-			return true;
+			return verbose;
 		}
 
 		@Override
 		public synchronized void debug(String msg) {
+			if (!verbose) {
+				return;
+			}
 			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), msg);
 		}
 
 		@Override
 		public synchronized void debug(String format, Object... arguments) {
+			if (!verbose) {
+				return;
+			}
 			this.log.format("[DEBUG] (%s) %s\n", Thread.currentThread().getName(), format(format, arguments));
 		}
 
 		@Override
 		public synchronized void debug(String msg, Throwable t) {
+			if (!verbose) {
+				return;
+			}
 			this.log.format("[DEBUG] (%s) %s - %s\n", Thread.currentThread().getName(), msg, t);
 			t.printStackTrace(this.log);
 		}
@@ -588,9 +627,15 @@ public abstract class Loggers {
 
 		private static final HashMap<String, Logger> consoleLoggers = new HashMap<>();
 
+		final boolean verbose;
+
+		private ConsoleLoggerFactory(boolean verbose) {
+			this.verbose = verbose;
+		}
+
 		@Override
 		public Logger getLogger(String name) {
-			return consoleLoggers.computeIfAbsent(name, ConsoleLogger::new);
+			return consoleLoggers.computeIfAbsent(name, n -> new ConsoleLogger(n, verbose));
 		}
 	}
 

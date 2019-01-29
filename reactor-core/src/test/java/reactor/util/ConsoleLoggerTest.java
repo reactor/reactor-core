@@ -36,7 +36,7 @@ public class ConsoleLoggerTest {
 
 	@Before
 	public void setUp() {
-		logger = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent));
+		logger = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent), true);
 	}
 
 	@After
@@ -89,6 +89,19 @@ public class ConsoleLoggerTest {
 	}
 
 	@Test
+	public void traceDismissedInNonVerboseMode() {
+		Logger log = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent), false);
+		log.trace("foo");
+		log.trace("foo", new IllegalArgumentException("foo"));
+		log.trace("foo {}", "foo");
+
+		assertThat(outContent.toString()).doesNotContain("foo");
+		assertThat(errContent.toString()).doesNotContain("foo");
+
+		assertThat(log.isTraceEnabled()).as("isTraceEnabled").isFalse();
+	}
+
+	@Test
 	public void isDebugEnabled() throws Exception {
 		assertThat(logger.isDebugEnabled()).isTrue();
 	}
@@ -129,6 +142,19 @@ public class ConsoleLoggerTest {
 		assertThat(outContent.toString())
 				.contains("vararg {} is {}")
 				.contains("param null is null");
+	}
+
+	@Test
+	public void debugDismissedInNonVerboseMode() {
+		Logger log = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent), false);
+		log.debug("foo");
+		log.debug("foo", new IllegalArgumentException("foo"));
+		log.debug("foo {}", "foo");
+
+		assertThat(outContent.toString()).doesNotContain("foo");
+		assertThat(errContent.toString()).doesNotContain("foo");
+
+		assertThat(log.isDebugEnabled()).as("isDebugEnabled").isFalse();
 	}
 
 	@Test
