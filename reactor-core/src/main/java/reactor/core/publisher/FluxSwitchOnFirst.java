@@ -214,7 +214,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             CoreSubscriber<? super T> i = inner;
             T f = first;
 
-            if (f == null && i == null) {
+            if (f == null && i == null && !cancelled) {
                 Publisher<? extends R> result;
                 CoreSubscriber<? super R> o = outer;
 
@@ -249,7 +249,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             CoreSubscriber<? super T> i = inner;
             T f = first;
 
-            if (f == null && i == null) {
+            if (f == null && i == null && !cancelled) {
                 Publisher<? extends R> result;
                 CoreSubscriber<? super R> o = outer;
 
@@ -526,7 +526,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             CoreSubscriber<? super T> i = inner;
             T f = first;
 
-            if (f == null && i == null) {
+            if (f == null && i == null && !cancelled) {
                 Publisher<? extends R> result;
                 CoreSubscriber<? super R> o = outer;
 
@@ -561,7 +561,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             CoreSubscriber<? super T> i = inner;
             T f = first;
 
-            if (f == null && i == null) {
+            if (f == null && i == null && !cancelled) {
                 Publisher<? extends R> result;
                 CoreSubscriber<? super R> o = outer;
 
