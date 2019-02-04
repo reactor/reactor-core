@@ -142,7 +142,7 @@ public class MonoRunnableTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(actual.get()).as("cancelled before run").isTrue();
+		assertThat(actual).as("cancelled before run").isTrue();
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1503
