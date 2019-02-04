@@ -28,7 +28,7 @@ Reactive Encoding and Decoding are fully supported.
 == Prerequisites
 Reactor Core runs on `Java 8` and above.
 
-It has a transitive dependency on `org.reactive-streams:reactive-streams:1.0.2`.
+It has a transitive dependency on `org.reactivestreams:reactive-streams:1.0.2`.
 
 [NOTE]
 ====
