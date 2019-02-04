@@ -19,6 +19,9 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -38,13 +41,18 @@ final class MonoRunnable<T> extends Mono<T>
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
-        try {
-            run.run();
-        } catch (Throwable ex) {
-            Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
+        MonoRunnableEagerSubscription s = new MonoRunnableEagerSubscription();
+        actual.onSubscribe(s);
+        if (s.isCancelled()) {
             return;
         }
-        Operators.complete(actual);
+
+        try {
+            run.run();
+            actual.onComplete();
+        } catch (Throwable ex) {
+            actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
+        }
     }
     
     @Override
@@ -71,5 +79,23 @@ final class MonoRunnable<T> extends Mono<T>
     @Override
     public Object scanUnsafe(Attr key) {
         return null; //no particular key to be represented, still useful in hooks
+    }
+
+    static final class MonoRunnableEagerSubscription extends AtomicBoolean implements Subscription {
+
+        @Override
+        public void request(long n) {
+            //NO-OP
+        }
+
+        @Override
+        public void cancel() {
+            set(true);
+        }
+
+        public boolean isCancelled() {
+            return get();
+        }
+
     }
 }
