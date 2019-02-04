@@ -16,13 +16,21 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.data.Offset;
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -119,5 +127,43 @@ public class MonoRunnableTest {
 		    .block();
 
 		Assert.assertEquals(1000, c[0]);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1503
+	@Test
+	public void runnableCancelledBeforeRun() {
+		AtomicBoolean actual = new AtomicBoolean(true);
+		Mono<?> mono = Mono.fromRunnable(() -> actual.set(false))
+		                   .doOnSubscribe(Subscription::cancel);
+
+		StepVerifier.create(mono)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenCancel()
+		            .verify();
+
+		assertThat(actual).as("cancelled before run").isTrue();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1503
+	//see https://github.com/reactor/reactor-core/issues/1504
+	@Test
+	public void runnableSubscribeToCompleteMeasurement() {
+		AtomicLong subscribeTs = new AtomicLong();
+		Mono<Object> mono = Mono.fromRunnable(() -> {
+			try {
+				Thread.sleep(500);
+			}
+			catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		})
+		                      .doOnSubscribe(sub -> subscribeTs.set(-1 * System.nanoTime()))
+		                      .doFinally(fin -> subscribeTs.addAndGet(System.nanoTime()));
+
+		StepVerifier.create(mono)
+		            .verifyComplete();
+
+		assertThat(TimeUnit.NANOSECONDS.toMillis(subscribeTs.get())).isCloseTo(500L, Offset.offset(50L));
 	}
 }
