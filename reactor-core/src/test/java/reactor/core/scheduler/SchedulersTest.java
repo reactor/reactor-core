@@ -1227,6 +1227,8 @@ public class SchedulersTest {
 			latch.await();
 
 			disposable.dispose();
+			//avoid race of checking the status of futures vs cancelling said futures
+			Thread.sleep(10);
 
 			assertThat(executorService.isAllTasksCancelledOrDone()).isTrue();
 		}
