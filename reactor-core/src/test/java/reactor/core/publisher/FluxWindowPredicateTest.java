@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -30,6 +32,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
@@ -44,6 +48,105 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowPredicateTest extends
                                      FluxOperatorTest<String, Flux<String>> {
+
+	//see https://github.com/reactor/reactor-core/issues/1452
+	@Test
+	public void windowWhilePropagatingCancelToSource_disposeOuterFirst() {
+		final AtomicBoolean beforeWindowWhileStageCancelled = new AtomicBoolean();
+		final AtomicBoolean afterWindowWhileStageCancelled = new AtomicBoolean();
+
+		TestPublisher<String> testPublisher = TestPublisher.create();
+
+		final Flux<String> sourceFlux = testPublisher
+				.flux()
+				.doOnCancel(() -> beforeWindowWhileStageCancelled.set(true));
+
+		final AtomicInteger windowCounter = new AtomicInteger();
+
+		final Disposable.Swap innerDisposable = Disposables.swap();
+
+		final Disposable outerDisposable = sourceFlux
+				.windowWhile(s -> !"#".equals(s))
+				.doOnCancel(() -> afterWindowWhileStageCancelled.set(true))
+				.subscribe(next -> {
+					final int windowId = windowCounter.getAndIncrement();
+
+					innerDisposable.update(next.subscribe());
+				});
+
+		testPublisher.next("1");
+
+		// Dispose outer subscription; we should see cancellation at stage after windowWhile, but not before
+		outerDisposable.dispose();
+		assertThat(afterWindowWhileStageCancelled).as("afterWindowWhileStageCancelled cancelled when outer is disposed").isTrue();
+		assertThat(beforeWindowWhileStageCancelled).as("beforeWindowWhileStageCancelled cancelled when outer is disposed").isFalse();
+
+		// Dispose inner subscription; we should see cancellation propagates all the way up
+		innerDisposable.dispose();
+		assertThat(afterWindowWhileStageCancelled).as("afterWindowWhileStageCancelled cancelled when inner is disposed").isTrue();
+		assertThat(beforeWindowWhileStageCancelled).as("beforeWindowWhileStageCancelled cancelled when inner is disposed").isTrue();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1452
+	@Test
+	public void windowWhileNotPropagatingCancelToSource_disposeInnerFirst() {
+		final AtomicBoolean beforeWindowWhileStageCancelled = new AtomicBoolean();
+		final AtomicBoolean afterWindowWhileStageCancelled = new AtomicBoolean();
+
+		final Flux<String> sourceFlux = Flux.<String>create(fluxSink ->
+				fluxSink
+						.next("0")
+						.next("#"))
+				.doOnCancel(() -> beforeWindowWhileStageCancelled.set(true));
+
+		final AtomicInteger windowCounter = new AtomicInteger();
+
+		final Disposable.Swap innerDisposable = Disposables.swap();
+
+		final Disposable outerDisposable = sourceFlux
+				.windowWhile(s -> !"#".equals(s))
+				.doOnCancel(() -> afterWindowWhileStageCancelled.set(true))
+				.subscribe(next -> {
+					final int windowId = windowCounter.getAndIncrement();
+
+					innerDisposable.update(next.subscribe());
+				});
+
+		// Dispose inner subscription, outer Flux at before/after the windowWhile stage should not be cancelled yet
+		innerDisposable.dispose();
+		assertThat(afterWindowWhileStageCancelled).as("afterWindowWhileStageCancelled cancelled when inner is disposed").isFalse();
+		assertThat(beforeWindowWhileStageCancelled).as("beforeWindowWhileStageCancelled cancelled when inner is disposed").isFalse();
+
+		// Dispose outer subscription; we should see cancellation propagates all the way up
+		outerDisposable.dispose();
+		assertThat(afterWindowWhileStageCancelled).as("afterWindowWhileStageCancelled cancelled when outer is disposed").isTrue();
+		assertThat(beforeWindowWhileStageCancelled).as("beforeWindowWhileStageCancelled cancelled when outer is disposed").isTrue();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1452
+	@Test
+	public void windowWhileNotPropagatingCancelToSource_withConcat() {
+		// Similar to windowWhileNotPropagatingCancelToSource_disposeOuterFirst
+		final AtomicBoolean beforeWindowWhileStageCancelled = new AtomicBoolean();
+		final AtomicBoolean afterWindowWhileStageCancelled = new AtomicBoolean();
+
+		final Flux<String> sourceFlux = Flux.<String>create(fluxSink ->
+				fluxSink
+						.next("0")
+						.next("#"))
+				.doOnCancel(() -> beforeWindowWhileStageCancelled.set(true));
+
+		final Disposable disposable = sourceFlux
+				.windowWhile(s -> !"#".equals(s))
+				.doOnCancel(() -> afterWindowWhileStageCancelled.set(true))
+				.as(Flux::concat)
+				.subscribe();
+
+		disposable.dispose();
+
+		assertThat(afterWindowWhileStageCancelled).as("afterWindowWhileStageCancelled cancelled").isTrue();
+		assertThat(beforeWindowWhileStageCancelled).as("beforeWindowWhileStageCancelled cancelled").isTrue();
+	}
 
 	@Test
 	public void windowWhileNoEmptyWindows() {
