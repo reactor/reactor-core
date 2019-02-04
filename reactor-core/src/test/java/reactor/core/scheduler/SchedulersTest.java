@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -1227,10 +1228,12 @@ public class SchedulersTest {
 			latch.await();
 
 			disposable.dispose();
-			//avoid race of checking the status of futures vs cancelling said futures
-			Thread.sleep(10);
 
-			assertThat(executorService.isAllTasksCancelledOrDone()).isTrue();
+//			avoid race of checking the status of futures vs cancelling said futures
+			Awaitility.await().atMost(500, TimeUnit.MILLISECONDS)
+			          .pollDelay(10, TimeUnit.MILLISECONDS)
+			          .pollInterval(50, TimeUnit.MILLISECONDS)
+			          .until(executorService::isAllTasksCancelledOrDone);
 		}
 	}
 
