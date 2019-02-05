@@ -5505,6 +5505,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * for cases where a race between request and cancellation can lead the upstream to
 	 * producing a lot of extraneous data, and such a production is undesirable (e.g.
 	 * a source that would send the extraneous data over the network).
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/limitRequest.svg" alt="">
 	 *
 	 * @param requestCap the global backpressure limit to apply to the sum of downstream's requests
 	 *
