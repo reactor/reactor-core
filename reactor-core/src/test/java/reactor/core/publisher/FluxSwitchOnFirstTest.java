@@ -103,7 +103,6 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldNotSubscribeTwiceWhenCanceled() {
-        Schedulers.single().start();
         CountDownLatch latch = new CountDownLatch(1);
         StepVerifier.create(Flux.just(1L)
                                 .doOnComplete(() -> {
@@ -121,8 +120,8 @@ public class FluxSwitchOnFirstTest {
                                 .switchOnFirst((s, f) -> f)
                                 .doOnSubscribe(s ->
                                     Schedulers
-                                        .single()
-                                        .schedulePeriodically(s::cancel, 10, 0, TimeUnit.MILLISECONDS)
+                                            .single()
+                                            .schedule(s::cancel, 10, TimeUnit.MILLISECONDS)
                                 )
         )
                     .expectSubscription()
@@ -135,7 +134,6 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldNotSubscribeTwiceConditionalWhenCanceled() {
-        Schedulers.single().start();
         CountDownLatch latch = new CountDownLatch(1);
         StepVerifier.create(Flux.just(1L)
                                 .doOnComplete(() -> {
@@ -155,7 +153,7 @@ public class FluxSwitchOnFirstTest {
                                 .doOnSubscribe(s ->
                                     Schedulers
                                         .single()
-                                        .schedulePeriodically(s::cancel, 10, 0, TimeUnit.MILLISECONDS)
+                                        .schedule(s::cancel, 10, TimeUnit.MILLISECONDS)
                                 )
         )
                     .expectSubscription()
