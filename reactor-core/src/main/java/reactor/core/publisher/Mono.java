@@ -590,13 +590,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
 	 * same by comparing the items emitted by each Publisher pairwise.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
 	 *
-	 * @param source1
-	 *            the first Publisher to compare
-	 * @param source2
-	 *            the second Publisher to compare
-	 * @param <T>
-	 *            the type of items emitted by each Publisher
+	 * @param source1 the first Publisher to compare
+	 * @param source2 the second Publisher to compare
+	 * @param <T> the type of items emitted by each Publisher
 	 * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
 	 */
 	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2) {
@@ -607,15 +606,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
 	 * same by comparing the items emitted by each Publisher pairwise based on the results of a specified
 	 * equality function.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
 	 *
-	 * @param source1
-	 *            the first Publisher to compare
-	 * @param source2
-	 *            the second Publisher to compare
-	 * @param isEqual
-	 *            a function used to compare items emitted by each Publisher
-	 * @param <T>
-	 *            the type of items emitted by each Publisher
+	 * @param source1 the first Publisher to compare
+	 * @param source2 the second Publisher to compare
+	 * @param isEqual a function used to compare items emitted by each Publisher
+	 * @param <T> the type of items emitted by each Publisher
 	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
 	 *         are the same according to the specified function
 	 */
@@ -628,17 +625,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
 	 * same by comparing the items emitted by each Publisher pairwise based on the results of a specified
 	 * equality function.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
 	 *
-	 * @param source1
-	 *            the first Publisher to compare
-	 * @param source2
-	 *            the second Publisher to compare
-	 * @param isEqual
-	 *            a function used to compare items emitted by each Publisher
-	 * @param prefetch
-	 *            the number of items to prefetch from the first and second source Publisher
-	 * @param <T>
-	 *            the type of items emitted by each Publisher
+	 * @param source1 the first Publisher to compare
+	 * @param source2 the second Publisher to compare
+	 * @param isEqual a function used to compare items emitted by each Publisher
+	 * @param prefetch the number of items to prefetch from the first and second source Publisher
+	 * @param <T> the type of items emitted by each Publisher
 	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
 	 *         are the same according to the specified function
 	 */
