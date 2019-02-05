@@ -7557,6 +7557,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>Note that calling {@code sort} with long, non-terminating or infinite sources
 	 * might cause {@link OutOfMemoryError}. Use sequence splitting like {@link #window} to sort batches in that case.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sort.svg" alt="">
 	 *
 	 * @throws ClassCastException if any item emitted by the {@link Flux} does not implement
 	 * {@link Comparable} with respect to all other items emitted by the {@link Flux}
@@ -7573,6 +7575,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>Note that calling {@code sort} with long, non-terminating or infinite sources
 	 * might cause {@link OutOfMemoryError}
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sort.svg" alt="">
 	 *
 	 * @param sortFunction a function that compares two items emitted by this {@link Flux}
 	 * to indicate their sort order
