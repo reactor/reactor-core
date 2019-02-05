@@ -1988,6 +1988,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <strong>reverse order</strong>. If you want to assert the execution of the callback
 	 * please keep in mind that the Mono will complete before it is executed, so its
 	 * effect might not be visible immediately after eg. a {@link #block()}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doFinallyForMono.svg" alt="">
+	 *
 	 *
 	 * @param onFinally the callback to execute after a terminal signal (complete, error
 	 * or cancel)
