@@ -140,6 +140,14 @@ There is an additional `subscribe` method that is more generic and takes a full-
 `Subscriber` rather than composing one out of lambdas. In order to help you writing
 such a `Subscriber`, we provide an extendable class called `BaseSubscriber`.
 
+WARNING: Instances of `BaseSubscriber` (or subclasses of it) are **single-use**,
+meaning that a `BaseSubscriber` will cancel its subscription to the first `Publisher` if it
+is subscribed to a second `Publisher`.
+That is because using an instance twice would violate the Reactive Streams rule that a
+`Subscriber`'s `onNext` method must not be called in parallel.
+As a result, anonymous implementations are fine only if they're declared directly within
+the call to `Publisher#subscribe(Subscriber)`.
+
 Let's implement one of these, we'll call it a `SampleSubscriber`. The following
 example shows how it would be attached to a `Flux`:
 
