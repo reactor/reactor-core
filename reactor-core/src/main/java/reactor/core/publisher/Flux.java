@@ -5960,7 +5960,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * is also immediately invoked when there is an overflow.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/onBackpressureBuffer.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithDurationAndMaxSize.svg" alt="">
 	 *
 	 * @reactor.discard This operator discards its internal buffer of elements that overflow,
 	 * after having applied the {@code onBufferEviction} handler.
@@ -5986,7 +5986,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * is also immediately invoked when there is an overflow.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/onBackpressureBuffer.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithDurationAndMaxSize.svg" alt="">
 	 *
 	 * @reactor.discard This operator discards its internal buffer of elements that overflow,
 	 * after having applied the {@code onBufferEviction} handler.
