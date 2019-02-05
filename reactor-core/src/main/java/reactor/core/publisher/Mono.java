@@ -2090,6 +2090,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * that is passed to the side-effect callback. Note that this is an advanced operator,
 	 * typically used for monitoring of a Mono.
 	 * These {@link Signal} have a {@link Context} associated to them.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doOnEachForMono.svg" alt="">
 	 *
 	 * @param signalConsumer the mandatory callback to call on
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
