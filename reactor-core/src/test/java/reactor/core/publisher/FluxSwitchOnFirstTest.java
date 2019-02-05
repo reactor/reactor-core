@@ -141,7 +141,7 @@ public class FluxSwitchOnFirstTest {
                                         latch.await();
                                     }
                                     catch (InterruptedException e) {
-                                        e.printStackTrace();
+                                        throw new RuntimeException(e);
                                     }
                                 })
                                 .hide()
