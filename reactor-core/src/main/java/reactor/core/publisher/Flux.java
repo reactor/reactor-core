@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3100,11 +3100,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collect.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
-	 *
 	 * @param <E> the container type
 	 * @param containerSupplier the supplier of the container instance for each Subscriber
 	 * @param collector a consumer of both the container instance and the value being currently collected
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */

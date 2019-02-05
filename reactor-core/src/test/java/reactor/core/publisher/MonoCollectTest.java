@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,8 +160,9 @@ public class MonoCollectTest {
 				                               throw new IllegalStateException("boom");
 			                               }
 			                               return i;
-		                               }).<List<Integer>>collect(ArrayList::new,
-						List::add).doOnDiscard(List.class,
+		                               })
+										.<List<Integer>>collect(ArrayList::new, List::add)
+										.doOnDiscard(List.class,
 						l -> {
 							l.removeAll(list);
 							res.set(l.isEmpty());
