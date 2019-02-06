@@ -3100,12 +3100,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collect.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param <E> the container type
 	 * @param containerSupplier the supplier of the container instance for each Subscriber
 	 * @param collector a consumer of both the container instance and the value being currently collected
-	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
-	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */
@@ -3187,6 +3186,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyExtractor.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param <K> the type of the key extracted from each source element
 	 *
@@ -3207,6 +3208,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyAndValueExtractors.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3232,6 +3235,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyAndValueExtractors.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3263,6 +3268,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyExtractor.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 *
 	 * @param <K> the type of the key extracted from each source element
@@ -3282,6 +3289,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyAndValueExtractors.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3306,6 +3315,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyAndValueExtractors.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3340,6 +3351,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedList.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @return a {@link Mono} of a sorted {@link List} of all values from this {@link Flux}, in natural order
 	 */
 	public final Mono<List<T>> collectSortedList() {
@@ -3353,6 +3366,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedListWithComparator.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param comparator a {@link Comparator} to sort the items of this sequences
 	 *
