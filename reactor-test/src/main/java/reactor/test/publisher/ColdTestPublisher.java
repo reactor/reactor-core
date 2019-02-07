@@ -312,12 +312,12 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			}
 		}
 
-		public void hotNext(T value) {
+		void hotNext(T value) {
 			values.offer(value);
 			drain();
 		}
 
-		public void hotTermination() {
+		void hotTermination() {
 			drain();
 		}
 	}
