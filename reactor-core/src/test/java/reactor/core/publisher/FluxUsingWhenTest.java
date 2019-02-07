@@ -147,7 +147,7 @@ public class FluxUsingWhenTest {
 		AtomicBoolean commitDone = new AtomicBoolean();
 		AtomicBoolean rollbackDone = new AtomicBoolean();
 
-		TestPublisher<String> testPublisher = TestPublisher.createCold();
+		TestPublisher<String> testPublisher = TestPublisher.createColdNonCompliant();
 		testPublisher.next("Resource").error(new IllegalStateException("boom"));
 
 		Flux<String> test = Flux.usingWhen(testPublisher,
@@ -173,7 +173,7 @@ public class FluxUsingWhenTest {
 		AtomicBoolean commitDone = new AtomicBoolean();
 		AtomicBoolean rollbackDone = new AtomicBoolean();
 
-		TestPublisher<String> testPublisher = TestPublisher.createCold();
+		TestPublisher<String> testPublisher = TestPublisher.createColdNonCompliant();
 		testPublisher.emit("Resource", "boom");
 
 		Flux<String> test = Flux.usingWhen(testPublisher,

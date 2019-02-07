@@ -18,20 +18,26 @@ package reactor.test.publisher;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * A cold implementation of a {@link TestPublisher}.
@@ -44,9 +50,13 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	@SuppressWarnings("rawtypes")
 	private static final ColdTestPublisherSubscription[] EMPTY = new ColdTestPublisherSubscription[0];
 
-	final List<T> values;
+	final boolean            onBackpressureBuffer;
+	final boolean            nonCompliant;
+	final List<T>            values;
+
 	Throwable     error;
 
+	volatile boolean hasOverflown;
 	volatile boolean wasRequested;
 
 	@SuppressWarnings("unchecked")
@@ -60,8 +70,10 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	static final AtomicLongFieldUpdater<ColdTestPublisher> SUBSCRIBED_COUNT =
 			AtomicLongFieldUpdater.newUpdater(ColdTestPublisher.class, "subscribeCount");
 
-	ColdTestPublisher() {
+	ColdTestPublisher(boolean onBackpressureBuffer, boolean nonCompliant) {
 		this.values = Collections.synchronizedList(new ArrayList<>());
+		this.onBackpressureBuffer = onBackpressureBuffer;
+		this.nonCompliant = nonCompliant;
 	}
 
 	@Override
@@ -69,24 +81,15 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		Objects.requireNonNull(s, "s");
 
 		ColdTestPublisherSubscription<T> p = new ColdTestPublisherSubscription<>(s, this);
-		s.onSubscribe(p);
 
 		if (add(p)) {
 			if (p.cancelled) {
 				remove(p);
 			}
 			ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
-
-			for (T value : values) {
-				p.onNext(value);
-			}
-			if (error == Exceptions.TERMINATED) {
-				p.onComplete();
-			}
-			else if (error != null) {
-				p.onError(error);
-			}
+			s.onSubscribe(p);
 		} else {
+			s.onSubscribe(p);
 			Throwable e = error;
 			if (e != null) {
 				s.onError(e);
@@ -156,17 +159,20 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 		final Subscriber<? super T>                     actual;
 		final Fuseable.ConditionalSubscriber<? super T> actualConditional;
+		final Context                                   ctx;
 
 		final ColdTestPublisher<T> parent;
+		final Queue<T>             values;
 
 		volatile boolean cancelled;
 
 		volatile long requested;
-
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription>
-				REQUESTED =
+		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ColdTestPublisherSubscription.class, "requested");
+
+		volatile int                                                          wip;
+		static final AtomicIntegerFieldUpdater<ColdTestPublisherSubscription> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ColdTestPublisherSubscription.class, "wip");
 
 		@SuppressWarnings("unchecked")
 		ColdTestPublisherSubscription(Subscriber<? super T> actual, ColdTestPublisher<T> parent) {
@@ -177,54 +183,139 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			else {
 				this.actualConditional = null;
 			}
+			if (actual instanceof CoreSubscriber) {
+				this.ctx = ((CoreSubscriber) actual).currentContext();
+			}
+			else {
+				this.ctx = Context.empty();
+			}
 			this.parent = parent;
+			this.values = Queues.<T>unboundedMultiproducer().get();
+			this.values.addAll(parent.values);
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.addCap(REQUESTED, this, n);
 				parent.wasRequested = true;
+				Operators.addCap(REQUESTED, this, n);
+				drain();
 			}
+		}
+
+		void drain() {
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
+			}
+
+			boolean nonCompliant = parent.nonCompliant;
+			boolean bufferOnOverflow = parent.onBackpressureBuffer;
+			int missed = 1;
+
+			final Queue<T> q = values;
+			final Subscriber<? super T> a = actual;
+
+			for (; ; ) {
+
+				long r = requested;
+				long e = 0L;
+
+				while (r != e) {
+
+					T t = q.poll();
+					boolean empty = t == null;
+
+					if (checkTerminated(empty, a)) {
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					if(actualConditional != null) {
+						if (actualConditional.tryOnNext(t)) {
+							e++;
+						}
+					}
+					else {
+						a.onNext(t);
+						e++;
+					}
+
+					if (nonCompliant) {
+						if (r == e) {
+							parent.hasOverflown = true;
+						}
+						e = 0L;
+					}
+				}
+
+				if (r == e) {
+					boolean qEmpty = q.isEmpty();
+					if (!bufferOnOverflow && !nonCompliant && !qEmpty) {
+						parent.remove(this);
+						a.onError(new IllegalStateException("Can't deliver value due to lack of requests"));
+						return;
+					}
+					if (checkTerminated(qEmpty, a)) {
+						return;
+					}
+				}
+
+				if (e != 0 && r != Long.MAX_VALUE) {
+					REQUESTED.addAndGet(this, -e);
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed < 1) {
+					break;
+				}
+			}
+		}
+
+		boolean checkTerminated(boolean valueCacheEmpty, Subscriber<? super T> a) {
+			if (cancelled) {
+				Operators.onDiscardQueueWithClear(values, ctx, null);
+				return true;
+			}
+			if (valueCacheEmpty) {
+				Throwable e = parent.error;
+				if (e == Exceptions.TERMINATED) {
+					parent.remove(this);
+					a.onComplete();
+					return true;
+				}
+				else if (e != null) {
+					parent.remove(this);
+					Operators.onDiscardQueueWithClear(values, ctx, null);
+					a.onError(e);
+					return true;
+				}
+			}
+			return false;
 		}
 
 		@Override
 		public void cancel() {
 			if (!cancelled) {
 				ColdTestPublisher.CANCEL_COUNT.incrementAndGet(parent);
+				if (parent.nonCompliant) {
+					return;
+				}
 				cancelled = true;
+				Operators.onDiscardQueueWithClear(values, ctx, null);
 				parent.remove(this);
 			}
 		}
 
-		void onNext(T value) {
-			long r = requested;
-			if (r != 0L) {
-				boolean sent;
-				if(actualConditional != null){
-					sent = actualConditional.tryOnNext(value);
-				}
-				else {
-					sent = true;
-					actual.onNext(value);
-				}
-				if (sent && r != Long.MAX_VALUE) {
-					REQUESTED.decrementAndGet(this);
-				}
-				return;
-			}
-			parent.remove(this);
-			actual.onError(new IllegalStateException("Can't deliver value due to lack of requests"));
+		public void hotNext(T value) {
+			values.offer(value);
+			drain();
 		}
 
-		void onError(Throwable e) {
-			parent.remove(this);
-			actual.onError(e);
-		}
-
-		void onComplete() {
-			parent.remove(this);
-			actual.onComplete();
+		public void hotTermination() {
+			drain();
 		}
 	}
 
@@ -254,17 +345,25 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	@Override
+	public long requestedAmount() {
+		ColdTestPublisherSubscription<T>[] subs = subscribers;
+		return Stream.of(subs)
+		                        .mapToLong(s -> s.requested)
+		                        .min()
+		                        .orElse(0);
+	}
+
+	@Override
 	public Mono<T> mono() {
+		if (nonCompliant) {
+			return Mono.fromDirect(this);
+		}
 		return Mono.from(this);
 	}
 
 	@Override
 	public ColdTestPublisher<T> assertMinRequested(long n) {
-		ColdTestPublisherSubscription<T>[] subs = subscribers;
-		long minRequest = Stream.of(subs)
-		                        .mapToLong(s -> s.requested)
-		                        .min()
-		                        .orElse(0);
+		long minRequest = requestedAmount();
 		if (minRequest < n) {
 			throw new AssertionError("Expected minimum request of " + n + "; got " + minRequest);
 		}
@@ -325,13 +424,21 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public ColdTestPublisher<T> assertRequestOverflow() {
-		//the cold publisher cannot really overflow requests, as it immediately throws
-		throw new AssertionError("Expected some request overflow");
+		//the cold publisher can only overflow requests when next is invoked after subscription,
+		// and only if it was created with the onBackpressureBuffer parameter to false
+		if (!hasOverflown) {
+			throw new AssertionError("Expected some request overflow");
+		}
+		return this;
 	}
 
 	@Override
 	public ColdTestPublisher<T> assertNoRequestOverflow() {
-		//the cold publisher cannot really overflow requests, as it immediately throws
+		//the cold publisher can only overflow requests when next is invoked after subscription,
+		// and only if it was created with the onBackpressureBuffer parameter to false
+		if (hasOverflown) {
+			throw new AssertionError("Expected no request overflow");
+		}
 		return this;
 	}
 
@@ -341,7 +448,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 		values.add(t);
 		for (ColdTestPublisherSubscription<T> s : subscribers) {
-			s.onNext(t);
+			s.hotNext(t);
 		}
 
 		return this;
@@ -354,7 +461,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		error = t;
 		ColdTestPublisherSubscription<?>[] subs = subscribers;
 		for (ColdTestPublisherSubscription<?> s : subs) {
-			s.onError(t);
+			s.hotTermination();
 		}
 		return this;
 	}
@@ -364,7 +471,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		ColdTestPublisherSubscription<?>[] subs = subscribers;
 		error = Exceptions.TERMINATED;
 		for (ColdTestPublisherSubscription<?> s : subs) {
-			s.onComplete();
+			s.hotTermination();
 		}
 		return this;
 	}

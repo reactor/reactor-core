@@ -287,6 +287,15 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	@Override
+	public long requestedAmount() {
+		TestPublisherSubscription<T>[] subs = subscribers;
+		return Stream.of(subs)
+		             .mapToLong(s -> s.requested)
+		             .min()
+		             .orElse(0);
+	}
+
+	@Override
 	public Mono<T> mono() {
 		if (violations.isEmpty()) {
 			return Mono.from(this);
@@ -298,11 +307,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public DefaultTestPublisher<T> assertMinRequested(long n) {
-		TestPublisherSubscription<T>[] subs = subscribers;
-		long minRequest = Stream.of(subs)
-		                        .mapToLong(s -> s.requested)
-		                        .min()
-		                        .orElse(0);
+		long minRequest = requestedAmount();
 		if (minRequest < n) {
 			throw new AssertionError("Expected minimum request of " + n + "; got " + minRequest);
 		}

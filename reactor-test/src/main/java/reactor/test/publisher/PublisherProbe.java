@@ -172,6 +172,8 @@ public interface PublisherProbe<T> {
 		return new DefaultPublisherProbe<>(Mono.empty());
 	}
 
+	long requestedAmount();
+
 	final class DefaultPublisherProbe<T>
 			extends AtomicLongArray
 			implements PublisherProbe<T> {
@@ -193,7 +195,7 @@ public interface PublisherProbe<T> {
 			return Mono.from(delegate)
 			           .doOnSubscribe(sub -> incrementAndGet(SUBSCRIBED))
 			           .doOnCancel(() -> incrementAndGet(CANCELLED))
-			           .doOnRequest(l -> incrementAndGet(REQUESTED));
+			           .doOnRequest(l -> addAndGet(REQUESTED, l));
 		}
 
 		@Override
@@ -201,7 +203,7 @@ public interface PublisherProbe<T> {
 			return Flux.from(delegate)
 			           .doOnSubscribe(sub -> incrementAndGet(SUBSCRIBED))
 			           .doOnCancel(() -> incrementAndGet(CANCELLED))
-			           .doOnRequest(l -> incrementAndGet(REQUESTED));
+			           .doOnRequest(l -> addAndGet(REQUESTED, l));
 		}
 
 		@Override
@@ -222,6 +224,11 @@ public interface PublisherProbe<T> {
 		@Override
 		public boolean wasRequested() {
 			return get(REQUESTED) > 0;
+		}
+
+		@Override
+		public long requestedAmount() {
+			return get(REQUESTED);
 		}
 	}
 }

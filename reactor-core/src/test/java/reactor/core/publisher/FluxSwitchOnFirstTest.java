@@ -586,7 +586,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldErrorOnOverflowTest() {
-        TestPublisher<Long> publisher = TestPublisher.createCold();
+        TestPublisher<Long> publisher = TestPublisher.createColdNoOverflow();
 
         Flux<String> switchTransformed = publisher.flux()
                                                   .switchOnFirst((first, innerFlux) -> innerFlux.map(String::valueOf));

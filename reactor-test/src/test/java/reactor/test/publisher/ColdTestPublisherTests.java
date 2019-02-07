@@ -16,6 +16,7 @@
 
 package reactor.test.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
@@ -24,6 +25,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
+import reactor.test.publisher.TestPublisher.Violation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -97,18 +100,64 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
-	public void coldDisallowsOverflow() {
+	public void coldPreventsOverflow() {
 		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		StepVerifier.create(publisher, 1)
+		            .then(() -> publisher.next("foo"))
+		            .then(() -> publisher.emit("bar"))
+		            .expectNext("foo")
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(1)
+		            .expectNext("bar")
+		            .verifyComplete();
+
+		publisher.assertNoRequestOverflow();
+	}
+
+	@Test
+	public void coldNoOverflowDisallowsOverflow() {
+		TestPublisher<String> publisher = TestPublisher.createColdNoOverflow();
 
 		StepVerifier.create(publisher, 1)
 		            .then(() -> publisher.next("foo")).as("should pass")
 		            .then(() -> publisher.emit("bar")).as("should fail")
 		            .expectNext("foo")
 		            .expectErrorMatches(e -> e instanceof IllegalStateException &&
-		                "Can't deliver value due to lack of requests".equals(e.getMessage()))
+				            "Can't deliver value due to lack of requests".equals(e.getMessage()))
 		            .verify();
 
 		publisher.assertNoRequestOverflow();
+	}
+
+	@Test
+	public void coldNonCompliantCanOverflow() {
+		TestPublisher<String> publisher = TestPublisher.createColdNonCompliant();
+		publisher.emit("foo", "bar");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(publisher, 1)
+				                              .expectNext("foo")
+				                              .expectComplete() //n/a
+				                              .verify())
+				.withMessageContaining("expected production of at most 1;");
+
+		publisher.assertRequestOverflow();
+	}
+
+	@Test
+	public void coldNonCompliantJustCountsCancel() {
+		ColdTestPublisher<Integer> publisher = new ColdTestPublisher<>(false, true);
+		publisher.emit(1, 2, 3, 4, 5);
+
+		StepVerifier.create(publisher.flux().take(2))
+		            .expectNext(1, 2)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDropped(3, 4, 5); //these are received by the take and discarded
+
+		publisher.assertNoRequestOverflow();
+		publisher.assertCancelled(1);
 	}
 
 	@Test
@@ -291,6 +340,19 @@ public class ColdTestPublisherTests {
 		StepVerifier.create(publisher)
 	                .then(() -> publisher.next("foo", "bar").error(new IllegalArgumentException("boom")))
 	                .expectNextCount(2)
+	                .expectErrorMessage("boom")
+	                .verify();
+	}
+
+	@Test
+	public void testErrorSlowpath() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+		StepVerifier.create(publisher, 2)
+	                .then(() -> publisher.next("foo", "bar", "baz").error(new IllegalArgumentException("boom")))
+		            .expectNext("foo", "bar")
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(1)
+	                .expectNext("baz")
 	                .expectErrorMessage("boom")
 	                .verify();
 	}

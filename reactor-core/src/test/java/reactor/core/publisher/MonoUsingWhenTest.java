@@ -131,7 +131,7 @@ public class MonoUsingWhenTest {
 		AtomicBoolean commitDone = new AtomicBoolean();
 		AtomicBoolean rollbackDone = new AtomicBoolean();
 
-		TestPublisher<String> testPublisher = TestPublisher.createCold();
+		TestPublisher<String> testPublisher = TestPublisher.createColdNonCompliant();
 		testPublisher.next("Resource").error(new IllegalStateException("boom"));
 
 		Mono<String> test = Mono.usingWhen(testPublisher,
@@ -157,7 +157,7 @@ public class MonoUsingWhenTest {
 		AtomicBoolean commitDone = new AtomicBoolean();
 		AtomicBoolean rollbackDone = new AtomicBoolean();
 
-		TestPublisher<String> testPublisher = TestPublisher.createCold();
+		TestPublisher<String> testPublisher = TestPublisher.createColdNonCompliant();
 		testPublisher.emit("Resource", "boom");
 
 		Mono<String> test = Mono.usingWhen(testPublisher,
