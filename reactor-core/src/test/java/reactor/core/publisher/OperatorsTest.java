@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -78,6 +79,32 @@ public class OperatorsTest {
 				.isEqualTo(1L);
 
 		assertThat(Operators.addCap(TEST_REQUEST, this, 0))
+				.isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void addAndGetAtomicLongArray() {
+		final AtomicLongArray atomicLongArray = new AtomicLongArray(2);
+		atomicLongArray.set(0, 0L);
+		atomicLongArray.set(1, 0L);
+
+		RaceTestUtils.race(0L,
+				s -> Operators.addCap(atomicLongArray, 1, 1),
+				a -> a >= 100_000L,
+				(a, b) -> a.longValue() == b.longValue()
+		);
+
+		atomicLongArray.set(1, 0L);
+
+		assertThat(Operators.addCap(atomicLongArray, 1, -1_000_000L))
+				.isEqualTo(0);
+
+		atomicLongArray.set(1, 1L);
+
+		assertThat(Operators.addCap(atomicLongArray, 1, Long.MAX_VALUE))
+				.isEqualTo(1L);
+
+		assertThat(Operators.addCap(atomicLongArray, 1, 0))
 				.isEqualTo(Long.MAX_VALUE);
 	}
 

@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
@@ -92,6 +93,30 @@ public abstract class Operators {
 			}
 		}
 	}
+
+	/**
+	 * Concurrent addition bound to Long.MAX_VALUE in one slot of an {@link AtomicLongArray}.
+	 * Any concurrent write will "happen before" this operation.
+	 *
+	 * @param atomicArray the {@link AtomicLongArray} to update
+	 * @param position the slot in the {@link AtomicLongArray} to update
+	 * @param toAdd    delta to add
+	 * @return value before addition or Long.MAX_VALUE
+	 */
+	public static long addCap(AtomicLongArray atomicArray, int position, long toAdd) {
+		long r,u;
+		for(;;) {
+			r = atomicArray.get(position);
+			if (r == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			u = addCap(r, toAdd);
+			if (atomicArray.compareAndSet(position, r, u)) {
+				return r;
+			}
+		}
+	}
+
 	/**
 	 * Returns the subscription as QueueSubscription if possible or null.
 	 * @param <T> the value type of the QueueSubscription.
