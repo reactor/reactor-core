@@ -82,10 +82,31 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 		return new ColdTestPublisher<>(true, false);
 	}
 
+	/**
+	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
+	 * subscribers. It caches the {@link #next(Object)} events and replays them to
+	 * late subscribers upon subscription, provided they request enough. In the other
+	 * case, an {@link IllegalStateException} is thrown indicating overflow.
+	 *
+	 * @param <T> the type of the publisher
+	 * @return the new {@link TestPublisher}
+	 * @see #createCold()
+	 * @see #createColdNonCompliant()
+	 */
 	public static <T> TestPublisher<T> createColdNoOverflow() {
 		return new ColdTestPublisher<>(false, false);
 	}
 
+	/**
+	 * Create a cold {@link TestPublisher}, which can be subscribed to by multiple
+	 * subscribers. It misbehaves and ignores cancellation and backpressure, replaying
+	 * ALL the data to late subscribers upon subscription regardless of request.
+	 *
+	 * @param <T> the type of the publisher
+	 * @return the new {@link TestPublisher}
+	 * @see #createCold()
+	 * @see #createColdNoOverflow()
+	 */
 	public static <T> TestPublisher<T> createColdNonCompliant() {
 		return new ColdTestPublisher<>(false, true);
 	}
