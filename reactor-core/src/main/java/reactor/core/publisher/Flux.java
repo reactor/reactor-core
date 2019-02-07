@@ -7970,6 +7970,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * }
 	 * </pre></blockquote>
 	 * <p>
+	 * <img class="marble" src="doc-files/marbles/switchOnFirst.svg" alt="">
+	 * <p>
 	 * It is advised to return a {@link Publisher} derived from the original {@link Flux}
 	 * in all cases, as not doing so would keep the original {@link Publisher} open and
 	 * hanging with a single request and no cancellation. Suppressing early errors while
