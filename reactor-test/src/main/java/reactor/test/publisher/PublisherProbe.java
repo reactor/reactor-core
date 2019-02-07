@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Operators;
 import reactor.test.publisher.TestPublisher.Violation;
 
 /**
@@ -148,6 +149,15 @@ public interface PublisherProbe<T> {
 	boolean wasRequested();
 
 	/**
+	 * Returns the total requested amount (capped at Long.MAX_VALUE). Note this doesn't
+	 * necessarily makes much sense if multiple subscribers are subscribed to the probe
+	 * during its lifetime.
+	 *
+	 * @return the total requested amount, capped at Long.MAX_VALUE.
+	 */
+	long requestedTotal();
+
+	/**
 	 * Create a {@link PublisherProbe} out of a {@link Publisher}, ensuring that its
 	 * {@link #flux()} and {@link #mono()} versions will propagate signals from this
 	 * publisher while capturing subscription, cancellation and request events around it.
@@ -172,7 +182,6 @@ public interface PublisherProbe<T> {
 		return new DefaultPublisherProbe<>(Mono.empty());
 	}
 
-	long requestedAmount();
 
 	final class DefaultPublisherProbe<T>
 			extends AtomicLongArray
@@ -195,7 +204,7 @@ public interface PublisherProbe<T> {
 			return Mono.from(delegate)
 			           .doOnSubscribe(sub -> incrementAndGet(SUBSCRIBED))
 			           .doOnCancel(() -> incrementAndGet(CANCELLED))
-			           .doOnRequest(l -> addAndGet(REQUESTED, l));
+			           .doOnRequest(l -> Operators.addCap(this, REQUESTED, l));
 		}
 
 		@Override
@@ -203,7 +212,7 @@ public interface PublisherProbe<T> {
 			return Flux.from(delegate)
 			           .doOnSubscribe(sub -> incrementAndGet(SUBSCRIBED))
 			           .doOnCancel(() -> incrementAndGet(CANCELLED))
-			           .doOnRequest(l -> addAndGet(REQUESTED, l));
+			           .doOnRequest(l -> Operators.addCap(this, REQUESTED, l));
 		}
 
 		@Override
@@ -227,7 +236,7 @@ public interface PublisherProbe<T> {
 		}
 
 		@Override
-		public long requestedAmount() {
+		public long requestedTotal() {
 			return get(REQUESTED);
 		}
 	}

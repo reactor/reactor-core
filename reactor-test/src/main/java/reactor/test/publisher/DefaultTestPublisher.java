@@ -53,7 +53,10 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	Throwable error;
 
 	volatile boolean hasOverflown;
-	volatile boolean wasRequested;
+
+	volatile long requestedTotal;
+	static final AtomicLongFieldUpdater<DefaultTestPublisher> REQUESTED_TOTAL =
+			AtomicLongFieldUpdater.newUpdater(DefaultTestPublisher.class, "requestedTotal");
 
 	volatile long subscribeCount;
 	static final AtomicLongFieldUpdater<DefaultTestPublisher> SUBSCRIBED_COUNT =
@@ -200,8 +203,8 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
+				Operators.addCap(REQUESTED_TOTAL, parent, n);
 				Operators.addCap(REQUESTED, this, n);
-				parent.wasRequested = true;
 			}
 		}
 
@@ -283,16 +286,12 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public boolean wasRequested() {
-		return wasRequested;
+		return requestedTotal > 0;
 	}
 
 	@Override
-	public long requestedAmount() {
-		TestPublisherSubscription<T>[] subs = subscribers;
-		return Stream.of(subs)
-		             .mapToLong(s -> s.requested)
-		             .min()
-		             .orElse(0);
+	public long requestedTotal() {
+		return requestedTotal;
 	}
 
 	@Override
@@ -307,7 +306,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public DefaultTestPublisher<T> assertMinRequested(long n) {
-		long minRequest = requestedAmount();
+		TestPublisherSubscription<T>[] subs = subscribers;
+		long minRequest = Stream.of(subs)
+		                        .mapToLong(s -> s.requested)
+		                        .min()
+		                        .orElse(0);
 		if (minRequest < n) {
 			throw new AssertionError("Expected minimum request of " + n + "; got " + minRequest);
 		}

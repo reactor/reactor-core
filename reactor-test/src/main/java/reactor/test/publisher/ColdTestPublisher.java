@@ -57,10 +57,13 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	Throwable     error;
 
 	volatile boolean hasOverflown;
-	volatile boolean wasRequested;
 
 	@SuppressWarnings("unchecked")
 	volatile ColdTestPublisherSubscription<T>[] subscribers = EMPTY;
+
+	volatile long requestedTotal;
+	static final AtomicLongFieldUpdater<ColdTestPublisher> REQUESTED_TOTAL =
+			AtomicLongFieldUpdater.newUpdater(ColdTestPublisher.class, "requestedTotal");
 
 	volatile int cancelCount;
 	static final AtomicIntegerFieldUpdater<ColdTestPublisher> CANCEL_COUNT =
@@ -197,7 +200,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				parent.wasRequested = true;
+				Operators.addCap(REQUESTED_TOTAL, parent, n);
 				Operators.addCap(REQUESTED, this, n);
 				drain();
 			}
@@ -341,16 +344,12 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public boolean wasRequested() {
-		return wasRequested;
+		return requestedTotal > 0;
 	}
 
 	@Override
-	public long requestedAmount() {
-		ColdTestPublisherSubscription<T>[] subs = subscribers;
-		return Stream.of(subs)
-		                        .mapToLong(s -> s.requested)
-		                        .min()
-		                        .orElse(0);
+	public long requestedTotal() {
+		return requestedTotal;
 	}
 
 	@Override
@@ -363,7 +362,11 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public ColdTestPublisher<T> assertMinRequested(long n) {
-		long minRequest = requestedAmount();
+		ColdTestPublisherSubscription<T>[] subs = subscribers;
+		long minRequest = Stream.of(subs)
+		             .mapToLong(s -> s.requested)
+		             .min()
+		             .orElse(0);
 		if (minRequest < n) {
 			throw new AssertionError("Expected minimum request of " + n + "; got " + minRequest);
 		}
