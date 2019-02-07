@@ -161,7 +161,7 @@ public class SignalLoggerTests {
 			public void cancel() {}
 		};
 
-		assertThat(SignalLogger.subscriptionAsString(s), is("SignalLoggerTests$1"));
+		assertThat(SignalLogger.subscriptionAsString(s), is("SignalLoggerTests$2"));
 	}
 
 	@Test
