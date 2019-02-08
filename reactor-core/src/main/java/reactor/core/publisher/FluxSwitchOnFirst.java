@@ -294,7 +294,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             if (Operators.validate(n)) {
                 if (state == STATE_SUBSCRIBED_ONCE && STATE.compareAndSet(this, STATE_SUBSCRIBED_ONCE, STATE_REQUESTED_ONCE)) {
                     if (first != null) {
-                        drainRegular();
+                        drain();
                     }
 
                     if (n != Long.MAX_VALUE) {
@@ -312,10 +312,6 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         }
 
         void drain() {
-            drainRegular();
-        }
-
-        void drainRegular() {
             if (WIP.getAndIncrement(this) != 0) {
                 return;
             }
