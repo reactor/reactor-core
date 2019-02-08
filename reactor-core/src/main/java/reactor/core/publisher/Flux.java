@@ -7974,10 +7974,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * It is advised to return a {@link Publisher} derived from the original {@link Flux}
 	 * in all cases, as not doing so would keep the original {@link Publisher} open and
-	 * hanging with a single request and no cancellation. Suppressing early errors while
-	 * maintaining this link can be achieved with {@link #onErrorResume(Function)} and
-	 * {@link #empty()}.
-	 *
+	 * hanging with a single request by the terminal signal of the returned
+	 * {@link Publisher}. Note, in such case only the terminal signal of the returned
+	 * {@link Publisher} or general stream cancellation will cancel the original
+	 * {@link Flux}.
+	 * <p>
+	 * Note, returning {@link Publisher} derived from the different source than original
+	 * will suppress all upstream signal.
+	 * <p>
+	 * For example, the following stream will return 3, 4, 5 and complete successfully
+	 * ignoring all signals from the upstream:
+     * <blockquote><pre>
+	 * {@code
+	 *  StepVerifier.create(
+	 *                  Flux.just(1)
+	 *                      .concatWith(Flux.error(new RuntimeException())
+	 *                      .switchOnFirst((s, flux) -> {
+	 *                          Assert.assertEquals(s.getType(), SignalType.ON_NEXT);
+	 *                          return Flux.just(3, 4, 5);
+	 *                      })
+	 *              )
+	 *              .expectNext(3, 4, 5)
+	 *              .verifyComplete();
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param transformer A {@link BiFunction} executed once the first signal is
 	 * available and used to transform the source conditionally. The whole source (including
