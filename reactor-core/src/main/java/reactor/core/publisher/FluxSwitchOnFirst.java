@@ -95,7 +95,9 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         AbstractSwitchOnFirstInner(
                 CoreSubscriber<? super R> outer,
                 BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer) {
-            this.outer = outer;
+            this.outer = outer instanceof Fuseable.ConditionalSubscriber
+                ? new SwitchOnFirstConditionalInnerSubscriber<>(this, (Fuseable.ConditionalSubscriber<R>) outer)
+                : new SwitchOnFirstInnerSubscriber<>(this, outer);
             this.transformer = transformer;
         }
 
@@ -497,6 +499,109 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
                     return sent;
                 }
             }
+        }
+    }
+
+    static final class SwitchOnFirstInnerSubscriber<T> implements InnerConsumer<T> {
+
+        final AbstractSwitchOnFirstInner<?, T> parent;
+        final CoreSubscriber<? super T> inner;
+
+        SwitchOnFirstInnerSubscriber(
+                AbstractSwitchOnFirstInner<?, T> parent,
+                CoreSubscriber<? super T> inner) {
+            this.parent = parent;
+            this.inner = inner;
+        }
+
+        @Override
+        public Context currentContext() {
+            return inner.currentContext();
+        }
+
+        @Override
+        public void onSubscribe(Subscription s) {
+            inner.onSubscribe(s);
+        }
+
+        @Override
+        public void onNext(T t) {
+            inner.onNext(t);
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            parent.cancel();
+            inner.onError(throwable);
+        }
+
+        @Override
+        public void onComplete() {
+            parent.cancel();
+            inner.onComplete();
+        }
+
+        @Override
+        public Object scanUnsafe(Attr key) {
+            if (key == Attr.PARENT) return parent;
+            if (key == Attr.ACTUAL) return inner;
+
+            return null;
+        }
+    }
+
+    static final class SwitchOnFirstConditionalInnerSubscriber<T> implements InnerConsumer<T>,
+                                                                             Fuseable.ConditionalSubscriber<T> {
+
+        final AbstractSwitchOnFirstInner<?, ? super T>  parent;
+        final Fuseable.ConditionalSubscriber<? super T> inner;
+
+        SwitchOnFirstConditionalInnerSubscriber(
+            AbstractSwitchOnFirstInner<?, ? super T> parent,
+            Fuseable.ConditionalSubscriber<? super T> inner
+        ) {
+            this.parent = parent;
+            this.inner = inner;
+        }
+
+        @Override
+        public Context currentContext() {
+            return inner.currentContext();
+        }
+
+        @Override
+        public void onSubscribe(Subscription s) {
+            inner.onSubscribe(s);
+        }
+
+        @Override
+        public void onNext(T t) {
+            inner.onNext(t);
+        }
+
+        @Override
+        public boolean tryOnNext(T t) {
+            return inner.tryOnNext(t);
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            parent.cancel();
+            inner.onError(throwable);
+        }
+
+        @Override
+        public void onComplete() {
+            parent.cancel();
+            inner.onComplete();
+        }
+
+        @Override
+        public Object scanUnsafe(Attr key) {
+            if (key == Attr.PARENT) return parent;
+            if (key == Attr.ACTUAL) return inner;
+
+            return null;
         }
     }
 }
