@@ -964,7 +964,7 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void shouldReleaseUpstreamByItsCancellingOnCompleteInCaseUnrelatedPublisherReturned() {
+    public void shouldCancelSourceOnUnrelatedPublisherComplete() {
         EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
 
         testPublisher.onNext(1L);
@@ -977,7 +977,7 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void shouldReleaseUpstreamByItsCancellingOnErrorInCaseUnrelatedPublisherReturned() {
+    public void shouldCancelSourceOnUnrelatedPublisherError() {
         EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
 
         testPublisher.onNext(1L);
@@ -994,7 +994,7 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void shouldReleaseUpstreamByItsCancellingInCaseCancellation() {
+    public void shouldCancelSourceOnUnrelatedPublisherCancel() {
         EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
 
         testPublisher.onNext(1L);
@@ -1008,7 +1008,7 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void shouldReleaseUpstreamByItsCancellingOnCompleteInCaseUnrelatedPublisherReturnedConditional() {
+    public void shouldCancelSourceOnUnrelatedPublisherCompleteConditional() {
         EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
 
         testPublisher.onNext(1L);
@@ -1025,7 +1025,7 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void shouldReleaseUpstreamByItsCancellingOnErrorInCaseUnrelatedPublisherReturnedConditional() {
+    public void shouldCancelSourceOnUnrelatedPublisherErrorConditional() {
         EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
 
         testPublisher.onNext(1L);
@@ -1046,7 +1046,7 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void shouldReleaseUpstreamByItsCancellingInCaseCancellationConditional() {
+    public void shouldCancelSourceOnUnrelatedPublisherCancelConditional() {
         EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
 
         testPublisher.onNext(1L);
