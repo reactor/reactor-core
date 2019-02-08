@@ -7966,7 +7966,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *      }
 	 *      return flux; //either early complete or error, this forwards the termination in any case
 	 *      //`return flux.onErrorResume(t -> Mono.empty());` instead would suppress an early error
-	 *      //`return Flux.just(1,2,3);` instead would suppress an early error and return 1, 2, 3
+	 *      //`return Flux.just(1,2,3);` instead would suppress an early error and return 1, 2, 3.
+	 *      //It would also only cancel the original `flux` at the completion of `just`.
 	 *  })
 	 * }
 	 * </pre></blockquote>
