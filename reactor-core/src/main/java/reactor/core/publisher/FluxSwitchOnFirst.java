@@ -468,7 +468,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
                     if (cancelled) {
                         Operators.onDiscard(f, a.currentContext());
-                        return true;
+                        return false;
                     }
 
                     sent = a.tryOnNext(f);
@@ -476,7 +476,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
                 }
 
                 if (cancelled) {
-                    return sent;
+                    return false;
                 }
 
                 if (done) {
