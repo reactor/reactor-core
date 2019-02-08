@@ -527,13 +527,19 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
         @Override
         public void onError(Throwable throwable) {
-            parent.cancel();
+            if (!parent.done) {
+                parent.cancel();
+            }
+
             inner.onError(throwable);
         }
 
         @Override
         public void onComplete() {
-            parent.cancel();
+            if (!parent.done) {
+                parent.cancel();
+            }
+
             inner.onComplete();
         }
 
@@ -553,9 +559,8 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
         final Fuseable.ConditionalSubscriber<? super T> inner;
 
         SwitchOnFirstConditionalInnerSubscriber(
-            AbstractSwitchOnFirstInner<?, ? super T> parent,
-            Fuseable.ConditionalSubscriber<? super T> inner
-        ) {
+                AbstractSwitchOnFirstInner<?, ? super T> parent,
+                Fuseable.ConditionalSubscriber<? super T> inner) {
             this.parent = parent;
             this.inner = inner;
         }
@@ -582,13 +587,19 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
         @Override
         public void onError(Throwable throwable) {
-            parent.cancel();
+            if (!parent.done) {
+                parent.cancel();
+            }
+
             inner.onError(throwable);
         }
 
         @Override
         public void onComplete() {
-            parent.cancel();
+            if (!parent.done) {
+                parent.cancel();
+            }
+
             inner.onComplete();
         }
 
