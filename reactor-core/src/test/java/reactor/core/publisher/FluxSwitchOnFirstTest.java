@@ -31,6 +31,7 @@ import org.junit.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -960,6 +961,107 @@ public class FluxSwitchOnFirstTest {
                     })
                     .expectNext(6L, 9L)
                     .verifyComplete();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherComplete() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty()))
+                    .expectSubscription()
+                    .verifyComplete();
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherError() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
+                    .expectSubscription()
+                    .verifyErrorSatisfies(t ->
+                        Assertions.assertThat(t)
+                                  .hasMessage("test")
+                                  .isExactlyInstanceOf(RuntimeException.class)
+                    );
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherCancel() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
+                    .expectSubscription()
+                    .thenCancel()
+                    .verify();
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherCompleteConditional() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+                    .then(() ->
+                        Assertions.assertThat(testPublisher.subscribers[0])
+                                  .extracting(psi -> psi.actual)
+                                  .isInstanceOf(Fuseable.ConditionalSubscriber.class)
+                    )
+                    .verifyComplete();
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherErrorConditional() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+                    .then(() ->
+                            Assertions.assertThat(testPublisher.subscribers[0])
+                                      .extracting(psi -> psi.actual)
+                                      .isInstanceOf(Fuseable.ConditionalSubscriber.class)
+                    )
+                    .verifyErrorSatisfies(t ->
+                            Assertions.assertThat(t)
+                                      .hasMessage("test")
+                                      .isExactlyInstanceOf(RuntimeException.class)
+                    );
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherCancelConditional() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+                    .then(() ->
+                            Assertions.assertThat(testPublisher.subscribers[0])
+                                      .extracting(psi -> psi.actual)
+                                      .isInstanceOf(Fuseable.ConditionalSubscriber.class)
+                    )
+                    .thenAwait(Duration.ofMillis(50))
+                    .thenCancel()
+                    .verify();
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
     }
 
     private static final class NoOpsScheduler implements Scheduler {

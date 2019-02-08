@@ -7966,6 +7966,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *      }
 	 *      return flux; //either early complete or error, this forwards the termination in any case
 	 *      //`return flux.onErrorResume(t -> Mono.empty());` instead would suppress an early error
+	 *      //`return Flux.just(1,2,3);` instead would suppress an early error and return 1, 2, 3.
+	 *      //It would also only cancel the original `flux` at the completion of `just`.
 	 *  })
 	 * }
 	 * </pre></blockquote>
@@ -7974,10 +7976,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * It is advised to return a {@link Publisher} derived from the original {@link Flux}
 	 * in all cases, as not doing so would keep the original {@link Publisher} open and
-	 * hanging with a single request and no cancellation. Suppressing early errors while
-	 * maintaining this link can be achieved with {@link #onErrorResume(Function)} and
-	 * {@link #empty()}.
-	 *
+	 * hanging with a single request until the inner {@link Publisher} terminates or
+	 * the whole {@link Flux} is cancelled.
 	 *
 	 * @param transformer A {@link BiFunction} executed once the first signal is
 	 * available and used to transform the source conditionally. The whole source (including
