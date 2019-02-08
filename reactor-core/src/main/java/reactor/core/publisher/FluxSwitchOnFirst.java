@@ -311,6 +311,7 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
             }
         }
 
+        @Override
         void drain() {
             if (WIP.getAndIncrement(this) != 0) {
                 return;
