@@ -37,7 +37,7 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
-class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
+class MonoCacheTime<T> extends MonoOperator<T, T> implements Scheduler.ContextRunnable {
 
 	private static final Logger LOGGER = Loggers.getLogger(MonoCacheTime.class);
 
@@ -82,6 +82,11 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		@SuppressWarnings("unchecked")
 		Signal<T> emptyState = (Signal<T>) EMPTY;
 		this.state = emptyState;
+	}
+
+	@Override
+	public Context currentContext() {
+		return Context.empty();
 	}
 
 	public void run() {

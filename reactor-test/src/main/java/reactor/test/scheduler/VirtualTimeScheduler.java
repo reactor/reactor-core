@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -35,6 +36,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
@@ -409,6 +411,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable run, long delayTime, TimeUnit unit) {
 			if (shutdown) {
 				throw Exceptions.failWithRejected();
@@ -426,6 +429,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public Disposable schedulePeriodically(Runnable task,
 				long initialDelay,
 				long period,
@@ -525,7 +529,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 	}
 
-	static class PeriodicDirectTask implements Runnable, Disposable {
+	static class PeriodicDirectTask implements ContextRunnable, Disposable {
 
 		final Runnable run;
 
@@ -533,6 +537,11 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		PeriodicDirectTask(Runnable run) {
 			this.run = run;
+		}
+
+		@Override
+		public Context currentContext() {
+			return run instanceof ContextAware ? ((ContextAware) run).currentContext() : Context.empty();
 		}
 
 		@Override

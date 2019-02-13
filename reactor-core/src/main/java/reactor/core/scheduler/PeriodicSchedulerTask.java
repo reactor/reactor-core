@@ -16,15 +16,17 @@
 
 package reactor.core.scheduler;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-final class PeriodicSchedulerTask implements Runnable, Disposable, Callable<Void> {
+final class PeriodicSchedulerTask implements Scheduler.ContextRunnable, Disposable, Callable<Void> {
 
 	final Runnable task;
 
@@ -38,6 +40,11 @@ final class PeriodicSchedulerTask implements Runnable, Disposable, Callable<Void
 
 	PeriodicSchedulerTask(Runnable task) {
 		this.task = task;
+	}
+
+	@Override
+	public Context currentContext() {
+		return task instanceof ContextAware ? ((ContextAware) task).currentContext() : Context.empty();
 	}
 
 	@Override

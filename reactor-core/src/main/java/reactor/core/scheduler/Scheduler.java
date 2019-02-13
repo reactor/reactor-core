@@ -15,12 +15,12 @@
  */
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 
@@ -47,8 +47,45 @@ public interface Scheduler extends Disposable {
 	 *
 	 * @return the {@link Disposable} instance that let's one cancel this particular task.
 	 * If the {@link Scheduler} has been shut down, throw a {@link RejectedExecutionException}.
+	 * @deprecated use {@link #schedule(ContextRunnable)}  to preserve the context.
 	 */
+	@Deprecated
 	Disposable schedule(Runnable task);
+
+	/**
+	 * Schedules the non-delayed execution of the given task on this scheduler.
+	 *
+	 * <p>
+	 * This method is safe to be called from multiple threads but there are no
+	 * ordering guarantees between tasks.
+	 *
+	 * @param task the task to execute
+	 * @return the {@link Disposable} instance that let's one cancel this particular task.
+	 * If the {@link Scheduler} has been shut down, throw a {@link RejectedExecutionException}.
+	 */
+	@SuppressWarnings("deprecation")
+	default Disposable schedule(ContextRunnable task) {
+		return schedule((Runnable) task);
+	}
+
+	/**
+	 * Schedules the execution of the given task with the given delay amount.
+	 *
+	 * <p>
+	 * This method is safe to be called from multiple threads but there are no
+	 * ordering guarantees between tasks.
+	 *
+	 * @param task the task to schedule
+	 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
+	 * @param unit the unit of measure of the delay amount
+	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
+	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
+	 * @deprecated use {@link #schedule(ContextRunnable, long, TimeUnit)} to preserve the context.
+	 */
+	@Deprecated
+	default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+		throw Exceptions.failWithRejectedNotTimeCapable();
+	}
 
 	/**
 	 * Schedules the execution of the given task with the given delay amount.
@@ -63,7 +100,32 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
-	default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+	@SuppressWarnings("deprecation")
+	default Disposable schedule(ContextRunnable task, long delay, TimeUnit unit) {
+		return schedule((Runnable) task, delay, unit);
+	}
+
+	/**
+	 * Schedules a periodic execution of the given task with the given initial delay and period.
+	 *
+	 * <p>
+	 * This method is safe to be called from multiple threads but there are no
+	 * ordering guarantees between tasks.
+	 *
+	 * <p>
+	 * The periodic execution is at a fixed rate, that is, the first execution will be after the initial
+	 * delay, the second after initialDelay + period, the third after initialDelay + 2 * period, and so on.
+	 *
+	 * @param task the task to schedule
+	 * @param initialDelay the initial delay amount, non-positive values indicate non-delayed scheduling
+	 * @param period the period at which the task should be re-executed
+	 * @param unit the unit of measure of the delay amount
+	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
+	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
+	 * @deprecated use {@link #schedulePeriodically(ContextRunnable, long, long, TimeUnit)} to preserve the context.
+	 */
+	@Deprecated
+	default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 		throw Exceptions.failWithRejectedNotTimeCapable();
 	}
 
@@ -85,8 +147,9 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
-	default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		throw Exceptions.failWithRejectedNotTimeCapable();
+	@SuppressWarnings("deprecation")
+	default Disposable schedulePeriodically(ContextRunnable task, long initialDelay, long period, TimeUnit unit) {
+		return schedulePeriodically((Runnable) task, initialDelay, period, unit);
 	}
 
 	/**
@@ -138,6 +201,15 @@ public interface Scheduler extends Disposable {
 	}
 
 	/**
+	 * A {@link ContextAware} {@link Runnable} to preserve the current context.
+	 *
+	 * @author Sergei Egorov
+	 */
+	interface ContextRunnable extends Runnable, ContextAware {
+
+	}
+
+	/**
 	 * A worker representing an asynchronous boundary that executes tasks.
 	 *
 	 * @author Stephane Maldini
@@ -150,8 +222,42 @@ public interface Scheduler extends Disposable {
 		 * @param task the task to schedule
 		 * @return the {@link Disposable} instance that let's one cancel this particular task.
 		 * If the Scheduler has been shut down, a {@link RejectedExecutionException} is thrown.
+		 * @deprecated use {@link #schedule(ContextRunnable)} to preserve the context.
 		 */
+		@Deprecated
 		Disposable schedule(Runnable task);
+
+		/**
+		 * Schedules the task for immediate execution on this worker.
+		 * @param task the task to schedule
+		 * @return the {@link Disposable} instance that let's one cancel this particular task.
+		 * If the Scheduler has been shut down, a {@link RejectedExecutionException} is thrown.
+		 */
+		@SuppressWarnings("deprecation")
+		default Disposable schedule(ContextRunnable task) {
+			return schedule((Runnable) task);
+		}
+
+		/**
+		 * Schedules the execution of the given task with the given delay amount.
+		 *
+		 * <p>
+		 * This method is safe to be called from multiple threads and tasks are executed in
+		 * some total order. Two tasks scheduled at a same time with the same delay will be
+		 * ordered in FIFO order if the schedule() was called from the same thread or
+		 * in arbitrary order if the schedule() was called from different threads.
+		 *
+		 * @param task the task to schedule
+		 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
+		 * @param unit the unit of measure of the delay amount
+		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
+		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling with delay.
+		 * @deprecated use {@link #schedule(ContextRunnable, long, TimeUnit)} to preserve the context.
+		 */
+		@Deprecated
+		default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+			throw Exceptions.failWithRejectedNotTimeCapable();
+		}
 
 		/**
 		 * Schedules the execution of the given task with the given delay amount.
@@ -168,7 +274,31 @@ public interface Scheduler extends Disposable {
 		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling with delay.
 		 */
-		default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+		@SuppressWarnings("deprecation")
+		default Disposable schedule(ContextRunnable task, long delay, TimeUnit unit) {
+			return schedule((Runnable) task, delay, unit);
+		}
+
+		/**
+		 * Schedules a periodic execution of the given task with the given initial delay and period.
+		 *
+		 * <p>
+		 * This method is safe to be called from multiple threads.
+		 *
+		 * <p>
+		 * The periodic execution is at a fixed rate, that is, the first execution will be after the initial
+		 * delay, the second after initialDelay + period, the third after initialDelay + 2 * period, and so on.
+		 *
+		 * @param task the task to schedule
+		 * @param initialDelay the initial delay amount, non-positive values indicate non-delayed scheduling
+		 * @param period the period at which the task should be re-executed
+		 * @param unit the unit of measure of the delay amount
+		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
+		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling periodically.
+		 * @deprecated use {@link #schedulePeriodically(ContextRunnable, long, long, TimeUnit)} to preserve the context.
+		 */
+		@Deprecated
+		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 
@@ -189,8 +319,9 @@ public interface Scheduler extends Disposable {
 		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling periodically.
 		 */
-		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-			throw Exceptions.failWithRejectedNotTimeCapable();
+		@SuppressWarnings("deprecation")
+		default Disposable schedulePeriodically(ContextRunnable task, long initialDelay, long period, TimeUnit unit) {
+			return schedulePeriodically((Runnable) task, initialDelay, period, unit);
 		}
 
 	}

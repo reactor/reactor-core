@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
@@ -122,19 +123,27 @@ public class RaceTestUtils {
 
 		final Throwable[] errors = { null, null };
 
-		s.schedule(() -> {
-			if (count.decrementAndGet() != 0) {
-				while (count.get() != 0) { }
+		s.schedule(new Scheduler.ContextRunnable() {
+			@Override
+			public void run() {
+				if (count.decrementAndGet() != 0) {
+					while (count.get() != 0) { }
+				}
+
+				try {
+					try {
+						r1.run();
+					} catch (Throwable ex) {
+						errors[0] = ex;
+					}
+				} finally {
+					cdl.countDown();
+				}
 			}
 
-			try {
-				try {
-					r1.run();
-				} catch (Throwable ex) {
-					errors[0] = ex;
-				}
-			} finally {
-				cdl.countDown();
+			@Override
+			public Context currentContext() {
+				return Context.empty();
 			}
 		});
 

@@ -53,7 +53,7 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 	}
 
 	static final class PublishOnSubscriber<T>
-			implements InnerOperator<T, T>, Runnable {
+			implements InnerOperator<T, T>, Scheduler.ContextRunnable {
 
 		final CoreSubscriber<? super T> actual;
 

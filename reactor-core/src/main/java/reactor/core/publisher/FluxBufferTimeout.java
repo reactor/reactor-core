@@ -30,6 +30,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.ContextRunnable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -89,10 +90,10 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		final static int TERMINATED_WITH_ERROR   = 2;
 		final static int TERMINATED_WITH_CANCEL  = 3;
 
-		final int                        batchSize;
-		final long                       timespan;
-		final Scheduler.Worker           timer;
-		final Runnable                   flushTask;
+		final int              batchSize;
+		final long             timespan;
+		final Scheduler.Worker timer;
+		final ContextRunnable  flushTask;
 
 		protected Subscription subscription;
 
@@ -130,19 +131,27 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 			this.ctx = actual.currentContext();
 			this.timespan = timespan;
 			this.timer = timer;
-			this.flushTask = () -> {
-				if (terminated == NOT_TERMINATED) {
-					int index;
-					for(;;){
-						index = this.index;
-						if(index == 0){
-							return;
+			this.flushTask = new ContextRunnable() {
+				@Override
+				public void run() {
+					if (terminated == NOT_TERMINATED) {
+						int index;
+						for(;;){
+							index = BufferTimeoutSubscriber.this.index;
+							if(index == 0){
+								return;
+							}
+							if(INDEX.compareAndSet(BufferTimeoutSubscriber.this, index, 0)){
+								break;
+							}
 						}
-						if(INDEX.compareAndSet(this, index, 0)){
-							break;
-						}
+						flushCallback(null);
 					}
-					flushCallback(null);
+				}
+
+				@Override
+				public Context currentContext() {
+					return ctx;
 				}
 			};
 

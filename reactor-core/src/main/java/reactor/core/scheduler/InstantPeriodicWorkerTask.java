@@ -22,13 +22,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A runnable task for {@link Scheduler} Workers that can run periodically
  **/
-final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
+final class InstantPeriodicWorkerTask implements Disposable, Callable<Void>, ContextAware {
 
 	final Runnable task;
 
@@ -61,6 +63,11 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 		this.task = task;
 		this.executor = executor;
 		PARENT.lazySet(this, parent);
+	}
+
+	@Override
+	public Context currentContext() {
+		return task instanceof ContextAware ? ((ContextAware) task).currentContext() : Context.empty();
 	}
 
 	@Override

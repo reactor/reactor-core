@@ -24,8 +24,10 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.ContextRunnable;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Subscribes to the upstream Mono on the specified Scheduler and makes sure
@@ -70,7 +72,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 	}
 
 	static final class SubscribeOnSubscriber<T>
-			implements InnerOperator<T, T>, Runnable {
+			implements InnerOperator<T, T>, ContextRunnable {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -187,7 +189,17 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 			}
 			else {
 				try {
-					worker.schedule(() -> s.request(n));
+					worker.schedule(new ContextRunnable() {
+						@Override
+						public void run() {
+							s.request(n);
+						}
+
+						@Override
+						public Context currentContext() {
+							return actual.currentContext();
+						}
+					});
 
 				}
 				catch (RejectedExecutionException ree) {

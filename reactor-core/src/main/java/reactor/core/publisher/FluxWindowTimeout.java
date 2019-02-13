@@ -33,6 +33,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * @author David Karnok
@@ -414,7 +415,7 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 			return WIP.getAndIncrement(this) == 0;
 		}
 
-		static final class ConsumerIndexHolder implements Runnable {
+		static final class ConsumerIndexHolder implements Scheduler.ContextRunnable {
 
 			final long                       index;
 			final WindowTimeoutSubscriber<?> parent;
@@ -422,6 +423,11 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 			ConsumerIndexHolder(long index, WindowTimeoutSubscriber<?> parent) {
 				this.index = index;
 				this.parent = parent;
+			}
+
+			@Override
+			public Context currentContext() {
+				return parent.currentContext();
 			}
 
 			@Override

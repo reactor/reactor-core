@@ -28,6 +28,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.
@@ -71,7 +72,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 	}
 
 	static final class CallableSubscribeOnSubscription<T>
-			implements QueueSubscription<T>, InnerProducer<T>, Runnable {
+			implements QueueSubscription<T>, InnerProducer<T>, Scheduler.ContextRunnable {
 
 		final CoreSubscriber<? super T> actual;
 
@@ -80,6 +81,12 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 		final Scheduler scheduler;
 
 		volatile int state;
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<CallableSubscribeOnSubscription> STATE =
 				AtomicIntegerFieldUpdater.newUpdater(CallableSubscribeOnSubscription.class,
@@ -270,7 +277,17 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable, Scan
 					if (s == NO_REQUEST_HAS_VALUE) {
 						if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
 							try {
-								Disposable f = scheduler.schedule(this::emitValue);
+								Disposable f = scheduler.schedule(new Scheduler.ContextRunnable() {
+									@Override
+									public void run() {
+										CallableSubscribeOnSubscription.this.emitValue();
+									}
+
+									@Override
+									public Context currentContext() {
+										return actual.currentContext();
+									}
+								});
 								setRequestFuture(f);
 							}
 							catch (RejectedExecutionException ree) {

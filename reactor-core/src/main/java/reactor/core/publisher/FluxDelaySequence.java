@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
 
 /**
  * @author Simon Baslé
@@ -106,7 +107,17 @@ final class FluxDelaySequence<T> extends FluxOperator<T, T> {
 			//we can also delay onError/onComplete when an onNext
 			//is "in flight"
 			DELAYED.incrementAndGet(this);
-			w.schedule(() -> delayedNext(t), delay, timeUnit);
+			w.schedule(new Scheduler.ContextRunnable() {
+				@Override
+				public void run() {
+					delayedNext(t);
+				}
+
+				@Override
+				public Context currentContext() {
+					return DelaySubscriber.this.currentContext();
+				}
+			}, delay, timeUnit);
 		}
 
 		private void delayedNext(T t) {
@@ -169,11 +180,16 @@ final class FluxDelaySequence<T> extends FluxOperator<T, T> {
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
-		final class OnError implements Runnable {
+		final class OnError implements Scheduler.ContextRunnable {
 			private final Throwable t;
 
 			OnError(Throwable t) {
 				this.t = t;
+			}
+
+			@Override
+			public Context currentContext() {
+				return actual.currentContext();
 			}
 
 			@Override
@@ -186,7 +202,13 @@ final class FluxDelaySequence<T> extends FluxOperator<T, T> {
 			}
 		}
 
-		final class OnComplete implements Runnable {
+		final class OnComplete implements Scheduler.ContextRunnable {
+
+			@Override
+			public Context currentContext() {
+				return actual.currentContext();
+			}
+
 			@Override
 			public void run() {
 				try {

@@ -16,8 +16,10 @@
 
 package reactor.core.scheduler;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -27,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 /**
  * A runnable task for {@link Scheduler} Workers that can run periodically
  **/
-final class PeriodicWorkerTask implements Runnable, Disposable, Callable<Void> {
+final class PeriodicWorkerTask implements Scheduler.ContextRunnable, Disposable, Callable<Void> {
 
 	final Runnable task;
 
@@ -48,6 +50,11 @@ final class PeriodicWorkerTask implements Runnable, Disposable, Callable<Void> {
 	PeriodicWorkerTask(Runnable task, Composite parent) {
 		this.task = task;
 		PARENT.lazySet(this, parent);
+	}
+
+	@Override
+	public Context currentContext() {
+		return task instanceof ContextAware ? ((ContextAware) task).currentContext() : Context.empty();
 	}
 
 	@Override
