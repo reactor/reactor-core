@@ -33,13 +33,10 @@ import reactor.util.context.Context;
  *
  * @since 3.1.0
  */
-public interface CoreSubscriber<T> extends Subscriber<T> {
+public interface CoreSubscriber<T> extends Subscriber<T>, ContextAware {
 
 	/**
-	 * Request a {@link Context} from dependent components which can include downstream
-	 * operators during subscribing or a terminal {@link org.reactivestreams.Subscriber}.
-	 *
-	 * @return a resolved context or {@link Context#empty()}
+	 * {@inheritDoc}
 	 */
 	default Context currentContext(){
 		return Context.empty();

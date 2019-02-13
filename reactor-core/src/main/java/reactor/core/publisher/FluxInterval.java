@@ -27,6 +27,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
@@ -83,13 +84,19 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 		return null;
 	}
 
-	static final class IntervalRunnable implements Runnable, Subscription,
+	static final class IntervalRunnable implements Scheduler.ContextRunnable, Subscription,
 	                                               InnerProducer<Long> {
 		final CoreSubscriber<? super Long> actual;
 
 		final Worker worker;
 
 		volatile long requested;
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
+		}
+
 		static final AtomicLongFieldUpdater<IntervalRunnable> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(IntervalRunnable.class, "requested");
 

@@ -30,10 +30,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import reactor.core.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Dynamically creates ScheduledExecutorService-based Workers and caches the thread pools, reusing
@@ -152,6 +154,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public Disposable schedule(Runnable task) {
 		CachedService cached = pick();
 
@@ -162,6 +165,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		CachedService cached = pick();
 
@@ -172,6 +176,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 		CachedService cached = pick();
 
@@ -275,7 +280,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		}
 	}
 
-	static final class DirectScheduleTask implements Runnable {
+	static final class DirectScheduleTask implements ContextRunnable {
 
 		final Runnable      delegate;
 		final CachedService cached;
@@ -283,6 +288,11 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		DirectScheduleTask(Runnable delegate, CachedService cached) {
 			this.delegate = delegate;
 			this.cached = cached;
+		}
+
+		@Override
+		public Context currentContext() {
+			return delegate instanceof ContextAware ? ((ContextAware) delegate).currentContext() : Context.empty();
 		}
 
 		@Override
@@ -322,6 +332,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable task) {
 			return Schedulers.workerSchedule(cached.exec,
 					tasks,
@@ -331,11 +342,13 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			return Schedulers.workerSchedule(cached.exec, tasks, task, delay, unit);
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public Disposable schedulePeriodically(Runnable task,
 				long initialDelay,
 				long period,
