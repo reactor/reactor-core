@@ -24,8 +24,10 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
 public class MonoCollectListTest {
 
@@ -104,6 +106,36 @@ public class MonoCollectListTest {
 		                        .hide()
 		                        .collectList())
 		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1523
+	@Test
+	public void protocolErrorsOnNext() {
+		TestPublisher<String> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
+
+		StepVerifier.create(testPublisher.flux().collectList())
+		            .expectSubscription()
+		            .then(() -> testPublisher.emit("foo"))
+		            .then(() -> testPublisher.next("bar"))
+		            .assertNext(l -> assertThat(l).containsExactly("foo"))
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDropped("bar");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1523
+	@Test
+	public void protocolErrorsOnError() {
+		TestPublisher<String> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
+
+		StepVerifier.create(testPublisher.flux().collectList())
+		            .expectSubscription()
+		            .then(() -> testPublisher.emit("foo"))
+		            .then(() -> testPublisher.error(new IllegalStateException("boom")))
+		            .assertNext(l -> assertThat(l).containsExactly("foo"))
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDroppedErrorOfType(IllegalStateException.class);
 	}
 
 	@Test
