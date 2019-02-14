@@ -41,7 +41,6 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
 
 import static reactor.core.Exceptions.unwrap;
 
@@ -759,7 +758,6 @@ public abstract class Schedulers {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable task) {
 			return cached.schedule(task);
 		}
@@ -770,7 +768,6 @@ public abstract class Schedulers {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			return cached.schedule(task, delay, unit);
 		}
@@ -781,7 +778,6 @@ public abstract class Schedulers {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public Disposable schedulePeriodically(Runnable task,
 				long initialDelay,
 				long period,

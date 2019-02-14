@@ -43,7 +43,6 @@ final class ImmediateScheduler implements Scheduler, Scannable {
     static final Disposable FINISHED = Disposables.disposed();
     
     @Override
-    @SuppressWarnings("deprecation")
     public Disposable schedule(Runnable task) {
         task.run();
         return FINISHED;
@@ -73,7 +72,6 @@ final class ImmediateScheduler implements Scheduler, Scannable {
         volatile boolean shutdown;
 
         @Override
-        @SuppressWarnings("deprecation")
         public Disposable schedule(Runnable task) {
             if (shutdown) {
                 throw Exceptions.failWithRejected();

@@ -56,19 +56,16 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedule(Runnable task) {
 		return Schedulers.directSchedule(executor, task, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		return Schedulers.directSchedule(executor, task, delay, unit);
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedulePeriodically(Runnable task,
 			long initialDelay,
 			long period,

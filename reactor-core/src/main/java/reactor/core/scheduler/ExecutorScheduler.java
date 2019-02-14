@@ -52,7 +52,6 @@ final class ExecutorScheduler implements Scheduler, Scannable {
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedule(Runnable task) {
 		if(terminated){
 			throw Exceptions.failWithRejected();
@@ -231,7 +230,6 @@ final class ExecutorScheduler implements Scheduler, Scannable {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable task) {
 			Objects.requireNonNull(task, "task");
 
@@ -305,7 +303,6 @@ final class ExecutorScheduler implements Scheduler, Scannable {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable task) {
 			Objects.requireNonNull(task, "task");
 			if (terminated) {
