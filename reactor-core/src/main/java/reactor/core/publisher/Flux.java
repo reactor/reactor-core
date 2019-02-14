@@ -100,7 +100,7 @@ import reactor.util.function.Tuples;
  * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
  * provided {@link Subscriber} may
  * be passed to this "subscribe" extension but will loose the available
- * per-subscribe @link Hooks#onSubscribe}.
+ * per-subscribe {@link Hooks#onLastOperator}.
  *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
  *
