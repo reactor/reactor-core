@@ -1497,7 +1497,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Nullable
 	public T block() {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.doSubscribe(this, subscriber);
 		return subscriber.blockingGet();
 	}
 
@@ -1521,7 +1521,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Nullable
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.doSubscribe(this, subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -1542,7 +1542,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public Optional<T> blockOptional() {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.doSubscribe(this, subscriber);
 		return subscriber.blockingGet();
 	}
 
@@ -1567,7 +1567,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public Optional<T> blockOptional(Duration timeout) {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.doSubscribe(this, subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -3693,7 +3693,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(actual));
+		Operators.doSubscribe(this, actual);
 	}
 
 	/**
@@ -4300,7 +4300,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param source the source to apply assembly hooks onto
 	 *
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
-	 * @deprecated use {@link Hooks#onLastOperator(CorePublisher)}
+	 * @deprecated use {@link Operators#doSubscribe(CorePublisher, Subscriber)}
 	 */
 	@SuppressWarnings("unchecked")
 	@Deprecated

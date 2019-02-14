@@ -100,7 +100,7 @@ import reactor.util.function.Tuples;
  * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
  * provided {@link Subscriber} may
  * be passed to this "subscribe" extension but will loose the available
- * per-subscribe @link Hooks#onLastOperator}.
+ * per-subscribe @link Hooks#onSubscribe}.
  *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
  *
@@ -2341,7 +2341,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockFirst() {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.doSubscribe(this, subscriber);
 		return subscriber.blockingGet();
 	}
 
@@ -2364,7 +2364,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.doSubscribe(this, subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -2386,7 +2386,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockLast() {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.doSubscribe(this, subscriber);
 		return subscriber.blockingGet();
 	}
 
@@ -2410,7 +2410,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.doSubscribe(this, subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -7740,8 +7740,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> actual) {
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(actual));
+		Operators.doSubscribe(this, actual);
 	}
 
 	/**
@@ -9148,7 +9149,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param source the source to apply assembly hooks onto
 	 *
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
-	 * @deprecated use {@link Hooks#onLastOperator(CorePublisher)}
+	 * @deprecated use {@link Operators#doSubscribe(CorePublisher, Subscriber)}
 	 */
 	@SuppressWarnings("unchecked")
 	@Deprecated

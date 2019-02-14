@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -763,6 +764,26 @@ public abstract class Operators {
 		else {
 			Throwable t = onOperatorError(null, error, value, context);
 			return Exceptions.propagate(t);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> void doSubscribe(CorePublisher<T> source, Subscriber<? super T> subscriber) {
+		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
+		final Publisher<T> publisher;
+		if (hook == null) {
+			publisher = source;
+		}
+		else {
+			publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
+		}
+
+		CoreSubscriber<? super T> coreSubscriber = toCoreSubscriber(subscriber);
+		if (publisher instanceof CorePublisher) {
+			((CorePublisher<T>) publisher).subscribe(coreSubscriber);
+		}
+		else {
+			publisher.subscribe(coreSubscriber);
 		}
 	}
 

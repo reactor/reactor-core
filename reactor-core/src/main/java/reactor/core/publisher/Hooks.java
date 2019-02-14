@@ -27,9 +27,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.core.CorePublisher;
-import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.Logger;
@@ -465,35 +462,6 @@ public abstract class Hooks {
 		log.debug("Reset to factory defaults : onNextError");
 		synchronized (log) {
 			onNextErrorHook = null;
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	static <T> CorePublisher<T> onLastOperator(CorePublisher<T> source) {
-		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
-		final Publisher<T> publisher;
-		if (hook == null) {
-			publisher = source;
-		}
-		else {
-			publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
-		}
-
-		if (publisher instanceof CorePublisher) {
-			return (CorePublisher<T>) publisher;
-		}
-		else {
-			return new CorePublisher<T>() {
-				@Override
-				public void subscribe(CoreSubscriber<? super T> subscriber) {
-					publisher.subscribe(subscriber);
-				}
-
-				@Override
-				public void subscribe(Subscriber<? super T> s) {
-					publisher.subscribe(s);
-				}
-			};
 		}
 	}
 
