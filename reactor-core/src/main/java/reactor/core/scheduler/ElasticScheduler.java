@@ -154,7 +154,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedule(Runnable task) {
 		CachedService cached = pick();
 
@@ -165,7 +164,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		CachedService cached = pick();
 
@@ -176,7 +174,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 		CachedService cached = pick();
 
@@ -332,7 +329,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable task) {
 			return Schedulers.workerSchedule(cached.exec,
 					tasks,
@@ -342,13 +338,11 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			return Schedulers.workerSchedule(cached.exec, tasks, task, delay, unit);
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public Disposable schedulePeriodically(Runnable task,
 				long initialDelay,
 				long period,

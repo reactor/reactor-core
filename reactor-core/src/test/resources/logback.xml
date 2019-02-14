@@ -33,6 +33,7 @@
     <logger name="logError.default" level="trace"/>
     <logger name="logError.fine" level="trace"/>
     <logger name="logError.finest" level="trace"/>
+    <logger name="com.tngtech.archunit.core.importer.JavaClassProcessor" level="warn"/>
 
     <root level="info">
         <appender-ref ref="stdout"/>
