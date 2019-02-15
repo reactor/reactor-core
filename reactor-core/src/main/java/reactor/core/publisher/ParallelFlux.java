@@ -1041,7 +1041,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 
 		@SuppressWarnings("unchecked")
 		MultiSubscriber<T> multiSubscriber = new MultiSubscriber<>((CoreSubscriber<T>[]) subscribers);
-		Operators.doSubscribe(this, multiSubscriber);
+		Operators.onLastAssembly(this).subscribe(multiSubscriber);
 		return Disposables.composite(subscribers);
 	}
 
@@ -1057,7 +1057,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 		FluxHide.SuppressFuseableSubscriber<T> subscriber =
 				new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s));
 
-		Operators.doSubscribe(sequential(), subscriber);
+		Operators.onLastAssembly(sequential()).subscribe(Operators.toCoreSubscriber(subscriber));
 	}
 
 	/**
@@ -1212,7 +1212,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @param source the source to wrap
 	 *
 	 * @return the potentially wrapped source
-	 * @deprecated use {@link Operators#doSubscribe(CorePublisher, Subscriber)}
+	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
 	@Deprecated

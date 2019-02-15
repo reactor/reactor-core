@@ -767,8 +767,16 @@ public abstract class Operators {
 		}
 	}
 
+	/**
+	 * Applies the hooks registered with {@link Hooks#onLastOperator} and returns
+	 * {@link CorePublisher} ready to be subscribed on.
+	 *
+	 * @param source the original {@link CorePublisher}.
+	 * @param <T> the type of the value.
+	 * @return a {@link CorePublisher} to subscribe on.
+	 */
 	@SuppressWarnings("unchecked")
-	public static <T> void doSubscribe(CorePublisher<T> source, Subscriber<? super T> subscriber) {
+	public static <T> CorePublisher<T> onLastAssembly(CorePublisher<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		final Publisher<T> publisher;
 		if (hook == null) {
@@ -778,12 +786,22 @@ public abstract class Operators {
 			publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
 		}
 
-		CoreSubscriber<? super T> coreSubscriber = toCoreSubscriber(subscriber);
 		if (publisher instanceof CorePublisher) {
-			((CorePublisher<T>) publisher).subscribe(coreSubscriber);
+			return (CorePublisher<T>) publisher;
 		}
 		else {
-			publisher.subscribe(coreSubscriber);
+			return new CorePublisher<T>() {
+				@Override
+				public void subscribe(CoreSubscriber<? super T> subscriber) {
+					publisher.subscribe(subscriber);
+				}
+
+				@Override
+				public void subscribe(Subscriber<? super T> s) {
+					publisher.subscribe(s);
+
+				}
+			};
 		}
 	}
 
