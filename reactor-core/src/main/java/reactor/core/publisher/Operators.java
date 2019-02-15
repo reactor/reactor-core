@@ -790,18 +790,7 @@ public abstract class Operators {
 			return (CorePublisher<T>) publisher;
 		}
 		else {
-			return new CorePublisher<T>() {
-				@Override
-				public void subscribe(CoreSubscriber<? super T> subscriber) {
-					publisher.subscribe(subscriber);
-				}
-
-				@Override
-				public void subscribe(Subscriber<? super T> s) {
-					publisher.subscribe(s);
-
-				}
-			};
+			return new CorePublisherAdapter<>(publisher);
 		}
 	}
 
@@ -1258,6 +1247,26 @@ public abstract class Operators {
 	}
 
 	Operators() {
+	}
+
+	static final class CorePublisherAdapter<T> implements CorePublisher<T> {
+
+		final Publisher<T> publisher;
+
+		CorePublisherAdapter(Publisher<T> publisher) {
+			this.publisher = publisher;
+		}
+
+		@Override
+		public void subscribe(CoreSubscriber<? super T> subscriber) {
+			publisher.subscribe(subscriber);
+		}
+
+		@Override
+		public void subscribe(Subscriber<? super T> s) {
+			publisher.subscribe(s);
+
+		}
 	}
 
 	static final CoreSubscriber<?> EMPTY_SUBSCRIBER = new CoreSubscriber<Object>() {
