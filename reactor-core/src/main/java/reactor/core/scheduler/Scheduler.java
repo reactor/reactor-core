@@ -20,7 +20,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import reactor.core.ContextAware;
+import reactor.util.context.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 

@@ -19,6 +19,7 @@ package reactor.core;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.util.context.Context;
+import reactor.util.context.ContextAware;
 
 /**
  * A {@link Context} aware subscriber which has relaxed rules for §1.3 and §3.9

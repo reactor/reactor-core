@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import reactor.core.ContextAware;
+import reactor.util.context.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
