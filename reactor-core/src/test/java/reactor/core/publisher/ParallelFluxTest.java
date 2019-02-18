@@ -1009,26 +1009,26 @@ public class ParallelFluxTest {
 		List<Integer> results = new CopyOnWriteArrayList<>();
 		CountDownLatch latch = new CountDownLatch(1);
 		Flux.just(1, 2, 3).parallel().subscribe(new CoreSubscriber<Integer>() {
-		    @Override
-		    public void onSubscribe(Subscription s) {
-		        s.request(Long.MAX_VALUE);
-		    }
+			@Override
+			public void onSubscribe(Subscription s) {
+				s.request(Long.MAX_VALUE);
+			}
 
-		    @Override
-		    public void onNext(Integer integer) {
-		        results.add(integer);
-		    }
+			@Override
+			public void onNext(Integer integer) {
+				results.add(integer);
+			}
 
-		    @Override
-		    public void onError(Throwable t) {
-		        t.printStackTrace();
-		    }
+			@Override
+			public void onError(Throwable t) {
+				t.printStackTrace();
+			}
 
-		    @Override
-		    public void onComplete() {
-		        latch.countDown();
-		    }
-	    });
+			@Override
+			public void onComplete() {
+				latch.countDown();
+			}
+		});
 
 		latch.await(1, TimeUnit.SECONDS);
 
