@@ -25,8 +25,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,6 +40,8 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -965,6 +969,70 @@ public class ParallelFluxTest {
 		assertThat(finished).as("cancelled latch").isTrue();
 		assertThat(d.isDisposed()).as("disposed").isTrue();
 		assertThat(nextCount.get()).as("received count").isEqualTo(3);
+	}
+
+	@Test
+	public void hooks() throws Exception {
+		String key = UUID.randomUUID().toString();
+		try {
+			Hooks.onLastOperator(key, p -> new CorePublisher<Object>() {
+				@Override
+				public void subscribe(CoreSubscriber<? super Object> subscriber) {
+					((CorePublisher<?>) p).subscribe(subscriber);
+				}
+
+				@Override
+				public void subscribe(Subscriber<? super Object> s) {
+					throw new IllegalStateException("Should not be called");
+				}
+			});
+
+			List<Integer> results = new CopyOnWriteArrayList<>();
+			CountDownLatch latch = new CountDownLatch(1);
+			Flux.just(1, 2, 3)
+			    .parallel()
+			    .doOnNext(results::add)
+			    .doOnComplete(latch::countDown)
+			    .subscribe();
+
+			latch.await(1, TimeUnit.SECONDS);
+
+			assertThat(results).containsOnly(1, 2, 3);
+		}
+		finally {
+			Hooks.resetOnLastOperator(key);
+		}
+	}
+
+	@Test
+	public void subscribeWithCoreSubscriber() throws Exception {
+		List<Integer> results = new CopyOnWriteArrayList<>();
+		CountDownLatch latch = new CountDownLatch(1);
+		Flux.just(1, 2, 3).parallel().subscribe(new CoreSubscriber<Integer>() {
+		    @Override
+		    public void onSubscribe(Subscription s) {
+		        s.request(Long.MAX_VALUE);
+		    }
+
+		    @Override
+		    public void onNext(Integer integer) {
+		        results.add(integer);
+		    }
+
+		    @Override
+		    public void onError(Throwable t) {
+		        t.printStackTrace();
+		    }
+
+		    @Override
+		    public void onComplete() {
+		        latch.countDown();
+		    }
+	    });
+
+		latch.await(1, TimeUnit.SECONDS);
+
+		assertThat(results).containsOnly(1, 2, 3);
 	}
 
 	private void tryToSleep(long value)
