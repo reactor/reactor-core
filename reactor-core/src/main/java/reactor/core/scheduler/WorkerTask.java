@@ -21,7 +21,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.ContextAware;
+import reactor.util.context.ContextAware;
 import reactor.core.Disposable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;

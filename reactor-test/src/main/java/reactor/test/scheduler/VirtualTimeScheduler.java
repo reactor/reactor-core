@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import reactor.core.ContextAware;
+import reactor.util.context.ContextAware;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;

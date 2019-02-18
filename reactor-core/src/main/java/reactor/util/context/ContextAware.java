@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package reactor.core;
+package reactor.util.context;
 
+import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
 
 /**
