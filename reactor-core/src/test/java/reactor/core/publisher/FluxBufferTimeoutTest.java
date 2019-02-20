@@ -230,7 +230,7 @@ public class FluxBufferTimeoutTest {
 		for (int i = 0; i < 500; i++) {
 			RaceTestUtils.race(
 					() -> test.onNext(counter.getAndIncrement()),
-					() -> test.onNext(counter.getAndIncrement()),
+					() -> test.flushCallback(null),
 					Schedulers.elastic()
 			);
 		}
