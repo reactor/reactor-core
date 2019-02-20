@@ -24,6 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import org.junit.After;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -38,6 +39,11 @@ import reactor.test.util.RaceTestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxBufferTimeoutTest {
+
+	@After
+	public void tearDown() {
+		VirtualTimeScheduler.reset();
+	}
 
 	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize() {
 		return Flux.range(1, 6)
