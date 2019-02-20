@@ -17,8 +17,12 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -29,6 +33,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -203,6 +208,32 @@ public class FluxBufferTimeoutTest {
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+	}
+
+	@Test
+	public void flushShouldNotRaceWithNext() {
+		Set<Integer> seen = new HashSet<>();
+		Consumer<List<Integer>> consumer = integers -> {
+			for (Integer i : integers) {
+				if (!seen.add(i)) {
+					throw new IllegalStateException("Duplicate! " + i);
+				}
+			}
+		};
+		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(consumer, null, null, null);
+
+		FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>>(
+				actual, 3, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+		test.onSubscribe(Operators.emptySubscription());
+
+		AtomicInteger counter = new AtomicInteger();
+		for (int i = 0; i < 500; i++) {
+			RaceTestUtils.race(
+					() -> test.onNext(counter.getAndIncrement()),
+					() -> test.onNext(counter.getAndIncrement()),
+					Schedulers.elastic()
+			);
+		}
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1247
