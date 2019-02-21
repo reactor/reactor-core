@@ -2906,11 +2906,15 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
+	 * and the value that triggered the error.
 	 * @return a {@link Mono} that attempts to continue processing on errors.
 	 */
 	public final Mono<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
@@ -2926,11 +2930,16 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the specified {@code type} are recovered from.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param type the {@link Class} of {@link Exception} that are resumed from.
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
+	 * and the value that triggered the error.
 	 * @return a {@link Mono} that attempts to continue processing on some errors.
 	 */
 	public final <E extends Throwable> Mono<T> onErrorContinue(Class<E> type, BiConsumer<Throwable, Object> errorConsumer) {
@@ -2940,13 +2949,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
-	 * Only errors matching the {@link Predicate} are recovered from.
+	 * Only errors matching the {@link Predicate} are recovered from (note that this
+	 * predicate can be applied several times and thus must be idempotent).
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param errorPredicate a {@link Predicate} used to filter which errors should be resumed from.
+	 * This MUST be idempotent, as it can be used several times.
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the predicate and the value
+	 * that triggered the error.
 	 * @return a {@link Mono} that attempts to continue processing on some errors.
 	 */
 	public final <E extends Throwable> Mono<T> onErrorContinue(Predicate<E> errorPredicate,
