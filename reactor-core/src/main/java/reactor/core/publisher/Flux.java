@@ -49,6 +49,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -99,7 +100,7 @@ import reactor.util.function.Tuples;
  * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
  * provided {@link Subscriber} may
  * be passed to this "subscribe" extension but will loose the available
- * per-subscribe @link Hooks#onLastOperator}.
+ * per-subscribe {@link Hooks#onLastOperator}.
  *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
  *
@@ -110,7 +111,7 @@ import reactor.util.function.Tuples;
  *
  * @see Mono
  */
-public abstract class Flux<T> implements Publisher<T> {
+public abstract class Flux<T> implements CorePublisher<T> {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -2340,7 +2341,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockFirst() {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -2363,7 +2364,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -2385,7 +2386,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockLast() {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -2409,7 +2410,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -7790,7 +7791,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
 	/**
@@ -9206,8 +9207,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param source the source to apply assembly hooks onto
 	 *
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
+	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	protected static <T> Flux<T> onLastAssembly(Flux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if(hook == null) {

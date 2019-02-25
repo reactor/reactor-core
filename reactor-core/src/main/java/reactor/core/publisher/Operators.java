@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -766,6 +767,33 @@ public abstract class Operators {
 		}
 	}
 
+	/**
+	 * Applies the hooks registered with {@link Hooks#onLastOperator} and returns
+	 * {@link CorePublisher} ready to be subscribed on.
+	 *
+	 * @param source the original {@link CorePublisher}.
+	 * @param <T> the type of the value.
+	 * @return a {@link CorePublisher} to subscribe on.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> CorePublisher<T> onLastAssembly(CorePublisher<T> source) {
+		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
+		final Publisher<T> publisher;
+		if (hook == null) {
+			publisher = source;
+		}
+		else {
+			publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
+		}
+
+		if (publisher instanceof CorePublisher) {
+			return (CorePublisher<T>) publisher;
+		}
+		else {
+			return new CorePublisherAdapter<>(publisher);
+		}
+	}
+
 	private static Throwable unwrapOnNextError(Throwable error) {
 		return Exceptions.isBubbling(error) ? error : Exceptions.unwrap(error);
 	}
@@ -1219,6 +1247,26 @@ public abstract class Operators {
 	}
 
 	Operators() {
+	}
+
+	static final class CorePublisherAdapter<T> implements CorePublisher<T> {
+
+		final Publisher<T> publisher;
+
+		CorePublisherAdapter(Publisher<T> publisher) {
+			this.publisher = publisher;
+		}
+
+		@Override
+		public void subscribe(CoreSubscriber<? super T> subscriber) {
+			publisher.subscribe(subscriber);
+		}
+
+		@Override
+		public void subscribe(Subscriber<? super T> s) {
+			publisher.subscribe(s);
+
+		}
 	}
 
 	static final CoreSubscriber<?> EMPTY_SUBSCRIBER = new CoreSubscriber<Object>() {

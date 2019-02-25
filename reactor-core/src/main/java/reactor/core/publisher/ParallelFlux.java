@@ -35,6 +35,7 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -65,7 +66,7 @@ import reactor.util.concurrent.Queues;
  *
  * @param <T> the value type
  */
-public abstract class ParallelFlux<T> implements Publisher<T> {
+public abstract class ParallelFlux<T> implements CorePublisher<T> {
 
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (one per CPU core)
@@ -1002,6 +1003,15 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return subscribe(onNext, onError, onComplete, null);
 	}
 
+	@Override
+	@SuppressWarnings("unchecked")
+	public final void subscribe(CoreSubscriber<? super T> s) {
+		FluxHide.SuppressFuseableSubscriber<T> subscriber =
+				new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s));
+
+		sequential().subscribe(Operators.toCoreSubscriber(subscriber));
+	}
+
 	/**
 	 * Subscribes to this {@link ParallelFlux} by providing an onNext, onError,
 	 * onComplete and onSubscribe callback and triggers the execution chain for all
@@ -1018,17 +1028,29 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			@Nullable Runnable onComplete,
 			@Nullable Consumer<? super Subscription> onSubscribe){
 
-		@SuppressWarnings("unchecked")
-		LambdaSubscriber<? super T>[] subscribers = new LambdaSubscriber[parallelism()];
+		CorePublisher<T> publisher = Operators.onLastAssembly(this);
+		if (publisher instanceof ParallelFlux) {
+			@SuppressWarnings("unchecked")
+			LambdaSubscriber<? super T>[] subscribers = new LambdaSubscriber[parallelism()];
 
-		int i = 0;
-		while(i < subscribers.length){
-			subscribers[i++] =
-					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+			int i = 0;
+			while(i < subscribers.length){
+				subscribers[i++] =
+						new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+			}
+
+			((ParallelFlux<T>) publisher).subscribe(subscribers);
+
+			return Disposables.composite(subscribers);
 		}
+		else {
+			LambdaSubscriber<? super T> subscriber =
+					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
 
-		onLastAssembly(this).subscribe(subscribers);
-		return Disposables.composite(subscribers);
+			publisher.subscribe(Operators.toCoreSubscriber(new FluxHide.SuppressFuseableSubscriber<>(subscriber)));
+
+			return subscriber;
+		}
 	}
 
 	/**
@@ -1040,8 +1062,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> s) {
-		Flux.onLastAssembly(sequential())
-		    .subscribe(new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s)));
+		FluxHide.SuppressFuseableSubscriber<T> subscriber =
+				new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s));
+
+		Operators.onLastAssembly(sequential()).subscribe(Operators.toCoreSubscriber(subscriber));
 	}
 
 	/**
@@ -1196,8 +1220,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param source the source to wrap
 	 *
 	 * @return the potentially wrapped source
+	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	protected static <T> ParallelFlux<T> onLastAssembly(ParallelFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if (hook == null) {

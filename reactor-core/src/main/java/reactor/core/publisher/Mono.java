@@ -41,6 +41,7 @@ import java.util.stream.LongStream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
@@ -98,7 +99,7 @@ import reactor.util.function.Tuples;
  * @author Simon Baslé
  * @see Flux
  */
-public abstract class Mono<T> implements Publisher<T> {
+public abstract class Mono<T> implements CorePublisher<T> {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -1490,7 +1491,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Nullable
 	public T block() {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1514,7 +1515,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Nullable
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -1535,7 +1536,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public Optional<T> blockOptional() {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1560,7 +1561,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public Optional<T> blockOptional(Duration timeout) {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -3707,7 +3708,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
 	/**
@@ -4314,8 +4315,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param source the source to apply assembly hooks onto
 	 *
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
+	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	protected static <T> Mono<T> onLastAssembly(Mono<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if(hook == null) {
