@@ -1005,13 +1005,11 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public final void subscribe(CoreSubscriber<? super T> subscriber) {
-		if (subscriber instanceof MultiSubscriber) {
-			subscribe(((MultiSubscriber<? super T>) subscriber).getSubscribers());
-		}
-		else {
-			subscribe((Subscriber<? super T>) subscriber);
-		}
+	public final void subscribe(CoreSubscriber<? super T> s) {
+		FluxHide.SuppressFuseableSubscriber<T> subscriber =
+				new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s));
+
+		sequential().subscribe(Operators.toCoreSubscriber(subscriber));
 	}
 
 	/**
@@ -1030,19 +1028,29 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			@Nullable Runnable onComplete,
 			@Nullable Consumer<? super Subscription> onSubscribe){
 
-		@SuppressWarnings("unchecked")
-		LambdaSubscriber<? super T>[] subscribers = new LambdaSubscriber[parallelism()];
+		CorePublisher<T> publisher = Operators.onLastAssembly(this);
+		if (publisher instanceof ParallelFlux) {
+			@SuppressWarnings("unchecked")
+			LambdaSubscriber<? super T>[] subscribers = new LambdaSubscriber[parallelism()];
 
-		int i = 0;
-		while(i < subscribers.length){
-			subscribers[i++] =
-					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+			int i = 0;
+			while(i < subscribers.length){
+				subscribers[i++] =
+						new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+			}
+
+			((ParallelFlux<T>) publisher).subscribe(subscribers);
+
+			return Disposables.composite(subscribers);
 		}
+		else {
+			LambdaSubscriber<? super T> subscriber =
+					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
 
-		@SuppressWarnings("unchecked")
-		MultiSubscriber<T> multiSubscriber = new MultiSubscriber<>((CoreSubscriber<T>[]) subscribers);
-		Hooks.onLastOperator(this).subscribe(multiSubscriber);
-		return Disposables.composite(subscribers);
+			publisher.subscribe(Operators.toCoreSubscriber(new FluxHide.SuppressFuseableSubscriber<>(subscriber)));
+
+			return subscriber;
+		}
 	}
 
 	/**
@@ -1054,8 +1062,10 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> s) {
-		Hooks.onLastOperator(sequential())
-		    .subscribe(new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s)));
+		FluxHide.SuppressFuseableSubscriber<T> subscriber =
+				new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s));
+
+		Operators.onLastAssembly(sequential()).subscribe(Operators.toCoreSubscriber(subscriber));
 	}
 
 	/**
@@ -1210,7 +1220,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @param source the source to wrap
 	 *
 	 * @return the potentially wrapped source
-	 * @deprecated use {@link Hooks#onLastOperator(CorePublisher)}
+	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
 	@Deprecated
@@ -1282,39 +1292,6 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 		}
 
 		return both;
-	}
-
-	private static class MultiSubscriber<T> implements CoreSubscriber<T> {
-
-		final CoreSubscriber<T>[] subscribers;
-
-		private MultiSubscriber(CoreSubscriber<T>[] subscribers) {
-			this.subscribers = subscribers;
-		}
-
-		public CoreSubscriber<T>[] getSubscribers() {
-			return subscribers;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			throw new IllegalStateException("Not implemented");
-		}
-
-		@Override
-		public void onNext(T t) {
-			throw new IllegalStateException("Not implemented");
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			throw new IllegalStateException("Not implemented");
-		}
-
-		@Override
-		public void onComplete() {
-			throw new IllegalStateException("Not implemented");
-		}
 	}
 
 }

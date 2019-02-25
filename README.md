@@ -13,6 +13,8 @@
 
 Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a [Reactive Extensions](http://reactivex.io) inspired API and efficient event streaming support.
 
+The `master` branch is now dedicated to development of the `3.3.x` line.
+
 ## Getting it
    
 **Reactor 3 requires Java 8 or + to run**.
@@ -27,10 +29,10 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.2.6.BUILD-SNAPSHOT"
-      //testCompile("io.projectreactor:reactor-test:3.2.6.BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.2.5.RELEASE"
-      testCompile("io.projectreactor:reactor-test:3.2.5.RELEASE")
+      //compile "io.projectreactor:reactor-core:3.3.0.BUILD-SNAPSHOT"
+      //testCompile("io.projectreactor:reactor-test:3.3.0.BUILD-SNAPSHOT")
+      compile "io.projectreactor:reactor-core:3.2.6.RELEASE"
+      testCompile("io.projectreactor:reactor-test:3.2.6.RELEASE")
     }
 ```
 

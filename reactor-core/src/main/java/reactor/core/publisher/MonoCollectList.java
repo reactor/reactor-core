@@ -93,13 +93,18 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 
 		@Override
 		public void onNext(T t) {
+			if (collection == null) {
+				Operators.onNextDropped(t, actual.currentContext());
+				return;
+			}
 			collection.add(t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			C c = collection;
-			if(c == null){
+			if(c == null) {
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			collection = null;

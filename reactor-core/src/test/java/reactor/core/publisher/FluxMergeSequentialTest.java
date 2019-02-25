@@ -767,6 +767,35 @@ public class FluxMergeSequentialTest {
 		            .verifyErrorMessage("test");
 	}
 
+	@Test
+	public void cancellingSequentiallyMergedMonos() {
+		AtomicInteger cancelCounter = new AtomicInteger(5);
+
+		final Flux<Object> merge = Flux.mergeSequential(
+				Mono.never().doOnCancel(() -> System.out.println("Cancelling #1, remaining " + cancelCounter.decrementAndGet())),
+				Mono.never().doOnCancel(() -> System.out.println("Cancelling #2, remaining " + cancelCounter.decrementAndGet())),
+				Mono.never().doOnCancel(() -> System.out.println("Cancelling #3, remaining " + cancelCounter.decrementAndGet())),
+				Mono.never().doOnCancel(() -> System.out.println("Cancelling #4, remaining " + cancelCounter.decrementAndGet())),
+				Mono.never().doOnCancel(() -> System.out.println("Cancelling #5, remaining " + cancelCounter.decrementAndGet())));
+
+		merge.subscribe().dispose();
+
+		assertThat(cancelCounter).as("cancellation remaining").hasValue(0);
+	}
+
+	@Test
+	public void cancellingSequentiallyFlatMappedMonos() {
+		AtomicInteger cancelCounter = new AtomicInteger(5);
+
+		final Flux<Object> merge = Flux.range(1, 5)
+				.flatMapSequential(i -> Mono.never()
+				                            .doOnCancel(() -> System.out.println("Cancelling #" + i + ", remaining " + cancelCounter.decrementAndGet())));
+
+		merge.subscribe().dispose();
+
+		assertThat(cancelCounter).as("cancellation remaining").hasValue(0);
+	}
+
     @Test
     public void scanMain() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);

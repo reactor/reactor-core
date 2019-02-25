@@ -24,10 +24,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
+
+import reactor.core.CoreTest;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.SynchronousSubscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.util.TestLogger;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -36,6 +39,42 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
 public class SignalLoggerTests {
+
+	@Test
+	public void safeLogsWhenLoggerThrows() {
+		TestLogger logger = new TestLogger() {
+			@Override
+			public synchronized void info(String format, Object... arguments) {
+				if (arguments[0] instanceof SignalType && arguments[1] instanceof Integer) {
+					throw new UnsupportedOperationException("boom on integer");
+				}
+				super.info(format, arguments);
+			}
+		};
+
+		SignalLogger signalLogger = new SignalLogger<>(Flux.empty(), null, Level.INFO, false, it -> logger);
+		signalLogger.safeLog(SignalType.ON_NEXT, 404);
+
+		Assertions.assertThat(logger.getOutContent())
+		          .contains("UnsupportedOperationException has been raised by the logging framework, does your log() placement make sense? " +
+				          "eg. 'window(2).log()' instead of 'window(2).flatMap(w -> w.log())' - " +
+				          "java.lang.UnsupportedOperationException: boom on integer")
+		          .contains("onNext(404)");
+	}
+
+	@Test
+	public void safeLogsWhenPassingQueueSubscription() {
+		TestLogger logger = new TestLogger();
+
+		SignalLogger signalLogger = new SignalLogger<>(Flux.empty(), null, Level.INFO, false, it -> logger);
+
+		signalLogger.safeLog(SignalType.ON_NEXT, new FluxPeekFuseableTest.AssertQueueSubscription<>());
+
+		Assertions.assertThat(logger.getOutContent())
+		          .contains("A Fuseable Subscription has been passed to the logging framework, this is generally a sign of a misplaced log(), " +
+				          "eg. 'window(2).log()' instead of 'window(2).flatMap(w -> w.log())'")
+		          .contains("onNext(reactor.core.publisher.FluxPeekFuseableTest$AssertQueueSubscription");
+	}
 
 	@Test
 	public void testLogCollectionSubscription() {
@@ -122,7 +161,7 @@ public class SignalLoggerTests {
 			public void cancel() {}
 		};
 
-		assertThat(SignalLogger.subscriptionAsString(s), is("SignalLoggerTests$1"));
+		assertThat(SignalLogger.subscriptionAsString(s), is("SignalLoggerTests$2"));
 	}
 
 	@Test

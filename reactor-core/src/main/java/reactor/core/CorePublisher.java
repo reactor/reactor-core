@@ -29,7 +29,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the {@link CoreSubscriber} data type
  *
- * @since 3.2.6
+ * @since 3.3.0
  */
 public interface CorePublisher<T> extends Publisher<T> {
 

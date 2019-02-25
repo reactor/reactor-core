@@ -29,6 +29,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
+import reactor.core.Fuseable;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -96,6 +100,69 @@ public class FluxSwitchOnFirstTest {
         Assertions.assertThat(throwables[0])
                   .isInstanceOf(IllegalStateException.class)
                   .hasMessage("FluxSwitchOnFirst allows only one Subscriber");
+    }
+
+    @Test
+    public void shouldNotSubscribeTwiceWhenCanceled() {
+        CountDownLatch latch = new CountDownLatch(1);
+        StepVerifier.create(Flux.just(1L)
+                                .doOnComplete(() -> {
+                                    try {
+                                        latch.await();
+                                    }
+                                    catch (InterruptedException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                })
+                                .hide()
+                                .publishOn(Schedulers.parallel())
+                                .cancelOn(NoOpsScheduler.INSTANCE)
+                                .doOnCancel(latch::countDown)
+                                .switchOnFirst((s, f) -> f)
+                                .doOnSubscribe(s ->
+                                    Schedulers
+                                            .single()
+                                            .schedule(s::cancel, 10, TimeUnit.MILLISECONDS)
+                                )
+        )
+                    .expectSubscription()
+                    .expectNext(1L)
+                    .expectNoEvent(Duration.ofMillis(200))
+                    .thenCancel()
+                    .verifyThenAssertThat()
+                    .hasNotDroppedErrors();
+    }
+
+    @Test
+    public void shouldNotSubscribeTwiceConditionalWhenCanceled() {
+        CountDownLatch latch = new CountDownLatch(1);
+        StepVerifier.create(Flux.just(1L)
+                                .doOnComplete(() -> {
+                                    try {
+                                        latch.await();
+                                    }
+                                    catch (InterruptedException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                })
+                                .hide()
+                                .publishOn(Schedulers.parallel())
+                                .cancelOn(NoOpsScheduler.INSTANCE)
+                                .doOnCancel(latch::countDown)
+                                .switchOnFirst((s, f) -> f)
+                                .filter(e -> true)
+                                .doOnSubscribe(s ->
+                                    Schedulers
+                                        .single()
+                                        .schedule(s::cancel, 10, TimeUnit.MILLISECONDS)
+                                )
+        )
+                    .expectSubscription()
+                    .expectNext(1L)
+                    .expectNoEvent(Duration.ofMillis(200))
+                    .thenCancel()
+                    .verifyThenAssertThat()
+                    .hasNotDroppedErrors();
     }
 
     @Test
@@ -894,5 +961,138 @@ public class FluxSwitchOnFirstTest {
                     })
                     .expectNext(6L, 9L)
                     .verifyComplete();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherComplete() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty()))
+                    .expectSubscription()
+                    .verifyComplete();
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherError() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
+                    .expectSubscription()
+                    .verifyErrorSatisfies(t ->
+                        Assertions.assertThat(t)
+                                  .hasMessage("test")
+                                  .isExactlyInstanceOf(RuntimeException.class)
+                    );
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherCancel() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
+                    .expectSubscription()
+                    .thenCancel()
+                    .verify();
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherCompleteConditional() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+                    .then(() ->
+                        Assertions.assertThat(testPublisher.subscribers[0])
+                                  .extracting(psi -> psi.actual)
+                                  .isInstanceOf(Fuseable.ConditionalSubscriber.class)
+                    )
+                    .verifyComplete();
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherErrorConditional() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+                    .then(() ->
+                            Assertions.assertThat(testPublisher.subscribers[0])
+                                      .extracting(psi -> psi.actual)
+                                      .isInstanceOf(Fuseable.ConditionalSubscriber.class)
+                    )
+                    .verifyErrorSatisfies(t ->
+                            Assertions.assertThat(t)
+                                      .hasMessage("test")
+                                      .isExactlyInstanceOf(RuntimeException.class)
+                    );
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelSourceOnUnrelatedPublisherCancelConditional() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        testPublisher.onNext(1L);
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+                    .then(() ->
+                            Assertions.assertThat(testPublisher.subscribers[0])
+                                      .extracting(psi -> psi.actual)
+                                      .isInstanceOf(Fuseable.ConditionalSubscriber.class)
+                    )
+                    .thenAwait(Duration.ofMillis(50))
+                    .thenCancel()
+                    .verify();
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    private static final class NoOpsScheduler implements Scheduler {
+
+        static final NoOpsScheduler INSTANCE = new NoOpsScheduler();
+
+        private NoOpsScheduler() {}
+
+        @Override
+        public Disposable schedule(Runnable task) {
+            return Disposables.composite();
+        }
+
+        @Override
+        public Worker createWorker() {
+            return NoOpsWorker.INSTANCE;
+        }
+
+        static final class NoOpsWorker implements Worker {
+
+            static final NoOpsWorker INSTANCE = new NoOpsWorker();
+
+            @Override
+            public Disposable schedule(Runnable task) {
+                return Disposables.never();
+            }
+
+            @Override
+            public void dispose() {
+
+            }
+        };
     }
 }

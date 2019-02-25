@@ -16,9 +16,18 @@
 package reactor.core.publisher;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.assertj.core.data.Offset;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -137,5 +146,45 @@ public class MonoCallableTest {
         MonoCallable<Integer> monoCallable = new MonoCallable<>(() -> null);
 
         assertThat(monoCallable.call()).isNull();
+    }
+
+    //see https://github.com/reactor/reactor-core/issues/1503
+    @Test
+    public void callableCancelledBeforeRun() {
+        AtomicBoolean actual = new AtomicBoolean(true);
+        Mono<?> mono = Mono.fromCallable(() -> actual.getAndSet(false))
+                           .doOnSubscribe(Subscription::cancel);
+
+        StepVerifier.create(mono)
+                    .expectSubscription()
+                    .expectNoEvent(Duration.ofSeconds(1))
+                    .thenCancel()
+                    .verify();
+
+        assertThat(actual).as("cancelled before run").isTrue();
+    }
+
+    //see https://github.com/reactor/reactor-core/issues/1503
+    //see https://github.com/reactor/reactor-core/issues/1504
+    @Test
+    public void callableSubscribeToCompleteMeasurement() {
+        AtomicLong subscribeTs = new AtomicLong();
+        Mono<String> mono = Mono.fromCallable(() -> {
+            try {
+                Thread.sleep(500);
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return "foo";
+        })
+                                .doOnSubscribe(sub -> subscribeTs.set(-1 * System.nanoTime()))
+                                .doFinally(fin -> subscribeTs.addAndGet(System.nanoTime()));
+
+        StepVerifier.create(mono)
+                    .expectNext("foo")
+                    .verifyComplete();
+
+        assertThat(TimeUnit.NANOSECONDS.toMillis(subscribeTs.get())).isCloseTo(500L, Offset.offset(50L));
     }
 }

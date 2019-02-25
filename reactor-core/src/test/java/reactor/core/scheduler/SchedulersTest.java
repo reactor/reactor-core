@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -1215,6 +1216,46 @@ public class SchedulersTest {
 			disposable.dispose();
 
 			assertThat(executorService.isAllTasksCancelled()).isTrue();
+		}
+	}
+
+	@Test
+	public void testDirectScheduleZeroPeriodicallyCancelsSchedulerTask() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(2);
+			Disposable disposable = Schedulers.directSchedulePeriodically(executorService,
+					latch::countDown, 0, 0, TimeUnit.MILLISECONDS);
+			latch.await();
+
+			disposable.dispose();
+
+//			avoid race of checking the status of futures vs cancelling said futures
+			Awaitility.await().atMost(500, TimeUnit.MILLISECONDS)
+			          .pollDelay(10, TimeUnit.MILLISECONDS)
+			          .pollInterval(50, TimeUnit.MILLISECONDS)
+			          .until(executorService::isAllTasksCancelledOrDone);
+		}
+	}
+
+	@Test
+	public void scheduleInstantTaskTest() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Schedulers.directSchedulePeriodically(executorService, latch::countDown, 0, 0, TimeUnit.MILLISECONDS);
+
+			assertThat(latch.await(100, TimeUnit.MILLISECONDS)).isTrue();
+		}
+	}
+
+	@Test
+	public void scheduleInstantTaskWithDelayTest() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Schedulers.directSchedulePeriodically(executorService, latch::countDown, 50, 0, TimeUnit.MILLISECONDS);
+
+			assertThat(latch.await(100, TimeUnit.MILLISECONDS)).isTrue();
 		}
 	}
 

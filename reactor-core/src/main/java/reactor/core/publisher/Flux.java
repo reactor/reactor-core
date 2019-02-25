@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,15 +54,15 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
-import reactor.util.Metrics;
-import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -100,7 +100,7 @@ import reactor.util.function.Tuples;
  * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
  * provided {@link Subscriber} may
  * be passed to this "subscribe" extension but will loose the available
- * per-subscribe @link Hooks#onLastOperator}.
+ * per-subscribe {@link Hooks#onLastOperator}.
  *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
  *
@@ -2341,7 +2341,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockFirst() {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -2364,7 +2364,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -2386,7 +2386,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockLast() {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -2410,7 +2410,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -3105,6 +3105,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param containerSupplier the supplier of the container instance for each Subscriber
 	 * @param collector a consumer of both the container instance and the value being currently collected
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */
@@ -3137,6 +3139,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectList.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @return a {@link Mono} of a {@link List} of all values from this {@link Flux}
 	 */
@@ -3184,6 +3188,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyExtractor.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param <K> the type of the key extracted from each source element
 	 *
@@ -3204,6 +3210,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyAndValueExtractors.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3229,6 +3237,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyAndValueExtractors.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3260,6 +3270,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyExtractor.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 *
 	 * @param <K> the type of the key extracted from each source element
@@ -3279,6 +3291,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyAndValueExtractors.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3303,6 +3317,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyAndValueExtractors.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3337,6 +3353,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedList.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 *
 	 * @return a {@link Mono} of a sorted {@link List} of all values from this {@link Flux}, in natural order
 	 */
 	public final Mono<List<T>> collectSortedList() {
@@ -3350,6 +3368,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedListWithComparator.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
 	 *
 	 * @param comparator a {@link Comparator} to sort the items of this sequences
 	 *
@@ -4118,6 +4138,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * that is passed to the side-effect callback. Note that this is an advanced operator,
 	 * typically used for monitoring of a Flux. These {@link Signal} have a {@link Context}
 	 * associated to them.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doOnEachForFlux.svg" alt="">
 	 *
 	 * @param signalConsumer the mandatory callback to call on
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
@@ -4281,6 +4303,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <strong>reverse order</strong>. If you want to assert the execution of the callback
 	 * please keep in mind that the Flux will complete before it is executed, so its
 	 * effect might not be visible immediately after eg. a {@link #blockLast()}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doFinallyForFlux.svg" alt="">
 	 *
 	 * @param onFinally the callback to execute after a terminal signal (complete, error
 	 * or cancel)
@@ -5260,6 +5284,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Keep information about the order in which source values were received by
 	 * indexing them with a 0-based incrementing long, returning a {@link Flux}
 	 * of {@link Tuple2 Tuple2<(index, value)>}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/index.svg" alt="">
 	 *
 	 * @return an indexed {@link Flux} with each source value combined with its 0-based index.
 	 */
@@ -5277,6 +5303,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * 1-based instead of 0-based:
 	 * <p>
 	 * {@code index((i, v) -> Tuples.of(i+1, v))}
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/indexWithMapper.svg" alt="">
 	 *
 	 * @param indexMapper the {@link BiFunction} to use to combine elements and their index.
 	 * @return an indexed {@link Flux} with each source value combined with its computed index.
@@ -5482,6 +5510,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * for cases where a race between request and cancellation can lead the upstream to
 	 * producing a lot of extraneous data, and such a production is undesirable (e.g.
 	 * a source that would send the extraneous data over the network).
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/limitRequest.svg" alt="">
 	 *
 	 * @param requestCap the global backpressure limit to apply to the sum of downstream's requests
 	 *
@@ -5935,7 +5965,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * is also immediately invoked when there is an overflow.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/onBackpressureBuffer.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithDurationAndMaxSize.svg" alt="">
 	 *
 	 * @reactor.discard This operator discards its internal buffer of elements that overflow,
 	 * after having applied the {@code onBufferEviction} handler.
@@ -5961,7 +5991,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * is also immediately invoked when there is an overflow.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/onBackpressureBuffer.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithDurationAndMaxSize.svg" alt="">
 	 *
 	 * @reactor.discard This operator discards its internal buffer of elements that overflow,
 	 * after having applied the {@code onBufferEviction} handler.
@@ -6050,6 +6080,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinue.svg" alt="">
 	 * <p>
@@ -6057,6 +6089,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the predicate and the value
+	 * that triggered the error.
 	 * @return a {@link Flux} that attempts to continue processing on errors.
 	 */
 	public final Flux<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
@@ -6072,6 +6106,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the specified {@code type} are recovered from.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinueWithClassPredicate.svg" alt="">
 	 * <p>
@@ -6079,6 +6115,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param type the {@link Class} of {@link Exception} that are resumed from.
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
+	 * and the value that triggered the error.
 	 * @return a {@link Flux} that attempts to continue processing on some errors.
 	 */
 	public final <E extends Throwable> Flux<T> onErrorContinue(Class<E> type, BiConsumer<Throwable, Object> errorConsumer) {
@@ -6088,8 +6127,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
-	 * Only errors matching the {@link Predicate} are recovered from.
+	 * Only errors matching the {@link Predicate} are recovered from (note that this
+	 * predicate can be applied several times and thus must be idempotent).
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorContinueWithPredicate.svg" alt="">
 	 * <p>
@@ -6097,6 +6139,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param errorPredicate a {@link Predicate} used to filter which errors should be resumed from.
+	 * This MUST be idempotent, as it can be used several times.
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the predicate and the value
+	 * that triggered the error.
 	 * @return a {@link Flux} that attempts to continue processing on some errors.
 	 */
 	public final <E extends Throwable> Flux<T> onErrorContinue(Predicate<E> errorPredicate,
@@ -7532,6 +7578,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>Note that calling {@code sort} with long, non-terminating or infinite sources
 	 * might cause {@link OutOfMemoryError}. Use sequence splitting like {@link #window} to sort batches in that case.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sort.svg" alt="">
 	 *
 	 * @throws ClassCastException if any item emitted by the {@link Flux} does not implement
 	 * {@link Comparable} with respect to all other items emitted by the {@link Flux}
@@ -7548,6 +7596,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p>Note that calling {@code sort} with long, non-terminating or infinite sources
 	 * might cause {@link OutOfMemoryError}
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sort.svg" alt="">
 	 *
 	 * @param sortFunction a function that compares two items emitted by this {@link Flux}
 	 * to indicate their sort order
@@ -7741,7 +7791,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(actual));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
 	/**
@@ -7912,34 +7962,43 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Transform the current {@link Flux<T>} once it emits its first element, making a
 	 * conditional transformation possible. This operator first requests one element
-	 * from the source then applies a transformation derived from a {@link Signal}.
-	 *
+	 * from the source then applies a transformation derived from the first {@link Signal}
+	 * and the source. The whole source (including the first signal) is passed as second
+	 * argument to the {@link BiFunction} and it is very strongly advised to always build
+	 * upon with operators (see below).
+	 * <p>
 	 * Note that the source might complete or error immediately instead of emitting,
 	 * in which case the {@link Signal} would be onComplete or onError. It is NOT
 	 * necessarily an onNext Signal, and must be checked accordingly.
-     *
-	 * For example, this operator could be used to define a form of routing, depending on
-	 * the first element (which could contain routing metadata for instance):
+     * <p>
+	 * For example, this operator could be used to define a dynamic transformation that depends
+	 * on the first element (which could contain routing metadata for instance):
 	 *
 	 * <blockquote><pre>
 	 * {@code
-	 *  flux.switchOnFirst((signal, flux) -> {
+	 *  fluxOfIntegers.switchOnFirst((signal, flux) -> {
 	 *      if (signal.hasValue()) {
-	 *          if (signal.get() ...) {
-	 *              return flux.map(...).filter(...).flatMap(...).transform(...)
-	 *          } else if (signal.get() ...) {
-	 *              ...
-	 *          }
+	 *          ColoredShape firstColor = signal.get();
+	 *          return flux.filter(v -> !v.hasSameColorAs(firstColor))
 	 *      }
-	 *
-	 *      return Flux.empty();
+	 *      return flux; //either early complete or error, this forwards the termination in any case
+	 *      //`return flux.onErrorResume(t -> Mono.empty());` instead would suppress an early error
+	 *      //`return Flux.just(1,2,3);` instead would suppress an early error and return 1, 2, 3.
+	 *      //It would also only cancel the original `flux` at the completion of `just`.
 	 *  })
 	 * }
 	 * </pre></blockquote>
-	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/switchOnFirst.svg" alt="">
+	 * <p>
+	 * It is advised to return a {@link Publisher} derived from the original {@link Flux}
+	 * in all cases, as not doing so would keep the original {@link Publisher} open and
+	 * hanging with a single request until the inner {@link Publisher} terminates or
+	 * the whole {@link Flux} is cancelled.
 	 *
 	 * @param transformer A {@link BiFunction} executed once the first signal is
-	 * available and used to transform it conditionally.
+	 * available and used to transform the source conditionally. The whole source (including
+	 * first signal) is passed as second argument to the BiFunction.
 	 * @param <V> the item type in the returned {@link Flux}
      *
 	 * @return a new {@link Flux} that transform the upstream once a signal is available
@@ -9148,7 +9207,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param source the source to apply assembly hooks onto
 	 *
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
-	 * @deprecated use {@link Hooks#onLastOperator(CorePublisher)}
+	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
 	@Deprecated

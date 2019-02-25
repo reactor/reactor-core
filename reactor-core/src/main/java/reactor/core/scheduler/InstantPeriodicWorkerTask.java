@@ -54,6 +54,11 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void>, Con
 
 	Thread thread;
 
+	InstantPeriodicWorkerTask(Runnable task, ExecutorService executor) {
+		this.task = task;
+		this.executor = executor;
+	}
+
 	InstantPeriodicWorkerTask(Runnable task, ExecutorService executor, Composite parent) {
 		this.task = task;
 		this.executor = executor;

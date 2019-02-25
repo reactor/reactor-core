@@ -591,13 +591,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
 	 * same by comparing the items emitted by each Publisher pairwise.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
 	 *
-	 * @param source1
-	 *            the first Publisher to compare
-	 * @param source2
-	 *            the second Publisher to compare
-	 * @param <T>
-	 *            the type of items emitted by each Publisher
+	 * @param source1 the first Publisher to compare
+	 * @param source2 the second Publisher to compare
+	 * @param <T> the type of items emitted by each Publisher
 	 * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
 	 */
 	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2) {
@@ -608,15 +607,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
 	 * same by comparing the items emitted by each Publisher pairwise based on the results of a specified
 	 * equality function.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
 	 *
-	 * @param source1
-	 *            the first Publisher to compare
-	 * @param source2
-	 *            the second Publisher to compare
-	 * @param isEqual
-	 *            a function used to compare items emitted by each Publisher
-	 * @param <T>
-	 *            the type of items emitted by each Publisher
+	 * @param source1 the first Publisher to compare
+	 * @param source2 the second Publisher to compare
+	 * @param isEqual a function used to compare items emitted by each Publisher
+	 * @param <T> the type of items emitted by each Publisher
 	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
 	 *         are the same according to the specified function
 	 */
@@ -629,17 +626,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
 	 * same by comparing the items emitted by each Publisher pairwise based on the results of a specified
 	 * equality function.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sequenceEqual.svg" alt="">
 	 *
-	 * @param source1
-	 *            the first Publisher to compare
-	 * @param source2
-	 *            the second Publisher to compare
-	 * @param isEqual
-	 *            a function used to compare items emitted by each Publisher
-	 * @param prefetch
-	 *            the number of items to prefetch from the first and second source Publisher
-	 * @param <T>
-	 *            the type of items emitted by each Publisher
+	 * @param source1 the first Publisher to compare
+	 * @param source2 the second Publisher to compare
+	 * @param isEqual a function used to compare items emitted by each Publisher
+	 * @param prefetch the number of items to prefetch from the first and second source Publisher
+	 * @param <T> the type of items emitted by each Publisher
 	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
 	 *         are the same according to the specified function
 	 */
@@ -1497,7 +1491,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Nullable
 	public T block() {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1521,7 +1515,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Nullable
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -1542,7 +1536,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public Optional<T> blockOptional() {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1567,7 +1561,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public Optional<T> blockOptional(Duration timeout) {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -1995,6 +1989,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <strong>reverse order</strong>. If you want to assert the execution of the callback
 	 * please keep in mind that the Mono will complete before it is executed, so its
 	 * effect might not be visible immediately after eg. a {@link #block()}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doFinallyForMono.svg" alt="">
+	 *
 	 *
 	 * @param onFinally the callback to execute after a terminal signal (complete, error
 	 * or cancel)
@@ -2094,6 +2091,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * that is passed to the side-effect callback. Note that this is an advanced operator,
 	 * typically used for monitoring of a Mono.
 	 * These {@link Signal} have a {@link Context} associated to them.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doOnEachForMono.svg" alt="">
 	 *
 	 * @param signalConsumer the mandatory callback to call on
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
@@ -2908,11 +2907,15 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
+	 * and the value that triggered the error.
 	 * @return a {@link Mono} that attempts to continue processing on errors.
 	 */
 	public final Mono<T> onErrorContinue(BiConsumer<Throwable, Object> errorConsumer) {
@@ -2928,11 +2931,16 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the specified {@code type} are recovered from.
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param type the {@link Class} of {@link Exception} that are resumed from.
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
+	 * and the value that triggered the error.
 	 * @return a {@link Mono} that attempts to continue processing on some errors.
 	 */
 	public final <E extends Throwable> Mono<T> onErrorContinue(Class<E> type, BiConsumer<Throwable, Object> errorConsumer) {
@@ -2942,13 +2950,20 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Let compatible operators <strong>upstream</strong> recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
-	 * Only errors matching the {@link Predicate} are recovered from.
+	 * Only errors matching the {@link Predicate} are recovered from (note that this
+	 * predicate can be applied several times and thus must be idempotent).
 	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * Alternatively, throwing from that biconsumer will propagate the thrown exception downstream
+	 * in place of the original error, which is added as a suppressed exception to the new one.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
 	 * support it).
 	 *
+	 * @param errorPredicate a {@link Predicate} used to filter which errors should be resumed from.
+	 * This MUST be idempotent, as it can be used several times.
+	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the predicate and the value
+	 * that triggered the error.
 	 * @return a {@link Mono} that attempts to continue processing on some errors.
 	 */
 	public final <E extends Throwable> Mono<T> onErrorContinue(Predicate<E> errorPredicate,
@@ -3693,7 +3708,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		Hooks.onLastOperator(this).subscribe(Operators.toCoreSubscriber(actual));
+		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
 	/**
@@ -4300,7 +4315,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param source the source to apply assembly hooks onto
 	 *
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
-	 * @deprecated use {@link Hooks#onLastOperator(CorePublisher)}
+	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
 	@Deprecated

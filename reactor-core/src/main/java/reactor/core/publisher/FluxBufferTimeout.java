@@ -176,9 +176,10 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		}
 
 		void flushCallback(@Nullable T ev) { //TODO investigate ev not used
-			C v = values;
+			final C v;
 			boolean flush = false;
 			synchronized (this) {
+				v = values;
 				if (v != null && !v.isEmpty()) {
 					values = bufferSupplier.get();
 					flush = true;
