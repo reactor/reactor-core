@@ -507,35 +507,6 @@ public abstract class Hooks {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	static <T> CorePublisher<T> onLastOperator(CorePublisher<T> source) {
-		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
-		final Publisher<T> publisher;
-		if (hook == null) {
-			publisher = source;
-		}
-		else {
-			publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
-		}
-
-		if (publisher instanceof CorePublisher) {
-			return (CorePublisher<T>) publisher;
-		}
-		else {
-			return new CorePublisher<T>() {
-				@Override
-				public void subscribe(CoreSubscriber<? super T> subscriber) {
-					publisher.subscribe(subscriber);
-				}
-
-				@Override
-				public void subscribe(Subscriber<? super T> s) {
-					publisher.subscribe(s);
-				}
-			};
-		}
-	}
-
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
