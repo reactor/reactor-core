@@ -15,6 +15,8 @@ Non-Blocking [Reactive Streams](https://www.reactive-streams.org/) Foundation fo
 
 The `master` branch is now dedicated to development of the `3.3.x` line.
 
+The `master` branch is now dedicated to development of the `3.3.x` line.
+
 ## Getting it
    
 **Reactor 3 requires Java 8 or + to run**.
