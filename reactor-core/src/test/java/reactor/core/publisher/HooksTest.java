@@ -21,11 +21,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 
@@ -59,6 +59,7 @@ public class HooksTest {
 		Hooks.resetOnOperatorDebug();
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
+		new ArrayList<>(Hooks.getOnScheduleHooks().keySet()).forEach(Hooks::removeOnScheduleDecorator);
 	}
 
 	void simpleFlux(){
@@ -940,6 +941,74 @@ public class HooksTest {
 		}
 		finally {
 			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void scheduleDecoratorIsAdditive() {
+		AtomicInteger tracker = new AtomicInteger();
+		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
+		Hooks.addOnScheduleDecorator("k2", new TrackingDecorator(tracker, 10));
+		Hooks.addOnScheduleDecorator("k3", new TrackingDecorator(tracker, 100));
+
+		Schedulers.parallel().schedule(() -> {});
+
+		assertThat(tracker).as("3 decorators invoked").hasValue(111);
+	}
+
+	@Test
+	public void scheduleDecoratorIsNotReplaceable() {
+		AtomicInteger tracker = new AtomicInteger();
+		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
+		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 10));
+		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 100));
+
+		Schedulers.parallel().schedule(() -> {});
+
+		assertThat(tracker).hasValue(1);
+	}
+
+	@Test
+	public void scheduleDecoratorWorksWhenEmpty() {
+		AtomicInteger tracker = new AtomicInteger();
+		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
+		Hooks.removeOnScheduleDecorator("k1");
+
+		Schedulers.parallel().schedule(() -> {});
+
+		assertThat(tracker).hasValue(0);
+	}
+
+	@Test
+	public void scheduleDecoratorIgnoresUnknownRemovals() {
+		assertThat(Hooks.removeOnScheduleDecorator("k1"))
+				.as("old")
+				.isNull();
+	}
+
+	private static class TrackingDecorator implements ScheduledTaskDecorator {
+		final AtomicInteger tracker;
+		final int dx;
+
+		private TrackingDecorator(AtomicInteger tracker, int dx) {
+			this.tracker = tracker;
+			this.dx = dx;
+		}
+
+		@Override
+		public Runnable decorate(Runnable runnable) {
+			return () -> {
+				tracker.addAndGet(dx);
+				runnable.run();
+			};
+		}
+
+		@Override
+		public <V> Callable<V> decorate(Callable<V> callable) {
+			return () -> {
+				tracker.addAndGet(dx);
+				return callable.call();
+			};
 		}
 	}
 }
