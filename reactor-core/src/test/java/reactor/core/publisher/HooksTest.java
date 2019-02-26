@@ -22,7 +22,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -945,36 +948,42 @@ public class HooksTest {
 	}
 
 	@Test
-	public void scheduleDecoratorIsAdditive() {
+	public void scheduleDecoratorIsAdditive() throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
 		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
 		Hooks.addOnScheduleDecorator("k2", new TrackingDecorator(tracker, 10));
 		Hooks.addOnScheduleDecorator("k3", new TrackingDecorator(tracker, 100));
 
-		Schedulers.parallel().schedule(() -> {});
+		CountDownLatch latch = new CountDownLatch(1);
+		Schedulers.newElastic("foo").schedule(latch::countDown);
+		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).as("3 decorators invoked").hasValue(111);
 	}
 
 	@Test
-	public void scheduleDecoratorIsNotReplaceable() {
+	public void scheduleDecoratorIsNotReplaceable() throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
 		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
 		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 10));
 		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 100));
 
-		Schedulers.parallel().schedule(() -> {});
+		CountDownLatch latch = new CountDownLatch(1);
+		Schedulers.newElastic("foo").schedule(latch::countDown);
+		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(1);
 	}
 
 	@Test
-	public void scheduleDecoratorWorksWhenEmpty() {
+	public void scheduleDecoratorWorksWhenEmpty() throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
 		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
 		Hooks.removeOnScheduleDecorator("k1");
 
-		Schedulers.parallel().schedule(() -> {});
+		CountDownLatch latch = new CountDownLatch(1);
+		Schedulers.newElastic("foo").schedule(latch::countDown);
+		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(0);
 	}
@@ -984,6 +993,24 @@ public class HooksTest {
 		assertThat(Hooks.removeOnScheduleDecorator("k1"))
 				.as("old")
 				.isNull();
+	}
+
+	@Test
+	public void scheduleDecoratorsAreOrdered() throws Exception {
+		CopyOnWriteArrayList<String> items = new CopyOnWriteArrayList<>();
+		Hooks.addOnScheduleDecorator("k1", new ApplicationOrderRecordingDecorator(items, "k1"));
+		Hooks.addOnScheduleDecorator("k2", new ApplicationOrderRecordingDecorator(items, "k2"));
+		Hooks.addOnScheduleDecorator("k3", new ApplicationOrderRecordingDecorator(items, "k3"));
+
+		CountDownLatch latch = new CountDownLatch(1);
+		Schedulers.newElastic("foo").schedule(latch::countDown);
+		latch.await(5, TimeUnit.SECONDS);
+
+		assertThat(items).containsExactly(
+				"k1#0",
+				"k2#0",
+				"k3#0"
+		);
 	}
 
 	private static class TrackingDecorator implements ScheduledTaskDecorator {
@@ -1009,6 +1036,33 @@ public class HooksTest {
 				tracker.addAndGet(dx);
 				return callable.call();
 			};
+		}
+	}
+
+	private static class ApplicationOrderRecordingDecorator
+			implements ScheduledTaskDecorator {
+
+		final List<String> items;
+
+		final String id;
+
+		final AtomicInteger counter = new AtomicInteger();
+
+		public ApplicationOrderRecordingDecorator(List<String> items, String id) {
+			this.items = items;
+			this.id = id;
+		}
+
+		@Override
+		public Runnable decorate(Runnable runnable) {
+			items.add(id + "#" + counter.getAndIncrement());
+			return runnable;
+		}
+
+		@Override
+		public <V> Callable<V> decorate(Callable<V> callable) {
+			items.add(id + "#" + counter.getAndIncrement());
+			return callable;
 		}
 	}
 }
