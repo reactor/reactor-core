@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -465,6 +466,71 @@ public abstract class Hooks {
 		}
 	}
 
+	/**
+	 * Set up an additional {@link ScheduledTaskDecorator} decorator for a given key
+	 * only if that key is not already present.
+	 * <p>
+	 * The decorator is a {@link ScheduledTaskDecorator} taking the {@link Runnable} or {@link Callable}.
+	 * It returns the decorated {@link Runnable}/{@link Callable}.
+	 *
+	 * @param key the key under which to set up the decorator
+	 * @param decorator the executor service decorator to add, if key not already present.
+	 * @return true if the decorator was added, false if a decorator was already present
+	 * for this key.
+	 * @see #removeOnScheduleDecorator(String)
+	 */
+	public static boolean addOnScheduleDecorator(String key, ScheduledTaskDecorator decorator) {
+		synchronized (onScheduleHooks) {
+			boolean wasEmpty = onScheduleHooks.isEmpty();
+
+			boolean added = onScheduleHooks.putIfAbsent(key, decorator) == null;
+
+			if (wasEmpty) {
+				Schedulers.addExecutorServiceDecorator(KEY_EXECUTOR_DECORATOR, ((scheduler, executorService) -> {
+					return new TaskWrappingScheduledExecutorService(executorService) {
+						@Override
+						protected Runnable wrap(Runnable runnable) {
+							for (ScheduledTaskDecorator decorator : onScheduleHooks.values()) {
+								runnable = decorator.decorate(runnable);
+							}
+							return runnable;
+						}
+
+						@Override
+						protected <V> Callable<V> wrap(Callable<V> callable) {
+							for (ScheduledTaskDecorator decorator : onScheduleHooks.values()) {
+								callable = decorator.decorate(callable);
+							}
+							return callable;
+						}
+					};
+				}));
+			}
+
+			return added;
+		}
+	}
+
+	/**
+	 * Remove an existing {@link ScheduledTaskDecorator} decorator if it has been set up
+	 * via {@link #addOnScheduleDecorator(String, ScheduledTaskDecorator)}.
+	 *
+	 * @param key the key for the executor service decorator to remove
+	 * @return the removed decorator, or null if none was set for that key
+	 * @see #addOnScheduleDecorator(String, ScheduledTaskDecorator)
+	 */
+	public static ScheduledTaskDecorator removeOnScheduleDecorator(String key) {
+		synchronized (onScheduleHooks) {
+			ScheduledTaskDecorator oldValue = onScheduleHooks.remove(key);
+
+			if (onScheduleHooks.isEmpty()) {
+				Schedulers.removeExecutorServiceDecorator(KEY_EXECUTOR_DECORATOR);
+			}
+
+			return oldValue;
+		}
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -514,6 +580,7 @@ public abstract class Hooks {
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onEachOperatorHooks;
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
+	private static final LinkedHashMap<String, ScheduledTaskDecorator> onScheduleHooks = new LinkedHashMap<>(1);
 
 	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
@@ -524,6 +591,9 @@ public abstract class Hooks {
 	}
 	static final Map<String, BiFunction<? super Throwable, Object, ? extends Throwable>> getOnOperatorErrorHooks() {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
+	}
+	static final Map<String, ScheduledTaskDecorator> getOnScheduleHooks() {
+		return Collections.unmodifiableMap(onScheduleHooks);
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);
@@ -556,6 +626,8 @@ public abstract class Hooks {
 	 * in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
 	 */
 	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
+
+	private static final String KEY_EXECUTOR_DECORATOR = "reactor.onSchedule.local";
 
 	static boolean GLOBAL_TRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
