@@ -37,6 +37,8 @@ import java.util.function.Supplier;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.publisher.Hooks;
+import reactor.core.publisher.ScheduledTaskDecorator;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
@@ -458,6 +460,7 @@ public abstract class Schedulers {
 	 * for this key.
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
+	 * @see Hooks#addOnScheduleDecorator(String, ScheduledTaskDecorator)
 	 */
 	public static boolean addExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
@@ -479,6 +482,7 @@ public abstract class Schedulers {
 	 * @param decorator the executor service decorator to add, if key not already present.
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
+	 * @see Hooks#addOnScheduleDecorator(String, ScheduledTaskDecorator)
 	 */
 	public static void setExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
