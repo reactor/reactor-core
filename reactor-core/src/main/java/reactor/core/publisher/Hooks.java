@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -485,23 +486,26 @@ public abstract class Hooks {
 
 			boolean added = onScheduleHooks.putIfAbsent(key, decorator) == null;
 
+			if (added) {
+				Iterator<ScheduledTaskDecorator> iterator = onScheduleHooks.values().iterator();
+
+				onScheduleHook = iterator.next();
+				while (iterator.hasNext()) {
+					onScheduleHook = new ChainedScheduledTaskDecorator(onScheduleHook, iterator.next());
+				}
+			}
+
 			if (wasEmpty) {
 				Schedulers.addExecutorServiceDecorator(KEY_EXECUTOR_DECORATOR, ((scheduler, executorService) -> {
 					return new TaskWrappingScheduledExecutorService(executorService) {
 						@Override
 						protected Runnable wrap(Runnable runnable) {
-							for (ScheduledTaskDecorator decorator : onScheduleHooks.values()) {
-								runnable = decorator.decorate(runnable);
-							}
-							return runnable;
+							return onScheduleHook.decorate(runnable);
 						}
 
 						@Override
 						protected <V> Callable<V> wrap(Callable<V> callable) {
-							for (ScheduledTaskDecorator decorator : onScheduleHooks.values()) {
-								callable = decorator.decorate(callable);
-							}
-							return callable;
+							return onScheduleHook.decorate(callable);
 						}
 					};
 				}));
@@ -574,6 +578,7 @@ public abstract class Hooks {
 	//Special hook that is between the two (strategy can be transformative, but not named)
 	static volatile OnNextFailureStrategy onNextErrorHook;
 
+	private static ScheduledTaskDecorator onScheduleHook;
 
 	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order
 	//internal use only as it relies on external synchronization
@@ -661,4 +666,26 @@ public abstract class Hooks {
 		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
 	}
 
+	private static class ChainedScheduledTaskDecorator implements ScheduledTaskDecorator {
+
+		final ScheduledTaskDecorator oldHook;
+
+		final ScheduledTaskDecorator decorator;
+
+		ChainedScheduledTaskDecorator(ScheduledTaskDecorator oldHook,
+				ScheduledTaskDecorator decorator) {
+			this.oldHook = oldHook;
+			this.decorator = decorator;
+		}
+
+		@Override
+		public Runnable decorate(Runnable runnable) {
+			return decorator.decorate(oldHook.decorate(runnable));
+		}
+
+		@Override
+		public <V> Callable<V> decorate(Callable<V> callable) {
+			return decorator.decorate(oldHook.decorate(callable));
+		}
+	}
 }
