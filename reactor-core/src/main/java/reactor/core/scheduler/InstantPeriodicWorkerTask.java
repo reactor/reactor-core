@@ -28,7 +28,7 @@ import reactor.util.annotation.Nullable;
 /**
  * A runnable task for {@link Scheduler} Workers that can run periodically
  **/
-final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
+final class InstantPeriodicWorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	final Runnable task;
 
@@ -70,7 +70,7 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 		try {
 			try {
 				task.run();
-				setRest(executor.submit(this));
+				setRest(executor.submit((Callable<Void>) this));
 			}
 			catch (Throwable ex) {
 				Schedulers.handleError(ex);
@@ -80,6 +80,11 @@ final class InstantPeriodicWorkerTask implements Disposable, Callable<Void> {
 			thread = null;
 		}
 		return null;
+	}
+
+	@Override
+	public void run() {
+		call();
 	}
 
 	void setRest(Future<?> f) {
