@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -436,6 +435,83 @@ public abstract class Hooks {
 	}
 
 	/**
+	 * Add or replace a named scheduling {@link Function decorator}. With subsequent calls
+	 * to this method, the onSchedule hook can be a composite of several sub-hooks, each
+	 * with a different key.
+	 * <p>
+	 * The sub-hook is a {@link Function} taking the scheduled {@link Runnable}.
+	 * It returns the decorated {@link Runnable}.
+	 *
+	 * @param key the key under which to set up the onSchedule sub-hook
+	 * @param decorator the {@link Runnable} decorator to add (or replace, if key is already present)
+	 * @see #resetOnSchedule(String)
+	 * @see #resetOnSchedule()
+	 */
+	public static void onSchedule(String key, Function<Runnable, Runnable> decorator) {
+		synchronized (onScheduleHooks) {
+			onScheduleHooks.put(key, decorator);
+			Function<Runnable, Runnable> newHook = null;
+			for (Function<Runnable, Runnable> function : onScheduleHooks.values()) {
+				if (newHook == null) {
+					newHook = function;
+				}
+				else {
+					newHook = newHook.andThen(function);
+				}
+			}
+			onScheduleHook = newHook;
+
+			//rely on the fact that add is no-op if already present
+			Schedulers.addExecutorServiceDecorator(EXECUTOR_DECORATOR_ONSCHEDULE,
+					((scheduler, executorService) -> new HookableScheduledExecutorService(executorService)));
+		}
+	}
+
+	/**
+	 * Reset a specific onSchedule {@link Function sub-hook} if it has been set up
+	 * via {@link #onSchedule(String, Function)}.
+	 *
+	 * @param key the key for onSchedule sub-hook to remove
+	 * @see #onSchedule(String, Function)
+	 * @see #resetOnSchedule()
+	 */
+	public static void resetOnSchedule(String key) {
+		synchronized (onScheduleHooks) {
+			onScheduleHooks.remove(key);
+			if (onScheduleHooks.isEmpty()) {
+				onScheduleHook = null;
+				Schedulers.removeExecutorServiceDecorator(EXECUTOR_DECORATOR_ONSCHEDULE);
+			}
+			else {
+				Function<Runnable, Runnable> newHook = null;
+				for (Function<Runnable, Runnable> function : onScheduleHooks.values()) {
+					if (newHook == null) {
+						newHook = function;
+					}
+					else {
+						newHook = newHook.andThen(function);
+					}
+				}
+				onScheduleHook = newHook;
+			}
+		}
+	}
+
+	/**
+	 * Remove all onSchedule {@link Function sub-hooks}.
+	 *
+	 * @see #onSchedule(String, Function)
+	 * @see #resetOnSchedule(String)
+	 */
+	public static void resetOnSchedule() {
+		synchronized (onScheduleHooks) {
+			onScheduleHooks.clear();
+			onScheduleHook = null;
+			Schedulers.removeExecutorServiceDecorator(EXECUTOR_DECORATOR_ONSCHEDULE);
+		}
+	}
+
+	/**
 	 * Reset global error dropped strategy to bubbling back the error.
 	 */
 	public static void resetOnErrorDropped() {
@@ -464,64 +540,6 @@ public abstract class Hooks {
 		log.debug("Reset to factory defaults : onNextError");
 		synchronized (log) {
 			onNextErrorHook = null;
-		}
-	}
-
-	/**
-	 * Set up an additional {@link Function} decorator for a given key
-	 * only if that key is not already present.
-	 * <p>
-	 * The decorator is a {@link Function} taking the scheduled {@link Runnable}.
-	 * It returns the decorated {@link Runnable}.
-	 *
-	 * @param key the key under which to set up the decorator
-	 * @param decorator the {@link Runnable} decorator to add, if key not already present.
-	 * @return true if the decorator was added, false if a decorator was already present
-	 * for this key.
-	 * @see #removeOnScheduleDecorator(String)
-	 */
-	public static boolean addOnScheduleDecorator(String key, Function<Runnable, Runnable> decorator) {
-		synchronized (onScheduleHooks) {
-			boolean wasEmpty = onScheduleHooks.isEmpty();
-
-			boolean added = onScheduleHooks.putIfAbsent(key, decorator) == null;
-
-			if (added) {
-				Iterator<Function<Runnable, Runnable>> iterator = onScheduleHooks.values().iterator();
-
-				onScheduleHook = iterator.next();
-				while (iterator.hasNext()) {
-					onScheduleHook = onScheduleHook.andThen(iterator.next());
-				}
-			}
-
-			if (wasEmpty) {
-				Schedulers.addExecutorServiceDecorator(KEY_EXECUTOR_DECORATOR, ((scheduler, executorService) -> {
-					return new HookableScheduledExecutorService(executorService);
-				}));
-			}
-
-			return added;
-		}
-	}
-
-	/**
-	 * Remove an existing {@link Function} decorator if it has been set up
-	 * via {@link #addOnScheduleDecorator(String, Function)}.
-	 *
-	 * @param key the key for the executor service decorator to remove
-	 * @return the removed decorator, or null if none was set for that key
-	 * @see #addOnScheduleDecorator(String, Function)
-	 */
-	public static Function<Runnable, Runnable> removeOnScheduleDecorator(String key) {
-		synchronized (onScheduleHooks) {
-			Function<Runnable, Runnable> oldValue = onScheduleHooks.remove(key);
-
-			if (onScheduleHooks.isEmpty()) {
-				Schedulers.removeExecutorServiceDecorator(KEY_EXECUTOR_DECORATOR);
-			}
-
-			return oldValue;
 		}
 	}
 
@@ -560,6 +578,8 @@ public abstract class Hooks {
 	static volatile Function<Publisher, Publisher>                             onEachOperatorHook;
 	static volatile Function<Publisher, Publisher>                             onLastOperatorHook;
 	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
+	@Nullable
+	static Function<Runnable, Runnable>                                        onScheduleHook;
 
 	//Hooks that are just callbacks
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
@@ -568,7 +588,6 @@ public abstract class Hooks {
 	//Special hook that is between the two (strategy can be transformative, but not named)
 	static volatile OnNextFailureStrategy onNextErrorHook;
 
-	static Function<Runnable, Runnable> onScheduleHook;
 
 	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order
 	//internal use only as it relies on external synchronization
@@ -592,6 +611,12 @@ public abstract class Hooks {
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);
+
+	/**
+	 * This key is used to add the {@link #onSchedule(String, Function)} composite hook as
+	 * a {@link Schedulers#addExecutorServiceDecorator(String, BiFunction) executorService decorator}.
+	 */
+	private static final String EXECUTOR_DECORATOR_ONSCHEDULE = "reactor.onSchedule";
 
 	/**
 	 * A key that can be used to store a sequence-specific {@link Hooks#onErrorDropped(Consumer)}
@@ -621,8 +646,6 @@ public abstract class Hooks {
 	 * in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
 	 */
 	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
-
-	private static final String KEY_EXECUTOR_DECORATOR = "reactor.onSchedule.local";
 
 	static boolean GLOBAL_TRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
