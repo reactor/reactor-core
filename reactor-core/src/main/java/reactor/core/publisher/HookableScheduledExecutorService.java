@@ -18,14 +18,10 @@ package reactor.core.publisher;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.jetbrains.annotations.NotNull;
 
 class HookableScheduledExecutorService implements ScheduledExecutorService {
 
@@ -44,37 +40,33 @@ class HookableScheduledExecutorService implements ScheduledExecutorService {
 		return Hooks.onScheduleHook.apply((Runnable) callable);
 	}
 
-	@NotNull
 	@Override
-	public ScheduledFuture<?> schedule(@NotNull Runnable command,
+	public ScheduledFuture<?> schedule(Runnable command,
 			long delay,
-			@NotNull TimeUnit unit) {
+			TimeUnit unit) {
 		return delegate.schedule(wrap(command), delay, unit);
 	}
 
-	@NotNull
 	@Override
-	public <V> ScheduledFuture<V> schedule(@NotNull Callable<V> callable,
+	public <V> ScheduledFuture<V> schedule(Callable<V> callable,
 			long delay,
-			@NotNull TimeUnit unit) {
-		return (ScheduledFuture<V>) delegate.schedule(wrap(callable), delay, unit);
+			TimeUnit unit) {
+		return (ScheduledFuture<V>) delegate.schedule(wrap(callable), delay, unit); //FIXME
 	}
 
-	@NotNull
 	@Override
-	public ScheduledFuture<?> scheduleAtFixedRate(@NotNull Runnable command,
+	public ScheduledFuture<?> scheduleAtFixedRate(Runnable command,
 			long initialDelay,
 			long period,
-			@NotNull TimeUnit unit) {
+			TimeUnit unit) {
 		return delegate.scheduleAtFixedRate(wrap(command), initialDelay, period, unit);
 	}
 
-	@NotNull
 	@Override
-	public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull Runnable command,
+	public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command,
 			long initialDelay,
 			long delay,
-			@NotNull TimeUnit unit) {
+			TimeUnit unit) {
 		return delegate.scheduleWithFixedDelay(wrap(command), initialDelay, delay, unit);
 	}
 
@@ -83,7 +75,6 @@ class HookableScheduledExecutorService implements ScheduledExecutorService {
 		delegate.shutdown();
 	}
 
-	@NotNull
 	@Override
 	public List<Runnable> shutdownNow() {
 		return delegate.shutdownNow();
@@ -100,61 +91,52 @@ class HookableScheduledExecutorService implements ScheduledExecutorService {
 	}
 
 	@Override
-	public boolean awaitTermination(long timeout, @NotNull TimeUnit unit)
+	public boolean awaitTermination(long timeout, TimeUnit unit)
 			throws InterruptedException {
 		return delegate.awaitTermination(timeout, unit);
 	}
 
-	@NotNull
 	@Override
-	public <T> Future<T> submit(@NotNull Callable<T> task) {
-		return (Future<T>) delegate.submit(wrap(task));
+	public <T> Future<T> submit(Callable<T> task) {
+		return (Future<T>) delegate.submit(wrap(task)); //FIXME
 	}
 
-	@NotNull
 	@Override
-	public <T> Future<T> submit(@NotNull Runnable task, T result) {
+	public <T> Future<T> submit(Runnable task, T result) {
 		return delegate.submit(wrap(task), result);
 	}
 
-	@NotNull
 	@Override
-	public Future<?> submit(@NotNull Runnable task) {
+	public Future<?> submit(Runnable task) {
 		return delegate.submit(wrap(task));
 	}
 
 	@Override
-	public void execute(@NotNull Runnable command) {
+	public void execute(Runnable command) {
 		delegate.execute(wrap(command));
 	}
 
-	@NotNull
 	@Override
-	public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks)
-			throws InterruptedException {
+	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) {
 		throw new UnsupportedOperationException("invokeAll is not implemented");
 	}
 
-	@NotNull
 	@Override
-	public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks,
+	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
 			long timeout,
-			@NotNull TimeUnit unit) throws InterruptedException {
+			TimeUnit unit) {
 		throw new UnsupportedOperationException("invokeAll is not implemented");
 	}
 
-	@NotNull
 	@Override
-	public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
-			throws InterruptedException, ExecutionException {
+	public <T> T invokeAny(Collection<? extends Callable<T>> tasks) {
 		throw new UnsupportedOperationException("invokeAny is not implemented");
 	}
 
 	@Override
-	public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks,
+	public <T> T invokeAny(Collection<? extends Callable<T>> tasks,
 			long timeout,
-			@NotNull TimeUnit unit)
-			throws InterruptedException, ExecutionException, TimeoutException {
+			TimeUnit unit) {
 		throw new UnsupportedOperationException("invokeAny is not implemented");
 	}
 }

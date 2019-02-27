@@ -62,7 +62,7 @@ public class HooksTest {
 		Hooks.resetOnOperatorDebug();
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
-		new ArrayList<>(Hooks.getOnScheduleHooks().keySet()).forEach(Hooks::removeOnScheduleDecorator);
+		Hooks.resetOnSchedule();
 	}
 
 	void simpleFlux(){
@@ -948,13 +948,13 @@ public class HooksTest {
 	}
 
 	@Test
-	public void scheduleDecoratorIsAdditive() throws Exception {
+	public void onScheduleIsAdditive() throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
-		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
-		Hooks.addOnScheduleDecorator("k2", new TrackingDecorator(tracker, 10));
-		Hooks.addOnScheduleDecorator("k3", new TrackingDecorator(tracker, 100));
+		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
+		Hooks.onSchedule("k2", new TrackingDecorator(tracker, 10));
+		Hooks.onSchedule("k3", new TrackingDecorator(tracker, 100));
 
-		CountDownLatch latch = new CountDownLatch(1);
+		CountDownLatch latch = new CountDownLatch(3);
 		Schedulers.newElastic("foo").schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
@@ -962,24 +962,24 @@ public class HooksTest {
 	}
 
 	@Test
-	public void scheduleDecoratorIsNotReplaceable() throws Exception {
+	public void onScheduleReplaces() throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
-		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
-		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 10));
-		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 100));
+		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
+		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 10));
+		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 100));
 
 		CountDownLatch latch = new CountDownLatch(1);
 		Schedulers.newElastic("foo").schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
-		assertThat(tracker).hasValue(1);
+		assertThat(tracker).hasValue(100);
 	}
 
 	@Test
-	public void scheduleDecoratorWorksWhenEmpty() throws Exception {
+	public void onScheduleWorksWhenEmpty() throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
-		Hooks.addOnScheduleDecorator("k1", new TrackingDecorator(tracker, 1));
-		Hooks.removeOnScheduleDecorator("k1");
+		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
+		Hooks.resetOnSchedule("k1");
 
 		CountDownLatch latch = new CountDownLatch(1);
 		Schedulers.newElastic("foo").schedule(latch::countDown);
@@ -989,18 +989,47 @@ public class HooksTest {
 	}
 
 	@Test
-	public void scheduleDecoratorIgnoresUnknownRemovals() {
-		assertThat(Hooks.removeOnScheduleDecorator("k1"))
-				.as("old")
-				.isNull();
+	public void onScheduleIgnoresUnknownRemovals() {
+		assertThatCode(() -> Hooks.resetOnSchedule("k1"))
+				.doesNotThrowAnyException();
 	}
 
 	@Test
-	public void scheduleDecoratorsAreOrdered() throws Exception {
+	public void onScheduleResetOne() throws InterruptedException {
+		AtomicInteger tracker = new AtomicInteger();
+		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
+		Hooks.onSchedule("k2", new TrackingDecorator(tracker, 10));
+		Hooks.onSchedule("k3", new TrackingDecorator(tracker, 100));
+		Hooks.resetOnSchedule("k2");
+
+		CountDownLatch latch = new CountDownLatch(3);
+		Schedulers.newElastic("foo").schedule(latch::countDown);
+		latch.await(5, TimeUnit.SECONDS);
+
+		assertThat(tracker).hasValue(101);
+	}
+
+	@Test
+	public void onScheduleResetAll() throws InterruptedException {
+		AtomicInteger tracker = new AtomicInteger();
+		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
+		Hooks.onSchedule("k2", new TrackingDecorator(tracker, 10));
+		Hooks.onSchedule("k3", new TrackingDecorator(tracker, 100));
+		Hooks.resetOnSchedule();
+
+		CountDownLatch latch = new CountDownLatch(1);
+		Schedulers.newElastic("foo").schedule(latch::countDown);
+		latch.await(5, TimeUnit.SECONDS);
+
+		assertThat(tracker).hasValue(0);
+	}
+
+	@Test
+	public void onSchedulesAreOrdered() throws Exception {
 		CopyOnWriteArrayList<String> items = new CopyOnWriteArrayList<>();
-		Hooks.addOnScheduleDecorator("k1", new ApplicationOrderRecordingDecorator(items, "k1"));
-		Hooks.addOnScheduleDecorator("k2", new ApplicationOrderRecordingDecorator(items, "k2"));
-		Hooks.addOnScheduleDecorator("k3", new ApplicationOrderRecordingDecorator(items, "k3"));
+		Hooks.onSchedule("k1", new ApplicationOrderRecordingDecorator(items, "k1"));
+		Hooks.onSchedule("k2", new ApplicationOrderRecordingDecorator(items, "k2"));
+		Hooks.onSchedule("k3", new ApplicationOrderRecordingDecorator(items, "k3"));
 
 		CountDownLatch latch = new CountDownLatch(1);
 		Schedulers.newElastic("foo").schedule(latch::countDown);
@@ -1014,9 +1043,9 @@ public class HooksTest {
 	}
 
 	@Test
-	public void scheduleDecoratorWorksWithCallables() throws Exception {
+	public void onScheduleWorksWithCallables() throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
-		Hooks.addOnScheduleDecorator("k1", r -> {
+		Hooks.onSchedule("k1", r -> {
 			assertThat(r).isInstanceOf(Callable.class);
 			return () -> {
 				tracker.getAndIncrement();
