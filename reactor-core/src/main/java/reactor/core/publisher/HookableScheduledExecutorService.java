@@ -24,29 +24,32 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
 
-abstract class TaskWrappingScheduledExecutorService implements ScheduledExecutorService {
+class HookableScheduledExecutorService implements ScheduledExecutorService {
 
 	final ScheduledExecutorService delegate;
 
-	protected TaskWrappingScheduledExecutorService(ScheduledExecutorService delegate) {
+	protected HookableScheduledExecutorService(ScheduledExecutorService delegate) {
 		this.delegate = delegate;
 	}
 
-	protected abstract Runnable wrap(Runnable runnable);
+	protected Runnable wrap(Runnable runnable) {
+		return Hooks.onScheduleHook.apply(runnable);
+	}
 
-	protected abstract <V> Callable<V> wrap(Callable<V> callable);
+	protected <V> Runnable wrap(Callable<V> callable) {
+		// We assume that every Callable in Reactor implements Runnable
+		return Hooks.onScheduleHook.apply((Runnable) callable);
+	}
 
 	@NotNull
 	@Override
 	public ScheduledFuture<?> schedule(@NotNull Runnable command,
 			long delay,
 			@NotNull TimeUnit unit) {
-		command = wrap(command);
-		return delegate.schedule(command, delay, unit);
+		return delegate.schedule(wrap(command), delay, unit);
 	}
 
 	@NotNull
@@ -54,8 +57,7 @@ abstract class TaskWrappingScheduledExecutorService implements ScheduledExecutor
 	public <V> ScheduledFuture<V> schedule(@NotNull Callable<V> callable,
 			long delay,
 			@NotNull TimeUnit unit) {
-		callable = wrap(callable);
-		return delegate.schedule(callable, delay, unit);
+		return (ScheduledFuture<V>) delegate.schedule(wrap(callable), delay, unit);
 	}
 
 	@NotNull
@@ -64,8 +66,7 @@ abstract class TaskWrappingScheduledExecutorService implements ScheduledExecutor
 			long initialDelay,
 			long period,
 			@NotNull TimeUnit unit) {
-		command = wrap(command);
-		return delegate.scheduleAtFixedRate(command, initialDelay, period, unit);
+		return delegate.scheduleAtFixedRate(wrap(command), initialDelay, period, unit);
 	}
 
 	@NotNull
@@ -74,8 +75,7 @@ abstract class TaskWrappingScheduledExecutorService implements ScheduledExecutor
 			long initialDelay,
 			long delay,
 			@NotNull TimeUnit unit) {
-		command = wrap(command);
-		return delegate.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+		return delegate.scheduleWithFixedDelay(wrap(command), initialDelay, delay, unit);
 	}
 
 	@Override
@@ -108,30 +108,31 @@ abstract class TaskWrappingScheduledExecutorService implements ScheduledExecutor
 	@NotNull
 	@Override
 	public <T> Future<T> submit(@NotNull Callable<T> task) {
-		task = wrap(task);
-		return delegate.submit(task);
+		return (Future<T>) delegate.submit(wrap(task));
 	}
 
 	@NotNull
 	@Override
 	public <T> Future<T> submit(@NotNull Runnable task, T result) {
-		task = wrap(task);
-		return delegate.submit(task, result);
+		return delegate.submit(wrap(task), result);
 	}
 
 	@NotNull
 	@Override
 	public Future<?> submit(@NotNull Runnable task) {
-		task = wrap(task);
-		return delegate.submit(task);
+		return delegate.submit(wrap(task));
+	}
+
+	@Override
+	public void execute(@NotNull Runnable command) {
+		delegate.execute(wrap(command));
 	}
 
 	@NotNull
 	@Override
 	public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks)
 			throws InterruptedException {
-		tasks = tasks.stream().map(this::wrap).collect(Collectors.toList());
-		return delegate.invokeAll(tasks);
+		throw new UnsupportedOperationException("invokeAll is not implemented");
 	}
 
 	@NotNull
@@ -139,20 +140,14 @@ abstract class TaskWrappingScheduledExecutorService implements ScheduledExecutor
 	public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks,
 			long timeout,
 			@NotNull TimeUnit unit) throws InterruptedException {
-		tasks = tasks.stream()
-		             .map(this::wrap)
-		             .collect(Collectors.toList());
-		return delegate.invokeAll(tasks, timeout, unit);
+		throw new UnsupportedOperationException("invokeAll is not implemented");
 	}
 
 	@NotNull
 	@Override
 	public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
 			throws InterruptedException, ExecutionException {
-		tasks = tasks.stream()
-		             .map(this::wrap)
-		             .collect(Collectors.toList());
-		return delegate.invokeAny(tasks);
+		throw new UnsupportedOperationException("invokeAny is not implemented");
 	}
 
 	@Override
@@ -160,15 +155,6 @@ abstract class TaskWrappingScheduledExecutorService implements ScheduledExecutor
 			long timeout,
 			@NotNull TimeUnit unit)
 			throws InterruptedException, ExecutionException, TimeoutException {
-		tasks = tasks.stream()
-		             .map(this::wrap)
-		             .collect(Collectors.toList());
-		return delegate.invokeAny(tasks, timeout, unit);
-	}
-
-	@Override
-	public void execute(@NotNull Runnable command) {
-		command = wrap(command);
-		delegate.execute(command);
+		throw new UnsupportedOperationException("invokeAny is not implemented");
 	}
 }

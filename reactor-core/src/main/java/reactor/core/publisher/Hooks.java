@@ -468,46 +468,36 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Set up an additional {@link ScheduledTaskDecorator} decorator for a given key
+	 * Set up an additional {@link Function} decorator for a given key
 	 * only if that key is not already present.
 	 * <p>
-	 * The decorator is a {@link ScheduledTaskDecorator} taking the {@link Runnable} or {@link Callable}.
-	 * It returns the decorated {@link Runnable}/{@link Callable}.
+	 * The decorator is a {@link Function} taking the scheduled {@link Runnable}.
+	 * It returns the decorated {@link Runnable}.
 	 *
 	 * @param key the key under which to set up the decorator
-	 * @param decorator the executor service decorator to add, if key not already present.
+	 * @param decorator the {@link Runnable} decorator to add, if key not already present.
 	 * @return true if the decorator was added, false if a decorator was already present
 	 * for this key.
 	 * @see #removeOnScheduleDecorator(String)
 	 */
-	public static boolean addOnScheduleDecorator(String key, ScheduledTaskDecorator decorator) {
+	public static boolean addOnScheduleDecorator(String key, Function<Runnable, Runnable> decorator) {
 		synchronized (onScheduleHooks) {
 			boolean wasEmpty = onScheduleHooks.isEmpty();
 
 			boolean added = onScheduleHooks.putIfAbsent(key, decorator) == null;
 
 			if (added) {
-				Iterator<ScheduledTaskDecorator> iterator = onScheduleHooks.values().iterator();
+				Iterator<Function<Runnable, Runnable>> iterator = onScheduleHooks.values().iterator();
 
 				onScheduleHook = iterator.next();
 				while (iterator.hasNext()) {
-					onScheduleHook = new ChainedScheduledTaskDecorator(onScheduleHook, iterator.next());
+					onScheduleHook = onScheduleHook.andThen(iterator.next());
 				}
 			}
 
 			if (wasEmpty) {
 				Schedulers.addExecutorServiceDecorator(KEY_EXECUTOR_DECORATOR, ((scheduler, executorService) -> {
-					return new TaskWrappingScheduledExecutorService(executorService) {
-						@Override
-						protected Runnable wrap(Runnable runnable) {
-							return onScheduleHook.decorate(runnable);
-						}
-
-						@Override
-						protected <V> Callable<V> wrap(Callable<V> callable) {
-							return onScheduleHook.decorate(callable);
-						}
-					};
+					return new HookableScheduledExecutorService(executorService);
 				}));
 			}
 
@@ -516,16 +506,16 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Remove an existing {@link ScheduledTaskDecorator} decorator if it has been set up
-	 * via {@link #addOnScheduleDecorator(String, ScheduledTaskDecorator)}.
+	 * Remove an existing {@link Function} decorator if it has been set up
+	 * via {@link #addOnScheduleDecorator(String, Function)}.
 	 *
 	 * @param key the key for the executor service decorator to remove
 	 * @return the removed decorator, or null if none was set for that key
-	 * @see #addOnScheduleDecorator(String, ScheduledTaskDecorator)
+	 * @see #addOnScheduleDecorator(String, Function)
 	 */
-	public static ScheduledTaskDecorator removeOnScheduleDecorator(String key) {
+	public static Function<Runnable, Runnable> removeOnScheduleDecorator(String key) {
 		synchronized (onScheduleHooks) {
-			ScheduledTaskDecorator oldValue = onScheduleHooks.remove(key);
+			Function<Runnable, Runnable> oldValue = onScheduleHooks.remove(key);
 
 			if (onScheduleHooks.isEmpty()) {
 				Schedulers.removeExecutorServiceDecorator(KEY_EXECUTOR_DECORATOR);
@@ -578,14 +568,14 @@ public abstract class Hooks {
 	//Special hook that is between the two (strategy can be transformative, but not named)
 	static volatile OnNextFailureStrategy onNextErrorHook;
 
-	private static ScheduledTaskDecorator onScheduleHook;
+	static Function<Runnable, Runnable> onScheduleHook;
 
 	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order
 	//internal use only as it relies on external synchronization
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onEachOperatorHooks;
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
-	private static final LinkedHashMap<String, ScheduledTaskDecorator> onScheduleHooks = new LinkedHashMap<>(1);
+	private static final LinkedHashMap<String, Function<Runnable, Runnable>> onScheduleHooks = new LinkedHashMap<>(1);
 
 	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
@@ -597,7 +587,7 @@ public abstract class Hooks {
 	static final Map<String, BiFunction<? super Throwable, Object, ? extends Throwable>> getOnOperatorErrorHooks() {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
 	}
-	static final Map<String, ScheduledTaskDecorator> getOnScheduleHooks() {
+	static final Map<String, Function<Runnable, Runnable>> getOnScheduleHooks() {
 		return Collections.unmodifiableMap(onScheduleHooks);
 	}
 
@@ -664,28 +654,5 @@ public abstract class Hooks {
 			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher, stacktrace);
 		}
 		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
-	}
-
-	private static class ChainedScheduledTaskDecorator implements ScheduledTaskDecorator {
-
-		final ScheduledTaskDecorator oldHook;
-
-		final ScheduledTaskDecorator decorator;
-
-		ChainedScheduledTaskDecorator(ScheduledTaskDecorator oldHook,
-				ScheduledTaskDecorator decorator) {
-			this.oldHook = oldHook;
-			this.decorator = decorator;
-		}
-
-		@Override
-		public Runnable decorate(Runnable runnable) {
-			return decorator.decorate(oldHook.decorate(runnable));
-		}
-
-		@Override
-		public <V> Callable<V> decorate(Callable<V> callable) {
-			return decorator.decorate(oldHook.decorate(callable));
-		}
 	}
 }
