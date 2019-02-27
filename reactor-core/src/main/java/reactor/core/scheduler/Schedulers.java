@@ -32,13 +32,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Hooks;
-import reactor.core.publisher.ScheduledTaskDecorator;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
@@ -460,7 +460,7 @@ public abstract class Schedulers {
 	 * for this key.
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
-	 * @see Hooks#addOnScheduleDecorator(String, ScheduledTaskDecorator)
+	 * @see Hooks#addOnScheduleDecorator(String, Function)
 	 */
 	public static boolean addExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
@@ -482,7 +482,7 @@ public abstract class Schedulers {
 	 * @param decorator the executor service decorator to add, if key not already present.
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
-	 * @see Hooks#addOnScheduleDecorator(String, ScheduledTaskDecorator)
+	 * @see Hooks#addOnScheduleDecorator(String, Function)
 	 */
 	public static void setExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
@@ -857,10 +857,10 @@ public abstract class Schedulers {
 					new InstantPeriodicWorkerTask(task, exec);
 			Future<?> f;
 			if (initialDelay <= 0L) {
-				f = exec.submit(isr);
+				f = exec.submit((Callable<?>) isr);
 			}
 			else {
-				f = exec.schedule(isr, initialDelay, unit);
+				f = exec.schedule((Callable<?>) isr, initialDelay, unit);
 			}
 			isr.setFirst(f);
 
@@ -921,10 +921,10 @@ public abstract class Schedulers {
 			try {
 				Future<?> f;
 				if (initialDelay <= 0L) {
-					f = exec.submit(isr);
+					f = exec.submit((Callable<?>) isr);
 				}
 				else {
-					f = exec.schedule(isr, initialDelay, unit);
+					f = exec.schedule((Callable<?>) isr, initialDelay, unit);
 				}
 				isr.setFirst(f);
 			}

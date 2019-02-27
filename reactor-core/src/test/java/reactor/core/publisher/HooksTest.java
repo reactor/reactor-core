@@ -1013,7 +1013,25 @@ public class HooksTest {
 		);
 	}
 
-	private static class TrackingDecorator implements ScheduledTaskDecorator {
+	@Test
+	public void scheduleDecoratorWorksWithCallables() throws Exception {
+		AtomicInteger tracker = new AtomicInteger();
+		Hooks.addOnScheduleDecorator("k1", r -> {
+			assertThat(r).isInstanceOf(Callable.class);
+			return () -> {
+				tracker.getAndIncrement();
+				r.run();
+			};
+		});
+
+		CountDownLatch latch = new CountDownLatch(1);
+		Schedulers.newElastic("foo").schedule(latch::countDown, 10, TimeUnit.MILLISECONDS);
+		latch.await(5, TimeUnit.SECONDS);
+
+		assertThat(tracker).hasValue(1);
+	}
+
+	private static class TrackingDecorator implements Function<Runnable, Runnable> {
 		final AtomicInteger tracker;
 		final int dx;
 
@@ -1023,24 +1041,16 @@ public class HooksTest {
 		}
 
 		@Override
-		public Runnable decorate(Runnable runnable) {
+		public Runnable apply(Runnable runnable) {
 			return () -> {
 				tracker.addAndGet(dx);
 				runnable.run();
 			};
 		}
-
-		@Override
-		public <V> Callable<V> decorate(Callable<V> callable) {
-			return () -> {
-				tracker.addAndGet(dx);
-				return callable.call();
-			};
-		}
 	}
 
 	private static class ApplicationOrderRecordingDecorator
-			implements ScheduledTaskDecorator {
+			implements Function<Runnable, Runnable> {
 
 		final List<String> items;
 
@@ -1054,15 +1064,9 @@ public class HooksTest {
 		}
 
 		@Override
-		public Runnable decorate(Runnable runnable) {
+		public Runnable apply(Runnable runnable) {
 			items.add(id + "#" + counter.getAndIncrement());
 			return runnable;
-		}
-
-		@Override
-		public <V> Callable<V> decorate(Callable<V> callable) {
-			items.add(id + "#" + counter.getAndIncrement());
-			return callable;
 		}
 	}
 }
