@@ -45,7 +45,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		//TODO fuseable version?
 		//TODO conditional version?
-		source.subscribe(new DoOnEachSubscriber<>(actual, onSignal));
+		source.subscribe(new DoOnEachSubscriber<>(actual, onSignal, false));
 	}
 
 	static final class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
@@ -53,6 +53,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		final CoreSubscriber<? super T>   actual;
 		final Context                     cachedContext;
 		final Consumer<? super Signal<T>> onSignal;
+		final boolean                     monoFlavor;
 
 		T t;
 
@@ -61,10 +62,12 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		boolean done;
 
 		DoOnEachSubscriber(CoreSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal) {
+				Consumer<? super Signal<T>> onSignal,
+				boolean monoFlavor) {
 			this.actual = actual;
 			this.cachedContext = actual.currentContext();
 			this.onSignal = onSignal;
+			this.monoFlavor = monoFlavor;
 		}
 
 		@Override
@@ -115,6 +118,18 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t, cachedContext));
 				return;
+			}
+
+			if (monoFlavor) {
+				done = true;
+				try {
+					onSignal.accept(Signal.complete(cachedContext));
+				}
+				catch (Throwable e) {
+					done = false;
+					onError(Operators.onOperatorError(s, e, cachedContext));
+					return;
+				}
 			}
 
 			actual.onNext(t);

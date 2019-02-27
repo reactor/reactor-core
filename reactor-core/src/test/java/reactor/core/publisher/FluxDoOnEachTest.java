@@ -302,7 +302,7 @@ public class FluxDoOnEachTest {
 		FluxDoOnEach<Integer> peek =
 				new FluxDoOnEach<>(Flux.just(1), s -> { });
 		FluxDoOnEach.DoOnEachSubscriber<Integer> test =
-				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignal);
+				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignal, false);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
