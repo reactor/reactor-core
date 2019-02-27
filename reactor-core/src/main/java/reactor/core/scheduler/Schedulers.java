@@ -460,7 +460,7 @@ public abstract class Schedulers {
 	 * for this key.
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
-	 * @see Hooks#addOnScheduleDecorator(String, Function)
+	 * @see Hooks#onSchedule(String, Function)
 	 */
 	public static boolean addExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
@@ -482,7 +482,7 @@ public abstract class Schedulers {
 	 * @param decorator the executor service decorator to add, if key not already present.
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
-	 * @see Hooks#addOnScheduleDecorator(String, Function)
+	 * @see Hooks#onSchedule(String, Function)
 	 */
 	public static void setExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
