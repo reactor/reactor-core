@@ -50,9 +50,10 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 	static final class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
 
-		private static final short STATE_FLUX = (short) 0;
-		private static final short STATE_MONO = (short) 1;
-		private static final short STATE_MONO_ALREADY_HANDLED = (short) 2;
+		private static final short STATE_FLUX_START   = (short) 0;
+		private static final short STATE_MONO_START   = (short) 1;
+		private static final short STATE_SKIP_HANDLER = (short) 2;
+		private static final short STATE_DONE         = (short) 3;
 
 		final CoreSubscriber<? super T>   actual;
 		final Context                     cachedContext;
@@ -62,8 +63,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		Subscription s;
 
-		short monoCompleteHandledState;
-		boolean done;
+		short state;
 
 		DoOnEachSubscriber(CoreSubscriber<? super T> actual,
 				Consumer<? super Signal<T>> onSignal,
@@ -71,7 +71,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			this.actual = actual;
 			this.cachedContext = actual.currentContext();
 			this.onSignal = onSignal;
-			this.monoCompleteHandledState = monoFlavor ? STATE_MONO : STATE_FLUX;
+			this.state = monoFlavor ? STATE_MONO_START : STATE_FLUX_START;
 		}
 
 		@Override
@@ -102,7 +102,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 				return s;
 			}
 			if (key == Attr.TERMINATED) {
-				return done;
+				return state == STATE_DONE;
 			}
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -110,13 +110,12 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
+			if (state == STATE_DONE) {
 				Operators.onNextDropped(t, cachedContext);
 				return;
 			}
 			try {
 				this.t = t;
-				//noinspection ConstantConditions
 				onSignal.accept(this);
 			}
 			catch (Throwable e) {
@@ -124,8 +123,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 				return;
 			}
 
-			if (monoCompleteHandledState == STATE_MONO) {
-				monoCompleteHandledState++;
+			if (state == STATE_MONO_START) {
+				state = STATE_SKIP_HANDLER;
 				try {
 					onSignal.accept(Signal.complete(cachedContext));
 				}
@@ -140,14 +139,14 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
-			if (done) {
+			if (state == STATE_DONE) {
 				Operators.onErrorDropped(t, cachedContext);
 				return;
 			}
-			done = true;
-			if (monoCompleteHandledState < STATE_MONO_ALREADY_HANDLED) {
+			boolean applyHandler = state < STATE_SKIP_HANDLER;
+			state = STATE_DONE;
+			if (applyHandler) {
 				try {
-					//noinspection ConstantConditions
 					onSignal.accept(Signal.error(t, cachedContext));
 				}
 				catch (Throwable e) {
@@ -169,16 +168,18 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onComplete() {
-			if (done) {
+			if (state == STATE_DONE) {
 				return;
 			}
-			done = true;
-			if (monoCompleteHandledState < STATE_MONO_ALREADY_HANDLED) {
+			boolean applyHandler = state < STATE_SKIP_HANDLER;
+			state = STATE_DONE;
+			if (applyHandler) {
 				try {
 					onSignal.accept(Signal.complete(cachedContext));
 				}
 				catch (Throwable e) {
-					done = false;
+					//we won't try to apply the handler (even with different signal type)
+					state = STATE_SKIP_HANDLER;
 					onError(Operators.onOperatorError(s, e, cachedContext));
 					return;
 				}
