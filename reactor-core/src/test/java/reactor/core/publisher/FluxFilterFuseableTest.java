@@ -156,7 +156,8 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		            .expectFusion(Fuseable.ASYNC)
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
-		            .hasDiscarded(1); //publishOn also might discard the rest
+		            .hasDiscarded(1) //publishOn also might discard the rest
+					.hasDiscardedMatching(o -> (Integer) o == 1);
 	}
 
 	@Test
@@ -255,7 +256,8 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		            .expectFusion(Fuseable.ASYNC)
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
-		            .hasDiscarded(1); //publishOn also discards the rest
+		            .hasDiscarded(1) //publishOn also discards the rest
+			        .hasDiscardedMatching(o -> (Integer) o == 1);
 	}
 
 	@Test

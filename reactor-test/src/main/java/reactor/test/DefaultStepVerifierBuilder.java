@@ -1819,6 +1819,16 @@ final class DefaultStepVerifierBuilder<T>
 							valuesList, hookRecorder.discardedElements));
 		}
 
+        @Override
+        public StepVerifier.Assertions hasDiscardedMatching(Predicate<Object> matcher) {
+            //noinspection ConstantConditions
+            satisfies(() -> matcher != null, () -> "Require non-null matcher");
+            return satisfies(() -> hookRecorder.discardedElements.stream().anyMatch(matcher),
+                    () -> String.format(
+                            "Expected discarded element matching the given predicate, did not match: <%s>.",
+                            hookRecorder.discardedElements));
+        }
+
 		@Override
 		public StepVerifier.Assertions hasNotDroppedErrors() {
 			return satisfies(hookRecorder::noDroppedErrors,

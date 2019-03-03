@@ -1071,6 +1071,8 @@ public interface StepVerifier {
 		 */
 		Assertions hasDiscardedExactly(Object... values);
 
+		Assertions hasDiscardedMatching(Predicate<Object> matcher);
+
 		/**
 		 * Assert that the tested publisher has dropped at least one error to the
 		 * {@link Hooks#onErrorDropped(Consumer)} hook.

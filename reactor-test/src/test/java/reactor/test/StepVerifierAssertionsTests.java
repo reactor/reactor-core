@@ -131,7 +131,8 @@ public class StepVerifierAssertionsTests {
 		            .verifyThenAssertThat()
 		            .hasDiscardedElements()
 		            .hasDiscardedExactly(1, 3)
-		            .hasDiscarded(1);
+		            .hasDiscarded(1)
+                    .hasDiscardedMatching(o -> (Integer) o % 2 != 0);
 	}
 
 	@Test
@@ -178,6 +179,21 @@ public class StepVerifierAssertionsTests {
 			assertThat(ae).hasMessage("Expected discarded elements to contain <[4]>, was <[1, 3]>.");
 		}
 	}
+
+    @Test
+    public void assertDiscardedMatchingElementsFailureOneExtra() {
+        try {
+            StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+                    .expectNext(2)
+                    .expectComplete()
+                    .verifyThenAssertThat()
+                    .hasDiscardedMatching(o -> (Integer) o == 4);
+            fail("expected an AssertionError");
+        }
+        catch (AssertionError ae) {
+            assertThat(ae).hasMessage("Expected discarded element matching the given predicate, did not match: <[1, 3]>.");
+        }
+    }
 
 	@Test
 	public void assertDiscardedElementsFailureOneMissing() {
