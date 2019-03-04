@@ -446,22 +446,29 @@ public class FluxDoOnEachTest {
 	@Parameters(method = "sources12Complete")
 	public void completeCallbackError(Flux<Integer> source) {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		LongAdder state = new LongAdder();
+		AtomicBoolean completeHandled = new AtomicBoolean();
+		AtomicBoolean errorHandled = new AtomicBoolean();
 
 		Throwable err = new Exception("test");
 
 		source
 		    .doOnEach(s -> {
 			    if (s.isOnComplete()) {
-				    state.increment();
+				    completeHandled.set(true);
 				    throw Exceptions.propagate(err);
+			    }
+			    if (s.isOnError()) {
+			    	errorHandled.set(true);
 			    }
 		    })
 		    .filter(t -> true)
 		    .subscribe(ts);
 
 		ts.assertErrorMessage("test");
-		Assert.assertEquals(1, state.intValue());
+		assertThat(completeHandled).as("complete() handler triggered")
+		                        .isTrue();
+		assertThat(errorHandled).as("complete() failure passed to error handler triggered")
+		                        .isTrue();
 	}
 
 	@Test
@@ -500,7 +507,7 @@ public class FluxDoOnEachTest {
 				return v;
 			}
 		};
-		DoOnEachConditionalSubscriber<Boolean> test = new DoOnEachConditionalSubscriber<>(actual, signals::add);
+		DoOnEachConditionalSubscriber<Boolean> test = new DoOnEachConditionalSubscriber<>(actual, signals::add, false);
 		AssertQueueSubscription<Boolean> qs = new AssertQueueSubscription<>();
 
 		test.onSubscribe(qs);
@@ -523,14 +530,14 @@ public class FluxDoOnEachTest {
 	@Test
 	public void conditionalFuseableTryOnNext() {
 		ArrayList<Signal<Boolean>> signals = new ArrayList<>();
-		ConditionalSubscriber<Boolean> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<Boolean>() {
+		FluxPeekFuseableTest.ConditionalAssertSubscriber<Boolean> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<Boolean>() {
 			@Override
 			public boolean tryOnNext(Boolean v) {
 				super.tryOnNext(v);
 				return v;
 			}
 		};
-		DoOnEachFuseableConditionalSubscriber<Boolean> test = new DoOnEachFuseableConditionalSubscriber<>(actual, signals::add);
+		DoOnEachFuseableConditionalSubscriber<Boolean> test = new DoOnEachFuseableConditionalSubscriber<>(actual, signals::add, false);
 		AssertQueueSubscription<Boolean> qs = new AssertQueueSubscription<>();
 
 		test.onSubscribe(qs);
@@ -573,7 +580,7 @@ public class FluxDoOnEachTest {
 		FluxDoOnEach<Integer> peek =
 				new FluxDoOnEach<>(Flux.just(1), s -> { });
 		FluxDoOnEach.DoOnEachSubscriber<Integer> test =
-				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignal);
+				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignal, false);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
