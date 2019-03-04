@@ -1071,6 +1071,10 @@ public interface StepVerifier {
 		 */
 		Assertions hasDiscardedExactly(Object... values);
 
+		/**
+		 * Assert that the tested publisher has discarded at least one element matching the given
+		 * predicate to the {@link reactor.core.publisher.Flux#doOnDiscard(Class, Consumer) discard} hook.
+		 */
 		Assertions hasDiscardedMatching(Predicate<Object> matcher);
 
 		/**
