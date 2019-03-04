@@ -238,21 +238,28 @@ public class FluxDoOnEachTest {
 	@Test
 	public void completeCallbackError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		LongAdder state = new LongAdder();
+		AtomicBoolean completeHandled = new AtomicBoolean();
+		AtomicBoolean errorHandled = new AtomicBoolean();
 
 		Throwable err = new Exception("test");
 
 		Flux.just(1)
 		    .doOnEach(s -> {
 			    if (s.isOnComplete()) {
-				    state.increment();
+				    completeHandled.set(true);
 				    throw Exceptions.propagate(err);
+			    }
+			    if (s.isOnError()) {
+			    	errorHandled.set(true);
 			    }
 		    })
 		    .subscribe(ts);
 
 		ts.assertErrorMessage("test");
-		Assert.assertEquals(1, state.intValue());
+		assertThat(completeHandled).as("complete() handler triggered")
+		                        .isTrue();
+		assertThat(errorHandled).as("complete() failure passed to error handler triggered")
+		                        .isTrue();
 	}
 
 	@Test

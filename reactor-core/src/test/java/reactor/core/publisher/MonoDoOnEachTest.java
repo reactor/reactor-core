@@ -408,4 +408,45 @@ public class MonoDoOnEachTest {
 
 		assertThat(completeHandlerCount).hasValue(1);
 	}
+
+	@Test
+	public void errorInCompleteHandlingTriggersErrorHandling() {
+		AtomicInteger errorHandlerCount = new AtomicInteger();
+
+		StepVerifier.create(
+				Mono.just("foo")
+				    .hide()
+				    .doOnEach(sig -> {
+					    if (sig.isOnComplete()) {
+						    throw new IllegalStateException("boom");
+					    }
+					    if (sig.isOnError()) {
+						    errorHandlerCount.incrementAndGet();
+					    }
+				    })
+		)
+		            .verifyErrorMessage("boom");
+
+		assertThat(errorHandlerCount).as("error handler invoked on top on complete").hasValue(1);
+	}
+
+	@Test
+	public void errorInCompleteHandlingTriggersErrorHandlingFused() {
+		AtomicInteger errorHandlerCount = new AtomicInteger();
+
+		StepVerifier.create(
+				Mono.just("foo")
+				    .doOnEach(sig -> {
+					    if (sig.isOnComplete()) {
+						    throw new IllegalStateException("boom");
+					    }
+					    if (sig.isOnError()) {
+						    errorHandlerCount.incrementAndGet();
+					    }
+				    })
+		)
+		            .verifyErrorMessage("boom");
+
+		assertThat(errorHandlerCount).as("error handler invoked on top on complete").hasValue(1);
+	}
 }

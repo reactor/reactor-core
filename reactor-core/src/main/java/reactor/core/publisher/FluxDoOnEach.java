@@ -129,6 +129,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 					onSignal.accept(Signal.complete(cachedContext));
 				}
 				catch (Throwable e) {
+					state = STATE_MONO_START;
 					onError(Operators.onOperatorError(s, e, cachedContext));
 					return;
 				}
@@ -171,15 +172,14 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			if (state == STATE_DONE) {
 				return;
 			}
-			boolean applyHandler = state < STATE_SKIP_HANDLER;
+			short oldState = state;
 			state = STATE_DONE;
-			if (applyHandler) {
+			if (oldState < STATE_SKIP_HANDLER) {
 				try {
 					onSignal.accept(Signal.complete(cachedContext));
 				}
 				catch (Throwable e) {
-					//we won't try to apply the handler (even with different signal type)
-					state = STATE_SKIP_HANDLER;
+					state = oldState;
 					onError(Operators.onOperatorError(s, e, cachedContext));
 					return;
 				}
