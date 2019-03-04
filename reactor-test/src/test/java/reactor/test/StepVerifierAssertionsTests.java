@@ -128,11 +128,11 @@ public class StepVerifierAssertionsTests {
 		StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
 		            .expectNext(2)
 		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasDiscardedElements()
-		            .hasDiscardedExactly(1, 3)
-		            .hasDiscarded(1)
-					.hasDiscardedMatching(o -> (Integer) o % 2 != 0);
+			    .verifyThenAssertThat()
+			    .hasDiscardedElements()
+			    .hasDiscardedExactly(1, 3)
+			    .hasDiscarded(1)
+			    .hasDiscardedMatching(o -> (Integer) o % 2 != 0);
 	}
 
 	@Test
