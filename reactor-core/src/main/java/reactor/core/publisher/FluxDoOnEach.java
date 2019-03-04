@@ -45,26 +45,31 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 	@SuppressWarnings("unchecked")
 	static <T> DoOnEachSubscriber<T> createSubscriber(CoreSubscriber<? super T> actual,
-			Consumer<? super Signal<T>> onSignal, boolean fuseable) {
+			Consumer<? super Signal<T>> onSignal, boolean fuseable, boolean isMono) {
 		if (fuseable) {
 			if(actual instanceof ConditionalSubscriber) {
-				return new DoOnEachFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal);
+				return new DoOnEachFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal, isMono);
 			}
-			return new DoOnEachFuseableSubscriber<>(actual, onSignal);
+			return new DoOnEachFuseableSubscriber<>(actual, onSignal, isMono);
 		}
 
 		if (actual instanceof ConditionalSubscriber) {
-			return new DoOnEachConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal);
+			return new DoOnEachConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal, isMono);
 		}
-		return new DoOnEachSubscriber<>(actual, onSignal);
+		return new DoOnEachSubscriber<>(actual, onSignal, isMono);
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(createSubscriber(actual, onSignal, false));
+		source.subscribe(createSubscriber(actual, onSignal, false, false));
 	}
 
 	static class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
+
+		static final short STATE_FLUX_START   = (short) 0;
+		static final short STATE_MONO_START   = (short) 1;
+		static final short STATE_SKIP_HANDLER = (short) 2;
+		static final short STATE_DONE         = (short) 3;
 
 		final CoreSubscriber<? super T>   actual;
 		final Context                     cachedContext;
@@ -76,13 +81,15 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		@Nullable
 		Fuseable.QueueSubscription<T> qs;
 
-		boolean done;
+		short state;
 
 		DoOnEachSubscriber(CoreSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal) {
+				Consumer<? super Signal<T>> onSignal,
+				boolean monoFlavor) {
 			this.actual = actual;
 			this.cachedContext = actual.currentContext();
 			this.onSignal = onSignal;
+			this.state = monoFlavor ? STATE_MONO_START : STATE_FLUX_START;
 		}
 
 		@Override
@@ -116,7 +123,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 				return s;
 			}
 			if (key == Attr.TERMINATED) {
-				return done;
+				return state == STATE_DONE;
 			}
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -124,13 +131,12 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
+			if (state == STATE_DONE) {
 				Operators.onNextDropped(t, cachedContext);
 				return;
 			}
 			try {
 				this.t = t;
-				//noinspection ConstantConditions
 				onSignal.accept(this);
 			}
 			catch (Throwable e) {
@@ -138,23 +144,37 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 				return;
 			}
 
+			if (state == STATE_MONO_START) {
+				state = STATE_SKIP_HANDLER;
+				try {
+					onSignal.accept(Signal.complete(cachedContext));
+				}
+				catch (Throwable e) {
+					state = STATE_MONO_START;
+					onError(Operators.onOperatorError(s, e, cachedContext));
+					return;
+				}
+			}
+
 			actual.onNext(t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			if (done) {
+			if (state == STATE_DONE) {
 				Operators.onErrorDropped(t, cachedContext);
 				return;
 			}
-			done = true;
-			try {
-				//noinspection ConstantConditions
-				onSignal.accept(Signal.error(t, cachedContext));
-			}
-			catch (Throwable e) {
-				//this performs a throwIfFatal or suppresses t in e
-				t = Operators.onOperatorError(null, e, t, cachedContext);
+			boolean applyHandler = state < STATE_SKIP_HANDLER;
+			state = STATE_DONE;
+			if (applyHandler) {
+				try {
+					onSignal.accept(Signal.error(t, cachedContext));
+				}
+				catch (Throwable e) {
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t, cachedContext);
+				}
 			}
 
 			try {
@@ -170,17 +190,20 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onComplete() {
-			if (done) {
+			if (state == STATE_DONE) {
 				return;
 			}
-			done = true;
-			try {
-				onSignal.accept(Signal.complete(cachedContext));
-			}
-			catch (Throwable e) {
-				done = false;
-				onError(Operators.onOperatorError(s, e, cachedContext));
-				return;
+			short oldState = state;
+			state = STATE_DONE;
+			if (oldState < STATE_SKIP_HANDLER) {
+				try {
+					onSignal.accept(Signal.complete(cachedContext));
+				}
+				catch (Throwable e) {
+					state = oldState;
+					onError(Operators.onOperatorError(s, e, cachedContext));
+					return;
+				}
 			}
 
 			actual.onComplete();
@@ -231,8 +254,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		boolean syncFused;
 
 		DoOnEachFuseableSubscriber(CoreSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal) {
-			super(actual, onSignal);
+				Consumer<? super Signal<T>> onSignal, boolean isMono) {
+			super(actual, onSignal, isMono);
 		}
 
 		@Override
@@ -266,7 +289,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			T v = qs.poll();
 			if (v == null && syncFused) {
-				done = true;
+				state = STATE_DONE;
 				try {
 					onSignal.accept(Signal.complete(cachedContext));
 				}
@@ -290,8 +313,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			implements ConditionalSubscriber<T> {
 
 		DoOnEachConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal) {
-			super(actual, onSignal);
+				Consumer<? super Signal<T>> onSignal, boolean isMono) {
+			super(actual, onSignal, isMono);
 		}
 
 		@Override
@@ -301,6 +324,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			if (result) {
 				this.t = t;
 				onSignal.accept(this);
+				//TODO also apply the handler with onComplete if there is a way to trigger tryOnNext from a Mono?
+				//TODO if so, should `tryOnNext` be called first?
 			}
 			return result;
 		}
@@ -310,8 +335,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			implements ConditionalSubscriber<T> {
 
 		DoOnEachFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal) {
-			super(actual, onSignal);
+				Consumer<? super Signal<T>> onSignal, boolean isMono) {
+			super(actual, onSignal, isMono);
 		}
 
 		@Override
@@ -321,6 +346,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			if (result) {
 				this.t = t;
 				onSignal.accept(this);
+				//TODO also apply the handler with onComplete if there is a way to trigger tryOnNext from a Mono?
 			}
 			return result;
 		}

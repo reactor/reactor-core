@@ -86,7 +86,7 @@ public class MonoTests {
 		            .expectSubscription()
 		            .expectNext(1)
 		            .expectComplete()
-		            .verify();
+		            .verify(Duration.ofSeconds(5));
 
 		assertThat(signals.size(), is(2));
 		assertThat("onNext", signals.get(0).get(), is(1));
