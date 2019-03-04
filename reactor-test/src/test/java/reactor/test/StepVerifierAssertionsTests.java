@@ -132,7 +132,7 @@ public class StepVerifierAssertionsTests {
 		            .hasDiscardedElements()
 		            .hasDiscardedExactly(1, 3)
 		            .hasDiscarded(1)
-                    .hasDiscardedMatching(o -> (Integer) o % 2 != 0);
+					.hasDiscardedMatching(o -> (Integer) o % 2 != 0);
 	}
 
 	@Test
