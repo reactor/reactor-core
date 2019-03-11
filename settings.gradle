@@ -16,4 +16,4 @@
 rootProject.name = 'reactor'
 
 
-include 'reactor-core', 'reactor-test'
+include 'reactor-core', 'reactor-test', 'reactor-tools'

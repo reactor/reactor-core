@@ -9197,6 +9197,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return source;
 	}
 
+	@SuppressWarnings("unused")
+	protected Flux<T> onAssemblyInfo(String info) {
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, () -> info);
+		return (Flux<T>) Hooks.addAssemblyInfo(this, stacktrace);
+	}
+
 	/**
 	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
 	 * {@link Flux}, potentially returning a new {@link Flux}. This is for example useful

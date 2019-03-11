@@ -23,7 +23,6 @@ buildscript {
   dependencies {
 	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
 	classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
-	classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.0'
 	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
   }
 }

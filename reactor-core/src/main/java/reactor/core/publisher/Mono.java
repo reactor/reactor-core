@@ -4305,6 +4305,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return source;
 	}
 
+	@SuppressWarnings("unused")
+	protected Mono<T> onAssemblyInfo(String info) {
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, () -> info);
+		return (Mono<T>) Hooks.addAssemblyInfo(this, stacktrace);
+	}
+
 	/**
 	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
 	 * {@link Mono}, potentially returning a new {@link Mono}. This is for example useful
