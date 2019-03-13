@@ -158,32 +158,29 @@ public class ReactorDebugAgent {
 		@Override
 		public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
 			super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-			if (!"onAssemblyInfo".equals(name) && !"<init>".equals(name) && !"subscribe".equals(name)) {
-				switch (owner) {
-					case "reactor/core/publisher/Flux":
-					case "reactor/core/publisher/Mono":
-					case "reactor/core/publisher/ParallelFlux":
-						String returnType = descriptor.substring(descriptor.lastIndexOf(")") + 1);
-						if (!returnType.startsWith("Lreactor/core/publisher/")) {
-							return;
-						}
+			switch (owner) {
+				case "reactor/core/publisher/Flux":
+				case "reactor/core/publisher/Mono":
+				case "reactor/core/publisher/ParallelFlux":
+					String returnType = descriptor.substring(descriptor.lastIndexOf(")") + 1);
+					if (!returnType.startsWith("Lreactor/core/publisher/")) {
+						return;
+					}
 
-						String callSite = String.format(
-								"%s.%s\n%s.%s(%s:%d)",
-								owner.replace("/", "."), name,
-								currentClassName.replace("/", "."),
-								currentMethod, currentSource, currentLine
-						);
-						super.visitLdcInsn(callSite);
-						super.visitMethodInsn(
-								Opcodes.INVOKESTATIC,
-								"reactor/core/publisher/Hooks",
-								"addAssemblyInfo",
-								"(Lreactor/core/CorePublisher;Ljava/lang/String;)Lreactor/core/CorePublisher;",
-								false
-						);
-						break;
-				}
+					String callSite = String.format(
+							"%s.%s\n%s.%s(%s:%d)",
+							owner.replace("/", "."), name,
+							currentClassName.replace("/", "."), currentMethod, currentSource, currentLine
+					);
+					super.visitLdcInsn(callSite);
+					super.visitMethodInsn(
+							Opcodes.INVOKESTATIC,
+							"reactor/core/publisher/Hooks",
+							"addAssemblyInfo",
+							"(Lreactor/core/CorePublisher;Ljava/lang/String;)Lreactor/core/CorePublisher;",
+							false
+					);
+					break;
 			}
 		}
 	}
