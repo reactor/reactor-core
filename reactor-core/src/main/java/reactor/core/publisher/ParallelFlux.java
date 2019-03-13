@@ -1212,12 +1212,6 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 		return source;
 	}
 
-	@SuppressWarnings("unused")
-	protected ParallelFlux<T> onAssemblyInfo(String info) {
-		AssemblySnapshot stacktrace = new AssemblySnapshot(null, () -> info);
-		return (ParallelFlux<T>) Hooks.addAssemblyInfo(this, stacktrace);
-	}
-
 	/**
 	 * Invoke {@link Hooks} pointcut given a {@link ParallelFlux} and returning an
 	 * eventually new {@link ParallelFlux}

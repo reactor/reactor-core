@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.Logger;
@@ -570,7 +571,12 @@ public abstract class Hooks {
 	Hooks() {
 	}
 
-	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
+	static <T> CorePublisher<T> addAssemblyInfo(CorePublisher<T> publisher, String info) {
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, () -> info);
+		return addAssemblyInfo(publisher, stacktrace);
+	}
+
+	static <T, P extends Publisher<T>> CorePublisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
 		if (publisher instanceof Callable) {
 			if (publisher instanceof Mono) {
 				return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
