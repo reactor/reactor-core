@@ -98,7 +98,6 @@ public class ReactorDebugAgent {
 			}
 		};
 
-		transformer = new ClassDumpingTransformer(transformer);
 		instrumentation.addTransformer(transformer, true);
 
 		ClassLoader bootstrapClassLoader = ClassLoader.getSystemClassLoader().getParent();
