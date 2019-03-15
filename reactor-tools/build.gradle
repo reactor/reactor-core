@@ -41,6 +41,7 @@ test {
   // Creates a JVM per test because the agent can be installed only once
   forkEvery = 1
   maxParallelForks = 1
+  jvmArgs = ["-Xverify:all"]
 }
 
 shadowJar {

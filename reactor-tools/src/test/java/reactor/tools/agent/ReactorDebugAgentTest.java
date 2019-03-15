@@ -29,12 +29,21 @@ public class ReactorDebugAgentTest {
 	}
 
 	@Test
-	public void stepNameAndToString() {
+	public void shouldAddAssemblyInfo() {
 		int baseline = getBaseline();
 		Flux<Integer> flux = Flux.just(1);
 
 		assertThat(Scannable.from(flux).stepName())
-				.startsWith("Flux.just ⇢ reactor.tools.agent.ReactorDebugAgentTest.stepNameAndToString(ReactorDebugAgentTest.java:" + (baseline + 1));
+				.startsWith("Flux.just ⇢ reactor.tools.agent.ReactorDebugAgentTest.shouldAddAssemblyInfo(ReactorDebugAgentTest.java:" + (baseline + 1));
+	}
+
+	@Test
+	public void shouldWorkWithMethodChains() {
+		int baseline = getBaseline();
+		Flux<Integer> flux = Flux.just(1).map(it -> it);
+
+		assertThat(Scannable.from(flux).stepName())
+				.startsWith("Flux.map ⇢ reactor.tools.agent.ReactorDebugAgentTest.shouldWorkWithMethodChains(ReactorDebugAgentTest.java:" + (baseline + 1));
 	}
 
 	private int getBaseline() {

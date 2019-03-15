@@ -28,6 +28,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import reactor.core.publisher.Hooks;
 
 public class ReactorDebugAgent {
@@ -162,8 +163,8 @@ public class ReactorDebugAgent {
 				case "reactor/core/publisher/Flux":
 				case "reactor/core/publisher/Mono":
 				case "reactor/core/publisher/ParallelFlux":
-					String returnType = descriptor.substring(descriptor.lastIndexOf(")") + 1);
-					if (!returnType.startsWith("Lreactor/core/publisher/")) {
+					String returnType = Type.getReturnType(descriptor).getInternalName();
+					if (!returnType.startsWith("reactor/core/publisher/")) {
 						return;
 					}
 
@@ -180,6 +181,7 @@ public class ReactorDebugAgent {
 							"(Lreactor/core/CorePublisher;Ljava/lang/String;)Lreactor/core/CorePublisher;",
 							false
 					);
+					super.visitTypeInsn(Opcodes.CHECKCAST, returnType);
 					break;
 			}
 		}
