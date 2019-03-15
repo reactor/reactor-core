@@ -65,7 +65,7 @@ public class ReactorDebugAgent {
 				}
 
 				ClassReader cr = new ClassReader(bytes);
-				ClassWriter cw = new ClassWriter(cr, 0);
+				ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
 
 				ClassVisitor classVisitor = new ClassVisitor(Opcodes.ASM7, cw) {
 
@@ -101,9 +101,8 @@ public class ReactorDebugAgent {
 
 		instrumentation.addTransformer(transformer, true);
 
-		ClassLoader bootstrapClassLoader = ClassLoader.getSystemClassLoader().getParent();
-		for (Class aClass : instrumentation.getAllLoadedClasses()) {
-			if (aClass == null || aClass.getClassLoader() == null || aClass.getClassLoader() == bootstrapClassLoader) {
+		for (Class aClass : instrumentation.getInitiatedClasses(ClassLoader.getSystemClassLoader())) {
+			if (aClass == null) {
 				continue;
 			}
 
