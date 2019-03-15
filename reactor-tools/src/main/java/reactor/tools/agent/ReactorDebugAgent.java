@@ -62,18 +62,28 @@ public class ReactorDebugAgent {
 					ProtectionDomain protectionDomain,
 					byte[] bytes
 			) {
+				if (loader == null) {
+					return null;
+				}
+
 				if (
-						loader == null ||
-								clazz.isPrimitive() ||
-								clazz.isArray() ||
-								clazz.isAnnotation() ||
-								clazz.isSynthetic() ||
-								className == null ||
+						className == null ||
 								className.startsWith("java/") ||
 								className.startsWith("jdk/") ||
 								className.startsWith("sun/") ||
 								className.startsWith("com/sun/") ||
 								className.startsWith("reactor/core/")
+				) {
+					return null;
+				}
+
+				if (
+						clazz != null && (
+								clazz.isPrimitive() ||
+										clazz.isArray() ||
+										clazz.isAnnotation() ||
+										clazz.isSynthetic()
+						)
 				) {
 					return null;
 				}
