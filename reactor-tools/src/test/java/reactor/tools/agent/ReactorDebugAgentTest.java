@@ -26,6 +26,9 @@ public class ReactorDebugAgentTest {
 
 	static {
 		ReactorDebugAgent.init();
+
+		// Since ReactorDebugAgentTest is already loaded, we need to re-process it
+		ReactorDebugAgent.processExistingClasses();
 	}
 
 	@Test

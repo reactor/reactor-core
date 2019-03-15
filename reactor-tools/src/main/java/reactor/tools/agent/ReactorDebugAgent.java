@@ -20,6 +20,8 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.security.ProtectionDomain;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import net.bytebuddy.agent.ByteBuddyAgent;
 import org.objectweb.asm.ClassReader;
@@ -33,8 +35,13 @@ import reactor.core.publisher.Hooks;
 
 public class ReactorDebugAgent {
 
-	public static void init() {
-		Instrumentation instrumentation = ByteBuddyAgent.install();
+	private static Instrumentation instrumentation;
+
+	public static synchronized void init() {
+		if (instrumentation != null) {
+			return;
+		}
+		instrumentation = ByteBuddyAgent.install();
 
 		ClassFileTransformer transformer = new PublicMethodsClassFileTransformer();
 		instrumentation.addTransformer(transformer, true);
@@ -56,17 +63,25 @@ public class ReactorDebugAgent {
 					byte[] bytes
 			) {
 				if (
-						className == null ||
+						loader == null ||
+								clazz.isPrimitive() ||
+								clazz.isArray() ||
+								clazz.isAnnotation() ||
+								clazz.isSynthetic() ||
+								className == null ||
 								className.startsWith("java/") ||
 								className.startsWith("jdk/") ||
 								className.startsWith("sun/") ||
-								className.startsWith("reactor/core/")) {
-					return bytes;
+								className.startsWith("com/sun/") ||
+								className.startsWith("reactor/core/")
+				) {
+					return null;
 				}
 
 				ClassReader cr = new ClassReader(bytes);
 				ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
 
+				AtomicBoolean changed = new AtomicBoolean();
 				ClassVisitor classVisitor = new ClassVisitor(Opcodes.ASM7, cw) {
 
 					private String currentClassName = "";
@@ -89,48 +104,65 @@ public class ReactorDebugAgent {
 					public MethodVisitor visitMethod(int access, String currentMethod, String descriptor, String signature, String[] exceptions) {
 						MethodVisitor visitor = super.visitMethod(access, currentMethod, descriptor, signature, exceptions);
 
-						return new AssemblyInfoAddingMethodVisitor(visitor, currentMethod, currentClassName, currentSource);
+						return new AssemblyInfoAddingMethodVisitor(visitor, currentMethod, currentClassName, currentSource, changed);
 					}
 				};
 
 				cr.accept(classVisitor, 0);
+
+				if (!changed.get()) {
+					return null;
+				}
 
 				return cw.toByteArray();
 			}
 		};
 
 		instrumentation.addTransformer(transformer, true);
+	}
 
-		for (Class aClass : instrumentation.getInitiatedClasses(ClassLoader.getSystemClassLoader())) {
-			if (aClass == null) {
-				continue;
-			}
+	public static synchronized void processExistingClasses() {
+		if (instrumentation == null) {
+			throw new IllegalStateException("Must be initialized first!");
+		}
 
-			if (!instrumentation.isModifiableClass(aClass)) {
-				continue;
-			}
+		try {
+			Class[] classes = Stream
+					.of(instrumentation.getInitiatedClasses(ClassLoader.getSystemClassLoader()))
+					.filter(aClass -> {
+						try {
+							if (aClass.getClassLoader() == null) return false;
+							if (aClass.isPrimitive() || aClass.isArray() || aClass.isInterface()) return false;
+							if (aClass.isAnnotation() || aClass.isSynthetic()) return false;
+							String name = aClass.getName();
+							if (name == null) return false;
+							if (name.startsWith("[")) return false;
+							if (name.startsWith("java.")) return false;
+							if (name.startsWith("sun.")) return false;
+							if (name.startsWith("com.sun.")) return false;
+							if (name.startsWith("jdk.")) return false;
+							if (name.startsWith("reactor.core.")) return false;
 
-			try {
-				String name = aClass.getCanonicalName();
-				if (name == null) continue;
-				if (name.startsWith("java.")) continue;
-				if (name.startsWith("sun.")) continue;
-				if (name.startsWith("jdk.")) continue;
-				if (name.startsWith("reactor.core.")) continue;
+							// May trigger NoClassDefFoundError, fail fast
+							aClass.getConstructors();
+						}
+						catch (NoClassDefFoundError e) {
+							return false;
+						}
 
-				instrumentation.retransformClasses(aClass);
-			}
-			catch (NoClassDefFoundError ignored) {
-				// Ignored
-			}
-			catch (Throwable e) {
-				System.err.println("Failed to retransform " + aClass.getName() + ":");
-				e.printStackTrace();
-				// Some classes fail to re-transform (e.g. worker.org.gradle.internal.UncheckedException)
-				// See https://bugs.openjdk.java.net/browse/JDK-8014229
-			}
+						return true;
+					})
+					.toArray(Class[]::new);
+
+			instrumentation.retransformClasses(classes);
+		}
+		catch (Throwable e) {
+			e.printStackTrace();
+			// Some classes fail to re-transform (e.g. worker.org.gradle.internal.UncheckedException)
+			// See https://bugs.openjdk.java.net/browse/JDK-8014229
 		}
 	}
+
 
 	static class AssemblyInfoAddingMethodVisitor extends MethodVisitor {
 
@@ -140,13 +172,22 @@ public class ReactorDebugAgent {
 
 		private final String currentSource;
 
+		private final AtomicBoolean changed;
+
 		private int currentLine = -1;
 
-		AssemblyInfoAddingMethodVisitor(MethodVisitor visitor, String currentMethod, String currentClassName, String currentSource) {
+		AssemblyInfoAddingMethodVisitor(
+				MethodVisitor visitor,
+				String currentMethod,
+				String currentClassName,
+				String currentSource,
+				AtomicBoolean changed
+		) {
 			super(Opcodes.ASM7, visitor);
 			this.currentMethod = currentMethod;
 			this.currentClassName = currentClassName;
 			this.currentSource = currentSource;
+			this.changed = changed;
 		}
 
 		@Override
@@ -167,6 +208,7 @@ public class ReactorDebugAgent {
 						return;
 					}
 
+					changed.set(true);
 					String callSite = String.format(
 							"%s.%s\n%s.%s(%s:%d)",
 							owner.replace("/", "."), name,
