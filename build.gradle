@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ import org.gradle.api.internal.plugins.osgi.OsgiHelper
 buildscript {
   ext.kotlinVersion = '1.2.51'
   repositories {
-	maven { url "http://repo.spring.io/plugins-release" }
+	maven { url "https://repo.spring.io/plugins-release" }
   }
   dependencies {
 	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
@@ -67,7 +67,7 @@ ext {
 
   javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
 				  "https://docs.oracle.com/javaee/6/api/",
-				  "http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
+				  "https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
 
 
   bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
@@ -104,12 +104,12 @@ configure(subprojects) { p ->
   repositories {
 	mavenLocal()
 	if (version.endsWith('BUILD-SNAPSHOT') || project.hasProperty('platformVersion')) {
-	  maven { url 'http://repo.spring.io/libs-snapshot' }
+	  maven { url 'https://repo.spring.io/libs-snapshot' }
 	}
 
 	mavenCentral()
 	jcenter()
-	maven { url 'http://repo.spring.io/libs-milestone' }
+	maven { url 'https://repo.spring.io/libs-milestone' }
 	maven { url "https://oss.sonatype.org/content/repositories/releases/" }
 
   }
@@ -358,10 +358,10 @@ project('reactor-core') {
 	sourceDirs = files("src/main/kotlin")
 
 	externalDocumentationLink {
-	  url = new URL("http://projectreactor.io/docs/core/release/api/")
+	  url = new URL("https://projectreactor.io/docs/core/release/api/")
 	}
 	externalDocumentationLink {
-	  url = new URL("http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+	  url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
 	}
   }
 
@@ -496,7 +496,7 @@ project('reactor-test') {
 	options.header = "$project.name"
 	options.stylesheetFile = file("$rootDir/src/api/stylesheet.css")
 	options.links(rootProject.ext.javadocLinks
-			.plus("http://projectreactor.io/docs/core/release/api/") as String[])
+			.plus("https://projectreactor.io/docs/core/release/api/") as String[])
 	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
 					 "implNote:a:Implementation Note:" ]
 
@@ -534,13 +534,13 @@ project('reactor-test') {
 	sourceDirs = files("src/main/kotlin")
 
 	externalDocumentationLink {
-	  url = new URL("http://projectreactor.io/docs/core/release/api/")
+	  url = new URL("https://projectreactor.io/docs/core/release/api/")
 	}
 	externalDocumentationLink {
-	  url = new URL("http://projectreactor.io/docs/test/release/api/")
+	  url = new URL("https://projectreactor.io/docs/test/release/api/")
 	}
 	externalDocumentationLink {
-	  url = new URL("http://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+	  url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
 	}
   }
 
