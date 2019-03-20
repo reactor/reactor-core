@@ -213,6 +213,9 @@ public class ReactorDebugAgent {
 				case "reactor/core/publisher/Flux":
 				case "reactor/core/publisher/Mono":
 				case "reactor/core/publisher/ParallelFlux":
+					if ("checkpoint".equals(name)) {
+						return;
+					}
 					String returnType = Type.getReturnType(descriptor).getInternalName();
 					if (!returnType.startsWith("reactor/core/publisher/")) {
 						return;

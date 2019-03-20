@@ -49,6 +49,14 @@ public class ReactorDebugAgentTest {
 				.startsWith("Flux.map ⇢ reactor.tools.agent.ReactorDebugAgentTest.shouldWorkWithMethodChains(ReactorDebugAgentTest.java:" + (baseline + 1));
 	}
 
+	@Test
+	public void shouldNotAddToCheckpoint() {
+		Flux<Integer> flux = Flux.just(1).checkpoint("foo");
+
+		assertThat(Scannable.from(flux).stepName())
+				.isEqualTo("checkpoint(\"foo\")");
+	}
+
 	private int getBaseline() {
 		return new Exception().getStackTrace()[1].getLineNumber();
 	}
