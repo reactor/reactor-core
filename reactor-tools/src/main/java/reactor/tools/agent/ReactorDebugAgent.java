@@ -272,7 +272,7 @@ public class ReactorDebugAgent {
 				cr.accept(classVisitor, 0);
 				return cw.toByteArray();
 			}
-			return bytes;
+			return null;
 		}
 	}
 }
