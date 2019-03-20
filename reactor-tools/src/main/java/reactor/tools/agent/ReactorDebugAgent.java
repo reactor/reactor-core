@@ -220,7 +220,7 @@ public class ReactorDebugAgent {
 
 					changed.set(true);
 					String callSite = String.format(
-							"%s.%s\n%s.%s(%s:%d)\n",
+							"\t%s.%s\n\t%s.%s(%s:%d)\n",
 							owner.replace("/", "."), name,
 							currentClassName.replace("/", "."), currentMethod, currentSource, currentLine
 					);
