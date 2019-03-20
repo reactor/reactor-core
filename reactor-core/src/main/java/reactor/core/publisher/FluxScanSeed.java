@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
 
@@ -183,6 +184,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 				return;
 			}
 			done = true;
+			value = null;
 			actual.onComplete();
 		}
 
@@ -193,6 +195,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 				return;
 			}
 			done = true;
+			value = null;
 			actual.onError(t);
 		}
 

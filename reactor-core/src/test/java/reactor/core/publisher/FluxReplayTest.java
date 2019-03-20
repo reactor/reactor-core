@@ -442,7 +442,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		Disposable connected = replay.connect();
 
 		//the lambda subscriber itself is cancelled so it will bubble the exception
-		//propagated by connect().dipose()
+		//propagated by connect().dispose()
 		assertThatExceptionOfType(RuntimeException.class)
 				.isThrownBy(connected::dispose)
 	            .withMessage("Disconnected");

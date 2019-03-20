@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import me.champeau.gradle.japicmp.JapicmpTask
 import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 buildscript {
@@ -26,17 +25,15 @@ buildscript {
 	classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
 	classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.0'
 	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
-	classpath 'org.jruby:jruby-complete:9.1.17.0'
-	classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.7'
-	classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
   }
 }
 
 plugins {
-  id 'org.asciidoctor.convert' version '1.5.6'
-  id "me.champeau.gradle.jmh" version "0.4.4" apply false
+  id 'org.asciidoctor.convert' version '1.5.9.2'
+  id "me.champeau.gradle.jmh" version "0.4.7" apply false
   id "org.jetbrains.dokka" version "0.9.16"
   id "me.champeau.gradle.japicmp" version "0.2.6"
+  id "de.undercouch.download" version "3.4.3"
 }
 
 apply from: "gradle/doc.gradle"
@@ -61,17 +58,23 @@ ext {
   logbackVersion = '1.1.2'
 
   // Testing
-  assertJVersion = '3.9.0'
-  mockitoVersion = '2.10.0'
+  assertJVersion = '3.11.1'
+  mockitoVersion = '2.23.0'
   jUnitParamsVersion = '1.1.1'
 
-  javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
-				  "https://docs.oracle.com/javaee/6/api/",
+  jdk = JavaVersion.current().majorVersion
+  jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"
+  if (JavaVersion.current().isJava11Compatible()) {
+	jdkJavadoc = "https://docs.oracle.com/en/java/javase/$jdk/docs/api/"
+  }
+
+  javadocLinks = [jdkJavadoc,
 				  "https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
 
 
   bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
 						  'kotlin.*;resolution:=optional',
+						  'io.micrometer.*;resolution:=optional',
 						  '!javax.annotation',
 						  '!javax.annotation.meta',
 						  '*']
@@ -115,7 +118,7 @@ configure(subprojects) { p ->
   }
 
   jacoco {
-	toolVersion = '0.7.9'
+	toolVersion = '0.8.2'
   }
 
   jacocoTestReport {
@@ -191,6 +194,12 @@ configure(subprojects) { p ->
 	  stackTraceFilters "ENTRY_POINT"
 	  maxGranularity 3
 	}
+
+	if (JavaVersion.current().isJava9Compatible()) {
+	  println "Java 9+: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
+	  jvmArgs = ["-XX:MaxGCPauseMillis=20"]
+	}
+
 	systemProperty("java.awt.headless", "true")
 	systemProperty("reactor.trace.cancel", "true")
 	systemProperty("reactor.trace.nocapacity", "true")
@@ -229,332 +238,6 @@ if (project.hasProperty('platformVersion')) {
 	  }
 	}
   }
-}
-
-
-project('reactor-core') {
-  apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
-  apply plugin: 'me.champeau.gradle.jmh'
-
-  configurations {
-	compileOnly.extendsFrom jsr166backport
-	testCompile.extendsFrom jsr166backport
-	baseline
-  }
-
-  dependencies {
-	// Reactive Streams
-	compile "org.reactivestreams:reactive-streams:1.0.2"
-	testCompile "org.reactivestreams:reactive-streams-tck:1.0.2"
-
-	// JSR-305 annotations
-	optional "com.google.code.findbugs:jsr305:3.0.2"
-
-	//Optional Logging Operator
-	optional "org.slf4j:slf4j-api:$slf4jVersion"
-
-	//Optional Metrics
-	optional "io.micrometer:micrometer-core:$micrometerVersion"
-
-	optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
-
-	//Optional JDK 9 Converter
-	jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
-
-	testCompile 'junit:junit:4.12'
-
-	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
-	testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
-	// Testing
-	testCompile(project(":reactor-test")) {
-	  exclude module: 'reactor-core'
-	}
-
-	testCompile "org.hamcrest:hamcrest-library:1.3",
-			"org.testng:testng:6.8.5",
-			"org.assertj:assertj-core:$assertJVersion",
-			"org.mockito:mockito-core:$mockitoVersion",
-			"org.openjdk.jol:jol-core:0.9",
-			"pl.pragmatists:JUnitParams:$jUnitParamsVersion"
-
-	if ("$compatibleVersion" != "SKIP") {
-	  baseline("io.projectreactor:reactor-core:$compatibleVersion") {
-		transitive = false
-		force = true
-	  }
-	}
-  }
-
-  jmh {
-	resultFormat = 'JSON'
-  }
-
-  task japicmp(type: JapicmpTask) {
-	onlyIf { "$compatibleVersion" != "SKIP" }
-	oldClasspath = configurations.baseline
-	newClasspath = files(jar.archivePath)
-	onlyBinaryIncompatibleModified = true
-	failOnModification = true
-	failOnSourceIncompatibility = true
-	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
-	ignoreMissingClasses = true
-	includeSynthetic = true
-
-	//TODO after a release, bump the gradle.properties baseline
-	//TODO after a release, remove the reactor-core exclusions below if any
-//	classExcludes = []
-	methodExcludes = ["reactor.core.Scannable#operatorName()"]
-  }
-
-  javadoc {
-	dependsOn jar
-	group = "documentation"
-	description = "Generates aggregated Javadoc API documentation."
-	title = "Reactor Core $version"
-
-	options.addStringOption('charSet', 'UTF-8')
-
-	options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-	options.author = true
-	options.header = "$project.name"
-	options.overview = "$rootDir/src/api/overview.html"
-	options.stylesheetFile = file("$rootDir/src/api/stylesheet.css")
-	options.links(rootProject.ext.javadocLinks )
-	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-					 "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
-					 "reactor.discard:m:onDiscard Support"]
-
-	// In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
-	// And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
-	classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
-	classpath += sourceSets.main.compileClasspath
-
-	maxMemory = "1024m"
-	destinationDir = new File(project.buildDir, "docs/javadoc")
-  }
-
-  // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
-  task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
-	dependsOn jar
-	group = "documentation"
-	description = "Generates Kotlin API documentation."
-	moduleName = "reactor-core"
-	jdkVersion = 8
-
-	outputFormat = "html"
-	outputDirectory = new File(project.buildDir, "docs/kdoc")
-
-	//this is needed so that links to java classes are resolved
-	doFirst {
-	  classpath += project.jar.outputs.files.getFiles()
-	  classpath += project.sourceSets.main.compileClasspath
-	}
-	//this is needed so that the kdoc only generates for kotlin classes
-	//(default kotlinTasks sourceSet also includes java)
-	kotlinTasks {
-
-	}
-	processConfigurations = []
-	sourceDirs = files("src/main/kotlin")
-
-	externalDocumentationLink {
-	  url = new URL("https://projectreactor.io/docs/core/release/api/")
-	}
-	externalDocumentationLink {
-	  url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
-	}
-  }
-
-  task kdocZip(type: Zip, dependsOn: dokka) {
-	//ends up similar to javadoc jar: reactor-core-xxxx.RELEASE-kdoc.zip
-	classifier = 'kdoc'
-	from("${project.buildDir}/docs/kdoc")
-  }
-
-  task testStaticInit(type: Test, group: 'verification') {
-	systemProperty 'reactor.trace.operatorStacktrace', 'true'
-	include '**/*TestStaticInit.*'
-	doFirst {
-	  println "Additional tests from `testStaticInit` ($includes)"
-	}
-	afterSuite { TestDescriptor descriptor, TestResult result ->
-	    if (!(result.testCount > 0 && result.skippedTestCount == 0)) {
-			throw new GradleException("No static initialization tests were executed")
-		}
-	}
-  }
-
-  task loops(type: Test, group: 'verification') {
-	mustRunAfter testStaticInit
-	include '**/*Loop.*'
-	doFirst {
-	  println "Additional tests from `loops` ($includes)"
-	}
-  }
-
-  task testNG(type: Test, group: 'verification') {
-	mustRunAfter testStaticInit
-	useTestNG()
-	include '**/*Verification.*'
-	doFirst {
-	  println "Additional tests from `testNG` ($includes)"
-	}
-  }
-
-  //inherit basic test task + common configuration in root
-  //always depend on testStaticInit, skip testNG on Travis, skip loops when not releasing
-  //note that this way the tasks can be run individually
-  test {
-	dependsOn testStaticInit
-	if (System.env.TRAVIS != "true") {
-	  dependsOn testNG
-	}
-	if (!version.endsWith('BUILD-SNAPSHOT')) {
-	  dependsOn loops
-	}
-  }
-
-  if (!JavaVersion.current().isJava9Compatible()) {
-	test {
-	  jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
-	}
-  }
-
-  jar {
-	manifest {
-	  attributes 'Implementation-Title': 'reactor-core',
-			  'Implementation-Version': version
-	  instruction 'Import-Package', bundleImportPackages.join(',')
-	}
-  }
-
-  artifacts {
-	archives sourcesJar
-	archives javadocJar
-	archives docsZip
-	archives kdocZip
-  }
-
-  jacocoTestReport.dependsOn test
-  check.dependsOn jacocoTestReport
-  jar.finalizedBy(japicmp)
-}
-
-
-
-
-project('reactor-test') {
-  description = 'Reactor Test support'
-
-  configurations {
-	baseline
-  }
-
-  dependencies {
-	compile project(":reactor-core")
-
-	testCompile 'junit:junit:4.12'
-
-	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
-
-	testCompile "org.hamcrest:hamcrest-library:1.3",
-			"org.assertj:assertj-core:$assertJVersion",
-			"org.mockito:mockito-core:$mockitoVersion"
-
-	if ("$compatibleVersion" != "SKIP") {
-	  baseline("io.projectreactor:reactor-test:$compatibleVersion") {
-		transitive = false
-		force = true
-	  }
-	}
-  }
-
-  task japicmp(type: JapicmpTask) {
-	onlyIf { "$compatibleVersion" != "SKIP" }
-	oldClasspath = configurations.baseline
-	newClasspath = files(jar.archivePath)
-	onlyBinaryIncompatibleModified = true
-	failOnModification = true
-	failOnSourceIncompatibility = true
-	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
-	ignoreMissingClasses = true
-	includeSynthetic = true
-
-	//TODO after a release, remove the reactor-test exclusions below if any
-  }
-
-  javadoc {
-	dependsOn jar
-	group = "documentation"
-	description = "Generates aggregated Javadoc API documentation."
-	title = "Reactor Test $version"
-
-	options.addStringOption('charSet', 'UTF-8')
-
-	options.memberLevel = JavadocMemberLevel.PROTECTED
-	options.author = true
-	options.header = "$project.name"
-	options.stylesheetFile = file("$rootDir/src/api/stylesheet.css")
-	options.links(rootProject.ext.javadocLinks
-			.plus("https://projectreactor.io/docs/core/release/api/") as String[])
-	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-					 "implNote:a:Implementation Note:" ]
-
-	// In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
-	// And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
-	classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
-	classpath += sourceSets.main.compileClasspath
-
-	maxMemory = "1024m"
-	destinationDir = new File(project.buildDir, "docs/javadoc")
-  }
-
-  // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
-  task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
-	dependsOn jar
-	group = "documentation"
-	description = "Generates Kotlin API documentation."
-	moduleName = "reactor-test"
-	jdkVersion = 8
-
-	outputFormat = "html"
-	outputDirectory = new File(project.buildDir, "docs/kdoc")
-
-	//this is needed so that links to java classes are resolved
-	doFirst {
-	  classpath += project.jar.outputs.files.getFiles()
-	  classpath += project.sourceSets.main.compileClasspath
-	}
-	//this is needed so that the kdoc only generates for kotlin classes
-	//(default kotlinTasks sourceSet also includes java)
-	kotlinTasks {
-
-	}
-	processConfigurations = []
-	sourceDirs = files("src/main/kotlin")
-
-	externalDocumentationLink {
-	  url = new URL("https://projectreactor.io/docs/core/release/api/")
-	}
-	externalDocumentationLink {
-	  url = new URL("https://projectreactor.io/docs/test/release/api/")
-	}
-	externalDocumentationLink {
-	  url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
-	}
-  }
-
-  task kdocZip(type: Zip, dependsOn: dokka) {
-	//ends up similar to javadoc jar: reactor-test-xxx.RELEASE-kdoc.zip
-	classifier = 'kdoc'
-	from("${project.buildDir}/docs/kdoc")
-  }
-
-  artifacts {
-	archives kdocZip
-  }
-
-  jar.finalizedBy(japicmp)
 }
 
 assemble.dependsOn docsZip

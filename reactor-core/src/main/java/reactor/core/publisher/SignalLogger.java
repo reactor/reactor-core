@@ -25,8 +25,8 @@ import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -87,7 +87,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		this.fuseable = source instanceof Fuseable;
 
 		if (correlateStack) {
-			operatorLine = Traces.extractOperatorAssemblyInformation(new AssemblySnapshotException().toString());
+			operatorLine = Traces.extractOperatorAssemblyInformation(Traces.callSiteSupplierFactory.get().get());
 		}
 		else {
 			operatorLine = null;
@@ -201,6 +201,13 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	 * @see #log
 	 */
 	void safeLog(SignalType signalType, Object signalValue) {
+		if (signalValue instanceof Fuseable.QueueSubscription) {
+			signalValue = String.valueOf(signalValue);
+			if (log.isDebugEnabled()) {
+				log.debug("A Fuseable Subscription has been passed to the logging framework, this is generally a sign of a misplaced log(), " +
+						"eg. 'window(2).log()' instead of 'window(2).flatMap(w -> w.log())'");
+			}
+		}
 		try {
 			log(signalType, signalValue);
 		}

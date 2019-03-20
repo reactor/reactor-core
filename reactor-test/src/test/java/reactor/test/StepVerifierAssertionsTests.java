@@ -16,6 +16,8 @@
 package reactor.test;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -23,9 +25,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 
 public class StepVerifierAssertionsTests {
 
@@ -662,6 +662,40 @@ public class StepVerifierAssertionsTests {
 		catch (AssertionError ae) {
 			assertThat(ae).hasMessage("Expected exactly one operator error with an actual throwable content, no throwable found.");
 		}
+	}
+
+	@Test
+	public void contextDiscardCaptureWithNoInitialContext() {
+		StepVerifier.create(Mono.subscriberContext()
+		                        .flatMapIterable(ctx -> ctx.stream()
+		                                                   .map(Map.Entry::getKey)
+		                                                   .map(String::valueOf)
+		                                                   .collect(Collectors.toList())
+		                        ).concatWithValues("A", "B")
+		                        .filter(s -> s.length() > 1)
+		)
+		            .expectNext("reactor.onDiscard.local")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly("A", "B");
+	}
+
+	@Test
+	public void contextDiscardCaptureWithInitialContext() {
+		Context initial = Context.of("foo", "bar");
+		StepVerifier.create(Mono.subscriberContext()
+				.flatMapIterable(ctx -> ctx.stream()
+				                           .map(Map.Entry::getKey)
+				                           .map(String::valueOf)
+				                           .collect(Collectors.toList())
+		                        ).concatWithValues("A", "B")
+		                        .filter(s -> s.length() > 1)
+				, StepVerifierOptions.create().withInitialContext(initial))
+		            .expectNext("foo")
+		            .expectNext("reactor.onDiscard.local")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly("A", "B");
 	}
 
 }

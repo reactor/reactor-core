@@ -17,12 +17,14 @@ package reactor.core.publisher.scenarios;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
@@ -35,6 +37,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,6 +49,35 @@ import static org.junit.Assert.assertTrue;
 public class MonoTests {
 
 	@Test
+	public void errorContinueOnMonoReduction() {
+		AtomicReference<Tuple2<Class, Object>> ref = new AtomicReference<>();
+		StepVerifier.create(Flux.just(1, 0, 2)
+		                        .map(v -> 100 / v)
+		                        .reduce((a, b) -> a + b)
+		                        .onErrorContinue(ArithmeticException.class, (t, v) -> ref.set(Tuples.of(t.getClass(), v))))
+		            .expectNext(100 + 50)
+		            .verifyComplete();
+
+		Assertions.assertThat(ref).hasValue(Tuples.of(ArithmeticException.class, 0));
+	}
+
+	@Test
+	public void discardLocalOrder() {
+		List<String> discardOrder = Collections.synchronizedList(new ArrayList<>(2));
+
+		StepVerifier.create(Mono.just(1)
+		                        .hide() //hide both avoid the fuseable AND tryOnNext usage
+		                        .filter(i -> i % 2 == 0)
+		                        .doOnDiscard(Number.class, i -> discardOrder.add("FIRST"))
+		                        .doOnDiscard(Integer.class, i -> discardOrder.add("SECOND"))
+		)
+		            .expectComplete()
+		            .verify();
+
+		Assertions.assertThat(discardOrder).containsExactly("FIRST", "SECOND");
+	}
+
+	@Test
 	public void testDoOnEachSignal() {
 		List<Signal<Integer>> signals = new ArrayList<>(4);
 		Mono<Integer> mono = Mono.just(1)
@@ -54,7 +86,7 @@ public class MonoTests {
 		            .expectSubscription()
 		            .expectNext(1)
 		            .expectComplete()
-		            .verify();
+		            .verify(Duration.ofSeconds(5));
 
 		assertThat(signals.size(), is(2));
 		assertThat("onNext", signals.get(0).get(), is(1));

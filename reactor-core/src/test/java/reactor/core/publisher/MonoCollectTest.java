@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,18 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -138,6 +141,62 @@ public class MonoCollectTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void discardOnError() {
+		List<Integer> list = new ArrayList<>();
+		list.add(1);
+		list.add(2);
+		list.add(3);
+		list.add(4);
+
+		AtomicBoolean res = new AtomicBoolean();
+
+		Mono<List<Integer>> test = Flux.range(1, 10)
+		                               .hide()
+		                               .map(i -> {
+			                               if (i == 5) {
+				                               throw new IllegalStateException("boom");
+			                               }
+			                               return i;
+		                               })
+										.<List<Integer>>collect(ArrayList::new, List::add)
+										.doOnDiscard(List.class,
+						l -> {
+							l.removeAll(list);
+							res.set(l.isEmpty());
+						});
+
+		StepVerifier.create(test)
+		            .expectErrorMessage("boom")
+		            .verify();
+
+		Assert.assertTrue("all discarded", res.get());
+	}
+
+	@Test
+	public void discardOnCancel() {
+		List<Long> list = new ArrayList<>();
+		list.add(0L);
+		list.add(1L);
+
+		AtomicBoolean res = new AtomicBoolean();
+
+		StepVerifier.withVirtualTime(() ->
+				Flux.interval(Duration.ofMillis(100))
+				    .take(10).<List<Long>>collect(ArrayList::new,
+						List::add).doOnDiscard(List.class,
+						l -> {
+							l.removeAll(list);
+							res.set(l.isEmpty());
+						}))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(210))
+		            .thenCancel()
+		            .verify();
+
+		Assert.assertTrue("all discarded", res.get());
 	}
 
 }

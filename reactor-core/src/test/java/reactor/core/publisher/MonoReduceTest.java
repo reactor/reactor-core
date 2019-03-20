@@ -16,11 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -30,6 +32,8 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.ReduceOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
+import reactor.util.context.Context;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -198,6 +202,106 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 			e.printStackTrace();
 		}
 		return "x" + x + "y" + y;
+	}
+
+	@Test
+	public void onNextAndCancelRace() {
+		final AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+
+		MonoReduce.ReduceSubscriber<Integer> sub =
+				new MonoReduce.ReduceSubscriber<>(testSubscriber, (current, next) -> current + next);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		//the race alone _could_ previously produce a NPE
+		RaceTestUtils.race(() -> sub.onNext(1), sub::cancel);
+		testSubscriber.assertNoError();
+
+		//to be even more sure, we try an onNext AFTER the cancel
+		sub.onNext(2);
+		testSubscriber.assertNoError();
+	}
+
+	@Test
+	public void discardAccumulatedOnCancel() {
+		final List<Object> discarded = new ArrayList<>();
+		final AssertSubscriber<Object> testSubscriber = new AssertSubscriber<>(
+				Operators.enableOnDiscard(Context.empty(), discarded::add));
+
+		MonoReduce.ReduceSubscriber<Integer> sub =
+				new MonoReduce.ReduceSubscriber<>(testSubscriber,
+						(current, next) -> current + next);
+
+		sub.onSubscribe(Operators. emptySubscription());
+
+		sub.onNext(1);
+		assertThat(sub.value).isEqualTo(1);
+
+		sub.cancel();
+		testSubscriber.assertNoError();
+		assertThat(discarded).containsExactly(1);
+	}
+
+
+	@Test
+	public void discardOnError() {
+		final List<Object> discarded = new ArrayList<>();
+		final AssertSubscriber<Object> testSubscriber = new AssertSubscriber<>(
+				Operators.enableOnDiscard(Context.empty(), discarded::add));
+
+		MonoReduce.ReduceSubscriber<Integer> sub =
+				new MonoReduce.ReduceSubscriber<>(testSubscriber,
+						(current, next) -> current + next);
+
+		sub.onSubscribe(Operators. emptySubscription());
+
+		sub.onNext(1);
+		assertThat(sub.value).isEqualTo(1);
+
+		sub.onError(new RuntimeException("boom"));
+		testSubscriber.assertErrorMessage("boom");
+		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void noRetainValueOnComplete() {
+		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+
+		MonoReduce.ReduceSubscriber<Integer> sub =
+				new MonoReduce.ReduceSubscriber<>(testSubscriber,
+						(current, next) -> current + next);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		sub.onNext(1);
+		sub.onNext(2);
+		assertThat(sub.value).isEqualTo(3);
+
+		sub.request(1);
+		sub.onComplete();
+		assertThat(sub.value).isNull();
+
+		testSubscriber.assertNoError();
+	}
+
+	@Test
+	public void noRetainValueOnError() {
+		final AssertSubscriber<Object> testSubscriber = AssertSubscriber.create();
+
+		MonoReduce.ReduceSubscriber<Integer> sub =
+				new MonoReduce.ReduceSubscriber<>(testSubscriber,
+						(current, next) -> current + next);
+
+		sub.onSubscribe(Operators.emptySubscription());
+
+		sub.onNext(1);
+		sub.onNext(2);
+		assertThat(sub.value).isEqualTo(3);
+
+		sub.onError(new RuntimeException("boom"));
+		assertThat(sub.value).isNull();
+
+		testSubscriber.assertErrorMessage("boom");
 	}
 
 	@Test

@@ -16,6 +16,8 @@
 
 package reactor.core.scheduler;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -29,6 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
@@ -36,6 +39,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
 import static reactor.core.Exceptions.unwrap;
@@ -74,6 +78,10 @@ public abstract class Schedulers {
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
 	 * Runnables for async operators.
 	 *
+	 * <p>Tasks scheduled with workers of this Scheduler are not guaranteed to run in FIFO
+	 * order and strictly non-concurrently.
+	 * If FIFO order is desired, use trampoline parameter of {@link Schedulers#fromExecutor(Executor, boolean)}
+	 *
 	 * @param executor an {@link Executor}
 	 *
 	 * @return a new {@link Scheduler}
@@ -85,6 +93,10 @@ public abstract class Schedulers {
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
 	 * Runnables for async operators.
+	 *
+	 * Trampolining here means tasks submitted in a burst are queued by the Worker itself,
+	 * which acts as a sole task from the perspective of the {@link ExecutorService},
+	 * so no reordering (but also no threading).
 	 *
 	 * @param executor an {@link Executor}
 	 * @param trampoline set to false if this {@link Scheduler} is used by "operators"
@@ -374,6 +386,29 @@ public abstract class Schedulers {
 	}
 
 	/**
+	 * If Micrometer is available, set-up a decorator that will instrument any
+	 * {@link ExecutorService} that backs a {@link Scheduler}.
+	 * No-op if Micrometer isn't available.
+	 *
+	 * This instrumentation sends data to the Micrometer Global Registry.
+	 *
+	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers, which doesn't change the Factory.
+	 */
+	public static void enableMetrics() {
+		if (Metrics.isInstrumentationAvailable()) {
+			addExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY, new SchedulerMetricDecorator());
+		}
+	}
+
+	/**
+	 * If {@link #enableMetrics()} has been previously called, removes the decorator.
+	 * No-op if {@link #enableMetrics()} hasn't been called.
+	 */
+	public static void disableMetrics() {
+		removeExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY);
+	}
+
+	/**
 	 * Re-apply default factory to {@link Schedulers}
 	 */
 	public static void resetFactory(){
@@ -405,6 +440,122 @@ public abstract class Schedulers {
 		Objects.requireNonNull(factoryInstance, "factoryInstance");
 		shutdownNow();
 		factory = factoryInstance;
+	}
+
+	/**
+	 * Set up an additional {@link ScheduledExecutorService} decorator for a given key
+	 * only if that key is not already present. Note that the {@link Factory}'s legacy
+	 * {@link Factory#decorateExecutorService(String, Supplier)} method will always be
+	 * invoked last after applying the decorators added via this method.
+	 * <p>
+	 * The decorator is a {@link BiFunction} taking the Scheduler and the backing
+	 * {@link ScheduledExecutorService} as second argument. It returns the
+	 * decorated {@link ScheduledExecutorService}.
+	 *
+	 * @param key the key under which to set up the decorator
+	 * @param decorator the executor service decorator to add, if key not already present.
+	 * @return true if the decorator was added, false if a decorator was already present
+	 * for this key.
+	 * @see #setExecutorServiceDecorator(String, BiFunction)
+	 * @see #removeExecutorServiceDecorator(String)
+	 */
+	public static boolean addExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
+		synchronized (DECORATORS) {
+			return DECORATORS.putIfAbsent(key, decorator) == null;
+		}
+	}
+
+	/**
+	 * Set up an additional {@link ScheduledExecutorService} decorator for a given key,
+	 * even if that key is already present. Note that the {@link Factory}'s legacy
+	 * {@link Factory#decorateExecutorService(String, Supplier)} method will always be
+	 * invoked last after applying the decorators added via this method.
+	 * <p>
+	 * The decorator is a {@link BiFunction} taking the Scheduler and the backing
+	 * {@link ScheduledExecutorService} as second argument. It returns the
+	 * decorated {@link ScheduledExecutorService}.
+	 *
+	 * @param key the key under which to set up the decorator
+	 * @param decorator the executor service decorator to add, if key not already present.
+	 * @see #addExecutorServiceDecorator(String, BiFunction)
+	 * @see #removeExecutorServiceDecorator(String)
+	 */
+	public static void setExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
+		synchronized (DECORATORS) {
+			DECORATORS.put(key, decorator);
+		}
+	}
+
+	/**
+	 * Remove an existing {@link ScheduledExecutorService} decorator if it has been set up
+	 * via {@link #addExecutorServiceDecorator(String, BiFunction)}. Note that the {@link Factory}'s
+	 * legacy {@link Factory#decorateExecutorService(String, Supplier)} method is always
+	 * applied last, even if all other decorators have been removed via this method.
+	 * <p>
+	 * In case the decorator implements {@link Disposable}, it is also
+	 * {@link Disposable#dispose() disposed}.
+	 *
+	 * @param key the key for the executor service decorator to remove
+	 * @return the removed decorator, or null if none was set for that key
+	 * @see #addExecutorServiceDecorator(String, BiFunction)
+	 * @see #setExecutorServiceDecorator(String, BiFunction)
+	 */
+	public static BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removeExecutorServiceDecorator(String key) {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removed;
+		synchronized (DECORATORS) {
+			removed = DECORATORS.remove(key);
+		}
+		if (removed instanceof Disposable) {
+			((Disposable) removed).dispose();
+		}
+		return removed;
+	}
+
+	/**
+	 * This method is aimed at {@link Scheduler} implementors, enabling custom implementations
+	 * that are backed by a {@link ScheduledExecutorService} to also have said executors
+	 * decorated (ie. for instrumentation purposes).
+	 * <p>
+	 * It <strong>applies</strong> the decorators added via
+	 * {@link #addExecutorServiceDecorator(String, BiFunction)}, so it shouldn't be added
+	 * as a decorator. Note also that decorators are not guaranteed to be idempotent, so
+	 * this method should be called only once per executor.
+	 *
+	 * @param owner a {@link Scheduler} that owns the {@link ScheduledExecutorService}
+	 * @param original the {@link ScheduledExecutorService} that the {@link Scheduler}
+	 * wants to use originally
+	 * @return the decorated {@link ScheduledExecutorService}, or the original if no decorator is set up
+	 * @see #addExecutorServiceDecorator(String, BiFunction)
+	 * @see #removeExecutorServiceDecorator(String)
+	 */
+	public static ScheduledExecutorService decorateExecutorService(Scheduler owner, ScheduledExecutorService original) {
+		synchronized (DECORATORS) {
+			for (BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator : DECORATORS.values()) {
+				original = decorator.apply(owner, original);
+			}
+		}
+
+		final ScheduledExecutorService beforeFactory = original;
+
+		// Backward compatibility
+		final String schedulerType;
+		if (owner instanceof SingleScheduler) {
+			schedulerType = Schedulers.SINGLE;
+		}
+		else if (owner instanceof ParallelScheduler) {
+			schedulerType = Schedulers.PARALLEL;
+		}
+		else if (owner instanceof ElasticScheduler) {
+			schedulerType = Schedulers.ELASTIC;
+		}
+		else if (owner instanceof DelegateServiceScheduler) {
+			schedulerType = "ExecutorService";
+		}
+		else {
+			schedulerType = owner.getClass().getName();
+		}
+
+		return factory.decorateExecutorService(schedulerType, () -> beforeFactory);
 	}
 
 	/**
@@ -462,7 +613,12 @@ public abstract class Schedulers {
 		 * @param actual the default backing implementation, provided lazily as a Supplier
 		 * so that you can bypass instantiation completely if you want to replace it.
 		 * @return the internal {@link ScheduledExecutorService} instance to use.
+		 * @deprecated use {@link Schedulers#addExecutorServiceDecorator(String, BiFunction)} and
+		 * {@link Schedulers#removeExecutorServiceDecorator(String)} instead, to compose
+		 * multiple decorators in addition to the one from the current
+		 * {@link Schedulers#setFactory(Factory) Factory}
 		 */
+		@Deprecated
 		default ScheduledExecutorService decorateExecutorService(String schedulerType,
 				Supplier<? extends ScheduledExecutorService> actual) {
 			return actual.get();
@@ -535,8 +691,10 @@ public abstract class Schedulers {
 
 	static final Supplier<Scheduler> SINGLE_SUPPLIER = () -> newSingle(SINGLE, true);
 
-	static final Factory DEFAULT = new Factory() {
-	};
+	static final Factory DEFAULT = new Factory() { };
+
+	static final Map<String, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>>
+			DECORATORS = new LinkedHashMap<>();
 
 	static volatile Factory factory = DEFAULT;
 
@@ -690,12 +848,27 @@ public abstract class Schedulers {
 			long period,
 			TimeUnit unit) {
 
-		PeriodicSchedulerTask sr = new PeriodicSchedulerTask(task);
+		if (period <= 0L) {
+			InstantPeriodicWorkerTask isr =
+					new InstantPeriodicWorkerTask(task, exec);
+			Future<?> f;
+			if (initialDelay <= 0L) {
+				f = exec.submit(isr);
+			}
+			else {
+				f = exec.schedule(isr, initialDelay, unit);
+			}
+			isr.setFirst(f);
 
-		Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
-		sr.setFuture(f);
+			return isr;
+		}
+		else {
+			PeriodicSchedulerTask sr = new PeriodicSchedulerTask(task);
+			Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
+			sr.setFuture(f);
 
-		return sr;
+			return sr;
+		}
 	}
 
 	static Disposable workerSchedule(ScheduledExecutorService exec,
@@ -738,6 +911,9 @@ public abstract class Schedulers {
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
 					new InstantPeriodicWorkerTask(task, exec, tasks);
+			if (!tasks.add(isr)) {
+			  throw Exceptions.failWithRejected();
+			}
 			try {
 				Future<?> f;
 				if (initialDelay <= 0L) {
@@ -783,12 +959,6 @@ public abstract class Schedulers {
 		}
 
 		return sr;
-	}
-
-
-	static ScheduledExecutorService decorateExecutorService(String schedulerType,
-			Supplier<? extends ScheduledExecutorService> actual) {
-		return factory.decorateExecutorService(schedulerType, actual);
 	}
 
 	/**

@@ -26,9 +26,9 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -282,31 +282,6 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Set a global cleanup {@link Consumer} for data element that do not get propagated
-	 * properly (eg. data that is filtered out, enqueue or buffered but never propagated
-	 * due a cancellation or an error...).
-	 *
-	 * The hook is cumulative, so calling this method several times will set up the hook
-	 * for as many consumer invocations (even if called with the same consumer instance).
-	 *
-	 * @param c the {@link Consumer} to apply to data that is not propagated due to
-	 * filtering, queue clearing due to cancellation or error...
-	 */
-	public static void onDiscard(Consumer<Object> c) {
-		Objects.requireNonNull(c, "onDiscardHook");
-		log.debug("Hooking new default : onDiscard");
-
-		synchronized(log) {
-			if (onDiscardHook != null) {
-				onDiscardHook = onDiscardHook.andThen(c);
-			}
-			else {
-				onDiscardHook = c;
-			}
-		}
-	}
-
-	/**
 	 * Resets {@link #resetOnNextDropped() onNextDropped hook(s)} and
 	 * apply a strategy of throwing {@link Exceptions#failWithCancel()} instead.
 	 * <p>
@@ -331,14 +306,14 @@ public abstract class Hooks {
 	 */
 	public static void onOperatorDebug() {
 		log.debug("Enabling stacktrace debugging via onOperatorDebug");
-		onEachOperator(ON_OPERATOR_DEBUG_KEY, OnOperatorDebug.instance());
+		GLOBAL_TRACE = true;
 	}
 
 	/**
 	 * Reset global operator debug.
 	 */
 	public static void resetOnOperatorDebug() {
-		resetOnEachOperator(ON_OPERATOR_DEBUG_KEY);
+		GLOBAL_TRACE = false;
 	}
 
 	/**
@@ -480,16 +455,6 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Reset global {@link #onDiscard discard hook} to doing nothing.
-	 */
-	public static void resetOnDiscard() {
-		log.debug("Reset to factory defaults: onDiscard");
-		synchronized (log) {
-			onDiscardHook = null;
-		}
-	}
-
-	/**
 	 * Reset global onNext error handling strategy to terminating the sequence with
 	 * an onError and cancelling upstream ({@link OnNextFailureStrategy#STOP}).
 	 */
@@ -539,7 +504,6 @@ public abstract class Hooks {
 	//Hooks that are just callbacks
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
 	static volatile Consumer<Object>            onNextDroppedHook;
-	static volatile Consumer<Object>            onDiscardHook;
 
 	//Special hook that is between the two (strategy can be transformative, but not named)
 	static volatile OnNextFailureStrategy onNextErrorHook;
@@ -579,11 +543,13 @@ public abstract class Hooks {
 	 * hook in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
 	 */
 	static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
+
 	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onDiscard(Consumer)}
+	 * A key that can be used to store a sequence-specific onDiscard(Consumer)
 	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Object&gt;}.
 	 */
 	static final String KEY_ON_DISCARD = "reactor.onDiscard.local";
+
 	/**
 	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
 	 * hook THAT IS ONLY APPLIED TO Operators{@link Operators#onRejectedExecution(Throwable, Context) onRejectedExecution}
@@ -591,60 +557,36 @@ public abstract class Hooks {
 	 */
 	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
 
-	/**
-	 * A key used by {@link #onOperatorDebug()} to hook the debug handler, augmenting
-	 * every single operator with an assembly traceback.
-	 */
-	static final String ON_OPERATOR_DEBUG_KEY = "onOperatorDebug";
+	static boolean GLOBAL_TRACE =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
+					"false"));
 
 	static {
 		onEachOperatorHooks = new LinkedHashMap<>(1);
 		onLastOperatorHooks = new LinkedHashMap<>(1);
 		onOperatorErrorHooks = new LinkedHashMap<>(1);
-
-		boolean globalTrace =
-				Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
-						"false"));
-
-		if (globalTrace) {
-			onEachOperator(ON_OPERATOR_DEBUG_KEY, OnOperatorDebug.instance());
-		}
 	}
 
 	Hooks() {
 	}
 
-	final static class OnOperatorDebug<T>
-			implements Function<Publisher<T>, Publisher<T>> {
-
-		static final OnOperatorDebug INSTANCE = new OnOperatorDebug<>();
-
-
-		@SuppressWarnings("unchecked")
-		static <T> OnOperatorDebug<T> instance(){
-			return (OnOperatorDebug<T>)INSTANCE;
-		}
-
-		@Override
-		@SuppressWarnings("unchecked")
-		public Publisher<T> apply(Publisher<T> publisher) {
-			if (publisher instanceof Callable) {
-				if (publisher instanceof Mono) {
-					return new MonoCallableOnAssembly<>((Mono<T>) publisher);
-				}
-				return new FluxCallableOnAssembly<>((Flux<T>) publisher);
-			}
+	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
+		if (publisher instanceof Callable) {
 			if (publisher instanceof Mono) {
-				return new MonoOnAssembly<>((Mono<T>) publisher);
+				return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
 			}
-			if (publisher instanceof ParallelFlux) {
-				return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher);
-			}
-			if (publisher instanceof ConnectableFlux) {
-				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher);
-			}
-			return new FluxOnAssembly<>((Flux<T>) publisher);
+			return new FluxCallableOnAssembly<>((Flux<T>) publisher, stacktrace);
 		}
+		if (publisher instanceof Mono) {
+			return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace);
+		}
+		if (publisher instanceof ParallelFlux) {
+			return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher, stacktrace);
+		}
+		if (publisher instanceof ConnectableFlux) {
+			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher, stacktrace);
+		}
+		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
 	}
 
 }

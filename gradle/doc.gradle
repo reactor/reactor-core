@@ -16,11 +16,26 @@
 configure(rootProject) {
 	apply plugin: 'org.asciidoctor.convert'
 
+  configure(subprojects) { p ->
+	p.tasks.withType(Javadoc).all {
+	  afterEvaluate {
+		println "JDK Javadoc link for ${p.name} is ${rootProject.jdkJavadoc}"
+	  }
+	}
+  }
+
 	asciidoctor {
-		sources {
-			include "index.asciidoc"
+	  sourceDir "$rootDir/docs/asciidoc/"
+	  sources {
+		include "index.asciidoc"
+	  }
+	  resources {
+		from(sourceDir) {
+		  include 'images/**'
+		  include 'highlight/**/*'
 		}
-		outputDir file("$buildDir/reactor-code/build/asciidoc")
+	  }
+	  outputDir file("$buildDir/reactor-code/build/asciidoc")
 	  backends = ['html5', 'pdf']
 		logDocuments = true
 		options = [
@@ -30,21 +45,30 @@ configure(rootProject) {
 				toc2: '',
 				'compat-mode': '',
 				'allow-uri-read': '',
+				imagesdir: "images/",
 				stylesdir: "stylesheets/",
-				stylesheet: 'golo.css',
+				stylesheet: 'reactor.css',
 				appversion: version,
-				'source-highlighter': 'coderay'
+				'source-highlighter': 'highlightjs',
+				'highlightjsdir': "./highlight",
+				'highlightjs-theme': 'railscasts'
 
 		doLast {
 			file("$outputDir/pdf/index.pdf").renameTo ("$outputDir/pdf/reactor-core-reference-guide-${version}.pdf")
 		}
 	}
 
+	dependencies {
+	  asciidoctor 'org.jruby:jruby-complete:9.2.5.0'
+	  asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
+	}
+
 	task docsZip(type: Zip, dependsOn: asciidoctor) {
 	  baseName = 'reactor-core-docs'
 	  from("$buildDir/reactor-code/build/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
 	  from("$buildDir/reactor-code/build/asciidoc/html5/index.html") { into("docs/") }
-	  from("$buildDir/reactor-code/build/asciidoc/html5/images") { into("images/") }
+	  from("$buildDir/reactor-code/build/asciidoc/html5/images") { into("docs/images/") }
+	  from("$buildDir/reactor-code/build/asciidoc/html5/highlight") { into("docs/highlight/") }
 	}
 }
 

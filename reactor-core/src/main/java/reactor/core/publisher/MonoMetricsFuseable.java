@@ -32,7 +32,7 @@ import reactor.util.function.Tuple2;
  * Activate metrics gathering on a {@link Mono} (Fuseable version), assumes Micrometer is
  * on the classpath.
  *
- * @implNote Metrics.isMicrometerAvailable() test should be performed BEFORE instantiating
+ * @implNote Metrics.isInstrumentationAvailable() test should be performed BEFORE instantiating
  * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
  * Micrometer is not there.
  *

@@ -192,8 +192,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 				return null;
 			}
 			catch (Throwable e) {
-				e.addSuppressed(error);
-				return e;
+				return Exceptions.addSuppressed(e, error);
 			}
 		}
 	}
@@ -229,8 +228,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 				return null;
 			}
 			catch (Throwable e) {
-				e.addSuppressed(error);
-				return e;
+				return Exceptions.addSuppressed(e, error);
 			}
 		}
 	}

@@ -101,6 +101,11 @@ final class Context3 implements Context {
 	}
 
 	@Override
+	public int size() {
+		return 3;
+	}
+
+	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
 		return Stream.of(
 				new AbstractMap.SimpleImmutableEntry<>(key1, value1),

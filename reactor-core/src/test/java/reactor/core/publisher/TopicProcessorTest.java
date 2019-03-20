@@ -56,7 +56,7 @@ public class TopicProcessorTest {
 
 
 	@Test
-	public void testShutdownSuccessfullAfterAllDataIsRequested() throws InterruptedException {
+	public void testShutdownSuccessfulAfterAllDataIsRequested() throws InterruptedException {
 		TopicProcessor<String> processor = TopicProcessor.<String>builder().name("processor").bufferSize(4).build();
 		Publisher<String>
 				publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,6 +130,9 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
+			R v = value;
+			Operators.onDiscard(v, currentContext());
+			value = null;
 			actual.onError(t);
 		}
 

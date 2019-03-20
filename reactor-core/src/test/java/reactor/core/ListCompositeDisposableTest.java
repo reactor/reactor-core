@@ -111,7 +111,7 @@ public class ListCompositeDisposableTest {
 	}
 
 	@Test
-	public void removeInexistant() throws Exception {
+	public void removeNonexistant() throws Exception {
 		FakeDisposable d = new FakeDisposable();
 		Disposable.Composite cd = new ListCompositeDisposable();
 		boolean deleted = cd.remove(d);

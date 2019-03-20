@@ -35,11 +35,14 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
@@ -63,7 +66,7 @@ import reactor.util.concurrent.Queues;
  *
  * @param <T> the value type
  */
-public abstract class ParallelFlux<T> implements Publisher<T> {
+public abstract class ParallelFlux<T> implements CorePublisher<T> {
 
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (one per CPU core)
@@ -162,7 +165,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint() {
-		return new ParallelFluxOnAssembly<>(this, null);
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+		return new ParallelFluxOnAssembly<>(this, stacktrace);
 	}
 
 	/**
@@ -182,7 +186,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint(String description) {
-		return new ParallelFluxOnAssembly<>(this, description, true);
+		return new ParallelFluxOnAssembly<>(this, new AssemblyLightSnapshot(description));
 	}
 
 	/**
@@ -212,7 +216,15 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link ParallelFlux}.
 	 */
 	public final ParallelFlux<T> checkpoint(String description, boolean forceStackTrace) {
-		return new ParallelFluxOnAssembly<>(this, description, !forceStackTrace);
+		final AssemblySnapshot stacktrace;
+		if (!forceStackTrace) {
+			stacktrace = new AssemblyLightSnapshot(description);
+		}
+		else {
+			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
+		}
+
+		return new ParallelFluxOnAssembly<>(this, stacktrace);
 	}
 
 	/**
@@ -616,8 +628,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
 	 * is available, it will be used instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
-	 * alt="">
+	 * <img class="marble" src="doc-files/marbles/logForFlux.svg" alt="">
 	 * <p>
 	 * The default log category will be "reactor.*", a generated operator suffix will
 	 * complete, e.g. "reactor.Parallel.Map".
@@ -633,8 +644,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
 	 * is available, it will be used instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
-	 * alt="">
+	 * <img class="marble" src="doc-files/marbles/logForFlux.svg" alt="">
 	 * <p>
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
@@ -659,8 +669,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *     ParallelFlux.log("category", Level.INFO, SignalType.ON_NEXT,
 	 * SignalType.ON_ERROR)
 	 *
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
-	 * alt="">
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/logForFlux.svg" alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
@@ -689,8 +699,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *     ParallelFlux.log("category", Level.INFO, SignalType.ON_NEXT,
 	 * SignalType.ON_ERROR)
 	 *
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/log.png"
-	 * alt="">
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/logForFlux.svg" alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
@@ -993,6 +1003,15 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return subscribe(onNext, onError, onComplete, null);
 	}
 
+	@Override
+	@SuppressWarnings("unchecked")
+	public final void subscribe(CoreSubscriber<? super T> s) {
+		FluxHide.SuppressFuseableSubscriber<T> subscriber =
+				new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s));
+
+		sequential().subscribe(Operators.toCoreSubscriber(subscriber));
+	}
+
 	/**
 	 * Subscribes to this {@link ParallelFlux} by providing an onNext, onError,
 	 * onComplete and onSubscribe callback and triggers the execution chain for all
@@ -1009,17 +1028,29 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			@Nullable Runnable onComplete,
 			@Nullable Consumer<? super Subscription> onSubscribe){
 
-		@SuppressWarnings("unchecked")
-		LambdaSubscriber<? super T>[] subscribers = new LambdaSubscriber[parallelism()];
+		CorePublisher<T> publisher = Operators.onLastAssembly(this);
+		if (publisher instanceof ParallelFlux) {
+			@SuppressWarnings("unchecked")
+			LambdaSubscriber<? super T>[] subscribers = new LambdaSubscriber[parallelism()];
 
-		int i = 0;
-		while(i < subscribers.length){
-			subscribers[i++] =
-					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+			int i = 0;
+			while(i < subscribers.length){
+				subscribers[i++] =
+						new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+			}
+
+			((ParallelFlux<T>) publisher).subscribe(subscribers);
+
+			return Disposables.composite(subscribers);
 		}
+		else {
+			LambdaSubscriber<? super T> subscriber =
+					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
 
-		onLastAssembly(this).subscribe(subscribers);
-		return Disposables.composite(subscribers);
+			publisher.subscribe(Operators.toCoreSubscriber(new FluxHide.SuppressFuseableSubscriber<>(subscriber)));
+
+			return subscriber;
+		}
 	}
 
 	/**
@@ -1031,8 +1062,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> s) {
-		Flux.onLastAssembly(sequential())
-		    .subscribe(new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s)));
+		FluxHide.SuppressFuseableSubscriber<T> subscriber =
+				new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s));
+
+		Operators.onLastAssembly(sequential()).subscribe(Operators.toCoreSubscriber(subscriber));
 	}
 
 	/**
@@ -1118,7 +1151,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @param <R> the result type
 	 * @param mapper the function to map each rail's value into a Publisher
-	 * @param delayUntilEnd true if delayed until all sources are concated
+	 * @param delayUntilEnd true if delayed until all sources are concatenated
 	 * @param prefetch the number of items to prefetch from each inner Publisher
 	 * source and the inner Publishers (immediate, boundary, end)
 	 *
@@ -1169,10 +1202,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	protected static <T> ParallelFlux<T> onAssembly(ParallelFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
-		if (hook == null) {
-			return source;
+		if(hook != null) {
+			source = (ParallelFlux<T>) hook.apply(source);
 		}
-		return (ParallelFlux<T>) hook.apply(source);
+		if (Hooks.GLOBAL_TRACE) {
+			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+			source = (ParallelFlux<T>) Hooks.addAssemblyInfo(source, stacktrace);
+		}
+		return source;
 	}
 
 	/**
@@ -1183,8 +1220,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param source the source to wrap
 	 *
 	 * @return the potentially wrapped source
+	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
 	 */
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	protected static <T> ParallelFlux<T> onLastAssembly(ParallelFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if (hook == null) {

@@ -41,6 +41,6 @@ final class MonoDoOnEachFuseable<T> extends MonoOperator<T, T> implements Fuseab
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(FluxDoOnEach.createSubscriber(actual, onSignal, true));
+		source.subscribe(FluxDoOnEach.createSubscriber(actual, onSignal, true, true));
 	}
 }

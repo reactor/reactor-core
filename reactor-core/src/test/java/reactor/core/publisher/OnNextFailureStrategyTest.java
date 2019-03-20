@@ -20,7 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.util.Arrays;
 import org.junit.Test;
+
+import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -295,6 +298,33 @@ public class OnNextFailureStrategyTest {
 	}
 
 	@Test
+	public void resumeDropDoesntSelfSuppressIfHookRethrows() {
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(e -> { throw Exceptions.propagate(e); });
+		Hooks.onNextDropped(value::set);
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+
+			String data = "foo";
+			Throwable exception = new IllegalArgumentException("foo");
+
+			assertThat(strategy.test(exception, data)).as("predicate matches").isTrue();
+			Throwable t = strategy.process(exception, data, Context.empty());
+
+			assertThat(t)
+					.isSameAs(exception)
+					.hasNoSuppressedExceptions();
+			assertThat(value.get()).isEqualTo("foo");
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+
+	@Test
 	public void resume() {
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<Object> value = new AtomicReference<>();
@@ -509,6 +539,35 @@ public class OnNextFailureStrategyTest {
 
 		assertThat(error.get()).isNull();
 		assertThat(value.get()).isNull();
+	}
+
+	@Test
+	public void resumeIfDoesntSelfSuppress() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(value::set);
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(t -> t instanceof IllegalArgumentException,
+					(t, v) -> { throw Exceptions.propagate(t);});
+
+			String data = "foo";
+			Throwable exception = new IllegalArgumentException("foo");
+
+			assertThat(strategy.test(exception, data)).as("predicate matches").isTrue();
+			Throwable t = strategy.process(exception, data, Context.empty());
+
+			assertThat(t)
+					.isSameAs(exception)
+					.hasNoSuppressedExceptions();
+			assertThat(error).hasValue(null);
+			assertThat(value).hasValue(null);
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
 	}
 
 	@Test

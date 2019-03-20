@@ -25,6 +25,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 
@@ -43,8 +44,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Stephane Maldini
@@ -56,10 +56,9 @@ public class HooksTest {
 		Hooks.resetOnOperatorError();
 		Hooks.resetOnNextDropped();
 		Hooks.resetOnErrorDropped();
-//		Hooks.resetOnOperatorDebug(); //superseded by resetOnEachOperator
+		Hooks.resetOnOperatorDebug();
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
-		Hooks.resetOnDiscard();
 	}
 
 	void simpleFlux(){
@@ -231,25 +230,6 @@ public class HooksTest {
 
 		assertThat(Hooks.onEachOperatorHook).isNull();
 		assertThat(Hooks.getOnEachOperatorHooks()).isEmpty();
-	}
-
-	@Test
-	public void resetDebugDoesntResetOtherHooksInComposite() {
-		Hooks.onEachOperator(p -> p);
-		Hooks.onEachOperator("other", p -> p);
-		Hooks.onOperatorDebug();
-
-		assertThat(Hooks.getOnEachOperatorHooks())
-				.hasSize(3)
-				.containsKey("other")
-				.containsKey(Hooks.ON_OPERATOR_DEBUG_KEY);
-
-		Hooks.resetOnOperatorDebug();
-
-		assertThat(Hooks.getOnEachOperatorHooks())
-				.hasSize(2)
-				.containsKey("other")
-				.doesNotContainKey(Hooks.ON_OPERATOR_DEBUG_KEY);
 	}
 
 	@Test

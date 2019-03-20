@@ -172,7 +172,7 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
-	public void expectSubscribersN() {
+	public void expectAssertSubscribersN() {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(AssertionError.class)
@@ -187,6 +187,27 @@ public class ColdTestPublisherTests {
 
 		publisher.complete()
 	             .assertNoSubscribers();
+	}
+
+	@Test
+	public void expectSubscribersCountN() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> publisher.assertSubscribers(1))
+				.withMessage("Expected 1 subscribers, got 0");
+
+		assertThat(publisher.subscribeCount()).isEqualTo(0);
+		publisher.assertNoSubscribers();
+
+		Flux.from(publisher).subscribe();
+		assertThat(publisher.subscribeCount()).isEqualTo(1);
+
+		Flux.from(publisher).subscribe();
+		assertThat(publisher.subscribeCount()).isEqualTo(2);
+
+		publisher.complete().assertNoSubscribers();
+		assertThat(publisher.subscribeCount()).isEqualTo(2);
 	}
 
 	@Test

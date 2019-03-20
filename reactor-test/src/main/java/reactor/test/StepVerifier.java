@@ -1036,7 +1036,7 @@ public interface StepVerifier {
 
 		/**
 		 * Assert that the tested publisher has discarded at least one element to the
-		 * {@link Hooks#onDiscard(Consumer)} hook.
+		 * {@link reactor.core.publisher.Flux#doOnDiscard(Class, Consumer) discard} hook.
 		 * <p>
 		 * Unlike {@link #hasDroppedElements()}, the discard hook can be invoked as part
 		 * of normal operations, eg. when an element doesn't match a filter.
@@ -1045,7 +1045,7 @@ public interface StepVerifier {
 
 		/**
 		 * Assert that the tested publisher has not discarded any element to the
-		 * {@link Hooks#onDiscard(Consumer)} hook.
+		 * {@link reactor.core.publisher.Flux#doOnDiscard(Class, Consumer) discard} hook.
 		 * <p>
 		 * Unlike {@link #hasDroppedElements()}, the discard hook can be invoked as part
 		 * of normal operations, eg. when an element doesn't match a filter.
@@ -1054,7 +1054,7 @@ public interface StepVerifier {
 
 		/**
 		 * Assert that the tested publisher has discarded at least all of the provided
-		 * elements to the {@link Hooks#onDiscard(Consumer)} hook, in any order.
+		 * elements to the {@link reactor.core.publisher.Flux#doOnDiscard(Class, Consumer) discard} hook, in any order.
 		 * <p>
 		 * Unlike {@link #hasDroppedElements()}, the discard hook can be invoked as part
 		 * of normal operations, eg. when an element doesn't match a filter.
@@ -1063,8 +1063,8 @@ public interface StepVerifier {
 
 		/**
 		 * Assert that the tested publisher has discarded all of the provided elements to
-		 * the {@link Hooks#onDiscard(Consumer)} hook, in any order, and that no
-		 * other elements were dropped.
+		 * the {@link reactor.core.publisher.Flux#doOnDiscard(Class, Consumer) discard} hook,
+		 * in any order, and that no other elements were dropped.
 		 * <p>
 		 * Unlike {@link #hasDroppedElements()}, the discard hook can be invoked as part
 		 * of normal operations, eg. when an element doesn't match a filter.

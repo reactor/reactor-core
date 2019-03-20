@@ -273,8 +273,12 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		}
 
 		void cancelAll() {
-			MergeSequentialInner<R> inner;
+			MergeSequentialInner<R> c = this.current;
+			if (c != null) {
+				c.cancel();
+			}
 
+			MergeSequentialInner<R> inner;
 			while ((inner = subscribers.poll()) != null) {
 				inner.cancel();
 			}

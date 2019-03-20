@@ -376,7 +376,7 @@ public class FluxFilterWhenTest {
 		assertThat(scannable.get().scan(Scannable.Attr.TERMINATED)).isEqualTo(true);
 	}
 
-	//TODO introspect errors (but is difficult due to Expections.terminate)
+	//TODO introspect errors (but is difficult due to Exceptions.terminate)
 	@Test
 	public void introspectionCancel() {
 		AtomicReference<Scannable> scannable = new AtomicReference<>();

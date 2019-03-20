@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -49,37 +50,14 @@ import reactor.util.function.Tuples;
 final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
                                                                     AssemblyOp {
 
-	final AssemblySnapshotException snapshotStack;
-
-	/**
-	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
-	 * instead of the sanitized version.
-	 */
-	static final boolean fullStackTrace = Boolean.parseBoolean(System.getProperty(
-			"reactor.trace.assembly.fullstacktrace",
-			"false"));
+	final AssemblySnapshot snapshotStack;
 
 	/**
 	 * Create an assembly trace decorated as a {@link Flux}.
 	 */
-	FluxOnAssembly(Flux<? extends T> source) {
+	FluxOnAssembly(Flux<? extends T> source, AssemblySnapshot snapshotStack) {
 		super(source);
-		this.snapshotStack = new AssemblySnapshotException();
-	}
-
-	/**
-	 * If light, create an assembly marker that has no trace but just shows a custom
-	 * description (eg. a name for a Flux or a wider correlation ID) and exposed as a
-	 * {@link Flux}.
-	 */
-	FluxOnAssembly(Flux<? extends T> source, @Nullable String description, boolean light) {
-		super(source);
-		if (light) {
-			this.snapshotStack = new AssemblyLightSnapshotException(description);
-		}
-		else {
-			this.snapshotStack = new AssemblySnapshotException(description);
-		}
+		this.snapshotStack = snapshotStack;
 	}
 
 	@Override
@@ -99,23 +77,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		return snapshotStack.operatorAssemblyInformation();
 	}
 
-	static String getStacktrace(AssemblySnapshotException snapshotStack) {
-		StackTraceElement[] stes = snapshotStack.getStackTrace();
-		if (!fullStackTrace) {
-			return Traces.stackTraceToSanitizedString(stes);
-		}
-		else {
-			return Traces.stackTraceToString(stes);
-		}
-	}
-
 	static void fillStacktraceHeader(StringBuilder sb, Class<?> sourceClass,
-			AssemblySnapshotException ase) {
+			AssemblySnapshot ase) {
 		if (ase.isLight()) {
 			sb.append("\nAssembly site of producer [")
 			  .append(sourceClass.getName())
 			  .append("] is identified by light checkpoint [")
-			  .append(ase.getMessage())
+			  .append(ase.getDescription())
 			  .append("].");
 			return;
 		}
@@ -124,9 +92,9 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		  .append(sourceClass.getName())
 		  .append("]");
 
-		if (ase.getMessage() != null) {
+		if (ase.getDescription() != null) {
 			sb.append(", described as [")
-			  .append(ase.getMessage())
+			  .append(ase.getDescription())
 			  .append("]");
 		}
 		sb.append(" :\n");
@@ -135,7 +103,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(CoreSubscriber<? super T> s,
 			Flux<? extends T> source,
-			@Nullable AssemblySnapshotException snapshotStack) {
+			@Nullable AssemblySnapshot snapshotStack) {
 
 		if(snapshotStack != null) {
 			if (s instanceof ConditionalSubscriber) {
@@ -167,57 +135,57 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	/**
-	 * The exception that captures assembly context, possibly with a user-readable
-	 * description or a wider correlation ID (which serves as the exception's
-	 * {@link #getMessage() message}). Use the empty constructor if the later is not
-	 * relevant.
+	 * A snapshot of current assembly traceback, possibly with a user-readable
+	 * description or a wider correlation ID.
 	 */
-	static class AssemblySnapshotException extends RuntimeException {
+	static class AssemblySnapshot {
 
-		final boolean checkpointed;
+		final boolean          checkpointed;
+		@Nullable
+		final String           description;
+		final Supplier<String> assemblyInformationSupplier;
 		String cached;
-
-		AssemblySnapshotException() {
-			super();
-			this.checkpointed = false;
-		}
 
 		/**
 		 * @param description a description for the assembly traceback.
-		 * Use {@link #AssemblySnapshotException()} rather than null if not relevant.
+		 * @param assemblyInformationSupplier a callSite supplier.
 		 */
-		AssemblySnapshotException(@Nullable String description) {
-			super(description);
-			this.checkpointed = true;
+		AssemblySnapshot(@Nullable String description, Supplier<String> assemblyInformationSupplier) {
+			this(description != null, description, assemblyInformationSupplier);
+		}
+
+		private AssemblySnapshot(boolean checkpointed, @Nullable String description, Supplier<String> assemblyInformationSupplier) {
+			this.checkpointed = checkpointed;
+			this.description = description;
+			this.assemblyInformationSupplier = assemblyInformationSupplier;
+		}
+
+		@Nullable
+		public String getDescription() {
+			return description;
 		}
 
 		public boolean isLight() {
 			return false;
 		}
 
-		@Override
-		public String toString() {
-			if(cached == null){
-				cached = getStacktrace(this);
+		String toAssemblyInformation() {
+			if(cached == null) {
+				cached = assemblyInformationSupplier.get();
 			}
 			return cached;
 		}
 
 		String operatorAssemblyInformation() {
-			return Traces.extractOperatorAssemblyInformation(toString());
+			return Traces.extractOperatorAssemblyInformation(toAssemblyInformation());
 		}
 	}
 
-	static final class AssemblyLightSnapshotException extends AssemblySnapshotException {
+	static final class AssemblyLightSnapshot extends AssemblySnapshot {
 
-		AssemblyLightSnapshotException(@Nullable String description) {
-			super(description);
-			cached = "checkpoint(\""+description+"\")";
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return this; //intentionally NO-OP
+		AssemblyLightSnapshot(@Nullable String description) {
+			super(true, description, () -> "");
+			cached = "checkpoint(\"" + description + "\")";
 		}
 
 		@Override
@@ -227,7 +195,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		@Override
 		String operatorAssemblyInformation() {
-			return toString();
+			return cached;
 		}
 	}
 
@@ -241,7 +209,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
 
-		OnAssemblyException(Publisher<?> parent, AssemblySnapshotException ase, String message) {
+		OnAssemblyException(Publisher<?> parent, AssemblySnapshot ase, String message) {
 			super(message);
 			//skip the "error seen by" if light (no stack)
 			if (!ase.isLight()) {
@@ -326,19 +294,31 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		             .orElse(parent.hashCode());
 	}
 
+	static class SnapshotStackException extends Exception {
+
+		public SnapshotStackException(String message) {
+			super(message);
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return this; // NOOP
+		}
+	}
+
 	static class OnAssemblySubscriber<T>
 			implements InnerOperator<T, T>, QueueSubscription<T> {
 
-		final AssemblySnapshotException snapshotStack;
-		final Publisher<?>    parent;
-		final CoreSubscriber<? super T>     actual;
+		final AssemblySnapshot          snapshotStack;
+		final Publisher<?>              parent;
+		final CoreSubscriber<? super T> actual;
 
 		QueueSubscription<T> qs;
 		Subscription         s;
 		int                  fusionMode;
 
 		OnAssemblySubscriber(CoreSubscriber<? super T> actual,
-				AssemblySnapshotException snapshotStack, Publisher<?> parent) {
+				AssemblySnapshot snapshotStack, Publisher<?> parent) {
 			this.actual = actual;
 			this.snapshotStack = snapshotStack;
 			this.parent = parent;
@@ -401,7 +381,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			fillStacktraceHeader(sb, parent.getClass(), snapshotStack);
 			OnAssemblyException set = null;
 			if (!snapshotStack.isLight()) {
-				sb.append(snapshotStack.toString());
+				sb.append(snapshotStack.toAssemblyInformation());
 			}
 
 			if (t.getSuppressed().length > 0) {
@@ -418,7 +398,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				t = Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, sb.toString()));
 			}
 			else if(snapshotStack.checkpointed) {
-				t = Exceptions.addSuppressed(t, snapshotStack);
+				t = Exceptions.addSuppressed(t, new SnapshotStackException(snapshotStack.getDescription()));
 			}
 			return t;
 		}
@@ -482,7 +462,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		final ConditionalSubscriber<? super T> actualCS;
 
 		OnAssemblyConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				AssemblySnapshotException stacktrace, Publisher<?> parent) {
+				AssemblySnapshot stacktrace, Publisher<?> parent) {
 			super(actual, stacktrace, parent);
 			this.actualCS = actual;
 		}

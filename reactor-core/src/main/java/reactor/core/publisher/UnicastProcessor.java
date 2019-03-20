@@ -35,7 +35,7 @@ import reactor.util.context.Context;
 
 /**
  * A Processor implementation that takes a custom queue and allows
- * only a single subscriber. UnicastProcessor allows demultiplexing of the events which
+ * only a single subscriber. UnicastProcessor allows multiplexing of the events which
  * means that it supports multiple producers and only one consumer.
  * However, it should be noticed that multi-producer case is only valid if appropriate
  * Queue

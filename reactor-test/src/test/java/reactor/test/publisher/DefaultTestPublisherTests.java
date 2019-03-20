@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher.Violation;
@@ -187,6 +188,30 @@ public class DefaultTestPublisherTests {
 	}
 
 	@Test
+	public void misbehavingFluxIgnoresCancellation() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.DEFER_CANCELLATION);
+		AtomicLong emitCount = new AtomicLong();
+
+		publisher.flux().subscribe(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				subscription.request(Long.MAX_VALUE);
+				subscription.cancel();
+			}
+
+			@Override
+			protected void hookOnNext(String value) {
+				emitCount.incrementAndGet();
+			}
+		});
+
+		publisher.emit("A", "B", "C");
+
+		publisher.assertCancelled();
+		assertThat(emitCount.get()).isEqualTo(3);
+	}
+
+	@Test
 	public void expectSubscribers() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
@@ -202,7 +227,7 @@ public class DefaultTestPublisherTests {
 	}
 
 	@Test
-	public void expectSubscribersN() {
+	public void expectAssertSubscribersN() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
 		assertThatExceptionOfType(AssertionError.class)
@@ -217,6 +242,27 @@ public class DefaultTestPublisherTests {
 
 		publisher.complete()
 	             .assertNoSubscribers();
+	}
+
+	@Test
+	public void expectSubscribersCountN() {
+		TestPublisher<String> publisher = TestPublisher.create();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> publisher.assertSubscribers(1))
+				.withMessage("Expected 1 subscribers, got 0");
+
+		assertThat(publisher.subscribeCount()).isEqualTo(0);
+		publisher.assertNoSubscribers();
+
+		Flux.from(publisher).subscribe();
+		assertThat(publisher.subscribeCount()).isEqualTo(1);
+
+		Flux.from(publisher).subscribe();
+		assertThat(publisher.subscribeCount()).isEqualTo(2);
+
+		publisher.complete().assertNoSubscribers();
+		assertThat(publisher.subscribeCount()).isEqualTo(2);
 	}
 
 	@Test

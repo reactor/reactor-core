@@ -92,7 +92,7 @@ public class RejectedExecutionTest {
 	}
 
 	/**
-	 * Test: onNext cannot be delivered due to RejectedExecutionExceptiob
+	 * Test: onNext cannot be delivered due to RejectedExecutionException
 	 * Current behaviour:
 	 *   No onNext, onError, onNextDropped, onErrorDropped generated
 	 *   Exception:
@@ -135,7 +135,7 @@ public class RejectedExecutionTest {
 	}
 
 	/**
-	 * Test: onNext cannot be delivered due to RejectedExecutionExceptiob
+	 * Test: onNext cannot be delivered due to RejectedExecutionException
 	 * Current behaviour:
 	 *   No onNext, onError, onNextDropped, onErrorDropped generated
 	 *   Exception:

@@ -18,17 +18,15 @@ package reactor.core.publisher;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import jdk.nashorn.internal.codegen.CompilerConstants;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.PublisherProbe;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.junit.Assert.assertTrue;
 
 public class MonoSourceTest {

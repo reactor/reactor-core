@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 
 import junitparams.JUnitParamsRunner;
@@ -28,7 +29,9 @@ import junitparams.Parameters;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
@@ -850,6 +853,180 @@ public class FluxUsingWhenTest {
 		testResource.commitProbe.assertWasNotSubscribed();
 		probe.assertWasSubscribed();
 		assertThat(errorRef).hasValue(null);
+	}
+
+	// == tests checking callbacks don't pile up ==
+
+	@Test
+	public void noCancelCallbackAfterComplete() {
+		LongAdder cleanupCount = new LongAdder();
+		Flux<String> flux = Flux.usingWhen(Mono.defer(() -> Mono.just("foo")), Mono::just,
+				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
+				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
+				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
+		);
+
+		flux.subscribe(new CoreSubscriber<Object>() {
+			Subscription subscription;
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				s.request(1);
+				subscription = s;
+			}
+
+			@Override
+			public void onNext(Object o) {}
+
+			@Override
+			public void onError(Throwable t) {}
+
+			@Override
+			public void onComplete() {
+				subscription.cancel();
+			}
+		});
+
+		assertThat(cleanupCount.sum()).isEqualTo(10);
+	}
+
+	@Test
+	public void noCancelCallbackAfterError() {
+		LongAdder cleanupCount = new LongAdder();
+		Flux<String> flux = Flux.usingWhen(Mono.just("foo"), v -> Mono.error(new IllegalStateException("boom")),
+				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
+				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
+				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
+		);
+
+		flux.subscribe(new CoreSubscriber<Object>() {
+			Subscription subscription;
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				s.request(1);
+				subscription = s;
+			}
+
+			@Override
+			public void onNext(Object o) {}
+
+			@Override
+			public void onError(Throwable t) {
+				subscription.cancel();
+			}
+
+			@Override
+			public void onComplete() {}
+		});
+
+		assertThat(cleanupCount.sum()).isEqualTo(100);
+	}
+
+	@Test
+	public void noCompleteCallbackAfterCancel() throws InterruptedException {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		LongAdder cleanupCount = new LongAdder();
+
+		Publisher<String> badPublisher = s -> s.onSubscribe(new Subscription() {
+			@Override
+			public void request(long n) {
+				new Thread(() -> {
+					s.onNext("foo1");
+					try { Thread.sleep(100); } catch (InterruptedException e) {}
+					s.onComplete();
+				}).start();
+			}
+
+			@Override
+			public void cancel() {
+				cancelled.set(true);
+			}
+		});
+
+		Flux<String> flux = Flux.usingWhen(Mono.just("foo"), v -> badPublisher,
+				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
+				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
+				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
+		);
+
+		flux.subscribe(new CoreSubscriber<String>() {
+			Subscription subscription;
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				s.request(1);
+				subscription = s;
+			}
+
+			@Override
+			public void onNext(String o) {
+				subscription.cancel();
+			}
+
+			@Override
+			public void onError(Throwable t) {}
+
+			@Override
+			public void onComplete() {}
+		});
+
+		Thread.sleep(300);
+		assertThat(cleanupCount.sum()).isEqualTo(1000);
+		assertThat(cancelled).as("source cancelled").isTrue();
+	}
+
+	@Test
+	public void noErrorCallbackAfterCancel() throws InterruptedException {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		LongAdder cleanupCount = new LongAdder();
+
+		Publisher<String> badPublisher = s -> s.onSubscribe(new Subscription() {
+			@Override
+			public void request(long n) {
+				new Thread(() -> {
+					s.onNext("foo1");
+					try { Thread.sleep(100); } catch (InterruptedException e) {}
+					s.onError(new IllegalStateException("boom"));
+				}).start();
+			}
+
+			@Override
+			public void cancel() {
+				cancelled.set(true);
+			}
+		});
+
+		Flux<String> flux = Flux.usingWhen(Mono.just("foo"), v -> badPublisher,
+				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
+				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
+				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
+		);
+
+		flux.subscribe(new CoreSubscriber<String>() {
+			Subscription subscription;
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				s.request(1);
+				subscription = s;
+			}
+
+			@Override
+			public void onNext(String o) {
+				subscription.cancel();
+			}
+
+			@Override
+			public void onError(Throwable t) {}
+
+			@Override
+			public void onComplete() {}
+		});
+
+		Thread.sleep(300);
+		assertThat(cleanupCount.sum()).isEqualTo(1000);
+		assertThat(cancelled).as("source cancelled").isTrue();
 	}
 
 

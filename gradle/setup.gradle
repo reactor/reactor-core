@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-task wrapper(type: Wrapper, description: "Create a Gradle self-download wrapper") {
+wrapper {
 	group = 'Project Setup'
-	gradleVersion = "4.2.1"
+	gradleVersion = "4.10.2"
 }
 
 configure(subprojects) { p ->

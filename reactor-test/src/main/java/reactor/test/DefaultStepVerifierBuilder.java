@@ -53,6 +53,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -85,19 +86,31 @@ final class DefaultStepVerifierBuilder<T>
 		final Queue<Throwable>                                droppedErrors     = new ConcurrentLinkedQueue<>();
 		final Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors    = new ConcurrentLinkedQueue<>();
 
-		public void plugHooks() {
+		private void plugHooks() {
 			Hooks.onErrorDropped(droppedErrors::offer);
 			Hooks.onNextDropped(droppedElements::offer);
-			Hooks.onDiscard(discardedElements::offer);
 			Hooks.onOperatorError((t, d) -> {
 				operatorErrors.offer(Tuples.of(Optional.ofNullable(t), Optional.ofNullable(d)));
 				return t;
 			});
 		}
 
+		public void plugHooks(StepVerifierOptions verifierOptions) {
+			plugHooks();
+
+			Context userContext = verifierOptions.getInitialContext();
+			verifierOptions.withInitialContext(Operators.enableOnDiscard(userContext, discardedElements::offer));
+		}
+
+		public void plugHooksForSubscriber(DefaultVerifySubscriber<?> subscriber) {
+			plugHooks();
+
+			Context userContext = subscriber.initialContext;
+			subscriber.initialContext = Operators.enableOnDiscard(userContext, discardedElements::offer);
+		}
+
 		public void unplugHooks() {
 			Hooks.resetOnNextDropped();
-			Hooks.resetOnDiscard();
 			Hooks.resetOnErrorDropped();
 			Hooks.resetOnOperatorError();
 		}
@@ -740,7 +753,7 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Assertions verifyThenAssertThat(Duration duration) {
 			HookRecorder stepRecorder = new HookRecorder();
-			stepRecorder.plugHooks();
+			stepRecorder.plugHooks(parent.options);
 
 			try {
 				//trigger the verify
@@ -847,9 +860,9 @@ final class DefaultStepVerifierBuilder<T>
 		final int                           requestedFusionMode;
 		final int                           expectedFusionMode;
 		final long                          initialRequest;
-		final Context                       initialContext;
 		final VirtualTimeScheduler          virtualTimeScheduler;
 
+		Context                       initialContext;
 		@Nullable
 		Logger                        logger;
 		int                           establishedFusionMode;
@@ -871,6 +884,11 @@ final class DefaultStepVerifierBuilder<T>
 		volatile Throwable errors;
 
 		volatile boolean monitorSignal;
+
+		/**
+		 * used to keep track of the terminal error, if any
+		 */
+		volatile Signal<T> terminalError;
 
 		/** The constructor used for verification, where a VirtualTimeScheduler can be
 		 * passed */
@@ -1008,7 +1026,8 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public void onError(Throwable t) {
-			onExpectation(Signal.error(t));
+			this.terminalError = Signal.error(t);
+			onExpectation(terminalError);
 			this.completeLatch.countDown();
 		}
 
@@ -1144,7 +1163,8 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Assertions verifyThenAssertThat(Duration duration) {
 			HookRecorder stepRecorder = new HookRecorder();
-			stepRecorder.plugHooks();
+			stepRecorder.plugHooksForSubscriber(this);
+
 			try {
 				//trigger the verify
 				Duration time = verify(duration);
@@ -2218,8 +2238,12 @@ final class DefaultStepVerifierBuilder<T>
 				parent.monitorSignal = true;
 				virtualOrRealWait(duration.minus(Duration.ofNanos(1)), parent);
 				parent.monitorSignal = false;
-				if(parent.isTerminated() && !parent.isCancelled()){
-					throw parent.errorFormatter.assertionError("unexpected end during a no-event expectation");
+				if (parent.terminalError != null && !parent.isCancelled()) {
+					Throwable terminalError = parent.terminalError.getThrowable();
+					throw parent.errorFormatter.assertionError("Unexpected error during a no-event expectation: " + terminalError, terminalError);
+				}
+				else if (parent.isTerminated() && !parent.isCancelled()) {
+					throw parent.errorFormatter.assertionError("Unexpected completion during a no-event expectation");
 				}
 				virtualOrRealWait(Duration.ofNanos(1), parent);
 			}
@@ -2227,8 +2251,12 @@ final class DefaultStepVerifierBuilder<T>
 				parent.monitorSignal = true;
 				virtualOrRealWait(duration, parent);
 				parent.monitorSignal = false;
-				if(parent.isTerminated() && !parent.isCancelled()){
-					throw parent.errorFormatter.assertionError("unexpected end during a no-event expectation");
+				if (parent.terminalError != null && !parent.isCancelled()) {
+					Throwable terminalError = parent.terminalError.getThrowable();
+					throw parent.errorFormatter.assertionError("Unexpected error during a no-event expectation: " + terminalError, terminalError);
+				}
+				else if (parent.isTerminated() && !parent.isCancelled()) {
+					throw parent.errorFormatter.assertionError("Unexpected completion during a no-event expectation");
 				}
 			}
 		}
@@ -2393,13 +2421,28 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public StepVerifier.Step<T> then() {
 			return step.consumeSubscriptionWith(s -> {
+				//the current subscription
 				Scannable lowest = Scannable.from(s);
-				Scannable verifierSubscriber = Scannable.from(lowest.scan(Scannable.Attr.ACTUAL));
 
-				Context c = Flux.fromStream(verifierSubscriber.parents())
+				//attempt to go back to the leftmost parent to check the Context from its perspective
+				Context c = Flux.<Scannable>
+						fromStream(lowest.parents())
 						.ofType(CoreSubscriber.class)
+						.takeLast(1)
+						.singleOrEmpty()
+						//no parent? must be a ScalaSubscription or similar source
+						.switchIfEmpty(
+								Mono.just(lowest)
+								    //unless it is directly a CoreSubscriber, let's try to scan the leftmost, see if it has an ACTUAL
+								    .map(sc -> (sc instanceof CoreSubscriber) ?
+										    sc :
+										    sc.scanOrDefault(Scannable.Attr.ACTUAL, Scannable.from(null)))
+								    //we are ultimately only interested in CoreSubscribers' Context
+								    .ofType(CoreSubscriber.class)
+						)
 						.map(CoreSubscriber::currentContext)
-						.blockLast();
+						//if it wasn't a CoreSubscriber (eg. custom or vanilla Subscriber) there won't be a Context
+						.block();
 
 				this.contextExpectations.accept(c);
 			});

@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -223,9 +224,9 @@ public abstract class Operators {
 	 * Use {@link #liftPublisher(Predicate, BiFunction)} instead for that kind of use case.
 	 *
 	 * <p>
-	 *     The function will be invoked only if the passed {@link Predicate} matches.
-	 *     Therefore the transformed type O must be the same than the input type since
-	 *     unmatched predicate will return the applied {@link Publisher}.
+	 * The function will be invoked only if the passed {@link Predicate} matches.
+	 * Therefore the transformed type O must be the same than the input type since
+	 * unmatched predicate will return the applied {@link Publisher}.
 	 *
 	 * @param filter the predicate to match taking {@link Scannable} from the applied
 	 * publisher to operate on. Assumes original is scan-compatible.
@@ -275,13 +276,13 @@ public abstract class Operators {
 	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
 	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
 	 * and works with the raw {@link Publisher} as input, which is useful if you need to
-	 * 	 * detect the precise type of the source (eg. instanceof checks to detect Mono, Flux,
-	 * 	 * true Scannable, etc...).
+	 * detect the precise type of the source (eg. instanceof checks to detect Mono, Flux,
+	 * true Scannable, etc...).
 	 *
 	 * <p>
-	 *     The function will be invoked only if the passed {@link Predicate} matches.
-	 *     Therefore the transformed type O must be the same than the input type since
-	 *     unmatched predicate will return the applied {@link Publisher}.
+	 * The function will be invoked only if the passed {@link Predicate} matches.
+	 * Therefore the transformed type O must be the same than the input type since
+	 * unmatched predicate will return the applied {@link Publisher}.
 	 *
 	 * @param filter the {@link Predicate} that the raw {@link Publisher} must pass for
 	 * the transformation to occur
@@ -318,9 +319,53 @@ public abstract class Operators {
 		return u;
 	}
 
-	@Nullable
-	private static Consumer<Object> localOrGlobalOnDiscardHook(Context context) {
-		return context.getOrDefault(Hooks.KEY_ON_DISCARD, Hooks.onDiscardHook);
+	/**
+	 * Create an adapter for local onDiscard hooks that check the element
+	 * being discarded is of a given {@link Class}. The resulting {@link Function} adds the
+	 * hook to the {@link Context}, potentially chaining it to an existing hook in the {@link Context}.
+	 *
+	 * @param type the type of elements to take into account
+	 * @param discardHook the discarding handler for this type of elements
+	 * @param <R> element type
+	 * @return a {@link Function} that can be used to modify a {@link Context}, adding or
+	 * updating a context-local discard hook.
+	 */
+	static final <R> Function<Context, Context> discardLocalAdapter(Class<R> type, Consumer<? super R> discardHook) {
+		Objects.requireNonNull(type, "onDiscard must be based on a type");
+		Objects.requireNonNull(discardHook, "onDiscard must be provided a discardHook Consumer");
+
+		final Consumer<Object> safeConsumer = obj -> {
+			if (type.isInstance(obj)) {
+				discardHook.accept(type.cast(obj));
+			}
+		};
+
+		return ctx -> {
+			Consumer<Object> consumer = ctx.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+			if (consumer == null) {
+				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer);
+			}
+			else {
+				return ctx.put(Hooks.KEY_ON_DISCARD, safeConsumer.andThen(consumer));
+			}
+		};
+	}
+
+	/**
+	 * Utility method to activate the onDiscard feature (see {@link Flux#doOnDiscard(Class, Consumer)})
+	 * in a target {@link Context}. Prefer using the {@link Flux} API, and reserve this for
+	 * testing purposes.
+	 *
+	 * @param target the original {@link Context}
+	 * @param discardConsumer the consumer that will be used to cleanup discarded elements
+	 * @return a new {@link Context} that holds (potentially combined) cleanup {@link Consumer}
+	 */
+	public static final Context enableOnDiscard(@Nullable Context target, Consumer<?> discardConsumer) {
+		Objects.requireNonNull(discardConsumer, "discardConsumer must be provided");
+		if (target == null) {
+			return Context.of(Hooks.KEY_ON_DISCARD, discardConsumer);
+		}
+		return target.put(Hooks.KEY_ON_DISCARD, discardConsumer);
 	}
 
 	/**
@@ -340,7 +385,7 @@ public abstract class Operators {
 	 * @see #onDiscardQueueWithClear(Queue, Context, Function)
 	 */
 	public static <T> void onDiscard(@Nullable T element, Context context) {
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (element != null && hook != null) {
 			try {
 				hook.accept(element);
@@ -374,7 +419,7 @@ public abstract class Operators {
 			return;
 		}
 
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook == null) {
 			queue.clear();
 			return;
@@ -414,7 +459,7 @@ public abstract class Operators {
    * @see #onDiscardQueueWithClear(Queue, Context, Function)
    */
   public static void onDiscardMultiple(Stream<?> multiple, Context context) {
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
 				multiple.forEach(hook);
@@ -438,7 +483,7 @@ public abstract class Operators {
    */
 	public static void onDiscardMultiple(@Nullable Collection<?> multiple, Context context) {
 		if (multiple == null) return;
-		Consumer<Object> hook = localOrGlobalOnDiscardHook(context);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
 				multiple.forEach(hook);
@@ -719,6 +764,33 @@ public abstract class Operators {
 		else {
 			Throwable t = onOperatorError(null, error, value, context);
 			return Exceptions.propagate(t);
+		}
+	}
+
+	/**
+	 * Applies the hooks registered with {@link Hooks#onLastOperator} and returns
+	 * {@link CorePublisher} ready to be subscribed on.
+	 *
+	 * @param source the original {@link CorePublisher}.
+	 * @param <T> the type of the value.
+	 * @return a {@link CorePublisher} to subscribe on.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> CorePublisher<T> onLastAssembly(CorePublisher<T> source) {
+		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
+		final Publisher<T> publisher;
+		if (hook == null) {
+			publisher = source;
+		}
+		else {
+			publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
+		}
+
+		if (publisher instanceof CorePublisher) {
+			return (CorePublisher<T>) publisher;
+		}
+		else {
+			return new CorePublisherAdapter<>(publisher);
 		}
 	}
 
@@ -1055,6 +1127,35 @@ public abstract class Operators {
 		return _actual;
 	}
 
+	/**
+	 * If the actual {@link CoreSubscriber} is not {@link Fuseable.ConditionalSubscriber},
+	 * it will apply an adapter which directly maps all
+	 * {@link Fuseable.ConditionalSubscriber#tryOnNext(T)} to {@link CoreSubscriber#onNext(T)}
+	 * and always returns true as the result
+	 *
+	 * @param <T> passed subscriber type
+	 *
+	 * @param actual the {@link Subscriber} to adapt
+	 * @return a potentially adapted {@link Fuseable.ConditionalSubscriber}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Fuseable.ConditionalSubscriber<? super  T> toConditionalSubscriber(CoreSubscriber<? super T> actual) {
+		Objects.requireNonNull(actual, "actual");
+
+		Fuseable.ConditionalSubscriber<? super T> _actual;
+
+		if (actual instanceof Fuseable.ConditionalSubscriber) {
+			_actual = (Fuseable.ConditionalSubscriber<? super T>) actual;
+		}
+		else {
+			_actual = new ConditionalSubscriberAdapter<>(actual);
+		}
+
+		return _actual;
+	}
+
+
+
 	static Context multiSubscribersContext(InnerProducer<?>[] subscribers){
 		if (subscribers.length > 0){
 			return subscribers[0].actual().currentContext();
@@ -1158,6 +1259,26 @@ public abstract class Operators {
 	}
 
 	Operators() {
+	}
+
+	static final class CorePublisherAdapter<T> implements CorePublisher<T> {
+
+		final Publisher<T> publisher;
+
+		CorePublisherAdapter(Publisher<T> publisher) {
+			this.publisher = publisher;
+		}
+
+		@Override
+		public void subscribe(CoreSubscriber<? super T> subscriber) {
+			publisher.subscribe(subscriber);
+		}
+
+		@Override
+		public void subscribe(Subscriber<? super T> s) {
+			publisher.subscribe(s);
+
+		}
 	}
 
 	static final CoreSubscriber<?> EMPTY_SUBSCRIBER = new CoreSubscriber<Object>() {
@@ -1388,7 +1509,7 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
-			if (this.state == NO_REQUEST_HAS_VALUE) {
+			if (this.state <= HAS_REQUEST_NO_VALUE) {
 				Operators.onDiscard(value, currentContext());
 			}
 			this.state = CANCELLED;
@@ -1408,7 +1529,7 @@ public abstract class Operators {
 		@Override
 		public final void clear() {
 			STATE.lazySet(this, FUSED_CONSUMED);
-			value = null;
+			this.value = null;
 		}
 
 		/**
@@ -1442,6 +1563,7 @@ public abstract class Operators {
 					STATE.lazySet(this, HAS_REQUEST_HAS_VALUE);
 					Subscriber<? super O> a = actual;
 					a.onNext(v);
+					this.value = null;
 					if (this.state != CANCELLED) {
 						a.onComplete();
 					}
@@ -1454,7 +1576,7 @@ public abstract class Operators {
 				state = this.state;
 				if (state == CANCELLED) {
 					Operators.onDiscard(value, actual.currentContext());
-					value = null;
+					this.value = null;
 					return;
 				}
 			}
@@ -2053,6 +2175,53 @@ public abstract class Operators {
 		@Override
 		public void onComplete() {
 
+		}
+	}
+
+	/**
+	 * This class wraps any non-conditional {@link CoreSubscriber<T>} so the delegate
+	 * can have an emulation of {@link reactor.core.Fuseable.ConditionalSubscriber<T>}
+	 * behaviors
+	 *
+	 * @param <T> passed subscriber type
+	 */
+	final static class ConditionalSubscriberAdapter<T> implements Fuseable.ConditionalSubscriber<T> {
+
+		final CoreSubscriber<T> delegate;
+
+		ConditionalSubscriberAdapter(CoreSubscriber<T> delegate) {
+			this.delegate = delegate;
+		}
+
+		@Override
+		public Context currentContext() {
+			return delegate.currentContext();
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			delegate.onSubscribe(s);
+		}
+
+		@Override
+		public void onNext(T t) {
+			delegate.onNext(t);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			delegate.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			delegate.onComplete();
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			delegate.onNext(t);
+			return true;
 		}
 	}
 

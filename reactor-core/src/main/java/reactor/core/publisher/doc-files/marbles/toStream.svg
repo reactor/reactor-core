@@ -1,0 +1,241 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="19 25 585 455.09" width="585" height="455.09" id="svg173">
+ <defs id="defs23">
+  <marker id="marker14547" refX="0" refY="0" orient="auto" overflow="visible">
+   <path d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" id="path14545" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker orient="auto" refY="0" refX="0" id="marker14195" overflow="visible">
+   <path id="path14193" d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker id="marker13699" refX="0" refY="0" orient="auto" overflow="visible">
+   <path d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" id="path13697" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker id="marker18274" refX="0" refY="0" orient="auto" overflow="visible">
+   <path d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" id="path18272" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker id="marker34523" refX="0" refY="0" orient="auto" overflow="visible">
+   <path d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" id="path34521" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker markerHeight="12" markerWidth="14" viewBox="-1 -6 14 12" stroke-miterlimit="10" id="FilledArrow_Marker" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g4">
+    <path id="path2" d="M12 0L0-4v9z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <font-face id="font-face7" font-weight="700" descent="-235" ascent="923" cap-height="682" x-height="501" slope="0" underline-thickness="50" underline-position="-75" units-per-em="1000" panose-1="2 11 9 2 3 0 4 2 2 3" font-size="24" font-family="'Tahoma','Nimbus Sans L'" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma-Bold"/>
+   </font-face-src>
+  </font-face>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="FilledArrow_Marker_2" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g11">
+    <path id="path9" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="6" markerWidth="7" viewBox="-6 -3 7 6" stroke-miterlimit="10" id="FilledArrow_Marker_3" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g16">
+    <path id="path14" d="M-5 0l5 2v-4z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <font-face id="font-face19" font-weight="400" descent="-230" ascent="918" cap-height="687" x-height="450" slope="0" underline-thickness="50" underline-position="-75" units-per-em="1000" panose-1="2 11 5 2 2 1 4 2 2 3" font-size="16" font-family="'Tahoma','Nimbus Sans L'" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma"/>
+   </font-face-src>
+  </font-face>
+  <font-face id="font-face21" font-weight="700" descent="-235" ascent="923" cap-height="682" x-height="501" slope="0" underline-thickness="50" underline-position="-75" units-per-em="1000" panose-1="2 11 9 2 3 0 4 2 2 3" font-size="16" font-family="'Tahoma','Nimbus Sans L'" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma-Bold"/>
+   </font-face-src>
+  </font-face>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-6-5" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g16-3-3">
+    <path d="M8 0L0-3v6z" id="path14-6-5" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-6-59" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g1046">
+    <path d="M8 0L0-3v6z" id="path1044" fill="#e6ba31" fill-opacity="1" stroke="#e6ba31" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="12" markerWidth="14" viewBox="-1 -6 14 12" stroke-miterlimit="10" id="FilledArrow_Marker-36" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g4-7">
+    <path id="path2-53" d="M12 0L0-4v9z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="FilledArrow_Marker_2-56" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g11-2">
+    <path id="path9-9" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="marker43813" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g43811">
+    <path id="path43809" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="marker43819" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g43817">
+    <path id="path43815" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="marker43825" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g43823">
+    <path id="path43821" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-6-5-1" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g16-3-3-2">
+    <path d="M8 0L0-3v6z" id="path14-6-5-7" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker43834" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g43832">
+    <path d="M8 0L0-3v6z" id="path43830" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-3e-7-3-3" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g4771-7-3-2">
+    <path d="M8 0L0-3v6z" id="path4769-3-6-6" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-3e-7-3-3-9" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g4771-7-3-2-8">
+    <path d="M8 0L0-3v6z" id="path4769-3-6-6-0" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="marker43846" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g43844">
+    <path id="path43842" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="marker43852" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g43850">
+    <path id="path43848" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="marker43858" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g43856">
+    <path id="path43854" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker id="marker35261-8" refX="0" refY="0" orient="auto" overflow="visible">
+   <path d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" id="path35259-6" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-3e-7-3-3-4-6" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g4771-7-3-2-2-2" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-opacity="1">
+    <path d="M8 0L0-3v6z" id="path4769-3-6-6-9-9" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+  <marker id="marker16643-9" refX="0" refY="0" orient="auto" overflow="visible">
+   <path d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" id="path16641-9" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker12662" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g12660" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-opacity="1">
+    <path d="M8 0L0-3v6z" id="path12658" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" refY="0" refX="0" id="marker33935-7" overflow="visible">
+   <path id="path33933-6" d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker12670" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g12668" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-opacity="1">
+    <path d="M8 0L0-3v6z" id="path12666" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" refY="0" refX="0" id="DotM-5" overflow="visible">
+   <path id="path32183-2" d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" fill="#5b1d88" fill-opacity="1" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".53" stroke-opacity="1"/>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="marker12678" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g12676" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-opacity="1">
+    <path d="M8 0L0-3v6z" id="path12674" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-3e-7-3-3-9-4" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g4771-7-3-2-8-6">
+    <path d="M8 0L0-3v6z" id="path4769-3-6-6-0-6" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="FilledArrow_Marker_2-56-3" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g11-2-9">
+    <path id="path9-9-4" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="marker12690" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g12688">
+    <path id="path12686" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker markerHeight="10" markerWidth="11" viewBox="-1 -5 11 10" stroke-miterlimit="10" id="marker12696" markerUnits="strokeWidth" overflow="visible" orient="auto" color="#34302c" stroke-linejoin="miter">
+   <g id="g12694">
+    <path id="path12692" d="M8 0L0-3v6z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+   </g>
+  </marker>
+  <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_3-3e-7-3-3-0" stroke-miterlimit="10" viewBox="-1 -5 11 10" markerWidth="11" markerHeight="10" color="#45b8de" stroke-linejoin="miter">
+   <g id="g4771-7-3-2-6">
+    <path d="M8 0L0-3v6z" id="path4769-3-6-6-1" fill="#5b1d88" fill-opacity="1" stroke="#5b1d88" stroke-width="1" stroke-opacity="1"/>
+   </g>
+  </marker>
+ </defs>
+ <path id="line31" d="M37 55h528" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker-36)"/>
+ <path id="path36" d="M26 164h572v52H25v-51z" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <text y="176" x="256.16" id="text40" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan38" y="198" x="256.16" font-weight="700" font-size="24" font-family="Tahoma,'Nimbus Sans L'" fill="#34302c">toStream</tspan>
+ </text>
+ <path id="line56" d="M347.54 80v64" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-56)"/>
+ <path id="line61" d="M519 71v72" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999996,5.99999985" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-56)"/>
+ <path id="line69" d="M449.02 80l1 64" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-56)"/>
+ <path d="M518 30h1l2 2v45l-2 2h-1l-2-2V32z" id="path72" fill="#34302c" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="line85" d="M246.55 80l1 65" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-56)"/>
+ <text id="text263-2-6" transform="rotate(-90)" x="-157" y="162" fill="#45b8de" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan257-2-2" y="175" x="-157" font-weight="400" font-size="14" font-family="Tahoma,'Nimbus Sans L'" fill="#45b8de">request()</tspan>
+ </text>
+ <path id="line86-3-4-6" d="M181.72 160V76" fill="none" fill-opacity="1" stroke="#45b8de" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.00000003,6.00000007" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-6-5-1)"/>
+ <text id="text1014-7" transform="rotate(-90)" x="-155" y="50" fill="#45b8de" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan1012-5" y="63" x="-155" font-weight="400" font-size="14" font-family="Tahoma,'Nimbus Sans L'" fill="#45b8de">subscribe()</tspan>
+ </text>
+ <path id="line1016-9" d="M70.13 158V74" fill="none" fill-opacity="1" stroke="#45b8de" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.00000003,6.00000007" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-6-5-1)"/>
+ <circle r="23" id="ellipse37" cy="56" cx="247.54" fill="#6cb33e" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle r="23" id="ellipse42" cy="56" cx="347.54" fill="#e6ba31" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle r="23" id="ellipse47" cy="56" cx="450" fill="#45b8de" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <text id="text1364-9" x="24.03" y="457.01" font-size="12" fill="#885ba9" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan1362-2" y="470.01" x="24.03" font-weight="400" font-size="14" font-style="italic" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">(from Iterator)</tspan>
+ </text>
+ <text font-size="12" y="438.14" x="43.7" id="text18230" fill="#885ba9" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-opacity="1">
+  <tspan font-size="14" font-weight="400" x="43.7" y="451.14" id="tspan18228" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">stream()</tspan>
+ </text>
+ <text font-size="12" y="459.27" x="140.84" id="text18266" fill="#885ba9" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-opacity="1">
+  <tspan font-size="14" font-weight="400" x="140.84" y="472.27" id="tspan18264" font-style="italic" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">consumption</tspan>
+ </text>
+ <text id="text18270" x="158.4" y="440.4" font-size="12" fill="#885ba9" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan18268" y="453.4" x="158.4" font-weight="400" font-size="14" font-style="italic" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">Stream</tspan>
+ </text>
+ <path d="M71.54 319.83v-86" id="line1360-5-2" fill="none" fill-opacity="1" stroke="#5b1d88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,6.00000006" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-3e-7-3-3-0)"/>
+ <circle cx="247.54" cy="327.83" id="circle43709" r="23" fill="#6cb33e" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle cx="347.54" cy="327.83" id="circle43711" r="23" fill="#e6ba31" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <circle cx="450" cy="328.21" id="circle43713" r="23" fill="#45b8de" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <path d="M247.54 217.1v58" id="path43733" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999996,5.99999989" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-56-3)"/>
+ <path id="path48" d="M115.37 292.83H518.7c31.34 0 45.49 17.14 45.49 38.25 0 21.1-14.15 38.24-45.49 38.24H115.37c-31.33 0-44.47-17.14-44.47-38.24s16.17-38.25 44.47-38.25z" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="rect97776" stroke-miterlimit="4" d="M274.54 313.83h49v28h-49z" opacity="1" fill="#797979" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+ <path id="path104634" d="M300.54 321.83v13" stroke-miterlimit="4" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="none" stroke-opacity="1"/>
+ <path d="M294.54 321.83v13" id="path104632" stroke-miterlimit="4" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="path43791" d="M347.54 217.1v58" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999996,5.99999989" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-56-3)"/>
+ <path d="M450 217.47v58" id="path43793" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.99999996,5.99999989" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_2-56-3)"/>
+ <path id="rect45255" stroke-miterlimit="4" d="M182.54 313.83h41v28h-41z" opacity="1" fill="#797979" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+ <path d="M206.54 321.83v13" id="path45257" stroke-miterlimit="4" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="path45259" d="M200.54 321.83v13" stroke-miterlimit="4" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="none" stroke-opacity="1"/>
+ <path id="path45272" d="M181.72 290.83v-56" fill="none" fill-opacity="1" stroke="#5b1d88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.00000005,6.00000022" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-3e-7-3-3-9-4)"/>
+ <text id="text1364-9-2-3-6" x="150.86" y="352.88" font-size="12" fill="#885ba9" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan1362-2-9-8-0" y="365.88" x="150.86" font-weight="400" font-size="14" font-style="italic" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">hasNext()</tspan>
+ </text>
+ <path d="M71.38 433.01v-71.44" id="line1360-5-0-3" fill="none" fill-opacity="1" stroke="#5b1d88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4" stroke-dasharray="1.99937011,5.99811032" stroke-dashoffset="0" stroke-opacity="1" marker-start="url(#DotM-5)" marker-end="url(#FilledArrow_Marker_3-3e-7-3-3-4-6)"/>
+ <path id="path32893-1" d="M181.72 435.28V388.9" fill="none" fill-opacity="1" stroke="#5b1d88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4" stroke-dasharray="1.99937006,5.99811019" stroke-dashoffset="0" stroke-opacity="1" marker-start="url(#marker33935-7)" marker-end="url(#FilledArrow_Marker_3-3e-7-3-3-4-6)"/>
+ <path d="M181.72 348.8v-38.26" id="path13695" fill="none" fill-opacity="1" stroke="#5b1d88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4" stroke-dasharray="1.99937007,5.99811021" stroke-dashoffset="0" stroke-opacity="1" marker-start="url(#marker13699)" marker-end="url(#FilledArrow_Marker_3-3e-7-3-3-4-6)"/>
+ <text font-size="12" y="352.88" x="242.86" id="text14189" fill="#885ba9" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-opacity="1">
+  <tspan font-style="italic" font-size="14" font-weight="400" x="242.86" y="365.88" id="tspan14187" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">hasNext()</tspan>
+ </text>
+ <path id="path14191" d="M273.72 348.8v-38.26" fill="none" fill-opacity="1" stroke="#5b1d88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4" stroke-dasharray="1.99937007,5.99811021" stroke-dashoffset="0" stroke-opacity="1" marker-start="url(#marker14195)" marker-end="url(#FilledArrow_Marker_3-3e-7-3-3-4-6)"/>
+ <path d="M374.54 313.83h50.88v28h-50.88z" stroke-miterlimit="4" id="path14497" opacity="1" fill="#797979" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-dashoffset="0" stroke-opacity="1"/>
+ <path stroke-miterlimit="4" d="M402.98 321.83v13" id="path14499" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="none" stroke-opacity="1"/>
+ <path stroke-miterlimit="4" id="path14501" d="M396.98 321.83v13" fill="none" fill-rule="evenodd" stroke="#fff" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="none" stroke-opacity="1"/>
+ <text id="text14505" x="342.86" y="352.88" font-size="12" fill="#885ba9" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-opacity="1">
+  <tspan id="tspan14503" y="365.88" x="342.86" font-weight="400" font-size="14" font-style="italic" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">hasNext()</tspan>
+ </text>
+ <path d="M373.72 348.8v-38.26" id="path14507" fill="none" fill-opacity="1" stroke="#5b1d88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4" stroke-dasharray="1.99937007,5.99811021000000011" stroke-dashoffset="0" stroke-opacity="1" marker-start="url(#marker14547)" marker-end="url(#FilledArrow_Marker_3-3e-7-3-3-4-6)"/>
+</svg>

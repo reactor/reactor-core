@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +27,8 @@ public class ConnectableFluxOnAssemblyTest {
 	@Test
 	public void scanMain() throws Exception {
 		ConnectableFlux<String> source = Flux.just("foo").publish();
-		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source);
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
@@ -35,7 +37,8 @@ public class ConnectableFluxOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		ConnectableFlux<String> source = Flux.just("foo").publish();
-		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source);
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
@@ -44,11 +47,12 @@ public class ConnectableFluxOnAssemblyTest {
 
 	@Test
 	public void stepNameAndToString() {
-		ConnectableFluxOnAssembly<?> test = new ConnectableFluxOnAssembly<>(Flux.empty().publish());
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+		ConnectableFluxOnAssembly<?> test = new ConnectableFluxOnAssembly<>(Flux.empty().publish(), stacktrace);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
-				.isEqualTo("reactor.core.publisher.ConnectableFluxOnAssemblyTest.stepNameAndToString(ConnectableFluxOnAssemblyTest.java:47)");
+				.startsWith("reactor.core.publisher.ConnectableFluxOnAssemblyTest.stepNameAndToString(ConnectableFluxOnAssemblyTest.java:");
 	}
 
 }

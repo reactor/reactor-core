@@ -16,8 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +36,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -61,10 +66,10 @@ public class FluxWindowWhenTest {
 		                     .assertNoError();
 	}
 
+
 	@Test
 	public void noWindowRetained_gh975() throws InterruptedException {
 		LongAdder created = new LongAdder();
-		LongAdder finalized = new LongAdder();
 		class Wrapper {
 
 			final int i;
@@ -78,19 +83,15 @@ public class FluxWindowWhenTest {
 			public String toString() {
 				return "{i=" + i + '}';
 			}
-
-			@Override
-			protected void finalize() {
-				finalized.increment();
-			}
 		}
+		MemoryUtils.RetainedDetector finalizedTracker = new MemoryUtils.RetainedDetector();
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final UnicastProcessor<Wrapper> processor = UnicastProcessor.create();
 
 		Flux<Integer> emitter = Flux.range(1, 400)
 		                            .delayElements(Duration.ofMillis(10))
-		                            .doOnNext(i -> processor.onNext(new Wrapper(i)))
+		                            .doOnNext(i -> processor.onNext(finalizedTracker.tracked(new Wrapper(i))))
 		                            .doOnComplete(processor::onComplete);
 
 		AtomicReference<FluxWindowWhen.WindowWhenMainSubscriber> startEndMain = new AtomicReference<>();
@@ -108,7 +109,7 @@ public class FluxWindowWhenTest {
 				         .index()
 				         .doOnNext(it -> System.gc())
 				         //index, number of windows "in flight", finalized
-				         .map(t2 -> Tuples.of(t2.getT1(), windows.get().size(), finalized.longValue()))
+				         .map(t2 -> Tuples.of(t2.getT1(), windows.get().size(), finalizedTracker.finalizedCount()))
 				         .doOnNext(v -> LOGGER.info(v.toString()))
 				         .doOnComplete(latch::countDown)
 				         .collectList();
@@ -131,7 +132,10 @@ public class FluxWindowWhenTest {
 		assertThat(windows.get().size())
 				.as("no window retained")
 				.isZero();
-		assertThat(finalized.longValue())
+
+		System.out.println(finalizedTracker.trackedTotal());
+
+		assertThat(finalizedTracker.finalizedCount())
 				.as("final GC collects all")
 				.isEqualTo(created.longValue());
 	}
@@ -260,7 +264,7 @@ public class FluxWindowWhenTest {
 
 
 	@Test
-	public void windowWillAcumulateMultipleListsOfValuesOverlap() {
+	public void windowWillAccumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
 		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
 		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.create();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ final class MonoBridges {
         return Mono.zip(combinator, monos);
     }
 
-    static Mono<Void> when(Publisher<Void>[] sources) {
+    static Mono<Void> when(Publisher<?>[] sources) {
         return Mono.when(sources);
     }
 }

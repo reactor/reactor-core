@@ -34,6 +34,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,18 +42,20 @@ public class MonoCallableOnAssemblyTest {
 
 	@Test
 	public void scanOperator() {
-		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty());
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty(), stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
 
 	@Test
 	public void stepNameAndToString() {
-		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty());
+		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty(), stacktrace);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
-				.isEqualTo("reactor.core.publisher.MonoCallableOnAssemblyTest.stepNameAndToString(MonoCallableOnAssemblyTest.java:51)");
+				.startsWith("reactor.core.publisher.MonoCallableOnAssemblyTest.stepNameAndToString(MonoCallableOnAssemblyTest.java:");
 	}
 
 }

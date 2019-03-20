@@ -82,7 +82,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     void init(int n) {
         ScheduledExecutorService[] a = new ScheduledExecutorService[n];
         for (int i = 0; i < n; i++) {
-            a[i] = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this);
+            a[i] = Schedulers.decorateExecutorService(this, this.get());
         }
         EXECUTORS.lazySet(this, a);
     }
@@ -109,7 +109,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             if (b == null) {
                 b = new ScheduledExecutorService[n];
                 for (int i = 0; i < n; i++) {
-                    b[i] = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this);
+                    b[i] = Schedulers.decorateExecutorService(this, this.get());
                 }
             }
             

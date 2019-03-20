@@ -33,7 +33,7 @@ If you prefer real-time discussion, we also have a [Gitter channel](https://gitt
  - **Ensure the bug was not already reported**: Do a bit of searching
 in our [Issues](https://github.com/reactor/reactor-core/issues/) to see if you
 can find something similar
- - If you don't find something similar, **open a [new issue](http://github.com/reactor/reactor-core/issues/new)**.
+ - If you don't find something similar, **open a [new issue](https://github.com/reactor/reactor-core/issues/new)**.
  Be sure to follow the template and to include a title and clear description.
  Add as much relevant information as possible, and a code sample or an executable test case demonstrating the expected behavior that is not occurring
 
@@ -217,13 +217,13 @@ IntelliJ users: If your IDE doesn't support import of xml files
 
 ```java
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -238,7 +238,7 @@ package ...;
 #### Update Apache license header in modified files as necessary
 
 Always check the date range in the license header. For example, if you've
-modified a file in 2018 whose header still reads:
+modified a file in 2019 whose header still reads:
 
 ```java
 /*
@@ -246,11 +246,11 @@ modified a file in 2018 whose header still reads:
  */
 ```
 
-Then be sure to update it to 2018 accordingly:
+Then be sure to update it to 2019 accordingly:
 
 ```java
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
  */
 ```
 

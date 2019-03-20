@@ -140,7 +140,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable {
 
 		@Override
 		public void onComplete() {
-			if (value == null) {
+			if (value == null && state < HAS_REQUEST_HAS_VALUE) {
 				actual.onComplete();
 			}
 		}

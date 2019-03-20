@@ -411,7 +411,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 					if (empty) {
 						//async mode only needs to break but SYNC mode needs to perform terminal cleanup here...
 						if (sourceMode == Fuseable.SYNC) {
-							q.poll();
+							//the q is empty
 							done = true;
 							checkTerminated(true, true);
 						}
@@ -439,10 +439,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 				}
 			}
 			else if ( sourceMode == Fuseable.SYNC ) {
-				q.poll();
 				done = true;
-				checkTerminated(true, true);
-				return;
+				if (checkTerminated(true, empty)) { //empty can be true if no subscriber
+					break;
+				}
 			}
 
 			missed = WIP.addAndGet(this, -missed);

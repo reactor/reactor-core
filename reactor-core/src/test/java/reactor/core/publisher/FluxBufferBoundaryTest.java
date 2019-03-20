@@ -320,7 +320,7 @@ public class FluxBufferBoundaryTest
 	}
 
 	@Test
-	public void bufferWillAcumulateMultipleListsOfValues() {
+	public void bufferWillAccumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
 		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
 

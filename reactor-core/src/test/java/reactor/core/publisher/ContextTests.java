@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
 import reactor.util.context.Context;
 
 import static org.hamcrest.Matchers.is;
@@ -249,6 +250,46 @@ public class ContextTests {
 				    .subscriberContext(Context.empty())
 		)
 		            .expectNextMatches(Context::isEmpty)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void expectAccessibleContextWithInitialContext() {
+		StepVerifierOptions stepVerifierOptions = StepVerifierOptions.create()
+		                                                             .withInitialContext(Context.of("foo", "bar"));
+
+		StepVerifier.create(Mono.just(1), stepVerifierOptions)
+		            .expectAccessibleContext()
+		            .contains("foo", "bar")
+		            .then()
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextAccessibleWithEmptySubscriptionAndOperator1() {
+		StepVerifier.create(Flux.empty()
+		                        .subscriberContext(Context.of("a", "b")))
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextAccessibleWithEmptySubscriptionAndOperator2() {
+		StepVerifier.create(Flux.empty()
+		                        .map(i -> i), StepVerifierOptions.create().withInitialContext(Context.of("a", "b")))
+		            .expectAccessibleContext()
+		            .contains("a", "b")
+		            .then()
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextNotAccessibleWithEmptySubscriptionOnly() {
+		StepVerifier.create(Flux.empty(), StepVerifierOptions.create().withInitialContext(Context.of("a", "b")))
+		            .expectNoAccessibleContext()
 		            .verifyComplete();
 	}
 }

@@ -33,13 +33,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -90,6 +94,159 @@ public class SchedulersTest {
 	@After
 	public void resetSchedulers() {
 		Schedulers.resetFactory();
+		Schedulers.DECORATORS.clear();
+	}
+
+	@Test
+	public void schedulerDecoratorIsAdditive() throws InterruptedException {
+		AtomicInteger tracker = new AtomicInteger();
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> {
+			tracker.addAndGet(1);
+			return serv;
+		};
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> {
+			tracker.addAndGet(10);
+			return serv;
+		};
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (scheduler, serv) -> {
+			tracker.addAndGet(100);
+			return serv;
+		};
+		//decorators are cleared after test
+		Schedulers.addExecutorServiceDecorator("k1", decorator1);
+		Schedulers.addExecutorServiceDecorator("k2", decorator2);
+		Schedulers.addExecutorServiceDecorator("k3", decorator3);
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(tracker).as("3 decorators invoked").hasValue(111);
+	}
+
+	@Test
+	public void schedulerDecoratorAddsSameIfDifferentKeys() {
+		AtomicInteger tracker = new AtomicInteger();
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator = (scheduler, serv) -> {
+			tracker.addAndGet(1);
+			return serv;
+		};
+
+		//decorators are cleared after test
+		Schedulers.addExecutorServiceDecorator("k1", decorator);
+		Schedulers.addExecutorServiceDecorator("k2", decorator);
+		Schedulers.addExecutorServiceDecorator("k3", decorator);
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(tracker).as("decorator invoked three times").hasValue(3);
+	}
+
+	@Test
+	public void schedulerDecoratorAddsOnceIfSameKey() {
+		AtomicInteger tracker = new AtomicInteger();
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> {
+			tracker.addAndGet(1);
+			return serv;
+		};
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> {
+			tracker.addAndGet(10);
+			return serv;
+		};
+
+		//decorators are cleared after test
+		Schedulers.addExecutorServiceDecorator("k1", decorator1);
+		Schedulers.addExecutorServiceDecorator("k1", decorator2);
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(tracker).as("decorator invoked once").hasValue(1);
+	}
+
+	@Test
+	public void schedulerDecoratorDisposedWhenRemoved() {
+		AtomicBoolean disposeTracker = new AtomicBoolean();
+
+		class DisposableDecorator implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>,
+		                                     Disposable {
+
+			@Override
+			public ScheduledExecutorService apply(Scheduler scheduler,
+					ScheduledExecutorService service) {
+				return service;
+			}
+
+			@Override
+			public void dispose() {
+				disposeTracker.set(true);
+			}
+		}
+
+		DisposableDecorator decorator = new DisposableDecorator();
+
+		Schedulers.addExecutorServiceDecorator("k1", decorator);
+
+		assertThat(Schedulers.removeExecutorServiceDecorator("k1"))
+				.as("decorator removed")
+				.isSameAs(decorator);
+
+		assertThat(disposeTracker)
+				.as("decorator disposed")
+				.isTrue();
+	}
+
+	@Test
+	public void schedulerDecoratorEmptyDecorators() {
+		assertThat(Schedulers.DECORATORS).isEmpty();
+		assertThatCode(() -> Schedulers.newSingle("foo").dispose())
+				.doesNotThrowAnyException();
+	}
+
+	@Test
+	@SuppressWarnings("deprecated")
+	public void schedulerDecoratorEmptyDecoratorsButCustomFactory() {
+		AtomicInteger factoryDecoratorCounter = new AtomicInteger();
+		Schedulers.setFactory(new Schedulers.Factory() {
+			@Override
+			public ScheduledExecutorService decorateExecutorService(String schedulerType,
+					Supplier<? extends ScheduledExecutorService> actual) {
+				factoryDecoratorCounter.incrementAndGet();
+				return actual.get();
+			}
+		});
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(factoryDecoratorCounter).hasValue(1);
+	}
+
+	@Test
+	public void schedulerDecoratorRemovesKnown() {
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> serv;
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> serv;
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (scheduler, serv) -> serv;
+
+		Schedulers.DECORATORS.put("k1", decorator1);
+		Schedulers.DECORATORS.put("k2", decorator2);
+		Schedulers.DECORATORS.put("k3", decorator3);
+
+		assertThat(Schedulers.DECORATORS).hasSize(3);
+
+		assertThat(Schedulers.removeExecutorServiceDecorator("k1")).as("decorator1 when present").isSameAs(decorator1);
+		assertThat(Schedulers.removeExecutorServiceDecorator("k1")).as("decorator1 once removed").isNull();
+		assertThat(Schedulers.removeExecutorServiceDecorator("k2")).as("decorator2").isSameAs(decorator2);
+		assertThat(Schedulers.removeExecutorServiceDecorator("k3")).as("decorator3").isSameAs(decorator3);
+
+		assertThat(Schedulers.DECORATORS).isEmpty();
+	}
+
+	@Test
+	public void schedulerDecoratorRemoveUnknownIgnored() {
+		assertThat(Schedulers.removeExecutorServiceDecorator("keyfoo"))
+				.as("unknown decorator ignored")
+				.isNull();
 	}
 
 	@Test
@@ -1063,18 +1220,105 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void testWorkerSchedulePeriodicallyCancelsSchedulerTask() throws Exception {
+	public void testDirectScheduleZeroPeriodicallyCancelsSchedulerTask() throws Exception {
 		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
 			CountDownLatch latch = new CountDownLatch(2);
-			Disposable.Composite tasks = Disposables.composite();
-			Disposable disposable = Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {
-				latch.countDown();
-			}, 0, 10, TimeUnit.MILLISECONDS);
+			Disposable disposable = Schedulers.directSchedulePeriodically(executorService,
+					latch::countDown, 0, 0, TimeUnit.MILLISECONDS);
 			latch.await();
 
 			disposable.dispose();
 
-			assertThat(executorService.isAllTasksCancelled()).isTrue();
+//			avoid race of checking the status of futures vs cancelling said futures
+			Awaitility.await().atMost(500, TimeUnit.MILLISECONDS)
+			          .pollDelay(10, TimeUnit.MILLISECONDS)
+			          .pollInterval(50, TimeUnit.MILLISECONDS)
+			          .until(executorService::isAllTasksCancelledOrDone);
+		}
+	}
+
+	@Test
+	public void scheduleInstantTaskTest() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Schedulers.directSchedulePeriodically(executorService, latch::countDown, 0, 0, TimeUnit.MILLISECONDS);
+
+			assertThat(latch.await(100, TimeUnit.MILLISECONDS)).isTrue();
+		}
+	}
+
+	@Test
+	public void scheduleInstantTaskWithDelayTest() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(1);
+
+			Schedulers.directSchedulePeriodically(executorService, latch::countDown, 50, 0, TimeUnit.MILLISECONDS);
+
+			assertThat(latch.await(100, TimeUnit.MILLISECONDS)).isTrue();
+		}
+	}
+
+	@Test
+	public void testWorkerSchedulePeriodicallyCancelsSchedulerTask() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			AtomicInteger zeroDelayZeroPeriod = new AtomicInteger();
+			AtomicInteger zeroPeriod = new AtomicInteger();
+			AtomicInteger zeroDelayPeriodic = new AtomicInteger();
+			AtomicInteger periodic = new AtomicInteger();
+
+			Disposable.Composite tasks = Disposables.composite();
+
+			Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> zeroDelayZeroPeriod.incrementAndGet(), 0, 0, TimeUnit.MINUTES);
+
+			Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> zeroPeriod.incrementAndGet(), 1, 0, TimeUnit.MINUTES);
+
+			Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> zeroDelayPeriodic.incrementAndGet(), 0, 1, TimeUnit.MINUTES);
+
+			Schedulers.workerSchedulePeriodically(executorService, tasks,
+					() -> periodic.incrementAndGet(), 1, 1, TimeUnit.MINUTES);
+
+			Thread.sleep(100);
+			tasks.dispose();
+
+			assertThat(executorService.isAllTasksCancelledOrDone())
+					.as("all tasks cancelled or done").isTrue();
+
+			//when no initial delay, the periodic task(s) have time to be schedule. A 0 period results in a lot of schedules
+			assertThat(zeroDelayZeroPeriod).as("zeroDelayZeroPeriod").hasPositiveValue();
+			assertThat(zeroDelayPeriodic).as("zeroDelayPeriodic").hasValue(1);
+			//the below have initial delays and as such shouldn't have had time to schedule
+			assertThat(zeroPeriod).as("zeroDelayPeriodic").hasValue(0);
+			assertThat(periodic).as("periodic").hasValue(0);
+		}
+	}
+
+	@Test
+	public void testWorkerScheduleRejectedWithDisposedParent() {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			Disposable.Composite tasks = Disposables.composite();
+			tasks.dispose();
+
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.as("zero period, zero delay")
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {}, 0, 0, TimeUnit.MILLISECONDS));
+
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.as("zero period, some delay")
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {}, 10, 0, TimeUnit.MILLISECONDS));
+
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.as("periodic, zero delay")
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {}, 0, 10, TimeUnit.MILLISECONDS));
+
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.as("periodic, some delay")
+					.isThrownBy(() -> Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {}, 10, 10, TimeUnit.MILLISECONDS));
+
+			assertThat(executorService.tasks).isEmpty();
 		}
 	}
 
@@ -1138,6 +1382,15 @@ public class SchedulersTest {
 		boolean isAllTasksCancelled() {
 			for(RunnableScheduledFuture<?> task: tasks) {
 				if (!task.isCancelled()) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		boolean isAllTasksCancelledOrDone() {
+			for(RunnableScheduledFuture<?> task: tasks) {
+				if (!task.isCancelled() && !task.isDone()) {
 					return false;
 				}
 			}

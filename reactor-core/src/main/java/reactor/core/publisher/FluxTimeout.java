@@ -25,6 +25,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item
@@ -55,7 +57,9 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
 		this.itemTimeout = Objects.requireNonNull(itemTimeout, "itemTimeout");
 		this.other = null;
-		this.timeoutDescription = Objects.requireNonNull(timeoutDescription, "timeoutDescription is needed when no fallback");
+
+		this.timeoutDescription = addNameToTimeoutDescription(source,
+				Objects.requireNonNull(timeoutDescription, "timeoutDescription is needed when no fallback"));
 	}
 
 	FluxTimeout(Flux<? extends T> source,
@@ -87,6 +91,22 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		source.subscribe(main);
 	}
 
+	@Nullable
+	static String addNameToTimeoutDescription(Publisher<?> source,
+			@Nullable  String timeoutDescription) {
+		if (timeoutDescription == null) {
+			return null;
+		}
+
+		Scannable s = Scannable.from(source);
+		if (s.isScanAvailable()) {
+			return timeoutDescription + " in '" + s.name() + "'";
+		}
+		else {
+			return timeoutDescription;
+		}
+	}
+
 	static final class TimeoutMainSubscriber<T, V>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
@@ -112,8 +132,8 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 
 		TimeoutMainSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<V>> itemTimeout,
-				Publisher<? extends T> other,
-				String timeoutDescription) {
+				@Nullable Publisher<? extends T> other,
+				@Nullable String timeoutDescription) {
 			super(actual);
 			this.itemTimeout = itemTimeout;
 			this.other = other;

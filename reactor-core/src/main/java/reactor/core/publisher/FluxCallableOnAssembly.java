@@ -20,7 +20,7 @@ import java.util.concurrent.Callable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -38,11 +38,11 @@ import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 		implements Fuseable, Callable<T>, AssemblyOp {
 
-	final AssemblySnapshotException stacktrace;
+	final AssemblySnapshot stacktrace;
 
-	FluxCallableOnAssembly(Flux<? extends T> source) {
+	FluxCallableOnAssembly(Flux<? extends T> source, AssemblySnapshot stacktrace) {
 		super(source);
-		this.stacktrace = new AssemblySnapshotException();
+		this.stacktrace = stacktrace;
 	}
 
 	@Override

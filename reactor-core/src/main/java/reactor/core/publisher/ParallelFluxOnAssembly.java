@@ -20,8 +20,8 @@ package reactor.core.publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshotException;
-import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -40,39 +40,15 @@ import reactor.util.annotation.Nullable;
 final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 		implements Fuseable, AssemblyOp, Scannable {
 
-	final ParallelFlux<T>           source;
-	final AssemblySnapshotException stacktrace;
+	final ParallelFlux<T>  source;
+	final AssemblySnapshot stacktrace;
 
 	/**
 	 * Create an assembly trace wrapping a {@link ParallelFlux}.
 	 */
-	ParallelFluxOnAssembly(ParallelFlux<T> source) {
+	ParallelFluxOnAssembly(ParallelFlux<T> source, AssemblySnapshot stacktrace) {
 		this.source = source;
-		this.stacktrace = new AssemblySnapshotException();
-	}
-
-	/**
-	 * Create an assembly trace augmented with a custom description (eg. a name for a
-	 * ParallelFlux or a wider correlation ID), wrapping a {@link ParallelFlux}.
-	 */
-	ParallelFluxOnAssembly(ParallelFlux<T> source, @Nullable String description) {
-		this.source = source;
-		this.stacktrace = new AssemblySnapshotException(description);
-	}
-
-	/**
-	 * Create a potentially light assembly trace augmented with a description (that must
-	 * be unique enough to identify the assembly site in case of light mode),
-	 * wrapping a {@link ParallelFlux}.
-	 */
-	ParallelFluxOnAssembly(ParallelFlux<T> source, String description, boolean light) {
-		this.source = source;
-		if (light) {
-			 this.stacktrace = new AssemblyLightSnapshotException(description);
-		}
-		else {
-			this.stacktrace = new AssemblySnapshotException(description);
-		}
+		this.stacktrace = stacktrace;
 	}
 
 	@Override

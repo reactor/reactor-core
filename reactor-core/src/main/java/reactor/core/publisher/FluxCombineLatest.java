@@ -158,11 +158,12 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 			Function<T, R> f = t -> combiner.apply(new Object[]{t});
 			if (a[0] instanceof Fuseable) {
 				new FluxMapFuseable<>(from(a[0]), f).subscribe(actual);
+				return;
 			}
-			else {
+			else if (!(actual instanceof QueueSubscription)) {
 				new FluxMap<>(from(a[0]), f).subscribe(actual);
+				return;
 			}
-			return;
 		}
 
 		Queue<SourceAndArray> queue = queueSupplier.get();

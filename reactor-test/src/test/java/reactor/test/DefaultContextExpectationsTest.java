@@ -25,6 +25,8 @@ import java.util.function.Function;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowableAssertAlternative;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.test.DefaultStepVerifierBuilder.DefaultContextExpectations;
 import reactor.test.StepVerifier.ContextExpectations;
@@ -81,8 +83,24 @@ public class DefaultContextExpectationsTest {
 	}
 
 	@Test
-	public void notContextAccessible() {
-		assertContextExpectationFails(s -> s, e -> e)
+	public void notContextAccessibleDueToPublisher() {
+		Publisher<Integer> publisher = subscriber -> subscriber.onSubscribe(new Subscription() {
+			@Override
+			public void request(long l) {
+				subscriber.onComplete();
+			}
+
+			@Override
+			public void cancel() {
+				//NO-OP
+			}
+		});
+
+		Step<Integer> step = StepVerifier.create(publisher);
+		DefaultContextExpectations<Integer> expectations = new DefaultContextExpectations<>(step, new ErrorFormatter(null));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> expectations.then().verifyComplete())
 				.withMessage("No propagated Context");
 	}
 

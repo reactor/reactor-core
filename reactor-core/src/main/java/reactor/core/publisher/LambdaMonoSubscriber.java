@@ -27,7 +27,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
- * An unbounded Java Lambda adapter to {@link Subscriber}, targetted at {@link Mono}.
+ * An unbounded Java Lambda adapter to {@link Subscriber}, targeted at {@link Mono}.
  *
  * @param <T> the value type
  */
