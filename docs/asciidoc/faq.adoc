@@ -1,13 +1,23 @@
 [[faq]]
 = FAQ, Best Practices, and "How do I...?"
 
+This section covers the following content:
+
+* <<faq.wrap-blocking>>
+* <<faq.chain>>
+* <<faq.monoThen>>
+* <<faq.retryWhen>>
+* <<faq.exponentialBackoff>>
+* <<faq.thread-affinity-publishon>>
+
 [[faq.wrap-blocking]]
 == How do I wrap a synchronous, blocking call?
 
-It's often the case that a source of information is synchronous and blocking.
+It is often the case that a source of information is synchronous and blocking.
 To deal with such sources in your Reactor applications, apply the following
 pattern:
 
+====
 [source,java]
 ----
 Mono blockingWrapper = Mono.fromCallable(() -> { <1>
@@ -18,103 +28,114 @@ blockingWrapper = blockingWrapper.subscribeOn(Schedulers.elastic()); <3>
 
 <1> Create a new `Mono` by using `fromCallable`.
 <2> Return the asynchronous, blocking resource.
-<3> Ensure each subscription will happen on a dedicated single-threaded worker
+<3> Ensure each subscription happens on a dedicated single-threaded worker
 from `Schedulers.elastic()`.
+====
 
-You should use a Mono because the source returns one value. You should use
-`Schedulers.elastic` because it creates a dedicated thread to wait for the
+You should use a `Mono`, because the source returns one value. You should use
+`Schedulers.elastic`, because it creates a dedicated thread to wait for the
 blocking resource without tying up some other resource.
 
 Note that `subscribeOn` does not subscribe to the `Mono`. It specifies what
 kind of `Scheduler` to use when a subscribe call happens.
 
 [[faq.chain]]
-== I used an operator on my `Flux` but it doesn't seem to apply. What gives?
+== I used an operator on my `Flux` but it does not seem to apply. What gives?
 
 Make sure that the variable you `.subscribe()` to has been affected by the
 operators you think should have been applied to it.
 
 Reactor operators are decorators. They return a different instance that wraps
 the source sequence and add behavior. That is why the preferred way of using
-operators is to *chain* the calls.
+operators is to _chain_ the calls.
 
 Compare the following two examples:
 
+====
 .without chaining (incorrect)
 [source,java]
 ----
-Flux<String> flux = Flux.just("foo", "chain");
+Flux<String> flux = Flux.just("something", "chain");
 flux.map(secret -> secret.replaceAll(".", "*")); <1>
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
-<1> The mistake is here. The result isn't attached to the `flux` variable.
+<1> The mistake is here. The result is not attached to the `flux` variable.
 
 .without chaining (correct)
 [source,java]
 ----
-Flux<String> flux = Flux.just("foo", "chain");
+Flux<String> flux = Flux.just("something", "chain");
 flux = flux.map(secret -> secret.replaceAll(".", "*"));
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
-This sample is even better (because it's simpler):
+====
+
+The following sample is even better (because it is simpler):
 
 .with chaining (best)
 [source,java]
 ----
 Flux<String> secrets = Flux
-  .just("foo", "chain")
+  .just("something", "chain")
   .map(secret -> secret.replaceAll(".", "*"))
   .subscribe(next -> System.out.println("Received: " + next));
 ----
+====
 
-The first version will output:
+The first version outputs the following:
 
+====
 [source]
 ----
-Received: foo
+Received: something
 Received: chain
 ----
+====
 
-Whereas the two other versions will output the expected:
+The two other versions output the expected values, as follows:
 
 [source]
 ----
-Received: ***
+Received: *********
 Received: *****
 ----
 
 [[faq.monoThen]]
-== My `Mono` `zipWith`/`zipWhen` is never called
+== My `Mono` `zipWith` or `zipWhen` is never called
 
-.example
+Consider the following example:
+
+====
 [source,java]
 ----
 myMethod.process("a") // this method returns Mono<Void>
         .zipWith(myMethod.process("b"), combinator) //this is never called
         .subscribe();
 ----
+====
 
 If the source `Mono` is either `empty` or a `Mono<Void>` (a `Mono<Void>` is
-empty for all intents and purposes), some combinations will never be called.
+empty for all intents and purposes), some combinations are never called.
 
-This is the typical case for any transformer like the `zip` static method or
-`zipWith`/`zipWhen` operators, which by definition need an element from each
+This is the typical case for any transformer such as the `zip` static method or
+the `zipWith` `zipWhen` operators, which (by definition) need an element from each
 source to produce their output.
 
 Using data-suppressing operators on sources of `zip` is thus problematic.
 Examples of data-suppressing operators include `then()`, `thenEmpty(Publisher<Void>)`,
-`ignoreElements()` and `ignoreElement()`, `when(Publisher...)`.
+`ignoreElements()` and `ignoreElement()`, and `when(Publisher...)`.
 
-Similarly, operators that use a `Function<T,?>` to tune their behavior, like `flatMap`,
-do need at least one element to be emitted for the `Function` to have a chance
-to apply. Applying these on an empty (or `<Void>`) sequence will never produce an element.
+Similarly, operators that use a `Function<T,?>` to tune their behavior, such as `flatMap`,
+need at least one element to be emitted for the `Function` to have a chance
+to apply. Applying these on an empty (or `<Void>`) sequence nevers produce an element.
 
-You can use `.defaultIfEmpty(T)` and `.switchIfEmpty(Publisher<T>)` to respectively
-replace an *empty* sequence of `T` with a default value or a fallback `Publisher<T>`,
-which could help avoid some of these situations. Note that this doesn't apply to
+You can use `.defaultIfEmpty(T)` and `.switchIfEmpty(Publisher<T>)` to
+replace an empty sequence of `T` with a default value or a fallback `Publisher<T>` (respectively),
+which could help avoid some of these situations. Note that this does not apply to
 `Flux<Void>`/`Mono<Void>` sources, as you can only switch to another `Publisher<Void>`,
-which is still guaranteed to be empty. Here's an example of `defaultIfEmpty`:
+which is still guaranteed to be empty. The following example uses `defaultIfEmpty`:
 
+====
 .use `defaultIfEmpty` before `zipWhen`
 [source,java]
 ----
@@ -123,29 +144,34 @@ myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
         .zipWhen(aString -> myMethod.process("b")) //this is called with the empty String
         .subscribe();
 ----
+====
 
 [[faq.retryWhen]]
 == How to use `retryWhen` to emulate `retry(3)`?
-The `retryWhen` operator can be quite complex. Hopefully this snippet of code
+
+The `retryWhen` operator can be quite complex. Hopefully the following snippet of code
 can help you understand how it works by attempting to emulate a simpler
 `retry(3)`:
+
 include::snippetRetryWhenRetry.adoc[]
 
 [[faq.exponentialBackoff]]
-== How to use `retryWhen` for exponential backoff?
+== How can I use `retryWhen` for Exponential Backoff?
+
 Exponential backoff produces retry attempts with a growing delay between each
-of the attempts, so as not to overload the source systems and risk an all out
-crash. The rationale is that if the source produces an error, it is already in
-an unstable state and not likely to immediately recover from it. So blindly
+of the attempts, so as not to overload the source systems and risk an all-out
+crash. The rationale is that, if the source produces an error, it is already in
+an unstable state and is not likely to immediately recover from it. So blindly
 retrying immediately is likely to produce yet another error and add to the
 instability.
 
 Since `3.2.0.RELEASE`, Reactor comes with such a retry baked in: `Flux.retryBackoff`.
 
-For the curious, here is how to implement an exponential backoff with `retryWhen`
-that delays retries and increase the delay between each attempt (pseudocode:
+The following example shows how to implement an exponential backoff with `retryWhen`.
+IT delays retries and increases the delay between each attempt (pseudocode:
 delay = attempt number * 100 milliseconds):
 
+====
 [source,java]
 ----
 Flux<String> flux =
@@ -161,12 +187,15 @@ Flux.<String>error(new IllegalArgumentException())
     );
 ----
 <1> We log the time of errors.
-<2> We use the `retryWhen` + `zipWith` trick to propagate the error after 3
+<2> We use the `retryWhen` + `zipWith` trick to propagate the error after three
 retries.
 <3> Through `flatMap`, we cause a delay that depends on the attempt's index.
 <4> We also log the time at which the retry happens.
+====
 
-When subscribed to, this fails and terminates after printing out:
+When subscribed to, this fails and terminates after printing out the following:
+
+====
 ----
 java.lang.IllegalArgumentException at 18:02:29.338
 retried at 18:02:29.459 <1>
@@ -176,26 +205,22 @@ java.lang.IllegalArgumentException at 18:02:29.663
 retried at 18:02:29.964 <3>
 java.lang.IllegalArgumentException at 18:02:29.964
 ----
-<1> first retry after about 100ms
-<2> second retry after about 200ms
-<3> third retry after about 300ms
+<1> First retry after about 100ms
+<2> Second retry after about 200ms
+<3> Third retry after about 300ms
+====
 
-== How do I ensure thread affinity using `publishOn()`?
+[[faq.thread-affinity-publishon]]
+== How Do I Ensure Thread Affinity when I Use `publishOn()`?
 
-As described in <<schedulers, Schedulers>>, `publishOn()` can be used to switch
+As described in <<schedulers,Schedulers>>, `publishOn()` can be used to switch
 execution contexts. The `publishOn` operator influences the threading context
-where the rest of the operators in the chain below it will execute, up to a new
+where the rest of the operators in the chain below it run, up to a new
 occurrence of `publishOn`. So the placement of `publishOn` is significant.
 
-For instance, in the example below, the `transform` function in `map()` is
-executed on a worker of `scheduler1` and the `processNext` method in
-`doOnNext()` is executed on a worker of `scheduler2`. Each **subscription** gets
-its own worker, so all elements pushed to the corresponding subscriber are published
-on the same `Thread`.
+Consider the following example:
 
-Single threaded schedulers may be used to ensure thread affinity for different stages in the
-chain or for different subscribers.
-
+====
 [source,java]
 ----
 EmitterProcessor<Integer> processor = EmitterProcessor.create();
@@ -205,5 +230,15 @@ processor.publishOn(scheduler1)
          .doOnNext(i -> processNext(i))
          .subscribe();
 ----
+====
+
+The `transform` function in `map()` is
+run on a worker of `scheduler1`, and the `processNext` method in
+`doOnNext()` is run on a worker of `scheduler2`. Each subscription gets
+its own worker, so all elements pushed to the corresponding subscriber are published
+on the same `Thread`.
+
+You can use single-threaded schedulers to ensure thread affinity for different stages in the
+chain or for different subscribers.
 
 //TODO reactive gems
