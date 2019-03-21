@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedTransferQueue;
@@ -1040,24 +1039,6 @@ public class HooksTest {
 				"k2#0",
 				"k3#0"
 		);
-	}
-
-	@Test
-	public void onScheduleWorksWithCallables() throws Exception {
-		AtomicInteger tracker = new AtomicInteger();
-		Hooks.onSchedule("k1", r -> {
-			assertThat(r).isInstanceOf(Callable.class);
-			return () -> {
-				tracker.getAndIncrement();
-				r.run();
-			};
-		});
-
-		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown, 10, TimeUnit.MILLISECONDS);
-		latch.await(5, TimeUnit.SECONDS);
-
-		assertThat(tracker).hasValue(1);
 	}
 
 	private static class TrackingDecorator implements Function<Runnable, Runnable> {
