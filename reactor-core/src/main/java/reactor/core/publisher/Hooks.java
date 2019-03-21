@@ -29,7 +29,6 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
-import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -460,10 +459,6 @@ public abstract class Hooks {
 				}
 			}
 			onScheduleHook = newHook;
-
-			//rely on the fact that add is no-op if already present
-			Schedulers.addExecutorServiceDecorator(EXECUTOR_DECORATOR_ONSCHEDULE,
-					((scheduler, executorService) -> new HookableScheduledExecutorService(executorService)));
 		}
 	}
 
@@ -479,8 +474,7 @@ public abstract class Hooks {
 		synchronized (onScheduleHooks) {
 			onScheduleHooks.remove(key);
 			if (onScheduleHooks.isEmpty()) {
-				onScheduleHook = null;
-				Schedulers.removeExecutorServiceDecorator(EXECUTOR_DECORATOR_ONSCHEDULE);
+				onScheduleHook = Function.identity();
 			}
 			else {
 				Function<Runnable, Runnable> newHook = null;
@@ -506,8 +500,7 @@ public abstract class Hooks {
 	public static void resetOnSchedule() {
 		synchronized (onScheduleHooks) {
 			onScheduleHooks.clear();
-			onScheduleHook = null;
-			Schedulers.removeExecutorServiceDecorator(EXECUTOR_DECORATOR_ONSCHEDULE);
+			onScheduleHook = Function.identity();
 		}
 	}
 
@@ -578,8 +571,7 @@ public abstract class Hooks {
 	static volatile Function<Publisher, Publisher>                             onEachOperatorHook;
 	static volatile Function<Publisher, Publisher>                             onLastOperatorHook;
 	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
-	@Nullable
-	static Function<Runnable, Runnable>                                        onScheduleHook;
+	private static Function<Runnable, Runnable>                                onScheduleHook;
 
 	//Hooks that are just callbacks
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
@@ -606,17 +598,12 @@ public abstract class Hooks {
 	static final Map<String, BiFunction<? super Throwable, Object, ? extends Throwable>> getOnOperatorErrorHooks() {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
 	}
-	static final Map<String, Function<Runnable, Runnable>> getOnScheduleHooks() {
-		return Collections.unmodifiableMap(onScheduleHooks);
+
+	public static Function<Runnable, Runnable> getOnScheduleHook() {
+		return onScheduleHook;
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);
-
-	/**
-	 * This key is used to add the {@link #onSchedule(String, Function)} composite hook as
-	 * a {@link Schedulers#addExecutorServiceDecorator(String, BiFunction) executorService decorator}.
-	 */
-	private static final String EXECUTOR_DECORATOR_ONSCHEDULE = "reactor.onSchedule";
 
 	/**
 	 * A key that can be used to store a sequence-specific {@link Hooks#onErrorDropped(Consumer)}

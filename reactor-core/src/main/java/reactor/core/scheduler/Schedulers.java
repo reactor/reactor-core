@@ -833,6 +833,7 @@ public abstract class Schedulers {
 			Runnable task,
 			long delay,
 			TimeUnit unit) {
+		task = Hooks.getOnScheduleHook().apply(task);
 		SchedulerTask sr = new SchedulerTask(task);
 		Future<?> f;
 		if (delay <= 0L) {
@@ -851,16 +852,17 @@ public abstract class Schedulers {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
+		task = Hooks.getOnScheduleHook().apply(task);
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
 					new InstantPeriodicWorkerTask(task, exec);
 			Future<?> f;
 			if (initialDelay <= 0L) {
-				f = exec.submit((Callable<?>) isr);
+				f = exec.submit(isr);
 			}
 			else {
-				f = exec.schedule((Callable<?>) isr, initialDelay, unit);
+				f = exec.schedule(isr, initialDelay, unit);
 			}
 			isr.setFirst(f);
 
@@ -880,6 +882,7 @@ public abstract class Schedulers {
 			Runnable task,
 			long delay,
 			TimeUnit unit) {
+		task = Hooks.getOnScheduleHook().apply(task);
 
 		WorkerTask sr = new WorkerTask(task, tasks);
 		if (!tasks.add(sr)) {
@@ -911,6 +914,7 @@ public abstract class Schedulers {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
+		task = Hooks.getOnScheduleHook().apply(task);
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
@@ -921,10 +925,10 @@ public abstract class Schedulers {
 			try {
 				Future<?> f;
 				if (initialDelay <= 0L) {
-					f = exec.submit((Callable<?>) isr);
+					f = exec.submit(isr);
 				}
 				else {
-					f = exec.schedule((Callable<?>) isr, initialDelay, unit);
+					f = exec.schedule(isr, initialDelay, unit);
 				}
 				isr.setFirst(f);
 			}
