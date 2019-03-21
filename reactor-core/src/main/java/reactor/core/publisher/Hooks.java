@@ -571,7 +571,7 @@ public abstract class Hooks {
 	static volatile Function<Publisher, Publisher>                             onEachOperatorHook;
 	static volatile Function<Publisher, Publisher>                             onLastOperatorHook;
 	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
-	private static Function<Runnable, Runnable>                                onScheduleHook;
+	private static Function<Runnable, Runnable>                                onScheduleHook = Function.identity();
 
 	//Hooks that are just callbacks
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
