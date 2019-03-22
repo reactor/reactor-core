@@ -4,8 +4,10 @@
 The `reactor-extra` artifact contains additional operators and utilities that are for
 users of `reactor-core` with advanced needs.
 
-As this is a separate artifact, you need to explicitly add it to your build:
+As this is a separate artifact, you need to explicitly add it to your build. The following
+example shows how to do so in Gradle:
 
+====
 [source,groovy]
 ----
 dependencies {
@@ -14,19 +16,21 @@ dependencies {
 }
 ----
 <1> Add the reactor extra artifact in addition to core. See <<getting>> for details
-about why you don't need to specify a version if you use the BOM, usage in Maven, etc...
+about why you do not need to specify a version if you use the BOM, usage in Maven, and other details.
+====
 
 [[extra-tuples]]
 == `TupleUtils` and Functional Interfaces
 
 The `reactor.function` package contains functional interfaces that complement the Java 8
-`Function`, `Predicate` and `Consumer` interfaces, for 3 to 8 values.
+`Function`, `Predicate`, and `Consumer` interfaces, for three to eight values.
 
 `TupleUtils` offers static methods that act as a bridge between lambdas of these functional
 interfaces to a similar interface on the corresponding `Tuple`.
 
-This allows to easily work with independent parts of any `Tuple`, for instance:
+This lets you easily work with independent parts of any `Tuple`, as the following example shows:
 
+====
 [source,java]
 ----
 .map(tuple -> {
@@ -37,32 +41,36 @@ This allows to easily work with independent parts of any `Tuple`, for instance:
   return new Customer(firstName, lastName, address);
 });
 ----
-Can be instead written as
+====
 
+You can rewrite the preceding example as follows:
+
+====
 [source,java]
 ----
 .map(TupleUtils.function(Customer::new)); // <1>
 ----
 <1> (as `Customer` constructor conforms to `Consumer3` functional interface signature)
+====
 
 [[extra-math]]
 == Math Operators With `MathFlux`
 
 The `reactor.math` package contains a `MathFlux` specialized version of `Flux` that offers
-mathematical operators, like `max`, `min`, `sumInt`, `averageDouble`...
+mathematical operators, including `max`, `min`, `sumInt`, `averageDouble`, and others.
 
 [[extra-repeat-retry]]
 == Repeat and Retry Utilities
 
 The `reactor.retry` package contains utilities to help in writing `Flux#repeatWhen` and
-`Flux#retryWhen` functions. The entry points are factory methods in respectively `Repeat`
-and `Retry` interfaces.
+`Flux#retryWhen` functions. The entry points are factory methods in the `Repeat`
+and `Retry` interfaces, respectively.
 
-Both interfaces can be used as a mutative builder AND are implementing the correct
+You can use both interfaces as a mutative builder, and they implement the correct
 `Function` signature to be used in their counterpart operators.
 
 Since 3.2.0, one of the most advanced retry strategies offered by these utilities is
-also part of the `reactor-core` main artifact directly: exponential backoff is
+also part of the `reactor-core` main artifact directly. Exponential backoff is
 available as the `Flux#retryBackoff` operator.
 
 
@@ -71,6 +79,6 @@ available as the `Flux#retryBackoff` operator.
 
 Reactor-extra comes with several specialized schedulers:
 
- - `ForkJoinPoolScheduler` in package `reactor.scheduler.forkjoin`: uses the Java `ForkJoinPool` to execute tasks.
- - `SwingScheduler` in package `reactor.swing` executes tasks in the Swing UI event loop thread, the `EDT`.
- - `SwtScheduler` in package `reactor.swing` executes tasks in the SWT UI event loop thread.
+* `ForkJoinPoolScheduler` (in the `reactor.scheduler.forkjoin` package): Uses the Java `ForkJoinPool` to execute tasks.
+* `SwingScheduler` (in the `reactor.swing` package): Runs tasks in the Swing UI event loop thread, the `EDT`.
+* `SwtScheduler` (in the `reactor.swing` package): Runs tasks in the SWT UI event loop thread.
