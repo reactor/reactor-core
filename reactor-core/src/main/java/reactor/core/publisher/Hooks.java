@@ -434,77 +434,6 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Add or replace a named scheduling {@link Function decorator}. With subsequent calls
-	 * to this method, the onSchedule hook can be a composite of several sub-hooks, each
-	 * with a different key.
-	 * <p>
-	 * The sub-hook is a {@link Function} taking the scheduled {@link Runnable}.
-	 * It returns the decorated {@link Runnable}.
-	 *
-	 * @param key the key under which to set up the onSchedule sub-hook
-	 * @param decorator the {@link Runnable} decorator to add (or replace, if key is already present)
-	 * @see #resetOnSchedule(String)
-	 * @see #resetOnSchedule()
-	 */
-	public static void onSchedule(String key, Function<Runnable, Runnable> decorator) {
-		synchronized (onScheduleHooks) {
-			onScheduleHooks.put(key, decorator);
-			Function<Runnable, Runnable> newHook = null;
-			for (Function<Runnable, Runnable> function : onScheduleHooks.values()) {
-				if (newHook == null) {
-					newHook = function;
-				}
-				else {
-					newHook = newHook.andThen(function);
-				}
-			}
-			onScheduleHook = newHook;
-		}
-	}
-
-	/**
-	 * Reset a specific onSchedule {@link Function sub-hook} if it has been set up
-	 * via {@link #onSchedule(String, Function)}.
-	 *
-	 * @param key the key for onSchedule sub-hook to remove
-	 * @see #onSchedule(String, Function)
-	 * @see #resetOnSchedule()
-	 */
-	public static void resetOnSchedule(String key) {
-		synchronized (onScheduleHooks) {
-			onScheduleHooks.remove(key);
-			if (onScheduleHooks.isEmpty()) {
-				onScheduleHook = Function.identity();
-			}
-			else {
-				Function<Runnable, Runnable> newHook = null;
-				for (Function<Runnable, Runnable> function : onScheduleHooks.values()) {
-					if (newHook == null) {
-						newHook = function;
-					}
-					else {
-						newHook = newHook.andThen(function);
-					}
-				}
-				onScheduleHook = newHook;
-			}
-		}
-	}
-
-	/**
-	 * Remove all onSchedule {@link Function sub-hooks}.
-	 *
-	 * @see #onSchedule(String, Function)
-	 * @see #resetOnSchedule(String)
-	 */
-	public static void resetOnSchedule() {
-		synchronized (onScheduleHooks) {
-			onScheduleHooks.clear();
-			onScheduleHook = Function.identity();
-		}
-	}
-
-	/**
 	 * Reset global error dropped strategy to bubbling back the error.
 	 */
 	public static void resetOnErrorDropped() {
@@ -571,7 +500,6 @@ public abstract class Hooks {
 	static volatile Function<Publisher, Publisher>                             onEachOperatorHook;
 	static volatile Function<Publisher, Publisher>                             onLastOperatorHook;
 	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
-	private static Function<Runnable, Runnable>                                onScheduleHook = Function.identity();
 
 	//Hooks that are just callbacks
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
@@ -586,7 +514,6 @@ public abstract class Hooks {
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onEachOperatorHooks;
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
-	private static final LinkedHashMap<String, Function<Runnable, Runnable>> onScheduleHooks = new LinkedHashMap<>(1);
 
 	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
@@ -597,10 +524,6 @@ public abstract class Hooks {
 	}
 	static final Map<String, BiFunction<? super Throwable, Object, ? extends Throwable>> getOnOperatorErrorHooks() {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
-	}
-
-	public static Function<Runnable, Runnable> getOnScheduleHook() {
-		return onScheduleHook;
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);

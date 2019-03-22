@@ -38,7 +38,6 @@ import java.util.function.Supplier;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.core.publisher.Hooks;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.Metrics;
@@ -460,7 +459,7 @@ public abstract class Schedulers {
 	 * for this key.
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
-	 * @see Hooks#onSchedule(String, Function)
+	 * @see Schedulers#onScheduleHook(String, Function)
 	 */
 	public static boolean addExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
@@ -482,7 +481,7 @@ public abstract class Schedulers {
 	 * @param decorator the executor service decorator to add, if key not already present.
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
-	 * @see Hooks#onSchedule(String, Function)
+	 * @see Schedulers#onScheduleHook(String, Function)
 	 */
 	public static void setExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
 		synchronized (DECORATORS) {
@@ -560,6 +559,93 @@ public abstract class Schedulers {
 		}
 
 		return factory.decorateExecutorService(schedulerType, () -> beforeFactory);
+	}
+
+	/**
+	 * Add or replace a named scheduling {@link Function decorator}. With subsequent calls
+	 * to this method, the onScheduleHook hook can be a composite of several sub-hooks, each
+	 * with a different key.
+	 * <p>
+	 * The sub-hook is a {@link Function} taking the scheduled {@link Runnable}.
+	 * It returns the decorated {@link Runnable}.
+	 *
+	 * @param key the key under which to set up the onScheduleHook sub-hook
+	 * @param decorator the {@link Runnable} decorator to add (or replace, if key is already present)
+	 * @see #resetOnScheduleHook(String)
+	 * @see #resetOnScheduleHooks()
+	 */
+	public static void onScheduleHook(String key, Function<Runnable, Runnable> decorator) {
+		synchronized (onScheduleHooks) {
+			onScheduleHooks.put(key, decorator);
+			Function<Runnable, Runnable> newHook = null;
+			for (Function<Runnable, Runnable> function : onScheduleHooks.values()) {
+				if (newHook == null) {
+					newHook = function;
+				}
+				else {
+					newHook = newHook.andThen(function);
+				}
+			}
+			onScheduleHook = newHook;
+		}
+	}
+
+	/**
+	 * Reset a specific onScheduleHook {@link Function sub-hook} if it has been set up
+	 * via {@link #onScheduleHook(String, Function)}.
+	 *
+	 * @param key the key for onScheduleHook sub-hook to remove
+	 * @see #onScheduleHook(String, Function)
+	 * @see #resetOnScheduleHooks()
+	 */
+	public static void resetOnScheduleHook(String key) {
+		synchronized (onScheduleHooks) {
+			onScheduleHooks.remove(key);
+			if (onScheduleHooks.isEmpty()) {
+				onScheduleHook = Function.identity();
+			}
+			else {
+				Function<Runnable, Runnable> newHook = null;
+				for (Function<Runnable, Runnable> function : onScheduleHooks.values()) {
+					if (newHook == null) {
+						newHook = function;
+					}
+					else {
+						newHook = newHook.andThen(function);
+					}
+				}
+				onScheduleHook = newHook;
+			}
+		}
+	}
+
+	/**
+	 * Remove all onScheduleHook {@link Function sub-hooks}.
+	 *
+	 * @see #onScheduleHook(String, Function)
+	 * @see #resetOnScheduleHook(String)
+	 */
+	public static void resetOnScheduleHooks() {
+		synchronized (onScheduleHooks) {
+			onScheduleHooks.clear();
+			onScheduleHook = null;
+		}
+	}
+
+	/**
+	 * Applies the hooks registered with {@link Schedulers#onScheduleHook(String, Function)}.
+	 *
+	 * @param runnable a {@link Runnable} submitted to a {@link Scheduler}
+	 * @return decorated {@link Runnable} if any hook is registered, the original otherwise.
+	 */
+	public static Runnable onSchedule(Runnable runnable) {
+		Function<Runnable, Runnable> hook = onScheduleHook;
+		if (hook != null) {
+			return hook.apply(runnable);
+		}
+		else {
+			return runnable;
+		}
 	}
 
 	/**
@@ -702,6 +788,11 @@ public abstract class Schedulers {
 
 	static volatile Factory factory = DEFAULT;
 
+	private static final LinkedHashMap<String, Function<Runnable, Runnable>> onScheduleHooks = new LinkedHashMap<>(1);
+
+	@Nullable
+	private static Function<Runnable, Runnable> onScheduleHook;
+
 	/**
 	 * Get a {@link CachedScheduler} out of the {@code reference} or create one using the
 	 * {@link Supplier} if the reference is empty, effectively creating a single instance
@@ -833,7 +924,7 @@ public abstract class Schedulers {
 			Runnable task,
 			long delay,
 			TimeUnit unit) {
-		task = Hooks.getOnScheduleHook().apply(task);
+		task = onSchedule(task);
 		SchedulerTask sr = new SchedulerTask(task);
 		Future<?> f;
 		if (delay <= 0L) {
@@ -852,7 +943,7 @@ public abstract class Schedulers {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		task = Hooks.getOnScheduleHook().apply(task);
+		task = onSchedule(task);
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =
@@ -882,7 +973,7 @@ public abstract class Schedulers {
 			Runnable task,
 			long delay,
 			TimeUnit unit) {
-		task = Hooks.getOnScheduleHook().apply(task);
+		task = onSchedule(task);
 
 		WorkerTask sr = new WorkerTask(task, tasks);
 		if (!tasks.add(sr)) {
@@ -914,7 +1005,7 @@ public abstract class Schedulers {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		task = Hooks.getOnScheduleHook().apply(task);
+		task = onSchedule(task);
 
 		if (period <= 0L) {
 			InstantPeriodicWorkerTask isr =

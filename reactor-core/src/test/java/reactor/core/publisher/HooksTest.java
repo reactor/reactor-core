@@ -21,10 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -61,7 +58,6 @@ public class HooksTest {
 		Hooks.resetOnOperatorDebug();
 		Hooks.resetOnEachOperator();
 		Hooks.resetOnLastOperator();
-		Hooks.resetOnSchedule();
 	}
 
 	void simpleFlux(){
@@ -943,140 +939,6 @@ public class HooksTest {
 		}
 		finally {
 			Hooks.resetOnNextDropped();
-		}
-	}
-
-	@Test
-	public void onScheduleIsAdditive() throws Exception {
-		AtomicInteger tracker = new AtomicInteger();
-		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
-		Hooks.onSchedule("k2", new TrackingDecorator(tracker, 10));
-		Hooks.onSchedule("k3", new TrackingDecorator(tracker, 100));
-
-		CountDownLatch latch = new CountDownLatch(3);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
-
-		assertThat(tracker).as("3 decorators invoked").hasValue(111);
-	}
-
-	@Test
-	public void onScheduleReplaces() throws Exception {
-		AtomicInteger tracker = new AtomicInteger();
-		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
-		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 10));
-		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 100));
-
-		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
-
-		assertThat(tracker).hasValue(100);
-	}
-
-	@Test
-	public void onScheduleWorksWhenEmpty() throws Exception {
-		AtomicInteger tracker = new AtomicInteger();
-		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
-		Hooks.resetOnSchedule("k1");
-
-		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
-
-		assertThat(tracker).hasValue(0);
-	}
-
-	@Test
-	public void onScheduleIgnoresUnknownRemovals() {
-		assertThatCode(() -> Hooks.resetOnSchedule("k1"))
-				.doesNotThrowAnyException();
-	}
-
-	@Test
-	public void onScheduleResetOne() throws InterruptedException {
-		AtomicInteger tracker = new AtomicInteger();
-		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
-		Hooks.onSchedule("k2", new TrackingDecorator(tracker, 10));
-		Hooks.onSchedule("k3", new TrackingDecorator(tracker, 100));
-		Hooks.resetOnSchedule("k2");
-
-		CountDownLatch latch = new CountDownLatch(3);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
-
-		assertThat(tracker).hasValue(101);
-	}
-
-	@Test
-	public void onScheduleResetAll() throws InterruptedException {
-		AtomicInteger tracker = new AtomicInteger();
-		Hooks.onSchedule("k1", new TrackingDecorator(tracker, 1));
-		Hooks.onSchedule("k2", new TrackingDecorator(tracker, 10));
-		Hooks.onSchedule("k3", new TrackingDecorator(tracker, 100));
-		Hooks.resetOnSchedule();
-
-		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
-
-		assertThat(tracker).hasValue(0);
-	}
-
-	@Test
-	public void onSchedulesAreOrdered() throws Exception {
-		CopyOnWriteArrayList<String> items = new CopyOnWriteArrayList<>();
-		Hooks.onSchedule("k1", new ApplicationOrderRecordingDecorator(items, "k1"));
-		Hooks.onSchedule("k2", new ApplicationOrderRecordingDecorator(items, "k2"));
-		Hooks.onSchedule("k3", new ApplicationOrderRecordingDecorator(items, "k3"));
-
-		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
-
-		assertThat(items).containsExactly(
-				"k1#0",
-				"k2#0",
-				"k3#0"
-		);
-	}
-
-	private static class TrackingDecorator implements Function<Runnable, Runnable> {
-		final AtomicInteger tracker;
-		final int dx;
-
-		private TrackingDecorator(AtomicInteger tracker, int dx) {
-			this.tracker = tracker;
-			this.dx = dx;
-		}
-
-		@Override
-		public Runnable apply(Runnable runnable) {
-			return () -> {
-				tracker.addAndGet(dx);
-				runnable.run();
-			};
-		}
-	}
-
-	private static class ApplicationOrderRecordingDecorator
-			implements Function<Runnable, Runnable> {
-
-		final List<String> items;
-
-		final String id;
-
-		final AtomicInteger counter = new AtomicInteger();
-
-		public ApplicationOrderRecordingDecorator(List<String> items, String id) {
-			this.items = items;
-			this.id = id;
-		}
-
-		@Override
-		public Runnable apply(Runnable runnable) {
-			items.add(id + "#" + counter.getAndIncrement());
-			return runnable;
 		}
 	}
 }
