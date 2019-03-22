@@ -63,7 +63,7 @@ which cleanly deals with `null` values at compile time rather than bumping into 
 `NullPointerException` at runtime. This makes applications safer through nullability
 declarations and expressive "`value or no value`" semantics without paying the cost of wrappers such as `Optional`.
 (Kotlin allows using functional constructs with nullable values. See this
-http://www.baeldung.com/kotlin-null-safety[comprehensive guide to Kotlin null-safety].)
+https://www.baeldung.com/kotlin-null-safety[comprehensive guide to Kotlin null-safety].)
 
 Although Java does not let one express null safety in its type-system, Reactor <<null-safety,now
 provides null safety>> of the whole Reactor API through tooling-friendly annotations declared

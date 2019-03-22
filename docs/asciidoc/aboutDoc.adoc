@@ -15,7 +15,7 @@ copy contains this Copyright Notice, whether distributed in print or electronica
 
 == Contributing to the Documentation
 The reference guide is written in
-http://asciidoctor.org/docs/asciidoc-writers-guide/[Asciidoc], and you can find its sources at
+https://asciidoctor.org/docs/asciidoc-writers-guide/[Asciidoc], and you can find its sources at
 https://github.com/reactor/reactor-core/tree/master/docs/asciidoc.
 
 If you have an improvement or a suggestion, we will be happy to get a pull request from you!
@@ -37,10 +37,10 @@ You can reach out for help in several ways with Reactor:
 
 * Get in touch with the community on https://gitter.im/reactor/reactor[Gitter].
 * Ask a question on stackoverflow.com at
-http://stackoverflow.com/tags/project-reactor[`project-reactor`].
+https://stackoverflow.com/tags/project-reactor[`project-reactor`].
 * Report bugs in Github issues. We closely monitor the following repositories:
-http://github.com/reactor/reactor-core/issues[reactor-core] (which covers the
-essential features) and http://github.com/reactor/reactor-addons/issues[reactor-addons]
+https://github.com/reactor/reactor-core/issues[reactor-core] (which covers the
+essential features) and https://github.com/reactor/reactor-addons/issues[reactor-addons]
 (which covers reactor-test and adapters issues).
 
 NOTE: All of Reactor is open source,
