@@ -527,11 +527,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					SinkDisposable current = (SinkDisposable) c;
 					if (current.onCancel == null) {
 						current.onCancel = d;
-					}
-					else {
-						d.dispose();
+						return this;
 					}
 				}
+				d.dispose();
 			}
 			return this;
 		}
@@ -549,9 +548,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					SinkDisposable current = (SinkDisposable) c;
 					if (current.disposable == null) {
 						current.disposable = d;
-					}
-					else {
-						d.dispose();
+						return this;
 					}
 				}
 			}
