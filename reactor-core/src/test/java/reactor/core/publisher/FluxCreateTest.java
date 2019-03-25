@@ -1177,6 +1177,20 @@ public class FluxCreateTest {
 
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+	}
+
+	@Test
+	public void scanBaseSinkTerminated() {
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual) {
+			@Override
+			public FluxSink<String> next(String s) {
+				return this;
+			}
+		};
+		test.complete();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
