@@ -291,6 +291,32 @@ public class FluxCreateTest {
 	}
 
 	@Test
+	public void monoFirstCancelThenOnCancel() {
+		AtomicInteger onCancel = new AtomicInteger();
+		AtomicReference<FluxSink<Object>> sink = new AtomicReference<>();
+		StepVerifier.create(Flux.create(sink::set))
+				.thenAwait()
+				.consumeSubscriptionWith(Subscription::cancel)
+				.then(() -> sink.get().onCancel(onCancel::getAndIncrement))
+				.thenCancel()
+				.verify();
+		assertThat(onCancel.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void monoFirstCancelThenOnDispose() {
+		AtomicInteger onDispose = new AtomicInteger();
+		AtomicReference<FluxSink<Object>> sink = new AtomicReference<>();
+		StepVerifier.create(Flux.create(sink::set))
+				.thenAwait()
+				.consumeSubscriptionWith(Subscription::cancel)
+				.then(() -> sink.get().onDispose(onDispose::getAndIncrement))
+				.thenCancel()
+				.verify();
+		assertThat(onDispose.get()).isEqualTo(1);
+	}
+
+	@Test
 	public void fluxCreateBufferedBackpressured() {
 		Flux<String> created = Flux.create(s -> {
 			assertThat(s.requestedFromDownstream()).isEqualTo(1);

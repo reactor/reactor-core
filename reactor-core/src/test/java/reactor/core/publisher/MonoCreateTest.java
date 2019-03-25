@@ -144,6 +144,32 @@ public class MonoCreateTest {
 	}
 
 	@Test
+	public void monoFirstCancelThenOnCancel() {
+		AtomicInteger onCancel = new AtomicInteger();
+		AtomicReference<MonoSink<Object>> sink = new AtomicReference<>();
+		StepVerifier.create(Mono.create(sink::set))
+				.thenAwait()
+				.consumeSubscriptionWith(Subscription::cancel)
+				.then(() -> sink.get().onCancel(onCancel::getAndIncrement))
+				.thenCancel()
+				.verify();
+		assertThat(onCancel.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void monoFirstCancelThenOnDispose() {
+		AtomicInteger onDispose = new AtomicInteger();
+		AtomicReference<MonoSink<Object>> sink = new AtomicReference<>();
+		StepVerifier.create(Mono.create(sink::set))
+				.thenAwait()
+				.consumeSubscriptionWith(Subscription::cancel)
+				.then(() -> sink.get().onDispose(onDispose::getAndIncrement))
+				.thenCancel()
+				.verify();
+		assertThat(onDispose.get()).isEqualTo(1);
+	}
+
+	@Test
 	public void createStreamFromMonoCreate2() {
 		StepVerifier.create(Mono.create(MonoSink::success)
 		                        .publishOn(Schedulers.parallel()))
