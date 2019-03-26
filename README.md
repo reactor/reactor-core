@@ -12,6 +12,8 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
    
 **3.0 requires Java 8 or + to run**.
 
+:warning: **3.0.7 os the last release of 3.0.x branch and is now End-Of-Life.**
+
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 ```groovy
     repositories {
