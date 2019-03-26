@@ -18,7 +18,7 @@
  * Adapt
  * {@link org.reactivestreams.Publisher} to Java 9+
  * {@link reactor.adapter.JdkFlowAdapter Flow.Publisher}. More adapter can be found
- * under http://github.com/reactor/reactor-addons/reactor-adapter including RxJava1 and
+ * under https://github.com/reactor/reactor-addons/reactor-adapter including RxJava1 and
  * RxJava2.
  *
  * @author Stephane Maldini

@@ -33,7 +33,7 @@ If you prefer real-time discussion, we also have a [Gitter channel](https://gitt
  - **Ensure the bug was not already reported**: Do a bit of searching
 in our [Issues](https://github.com/reactor/reactor-core/issues/) to see if you
 can find something similar
- - If you don't find something similar, **open a [new issue](http://github.com/reactor/reactor-core/issues/new)**.
+ - If you don't find something similar, **open a [new issue](https://github.com/reactor/reactor-core/issues/new)**.
  Be sure to follow the template and to include a title and clear description.
  Add as much relevant information as possible, and a code sample or an executable test case demonstrating the expected behavior that is not occurring
 
