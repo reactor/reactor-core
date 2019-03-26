@@ -1340,8 +1340,6 @@ final class DefaultStepVerifierBuilder<T>
 					if (onCollect(actualSignal)) {
 						return;
 					}
-					//possibly re-evaluate the current onNext
-					event = this.script.peek();
 				}
 				if (event instanceof SignalCountEvent) {
 					if (onSignalCount(actualSignal, (SignalCountEvent<T>) event)) {
