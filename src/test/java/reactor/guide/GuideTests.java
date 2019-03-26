@@ -721,7 +721,7 @@ public class GuideTests {
 
 	private Flux<String> urls() {
 		return Flux.range(1, 5)
-		           .map(i -> "http://mysite.io/quote/" + i);
+		           .map(i -> "https://www.mysite.io/quote" + i);
 	}
 
 	private Flux<String> doRequest(String url) {

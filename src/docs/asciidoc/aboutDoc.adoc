@@ -5,7 +5,7 @@ sections if something doesn’t interest you.
 
 == Latest version & Copyright Notice
 The Reactor reference guide is available as html documents. The latest copy is
-available at http://projectreactor.io/docs/core/release/reference/docs/index.html
+available at https://projectreactor.io/docs/core/release/reference/docs/index.html
 
 Copies of this document may be made for your own use and for distribution to
 others, provided that you do not charge any fee for such copies and further
@@ -17,11 +17,11 @@ There are several ways to reach out for help with Reactor.
 
  * Get in touch with the community on
  https://gitter.im/reactor/reactor[Gitter].
- * Ask a question on stackoverflow.com, the tag is http://stackoverflow.com/tags/project-reactor[`project-reactor`].
+ * Ask a question on stackoverflow.com, the tag is https://stackoverflow.com/tags/project-reactor[`project-reactor`].
  * Report bugs (or ask questions) in github issues, the most relevant repositories
  that are most monitored are
- http://github.com/reactor/reactor-core/issues[reactor-core] and
- http://github.com/reactor/reactor-addons/issues[reactor-addons]
+ https://github.com/reactor/reactor-core/issues[reactor-core] and
+ https://github.com/reactor/reactor-addons/issues[reactor-addons]
  (which covers reactor-test and adapters issues)
 
 NOTE: All of Reactor is open source,

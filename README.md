@@ -1,11 +1,11 @@
 # Reactor Core
 
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](http://mvnrepository.com/artifact/io.projectreactor/reactor-core) 
+[![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) 
    [![Download](https://api.bintray.com/packages/spring/jars/io.projectreactor/images/download.svg)](https://bintray.com/spring/jars/io.projectreactor/_latestVersion)
    [![Travis CI](https://travis-ci.org/reactor/reactor-core.svg?branch=master)](https://travis-ci.org/reactor/reactor-core)
 
-Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a [Reactive Extensions]
+Non-Blocking [Reactive Streams](https://www.reactive-streams.org/) Foundation for the JVM both implementing a [Reactive Extensions]
 (http://reactivex.io) inspired API and efficient event streaming support.
 
 ## Getting it
@@ -17,7 +17,7 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 ```groovy
     repositories {
-      //maven { url 'http://repo.spring.io/snapshot' }
+      //maven { url 'https://repo.spring.io/snapshot' }
       mavenCentral()
     }
 
@@ -40,7 +40,7 @@ A Reactive Streams Publisher with basic flow operators.
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#subscribe()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flux.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flux.png" width="500">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
 
 Flux in action :
 ```java
@@ -59,7 +59,7 @@ A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropr
 - Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Mono#subscribe()_ or _Mono#get()_ eventually called.
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mono.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mono.png" width="500">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
 
 Mono in action :
 ```java
@@ -81,11 +81,11 @@ Tuple2<Long, Long> nowAndLater =
 
 ## Schedulers
 
-Reactor uses a [Scheduler](http://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html) as a
+Reactor uses a [Scheduler](https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html) as a
 contract for arbitrary task execution. It provides some guarantees required by Reactive
 Streams flows like FIFO execution.
 
-You can use or create efficient [schedulers](http://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html)
+You can use or create efficient [schedulers](https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html)
 to jump thread on the producing flows (subscribeOn) or receiving flows (publishOn):
 
 ```java
@@ -103,7 +103,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 
 ## ParallelFlux
 
-[ParallelFlux](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/ParallelFlux.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
+[ParallelFlux](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ParallelFlux.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
  tasks. Turn back into a `Flux` with `ParallelFlux#sequential()`, an unordered join or
  use abitrary merge strategies via 'groups()'.
 
@@ -146,11 +146,11 @@ Flux.create(emitter -> {
 
 ## Hot Publishing : Processors
 
-The 3 main processor implementations are message relays using 0 ([EmitterProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded buffers, aka RingBuffer.
+The 3 main processor implementations are message relays using 0 ([EmitterProcessor](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded buffers, aka RingBuffer.
 
 ### Pub-Sub : EmitterProcessor
 
-[A signal broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/EmitterProcessor.html) that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
+[A signal broadcaster](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/EmitterProcessor.html) that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
 
 ```java
 EmitterProcessor<Integer> emitter = EmitterProcessor.create();
@@ -164,7 +164,7 @@ sink.finish();
 
 ### Pub-Sub Replay : ReplayProcessor
 
-[A caching broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/ReplayProcessor.html) that will safely handle
+[A caching broadcaster](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ReplayProcessor.html) that will safely handle
 asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
 
 Replay capacity in action:
@@ -183,7 +183,7 @@ Note : ReplayProcessor does not explicitly require a call to `connectSink()` sin
 
 ### Async Pub-Sub : TopicProcessor
 
-[An asynchronous signal broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/TopicProcessor.html) dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
+[An asynchronous signal broadcaster](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/TopicProcessor.html) dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
 
 ```java
 TopicProcessor<Integer> topic = TopicProcessor.create();
@@ -197,7 +197,7 @@ topic.onComplete();
 
 ### Async Distributed : WorkQueueProcessor
 
-Similar to TopicProcessor regarding thread per subscriber but this time exclusively distributing the input data signal to the next available Subscriber. [WorkQueueProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/WorkQueueProcessor.html) is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
+Similar to TopicProcessor regarding thread per subscriber but this time exclusively distributing the input data signal to the next available Subscriber. [WorkQueueProcessor](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/WorkQueueProcessor.html) is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
 
 ```java
 WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
@@ -211,11 +211,11 @@ queue.onComplete();
 
 ## The Backpressure Thing
 
-Most of this cool stuff uses bounded ring buffer implementation under the hood to mitigate signal processing difference between producers and consumers. Now, the operators and processors or any standard reactive stream component working on the sequence will be instructed to flow in when these buffers have free room AND only then. This means that we make sure we both have a deterministic capacity model (bounded buffer) and we never block (request more data on write capacity). Yup, it's not rocket science after all, the boring part is already being worked by us in collaboration with [Reactive Streams Commons](http://github.com/reactor/reactive-streams-commons) on going research effort.
+Most of this cool stuff uses bounded ring buffer implementation under the hood to mitigate signal processing difference between producers and consumers. Now, the operators and processors or any standard reactive stream component working on the sequence will be instructed to flow in when these buffers have free room AND only then. This means that we make sure we both have a deterministic capacity model (bounded buffer) and we never block (request more data on write capacity). Yup, it's not rocket science after all, the boring part is already being worked by us in collaboration with [Reactive Streams Commons](https://github.com/reactor/reactive-streams-commons) on going research effort.
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The `reactor-addons` repository contains a `reactor-test` project with test features like the [`StepVerifier`](http://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
+"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The `reactor-addons` repository contains a `reactor-test` project with test features like the [`StepVerifier`](https://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
 
 -------------------------------------
 
@@ -229,13 +229,13 @@ https://github.com/reactor/lite-rx-api-hands-on
 https://www.infoq.com/articles/reactor-by-example
 
 ## Beyond Reactor Core
-- Everything to jump outside the JVM with the non-blocking drivers from [Reactor IPC](http://github.com/reactor/reactor-ipc).
-- [Reactor Addons](http://github.com/reactor/reactor-addons) include _Bus_ and _Pipes_ event routers plus a handful of extra reactive modules.
+- Everything to jump outside the JVM with the non-blocking drivers from [Reactor IPC](https://github.com/reactor/reactor-ipc).
+- [Reactor Addons](https://github.com/reactor/reactor-addons) include _Bus_ and _Pipes_ event routers plus a handful of extra reactive modules.
 
 -------------------------------------
-_Powered by [Reactive Streams Commons](http://github.com/reactor/reactive-streams-commons)_
+_Powered by [Reactive Streams Commons](https://github.com/reactor/reactive-streams-commons)_
 
 _Licensed under [Apache Software License 2.0](www.apache.org/licenses/LICENSE-2.0)_
 
-_Sponsored by [Pivotal](http://pivotal.io)_
+_Sponsored by [Pivotal](https://pivotal.io)_
 
