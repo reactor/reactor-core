@@ -245,10 +245,10 @@ the commit message. This is fine, but please also include the items above in the
 body of the request.
 
 
-[help documentation]: http://help.github.com/send-pull-requests
+[help documentation]: https://help.github.com/send-pull-requests
 [Issues]: https://github.com/reactor/reactor-core/issues
 [Spring CLA]: https://cla.pivotal.io/sign/spring
 [fork-and-edit]: https://github.com/blog/844-forking-with-the-edit-button
 [Spring Framework Wiki]: https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-Code-Style
-[Rewriting History section of Pro Git]: http://git-scm.com/book/en/Git-Tools-Rewriting-History
-[Commit Guidelines section of Pro Git]: http://git-scm.com/book/en/Distributed-Git-Contributing-to-a-Project#Commit-Guidelines
+[Rewriting History section of Pro Git]: https://git-scm.com/book/en/Git-Tools-Rewriting-History
+[Commit Guidelines section of Pro Git]: https://git-scm.com/book/en/Distributed-Git-Contributing-to-a-Project#Commit-Guidelines

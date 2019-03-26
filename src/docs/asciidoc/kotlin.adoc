@@ -68,7 +68,7 @@ One of Kotlin's key features is https://kotlinlang.org/docs/reference/null-safet
 `NullPointerException` at runtime. This makes applications safer through nullability
 declarations and expressing "value or no value" semantics without paying the cost of wrappers like `Optional`.
 (Kotlin allows using functional constructs with nullable values; check out this
-http://www.baeldung.com/kotlin-null-safety[comprehensive guide to Kotlin null-safety].)
+https://www.baeldung.com/kotlin-null-safety[comprehensive guide to Kotlin null-safety].)
 
 Although Java does not allow one to express null-safety in its type-system, Reactor <<null-safety,now
 provides null-safety>> of the whole Reactor API via tooling-friendly annotations declared
