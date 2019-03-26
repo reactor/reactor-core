@@ -308,7 +308,7 @@ public class MonoCreateTest {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.success();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 	}
 
 	@Test
