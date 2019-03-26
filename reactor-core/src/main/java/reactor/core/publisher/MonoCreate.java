@@ -25,6 +25,7 @@ import java.util.function.LongConsumer;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -36,6 +37,9 @@ import reactor.util.context.Context;
  * @param <T> the value type
  */
 final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
+
+	static final Disposable TERMINATED = OperatorDisposables.DISPOSED;
+	static final Disposable CANCELLED = Disposables.disposed();
 
 	final Consumer<MonoSink<T>> callback;
 
@@ -66,7 +70,6 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 			implements MonoSink<T>, InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
-		final Context                   ctx;
 
 		volatile Disposable disposable;
 		@SuppressWarnings("rawtypes")
@@ -96,7 +99,6 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 		DefaultMonoSink(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
-			this.ctx = actual.currentContext();
 		}
 
 		@Override
@@ -108,10 +110,10 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) {
-				return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
+				return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE || disposable == TERMINATED;
 			}
 			if (key == Attr.CANCELLED) {
-				return OperatorDisposables.isDisposed(disposable);
+				return disposable == CANCELLED;
 			}
 
 			return InnerProducer.super.scanUnsafe(key);
@@ -119,6 +121,9 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 		@Override
 		public void success() {
+			if (isDisposed()) {
+				return;
+			}
 			if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
 				try {
 					actual.onComplete();
@@ -133,6 +138,10 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		public void success(@Nullable T value) {
 			if (value == null) {
 				success();
+				return;
+			}
+			if (isDisposed()) {
+				Operators.onNextDropped(value, actual.currentContext());
 				return;
 			}
 			for (; ; ) {
@@ -162,6 +171,10 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 		@Override
 		public void error(Throwable e) {
+			if (isDisposed()) {
+				Operators.onOperatorError(e, actual.currentContext());
+				return;
+			}
 			if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
 				try {
 					actual.onError(e);
@@ -200,14 +213,18 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 			SinkDisposable sd = new SinkDisposable(null, d);
 			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
 				Disposable c = disposable;
-				if (c instanceof SinkDisposable) {
+				if (c == CANCELLED) {
+					d.dispose();
+				}
+				else if (c instanceof SinkDisposable) {
 					SinkDisposable current = (SinkDisposable) c;
 					if (current.onCancel == null) {
 						current.onCancel = d;
-						return this;
+					}
+					else {
+						d.dispose();
 					}
 				}
-				d.dispose();
 			}
 			return this;
 		}
@@ -218,14 +235,18 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 			SinkDisposable sd = new SinkDisposable(d, null);
 			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
 				Disposable c = disposable;
-				if (c instanceof SinkDisposable) {
+				if (isDisposed()) {
+					d.dispose();
+				}
+				else if (c instanceof SinkDisposable) {
 					SinkDisposable current = (SinkDisposable) c;
 					if (current.disposable == null) {
 						current.disposable = d;
-						return this;
+					}
+					else {
+						d.dispose();
 					}
 				}
-				d.dispose();
 			}
 			return this;
 		}
@@ -272,10 +293,11 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		}
 
 		void disposeResource(boolean isCancel) {
+			Disposable target = isCancel ? CANCELLED : TERMINATED;
 			Disposable d = disposable;
-			if (d != OperatorDisposables.DISPOSED) {
-				d = DISPOSABLE.getAndSet(this, OperatorDisposables.DISPOSED);
-				if (d != null && d != OperatorDisposables.DISPOSED) {
+			if (d != TERMINATED && d != CANCELLED) {
+				d = DISPOSABLE.getAndSet(this, target);
+				if (d != null && d != TERMINATED && d != CANCELLED) {
 					if (isCancel && d instanceof SinkDisposable) {
 						((SinkDisposable) d).cancel();
 					}
@@ -288,5 +310,11 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 		public String toString() {
 			return "MonoSink";
 		}
+
+		boolean isDisposed() {
+			Disposable d = disposable;
+			return d == CANCELLED || d == TERMINATED;
+		}
+
 	}
 }
