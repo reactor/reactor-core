@@ -15,7 +15,7 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
    
 **Reactor 3 requires Java 8 or + to run**.
 
-:warning: 3.1.16 is marked as the last supported 3.1.x version as 3.1 is entering End-of-life.
+:warning: **3.1.16 is marked as the last supported 3.1.x version as 3.1 is entering End-of-life.**
 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 
