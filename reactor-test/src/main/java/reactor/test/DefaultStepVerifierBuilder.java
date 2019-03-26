@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1307,7 +1307,7 @@ final class DefaultStepVerifierBuilder<T>
 				this.completeLatch.countDown();
 				return true;
 			}
-			return true;
+			return false;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -1336,14 +1336,15 @@ final class DefaultStepVerifierBuilder<T>
 					}
 					//possibly re-evaluate the current onNext
 					event = this.script.peek();
+				} else if (event instanceof CollectEvent) {
+					if (onCollect(actualSignal)) {
+						return;
+					}
+					//possibly re-evaluate the current onNext
+					event = this.script.peek();
 				}
 				if (event instanceof SignalCountEvent) {
 					if (onSignalCount(actualSignal, (SignalCountEvent<T>) event)) {
-						return;
-					}
-				}
-				else if (event instanceof CollectEvent) {
-					if (onCollect(actualSignal)) {
 						return;
 					}
 				}
