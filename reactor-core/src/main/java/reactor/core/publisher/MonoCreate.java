@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -181,6 +181,10 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 			if (!REQUEST_CONSUMER.compareAndSet(this, null, consumer)) {
 				throw new IllegalStateException(
 						"A consumer has already been assigned to consume requests");
+			}
+			int s = this.state;
+			if (s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {
+				consumer.accept(Long.MAX_VALUE);
 			}
 			return this;
 		}

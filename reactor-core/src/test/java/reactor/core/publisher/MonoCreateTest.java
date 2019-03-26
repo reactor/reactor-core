@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -339,6 +338,23 @@ public class MonoCreateTest {
 	public void sinkToString() {
 		StepVerifier.create(Mono.create(sink -> sink.success(sink.toString())))
 		            .expectNext("MonoSink")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onRequest() {
+		StepVerifier.create(Mono.create(sink -> sink.onRequest(sink::success)))
+		            .expectNext(Long.MAX_VALUE)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onRequestDeferred() {
+		StepVerifier.create(Mono.create(sink -> sink.onRequest(sink::success)), 0)
+		            .expectSubscription()
+		            .thenAwait(Duration.ofMillis(1))
+		            .thenRequest(1)
+		            .expectNext(1L)
 		            .verifyComplete();
 	}
 }
