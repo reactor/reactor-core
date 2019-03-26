@@ -39,7 +39,7 @@ import reactor.util.context.Context;
  * However, it should be noticed that multi-producer case is only valid if appropriate
  * Queue
  * is provided. Otherwise, it could break
- * <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a> if Publishers
+ * <a href="https://www.reactive-streams.org/">Reactive Streams Spec</a> if Publishers
  * publish on different threads.
  *
  * <p>
@@ -52,14 +52,14 @@ import reactor.util.context.Context;
  * <p>
  *      <b>Note: </b> UnicastProcessor does not respect the actual subscriber's
  *      demand as it is described in
- *      <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a>. However,
+ *      <a href="https://www.reactive-streams.org/">Reactive Streams Spec</a>. However,
  *      UnicastProcessor embraces configurable Queue internally which allows enabling
  *      backpressure support and preventing of consumer's overwhelming.
  *
  *      Hence, interaction model between producers and UnicastProcessor will be PUSH
  *      only. In opposite, interaction model between UnicastProcessor and consumer will be
  *      PUSH-PULL as defined in
- *      <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a>.
+ *      <a href="https://www.reactive-streams.org/">Reactive Streams Spec</a>.
  *
  *      In the case when upstream's signals overflow the bound of internal Queue,
  *      UnicastProcessor will fail with signaling onError(

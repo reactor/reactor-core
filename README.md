@@ -1,7 +1,7 @@
 # Reactor Core
 
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](http://mvnrepository.com/artifact/io.projectreactor/reactor-core) [![Latest](https://img.shields.io/github/release/reactor/reactor-core/all.svg)]() 
+[![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) [![Latest](https://img.shields.io/github/release/reactor/reactor-core/all.svg)]() 
 
 [![Download](https://api.bintray.com/packages/spring/jars/io.projectreactor/images/download.svg)](https://bintray.com/spring/jars/io.projectreactor/_latestVersion)
 
@@ -9,7 +9,7 @@
 [![Codecov](https://img.shields.io/codecov/c/github/reactor/reactor-core.svg)]()
 
 
-Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a [Reactive Extensions](http://reactivex.io) inspired API and efficient event streaming support.
+Non-Blocking [Reactive Streams](https://www.reactive-streams.org/) Foundation for the JVM both implementing a [Reactive Extensions](http://reactivex.io) inspired API and efficient event streaming support.
 
 ## Getting it
    
@@ -19,8 +19,8 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 ```groovy
     repositories {
-//      maven { url 'http://repo.spring.io/snapshot' }
-      maven { url 'http://repo.spring.io/milestone' }
+//      maven { url 'https://repo.spring.io/snapshot' }
+      maven { url 'https://repo.spring.io/milestone' }
       mavenCentral()
     }
 
@@ -32,12 +32,12 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 ```
 
-See the [reference documentation](http://projectreactor.io/docs/core/release/reference/docs/index.html#getting)
+See the [reference documentation](https://projectreactor.io/docs/core/release/reference/docs/index.html#getting)
 for more information on getting it (eg. using Maven, or on how to get milestones and snapshots).
 
 > **Note about Android support**: Reactor 3 doesn't officially support nor target Android.
 However it should work fine with Android SDK 26 (Android O) and above. See the
-[complete note](http://projectreactor.io/docs/core/release/reference/docs/index.html#prerequisites)
+[complete note](https://projectreactor.io/docs/core/release/reference/docs/index.html#prerequisites)
 in the reference guide.
 
 
@@ -54,7 +54,7 @@ A Reactive Streams Publisher with basic flow operators.
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#subscribe()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flux.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/flux.png" width="500">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
 
 Flux in action :
 ```java
@@ -73,7 +73,7 @@ A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropr
 - Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Mono#subscribe()_ or _Mono#get()_ eventually called.
 
-[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mono.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
+[<img src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/mono.png" width="500">](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
 
 Mono in action :
 ```java
@@ -95,11 +95,11 @@ Tuple2<Long, Long> nowAndLater =
 
 ## Schedulers
 
-Reactor uses a [Scheduler](http://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html) as a
+Reactor uses a [Scheduler](https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html) as a
 contract for arbitrary task execution. It provides some guarantees required by Reactive
 Streams flows like FIFO execution.
 
-You can use or create efficient [schedulers](http://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html)
+You can use or create efficient [schedulers](https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html)
 to jump thread on the producing flows (subscribeOn) or receiving flows (publishOn):
 
 ```java
@@ -117,7 +117,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 
 ## ParallelFlux
 
-[ParallelFlux](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/ParallelFlux.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
+[ParallelFlux](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/ParallelFlux.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
  tasks. Turn back into a `Flux` with `ParallelFlux#sequential()`, an unordered join or
  use abitrary merge strategies via 'groups()'.
 
@@ -158,16 +158,16 @@ Flux.create(sink -> {
 
 ## The Backpressure Thing
 
-Most of this cool stuff uses bounded ring buffer implementation under the hood to mitigate signal processing difference between producers and consumers. Now, the operators and processors or any standard reactive stream component working on the sequence will be instructed to flow in when these buffers have free room AND only then. This means that we make sure we both have a deterministic capacity model (bounded buffer) and we never block (request more data on write capacity). Yup, it's not rocket science after all, the boring part is already being worked by us in collaboration with [Reactive Streams Commons](http://github.com/reactor/reactive-streams-commons) on going research effort.
+Most of this cool stuff uses bounded ring buffer implementation under the hood to mitigate signal processing difference between producers and consumers. Now, the operators and processors or any standard reactive stream component working on the sequence will be instructed to flow in when these buffers have free room AND only then. This means that we make sure we both have a deterministic capacity model (bounded buffer) and we never block (request more data on write capacity). Yup, it's not rocket science after all, the boring part is already being worked by us in collaboration with [Reactive Streams Commons](https://github.com/reactor/reactive-streams-commons) on going research effort.
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The repository contains a `reactor-test` project with test features like the [`StepVerifier`](http://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
+"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The repository contains a `reactor-test` project with test features like the [`StepVerifier`](https://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
 
 -------------------------------------
 
 ## Reference Guide
-http://projectreactor.io/docs/core/release/reference/docs/index.html
+https://projectreactor.io/docs/core/release/reference/docs/index.html
 
 ## Javadoc
 https://projectreactor.io/docs/core/release/api/
@@ -182,13 +182,13 @@ https://www.infoq.com/articles/reactor-by-example
 https://github.com/reactor/head-first-reactive-with-spring-and-reactor/
 
 ## Beyond Reactor Core
-- Everything to jump outside the JVM with the non-blocking drivers from [Reactor Netty](http://github.com/reactor/reactor-netty).
-- [Reactor Addons](http://github.com/reactor/reactor-addons) provide for adapters and extra operators for Reactor 3.
+- Everything to jump outside the JVM with the non-blocking drivers from [Reactor Netty](https://github.com/reactor/reactor-netty).
+- [Reactor Addons](https://github.com/reactor/reactor-addons) provide for adapters and extra operators for Reactor 3.
 
 -------------------------------------
-_Powered by [Reactive Streams Commons](http://github.com/reactor/reactive-streams-commons)_
+_Powered by [Reactive Streams Commons](https://github.com/reactor/reactive-streams-commons)_
 
 _Licensed under [Apache Software License 2.0](www.apache.org/licenses/LICENSE-2.0)_
 
-_Sponsored by [Pivotal](http://pivotal.io)_
+_Sponsored by [Pivotal](https://pivotal.io)_
 
