@@ -45,7 +45,7 @@ import static reactor.core.Fuseable.NONE;
  * size and to cap concurrent additive operations to Long.MAX_VALUE,
  * which is generic to {@link Subscription#request(long)} handling.
  *
- * Combine utils available to operator implementations, @see http://github.com/reactor/reactive-streams-commons
+ * Combine utils available to operator implementations, @see https://github.com/reactor/reactive-streams-commons
  *
  */
 public abstract class Operators {
