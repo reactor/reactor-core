@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -81,7 +81,7 @@ import reactor.util.function.Tuples;
  * <p>
  * The recommended way to learn about the {@link Flux} API and discover new operators is
  * through the reference documentation, rather than through this javadoc (as opposed to
- * learning more about individual operators). See the <a href="http://projectreactor.io/docs/core/release/reference/docs/index.html#which-operator">
+ * learning more about individual operators). See the <a href="https://projectreactor.io/docs/core/release/reference/docs/index.html#which-operator">
  * "which operator do I need?" appendix</a>.
  *
  * <p>

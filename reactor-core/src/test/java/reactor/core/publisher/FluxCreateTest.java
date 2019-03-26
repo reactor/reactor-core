@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -54,8 +54,6 @@ public class FluxCreateTest {
 			e.next(Signal.next(2));
 			e.next(Signal.next(3));
 			e.next(Signal.complete());
-			System.out.println(e.isCancelled());
-			System.out.println(e.requestedFromDownstream());
 		}).dematerialize();
 
 		source.subscribe(ts);
@@ -288,6 +286,32 @@ public class FluxCreateTest {
 		            .verify();
 		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(0);
+	}
+
+	@Test
+	public void monoFirstCancelThenOnCancel() {
+		AtomicInteger onCancel = new AtomicInteger();
+		AtomicReference<FluxSink<Object>> sink = new AtomicReference<>();
+		StepVerifier.create(Flux.create(sink::set))
+				.thenAwait()
+				.consumeSubscriptionWith(Subscription::cancel)
+				.then(() -> sink.get().onCancel(onCancel::getAndIncrement))
+				.thenCancel()
+				.verify();
+		assertThat(onCancel.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void monoFirstCancelThenOnDispose() {
+		AtomicInteger onDispose = new AtomicInteger();
+		AtomicReference<FluxSink<Object>> sink = new AtomicReference<>();
+		StepVerifier.create(Flux.create(sink::set))
+				.thenAwait()
+				.consumeSubscriptionWith(Subscription::cancel)
+				.then(() -> sink.get().onDispose(onDispose::getAndIncrement))
+				.thenCancel()
+				.verify();
+		assertThat(onDispose.get()).isEqualTo(1);
 	}
 
 	@Test
@@ -1151,6 +1175,20 @@ public class FluxCreateTest {
 
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+	}
+
+	@Test
+	public void scanBaseSinkTerminated() {
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual) {
+			@Override
+			public FluxSink<String> next(String s) {
+				return this;
+			}
+		};
+		test.complete();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 

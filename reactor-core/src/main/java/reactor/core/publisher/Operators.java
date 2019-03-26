@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -49,7 +49,7 @@ import static reactor.core.Fuseable.NONE;
  * size and to cap concurrent additive operations to Long.MAX_VALUE,
  * which is generic to {@link Subscription#request(long)} handling.
  *
- * Combine utils available to operator implementations, @see http://github.com/reactor/reactive-streams-commons
+ * Combine utils available to operator implementations, @see https://github.com/reactor/reactive-streams-commons
  *
  */
 public abstract class Operators {
@@ -1163,6 +1163,18 @@ public abstract class Operators {
 		return Context.empty();
 	}
 
+	/**
+	 * Add the amount {@code n} to the given field, capped to {@link Long#MAX_VALUE},
+	 * unless the field is already at {@link Long#MAX_VALUE} OR {@link Long#MIN_VALUE}.
+	 * Return the value before the update.
+	 *
+	 * @param updater the field to update
+	 * @param instance the instance bearing the field
+	 * @param n the value to add
+	 * @param <T> the type of the field-bearing instance
+	 *
+	 * @return the old value of the field, before update.
+	 */
 	static <T> long addCapCancellable(AtomicLongFieldUpdater<T> updater, T instance,
 			long n) {
 		for (; ; ) {

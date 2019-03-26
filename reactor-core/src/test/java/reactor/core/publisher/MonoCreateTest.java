@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,15 +15,14 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -141,6 +140,32 @@ public class MonoCreateTest {
 
 		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(0);
+	}
+
+	@Test
+	public void monoFirstCancelThenOnCancel() {
+		AtomicInteger onCancel = new AtomicInteger();
+		AtomicReference<MonoSink<Object>> sink = new AtomicReference<>();
+		StepVerifier.create(Mono.create(sink::set))
+				.thenAwait()
+				.consumeSubscriptionWith(Subscription::cancel)
+				.then(() -> sink.get().onCancel(onCancel::getAndIncrement))
+				.thenCancel()
+				.verify();
+		assertThat(onCancel.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void monoFirstCancelThenOnDispose() {
+		AtomicInteger onDispose = new AtomicInteger();
+		AtomicReference<MonoSink<Object>> sink = new AtomicReference<>();
+		StepVerifier.create(Mono.create(sink::set))
+				.thenAwait()
+				.consumeSubscriptionWith(Subscription::cancel)
+				.then(() -> sink.get().onDispose(onDispose::getAndIncrement))
+				.thenCancel()
+				.verify();
+		assertThat(onDispose.get()).isEqualTo(1);
 	}
 
 	@Test
@@ -313,6 +338,23 @@ public class MonoCreateTest {
 	public void sinkToString() {
 		StepVerifier.create(Mono.create(sink -> sink.success(sink.toString())))
 		            .expectNext("MonoSink")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onRequest() {
+		StepVerifier.create(Mono.create(sink -> sink.onRequest(sink::success)))
+		            .expectNext(Long.MAX_VALUE)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onRequestDeferred() {
+		StepVerifier.create(Mono.create(sink -> sink.onRequest(sink::success)), 0)
+		            .expectSubscription()
+		            .thenAwait(Duration.ofMillis(1))
+		            .thenRequest(1)
+		            .expectNext(1L)
 		            .verifyComplete();
 	}
 }

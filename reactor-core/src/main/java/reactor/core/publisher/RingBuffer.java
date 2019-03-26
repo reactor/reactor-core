@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -503,7 +503,7 @@ abstract class RingBuffer<E> implements LongSupplier {
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -549,7 +549,7 @@ enum  UnsafeSupport {
 
 		// ensure the unsafe supports all necessary methods to work around the mistake in the latest OpenJDK
 		// https://github.com/netty/netty/issues/1061
-		// http://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
+		// https://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
 		if (unsafe != null) {
 			final Unsafe finalUnsafe = unsafe;
 			Object maybeException;

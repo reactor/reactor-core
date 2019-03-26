@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,6 +29,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
@@ -142,7 +143,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public FluxSink<T> next(T t) {
 			Objects.requireNonNull(t, "t is null in sink.next(t)");
-			if (sink.isCancelled() || done) {
+			if (sink.isDisposed() || done) {
 				Operators.onNextDropped(t, sink.currentContext());
 				return this;
 			}
@@ -170,7 +171,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public void error(Throwable t) {
 			Objects.requireNonNull(t, "t is null in sink.error(t)");
-			if (sink.isCancelled() || done) {
+			if (sink.isDisposed() || done) {
 				Operators.onOperatorError(t, sink.currentContext());
 				return;
 			}
@@ -185,7 +186,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void complete() {
-			if (sink.isCancelled() || done) {
+			if (sink.isDisposed() || done) {
 				return;
 			}
 			done = true;
@@ -381,6 +382,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	static abstract class BaseSink<T> extends AtomicBoolean
 			implements FluxSink<T>, InnerProducer<T> {
 
+		static final Disposable TERMINATED = OperatorDisposables.DISPOSED;
+		static final Disposable CANCELLED  = Disposables.disposed();
+
 		final CoreSubscriber<? super T> actual;
 		final Context                   ctx;
 
@@ -417,7 +421,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void complete() {
-			if (isCancelled()) {
+			if (isDisposed()) {
 				return;
 			}
 			try {
@@ -430,7 +434,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void error(Throwable e) {
-			if (isCancelled()) {
+			if (isDisposed()) {
 				Operators.onOperatorError(e, ctx);
 				return;
 			}
@@ -449,10 +453,11 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		void disposeResource(boolean isCancel) {
+			Disposable disposed = isCancel ? CANCELLED : TERMINATED;
 			Disposable d = disposable;
-			if (d != OperatorDisposables.DISPOSED) {
-				d = DISPOSABLE.getAndSet(this, OperatorDisposables.DISPOSED);
-				if (d != null && d != OperatorDisposables.DISPOSED) {
+			if (d != TERMINATED && d != CANCELLED) {
+				d = DISPOSABLE.getAndSet(this, disposed);
+				if (d != null && d != TERMINATED && d != CANCELLED) {
 					if (isCancel && d instanceof SinkDisposable) {
 						((SinkDisposable) d).cancel();
 					}
@@ -472,7 +477,15 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public final boolean isCancelled() {
-			return OperatorDisposables.isDisposed(disposable);
+			return disposable == CANCELLED;
+		}
+
+		/**
+		 * @return true if the sink has been terminated or cancelled
+		 */
+		final boolean isDisposed() {
+			Disposable d = disposable;
+			return d == TERMINATED || d == CANCELLED;
 		}
 
 		@Override
@@ -523,7 +536,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			SinkDisposable sd = new SinkDisposable(null, d);
 			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
 				Disposable c = disposable;
-				if (c instanceof SinkDisposable) {
+				if (c == CANCELLED) {
+					d.dispose();
+				}
+				else if (c instanceof SinkDisposable) {
 					SinkDisposable current = (SinkDisposable) c;
 					if (current.onCancel == null) {
 						current.onCancel = d;
@@ -542,7 +558,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			SinkDisposable sd = new SinkDisposable(d, null);
 			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
 				Disposable c = disposable;
-				if (c == OperatorDisposables.DISPOSED) {
+				if (isDisposed()) {
 					d.dispose();
 				}
 				else if (c instanceof SinkDisposable) {
@@ -561,9 +577,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED || key == Attr.CANCELLED) {
-				return OperatorDisposables.isDisposed(disposable);
-			}
+			if (key == Attr.TERMINATED) return disposable == TERMINATED;
+			if (key == Attr.CANCELLED) return disposable == CANCELLED;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
 				return requested;
 			}
@@ -585,7 +600,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public FluxSink<T> next(T t) {
-			if (isCancelled()) {
+			if (isDisposed()) {
 				Operators.onNextDropped(t, ctx);
 				return this;
 			}
@@ -614,7 +629,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public final FluxSink<T> next(T t) {
-			if (isCancelled()) {
+			if (isDisposed()) {
 				Operators.onNextDropped(t, ctx);
 				return this;
 			}

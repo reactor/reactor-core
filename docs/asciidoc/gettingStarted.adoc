@@ -2,7 +2,7 @@
 = Getting Started
 
 This section contains information that should help you get going with Reactor. It
-includes the following information:
+includes the following sections:
 
 * <<getting-started-introducing-reactor>>
 * <<prerequisites>>
@@ -11,29 +11,30 @@ includes the following information:
 
 [[getting-started-introducing-reactor]]
 == Introducing Reactor
+
 //TODO flesh out, reword. could also be updated on the website
 Reactor is a fully non-blocking reactive programming foundation for the JVM, with
-efficient demand management (in the form of managing "backpressure"). It integrates
+efficient demand management (in the form of managing "`backpressure`"). It integrates
 directly with the Java 8 functional APIs, notably `CompletableFuture`, `Stream`, and
-`Duration`. It offers composable asynchronous sequence APIs `Flux` (for [N] elements) and
-`Mono` (for [0|1] elements), extensively implementing the [Reactive Streams](http://www.reactive-streams.org/)
+`Duration`. It offers composable asynchronous sequence APIs -- `Flux` (for [N] elements) and
+`Mono` (for [0|1] elements) -- and extensively implements the [Reactive Streams](https://www.reactive-streams.org/)
 specification.
 
 Reactor also supports non-blocking inter-process communication with the
 `reactor-netty` project. Suited for Microservices Architecture, Reactor Netty offers
 backpressure-ready network engines for HTTP (including Websockets), TCP, and UDP.
-Reactive Encoding and Decoding are fully supported.
+Reactive encoding and decoding are fully supported.
 
 [[prerequisites]]
 == Prerequisites
+
 Reactor Core runs on `Java 8` and above.
 
 It has a transitive dependency on `org.reactivestreams:reactive-streams:1.0.2`.
 
 [NOTE]
+.Android Support
 ====
-*Android support*:
-
 * Reactor 3 does not officially support or target Android (consider using RxJava 2 if
 such support is a strong requirement).
 * However, it should work fine with Android SDK 26 (Android O) and above.
@@ -44,12 +45,14 @@ case-by-case basis.
 
 [[getting-started-understanding-bom]]
 == Understanding the BOM
-Reactor 3 uses a BOM model since `reactor-core 3.0.4`, with the `Aluminium` release train.
+
+Reactor 3 uses a BOM (Bill of Materials) model (since `reactor-core 3.0.4`, with the `Aluminium` release train).
 This curated list groups artifacts that are meant to work well together, providing
 the relevant versions despite potentially divergent versioning schemes in these artifacts.
 
-The BOM (Bill of Materials) is itself versioned, using a release train scheme
-with a codename followed by a qualifier. Here are a few examples:
+The BOM is itself versioned, using a release train scheme
+with a codename followed by a qualifier. The following list shows a few examples:
+
 [verse]
 Aluminium-RELEASE
 Californium-BUILD-SNAPSHOT
@@ -63,16 +66,17 @@ Elements], in increasing alphabetical order.
 
 The qualifiers are (in chronological order):
 
-* `BUILD-SNAPSHOT`
-* `M1`..`N`: Milestones or developer previews
-* `RELEASE`: The first GA (General Availability) release in a codename series
-* `SR1`..`N`: The subsequent GA releases in a codename series (equivalent to PATCH
-number, SR stands for "Service Release").
+* `BUILD-SNAPSHOT`: Builds for development and testing.
+* `M1`..`N`: Milestones or developer previews.
+* `RELEASE`: The first GA (General Availability) release in a codename series.
+* `SR1`..`N`: The subsequent GA releases in a codename series -- equivalent to a PATCH
+number. (SR stands for "`Service Release`").
 
 [[getting]]
 == Getting Reactor
-As mentioned earlier, the easiest way to use Reactor in your core is to use the BOM and
-add the relevant dependencies to your project. Note that, when adding such a dependency,
+
+As <<getting-started-understanding-bom,mentioned earlier>>, the easiest way to use Reactor in your core is to use the BOM and
+add the relevant dependencies to your project. Note that, when you add such a dependency,
 you must omit the version so that the version gets picked up from the BOM.
 
 However, if you want to force the use of a specific artifact's version, you can specify
@@ -80,10 +84,11 @@ it when adding your dependency, as you usually would. You can also forgo the BOM
 and specify dependencies by their artifact versions.
 
 === Maven Installation
-The BOM concept is natively supported by Maven. First, you need to import the BOM by
-adding the following snippet to your `pom.xml`. If the top section
-(`dependencyManagement`) already exists in your pom, add only the contents.
 
+Maven natively supports the BOM concept. First, you need to import the BOM by
+adding the following snippet to your `pom.xml`:
+
+====
 [source,xml]
 ----
 <dependencyManagement> <1>
@@ -100,10 +105,14 @@ adding the following snippet to your `pom.xml`. If the top section
 ----
 <1> Notice the `dependencyManagement` tag. This is in addition to the regular
 `dependencies` section.
+====
+
+If the top section (`dependencyManagement`) already exists in your pom, add only the contents.
 
 Next, add your dependencies to the relevant reactor projects, as usual, except without a
-`<version>`, as shown here:
+`<version>`, as follows:
 
+====
 [source,xml]
 ----
 <dependencies>
@@ -119,17 +128,20 @@ Next, add your dependencies to the relevant reactor projects, as usual, except w
     </dependency>
 </dependencies>
 ----
-<1> Dependency on the core library
-<2> No version tag here
-<3> `reactor-test` provides facilities to unit test reactive streams
+<1> Dependency on the core library.
+<2> No version tag here.
+<3> `reactor-test` provides facilities to unit test reactive streams.
+====
 
-=== Gradle installation
+=== Gradle Installation
+
 Gradle has no core support for Maven BOMs, but you can use Spring's
 https://github.com/spring-gradle-plugins/dependency-management-plugin[gradle-dependency-management]
 plugin.
 
-First, apply the plugin from the Gradle Plugin Portal:
+First, apply the plugin from the Gradle Plugin Portal, as follows:
 
+====
 [source,groovy]
 ----
 plugins {
@@ -138,8 +150,11 @@ plugins {
 ----
 <1> as of this writing, 1.0.6.RELEASE is the latest version of the plugin.
 Check for updates.
+====
 
-Then use it to import the BOM:
+Then use it to import the BOM, as follows:
+
+====
 [source,groovy]
 ----
 dependencyManagement {
@@ -148,8 +163,11 @@ dependencyManagement {
      }
 }
 ----
+====
 
-Finally add a dependency to your project, without a version number:
+Finally add a dependency to your project, without a version number, as follows:
+
+====
 [source,groovy]
 ----
 dependencies {
@@ -158,12 +176,15 @@ dependencies {
 ----
 <1> There is no third `:` separated section for the version. It is taken from
 the BOM.
+====
 
 === Milestones and Snapshots
+
 Milestones and developer previews are distributed through the Spring Milestones
 repository rather than Maven Central. To add it to your build configuration
 file, use the following snippet:
 
+====
 .Milestones in Maven
 [source,xml]
 ----
@@ -175,20 +196,24 @@ file, use the following snippet:
 	</repository>
 </repositories>
 ----
+====
 
 For Gradle, use the following snippet:
 
+====
 .Milestones in Gradle
 [source,groovy]
 ----
 repositories {
-  maven { url 'http://repo.spring.io/milestone' }
+  maven { url 'https://repo.spring.io/milestone' }
   mavenCentral()
 }
 ----
+====
 
-Similarly, snapshots are also available in a separate dedicated repository:
+Similarly, snapshots are also available in a separate dedicated repository, as the following example show:
 
+====
 .BUILD-SNAPSHOTs in Maven
 [source,xml]
 ----
@@ -205,7 +230,8 @@ Similarly, snapshots are also available in a separate dedicated repository:
 [source,groovy]
 ----
 repositories {
-  maven { url 'http://repo.spring.io/snapshot' }
+  maven { url 'https://repo.spring.io/snapshot' }
   mavenCentral()
 }
 ----
+====

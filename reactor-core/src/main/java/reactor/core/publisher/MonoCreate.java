@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -182,6 +182,10 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 				throw new IllegalStateException(
 						"A consumer has already been assigned to consume requests");
 			}
+			int s = this.state;
+			if (s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {
+				consumer.accept(Long.MAX_VALUE);
+			}
 			return this;
 		}
 
@@ -200,11 +204,10 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 					SinkDisposable current = (SinkDisposable) c;
 					if (current.onCancel == null) {
 						current.onCancel = d;
-					}
-					else {
-						d.dispose();
+						return this;
 					}
 				}
+				d.dispose();
 			}
 			return this;
 		}
@@ -219,11 +222,10 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 					SinkDisposable current = (SinkDisposable) c;
 					if (current.disposable == null) {
 						current.disposable = d;
-					}
-					else {
-						d.dispose();
+						return this;
 					}
 				}
+				d.dispose();
 			}
 			return this;
 		}

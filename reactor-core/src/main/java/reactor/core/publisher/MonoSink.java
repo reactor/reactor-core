@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -78,7 +78,7 @@ public interface MonoSink<T> {
 	 * Attaches a {@link LongConsumer} to this {@link MonoSink} that will be notified of
 	 * any request to this sink.
 	 *
-	 * @param consumer the consumer to invoke on each request
+	 * @param consumer the consumer to invoke on request
 	 *
 	 * @return {@link MonoSink} with a consumer that is notified of requests
 	 */

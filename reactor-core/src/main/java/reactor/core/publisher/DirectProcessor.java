@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *       https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,7 @@ import reactor.util.annotation.Nullable;
  * Please note, that along with multiple consumers, current implementation of
  * DirectProcessor supports multiple producers. However, all producers must produce
  * messages on the same Thread, otherwise
- * <a href="http://www.reactive-streams.org/">Reactive Streams Spec</a> contract is
+ * <a href="https://www.reactive-streams.org/">Reactive Streams Spec</a> contract is
  * violated.
  * <p>
  *      <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/directprocessornormal.png" alt="">

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *        https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,14 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -287,5 +289,242 @@ public class MonoDoOnEachTest {
 
 		assertThat(signalsAndContext.stream().map(t2 -> t2.getT1().getType()))
 				.containsExactly(SignalType.ON_ERROR);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1547
+	@Test
+	public void triggersCompleteSignalInMonoOnNext() {
+		CopyOnWriteArrayList<String> eventOrder = new CopyOnWriteArrayList<>();
+
+		Mono.just("parent").hide()
+		    .flatMap(v -> Mono.just("child").hide()
+				    .doOnEach(sig -> eventOrder.add("childEach" + sig))
+				    .doOnSuccess(it -> eventOrder.add("childSuccess"))
+		    )
+		    .doOnEach(sig -> eventOrder.add("parentEach" + sig))
+		    .doOnSuccess(it -> eventOrder.add("parentSuccess"))
+		    .block();
+
+		assertThat(eventOrder).containsExactly(
+				"childEachdoOnEach_onNext(child)",
+				"childEachonComplete()",
+				"childSuccess",
+				"parentEachdoOnEach_onNext(child)",
+				"parentEachonComplete()",
+				"parentSuccess");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1547
+	@Test
+	public void triggersCompleteSignalInMonoOnNextFused() {
+		CopyOnWriteArrayList<String> eventOrder = new CopyOnWriteArrayList<>();
+
+		Mono.just("parent")
+		    .flatMap(v -> Mono.just("child")
+				    .doOnEach(sig -> eventOrder.add("childEach" + sig))
+				    .doOnSuccess(it -> eventOrder.add("childSuccess"))
+		    )
+		    .doOnEach(sig -> eventOrder.add("parentEach" + sig))
+		    .doOnSuccess(it -> eventOrder.add("parentSuccess"))
+		    .block();
+
+		assertThat(eventOrder).containsExactly(
+				"childEachdoOnEach_onNext(child)",
+				"childEachonComplete()",
+				"childSuccess",
+				"parentEachdoOnEach_onNext(child)",
+				"parentEachonComplete()",
+				"parentSuccess");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1547
+	@Test
+	@Ignore("Mono doesn't trigger tryOnNext")
+	public void triggersCompleteSignalInMonoOnNextConditional() {
+		CopyOnWriteArrayList<String> eventOrder = new CopyOnWriteArrayList<>();
+
+		Mono.just("parent").hide()
+		    .filter(it -> true)
+		    .flatMap(v -> Mono.just("child").hide()
+		                      .doOnEach(sig -> eventOrder.add("childEach" + sig))
+		                      .doOnSuccess(it -> eventOrder.add("childSuccess"))
+		                      .filter(it -> true)
+		    )
+		    .doOnEach(sig -> eventOrder.add("parentEach" + sig))
+		    .doOnSuccess(it -> eventOrder.add("parentSuccess"))
+		    .filter(it -> true)
+		    .block();
+
+		assertThat(eventOrder).containsExactly(
+				"childEachdoOnEach_onNext(child)",
+				"childEachonComplete()",
+				"childSuccess",
+				"parentEachdoOnEach_onNext(child)",
+				"parentEachonComplete()",
+				"parentSuccess");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1547
+	@Test
+	@Ignore("Mono doesn't trigger tryOnNext")
+	public void triggersCompleteSignalInMonoOnNextConditionalFused() {
+		CopyOnWriteArrayList<String> eventOrder = new CopyOnWriteArrayList<>();
+
+		Mono.just("parent")
+		    .flatMap(v -> Mono.just("child")
+		                      .doOnEach(sig -> eventOrder.add("childEach" + sig))
+		                      .doOnSuccess(it -> eventOrder.add("childSuccess"))
+		                      .filter(it -> true)
+		    )
+		    .doOnEach(sig -> eventOrder.add("parentEach" + sig))
+		    .doOnSuccess(it -> eventOrder.add("parentSuccess"))
+		    .filter(it -> true)
+		    .block();
+
+		assertThat(eventOrder).containsExactly(
+				"childEachdoOnEach_onNext(child)",
+				"childEachonComplete()",
+				"childSuccess",
+				"parentEachdoOnEach_onNext(child)",
+				"parentEachonComplete()",
+				"parentSuccess");
+	}
+
+	@Test
+	public void errorDuringCompleteSignalInMonoOnNext() {
+		CopyOnWriteArrayList<String> eventOrder = new CopyOnWriteArrayList<>();
+
+		Mono.fromSupplier(() -> "parent").hide()
+		    .flatMap(ignored -> Mono.fromSupplier(() -> "child").hide()
+				    .doOnEach(sig -> {
+				    	eventOrder.add("childEach" + sig);
+				    	if (sig.isOnNext()) {
+				    		throw new IllegalStateException("boomChild");
+					    }
+				    })
+				    .doOnSuccessOrError((v, e) -> {
+					    if (e == null) eventOrder.add("childSuccess");
+					    else eventOrder.add("childError");
+				    })
+		    )
+		    .doOnEach(sig -> eventOrder.add("parentEach" + sig))
+		    .doOnSuccessOrError((v, e) -> {
+			    if (e == null) eventOrder.add("parentSuccess");
+			    else eventOrder.add("parentError");
+		    })
+		    .onErrorReturn("boom expected")
+		    .block();
+
+		assertThat(eventOrder).containsExactly(
+				"childEachdoOnEach_onNext(child)",
+				"childEachonError(java.lang.IllegalStateException: boomChild)",
+				"childError",
+				"parentEachonError(java.lang.IllegalStateException: boomChild)",
+				"parentError");
+	}
+
+	@Test
+	public void errorDuringCompleteSignalInMonoOnNextFused() {
+		CopyOnWriteArrayList<String> eventOrder = new CopyOnWriteArrayList<>();
+
+		Mono.fromSupplier(() -> "parent")
+		    .flatMap(ignored -> Mono.fromSupplier(() -> "child")
+		                            .doOnEach(sig -> {
+			                            eventOrder.add("childEach" + sig);
+			                            if (sig.isOnNext()) {
+				                            throw new IllegalStateException("boomChild");
+			                            }
+		                            })
+		                            .doOnSuccessOrError((v, e) -> {
+			                            if (e == null) eventOrder.add("childSuccess");
+			                            else eventOrder.add("childError");
+		                            })
+		    )
+		    .doOnEach(sig -> eventOrder.add("parentEach" + sig))
+		    .doOnSuccessOrError((v, e) -> {
+			    if (e == null) eventOrder.add("parentSuccess");
+			    else eventOrder.add("parentError");
+		    })
+		    .onErrorReturn("boom expected")
+		    .block();
+
+		assertThat(eventOrder).containsExactly(
+				"childEachdoOnEach_onNext(child)",
+				"childEachonError(java.lang.IllegalStateException: boomChild)",
+				"childError",
+				"parentEachonError(java.lang.IllegalStateException: boomChild)",
+				"parentError");
+	}
+
+	@Test
+	public void monoOnNextDoesntTriggerCompleteTwice() {
+		AtomicInteger completeHandlerCount = new AtomicInteger();
+
+		Mono.just("foo")
+		    .hide()
+		    .doOnEach(sig -> {
+		    	if (sig.isOnComplete()) {
+		    		completeHandlerCount.incrementAndGet();
+			    }
+		    })
+		    .block();
+
+		assertThat(completeHandlerCount).hasValue(1);
+	}
+
+	@Test
+	public void monoOnNextDoesntTriggerCompleteTwiceFused() {
+		AtomicInteger completeHandlerCount = new AtomicInteger();
+
+		Mono.just("foo")
+		    .doOnEach(sig -> {
+		    	if (sig.isOnComplete()) {
+		    		completeHandlerCount.incrementAndGet();
+			    }
+		    })
+		    .block();
+
+		assertThat(completeHandlerCount).hasValue(1);
+	}
+
+	@Test
+	public void errorInCompleteHandlingTriggersErrorHandling() {
+		AtomicInteger errorHandlerCount = new AtomicInteger();
+
+		StepVerifier.create(
+				Mono.just("foo")
+				    .hide()
+				    .doOnEach(sig -> {
+					    if (sig.isOnComplete()) {
+						    throw new IllegalStateException("boom");
+					    }
+					    if (sig.isOnError()) {
+						    errorHandlerCount.incrementAndGet();
+					    }
+				    })
+		)
+		            .verifyErrorMessage("boom");
+
+		assertThat(errorHandlerCount).as("error handler invoked on top on complete").hasValue(1);
+	}
+
+	@Test
+	public void errorInCompleteHandlingTriggersErrorHandlingFused() {
+		AtomicInteger errorHandlerCount = new AtomicInteger();
+
+		StepVerifier.create(
+				Mono.just("foo")
+				    .doOnEach(sig -> {
+					    if (sig.isOnComplete()) {
+						    throw new IllegalStateException("boom");
+					    }
+					    if (sig.isOnError()) {
+						    errorHandlerCount.incrementAndGet();
+					    }
+				    })
+		)
+		            .verifyErrorMessage("boom");
+
+		assertThat(errorHandlerCount).as("error handler invoked on top on complete").hasValue(1);
 	}
 }
