@@ -32,14 +32,17 @@ final class ErrorFormatter {
 	private static final String EMPTY = "";
 
 	final String scenarioPrefix;
+	@Nullable
+	final Function<Object, String> valueFormatter;
 
-	ErrorFormatter(@Nullable final String scenarioName) {
+	ErrorFormatter(@Nullable final String scenarioName, @Nullable Function<Object, String> valueFormatter) {
 		if (scenarioName == null || scenarioName.isEmpty()) {
 			scenarioPrefix = EMPTY;
 		}
 		else {
 			scenarioPrefix = "[" + scenarioName + "] ";
 		}
+		this.valueFormatter =  valueFormatter;
 	}
 
 	/**
@@ -91,6 +94,9 @@ final class ErrorFormatter {
 	 * @return an {@link AssertionError} with a standardized message potentially prefixed with the associated scenario name
 	 */
 	AssertionError failPrefix(String prefix, String msg, Object... args) {
+		if (valueFormatter != null) {
+			return assertionError(prefix + String.format(msg, CustomizableObjectFormatter.convertVarArgs(valueFormatter, args)) + ")");
+		}
 		return assertionError(prefix + String.format(msg, args) + ")");
 	}
 

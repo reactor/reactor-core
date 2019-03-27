@@ -156,7 +156,7 @@ final class DefaultStepVerifierBuilder<T>
 	 * The {@link ErrorFormatter} used for cases where no scenario name has been provided
 	 * through {@link StepVerifierOptions}.
 	 */
-	static final ErrorFormatter NO_NAME_ERROR_FORMATTER = new ErrorFormatter(null);
+	static final ErrorFormatter NO_NAME_ERROR_FORMATTER = new ErrorFormatter(null, null);
 
 	static void checkPositive(long n) {
 		if (n < 0) {
@@ -194,7 +194,12 @@ final class DefaultStepVerifierBuilder<T>
 			@Nullable Supplier<? extends Publisher<? extends T>> sourceSupplier) {
 		this.initialRequest = options.getInitialRequest();
 		this.options = options;
-		this.errorFormatter = options.getScenarioName() == null ? NO_NAME_ERROR_FORMATTER : new ErrorFormatter(options.getScenarioName());
+		if (options.getScenarioName() == null && options.getValueFormatter() == null) {
+			this.errorFormatter = NO_NAME_ERROR_FORMATTER;
+		}
+		else {
+			this.errorFormatter = new ErrorFormatter(options.getScenarioName(), options.getValueFormatter());
+		}
 		this.vtsLookup = options.getVirtualTimeSchedulerSupplier();
 		this.sourceSupplier = sourceSupplier;
 		this.script = new ArrayList<>();

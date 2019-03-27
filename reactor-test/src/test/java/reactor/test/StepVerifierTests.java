@@ -58,6 +58,60 @@ import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 public class StepVerifierTests {
 
 	@Test
+	public void expectationErrorWithValueFormatter() {
+		Flux<String> flux = Flux.just("foobar");
+		StepVerifierOptions options = StepVerifierOptions.create()
+		                                                 .valueFormatterCatchAll(t -> t.getClass().getSimpleName() + "{'" + t + "'}");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(flux, options)
+				                        .expectError()
+						::verify)
+				.withMessage("expectation \"expectError()\" failed (expected: onError(); actual: onNext(String{'foobar'}))");
+	}
+
+	@Test
+	public void expectationErrorWithValueFormatterPrecedence() {
+		Flux<String> flux = Flux.just("foobar");
+		StepVerifierOptions options = StepVerifierOptions.create()
+		                                                 .valueFormatterCatchAll(t -> t.getClass().getSimpleName() + "{'" + t + "'}")
+		                                                 .valueFormatter(String.class, s -> "" + s.length());
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(flux, options)
+				                        .expectError()
+						::verify)
+				.withMessage("expectation \"expectError()\" failed (expected: onError(); actual: onNext(6))");
+	}
+
+
+	@Test
+	public void expectationErrorWithValueFormatterButNoUnwrap() {
+		Flux<String> flux = Flux.just("foobar");
+		StepVerifierOptions options = StepVerifierOptions.create()
+		                                                 .valueFormatterCatchAll(t -> t.getClass().getSimpleName() + "{'" + t + "'}")
+		                                                 .valueFormatterUnwrapSignalNext(false);
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(flux, options)
+				                        .expectError()
+						::verify)
+				.withMessage("expectation \"expectError()\" failed (expected: onError(); actual: ImmutableSignal{'onNext(foobar)'})");
+	}
+
+	@Test
+	public void expectationErrorWithoutValueFormatter() {
+		Flux<String> flux = Flux.just("foobar");
+		StepVerifierOptions options = StepVerifierOptions.create();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(flux, options)
+				                        .expectError()
+						::verify)
+				.withMessage("expectation \"expectError()\" failed (expected: onError(); actual: onNext(foobar))");
+	}
+
+	@Test
 	public void expectNext() {
 		Flux<String> flux = Flux.just("foo", "bar");
 

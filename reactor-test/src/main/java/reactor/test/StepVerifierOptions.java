@@ -15,8 +15,10 @@
  */
 package reactor.test;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -29,6 +31,8 @@ import reactor.util.context.Context;
  */
 public class StepVerifierOptions {
 
+	static final CustomizableObjectFormatter OBJECT_FORMATTER_NONE = new CustomizableObjectFormatter();
+
 	@Nullable
 	private String scenarioName = null;
 
@@ -36,6 +40,7 @@ public class StepVerifierOptions {
 	private long initialRequest = Long.MAX_VALUE;
 	private Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
 	private Context initialContext;
+	private CustomizableObjectFormatter objectFormatter = OBJECT_FORMATTER_NONE;
 
 	/**
 	 * Create a new default set of options for a {@link StepVerifier} that can be tuned
@@ -85,6 +90,77 @@ public class StepVerifierOptions {
 	 */
 	public long getInitialRequest() {
 		return this.initialRequest;
+	}
+
+	/**
+	 * Set a "catch-all" custom value formatter to be used in error messages when presenting
+	 * expected and actual values. Note this doesn't necessarily affect the description of the
+	 * initial expectation.
+	 *
+	 * @param catchAllFormatter the generic, catch-all, value formatter to use on an object
+	 * if no specific formatter was found for it
+	 * @return this instance, to continue setting the options
+	 */
+	public StepVerifierOptions valueFormatterCatchAll(Function<Object, String> catchAllFormatter) {
+		if (this.objectFormatter == OBJECT_FORMATTER_NONE) {
+			this.objectFormatter = new CustomizableObjectFormatter();
+		}
+		this.objectFormatter.setCatchAll(catchAllFormatter);
+		return this;
+	}
+
+	/**
+	 * Set a custom value formatter for a specific {@link Class}, to be used in error messages
+	 * when presenting expected and actual values.
+	 * and actual values. Note this doesn't necessarily affect the description of the
+	 * initial expectation.
+	 *
+	 * @param clazz the {@link Class} for which this formatter would be applied
+	 * @param valueFormatter the class-specific value formatter to set
+	 * @return this instance, to continue setting the options
+	 */
+	public <T> StepVerifierOptions valueFormatter(Class<T> clazz, Function<T, String> valueFormatter) {
+		if (this.objectFormatter == OBJECT_FORMATTER_NONE) {
+			this.objectFormatter = new CustomizableObjectFormatter();
+		}
+		this.objectFormatter.setConverter(clazz, valueFormatter);
+		return this;
+	}
+
+	/**
+	 * Activate or deactivate {@link Signal} unwrapping, which formats the values inside
+	 * {@link Signal#next(Object) onNext} signals by the current formatters. Activated
+	 * by default.
+	 *
+	 * @param unwrap true to unwrap onNext values and format them (default), false to use {@link Signal#toString()}
+	 * @return this instance, to continue setting the options
+	 */
+	public StepVerifierOptions valueFormatterUnwrapSignalNext(boolean unwrap) {
+		if (this.objectFormatter == OBJECT_FORMATTER_NONE) {
+			if (!unwrap) {
+				//modifying the default
+				this.objectFormatter = new CustomizableObjectFormatter();
+				this.objectFormatter.setUnwrap(false);
+			}
+		}
+		else {
+			this.objectFormatter.setUnwrap(unwrap);
+		}
+		return this;
+	}
+
+	//implementation note: exposed as a Function but internally should use CustomizableObjectFormatter
+	/**
+	 * Get the object formatter to use when producing error messages. This applies all configured
+	 * {@link #valueFormatter(Class, Function) class specific formatters} as well as the
+	 * {@link #valueFormatterCatchAll(Function) catch-all}.
+	 *
+	 * @return the complete object formatter
+	 */
+	@Nullable
+	public Function<Object, String> getValueFormatter() {
+		if (this.objectFormatter == OBJECT_FORMATTER_NONE) return null;
+		return this.objectFormatter;
 	}
 
 	/**

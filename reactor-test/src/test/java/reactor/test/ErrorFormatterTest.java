@@ -26,26 +26,26 @@ public class ErrorFormatterTest {
 
 	@Test
 	public void noScenarioEmpty() {
-		assertThat(new ErrorFormatter("").scenarioPrefix)
+		assertThat(new ErrorFormatter("", null).scenarioPrefix)
 				.isNotNull()
 				.isEmpty();
 	}
 
 	@Test
 	public void nullScenarioEmpty() {
-		assertThat(new ErrorFormatter(null).scenarioPrefix)
+		assertThat(new ErrorFormatter(null, null).scenarioPrefix)
 				.isNotNull()
 				.isEmpty();
 	}
 
 	@Test
 	public void givenScenarioWrapped() {
-		assertThat(new ErrorFormatter("foo").scenarioPrefix)
+		assertThat(new ErrorFormatter("foo", null).scenarioPrefix)
 				.isEqualTo("[foo] ");
 	}
 
 	// === Tests with an empty scenario name ===
-	static final ErrorFormatter noScenario = new ErrorFormatter("");
+	static final ErrorFormatter noScenario = new ErrorFormatter("", null);
 
 	@Test
 	public void noScenarioFailNullEventNoArgs() {
@@ -145,7 +145,7 @@ public class ErrorFormatterTest {
 
 
 	// === Tests with a scenario name ===
-	static final ErrorFormatter withScenario = new ErrorFormatter("ErrorFormatterTest");
+	static final ErrorFormatter withScenario = new ErrorFormatter("ErrorFormatterTest", null);
 
 	@Test
 	public void withScenarioFailNullEventNoArgs() {
@@ -241,5 +241,104 @@ public class ErrorFormatterTest {
 		assertThat(withScenario.<Throwable>error(IllegalStateException::new, "plain"))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("[ErrorFormatterTest] plain");
+	}
+
+	// === Tests with a value formatter ===
+	static final ErrorFormatter withCustomFormatter = new ErrorFormatter("withCustomFormatter", CustomizableObjectFormatter.simple(o -> o.getClass().getSimpleName() + "=>" + o));
+
+	@Test
+	public void withCustomFormatterFailNullEventNoArgs() {
+		assertThat(withCustomFormatter.fail(null, "details"))
+				.hasMessage("[withCustomFormatter] expectation failed (details)");
+	}
+
+	@Test
+	public void withCustomFormatterFailNoDescriptionNoArgs() {
+		DefaultStepVerifierBuilder.Event event = new DefaultStepVerifierBuilder.NoEvent(Duration.ofMillis(5),
+				"");
+
+		assertThat(withCustomFormatter.fail(event, "details"))
+				.hasMessage("[withCustomFormatter] expectation failed (details)");
+	}
+
+	@Test
+	public void withCustomFormatterFailDescriptionNoArgs() {
+		DefaultStepVerifierBuilder.Event event = new DefaultStepVerifierBuilder.NoEvent(Duration.ofMillis(5),
+				"eventDescription");
+
+		assertThat(withCustomFormatter.fail(event, "details"))
+				.hasMessage("[withCustomFormatter] expectation \"eventDescription\" failed (details)");
+	}
+
+	@Test
+	public void withCustomFormatterFailNullEventHasArgs() {
+		assertThat(withCustomFormatter.fail(null, "details = %s", "bar"))
+				.hasMessage("[withCustomFormatter] expectation failed (details = String=>bar)");
+	}
+
+
+	@Test
+	public void withCustomFormatterFailNoDescriptionHasArgs() {
+		DefaultStepVerifierBuilder.Event event = new DefaultStepVerifierBuilder.NoEvent(Duration.ofMillis(5),
+				"");
+
+		assertThat(withCustomFormatter.fail(event, "details = %s", "bar"))
+				.hasMessage("[withCustomFormatter] expectation failed (details = String=>bar)");
+	}
+
+	@Test
+	public void withCustomFormatterFailDescriptionHasArgs() {
+		DefaultStepVerifierBuilder.Event event = new DefaultStepVerifierBuilder.NoEvent(Duration.ofMillis(5),
+				"eventDescription");
+
+		assertThat(withCustomFormatter.fail(event, "details = %s", "bar"))
+				.hasMessage("[withCustomFormatter] expectation \"eventDescription\" failed (details = String=>bar)");
+	}
+
+	@Test
+	public void withCustomFormatterFailOptional() {
+		assertThat(withCustomFormatter.failOptional(null, "foo"))
+				.hasValueSatisfying(ae -> assertThat(ae).hasMessage("[withCustomFormatter] expectation failed (foo)"));
+	}
+
+	@Test
+	public void withCustomFormatterFailPrefixNoArgs() {
+		assertThat(withCustomFormatter.failPrefix("firstPart", "secondPart"))
+				.hasMessage("[withCustomFormatter] firstPartsecondPart)"); //note the prefix doesn't have an opening parenthesis
+	}
+
+	@Test
+	public void withCustomFormatterFailPrefixHasArgs() {
+		assertThat(withCustomFormatter.failPrefix("firstPart(", "secondPart = %s", "foo"))
+				.hasMessage("[withCustomFormatter] firstPart(secondPart = String=>foo)");
+	}
+
+	@Test
+	public void withCustomFormatterAssertionError() {
+		assertThat(withCustomFormatter.assertionError("plain"))
+				.hasMessage("[withCustomFormatter] plain")
+				.hasNoCause();
+	}
+
+	@Test
+	public void withCustomFormatterAssertionErrorWithCause() {
+		Throwable cause = new IllegalArgumentException("boom");
+		assertThat(withCustomFormatter.assertionError("plain", cause))
+				.hasMessage("[withCustomFormatter] plain")
+				.hasCause(cause);
+	}
+
+	@Test
+	public void withCustomFormatterAssertionErrorWithNullCause() {
+		assertThat(withCustomFormatter.assertionError("plain", null))
+				.hasMessage("[withCustomFormatter] plain")
+				.hasNoCause();
+	}
+
+	@Test
+	public void withCustomFormatterIllegalStateException() {
+		assertThat(withCustomFormatter.<Throwable>error(IllegalStateException::new, "plain"))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("[withCustomFormatter] plain");
 	}
 }
