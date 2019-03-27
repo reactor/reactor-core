@@ -1233,6 +1233,22 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void testExpectRecordedMatchesTwice() {
+		List<Integer> expected1 = Arrays.asList(1,2);
+		List<Integer> expected2 = Arrays.asList(3,4);
+
+		StepVerifier.create(Flux.just(1,2,3,4))
+		            .recordWith(ArrayList::new)
+		            .thenConsumeWhile(i -> i < 2)
+		            .expectRecordedMatches(expected1::equals)
+		            .recordWith(ArrayList::new)
+		            .thenConsumeWhile(i -> i < 4)
+		            .expectRecordedMatches(expected2::equals)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
 	public void testExpectRecordedMatchesWithoutComplete() {
 		List<Integer> expected = Arrays.asList(1,2);
 
