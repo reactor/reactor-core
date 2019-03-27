@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1218,6 +1218,50 @@ public class StepVerifierTests {
 			            .log()
 			            .verify())
 		        .withMessageContaining("expectNext(9)");
+	}
+
+	@Test
+	public void testExpectRecordedMatches() {
+		List<Integer> expected = Arrays.asList(1,2);
+
+		StepVerifier.create(Flux.just(1,2))
+		            .recordWith(ArrayList::new)
+		            .thenConsumeWhile(i -> i < 2)
+		            .expectRecordedMatches(expected::equals)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void testExpectRecordedMatchesTwice() {
+		List<Integer> expected1 = Arrays.asList(1,2);
+		List<Integer> expected2 = Arrays.asList(3,4);
+
+		StepVerifier.create(Flux.just(1,2,3,4))
+		            .recordWith(ArrayList::new)
+		            .thenConsumeWhile(i -> i < 2)
+		            .expectRecordedMatches(expected1::equals)
+		            .recordWith(ArrayList::new)
+		            .thenConsumeWhile(i -> i < 4)
+		            .expectRecordedMatches(expected2::equals)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void testExpectRecordedMatchesWithoutComplete() {
+		List<Integer> expected = Arrays.asList(1,2);
+
+		TestPublisher<Integer> publisher = TestPublisher.createCold();
+		publisher.next(1);
+		publisher.next(2);
+
+		StepVerifier.create(publisher)
+		            .recordWith(ArrayList::new)
+		            .thenConsumeWhile(i -> i < 2)
+		            .expectRecordedMatches(expected::equals)
+		            .thenCancel()
+		            .verify();
 	}
 
 	@Test
