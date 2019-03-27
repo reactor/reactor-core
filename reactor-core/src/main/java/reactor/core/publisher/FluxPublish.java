@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -467,6 +467,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 									inner,1) ==
 									Long.MIN_VALUE){
 								cancel = Integer.MIN_VALUE;
+								if (sourceMode == Fuseable.SYNC) {
+									return;
+								}
 							}
 						}
 

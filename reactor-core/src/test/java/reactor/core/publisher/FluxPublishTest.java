@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -640,5 +641,35 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(4));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1528
+	@Test
+	public void syncFusionFromInfiniteStream() {
+		final ConnectableFlux<Integer> publish =
+				Flux.fromStream(Stream.iterate(0, i -> i + 1))
+				    .publish();
+
+		StepVerifier.create(publish)
+		            .then(publish::connect)
+		            .thenConsumeWhile(i -> i < 10)
+		            .expectNextCount(10)
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(4));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1528
+	@Test
+	public void syncFusionFromInfiniteStreamAndTake() {
+		final Flux<Integer> publish =
+				Flux.fromStream(Stream.iterate(0, i -> i + 1))
+		            .publish()
+		            .autoConnect()
+		            .take(10);
+
+		StepVerifier.create(publish)
+                    .expectNextCount(10)
+		            .expectComplete()
+                    .verify(Duration.ofSeconds(4));
 	}
 }
