@@ -11,7 +11,7 @@
 [![Total Alerts](https://img.shields.io/lgtm/alerts/g/reactor/reactor-core.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/reactor/reactor-core/alerts)
 
 
-Non-Blocking [Reactive Streams](https://www.reactive-streams.org/) Foundation for the JVM both implementing a [Reactive Extensions](http://reactivex.io) inspired API and efficient event streaming support.
+Non-Blocking [Reactive Streams](https://www.reactive-streams.org/) Foundation for the JVM both implementing a [Reactive Extensions](https://reactivex.io) inspired API and efficient event streaming support.
 
 The `master` branch is now dedicated to development of the `3.3.x` line.
 
@@ -31,8 +31,8 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     dependencies {
       //compile "io.projectreactor:reactor-core:3.3.0.BUILD-SNAPSHOT"
       //testCompile("io.projectreactor:reactor-test:3.3.0.BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.2.6.RELEASE"
-      testCompile("io.projectreactor:reactor-test:3.2.6.RELEASE")
+      compile "io.projectreactor:reactor-core:3.2.8.RELEASE"
+      testCompile("io.projectreactor:reactor-test:3.2.8.RELEASE")
     }
 ```
 
