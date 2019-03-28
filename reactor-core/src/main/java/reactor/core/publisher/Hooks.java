@@ -588,5 +588,4 @@ public abstract class Hooks {
 		}
 		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
 	}
-
 }
