@@ -16,6 +16,7 @@
 package reactor.test;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import reactor.core.publisher.Signal;
@@ -40,7 +41,7 @@ public class StepVerifierOptions {
 	private long initialRequest = Long.MAX_VALUE;
 	private Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
 	private Context initialContext;
-	private CustomizableObjectFormatter objectFormatter = OBJECT_FORMATTER_NONE;
+	CustomizableObjectFormatter objectFormatter = OBJECT_FORMATTER_NONE;
 
 	/**
 	 * Create a new default set of options for a {@link StepVerifier} that can be tuned
@@ -94,8 +95,10 @@ public class StepVerifierOptions {
 
 	/**
 	 * Set a "catch-all" custom value formatter to be used in error messages when presenting
-	 * expected and actual values. Note this doesn't necessarily affect the description of the
-	 * initial expectation.
+	 * expected and actual values, and no {@link #valueFormatter(Class, Function) specific formatter}
+	 * was matching.
+	 * <p>
+	 * Note formatters don't necessarily affect the description of the initial expectation.
 	 *
 	 * @param catchAllFormatter the generic, catch-all, value formatter to use on an object
 	 * if no specific formatter was found for it
@@ -110,10 +113,13 @@ public class StepVerifierOptions {
 	}
 
 	/**
-	 * Set a custom value formatter for a specific {@link Class}, to be used in error messages
+	 * Add a custom value formatter for a specific {@link Class}, to be used in error messages
 	 * when presenting expected and actual values.
-	 * and actual values. Note this doesn't necessarily affect the description of the
-	 * initial expectation.
+	 * Such formatters are added in a chain where the first matching formatter will apply
+	 * and return, so calling this method twice with the same {@link Class} would only
+	 * consider the first formatter.
+	 * <p>
+	 * Note formatters don't necessarily affect the description of the initial expectation.
 	 *
 	 * @param clazz the {@link Class} for which this formatter would be applied
 	 * @param valueFormatter the class-specific value formatter to set
@@ -123,7 +129,28 @@ public class StepVerifierOptions {
 		if (this.objectFormatter == OBJECT_FORMATTER_NONE) {
 			this.objectFormatter = new CustomizableObjectFormatter();
 		}
-		this.objectFormatter.setConverter(clazz, valueFormatter);
+		this.objectFormatter.addConverter(clazz, valueFormatter);
+		return this;
+	}
+
+	/**
+	 * Add a custom value formatter that matches {@link Object} on a given {@link java.util.function.Predicate},
+	 * to be used in error messages when presenting expected and actual values.
+	 * Such formatters are added in a chain where the first matching formatter will apply
+	 * and return (including {@link #valueFormatter(Class, Function) class matching} ones).
+	 * <p>
+	 * Note formatters don't necessarily affect the description of the initial expectation.
+	 *
+	 * @param predicate the {@link Predicate} used to determine if this formatter should be applied
+	 * to a given arbitrary object
+	 * @param valueFormatter the value formatter to use when predicate matches
+	 * @return this instance, to continue setting the options
+	 */
+	public StepVerifierOptions valueFormatter(Predicate<Object> predicate, Function<Object, String> valueFormatter) {
+		if (this.objectFormatter == OBJECT_FORMATTER_NONE) {
+			this.objectFormatter = new CustomizableObjectFormatter();
+		}
+		this.objectFormatter.addConverter(predicate, valueFormatter);
 		return this;
 	}
 
@@ -151,11 +178,11 @@ public class StepVerifierOptions {
 
 	//implementation note: exposed as a Function but internally should use CustomizableObjectFormatter
 	/**
-	 * Get the object formatter to use when producing error messages. This applies all configured
+	 * Get the custom object formatter to use when producing error messages. This applies all configured
 	 * {@link #valueFormatter(Class, Function) class specific formatters} as well as the
 	 * {@link #valueFormatterCatchAll(Function) catch-all}.
 	 *
-	 * @return the complete object formatter
+	 * @return the complete object formatter, or null if no specific formatting has been defined.
 	 */
 	@Nullable
 	public Function<Object, String> getValueFormatter() {

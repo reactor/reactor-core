@@ -16,18 +16,19 @@
 
 package reactor.test;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import reactor.core.publisher.Signal;
 import reactor.util.annotation.Nullable;
 
 /**
- * A class that holds custom class-specific converters of object to {@link String}, as
- * well as an optional catch-all {@link Object}-to-{@link String} converter. It can be
- * applied as a {@link Function}. A static utility method {@link #convertVarArgs(Function, Object...)}
- * can be used to apply it to varargs.
+ * A class that holds custom class-specific or predicate-based converters of object to
+ * {@link String}, as well as an optional catch-all {@link Object}-to-{@link String}
+ * converter. It can be applied as a {@link Function}. A static utility method
+ * {@link #convertVarArgs(Function, Object...)} can be used to apply it to varargs.
  * <p>
  * By default it treats {@link Signal} objects particularly: if the signal
  * is an onNext, the <i>value</i> is converted. Then whatever the type, the {@link Signal}
@@ -40,16 +41,18 @@ import reactor.util.annotation.Nullable;
  */
 final class CustomizableObjectFormatter implements Function<Object, String> {
 
+	interface Converter extends Predicate<Object>, Function<Object, String> { }
+
 	static CustomizableObjectFormatter simple(Function<Object, String> catchAll) {
 		CustomizableObjectFormatter simple = new CustomizableObjectFormatter();
 		simple.setCatchAll(catchAll);
 		return simple;
 	}
 
-	private final Map<Class<?>, Function<Object, String>> converters = new LinkedHashMap<>();
+	final List<Converter>    converters = new LinkedList<>();
 	@Nullable
-	private       Function<Object, String>                catchAll;
-	private       boolean                                 unwrap = true;
+	Function<Object, String> catchAll;
+	boolean                  unwrap = true;
 
 	void setUnwrap(boolean unwrap) {
 		this.unwrap = unwrap;
@@ -59,9 +62,33 @@ final class CustomizableObjectFormatter implements Function<Object, String> {
 		this.catchAll = catchAll;
 	}
 
-	<T> void setConverter(Class<T> clazz, Function<T, String> converter) {
-		//noinspection unchecked
-		this.converters.put(clazz, (Function<Object, String>) converter);
+	<T> void addConverter(Class<T> clazz, Function<T, String> converter) {
+		this.converters.add(new Converter() {
+			@Override
+			public boolean test(Object o) {
+				return clazz.isInstance(o);
+			}
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public String apply(Object o) {
+				return converter.apply((T) o);
+			}
+		});
+	}
+
+	void addConverter(Predicate<Object> predicate, Function<Object, String> converter) {
+		this.converters.add(new Converter() {
+			@Override
+			public String apply(Object o) {
+				return converter.apply(o);
+			}
+
+			@Override
+			public boolean test(Object o) {
+				return predicate.test(o);
+			}
+		});
 	}
 
 	@Override
@@ -78,10 +105,9 @@ final class CustomizableObjectFormatter implements Function<Object, String> {
 		if (o == null) {
 			return "null";
 		}
-		for (Map.Entry<Class<?>, Function<Object, String>> entry : converters.entrySet()) {
-			Class<?> c = entry.getKey();
-			if (c.isInstance(o)) {
-				return entry.getValue().apply(o);
+		for (Converter converter : converters) {
+			if (converter.test(o)) {
+				return converter.apply(o);
 			}
 		}
 		if (catchAll != null) {
@@ -99,11 +125,9 @@ final class CustomizableObjectFormatter implements Function<Object, String> {
 			sig = Signal.next(stringRepresentation);
 		}
 
-
-		for (Map.Entry<Class<?>, Function<Object, String>> entry : converters.entrySet()) {
-			Class<?> c = entry.getKey();
-			if (c.isInstance(sig)) {
-				return entry.getValue().apply(sig);
+		for (Converter converter : converters) {
+			if (converter.test(sig)) {
+				return converter.apply(sig);
 			}
 		}
 		return String.valueOf(sig);

@@ -26,7 +26,7 @@ public class StepVerifierOptionsTest {
 	public void valueFormatterCatchAllChangesFromNoOp() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
-		assertThat(options.getValueFormatter()).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
+		assertThat(options.objectFormatter).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
 
 		options.valueFormatterCatchAll(String::valueOf);
 
@@ -34,12 +34,23 @@ public class StepVerifierOptionsTest {
 	}
 
 	@Test
-	public void valueFormatterSpecificChangesFromNoOp() {
+	public void valueFormatterClassSpecificChangesFromNoOp() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
-		assertThat(options.getValueFormatter()).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
+		assertThat(options.objectFormatter).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
 
 		options.valueFormatter(String.class, String::valueOf);
+
+		assertThat(options.getValueFormatter()).isNotSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
+	}
+
+	@Test
+	public void valueFormatterPredicateSpecificChangesFromNoOp() {
+		StepVerifierOptions options = StepVerifierOptions.create();
+
+		assertThat(options.objectFormatter).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
+
+		options.valueFormatter(o -> o instanceof String, String::valueOf);
 
 		assertThat(options.getValueFormatter()).isNotSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
 	}
@@ -48,11 +59,19 @@ public class StepVerifierOptionsTest {
 	public void valueFormatterNoUnwrapChangesFromNoOp() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
-		assertThat(options.getValueFormatter()).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
+		assertThat(options.objectFormatter).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
 
 		options.valueFormatterUnwrapSignalNext(false);
 
 		assertThat(options.getValueFormatter()).isNotSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
+	}
+
+	@Test
+	public void defaultValueFormatterExposedAsNullFromGetter() {
+		StepVerifierOptions options = StepVerifierOptions.create();
+
+		assertThat(options.objectFormatter).isNotNull().isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
+		assertThat(options.getValueFormatter()).isNull();
 	}
 
 }
