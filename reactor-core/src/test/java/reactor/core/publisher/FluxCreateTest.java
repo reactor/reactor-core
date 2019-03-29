@@ -30,10 +30,12 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxCreate.BufferAsyncSink;
+import reactor.core.publisher.FluxCreate.LatestAsyncSink;
 import reactor.core.publisher.FluxCreate.SerializedSink;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
@@ -41,8 +43,10 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifier.Step;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
+import reactor.util.context.Context;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxCreateTest {
 
@@ -1211,7 +1215,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanLatestAsyncSink() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxCreate.LatestAsyncSink<String> test = new FluxCreate.LatestAsyncSink<>(actual);
+		LatestAsyncSink<String> test = new LatestAsyncSink<>(actual);
 
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 		test.queue.set("foo");
@@ -1228,7 +1232,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanSerializedSink() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxCreate.BaseSink<String> decorated = new FluxCreate.LatestAsyncSink<>(actual);
+		FluxCreate.BaseSink<String> decorated = new LatestAsyncSink<>(actual);
 		SerializedSink<String> test = new SerializedSink<>(decorated);
 
 		test.mpscQueue.offer("foo");
@@ -1358,5 +1362,81 @@ public class FluxCreateTest {
 		            .expectNext("FluxSink(LATEST)")
 		            .expectNext("FluxSink(LATEST)")
 		            .verifyComplete();
+	}
+
+	@Test
+	public void bufferSinkRaceNextCancel() {
+		AtomicInteger discarded = new AtomicInteger();
+		final Context context = Operators.discardLocalAdapter(String.class, s -> discarded.incrementAndGet()).apply(Context.empty());
+
+		BufferAsyncSink<String> sink = new BufferAsyncSink<>(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				//do not request
+			}
+
+			@Override
+			public Context currentContext() {
+				return context;
+			}
+		}, 10);
+
+		RaceTestUtils.race(sink::cancel,
+				() -> sink.next("foo"));
+
+		assertThat(sink.queue.poll()).as("internal queue empty").isNull();
+		assertThat(discarded).as("discarded").hasValue(1);
+	}
+
+	@Test
+	public void bufferSinkRaceNextCancel_loop() {
+		int failed = 0;
+		for (int i = 0; i < 10_000; i++) {
+			try {
+				bufferSinkRaceNextCancel();
+			}
+			catch (AssertionError e) {
+				failed++;
+			}
+		}
+		assertThat(failed).as("failed").isZero();
+	}
+
+	@Test
+	public void latestSinkRaceNextCancel() {
+		AtomicInteger discarded = new AtomicInteger();
+		final Context context = Operators.discardLocalAdapter(String.class, s -> discarded.incrementAndGet()).apply(Context.empty());
+
+		LatestAsyncSink<String> sink = new LatestAsyncSink<>(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				//do not request
+			}
+
+			@Override
+			public Context currentContext() {
+				return context;
+			}
+		});
+
+		RaceTestUtils.race(sink::cancel,
+				() -> sink.next("foo"));
+
+		assertThat(sink.queue).as("internal queue empty").hasValue(null);
+		assertThat(discarded).as("discarded").hasValue(1);
+	}
+
+	@Test
+	public void latestSinkRaceNextCancel_loop() {
+		int failed = 0;
+		for (int i = 0; i < 10_000; i++) {
+			try {
+				latestSinkRaceNextCancel();
+			}
+			catch (AssertionError e) {
+				failed++;
+			}
+		}
+		assertThat(failed).as("failed").isZero();
 	}
 }

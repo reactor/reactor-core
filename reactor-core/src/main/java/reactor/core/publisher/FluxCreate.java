@@ -729,9 +729,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		void onCancel() {
-			if (WIP.getAndIncrement(this) == 0) {
-				Operators.onDiscardQueueWithClear(queue, ctx, null);
-			}
+			drain();
 		}
 
 		void drain() {
@@ -739,7 +737,6 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				return;
 			}
 
-			int missed = 1;
 			final Subscriber<? super T> a = actual;
 			final Queue<T> q = queue;
 
@@ -750,7 +747,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				while (e != r) {
 					if (isCancelled()) {
 						Operators.onDiscardQueueWithClear(q, ctx, null);
-						return;
+						if (WIP.decrementAndGet(this) != 0) {
+							continue;
+						}
+						else {
+							return;
+						}
 					}
 
 					boolean d = done;
@@ -782,7 +784,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				if (e == r) {
 					if (isCancelled()) {
 						Operators.onDiscardQueueWithClear(q, ctx, null);
-						return;
+						if (WIP.decrementAndGet(this) != 0) {
+							continue;
+						}
+						else {
+							return;
+						}
 					}
 
 					boolean d = done;
@@ -805,8 +812,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					Operators.produced(REQUESTED, this, e);
 				}
 
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
+				if (WIP.decrementAndGet(this) == 0) {
 					break;
 				}
 			}
@@ -879,10 +885,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		void onCancel() {
-			if (WIP.getAndIncrement(this) == 0) {
-				T old = queue.getAndSet(null);
-				Operators.onDiscard(old, ctx);
-			}
+			drain();
 		}
 
 		void drain() {
@@ -890,7 +893,6 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				return;
 			}
 
-			int missed = 1;
 			final Subscriber<? super T> a = actual;
 			final AtomicReference<T> q = queue;
 
@@ -902,7 +904,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					if (isCancelled()) {
 						T old = q.getAndSet(null);
 						Operators.onDiscard(old, ctx);
-						return;
+						if (WIP.decrementAndGet(this) != 0) {
+							continue;
+						}
+						else {
+							return;
+						}
 					}
 
 					boolean d = done;
@@ -935,7 +942,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					if (isCancelled()) {
 						T old = q.getAndSet(null);
 						Operators.onDiscard(old, ctx);
-						return;
+						if (WIP.decrementAndGet(this) != 0) {
+							continue;
+						}
+						else {
+							return;
+						}
 					}
 
 					boolean d = done;
@@ -958,8 +970,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					Operators.produced(REQUESTED, this, e);
 				}
 
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
+				if (WIP.decrementAndGet(this) == 0) {
 					break;
 				}
 			}
