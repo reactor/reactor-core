@@ -1439,4 +1439,44 @@ public class FluxCreateTest {
 		}
 		assertThat(failed).as("failed").isZero();
 	}
+
+	@Test
+	public void serializedBufferSinkRaceNextCancel() {
+		AtomicInteger discarded = new AtomicInteger();
+		final Context context = Operators.discardLocalAdapter(String.class, s -> discarded.incrementAndGet()).apply(Context.empty());
+
+		BufferAsyncSink<String> baseSink = new BufferAsyncSink<>(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				//do not request
+			}
+
+			@Override
+			public Context currentContext() {
+				return context;
+			}
+		}, 10);
+		SerializedSink<String> serializedSink = new SerializedSink<>(baseSink);
+
+		RaceTestUtils.race(baseSink::cancel,
+				() -> serializedSink.next("foo"));
+
+		assertThat(serializedSink.mpscQueue.poll()).as("serialized internal queue empty").isNull();
+		assertThat(baseSink.queue.poll()).as("bufferAsyncSink internal queue empty").isNull();
+		assertThat(discarded).as("discarded").hasValue(1);
+	}
+
+	@Test
+	public void serializedBufferSinkRaceNextCancel_loop() {
+		int failed = 0;
+		for (int i = 0; i < 10_000; i++) {
+			try {
+				serializedBufferSinkRaceNextCancel();
+			}
+			catch (AssertionError e) {
+				failed++;
+			}
+		}
+		assertThat(failed).as("failed").isZero();
+	}
 }
