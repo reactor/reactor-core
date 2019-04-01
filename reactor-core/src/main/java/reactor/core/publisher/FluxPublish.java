@@ -390,8 +390,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					return;
 				}
 
-				if (!empty) {
-					PubSubInner<T>[] a = subscribers;
+				PubSubInner<T>[] a = subscribers;
+
+				if (a != EMPTY && !empty) {
 					long maxRequested = Long.MAX_VALUE;
 
 					int len = a.length;
@@ -483,8 +484,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				}
 				else if (sourceMode == Fuseable.SYNC) {
 					done = true;
-					if (checkTerminated(true, true)) {
-						return;
+					if (checkTerminated(true, empty)) {
+						break;
 					}
 				}
 
