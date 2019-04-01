@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -877,5 +878,33 @@ public class EmitterProcessorTest {
 		test.sink().error(new IllegalStateException("boom"));
 
 		assertThat(test.scan(Attr.ERROR)).hasMessage("boom");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1528
+	@Test
+	public void syncFusionFromInfiniteStream() {
+		final Flux<Integer> flux = Flux.fromStream(Stream.iterate(0, i -> i + 1));
+		final EmitterProcessor<Integer> processor = EmitterProcessor.create();
+
+		StepVerifier.create(processor)
+		            .then(() -> flux.subscribe(processor))
+		            .thenConsumeWhile(i -> i < 10)
+		            .expectNextCount(10)
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(4));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1528
+	@Test
+	public void syncFusionFromInfiniteStreamAndTake() {
+		final Flux<Integer> flux = Flux.fromStream(Stream.iterate(0, i -> i + 1))
+				.take(10);
+		final EmitterProcessor<Integer> processor = EmitterProcessor.create();
+		flux.subscribe(processor);
+
+		StepVerifier.create(processor)
+		            .expectNextCount(10)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(4));
 	}
 }

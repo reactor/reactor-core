@@ -19,16 +19,14 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.Disposable;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -37,8 +35,6 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
@@ -638,6 +634,36 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		StepVerifier.create(publish)
 		            .then(publish::connect)
 		            .expectNext(1, 2, 3, 4, 5)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(4));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1528
+	@Test
+	public void syncFusionFromInfiniteStream() {
+		final ConnectableFlux<Integer> publish =
+				Flux.fromStream(Stream.iterate(0, i -> i + 1))
+				    .publish();
+
+		StepVerifier.create(publish)
+		            .then(publish::connect)
+		            .thenConsumeWhile(i -> i < 10)
+		            .expectNextCount(10)
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(4));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1528
+	@Test
+	public void syncFusionFromInfiniteStreamAndTake() {
+		final Flux<Integer> publish =
+				Flux.fromStream(Stream.iterate(0, i -> i + 1))
+				    .publish()
+				    .autoConnect()
+				    .take(10);
+
+		StepVerifier.create(publish)
+		            .expectNextCount(10)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(4));
 	}
