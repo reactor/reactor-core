@@ -95,7 +95,7 @@ final class ErrorFormatter {
 	 */
 	AssertionError failPrefix(String prefix, String msg, Object... args) {
 		if (valueFormatter != null) {
-			return assertionError(prefix + String.format(msg, CustomizableObjectFormatter.convertVarArgs(valueFormatter, args)) + ")");
+			return assertionError(prefix + String.format(msg, ValueFormatters.convertVarArgs(valueFormatter, args)) + ")");
 		}
 		return assertionError(prefix + String.format(msg, args) + ")");
 	}

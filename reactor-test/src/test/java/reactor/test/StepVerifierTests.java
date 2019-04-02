@@ -58,10 +58,11 @@ import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 public class StepVerifierTests {
 
 	@Test
-	public void expectationErrorWithValueFormatter() {
-		Flux<String> flux = Flux.just("foobar");
-		StepVerifierOptions options = StepVerifierOptions.create()
-		                                                 .valueFormatterCatchAll(t -> t.getClass().getSimpleName() + "{'" + t + "'}");
+	public void expectationErrorWithValueFormatterSignalGeneric() {
+		Flux<Object> flux = Flux.just("foobar", 1L);
+		StepVerifierOptions options = StepVerifierOptions
+				.create()
+				.valueFormatter(ValueFormatters.signalOf(Object.class, t -> t.getClass().getSimpleName() + "{'" + t + "'}"));
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(StepVerifier.create(flux, options)
@@ -71,11 +72,11 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void expectationErrorWithValueFormatterPrecedence() {
+	public void expectationErrorWithValueFormatterSignalSpecific() {
 		Flux<String> flux = Flux.just("foobar");
-		StepVerifierOptions options = StepVerifierOptions.create()
-		                                                 .valueFormatterCatchAll(t -> t.getClass().getSimpleName() + "{'" + t + "'}")
-		                                                 .valueFormatter(String.class, s -> "" + s.length());
+		StepVerifierOptions options = StepVerifierOptions
+				.create()
+				.valueFormatter(ValueFormatters.signalOf(String.class, s -> "" + s.length()));
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(StepVerifier.create(flux, options)
@@ -86,11 +87,11 @@ public class StepVerifierTests {
 
 
 	@Test
-	public void expectationErrorWithValueFormatterButNoUnwrap() {
+	public void expectationErrorWithValueFormatterAnyClass() {
 		Flux<String> flux = Flux.just("foobar");
-		StepVerifierOptions options = StepVerifierOptions.create()
-		                                                 .valueFormatterCatchAll(t -> t.getClass().getSimpleName() + "{'" + t + "'}")
-		                                                 .valueFormatterUnwrapSignalNext(false);
+		StepVerifierOptions options = StepVerifierOptions
+				.create()
+				.valueFormatter(ValueFormatters.forClass(Object.class, t -> t.getClass().getSimpleName() + "{'" + t + "'}"));
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(StepVerifier.create(flux, options)

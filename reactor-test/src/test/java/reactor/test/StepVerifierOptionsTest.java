@@ -16,6 +16,8 @@
 
 package reactor.test;
 
+import java.util.function.Function;
+
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,55 +25,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class StepVerifierOptionsTest {
 
 	@Test
-	public void valueFormatterCatchAllChangesFromNoOp() {
+	public void valueFormatterDefaultNull() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
-		assertThat(options.objectFormatter).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
-
-		options.valueFormatterCatchAll(String::valueOf);
-
-		assertThat(options.getValueFormatter()).isNotSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
-	}
-
-	@Test
-	public void valueFormatterClassSpecificChangesFromNoOp() {
-		StepVerifierOptions options = StepVerifierOptions.create();
-
-		assertThat(options.objectFormatter).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
-
-		options.valueFormatter(String.class, String::valueOf);
-
-		assertThat(options.getValueFormatter()).isNotSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
-	}
-
-	@Test
-	public void valueFormatterPredicateSpecificChangesFromNoOp() {
-		StepVerifierOptions options = StepVerifierOptions.create();
-
-		assertThat(options.objectFormatter).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
-
-		options.valueFormatter(o -> o instanceof String, String::valueOf);
-
-		assertThat(options.getValueFormatter()).isNotSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
-	}
-
-	@Test
-	public void valueFormatterNoUnwrapChangesFromNoOp() {
-		StepVerifierOptions options = StepVerifierOptions.create();
-
-		assertThat(options.objectFormatter).isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
-
-		options.valueFormatterUnwrapSignalNext(false);
-
-		assertThat(options.getValueFormatter()).isNotSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
-	}
-
-	@Test
-	public void defaultValueFormatterExposedAsNullFromGetter() {
-		StepVerifierOptions options = StepVerifierOptions.create();
-
-		assertThat(options.objectFormatter).isNotNull().isSameAs(StepVerifierOptions.OBJECT_FORMATTER_NONE);
 		assertThat(options.getValueFormatter()).isNull();
+	}
+
+	@Test
+	public void valueFormatterCanSetNull() {
+		Function<Object, String> formatter = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
+		final StepVerifierOptions options = StepVerifierOptions.create().valueFormatter(formatter);
+
+		assertThat(options.getValueFormatter()).as("before remove").isSameAs(formatter);
+
+		options.valueFormatter(null);
+
+		assertThat(options.getValueFormatter()).as("after remove").isNull();
+	}
+
+	@Test
+	public void valueFormatterSetterReplaces() {
+		Function<Object, String> formatter1 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
+		Function<Object, String> formatter2 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
+
+		final StepVerifierOptions options = StepVerifierOptions.create().valueFormatter(formatter1);
+
+		assertThat(options.getValueFormatter()).as("before replace").isSameAs(formatter1);
+
+		options.valueFormatter(formatter2);
+
+		assertThat(options.getValueFormatter()).as("after replace").isSameAs(formatter2);
 	}
 
 }

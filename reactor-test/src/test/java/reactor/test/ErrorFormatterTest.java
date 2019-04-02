@@ -244,7 +244,7 @@ public class ErrorFormatterTest {
 	}
 
 	// === Tests with a value formatter ===
-	static final ErrorFormatter withCustomFormatter = new ErrorFormatter("withCustomFormatter", CustomizableObjectFormatter.simple(o -> o.getClass().getSimpleName() + "=>" + o));
+	static final ErrorFormatter withCustomFormatter = new ErrorFormatter("withCustomFormatter", ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName() + "=>" + o));
 
 	@Test
 	public void withCustomFormatterFailNullEventNoArgs() {
