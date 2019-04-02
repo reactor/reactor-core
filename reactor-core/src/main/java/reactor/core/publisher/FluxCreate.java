@@ -196,6 +196,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			drain();
 		}
 
+		//impl note: don't use sink.isTerminated() in the drain loop,
+		//it needs to separately check its own `done` status before calling the base sink
+		//complete()/error() methods (which do flip the isTerminated), otherwise it could
+		//bypass the terminate handler (in buffer and latest variants notably).
 		void drain() {
 			if (WIP.getAndIncrement(this) == 0) {
 				drainLoop();
@@ -696,7 +700,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		final Queue<T> queue;
 
 		Throwable error;
-		volatile boolean done;
+		volatile boolean done; //done is still useful to be able to drain before the terminated handler is executed
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -738,6 +742,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			drain();
 		}
 
+		//impl note: don't use isTerminated() in the drain loop,
+		//it needs to first check the `done` status before setting `disposable` to TERMINATED
+		//otherwise it would either loose the ability to drain or the ability to invoke the
+		//handler at the right time.
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
@@ -851,7 +859,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		final AtomicReference<T> queue;
 
 		Throwable error;
-		volatile boolean done;
+		volatile boolean done; //done is still useful to be able to drain before the terminated handler is executed
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -894,6 +902,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			drain();
 		}
 
+		//impl note: don't use isTerminated() in the drain loop,
+		//it needs to first check the `done` status before setting `disposable` to TERMINATED
+		//otherwise it would either loose the ability to drain or the ability to invoke the
+		//handler at the right time.
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
