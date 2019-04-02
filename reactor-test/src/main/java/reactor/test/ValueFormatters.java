@@ -280,12 +280,12 @@ public final class ValueFormatters {
 
 		@Override
 		CharSequence prefixFor(Iterable iterable) {
-			return "(";
+			return "[";
 		}
 
 		@Override
 		CharSequence suffixFor(Iterable iterable) {
-			return ")";
+			return "]";
 		}
 	}
 }
