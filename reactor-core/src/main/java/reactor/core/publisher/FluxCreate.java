@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -143,7 +144,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public FluxSink<T> next(T t) {
 			Objects.requireNonNull(t, "t is null in sink.next(t)");
-			if (sink.isDisposed() || done) {
+			if (sink.isTerminated() || done) {
 				Operators.onNextDropped(t, sink.currentContext());
 				return this;
 			}
@@ -171,7 +172,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public void error(Throwable t) {
 			Objects.requireNonNull(t, "t is null in sink.error(t)");
-			if (sink.isDisposed() || done) {
+			if (sink.isTerminated() || done) {
 				Operators.onOperatorError(t, sink.currentContext());
 				return;
 			}
@@ -180,19 +181,25 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				drain();
 			}
 			else {
-				Operators.onOperatorError(t, sink.currentContext());
+				Context ctx = sink.currentContext();
+				Operators.onDiscardQueueWithClear(mpscQueue, ctx, null);
+				Operators.onOperatorError(t, ctx);
 			}
 		}
 
 		@Override
 		public void complete() {
-			if (sink.isDisposed() || done) {
+			if (sink.isTerminated() || done) {
 				return;
 			}
 			done = true;
 			drain();
 		}
 
+		//impl note: don't use sink.isTerminated() in the drain loop,
+		//it needs to separately check its own `done` status before calling the base sink
+		//complete()/error() methods (which do flip the isTerminated), otherwise it could
+		//bypass the terminate handler (in buffer and latest variants notably).
 		void drain() {
 			if (WIP.getAndIncrement(this) == 0) {
 				drainLoop();
@@ -203,13 +210,17 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			Context ctx = sink.currentContext();
 			BaseSink<T> e = sink;
 			Queue<T> q = mpscQueue;
-			int missed = 1;
 			for (; ; ) {
 
 				for (; ; ) {
 					if (e.isCancelled()) {
 						Operators.onDiscardQueueWithClear(q, ctx, null);
-						return;
+						if (WIP.decrementAndGet(this) == 0) {
+							return;
+						}
+						else {
+							continue;
+						}
 					}
 
 					if (ERROR.get(this) != null) {
@@ -241,8 +252,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					}
 				}
 
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
+				if (WIP.decrementAndGet(this) == 0) {
 					break;
 				}
 			}
@@ -421,7 +431,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void complete() {
-			if (isDisposed()) {
+			if (isTerminated()) {
 				return;
 			}
 			try {
@@ -434,7 +444,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void error(Throwable e) {
-			if (isDisposed()) {
+			if (isTerminated()) {
 				Operators.onOperatorError(e, ctx);
 				return;
 			}
@@ -480,12 +490,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			return disposable == CANCELLED;
 		}
 
-		/**
-		 * @return true if the sink has been terminated or cancelled
-		 */
-		final boolean isDisposed() {
-			Disposable d = disposable;
-			return d == TERMINATED || d == CANCELLED;
+		final boolean isTerminated() {
+			return disposable == TERMINATED;
 		}
 
 		@Override
@@ -558,7 +564,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			SinkDisposable sd = new SinkDisposable(d, null);
 			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
 				Disposable c = disposable;
-				if (isDisposed()) {
+				if (c == TERMINATED || c == CANCELLED) {
 					d.dispose();
 				}
 				else if (c instanceof SinkDisposable) {
@@ -600,8 +606,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public FluxSink<T> next(T t) {
-			if (isDisposed()) {
+			if (isTerminated()) {
 				Operators.onNextDropped(t, ctx);
+				return this;
+			}
+			if (isCancelled()) {
+				Operators.onDiscard(t, ctx);
 				return this;
 			}
 
@@ -629,7 +639,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public final FluxSink<T> next(T t) {
-			if (isDisposed()) {
+			if (isTerminated()) {
 				Operators.onNextDropped(t, ctx);
 				return this;
 			}
@@ -690,7 +700,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		final Queue<T> queue;
 
 		Throwable error;
-		volatile boolean done;
+		volatile boolean done; //done is still useful to be able to drain before the terminated handler is executed
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -729,17 +739,18 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		void onCancel() {
-			if (WIP.getAndIncrement(this) == 0) {
-				Operators.onDiscardQueueWithClear(queue, ctx, null);
-			}
+			drain();
 		}
 
+		//impl note: don't use isTerminated() in the drain loop,
+		//it needs to first check the `done` status before setting `disposable` to TERMINATED
+		//otherwise it would either loose the ability to drain or the ability to invoke the
+		//handler at the right time.
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
 
-			int missed = 1;
 			final Subscriber<? super T> a = actual;
 			final Queue<T> q = queue;
 
@@ -750,7 +761,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				while (e != r) {
 					if (isCancelled()) {
 						Operators.onDiscardQueueWithClear(q, ctx, null);
-						return;
+						if (WIP.decrementAndGet(this) != 0) {
+							continue;
+						}
+						else {
+							return;
+						}
 					}
 
 					boolean d = done;
@@ -782,7 +798,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				if (e == r) {
 					if (isCancelled()) {
 						Operators.onDiscardQueueWithClear(q, ctx, null);
-						return;
+						if (WIP.decrementAndGet(this) != 0) {
+							continue;
+						}
+						else {
+							return;
+						}
 					}
 
 					boolean d = done;
@@ -805,8 +826,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					Operators.produced(REQUESTED, this, e);
 				}
 
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
+				if (WIP.decrementAndGet(this) == 0) {
 					break;
 				}
 			}
@@ -839,7 +859,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		final AtomicReference<T> queue;
 
 		Throwable error;
-		volatile boolean done;
+		volatile boolean done; //done is still useful to be able to drain before the terminated handler is executed
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -879,18 +899,18 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		void onCancel() {
-			if (WIP.getAndIncrement(this) == 0) {
-				T old = queue.getAndSet(null);
-				Operators.onDiscard(old, ctx);
-			}
+			drain();
 		}
 
+		//impl note: don't use isTerminated() in the drain loop,
+		//it needs to first check the `done` status before setting `disposable` to TERMINATED
+		//otherwise it would either loose the ability to drain or the ability to invoke the
+		//handler at the right time.
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
 
-			int missed = 1;
 			final Subscriber<? super T> a = actual;
 			final AtomicReference<T> q = queue;
 
@@ -902,7 +922,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					if (isCancelled()) {
 						T old = q.getAndSet(null);
 						Operators.onDiscard(old, ctx);
-						return;
+						if (WIP.decrementAndGet(this) != 0) {
+							continue;
+						}
+						else {
+							return;
+						}
 					}
 
 					boolean d = done;
@@ -935,7 +960,12 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					if (isCancelled()) {
 						T old = q.getAndSet(null);
 						Operators.onDiscard(old, ctx);
-						return;
+						if (WIP.decrementAndGet(this) != 0) {
+							continue;
+						}
+						else {
+							return;
+						}
 					}
 
 					boolean d = done;
@@ -958,8 +988,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 					Operators.produced(REQUESTED, this, e);
 				}
 
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
+				if (WIP.decrementAndGet(this) == 0) {
 					break;
 				}
 			}
