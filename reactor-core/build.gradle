@@ -82,6 +82,9 @@ jmh {
 
 task downloadBaseline(type: Download) {
   onlyIf { "$compatibleVersion" != "SKIP" }
+  onlyIfNewer true
+  compress true
+
   src "${repositories.mavenCentral().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
   dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
 }
