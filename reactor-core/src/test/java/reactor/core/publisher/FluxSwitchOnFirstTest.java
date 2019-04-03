@@ -1014,11 +1014,13 @@ public class FluxSwitchOnFirstTest {
         testPublisher.onNext(1L);
 
         StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
-                    .then(() ->
-                        Assertions.assertThat(testPublisher.subscribers[0])
+                    .then(() -> {
+                        FluxPublish.PubSubInner<Long>[] subs = testPublisher.subscribers;
+                        Assertions.assertThat(subs).hasSize(1);
+                        Assertions.assertThat(subs[0])
                                   .extracting(psi -> psi.actual)
-                                  .isInstanceOf(Fuseable.ConditionalSubscriber.class)
-                    )
+                                  .isInstanceOf(Fuseable.ConditionalSubscriber.class);
+                    })
                     .verifyComplete();
 
         Assertions.assertThat(testPublisher.isCancelled()).isTrue();
@@ -1031,11 +1033,13 @@ public class FluxSwitchOnFirstTest {
         testPublisher.onNext(1L);
 
         StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
-                    .then(() ->
-                            Assertions.assertThat(testPublisher.subscribers[0])
-                                      .extracting(psi -> psi.actual)
-                                      .isInstanceOf(Fuseable.ConditionalSubscriber.class)
-                    )
+                    .then(() -> {
+                        FluxPublish.PubSubInner<Long>[] subs = testPublisher.subscribers;
+                        Assertions.assertThat(subs).hasSize(1);
+                        Assertions.assertThat(subs[0])
+                                  .extracting(psi -> psi.actual)
+                                  .isInstanceOf(Fuseable.ConditionalSubscriber.class);
+                    })
                     .verifyErrorSatisfies(t ->
                             Assertions.assertThat(t)
                                       .hasMessage("test")
@@ -1052,11 +1056,13 @@ public class FluxSwitchOnFirstTest {
         testPublisher.onNext(1L);
 
         StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
-                    .then(() ->
-                            Assertions.assertThat(testPublisher.subscribers[0])
-                                      .extracting(psi -> psi.actual)
-                                      .isInstanceOf(Fuseable.ConditionalSubscriber.class)
-                    )
+                    .then(() -> {
+                        FluxPublish.PubSubInner<Long>[] subs = testPublisher.subscribers;
+                        Assertions.assertThat(subs).hasSize(1);
+                        Assertions.assertThat(subs[0])
+                                  .extracting(psi -> psi.actual)
+                                  .isInstanceOf(Fuseable.ConditionalSubscriber.class);
+                    })
                     .thenAwait(Duration.ofMillis(50))
                     .thenCancel()
                     .verify();
