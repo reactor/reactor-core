@@ -114,14 +114,15 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				queueSupplier));
 	}
 
-	static final class PublishOnSubscriber<T>
+	static class PublishOnSubscriber<T>
 			implements QueueSubscription<T>, Runnable, InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
-		final Scheduler scheduler;
-
-		final Worker worker;
+		@Nullable
+		volatile Scheduler scheduler;
+		@Nullable
+		volatile Worker worker;
 
 		final boolean delayError;
 
@@ -158,8 +159,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		boolean outputFused;
 
 		PublishOnSubscriber(CoreSubscriber<? super T> actual,
-				Scheduler scheduler,
-				Worker worker,
+				@Nullable Scheduler scheduler,
+				@Nullable Worker worker,
 				boolean delayError,
 				int prefetch,
 				int lowTide,
@@ -270,7 +271,10 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 			cancelled = true;
 			s.cancel();
-			worker.dispose();
+			Worker w = worker;
+			if (w != null) {
+				w.dispose();
+			}
 
 			if (WIP.getAndIncrement(this) == 0) {
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
@@ -285,13 +289,21 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				return;
 			}
 
-			try {
-				worker.schedule(this);
-			}
-			catch (RejectedExecutionException ree) {
+			Worker w = worker;
+			if (w == null) {
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
-				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
+				actual.onError(Operators.onOperatorError(new NullPointerException("worker is still undefined in trySchedule"),
 						actual.currentContext()));
+			}
+			else {
+				try {
+					w.schedule(this);
+				}
+				catch (RejectedExecutionException ree) {
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
+							actual.currentContext()));
+				}
 			}
 		}
 
@@ -460,7 +472,9 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		void doComplete(Subscriber<?> a) {
 			a.onComplete();
-			worker.dispose();
+			if (worker != null) {
+				worker.dispose();
+			}
 		}
 
 		void doError(Subscriber<?> a, Throwable e) {
@@ -468,7 +482,9 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				a.onError(e);
 			}
 			finally {
-				worker.dispose();
+				if (worker != null) {
+					worker.dispose();
+				}
 			}
 		}
 

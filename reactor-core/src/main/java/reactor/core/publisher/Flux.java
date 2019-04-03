@@ -49,6 +49,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
@@ -8619,6 +8620,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<Flux<T>> window(int maxSize) {
 		return onAssembly(new FluxWindow<>(this, maxSize, Queues.get(maxSize)));
+	}
+
+	public final Flux<T> captureScheduler() {
+		return onAssembly(new FluxSchedulerCapture(this));
+	}
+
+	public final Flux<T> publishOnCapturedOr(Supplier<Scheduler> alternative) {
+		return onAssembly(new FluxPublishOnCaptured<>(this, alternative));
 	}
 
 	/**

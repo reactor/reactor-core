@@ -59,6 +59,7 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -1473,5 +1474,30 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		System.out.println(runOnScannable.scan(Scannable.Attr.NAME));
 		runOnScannable.parents().forEach(System.out::println);
 		System.out.println(runOnScannable.scan(Scannable.Attr.BUFFERED));
+	}
+
+	@Test
+	public void noSchedulerSetDuringOnNextTrySchedule() {
+		List<Object> discarded = new ArrayList<>(1);
+		Context discarding = Operators.enableOnDiscard(Context.empty(), discarded::add);
+		AssertSubscriber<String> testSubscriber = new AssertSubscriber<>(discarding, 0);
+
+		final FluxPublishOn.PublishOnSubscriber<String> subscriber =
+				new FluxPublishOn.PublishOnSubscriber<>(testSubscriber,
+						null,
+						null,
+						false,
+						1,
+						1,
+						Queues.one());
+		subscriber.onSubscribe(Operators.emptySubscription());
+
+		subscriber.onNext("foo");
+
+		testSubscriber.assertErrorWith(e -> Assertions.assertThat(e)
+		                                              .isInstanceOf(NullPointerException.class)
+		                                              .hasMessage("worker is still undefined in trySchedule"));
+
+		Assertions.assertThat(discarded).as("discarded").containsExactly("foo");
 	}
 }
