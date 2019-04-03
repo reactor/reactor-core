@@ -31,6 +31,9 @@ dependencies {
 
 task downloadBaseline(type: Download) {
   onlyIf { "$compatibleVersion" != "SKIP" }
+  onlyIfNewer true
+  compress true
+
   src "${repositories.mavenCentral().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
   dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
 }
