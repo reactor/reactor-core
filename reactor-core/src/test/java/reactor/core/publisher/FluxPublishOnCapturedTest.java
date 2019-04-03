@@ -62,7 +62,7 @@ public class FluxPublishOnCapturedTest {
 			                                .map(i -> i + " on " + Thread.currentThread().getName());
 
 			final Flux<String> flux = opaqueSource.captureScheduler()
-			                                      .flatMap(s -> Mono.fromCallable(() -> s + " flatMap on " + Thread.currentThread().getName())
+			                                      .concatMap(s -> Mono.fromCallable(() -> s + " flatMap on " + Thread.currentThread().getName())
 			                                                        .subscribeOn(Schedulers.elastic()))
 			                                      .publishOn(Schedulers.parallel())
 			                                      .map(s -> s + " published on " + Thread.currentThread().getName());
@@ -86,7 +86,7 @@ public class FluxPublishOnCapturedTest {
 			                                .publishOn(expected)
 			                                .map(i -> i + " on " + Thread.currentThread().getName());
 
-			final Flux<String> flux = opaqueSource.flatMap(s -> Mono.fromCallable(() -> s + " flatMap on " + Thread.currentThread().getName())
+			final Flux<String> flux = opaqueSource.concatMap(s -> Mono.fromCallable(() -> s + " flatMap on " + Thread.currentThread().getName())
 			                                                        .subscribeOn(Schedulers.elastic()))
 			                                      .publishOn(Schedulers.parallel())
 			                                      .map(s -> s + " published on " + Thread.currentThread().getName())
@@ -113,7 +113,7 @@ public class FluxPublishOnCapturedTest {
 			                                .publishOn(expected)
 			                                .map(i -> i + " on " + Thread.currentThread().getName());
 
-			final Flux<String> flux = opaqueSource.flatMap(s -> Mono.fromCallable(() -> s + " flatMap on " + Thread.currentThread().getName())
+			final Flux<String> flux = opaqueSource.concatMap(s -> Mono.fromCallable(() -> s + " flatMap on " + Thread.currentThread().getName())
 			                                                        .subscribeOn(Schedulers.elastic()))
 			                                      .publishOn(Schedulers.parallel())
 			                                      .map(s -> s + " published on " + Thread.currentThread().getName())
