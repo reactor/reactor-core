@@ -16,6 +16,7 @@
 
 package reactor.test;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -27,15 +28,19 @@ import reactor.util.annotation.Nullable;
  *
  * @author Simon Baslé
  */
-final class ErrorFormatter {
+final class MessageFormatter {
 
-	private static final String EMPTY = "";
+	private static final String                            EMPTY = "";
 
 	final String scenarioPrefix;
 	@Nullable
-	final Function<Object, String> valueFormatter;
+	final ValueFormatters.ToStringConverter valueFormatter;
+	@Nullable
+	final Collection<ValueFormatters.Extractor<?>> extractors;
 
-	ErrorFormatter(@Nullable final String scenarioName, @Nullable Function<Object, String> valueFormatter) {
+	MessageFormatter(@Nullable final String scenarioName,
+			@Nullable ValueFormatters.ToStringConverter valueFormatter,
+			@Nullable Collection<ValueFormatters.Extractor<?>> extractors) {
 		if (scenarioName == null || scenarioName.isEmpty()) {
 			scenarioPrefix = EMPTY;
 		}
@@ -43,6 +48,7 @@ final class ErrorFormatter {
 			scenarioPrefix = "[" + scenarioName + "] ";
 		}
 		this.valueFormatter =  valueFormatter;
+		this.extractors = extractors;
 	}
 
 	/**
@@ -94,10 +100,8 @@ final class ErrorFormatter {
 	 * @return an {@link AssertionError} with a standardized message potentially prefixed with the associated scenario name
 	 */
 	AssertionError failPrefix(String prefix, String msg, Object... args) {
-		if (valueFormatter != null) {
-			return assertionError(prefix + String.format(msg, ValueFormatters.convertVarArgs(valueFormatter, args)) + ")");
-		}
-		return assertionError(prefix + String.format(msg, args) + ")");
+		String formattedMessage = format(msg, args);
+		return assertionError(prefix + formattedMessage + ")");
 	}
 
 	/**
@@ -135,5 +139,20 @@ final class ErrorFormatter {
 	 */
 	<T extends Throwable> T error(Function<String, T> errorProducer, String message) {
 		return errorProducer.apply(scenarioPrefix + message);
+	}
+
+	/**
+	 * Format a message with placeholders (in the {@link String#format(String, Object...)}
+	 * style), with a potential customization of each argument's {@link Object#toString() toString}.
+	 *
+	 * @param msg the message base, with placeholders for arguments
+	 * @param args the arguments
+	 * @return the formatted message
+	 */
+	String format(String msg, Object... args) {
+		if (valueFormatter != null) {
+			return String.format(msg, ValueFormatters.convertVarArgs(valueFormatter, extractors, args));
+		}
+		return String.format(msg, args);
 	}
 }

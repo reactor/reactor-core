@@ -16,9 +16,15 @@
 
 package reactor.test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.Test;
+
+import reactor.core.publisher.Signal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +39,7 @@ public class StepVerifierOptionsTest {
 
 	@Test
 	public void valueFormatterCanSetNull() {
-		Function<Object, String> formatter = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
+		ValueFormatters.ToStringConverter formatter = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
 		final StepVerifierOptions options = StepVerifierOptions.create().valueFormatter(formatter);
 
 		assertThat(options.getValueFormatter()).as("before remove").isSameAs(formatter);
@@ -45,8 +51,8 @@ public class StepVerifierOptionsTest {
 
 	@Test
 	public void valueFormatterSetterReplaces() {
-		Function<Object, String> formatter1 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
-		Function<Object, String> formatter2 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
+		ValueFormatters.ToStringConverter formatter1 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
+		ValueFormatters.ToStringConverter formatter2 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
 
 		final StepVerifierOptions options = StepVerifierOptions.create().valueFormatter(formatter1);
 
@@ -55,6 +61,50 @@ public class StepVerifierOptionsTest {
 		options.valueFormatter(formatter2);
 
 		assertThat(options.getValueFormatter()).as("after replace").isSameAs(formatter2);
+	}
+
+	@Test
+	public void extractorReplacesExisting() {
+		List<ValueFormatters.Extractor> defaults;
+		List<ValueFormatters.Extractor> custom;
+		StepVerifierOptions options = StepVerifierOptions.create();
+
+		defaults = new ArrayList<>(options.getExtractors());
+
+		options.extractor(new ValueFormatters.Extractor<Signal>() {
+			@Override
+			public Class<Signal> getTargetClass() {
+				return Signal.class;
+			}
+
+			@Override
+			public boolean matches(Signal value) {
+				return false;
+			}
+
+			@Override
+			public String prefix(Signal original) {
+				return "signal(";
+			}
+
+			@Override
+			public String suffix(Signal original) {
+				return ")";
+			}
+
+			@Override
+			public Stream<Object> explode(Signal original) {
+				return Stream.of(original.getType());
+			}
+		});
+
+		custom = new ArrayList<>(options.getExtractors());
+
+		assertThat(defaults.stream().map(ValueFormatters.Extractor::getTargetClass))
+				.as("same class-matching order")
+				.containsExactlyElementsOf(custom.stream().map(ValueFormatters.Extractor::getTargetClass).collect(Collectors.toList()));
+
+		assertThat(defaults).as("not same extractors").doesNotContainSequence(custom);
 	}
 
 }
