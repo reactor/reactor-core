@@ -89,29 +89,41 @@ public final class ValueFormatters {
 		 * it or not. The {@link BiFunction} shouldn't be applied to container that do not
 		 * match that predicate, although it will default to using {@link String#valueOf(Object)}
 		 * on them. This verification is included in {@link #test(Object)}.
+		 * <p>
+		 * Defaults to always matching instances of the {@link #getTargetClass() target Class}.
 		 *
 		 * @param value the candidate container
 		 * @return true if it can be extracted and converted, false otherwise
 		 */
-		boolean matches(CONTAINER value);
+		default boolean matches(CONTAINER value) {
+			return true;
+		}
 
 		/**
 		 * Return the prefix to use in the container's {@link String} representation, given
 		 * the original container.
+		 * <p>
+		 * Defaults to {@code "["}.
 		 *
 		 * @param original the original container
 		 * @return the prefix to use
 		 */
-		String prefix(CONTAINER original);
+		default String prefix(CONTAINER original) {
+			return "[";
+		}
 
 		/**
 		 * Return the suffix to use in the container's {@link String} representation, given
 		 * the original container.
+		 * <p>
+		 * Defaults to {@code "]"}.
 		 *
 		 * @param original the original container
 		 * @return the suffix to use
 		 */
-		String suffix(CONTAINER original);
+		default String suffix(CONTAINER original) {
+			return "]";
+		}
 
 		/**
 		 * Explode the container into a {@link Stream} of {@link Object}, each of which
