@@ -69,6 +69,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 
 		boolean done;
 
+		@Nullable
 		K lastKey;
 
 		DistinctUntilChangedSubscriber(CoreSubscriber<? super T> actual,
@@ -149,6 +150,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
+			lastKey = null;
 
 			actual.onError(t);
 		}
@@ -159,6 +161,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
+			lastKey = null;
 
 			actual.onComplete();
 		}
@@ -185,6 +188,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			s.cancel();
+			lastKey = null;
 		}
 	}
 
@@ -200,6 +204,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 
 		boolean done;
 
+		@Nullable
 		K lastKey;
 
 		DistinctUntilChangedConditionalSubscriber(ConditionalSubscriber<? super T> actual,
@@ -278,6 +283,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
+			lastKey = null;
 
 			actual.onError(t);
 		}
@@ -288,6 +294,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 				return;
 			}
 			done = true;
+			lastKey = null;
 
 			actual.onComplete();
 		}
@@ -314,6 +321,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			s.cancel();
+			lastKey = null;
 		}
 	}
 
