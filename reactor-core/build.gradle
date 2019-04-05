@@ -80,14 +80,30 @@ jmh {
   resultFormat = 'JSON'
 }
 
-task downloadBaseline(type: Download) {
-  onlyIf { "$compatibleVersion" != "SKIP" }
+task downloadBaseline {
+  if (project.gradle.startParameter.isOffline()) {
+	println "Offline: skipping downloading of baseline and JAPICMP"
+  }
+  else if ("$compatibleVersion" == "SKIP") {
+	println "SKIP: Instructed to skip the baseline comparison"
+  }
+  else {
+	println "Will download and perform baseline comparison with ${compatibleVersion}"
+	finalizedBy { doDownloadBaseline }
+  }
+}
+
+task doDownloadBaseline(type: Download) {
+  onlyIfNewer true
+  compress true
+
   src "${repositories.mavenCentral().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
   dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
+
+  finalizedBy { japicmp }
 }
 
 task japicmp(type: JapicmpTask) {
-  onlyIf { "$compatibleVersion" != "SKIP" }
   oldClasspath = files("${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar")
   newClasspath = files(jar.archivePath)
   onlyBinaryIncompatibleModified = true
@@ -255,7 +271,6 @@ artifacts {
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
 jar.finalizedBy(downloadBaseline)
-downloadBaseline.finalizedBy(japicmp)
 
 if (JavaVersion.current().java9Compatible) {
   sourceSets {

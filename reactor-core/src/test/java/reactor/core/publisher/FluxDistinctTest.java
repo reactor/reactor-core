@@ -18,13 +18,16 @@ package reactor.core.publisher;
 
 import java.util.AbstractCollection;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import org.junit.Test;
@@ -33,6 +36,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxDistinct.DistinctConditionalSubscriber;
+import reactor.core.publisher.FluxDistinct.DistinctSubscriber;
 import reactor.test.MemoryUtils;
 import reactor.test.MemoryUtils.RetainedDetector;
 import reactor.test.MockUtils;
@@ -43,6 +48,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
@@ -422,8 +428,8 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		when(actualConditional.currentContext()).thenReturn(Context.empty());
 		when(actualConditional.tryOnNext(anyInt())).thenReturn(false);
 
-		FluxDistinct.DistinctConditionalSubscriber<Integer, Integer, Set<Integer>> conditionalSubscriber =
-				new FluxDistinct.DistinctConditionalSubscriber<>(
+		DistinctConditionalSubscriber<Integer, Integer, Set<Integer>> conditionalSubscriber =
+				new DistinctConditionalSubscriber<>(
 						actualConditional,
 						new HashSet<>(),
 						k -> k,
@@ -443,8 +449,8 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		Fuseable.ConditionalSubscriber<Integer> actualConditional = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		when(actualConditional.currentContext()).thenReturn(Context.empty());
 
-		FluxDistinct.DistinctConditionalSubscriber<Integer, Integer, Set<Integer>> conditionalSubscriber =
-				new FluxDistinct.DistinctConditionalSubscriber<>(
+		DistinctConditionalSubscriber<Integer, Integer, Set<Integer>> conditionalSubscriber =
+				new DistinctConditionalSubscriber<>(
 						actualConditional,
 						new HashSet<>(),
 						k -> k,
@@ -535,8 +541,8 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxDistinct.DistinctSubscriber<String, Integer, Set<Integer>> test =
-				new FluxDistinct.DistinctSubscriber<>(actual, new HashSet<>(), String::hashCode, Set::add, Set::clear);
+		DistinctSubscriber<String, Integer, Set<Integer>> test =
+				new DistinctSubscriber<>(actual, new HashSet<>(), String::hashCode, Set::add, Set::clear);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -552,8 +558,8 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 	public void scanConditionalSubscriber() {
 		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-		FluxDistinct.DistinctConditionalSubscriber<String, Integer, Set<Integer>> test =
-				new FluxDistinct.DistinctConditionalSubscriber<>(actual, new HashSet<>(), String::hashCode, Set::add, Set::clear);
+		DistinctConditionalSubscriber<String, Integer, Set<Integer>> test =
+				new DistinctConditionalSubscriber<>(actual, new HashSet<>(), String::hashCode, Set::add, Set::clear);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -662,6 +668,168 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		assertThat(retainedDetector.finalizedCount())
 				.as("none retained after cancel")
 				.isEqualTo(50);
+	}
+
+	@Test
+	public void doesntRetainObjectsWithForcedCompleteOnSubscriber() {
+		RetainedDetector retainedDetector = new RetainedDetector();
+
+		DistinctSubscriber<DistinctDefaultCancel, DistinctDefaultCancel, Set<DistinctDefaultCancel>> sub = new DistinctSubscriber<>(
+				new BaseSubscriber<DistinctDefaultCancel>() {},
+				new HashSet<>(),
+				Function.identity(),
+				Collection::add,
+				Collection::clear);
+		sub.onSubscribe(Operators.emptySubscription());
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(0)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(1)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(2)));
+
+		assertThat(retainedDetector.finalizedCount()).isZero();
+		assertThat(retainedDetector.trackedTotal()).isEqualTo(3);
+
+		sub.onComplete();
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+	}
+
+	@Test
+	public void doesntRetainObjectsWithForcedCompleteOnSubscriber_conditional() {
+		RetainedDetector retainedDetector = new RetainedDetector();
+
+		DistinctConditionalSubscriber<DistinctDefaultCancel, DistinctDefaultCancel, Set<DistinctDefaultCancel>> sub = new DistinctConditionalSubscriber<>(
+				Operators.toConditionalSubscriber(new BaseSubscriber<DistinctDefaultCancel>() {}),
+				new HashSet<>(),
+				Function.identity(),
+				Collection::add,
+				Collection::clear);
+		sub.onSubscribe(Operators.emptySubscription());
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(0)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(1)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(2)));
+
+		assertThat(retainedDetector.finalizedCount()).isZero();
+		assertThat(retainedDetector.trackedTotal()).isEqualTo(3);
+
+		sub.onComplete();
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+	}
+
+	@Test
+	public void doesntRetainObjectsWithForcedErrorOnSubscriber() {
+		RetainedDetector retainedDetector = new RetainedDetector();
+
+		DistinctSubscriber<DistinctDefaultCancel, DistinctDefaultCancel, Set<DistinctDefaultCancel>> sub = new DistinctSubscriber<>(
+				new BaseSubscriber<DistinctDefaultCancel>() {
+					@Override
+					protected void hookOnError(Throwable throwable) { }
+				},
+				new HashSet<>(),
+				Function.identity(),
+				Collection::add,
+				Collection::clear);
+		sub.onSubscribe(Operators.emptySubscription());
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(0)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(1)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(2)));
+
+		assertThat(retainedDetector.finalizedCount()).isZero();
+		assertThat(retainedDetector.trackedTotal()).isEqualTo(3);
+
+		sub.onError(new IllegalStateException("expected"));
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+	}
+
+	@Test
+	public void doesntRetainObjectsWithForcedErrorOnSubscriber_conditional() {
+		RetainedDetector retainedDetector = new RetainedDetector();
+
+		DistinctConditionalSubscriber<DistinctDefaultCancel, DistinctDefaultCancel, Set<DistinctDefaultCancel>> sub = new DistinctConditionalSubscriber<>(
+				Operators.toConditionalSubscriber(new BaseSubscriber<DistinctDefaultCancel>() {
+					@Override
+					protected void hookOnError(Throwable throwable) { }
+				}),
+				new HashSet<>(),
+				Function.identity(),
+				Collection::add,
+				Collection::clear);
+		sub.onSubscribe(Operators.emptySubscription());
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(0)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(1)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(2)));
+
+		assertThat(retainedDetector.finalizedCount()).isZero();
+		assertThat(retainedDetector.trackedTotal()).isEqualTo(3);
+
+		sub.onError(new IllegalStateException("expected"));
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+	}
+
+	@Test
+	public void doesntRetainObjectsWithForcedCancelOnSubscriber() {
+		RetainedDetector retainedDetector = new RetainedDetector();
+
+		DistinctSubscriber<DistinctDefaultCancel, DistinctDefaultCancel, Set<DistinctDefaultCancel>> sub = new DistinctSubscriber<>(
+				new BaseSubscriber<DistinctDefaultCancel>() {},
+				new HashSet<>(),
+				Function.identity(),
+				Collection::add,
+				Collection::clear);
+		sub.onSubscribe(Operators.emptySubscription());
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(0)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(1)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(2)));
+
+		assertThat(retainedDetector.finalizedCount()).isZero();
+		assertThat(retainedDetector.trackedTotal()).isEqualTo(3);
+
+		sub.cancel();
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+	}
+
+	@Test
+	public void doesntRetainObjectsWithForcedCancelOnSubscriber_conditional() {
+		RetainedDetector retainedDetector = new RetainedDetector();
+
+		DistinctConditionalSubscriber<DistinctDefaultCancel, DistinctDefaultCancel, Set<DistinctDefaultCancel>> sub = new DistinctConditionalSubscriber<>(
+				Operators.toConditionalSubscriber(new BaseSubscriber<DistinctDefaultCancel>() {}),
+				new HashSet<>(),
+				Function.identity(),
+				Collection::add,
+				Collection::clear);
+		sub.onSubscribe(Operators.emptySubscription());
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(0)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(1)));
+		sub.onNext(retainedDetector.tracked(new DistinctDefaultCancel(2)));
+
+		assertThat(retainedDetector.finalizedCount()).isZero();
+		assertThat(retainedDetector.trackedTotal()).isEqualTo(3);
+
+		sub.cancel();
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
 	}
 
 	static class DistinctDefault {
