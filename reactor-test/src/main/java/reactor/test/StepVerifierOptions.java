@@ -15,6 +15,7 @@
  */
 package reactor.test;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class StepVerifierOptions {
 	@Nullable
 	private ToStringConverter objectFormatter = null;
 
-	final Map<Class<?>, Extractor<?>> extractorMap;
+	final Map<Class<?>, Extractor<?>> extractorMap = new LinkedHashMap<>();
 
 	/**
 	 * Create a new default set of options for a {@link StepVerifier} that can be tuned
@@ -57,12 +58,7 @@ public class StepVerifierOptions {
 		return new StepVerifierOptions();
 	}
 
-	private StepVerifierOptions() { //disable constructor
-		this.extractorMap = new LinkedHashMap<>();
-		extractorMap.put(Signal.class, ValueFormatters.signalExtractor());
-		extractorMap.put(Iterable.class, ValueFormatters.iterableExtractor());
-		extractorMap.put(Object[].class, ValueFormatters.arrayExtractor(Object[].class));
-	}
+	private StepVerifierOptions() { } //disable constructor
 
 	/**
 	 * Activate or deactivate the {@link StepVerifier} check of request amount
@@ -158,12 +154,22 @@ public class StepVerifierOptions {
 	}
 
 	/**
-	 * Get the value extractors added to the options (or default ones if none where set).
+	 * Get the list of value extractors added to the options, including default ones at
+	 * the end (unless they've been individually replaced).
+	 * <p>
+	 * The {@link Collection} is a copy, and mutating the collection doesn't mutate the
+	 * configured extractors in this {@link StepVerifierOptions}.
 	 *
 	 * @return the collection of value {@link Extractor}
 	 */
 	public Collection<Extractor<?>> getExtractors() {
-		return extractorMap.values();
+		ArrayList<Extractor<?>> copy = new ArrayList<>(extractorMap.size() + 3);
+
+		copy.addAll(extractorMap.values());
+		if (!extractorMap.containsKey(Signal.class)) copy.add(ValueFormatters.signalExtractor());
+		if (!extractorMap.containsKey(Iterable.class)) copy.add(ValueFormatters.iterableExtractor());
+		if (!extractorMap.containsKey(Object[].class)) copy.add(ValueFormatters.arrayExtractor(Object[].class));
+		return copy;
 	}
 
 	/**

@@ -17,6 +17,7 @@
 package reactor.test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ import java.util.stream.Stream;
 import org.junit.Test;
 
 import reactor.core.publisher.Signal;
+import reactor.test.ValueFormatters.Extractor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,14 +66,32 @@ public class StepVerifierOptionsTest {
 	}
 
 	@Test
-	public void extractorReplacesExisting() {
-		List<ValueFormatters.Extractor> defaults;
-		List<ValueFormatters.Extractor> custom;
+	public void extractorsDefaultAtEnd() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
-		defaults = new ArrayList<>(options.getExtractors());
+		options.extractor(new Extractor<String>() {
+			@Override
+			public Class<String> getTargetClass() {
+				return String.class;
+			}
 
-		options.extractor(new ValueFormatters.Extractor<Signal>() {
+			@Override
+			public Stream<Object> explode(String original) {
+				return Stream.of(original.split(" "));
+			}
+		});
+
+		assertThat(options.getExtractors()
+		                  .stream()
+		                  .map(e -> e.getTargetClass().getSimpleName()))
+				.containsExactly("String", "Signal", "Iterable", "Object[]");
+	}
+
+	@Test
+	public void extractorReplacingDefaultMovesUp() {
+		StepVerifierOptions options = StepVerifierOptions.create();
+
+		options.extractor(new Extractor<Signal>() {
 			@Override
 			public Class<Signal> getTargetClass() {
 				return Signal.class;
@@ -97,14 +117,87 @@ public class StepVerifierOptionsTest {
 				return Stream.of(original.getType());
 			}
 		});
+		options.extractor(new Extractor<String>() {
+			@Override
+			public Class<String> getTargetClass() {
+				return String.class;
+			}
 
-		custom = new ArrayList<>(options.getExtractors());
+			@Override
+			public Stream<Object> explode(String original) {
+				return Stream.of(original.split(" "));
+			}
+		});
 
-		assertThat(defaults.stream().map(ValueFormatters.Extractor::getTargetClass))
-				.as("same class-matching order")
-				.containsExactlyElementsOf(custom.stream().map(ValueFormatters.Extractor::getTargetClass).collect(Collectors.toList()));
+		assertThat(options.getExtractors()
+		                  .stream()
+		                  .map(e -> e.getTargetClass().getSimpleName()))
+				.containsExactly("Signal", "String", "Iterable", "Object[]");
+	}
 
-		assertThat(defaults).as("not same extractors").doesNotContainSequence(custom);
+	@Test
+	public void extractorReplacingCustomInPlace() {
+		StepVerifierOptions options = StepVerifierOptions.create();
+		Extractor<String> extractorV1 = new Extractor<String>() {
+			@Override
+			public Class<String> getTargetClass() {
+				return String.class;
+			}
+
+			@Override
+			public Stream<Object> explode(String original) {
+				return Stream.of(original.split(" "));
+			}
+		};
+		Extractor<String> extractorV2 = new Extractor<String>() {
+			@Override
+			public Class<String> getTargetClass() {
+				return String.class;
+			}
+
+			@Override
+			public Stream<Object> explode(String original) {
+				return Stream.of(original.split(""));
+			}
+		};
+
+		options.extractor(extractorV1)
+		       .extractor(extractorV2);
+
+		assertThat(options.getExtractors()
+		                  .stream()
+		                  .map(e -> e.getTargetClass().getSimpleName()))
+				.containsExactly("String", "Signal", "Iterable", "Object[]");
+
+		assertThat(options.getExtractors())
+				.first()
+				.isSameAs(extractorV2);
+	}
+
+	@Test
+	public void getExtractorsIsCopy() {
+		StepVerifierOptions options = StepVerifierOptions.create();
+		options.extractor(new Extractor<String>() {
+			@Override
+			public Class<String> getTargetClass() {
+				return String.class;
+			}
+
+			@Override
+			public Stream<Object> explode(String original) {
+				return Stream.of(original.split(" "));
+			}
+		});
+
+		Collection<Extractor<?>> extractors1 = options.getExtractors();
+		Collection<Extractor<?>> extractors2 = options.getExtractors();
+
+		assertThat(extractors1).isNotSameAs(extractors2);
+
+		extractors1.clear();
+
+		assertThat(extractors1).isEmpty();
+		assertThat(extractors2).isNotEmpty();
 	}
 
 }
