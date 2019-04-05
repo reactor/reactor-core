@@ -144,7 +144,7 @@ public class StepVerifierOptions {
 	 * same {@link Class} (as in {@link Extractor#getTargetClass()}).
 	 * <p>
 	 * Note that by default, default extractors for {@link ValueFormatters#signalExtractor() Signal},
-	 * {@link ValueFormatters#arrayExtractor() Iterable} and
+	 * {@link ValueFormatters#iterableExtractor() Iterable} and
 	 * {@link ValueFormatters#arrayExtractor(Class) Object[]} are in place.
 	 *
 	 *

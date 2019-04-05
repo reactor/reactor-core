@@ -53,7 +53,7 @@ public final class ValueFormatters {
 	 * also a {@link Predicate}, and which only applies a custom conversion to targets that
 	 * match said {@link Predicate}. Other targets are converted using {@link String#valueOf(Object)}.
 	 */
-	interface ToStringConverter extends Predicate<Object>, Function<Object, String> {}
+	public interface ToStringConverter extends Predicate<Object>, Function<Object, String> {}
 
 	/**
 	 * An extractor of data wrapped in a {@link BiFunction} aiming at producing a customized {@link String}
@@ -73,7 +73,7 @@ public final class ValueFormatters {
 	 *
 	 * @param <CONTAINER> the type of container
 	 */
-	interface Extractor<CONTAINER> extends Predicate<Object>, BiFunction<Object, Function<Object, String>, String> {
+	public interface Extractor<CONTAINER> extends Predicate<Object>, BiFunction<Object, Function<Object, String>, String> {
 
 		/**
 		 * Return the targeted container {@link Class}. The {@link BiFunction} shouldn't be
