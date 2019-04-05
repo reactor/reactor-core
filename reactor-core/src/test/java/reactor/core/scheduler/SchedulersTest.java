@@ -54,6 +54,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.fail;
 
 public class SchedulersTest {
@@ -1230,7 +1231,7 @@ public class SchedulersTest {
 			disposable.dispose();
 
 //			avoid race of checking the status of futures vs cancelling said futures
-			Awaitility.await().atMost(500, TimeUnit.MILLISECONDS)
+			await().atMost(500, TimeUnit.MILLISECONDS)
 			          .pollDelay(10, TimeUnit.MILLISECONDS)
 			          .pollInterval(50, TimeUnit.MILLISECONDS)
 			          .until(executorService::isAllTasksCancelledOrDone);
@@ -1284,8 +1285,10 @@ public class SchedulersTest {
 			Thread.sleep(100);
 			tasks.dispose();
 
-			assertThat(executorService.isAllTasksCancelledOrDone())
-					.as("all tasks cancelled or done").isTrue();
+			await().atMost(50, TimeUnit.MILLISECONDS)
+			       .pollInterval(10, TimeUnit.MILLISECONDS)
+			       .alias("all tasks cancelled or done")
+			       .until(executorService::isAllTasksCancelledOrDone);
 
 			//when no initial delay, the periodic task(s) have time to be schedule. A 0 period results in a lot of schedules
 			assertThat(zeroDelayZeroPeriod).as("zeroDelayZeroPeriod").hasPositiveValue();
