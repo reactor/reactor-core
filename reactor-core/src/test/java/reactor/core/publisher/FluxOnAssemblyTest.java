@@ -18,8 +18,11 @@ package reactor.core.publisher;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Iterator;
 import java.util.Objects;
+import java.util.stream.Stream;
 
+import org.junit.After;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -32,12 +35,16 @@ import static org.junit.Assert.assertTrue;
 
 public class FluxOnAssemblyTest {
 
+	@After
+	public void tearDown() {
+		Hooks.resetOnOperatorDebug();
+	}
+
 	@Test
 	public void stacktraceHeaderTraceEmpty() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 
-		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
+		FluxOnAssembly.fillStacktraceHeader(sb, String.class, null);
 
 		assertThat(sb.toString())
 				.isEqualTo("\nAssembly trace from producer [java.lang.String] :\n");
@@ -46,9 +53,8 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescriptionNull() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 
-		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
+		FluxOnAssembly.fillStacktraceHeader(sb, String.class, null);
 
 		assertThat(sb.toString())
 				.isEqualTo("\nAssembly trace from producer [java.lang.String] :\n");
@@ -57,9 +63,8 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescription() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshot e = new AssemblySnapshot("1234", Traces.callSiteSupplierFactory.get());
 
-		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
+		FluxOnAssembly.fillStacktraceHeader(sb, String.class, "1234");
 
 		assertThat(sb.toString())
 				.startsWith("\nAssembly trace from producer [java.lang.String]")
@@ -219,6 +224,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void parallelFluxCheckpointDescriptionAndForceStack() {
 		StringWriter sw = new StringWriter();
+		int baseline = getBaseline();
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .parallel(2)
 		                           .composeGroup(g -> g.map(i -> (Integer) null))
@@ -233,9 +239,9 @@ public class FluxOnAssemblyTest {
 
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
 				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:224)\n"
-				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n");
+				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n");
 		assertThat(debugStack).endsWith("Error has been observed by the following operator(s):\n"
-				+ "\t|_\tParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)\n\n");
+				+ "\t|_\tParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n\n");
 	}
 
 	@Test
@@ -291,10 +297,48 @@ public class FluxOnAssemblyTest {
 
 	@Test
 	public void stepNameAndToString() {
+		int baseline = getBaseline();
 		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()));
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
-				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.stepNameAndToString(FluxOnAssemblyTest.java:294)");
+				.isEqualTo("reactor.core.publisher.FluxOnAssemblyTest.stepNameAndToString(FluxOnAssemblyTest.java:" + (baseline + 1) + ")");
+	}
+
+	@Test
+	public void stackAndLightCheckpoint() {
+		Hooks.onOperatorDebug();
+		StringWriter sw = new StringWriter();
+		Mono<Integer> tested = Flux.just(1, 2)
+		                           .single()
+		                           .checkpoint("single")
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		Iterator<String> lines = Stream.of(debugStack.split("\n"))
+		                                  .map(String::trim)
+		                                  .iterator();
+
+		while (lines.hasNext()) {
+			if (lines.next().equals("Error has been observed by the following operator(s):")) {
+				break;
+			}
+		}
+
+		assertThat(lines.next())
+				.as("first backtrace line")
+				.contains("Flux.single ⇢ reactor.core.publisher.FluxOnAssemblyTest.stackAndLightCheckpoint(FluxOnAssemblyTest.java:");
+
+		assertThat(lines.next())
+				.as("second backtrace line")
+				.endsWith("identified by light checkpoint [single].");
+	}
+
+	private static int getBaseline() {
+		return new Exception().getStackTrace()[1].getLineNumber();
 	}
 }

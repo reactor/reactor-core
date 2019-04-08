@@ -77,24 +77,14 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		return snapshotStack.operatorAssemblyInformation();
 	}
 
-	static void fillStacktraceHeader(StringBuilder sb, Class<?> sourceClass,
-			AssemblySnapshot ase) {
-		if (ase.isLight()) {
-			sb.append("\nAssembly site of producer [")
-			  .append(sourceClass.getName())
-			  .append("] is identified by light checkpoint [")
-			  .append(ase.getDescription())
-			  .append("].");
-			return;
-		}
-
+	static void fillStacktraceHeader(StringBuilder sb, Class<?> sourceClass, @Nullable String description) {
 		sb.append("\nAssembly trace from producer [")
 		  .append(sourceClass.getName())
 		  .append("]");
 
-		if (ase.getDescription() != null) {
+		if (description != null) {
 			sb.append(", described as [")
-			  .append(ase.getDescription())
+			  .append(description)
 			  .append("]");
 		}
 		sb.append(" :\n");
@@ -253,10 +243,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 
 				for(;;){
-					Tuple3<Integer, String, Integer> t =
-							Tuples.of(
-									parent.hashCode(),
-									Traces.extractOperatorAssemblyInformation(stacktrace, true), i);
+					Tuple3<Integer, String, Integer> t = Tuples.of(parent.hashCode(), stacktrace, i);
 
 					if(!chainOrder.contains(t)){
 						chainOrder.add(t);
@@ -303,6 +290,11 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		@Override
 		public synchronized Throwable fillInStackTrace() {
 			return this; // NOOP
+		}
+
+		@Override
+		public String toString() {
+			return getMessage();
 		}
 	}
 
@@ -378,17 +370,29 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		final Throwable fail(Throwable t) {
 			StringBuilder sb = new StringBuilder();
-			fillStacktraceHeader(sb, parent.getClass(), snapshotStack);
 			OnAssemblyException set = null;
-			if (!snapshotStack.isLight()) {
+			final String backtrace;
+			if (snapshotStack.isLight()) {
+				sb.append("Assembly site of producer [")
+				  .append(parent.getClass().getName())
+				  .append("] is identified by light checkpoint [")
+				  .append(snapshotStack.getDescription())
+				  .append("].");
+
+				backtrace = sb.toString();
+			}
+			else {
+				fillStacktraceHeader(sb, parent.getClass(), snapshotStack.getDescription());
 				sb.append(snapshotStack.toAssemblyInformation());
+
+				backtrace = Traces.extractOperatorAssemblyInformation(sb.toString(), true);
 			}
 
 			if (t.getSuppressed().length > 0) {
 				for (Throwable e : t.getSuppressed()) {
 					if (e instanceof OnAssemblyException) {
 						OnAssemblyException oae = ((OnAssemblyException) e);
-						oae.add(parent, sb.toString());
+						oae.add(parent, backtrace);
 						set = oae;
 						break;
 					}
