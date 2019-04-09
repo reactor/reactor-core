@@ -147,16 +147,6 @@ public class MonoCompletionStageTest {
 	}
 
 	@Test
-	public void failedFutureIsPropagatedDirectly() {
-		Throwable expected = new IllegalStateException("boom");
-		CompletionStage<Integer> future = CompletableFuture.failedFuture(expected);
-
-		Mono.fromCompletionStage(future)
-		    .as(StepVerifier::create)
-		    .verifyErrorSatisfies(e -> assertThat(e).isSameAs(expected));
-	}
-
-	@Test
 	public void lateFailureIsPropagatedDirectly() {
 		Throwable expected = new IllegalStateException("boom");
 		CompletableFuture<Integer> future = new CompletableFuture<>();
