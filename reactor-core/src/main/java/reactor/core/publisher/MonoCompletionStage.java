@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import reactor.core.CoreSubscriber;
@@ -75,7 +76,10 @@ final class MonoCompletionStage<T> extends Mono<T>
                 return;
             }
             try {
-                if (e != null) {
+                if (e instanceof CompletionException) {
+                    actual.onError(e.getCause());
+                }
+                else if (e != null) {
                     actual.onError(e);
                 }
                 else if (v != null) {
