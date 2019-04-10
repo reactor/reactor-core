@@ -1819,15 +1819,25 @@ final class DefaultStepVerifierBuilder<T>
 							valuesList, hookRecorder.discardedElements));
 		}
 
-        @Override
-        public StepVerifier.Assertions hasDiscardedMatching(Predicate<Object> matcher) {
-            //noinspection ConstantConditions
-            satisfies(() -> matcher != null, () -> "Require non-null matcher");
-            return satisfies(() -> hookRecorder.discardedElements.stream().anyMatch(matcher),
-                    () -> String.format(
-                            "Expected discarded element matching the given predicate, did not match: <%s>.",
-                            hookRecorder.discardedElements));
-        }
+		@Override
+		public StepVerifier.Assertions hasDiscardedElementsMatching(Predicate<Collection<Object>> matcher) {
+			//noinspection ConstantConditions
+			satisfies(() -> matcher != null, () -> "Require non-null matcher");
+			hasDiscardedElements();
+			return satisfies(() -> matcher.test(hookRecorder.discardedElements),
+					() -> String.format(
+							"Expected collection of discarded elements matching the given predicate, did not match: <%s>.",
+							hookRecorder.discardedElements));
+		}
+
+		@Override
+		public StepVerifier.Assertions hasDiscardedElementsSatisfying(Consumer<Collection<Object>> asserter) {
+			//noinspection ConstantConditions
+			satisfies(() -> asserter != null, () -> "Require non-null asserter");
+			hasDiscardedElements();
+			asserter.accept(hookRecorder.discardedElements);
+			return this;
+		}
 
 		@Override
 		public StepVerifier.Assertions hasNotDroppedErrors() {

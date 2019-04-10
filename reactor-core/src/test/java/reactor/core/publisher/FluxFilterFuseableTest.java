@@ -157,7 +157,8 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscarded(1) //publishOn also might discard the rest
-					.hasDiscardedMatching(o -> (Integer) o == 1);
+                            .hasDiscardedElementsMatching(list -> !list.contains(0))
+			    .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 	}
 
 	@Test
@@ -193,7 +194,9 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		            .expectNextCount(5)
 		            .expectComplete()
 		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+		            .hasDiscardedExactly(1, 3, 5, 7, 9)
+                            .hasDiscardedElementsMatching(list -> list.stream().allMatch(i -> (int)i % 2 != 0))
+                            .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 3, 5, 7, 9));
 	}
 
 	@Test
@@ -218,7 +221,9 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		            .expectNextCount(5)
 		            .expectComplete()
 		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+		            .hasDiscardedExactly(1, 3, 5, 7, 9)
+                            .hasDiscardedElementsMatching(list -> list.stream().allMatch(i -> (int)i % 2 != 0))
+                            .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 3, 5, 7, 9));
 	}
 
 	@Test
@@ -243,7 +248,9 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		             .expectNextCount(5)
 		             .expectComplete()
 		             .verifyThenAssertThat()
-		             .hasDiscardedExactly(1, 3, 5, 7, 9);
+		             .hasDiscardedExactly(1, 3, 5, 7, 9)
+                             .hasDiscardedElementsMatching(list -> list.stream().allMatch(i -> (int)i % 2 != 0))
+                             .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 3, 5, 7, 9));
 	}
 
 	@Test
@@ -257,7 +264,8 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscarded(1) //publishOn also discards the rest
-			        .hasDiscardedMatching(o -> (Integer) o == 1);
+			    .hasDiscardedElementsMatching(list -> !list.contains(0))
+			    .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 	}
 
 	@Test
@@ -271,7 +279,9 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		            .expectNextCount(5)
 		            .expectComplete()
 		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+		            .hasDiscardedExactly(1, 3, 5, 7, 9)
+                            .hasDiscardedElementsMatching(list -> list.stream().allMatch(i -> (int)i % 2 != 0))
+                            .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 3, 5, 7, 9));
 	}
 
 	@Test
@@ -296,7 +306,9 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 		            .expectNextCount(5)
 		            .expectComplete()
 		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+		            .hasDiscardedExactly(1, 3, 5, 7, 9)
+                            .hasDiscardedElementsMatching(list -> list.stream().allMatch(i -> (int)i % 2 != 0))
+                            .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 3, 5, 7, 9));
 	}
 
 }

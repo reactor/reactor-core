@@ -132,7 +132,8 @@ public class StepVerifierAssertionsTests {
 			    .hasDiscardedElements()
 			    .hasDiscardedExactly(1, 3)
 			    .hasDiscarded(1)
-			    .hasDiscardedMatching(o -> (Integer) o % 2 != 0);
+			    .hasDiscardedElementsMatching(list -> list.stream().allMatch(e -> (int)e % 2 != 0))
+			    .hasDiscardedElementsSatisfying(list -> assertThat(list).containsOnly(1, 3));
 	}
 
 	@Test
@@ -180,20 +181,36 @@ public class StepVerifierAssertionsTests {
 		}
 	}
 
-    @Test
-    public void assertDiscardedMatchingElementsFailureOneExtra() {
-        try {
-            StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
-                    .expectNext(2)
-                    .expectComplete()
-                    .verifyThenAssertThat()
-                    .hasDiscardedMatching(o -> (Integer) o == 4);
-            fail("expected an AssertionError");
+        @Test
+        public void assertDiscardedElementsSatisfyingFailureOneExtra() {
+		try {
+	                 StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+		                     .expectNext(2)
+		                     .expectComplete()
+		                     .verifyThenAssertThat()
+		                     .hasDiscardedElementsSatisfying(list -> assertThat(list).hasSize(3));
+	                 fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+	                 assertThat(ae).hasMessageContaining("Expected size:<3> but was:<2> in:");
+	        }
         }
-        catch (AssertionError ae) {
-            assertThat(ae).hasMessage("Expected discarded element matching the given predicate, did not match: <[1, 3]>.");
-        }
-    }
+
+	@Test
+	public void assertDiscardedElementsMatchingFailureOneExtra() {
+		try {
+			StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+					.expectNext(2)
+					.expectComplete()
+					.verifyThenAssertThat()
+					.hasDiscardedElementsMatching(list -> list.stream().allMatch(e -> (int)e % 2 == 0));
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected collection of discarded elements matching the given predicate, did not match: <[1, 3]>.");
+		}
+	}
+
 
 	@Test
 	public void assertDiscardedElementsFailureOneMissing() {
