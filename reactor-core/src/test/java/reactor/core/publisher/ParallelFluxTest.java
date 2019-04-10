@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,6 +39,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -45,6 +47,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -965,6 +968,30 @@ public class ParallelFluxTest {
 		assertThat(finished).as("cancelled latch").isTrue();
 		assertThat(d.isDisposed()).as("disposed").isTrue();
 		assertThat(nextCount.get()).as("received count").isEqualTo(3);
+	}
+
+	@Test
+	public void contextPropagation() {
+		List<String> results = new CopyOnWriteArrayList<>();
+		Flux.just(1, 2, 3)
+		    .parallel()
+		    .doOnEach(s -> {
+			    String valueFromContext = s.getContext()
+			                               .getOrDefault("test", null);
+			    results.add(s + " " + valueFromContext);
+		    })
+		    .reduce(Integer::sum)
+		    .subscriberContext(Context.of("test", "Hello!"))
+		    .block();
+
+		assertThat(results).contains(
+				"onNext(1) Hello!",
+				"onNext(2) Hello!",
+				"onNext(3) Hello!",
+				"onComplete() Hello!",
+				"onComplete() Hello!",
+				"onComplete() Hello!"
+		);
 	}
 
 	private void tryToSleep(long value)
