@@ -970,8 +970,9 @@ public class ParallelFluxTest {
 		assertThat(nextCount.get()).as("received count").isEqualTo(3);
 	}
 
+	// https://github.com/reactor/reactor-core/issues/1656
 	@Test
-	public void contextPropagation() {
+	public void doOnEachContext() {
 		List<String> results = new CopyOnWriteArrayList<>();
 		Flux.just(1, 2, 3)
 		    .parallel(3)
