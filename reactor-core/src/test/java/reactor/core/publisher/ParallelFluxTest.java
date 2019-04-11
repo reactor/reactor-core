@@ -40,6 +40,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
@@ -49,6 +50,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -1033,6 +1035,31 @@ public class ParallelFluxTest {
 		latch.await(1, TimeUnit.SECONDS);
 
 		assertThat(results).containsOnly(1, 2, 3);
+	}
+
+	// https://github.com/reactor/reactor-core/issues/1656
+	@Test
+	public void doOnEachContext() {
+		List<String> results = new CopyOnWriteArrayList<>();
+		Flux.just(1, 2, 3)
+		    .parallel(3)
+		    .doOnEach(s -> {
+			    String valueFromContext = s.getContext()
+			                               .getOrDefault("test", null);
+			    results.add(s + " " + valueFromContext);
+		    })
+		    .reduce(Integer::sum)
+		    .subscriberContext(Context.of("test", "Hello!"))
+		    .block();
+
+		assertThat(results).containsExactlyInAnyOrder(
+				"onNext(1) Hello!",
+				"onNext(2) Hello!",
+				"onNext(3) Hello!",
+				"onComplete() Hello!",
+				"onComplete() Hello!",
+				"onComplete() Hello!"
+		);
 	}
 
 	private void tryToSleep(long value)

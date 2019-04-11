@@ -418,12 +418,12 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
-		return doOnSignal(this,
-				v -> signalConsumer.accept(Signal.next(v)),
-				null,
-				e -> signalConsumer.accept(Signal.error(e)),
-				() -> signalConsumer.accept(Signal.complete()),
-				null, null, null, null);
+		return onAssembly(new ParallelDoOnEach<>(
+				this,
+				(ctx, v) -> signalConsumer.accept(Signal.next(v, ctx)),
+				(ctx, e) -> signalConsumer.accept(Signal.error(e, ctx)),
+				ctx -> signalConsumer.accept(Signal.complete(ctx))
+		));
 	}
 
 	/**
