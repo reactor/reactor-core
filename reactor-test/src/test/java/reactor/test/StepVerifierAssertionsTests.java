@@ -128,10 +128,12 @@ public class StepVerifierAssertionsTests {
 		StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
 		            .expectNext(2)
 		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasDiscardedElements()
-		            .hasDiscardedExactly(1, 3)
-		            .hasDiscarded(1);
+			    .verifyThenAssertThat()
+			    .hasDiscardedElements()
+			    .hasDiscardedExactly(1, 3)
+			    .hasDiscarded(1)
+			    .hasDiscardedElementsMatching(list -> list.stream().allMatch(e -> (int)e % 2 != 0))
+			    .hasDiscardedElementsSatisfying(list -> assertThat(list).containsOnly(1, 3));
 	}
 
 	@Test
@@ -178,6 +180,37 @@ public class StepVerifierAssertionsTests {
 			assertThat(ae).hasMessage("Expected discarded elements to contain <[4]>, was <[1, 3]>.");
 		}
 	}
+
+        @Test
+        public void assertDiscardedElementsSatisfyingFailureOneExtra() {
+		try {
+	                 StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+		                     .expectNext(2)
+		                     .expectComplete()
+		                     .verifyThenAssertThat()
+		                     .hasDiscardedElementsSatisfying(list -> assertThat(list).hasSize(3));
+	                 fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+	                 assertThat(ae).hasMessageContaining("Expected size:<3> but was:<2> in:");
+	        }
+        }
+
+	@Test
+	public void assertDiscardedElementsMatchingFailureOneExtra() {
+		try {
+			StepVerifier.create(Flux.just(1, 2, 3).filter(i -> i == 2))
+					.expectNext(2)
+					.expectComplete()
+					.verifyThenAssertThat()
+					.hasDiscardedElementsMatching(list -> list.stream().allMatch(e -> (int)e % 2 == 0));
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected collection of discarded elements matching the given predicate, did not match: <[1, 3]>.");
+		}
+	}
+
 
 	@Test
 	public void assertDiscardedElementsFailureOneMissing() {
