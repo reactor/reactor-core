@@ -974,7 +974,7 @@ public class ParallelFluxTest {
 	public void contextPropagation() {
 		List<String> results = new CopyOnWriteArrayList<>();
 		Flux.just(1, 2, 3)
-		    .parallel()
+		    .parallel(3)
 		    .doOnEach(s -> {
 			    String valueFromContext = s.getContext()
 			                               .getOrDefault("test", null);
@@ -984,7 +984,7 @@ public class ParallelFluxTest {
 		    .subscriberContext(Context.of("test", "Hello!"))
 		    .block();
 
-		assertThat(results).contains(
+		assertThat(results).containsExactlyInAnyOrder(
 				"onNext(1) Hello!",
 				"onNext(2) Hello!",
 				"onNext(3) Hello!",
