@@ -217,7 +217,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Override
-		public synchronized Throwable fillInStackTrace() {
+		public Throwable fillInStackTrace() {
 			return this;
 		}
 
@@ -262,11 +262,42 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					return super.getMessage();
 				}
 
+				int maxWidth = 1;
+				for (Tuple3<Integer, String, Integer> t : chainOrder) {
+					String line = t.getT2();
+					// FIXME store operator and location separately
+					if (line.contains("⇢")) {
+						String operator = line.split(" ⇢ ", 2)[0];
+
+						if (operator.length() > maxWidth) {
+							maxWidth = operator.length();
+						}
+					}
+				}
+
 				StringBuilder sb = new StringBuilder(super.getMessage()).append(
 						"Error has been observed by the following operator(s):\n");
 				for(Tuple3<Integer, String, Integer> t : chainOrder) {
-					//noinspection ConstantConditions
-					mapLine(t.getT3(), sb, t.getT2());
+					Integer indent = t.getT3();
+					String line = t.getT2();
+					for (int i = 0; i < indent; i++) {
+						sb.append("\t");
+					}
+					sb.append("|_ ");
+
+					if (line.contains("⇢")) {
+						String[] parts = line.split(" ⇢ ", 2);
+						String operator = parts[0];
+						for (int i = operator.length(); i < maxWidth; i++) {
+							sb.append(' ');
+						}
+						sb.append(operator);
+						sb.append(" ⇢ ");
+						sb.append(parts[1]);
+					} else {
+						sb.append(line);
+					}
+					sb.append("\n");
 				}
 				return sb.toString();
 			}
@@ -279,23 +310,6 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		             .findFirst()
 		             .map(Object::hashCode)
 		             .orElse(parent.hashCode());
-	}
-
-	static class SnapshotStackException extends Exception {
-
-		public SnapshotStackException(String message) {
-			super(message);
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return this; // NOOP
-		}
-
-		@Override
-		public String toString() {
-			return getMessage();
-		}
 	}
 
 	static class OnAssemblySubscriber<T>
@@ -370,12 +384,9 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		final Throwable fail(Throwable t) {
 			StringBuilder sb = new StringBuilder();
-			OnAssemblyException set = null;
 			final String backtrace;
 			if (snapshotStack.isLight()) {
-				sb.append("Assembly site of producer [")
-				  .append(parent.getClass().getName())
-				  .append("] is identified by light checkpoint [")
+				sb.append("Checkpoint [")
 				  .append(snapshotStack.getDescription())
 				  .append("].");
 
@@ -388,23 +399,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				backtrace = Traces.extractOperatorAssemblyInformation(sb.toString(), true);
 			}
 
-			if (t.getSuppressed().length > 0) {
-				for (Throwable e : t.getSuppressed()) {
-					if (e instanceof OnAssemblyException) {
-						OnAssemblyException oae = ((OnAssemblyException) e);
-						oae.add(parent, backtrace);
-						set = oae;
-						break;
-					}
+			for (Throwable e : t.getSuppressed()) {
+				if (e instanceof OnAssemblyException) {
+					((OnAssemblyException) e).add(parent, backtrace);
+					return t;
 				}
 			}
-			if (set == null) {
-				t = Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, sb.toString()));
-			}
-			else if(snapshotStack.checkpointed) {
-				t = Exceptions.addSuppressed(t, new SnapshotStackException(snapshotStack.getDescription()));
-			}
-			return t;
+			return Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, sb.toString()));
 		}
 
 		@Override

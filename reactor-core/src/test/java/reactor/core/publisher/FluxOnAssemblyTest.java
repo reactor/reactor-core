@@ -335,7 +335,7 @@ public class FluxOnAssemblyTest {
 
 		assertThat(lines.next())
 				.as("second backtrace line")
-				.endsWith("identified by light checkpoint [single].");
+				.endsWith("Checkpoint [single].");
 	}
 
 	private static int getBaseline() {
