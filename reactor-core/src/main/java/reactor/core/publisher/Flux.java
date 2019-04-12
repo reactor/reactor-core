@@ -3174,7 +3174,7 @@ public abstract class Flux<T> implements Publisher<T> {
 				return list;
 			}));
 		}
-		return Mono.onAssembly(new MonoCollectList<>(this, listSupplier()));
+		return Mono.onAssembly(new MonoCollectList<>(this));
 	}
 
 	/**

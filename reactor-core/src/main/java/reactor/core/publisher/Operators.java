@@ -461,7 +461,8 @@ public abstract class Operators {
 		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
-				multiple.forEach(hook);
+				multiple.filter(Objects::nonNull)
+				        .forEach(hook);
 			}
 			catch (Throwable t) {
 				log.warn("Error in discard hook while discarding multiple values", t);
@@ -485,7 +486,9 @@ public abstract class Operators {
 		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
-				multiple.forEach(hook);
+				multiple.stream()
+				        .filter(Objects::nonNull)
+				        .forEach(hook);
 			}
 			catch (Throwable t) {
 				log.warn("Error in discard hook while discarding multiple values", t);

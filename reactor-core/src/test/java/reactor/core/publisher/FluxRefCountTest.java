@@ -365,7 +365,8 @@ public class FluxRefCountTest {
 		Flux<Long> publishedFlux = p
 			.publish()
 			.refCount(2)
-			.doOnCancel(() -> cancellations.incrementAndGet());
+			.doOnCancel(() -> cancellations.incrementAndGet())
+				.log();
 
 		publishedFlux.any(x -> x > 5)
 			.delayElement(Duration.ofMillis(2))
@@ -380,7 +381,7 @@ public class FluxRefCountTest {
 		p.onComplete();
 
 		assertThat(result.get(10, TimeUnit.MILLISECONDS).size()).isEqualTo(10);
-		assertThat(cancellations.get()).isEqualTo(2);
+		assertThat(cancellations.get()).isEqualTo(1);
 	}
 
 	@Test
