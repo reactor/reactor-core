@@ -16,23 +16,30 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.publisher.MonoCollectList.MonoBufferAllSubscriber;
+import reactor.core.publisher.MonoCollectList.MonoCollectListSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
+import reactor.util.Logger;
+import reactor.util.Loggers;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
 public class MonoCollectListTest {
+
+	static final Logger LOGGER = Loggers.getLogger(MonoCollectListTest.class);
 
 	@Test
 	public void aFluxCanBeSorted(){
@@ -144,8 +151,7 @@ public class MonoCollectListTest {
 	@Test
 	public void scanBufferAllSubscriber() {
 		CoreSubscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoBufferAllSubscriber<String, List<String>> test = new MonoBufferAllSubscriber<String, List<String>>(
-				actual, new ArrayList<>());
+		MonoCollectListSubscriber<String> test = new MonoCollectListSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -192,6 +198,63 @@ public class MonoCollectListTest {
 		            .thenCancel()
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(0L, 1L);
+	}
+
+
+	@Test
+	public void discardCancelNextRace() {
+		AtomicInteger doubleDiscardCounter = new AtomicInteger();
+		Context discardingContext = Operators.enableOnDiscard(null, o -> {
+			AtomicBoolean ab = (AtomicBoolean) o;
+			if (ab.getAndSet(true)) {
+				doubleDiscardCounter.incrementAndGet();
+				throw new RuntimeException("test");
+			}
+		});
+		for (int i = 0; i < 100_000; i++) {
+			AssertSubscriber<List<AtomicBoolean>> testSubscriber = new AssertSubscriber<>(discardingContext);
+			MonoCollectListSubscriber<AtomicBoolean> subscriber = new MonoCollectListSubscriber<>(testSubscriber);
+			subscriber.onSubscribe(Operators.emptySubscription());
+
+			AtomicBoolean extraneous = new AtomicBoolean(false);
+
+			RaceTestUtils.race(subscriber::cancel,
+					() -> subscriber.onNext(extraneous));
+
+			testSubscriber.assertNoValues();
+			if (!extraneous.get()) {
+				LOGGER.info(""+subscriber.list);
+			}
+			assertThat(extraneous).as("released " + i).isTrue();
+		}
+		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
+	}
+
+	@Test
+	public void discardCancelCompleteRace() {
+		AtomicInteger doubleDiscardCounter = new AtomicInteger();
+		Context discardingContext = Operators.enableOnDiscard(null, o -> {
+			AtomicBoolean ab = (AtomicBoolean) o;
+			if (ab.getAndSet(true)) {
+				doubleDiscardCounter.incrementAndGet();
+				throw new RuntimeException("test");
+			}
+		});
+		for (int i = 0; i < 100_000; i++) {
+			AssertSubscriber<List<AtomicBoolean>> testSubscriber = new AssertSubscriber<>(discardingContext);
+			MonoCollectListSubscriber<AtomicBoolean> subscriber = new MonoCollectListSubscriber<>(testSubscriber);
+			subscriber.onSubscribe(Operators.emptySubscription());
+
+			AtomicBoolean resource = new AtomicBoolean(false);
+			subscriber.onNext(resource);
+
+			RaceTestUtils.race(subscriber::cancel, subscriber::onComplete);
+
+			if (testSubscriber.values().isEmpty()) {
+				assertThat(resource).as("not completed and released " + i).isTrue();
+			}
+		}
+		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
 	}
 
 }

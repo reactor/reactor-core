@@ -16,9 +16,8 @@
 
 package reactor.core.publisher;
 
-import java.util.Collection;
-import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -26,57 +25,40 @@ import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 
 /**
- * Buffers all values from the source Publisher and emits it as a single Collection.
+ * Buffers all values from the source Publisher and emits it as a single List.
  *
  * @param <T> the source value type
- * @param <C> the collection type that takes any supertype of T
  */
-final class MonoCollectList<T, C extends Collection<? super T>>
-		extends MonoFromFluxOperator<T, C>
-		implements Fuseable {
+final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implements Fuseable {
 
-	final Supplier<C> collectionSupplier;
-
-	MonoCollectList(Flux<? extends T> source,
-			Supplier<C> collectionSupplier) {
+	MonoCollectList(Flux<? extends T> source) {
 		super(source);
-		this.collectionSupplier = collectionSupplier;
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> actual) {
-		C collection;
-
-		try {
-			collection = Objects.requireNonNull(collectionSupplier.get(),
-					"The collectionSupplier returned a null collection");
-		}
-		catch (Throwable ex) {
-			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
-			return;
-		}
-
-		source.subscribe(new MonoBufferAllSubscriber<>(actual, collection));
+	public void subscribe(CoreSubscriber<? super List<T>> actual) {
+		source.subscribe(new MonoCollectListSubscriber<>(actual));
 	}
 
-	static final class MonoBufferAllSubscriber<T, C extends Collection<? super T>>
-			extends Operators.MonoSubscriber<T, C> {
-
-		C collection;
+	static final class MonoCollectListSubscriber<T> extends Operators.MonoSubscriber<T, List<T>> {
 
 		Subscription s;
 
-		MonoBufferAllSubscriber(CoreSubscriber<? super C> actual, C collection) {
+		List<T> list;
+
+		boolean done;
+
+		MonoCollectListSubscriber(CoreSubscriber<? super List<T>> actual) {
 			super(actual);
-			this.collection = collection;
+			//not this is not thread safe so concurrent discarding multiple + add might fail with ConcurrentModificationException
+			this.list = new ArrayList<>();
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.TERMINATED) return collection == null;
-
+			if (key == Attr.TERMINATED) return done;
 			return super.scanUnsafe(key);
 		}
 
@@ -93,42 +75,77 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 
 		@Override
 		public void onNext(T t) {
-			if (collection == null) {
+			if (done) {
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-			collection.add(t);
+			List<T> l;
+			synchronized (this) {
+				l = list;
+				if (l != null) {
+					l.add(t);
+					return;
+				}
+			}
+			Operators.onDiscard(t, actual.currentContext());
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			C c = collection;
-			if(c == null) {
+			if(done) {
 				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
-			collection = null;
-			Operators.onDiscardMultiple(c, currentContext());
+			done = true;
+			List<T> l;
+			synchronized (this) {
+				l = list;
+				list = null;
+			}
+			Operators.onDiscardMultiple(l, actual.currentContext());
 			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			C c = collection;
-			if(c == null){
+			if(done) {
 				return;
 			}
-			collection = null;
+			done = true;
+			List<T> l;
+			synchronized (this) {
+				l = list;
+				list = null;
+			}
+			if (l != null) {
+				complete(l);
+			}
+		}
 
-			complete(c);
+		@Override
+		protected void discard(List<T> v) {
+			Operators.onDiscardMultiple(v, actual.currentContext());
 		}
 
 		@Override
 		public void cancel() {
-			//specific discard of the collection
-			Operators.onDiscardMultiple(collection, currentContext());
-			super.cancel();
-			s.cancel();
+			int state;
+			List<T> l;
+			synchronized (this) {
+				state = STATE.getAndSet(this, CANCELLED);
+				if (state <= HAS_REQUEST_NO_VALUE) {
+					l = list;
+					value = null;
+					list = null;
+				}
+				else {
+					l = null;
+				}
+			}
+			if (l != null) {
+				s.cancel();
+				Operators.onDiscardMultiple(l, actual.currentContext());
+			}
 		}
 	}
 }
