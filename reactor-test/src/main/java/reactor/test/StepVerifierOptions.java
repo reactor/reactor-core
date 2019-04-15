@@ -15,8 +15,16 @@
  */
 package reactor.test;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import reactor.core.publisher.Signal;
+import reactor.test.ValueFormatters.Extractor;
+import reactor.test.ValueFormatters.ToStringConverter;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -36,6 +44,11 @@ public class StepVerifierOptions {
 	private long initialRequest = Long.MAX_VALUE;
 	private Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
 	private Context initialContext;
+
+	@Nullable
+	private ToStringConverter objectFormatter = null;
+
+	final Map<Class<?>, Extractor<?>> extractorMap = new LinkedHashMap<>();
 
 	/**
 	 * Create a new default set of options for a {@link StepVerifier} that can be tuned
@@ -85,6 +98,78 @@ public class StepVerifierOptions {
 	 */
 	public long getInitialRequest() {
 		return this.initialRequest;
+	}
+
+	/**
+	 * Set up a custom value formatter to be used in error messages when presenting
+	 * expected and actual values. This is intended for classes that have obscure {@link #toString()}
+	 * implementation that cannot be overridden.
+	 * <p>
+	 * This is a {@link Function} capable of formatting an arbitrary {@link Object} to
+	 * {@link String}, with the intention of detecting elements from the sequence under
+	 * test and applying customized {@link String} conversion to them (and simply calling
+	 * {@link #toString()} on other objects).
+	 * <p>
+	 * See {@link ValueFormatters} for factories of such functions.
+	 *
+	 * @param valueFormatter the custom value to {@link String} formatter, or null to deactivate
+	 * custom formatting
+	 * @return this instance, to continue setting the options
+	 */
+	public StepVerifierOptions valueFormatter(
+			@Nullable ToStringConverter valueFormatter) {
+		this.objectFormatter = valueFormatter;
+		return this;
+	}
+
+	/**
+	 * Get the custom object formatter to use when producing messages. The formatter
+	 * should be able to work with any {@link Object}, usually filtering types matching
+	 * the content of the sequence under test, and applying a simple {@link String} conversion
+	 * on other objects.
+	 *
+	 * @return the custom value formatter, or null if no specific formatting has been defined.
+	 */
+	@Nullable
+	public ToStringConverter getValueFormatter() {
+		return this.objectFormatter;
+	}
+
+	/**
+	 * Add an {@link Extractor}, replacing any existing {@link Extractor} that targets the
+	 * same {@link Class} (as in {@link Extractor#getTargetClass()}).
+	 * <p>
+	 * Note that by default, default extractors for {@link ValueFormatters#signalExtractor() Signal},
+	 * {@link ValueFormatters#iterableExtractor() Iterable} and
+	 * {@link ValueFormatters#arrayExtractor(Class) Object[]} are in place.
+	 *
+	 *
+	 * @param extractor the extractor to add / set
+	 * @param <T> the type of container considered by this extractor
+	 * @return this instance, to continue setting the options
+	 */
+	public <T> StepVerifierOptions extractor(Extractor<T> extractor) {
+		extractorMap.put(extractor.getTargetClass(), extractor);
+		return this;
+	}
+
+	/**
+	 * Get the list of value extractors added to the options, including default ones at
+	 * the end (unless they've been individually replaced).
+	 * <p>
+	 * The {@link Collection} is a copy, and mutating the collection doesn't mutate the
+	 * configured extractors in this {@link StepVerifierOptions}.
+	 *
+	 * @return the collection of value {@link Extractor}
+	 */
+	public Collection<Extractor<?>> getExtractors() {
+		ArrayList<Extractor<?>> copy = new ArrayList<>(extractorMap.size() + 3);
+
+		copy.addAll(extractorMap.values());
+		if (!extractorMap.containsKey(Signal.class)) copy.add(ValueFormatters.signalExtractor());
+		if (!extractorMap.containsKey(Iterable.class)) copy.add(ValueFormatters.iterableExtractor());
+		if (!extractorMap.containsKey(Object[].class)) copy.add(ValueFormatters.arrayExtractor(Object[].class));
+		return copy;
 	}
 
 	/**

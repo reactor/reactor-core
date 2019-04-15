@@ -622,7 +622,7 @@ public class StepVerifierAssertionsTests {
 	public void assertDurationConsidersEqualsASuccess() {
 		new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null,
 				Duration.ofSeconds(3),
-				new ErrorFormatter(null))
+				new MessageFormatter(null, null, null))
 				.tookLessThan(Duration.ofMillis(3000L))
 				.tookMoreThan(Duration.ofSeconds(3));
 	}
@@ -633,7 +633,7 @@ public class StepVerifierAssertionsTests {
 				.isThrownBy(() ->
 						new DefaultStepVerifierBuilder.DefaultStepVerifierAssertions(null
 								, Duration.ofSeconds(3),
-								new ErrorFormatter("fooScenario"))
+								new MessageFormatter("fooScenario", null, null))
 								.tookLessThan(Duration.ofMillis(200))
 				)
 				.withMessage("[fooScenario] Expected scenario to be verified in less than 200ms, took 3000ms.");

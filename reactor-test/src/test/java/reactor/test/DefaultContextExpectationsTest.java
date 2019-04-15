@@ -43,7 +43,7 @@ public class DefaultContextExpectationsTest {
 			long count) {
 		Flux<Integer> source = sourceTransformer.apply(Flux.range(1, 10));
 		Step<Integer> step = StepVerifier.create(source);
-		final DefaultContextExpectations<Integer> base = new DefaultContextExpectations<>(step, new ErrorFormatter(null));
+		final DefaultContextExpectations<Integer> base = new DefaultContextExpectations<>(step, new MessageFormatter(null, null, null));
 
 		expectations
 				.apply(base)
@@ -97,7 +97,7 @@ public class DefaultContextExpectationsTest {
 		});
 
 		Step<Integer> step = StepVerifier.create(publisher);
-		DefaultContextExpectations<Integer> expectations = new DefaultContextExpectations<>(step, new ErrorFormatter(null));
+		DefaultContextExpectations<Integer> expectations = new DefaultContextExpectations<>(step, new MessageFormatter(null, null, null));
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> expectations.then().verifyComplete())
@@ -285,7 +285,7 @@ public class DefaultContextExpectationsTest {
 		                           .subscriberContext(Context.of("foo", "bar"));
 
 		Step<Integer> step = StepVerifier.create(source);
-		final DefaultContextExpectations<Integer> base = new DefaultContextExpectations<>(step, new ErrorFormatter("scenario"));
+		final DefaultContextExpectations<Integer> base = new DefaultContextExpectations<>(step, new MessageFormatter("scenario", null, null));
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(

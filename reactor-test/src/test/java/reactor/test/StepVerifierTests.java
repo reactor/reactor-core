@@ -58,6 +58,61 @@ import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 public class StepVerifierTests {
 
 	@Test
+	public void expectationErrorWithGenericValueFormatterBypassesExtractor() {
+		Flux<String> flux = Flux.just("foobar");
+		StepVerifierOptions options = StepVerifierOptions
+				.create()
+				.valueFormatter(ValueFormatters.forClass(Object.class, t -> t.getClass().getSimpleName() + "{'" + t + "'}"));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(flux, options)
+				                        .expectError()
+						::verify)
+				.withMessage("expectation \"expectError()\" failed (expected: onError(); actual: ImmutableSignal{'onNext(foobar)'})");
+	}
+
+	@Test
+	public void expectationErrorWithSpecificValueFormatterExtractsSignal() {
+		Flux<String> flux = Flux.just("foobar");
+		StepVerifierOptions options = StepVerifierOptions
+				.create()
+				.valueFormatter(ValueFormatters.forClass(String.class, s -> "" + s.length()));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(flux, options)
+				                        .expectError()
+						::verify)
+				.withMessage("expectation \"expectError()\" failed (expected: onError(); actual: onNext(6))");
+	}
+
+	@Test
+	public void expectationErrorWithoutValueFormatter() {
+		Flux<String> flux = Flux.just("foobar");
+		StepVerifierOptions options = StepVerifierOptions.create();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(StepVerifier.create(flux, options)
+				                        .expectError()
+						::verify)
+				.withMessage("expectation \"expectError()\" failed (expected: onError(); actual: onNext(foobar))");
+	}
+
+	@Test
+	public void expectInvalidNextsWithCustomConverter() {
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		StepVerifierOptions options = StepVerifierOptions.create()
+		                                                 .valueFormatter(ValueFormatters.forClass(String.class, s -> "String=>" + s));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux, options)
+				                              .expectNext("foo", "baz")
+				                              .expectComplete()
+				                              .verify())
+				.withMessage("expectation \"expectNext(String=>baz)\" failed (expected value: String=>baz; actual value: String=>bar)");
+	}
+
+	@Test
 	public void expectNext() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
@@ -99,6 +154,16 @@ public class StepVerifierTests {
 
 		StepVerifier.create(flux)
 		            .expectNext("foo", "bar")
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void expectNextsMoreThan6() {
+		Flux<Integer> flux = Flux.range(1, 7);
+
+		StepVerifier.create(flux)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7)
 		            .expectComplete()
 		            .verify();
 	}
