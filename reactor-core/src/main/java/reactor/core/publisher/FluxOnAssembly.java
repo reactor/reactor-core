@@ -288,10 +288,10 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					if (line.contains("⇢")) {
 						String[] parts = line.split(" ⇢ ", 2);
 						String operator = parts[0];
-						for (int i = operator.length(); i < maxWidth; i++) {
-							sb.append(' ');
-						}
 						sb.append(operator);
+						for (int i = operator.length(); i < maxWidth; i++) {
+							sb.append('_');
+						}
 						sb.append(" ⇢ ");
 						sb.append(parts[1]);
 					} else {
