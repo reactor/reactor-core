@@ -26,7 +26,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
-import reactor.util.function.Tuple3;
+import reactor.util.function.Tuple4;
 import reactor.util.function.Tuples;
 
 /**
@@ -194,7 +194,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	 */
 	static final class OnAssemblyException extends RuntimeException {
 
-		final List<Tuple3<Integer, String, Integer>> chainOrder = new LinkedList<>();
+		final List<Tuple4<Integer, String, String, Integer>> chainOrder = new LinkedList<>();
 
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
@@ -203,22 +203,23 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			super(message);
 			//skip the "error seen by" if light (no stack)
 			if (!ase.isLight()) {
-				chainOrder.add(Tuples.of(parent.hashCode(), Traces.extractOperatorAssemblyInformation(message, true), 0));
+				chainOrder.add(toTuple(parent, Traces.extractOperatorAssemblyInformation(message, true), 0));
 			}
-		}
-
-		void mapLine(int indent, StringBuilder sb, String s) {
-			for (int i = 0; i < indent; i++) {
-				sb.append("\t");
-			}
-			sb.append("\t|_\t")
-			  .append(s)
-			  .append("\n");
 		}
 
 		@Override
 		public Throwable fillInStackTrace() {
 			return this;
+		}
+
+		Tuple4<Integer, String, String, Integer> toTuple(Publisher<?> parent, String stacktrace, int depth) {
+			if (stacktrace.contains("⇢")) {
+				String[] parts = stacktrace.split(" ⇢ ");
+				return Tuples.of(parent.hashCode(), parts[0], parts[1], depth);
+			}
+			else {
+				return Tuples.of(parent.hashCode(), "checkpoint", stacktrace, depth);
+			}
 		}
 
 		void add(Publisher<?> parent, String stacktrace) {
@@ -229,13 +230,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 				int n = chainOrder.size();
 				int j = n - 1;
-				Tuple3<Integer, String, Integer> tmp;
+				Tuple4<Integer, String, String, Integer> tmp;
 				while(j >= 0){
 					tmp = chainOrder.get(j);
 					//noinspection ConstantConditions
 					if(tmp.getT1() == key){
 						//noinspection ConstantConditions
-						i = tmp.getT3();
+						i = tmp.getT4();
 						break;
 					}
 					j--;
@@ -243,7 +244,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 
 				for(;;){
-					Tuple3<Integer, String, Integer> t = Tuples.of(parent.hashCode(), stacktrace, i);
+					Tuple4<Integer, String, String, Integer> t = toTuple(parent, stacktrace, i);
 
 					if(!chainOrder.contains(t)){
 						chainOrder.add(t);
@@ -262,41 +263,31 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					return super.getMessage();
 				}
 
-				int maxWidth = 1;
-				for (Tuple3<Integer, String, Integer> t : chainOrder) {
-					String line = t.getT2();
-					// FIXME store operator and location separately
-					if (line.contains("⇢")) {
-						String operator = line.split(" ⇢ ", 2)[0];
-
-						if (operator.length() > maxWidth) {
-							maxWidth = operator.length();
-						}
+				int maxWidth = 0;
+				for (Tuple4<Integer, String, String, Integer> t : chainOrder) {
+					int length = t.getT2().length();
+					if (length > maxWidth) {
+						maxWidth = length;
 					}
 				}
 
-				StringBuilder sb = new StringBuilder(super.getMessage()).append(
-						"Error has been observed by the following operator(s):\n");
-				for(Tuple3<Integer, String, Integer> t : chainOrder) {
-					Integer indent = t.getT3();
-					String line = t.getT2();
+				StringBuilder sb = new StringBuilder(super.getMessage())
+						.append("Error has been observed at the following site(s):\n");
+				for(Tuple4<Integer, String, String, Integer> t : chainOrder) {
+					Integer indent = t.getT4();
+					String operator = t.getT2();
+					String message = t.getT3();
+					sb.append("\t|_");
 					for (int i = 0; i < indent; i++) {
-						sb.append("\t");
+						sb.append("____");
 					}
-					sb.append("|_ ");
 
-					if (line.contains("⇢")) {
-						String[] parts = line.split(" ⇢ ", 2);
-						String operator = parts[0];
-						sb.append(operator);
-						for (int i = operator.length(); i < maxWidth; i++) {
-							sb.append('_');
-						}
-						sb.append(" ⇢ ");
-						sb.append(parts[1]);
-					} else {
-						sb.append(line);
+					for (int i = operator.length(); i < maxWidth + 1; i++) {
+						sb.append(' ');
 					}
+					sb.append(operator);
+					sb.append(" ⇢ ");
+					sb.append(message);
 					sb.append("\n");
 				}
 				return sb.toString();
@@ -383,20 +374,21 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		final Throwable fail(Throwable t) {
-			StringBuilder sb = new StringBuilder();
+			final String description;
 			final String backtrace;
 			if (snapshotStack.isLight()) {
-				sb.append("Checkpoint [")
-				  .append(snapshotStack.getDescription())
-				  .append("].");
-
-				backtrace = sb.toString();
+				description = snapshotStack.getDescription();
+				backtrace = description;
 			}
 			else {
-				fillStacktraceHeader(sb, parent.getClass(), snapshotStack.getDescription());
-				sb.append(snapshotStack.toAssemblyInformation());
+				String assemblyInformation = snapshotStack.toAssemblyInformation();
 
-				backtrace = Traces.extractOperatorAssemblyInformation(sb.toString(), true);
+				StringBuilder sb = new StringBuilder();
+				fillStacktraceHeader(sb, parent.getClass(), snapshotStack.getDescription());
+				sb.append(assemblyInformation);
+				description = sb.toString();
+
+				backtrace = Traces.extractOperatorAssemblyInformation(assemblyInformation);
 			}
 
 			for (Throwable e : t.getSuppressed()) {
@@ -405,7 +397,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					return t;
 				}
 			}
-			return Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, sb.toString()));
+			return Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, description));
 		}
 
 		@Override

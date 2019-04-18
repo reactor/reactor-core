@@ -747,10 +747,10 @@ public class HooksTest {
 			    })).flux().publish();
 
 			t.map(d -> d).subscribe(null,
-					e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t|_\tFlux.publish"));
+					e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t|_ Flux.publish"));
 
-			t.filter(d -> true).subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t\t|_\tFlux.publish"));
-			t.distinct().subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t\t\t|_\tFlux.publish"));
+			t.filter(d -> true).subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("|_____ Flux.publish"));
+			t.distinct().subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("_________  Flux.publish"));
 
 			t.connect();
 		}

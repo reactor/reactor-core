@@ -386,6 +386,6 @@ final class Traces {
 		}
 		apiLine = apiLine.replaceFirst("reactor.core.publisher.", "");
 
-		return apiLine + " ⇢ " + userCodeLine;
+		return apiLine + " ⇢ at " + userCodeLine;
 	}
 }
