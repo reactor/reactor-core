@@ -5845,10 +5845,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Request an unbounded demand and push to the returned {@link Flux}, or park the
-	 * observed elements if not enough demand is requested downstream. Errors will be
-	 * immediately emitted on overflow regardless of the pending buffer.
-	 *
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park up to
+	 * {@code maxSize} elements when not enough demand is requested downstream.
+	 * The first element past this buffer to arrive out of sync with the downstream
+	 * subscriber's demand (the "overflowing" element) immediately triggers an overflow
+	 * error and cancels the source.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSize.svg" alt="">
 	 *
@@ -5865,11 +5866,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Request an unbounded demand and push to the returned {@link Flux}, or park the
-	 * observed elements if not enough demand is requested downstream. Overflow error
-	 * will be delayed after the current backlog is consumed. However the
-	 * {@link Consumer} will be immediately invoked.
-	 *
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park up to
+	 * {@code maxSize} elements when not enough demand is requested downstream.
+	 * The first element past this buffer to arrive out of sync with the downstream
+	 * subscriber's demand (the "overflowing" element) is immediately passed to a
+	 * {@link Consumer} and the source is cancelled.
+	 * The {@link Flux} is going to terminate with an overflow error, but this error is
+	 * delayed, which lets the subscriber make more requests for the content of the buffer.
+	 * <p>
+	 * Note that should the cancelled source produce further overflowing elements, these
+	 * would be passed to the {@link Hooks#onNextDropped(Consumer) onNextDropped hook}.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSize.svg" alt="">
 	 *
@@ -5877,7 +5883,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * as well as elements that are rejected by the buffer due to {@code maxSize} (even though
 	 * they are passed to the {@code onOverflow} {@link Consumer} first).
 	 *
-	 * @param maxSize maximum buffer backlog size before overflow callback is called
+	 * @param maxSize maximum buffer backlog size before overflow callback is called and source is cancelled
 	 * @param onOverflow callback to invoke on overflow
 	 *
 	 * @return a backpressured {@link Flux} that buffers with a bounded capacity

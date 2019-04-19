@@ -74,6 +74,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		final CoreSubscriber<? super T> actual;
 		final Context                   ctx;
 		final Queue<T>                  queue;
+		final int                       capacityOrSkip;
 		final Consumer<? super T>       onOverflow;
 		final boolean                   delayError;
 
@@ -115,6 +116,13 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				q = Queues.<T>get(bufferSize).get();
 			}
 
+			if (Queues.capacity(q) > bufferSize) {
+				this.capacityOrSkip = bufferSize;
+			}
+			else {
+				this.capacityOrSkip = Integer.MAX_VALUE; //when checking q.size() == capacityOrSkip, this will skip the check
+			}
+
 			this.queue = q;
 		}
 
@@ -148,10 +156,8 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				Operators.onNextDropped(t, ctx);
 				return;
 			}
-			if (!queue.offer(t)) {
-				Throwable ex =
-						Operators.onOperatorError(s, Exceptions.failWithOverflow(), t,
-								ctx);
+			if (queue.size() >= capacityOrSkip || !queue.offer(t)) {
+				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), t, ctx);
 				if (onOverflow != null) {
 					try {
 						onOverflow.accept(t);
