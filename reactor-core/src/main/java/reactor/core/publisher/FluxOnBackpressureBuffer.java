@@ -116,11 +116,13 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				q = Queues.<T>get(bufferSize).get();
 			}
 
-			if (Queues.capacity(q) > bufferSize) {
+			if (!unbounded && Queues.capacity(q) > bufferSize) {
 				this.capacityOrSkip = bufferSize;
 			}
 			else {
-				this.capacityOrSkip = Integer.MAX_VALUE; //when checking q.size() == capacityOrSkip, this will skip the check
+				//for unbounded, the bufferSize is not terribly relevant
+				//for bounded, if the queue has exact capacity then when checking q.size() == capacityOrSkip, this will skip the check
+				this.capacityOrSkip = Integer.MAX_VALUE;
 			}
 
 			this.queue = q;
@@ -156,7 +158,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				Operators.onNextDropped(t, ctx);
 				return;
 			}
-			if (queue.size() >= capacityOrSkip || !queue.offer(t)) {
+			if ((capacityOrSkip != Integer.MAX_VALUE && queue.size() >= capacityOrSkip) || !queue.offer(t)) {
 				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), t, ctx);
 				if (onOverflow != null) {
 					try {
