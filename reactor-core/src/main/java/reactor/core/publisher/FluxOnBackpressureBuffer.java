@@ -74,6 +74,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		final CoreSubscriber<? super T> actual;
 		final Context                   ctx;
 		final Queue<T>                  queue;
+		final int                       capacityOrSkip;
 		final Consumer<? super T>       onOverflow;
 		final boolean                   delayError;
 
@@ -115,6 +116,15 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				q = Queues.<T>get(bufferSize).get();
 			}
 
+			if (!unbounded && Queues.capacity(q) > bufferSize) {
+				this.capacityOrSkip = bufferSize;
+			}
+			else {
+				//for unbounded, the bufferSize is not terribly relevant
+				//for bounded, if the queue has exact capacity then when checking q.size() == capacityOrSkip, this will skip the check
+				this.capacityOrSkip = Integer.MAX_VALUE;
+			}
+
 			this.queue = q;
 		}
 
@@ -129,6 +139,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.DELAY_ERROR) return delayError;
+			if (key == Attr.CAPACITY) return capacityOrSkip == Integer.MAX_VALUE ? Queues.capacity(queue) : capacityOrSkip;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -148,10 +159,8 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				Operators.onNextDropped(t, ctx);
 				return;
 			}
-			if (!queue.offer(t)) {
-				Throwable ex =
-						Operators.onOperatorError(s, Exceptions.failWithOverflow(), t,
-								ctx);
+			if ((capacityOrSkip != Integer.MAX_VALUE && queue.size() >= capacityOrSkip) || !queue.offer(t)) {
+				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), t, ctx);
 				if (onOverflow != null) {
 					try {
 						onOverflow.accept(t);
