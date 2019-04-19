@@ -34,8 +34,10 @@ import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 public class FluxOnBackpressureBufferTest
 		extends FluxOperatorTest<String, String> {
@@ -254,5 +256,43 @@ public class FluxOnBackpressureBufferTest
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+    }
+
+    @Test
+	public void scanCapacityUnbounded() {
+	    CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+	    FluxOnBackpressureBuffer.BackpressureBufferSubscriber<Integer> test =
+			    new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(actual,
+					    123, true, true, t -> {});
+
+	    assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(Integer.MAX_VALUE);
+    }
+
+    @Test
+	public void scanCapacityBoundedQueueWithExactCapacity() {
+		int exactCapacity = 16;
+
+	    CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+	    FluxOnBackpressureBuffer.BackpressureBufferSubscriber<Integer> test =
+			    new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(actual,
+					    exactCapacity, false, true, t -> {});
+
+	    assumeThat(Queues.capacity(test.queue)).as("Queue has exact required capacity").isEqualTo(exactCapacity);
+
+	    assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(exactCapacity);
+    }
+
+    @Test
+	public void scanCapacityBoundedQueueWithExtraCapacity() {
+		int desiredCapacity = 12;
+
+	    CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+	    FluxOnBackpressureBuffer.BackpressureBufferSubscriber<Integer> test =
+			    new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(actual,
+					    desiredCapacity, false, true, t -> {});
+
+	    assumeThat(Queues.capacity(test.queue)).as("Queue has greater than required capacity").isGreaterThan(desiredCapacity);
+
+	    assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(desiredCapacity);
     }
 }

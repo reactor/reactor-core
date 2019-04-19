@@ -139,6 +139,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.DELAY_ERROR) return delayError;
+			if (key == Attr.CAPACITY) return capacityOrSkip == Integer.MAX_VALUE ? Queues.capacity(queue) : capacityOrSkip;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
