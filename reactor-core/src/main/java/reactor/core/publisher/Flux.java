@@ -5877,7 +5877,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Note that should the cancelled source produce further overflowing elements, these
 	 * would be passed to the {@link Hooks#onNextDropped(Consumer) onNextDropped hook}.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSize.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSizeConsumer.svg" alt="">
 	 *
 	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal,
 	 * as well as elements that are rejected by the buffer due to {@code maxSize} (even though
@@ -5903,7 +5903,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * error will be delayed after the current backlog is consumed.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSize.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSizeStrategyDropOldest.svg" alt="">
 	 *
 	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal,
 	 * as well as elements that are rejected by the buffer due to {@code maxSize} (even though
@@ -5938,7 +5938,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * invoked immediately.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSize.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSizeStrategyDropOldest.svg" alt="">
 	 *
 	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal,
 	 * as well as elements that are rejected by the buffer due to {@code maxSize} (even though
