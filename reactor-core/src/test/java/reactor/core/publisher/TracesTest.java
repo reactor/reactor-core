@@ -165,8 +165,8 @@ public class TracesTest {
 				+ "\treactor.foo.Bar.baz2(Bar.java:456)\n"
 				+ "\treactor.foo.Bar.baz3(Bar.java:789)\n";
 
-		assertThat(Traces.extractOperatorAssemblyInformation(stack, true))
-				.isEqualTo("reactor.foo.Bar.baz(Bar.java:123)");
+		assertThat(Traces.extractOperatorAssemblyInformationParts(stack, true))
+				.containsOnly("reactor.foo.Bar.baz(Bar.java:123)");
 	}
 
 	@Test

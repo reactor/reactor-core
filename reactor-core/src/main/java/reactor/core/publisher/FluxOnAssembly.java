@@ -203,7 +203,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			super(message);
 			//skip the "error seen by" if light (no stack)
 			if (!ase.isLight()) {
-				chainOrder.add(toTuple(parent, Traces.extractOperatorAssemblyInformation(message, true), 0));
+				chainOrder.add(toTuple(parent, Traces.extractOperatorAssemblyInformationParts(message, true), 0));
 			}
 		}
 
@@ -212,17 +212,16 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			return this;
 		}
 
-		Tuple4<Integer, String, String, Integer> toTuple(Publisher<?> parent, String stacktrace, int depth) {
-			if (stacktrace.contains("⇢")) {
-				String[] parts = stacktrace.split(" ⇢ ");
-				return Tuples.of(parent.hashCode(), parts[0], parts[1], depth);
+		Tuple4<Integer, String, String, Integer> toTuple(Publisher<?> parent, String[] callSite, int depth) {
+			if (callSite.length == 2) {
+				return Tuples.of(parent.hashCode(), callSite[0], callSite[1], depth);
 			}
 			else {
-				return Tuples.of(parent.hashCode(), "checkpoint", stacktrace, depth);
+				return Tuples.of(parent.hashCode(), "checkpoint", callSite[0], depth);
 			}
 		}
 
-		void add(Publisher<?> parent, String stacktrace) {
+		void add(Publisher<?> parent, String[] callSite) {
 			//noinspection ConstantConditions
 			int key = getParentOrThis(Scannable.from(parent));
 			synchronized (chainOrder) {
@@ -244,7 +243,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 
 				for(;;){
-					Tuple4<Integer, String, String, Integer> t = toTuple(parent, stacktrace, i);
+					Tuple4<Integer, String, String, Integer> t = toTuple(parent, callSite, i);
 
 					if(!chainOrder.contains(t)){
 						chainOrder.add(t);
@@ -286,7 +285,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 						sb.append(' ');
 					}
 					sb.append(operator);
-					sb.append(" ⇢ ");
+					sb.append(Traces.CALL_SITE_GLUE);
 					sb.append(message);
 					sb.append("\n");
 				}
@@ -375,10 +374,10 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		final Throwable fail(Throwable t) {
 			final String description;
-			final String backtrace;
+			final String[] backtrace;
 			if (snapshotStack.isLight()) {
 				description = snapshotStack.getDescription();
-				backtrace = description;
+				backtrace = new String[] { description };
 			}
 			else {
 				String assemblyInformation = snapshotStack.toAssemblyInformation();
@@ -388,7 +387,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				sb.append(assemblyInformation);
 				description = sb.toString();
 
-				backtrace = Traces.extractOperatorAssemblyInformation(assemblyInformation);
+				backtrace = Traces.extractOperatorAssemblyInformationParts(assemblyInformation, false);
 			}
 
 			for (Throwable e : t.getSuppressed()) {
