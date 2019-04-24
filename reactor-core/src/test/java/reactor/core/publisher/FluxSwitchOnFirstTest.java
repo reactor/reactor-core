@@ -324,32 +324,6 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void shouldRequestExpectedAmountOfElements() throws InterruptedException {
-        TestPublisher<Long> publisher = TestPublisher.createCold();
-        AtomicLong capture = new AtomicLong();
-        AtomicLong requested = new AtomicLong();
-        CountDownLatch latch = new CountDownLatch(1);
-        Flux<Long> switchTransformed = publisher.flux()
-                                                .doOnRequest(requested::addAndGet)
-                                                .switchOnFirst((first, innerFlux) -> innerFlux);
-
-        publisher.next(1L);
-
-        switchTransformed.subscribe(capture::set, __ -> {
-        }, latch::countDown, s -> {
-            for (int i = 0; i < 10000; i++) {
-                RaceTestUtils.race(() -> s.request(1), () -> s.request(1));
-            }
-            RaceTestUtils.race(publisher::complete, publisher::complete);
-        });
-
-        latch.await(5, TimeUnit.SECONDS);
-
-        Assertions.assertThat(capture.get()).isEqualTo(1L);
-        Assertions.assertThat(requested.get()).isEqualTo(20000L);
-    }
-
-    @Test
     public void shouldNeverSendIncorrectRequestSizeToUpstream() throws InterruptedException {
         TestPublisher<Long> publisher = TestPublisher.createCold();
         AtomicLong capture = new AtomicLong();
@@ -840,7 +814,6 @@ public class FluxSwitchOnFirstTest {
                 );
 
                 Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-                Assertions.assertThat(requested.get()).isEqualTo(1L);
                 capturedElements.add(captureElement.get());
                 capturedCompletions.add(captureCompletion.get());
             }
