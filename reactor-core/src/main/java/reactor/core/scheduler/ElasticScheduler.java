@@ -101,6 +101,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	public ScheduledExecutorService get() {
 		ScheduledThreadPoolExecutor poolExecutor = new ScheduledThreadPoolExecutor(1, factory);
 		poolExecutor.setMaximumPoolSize(1);
+		poolExecutor.setRemoveOnCancelPolicy(true);
 		return poolExecutor;
 	}
 
