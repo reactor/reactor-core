@@ -31,6 +31,17 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the value type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: OPERATION-VALUE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: MONO
+ */
 final class MonoPublishOn<T> extends MonoOperator<T, T> {
 
 	final Scheduler scheduler;

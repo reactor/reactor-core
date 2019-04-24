@@ -21,6 +21,17 @@ import reactor.core.Fuseable;
 /**
  * @author Stephane Maldini
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: MONO
+ */
 final class FluxSourceMonoFuseable<I> extends FluxFromMonoOperator<I, I> implements Fuseable {
 
 	FluxSourceMonoFuseable(Mono<? extends I> source) {

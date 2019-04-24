@@ -28,6 +28,18 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Simon Baslé
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SIDE-EFFECT
+ * {SOURCE}: GROUPEDFLUX
+ * {OTHER}: serviceability
+ */
 final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 		implements Scannable, Fuseable {
 

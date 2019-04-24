@@ -24,20 +24,32 @@ import reactor.core.CoreSubscriber;
  *
  * @param <I> Upstream type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * ^ assumes Flux has Mono semantics
+ * {SOURCE}: FLUX
+ */
 final class MonoSourceFlux<I> extends MonoFromFluxOperator<I, I> {
 
 
 	/**
-	 * Build a {@link MonoSourceFlux} wrapper around the passed parent {@link Publisher}
+	 * Build a {@link MonoSourceFlux} wrapper around the passed parent {@link Flux}
 	 *
-	 * @param source the {@link Publisher} to decorate
+	 * @param source the {@link Flux} to decorate
 	 */
 	MonoSourceFlux(Flux<? extends I> source) {
 		super(source);
 	}
 
 	/**
-	 * Default is simply delegating and decorating with {@link Flux} API. Note this
+	 * Default is simply delegating and decorating with {@link Mono} API. Note this
 	 * assumes an identity between input and output types.
 	 * @param actual
 	 */

@@ -37,6 +37,19 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: UNBOUNDED
+ * {BUFFERING}: OPERATION-VALUE
+ * ^ Signal
+ * {GEOMETRY}: FAN-OUT
+ * {SOURCE}: MONO
+ * {OTHER}: time
+ */
 class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 	private static final Logger LOGGER = Loggers.getLogger(MonoCacheTime.class);

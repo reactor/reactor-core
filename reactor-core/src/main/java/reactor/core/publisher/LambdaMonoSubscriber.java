@@ -31,6 +31,16 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {PREFETCH}: UNBOUNDED
+ * {GEOMETRY}: SUBSCRIBER
+ * {SOURCE}: MONO
+ * ^ loosely held
+ */
 final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 
 	final Consumer<? super T>            consumer;

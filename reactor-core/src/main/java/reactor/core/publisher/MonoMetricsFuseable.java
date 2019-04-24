@@ -38,6 +38,18 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SIDE-EFFECT
+ * {SOURCE}: MONO
+ * {OTHER}: serviceability
+ */
 final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final String    name;

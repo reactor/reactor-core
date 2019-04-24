@@ -51,6 +51,17 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: FLUX
+ */
 final class FluxIndexFuseable<T, I> extends FluxOperator<T, I>
 		implements Fuseable {
 

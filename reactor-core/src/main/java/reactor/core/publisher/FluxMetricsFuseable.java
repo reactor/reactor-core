@@ -39,6 +39,18 @@ import static reactor.core.publisher.FluxMetrics.resolveNameAndTags;
  *
  * @author Simon Baslé
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SIDE-EFFECT
+ * {SOURCE}: FLUX
+ * {OTHER}: serviceability
+ */
 final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 
 	final String    name;

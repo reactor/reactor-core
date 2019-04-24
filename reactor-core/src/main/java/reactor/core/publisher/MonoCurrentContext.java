@@ -24,8 +24,19 @@ import reactor.util.context.Context;
 /**
  * Materialize current {@link Context} from the subscribing flow
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: CALLABLE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SOURCE
+ * {SOURCE}: NONE
+ */
 final class MonoCurrentContext extends Mono<Context>
-		implements Fuseable, Scannable {
+		implements Fuseable, SourceProducer<Context> {
 
 	static final MonoCurrentContext INSTANCE = new MonoCurrentContext();
 

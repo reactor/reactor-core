@@ -29,6 +29,17 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the source value type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: UNBOUNDED
+ * {BUFFERING}: OPERATION-MULTIPLE
+ * {GEOMETRY}: N-1
+ * {SOURCE}: FLUX
+ */
 final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implements Fuseable {
 
 	MonoCollectList(Flux<? extends T> source) {

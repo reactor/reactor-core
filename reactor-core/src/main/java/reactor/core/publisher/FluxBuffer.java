@@ -37,6 +37,17 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: MULTIPLY
+ * {PREFETCH}: BOUNDED
+ * {BUFFERING}: OPERATION-MULTIPLE
+ * {GEOMETRY}: M-N
+ * {SOURCE}: FLUX
+ */
 final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<T, C> {
 
 	final int size;

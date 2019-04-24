@@ -44,6 +44,19 @@ import reactor.util.context.Context;
  * @param <R> the result value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: LIMIT
+ * {BUFFERING}: OPERATION-MULTIPLE
+ * ^ concurrency
+ * {BUFFERING}: INNER-BACKPRESSURE
+ * {GEOMETRY}: 1-INNERS-N
+ * {SOURCE}: FLUX
+ */
 final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;

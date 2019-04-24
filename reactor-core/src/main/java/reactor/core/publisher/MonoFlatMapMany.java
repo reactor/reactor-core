@@ -30,6 +30,17 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: UNBOUNDED
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-N
+ * {SOURCE}: MONO
+ */
 final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 

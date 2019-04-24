@@ -44,6 +44,19 @@ import reactor.util.concurrent.Queues;
  * @author Simon Baslé
  */
 //source: https://akarnokd.blogspot.fr/2017/09/java-9-flow-api-ordered-merge.html
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: BOUNDED
+ * {BUFFERING}: INNER-BACKPRESSURE
+ * {BUFFERING}: OPERATION-MULTIPLE
+ * {GEOMETRY}: SOURCE
+ * {GEOMETRY}: FAN-IN
+ * {SOURCE}: ANY
+ */
 final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 
 	final int                      prefetch;

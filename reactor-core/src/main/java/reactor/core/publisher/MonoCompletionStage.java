@@ -36,8 +36,19 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: CALLABLE
+ * {BUFFERING}: INNER-BACKPRESSURE
+ * {GEOMETRY}: SOURCE
+ * {SOURCE}: NONE
+ */
 final class MonoCompletionStage<T> extends Mono<T>
-        implements Fuseable, Scannable {
+        implements Fuseable, SourceProducer<T> {
 
     static final Logger LOGGER = Loggers.getLogger(MonoCompletionStage.class);
 

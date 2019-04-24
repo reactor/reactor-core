@@ -29,6 +29,17 @@ import reactor.core.CoreSubscriber;
  * @author David Karnok
  * @author Simon Baslé
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: BACKPRESSURE
+ * {GEOMETRY}: 1-INNERS-N
+ * {SOURCE}: MONO
+ */
 final class MonoExpand<T> extends FluxFromMonoOperator<T, T> {
 
 	final boolean                                               breadthFirst;

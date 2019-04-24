@@ -33,6 +33,18 @@ import reactor.util.context.Context;
  * Waits for all Mono sources to produce a value or terminate, and if all of them produced
  * a value, emit a Tuples of those values; otherwise terminate.
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: CALLABLE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SOURCE
+ * {GEOMETRY}: FAN-IN
+ * {SOURCE}: ANY
+ */
 final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 	final boolean delayError;
@@ -272,6 +284,7 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 		@Override
 		public void onNext(Object t) {
+			//FIXME should discard
 		}
 
 		@Override

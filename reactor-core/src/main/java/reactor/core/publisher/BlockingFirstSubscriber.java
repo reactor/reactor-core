@@ -22,6 +22,14 @@ package reactor.core.publisher;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {GEOMETRY}: SUBSCRIBER
+ * {OTHER}: blocking
+ */
 final class BlockingFirstSubscriber<T> extends BlockingSingleSubscriber<T> {
 
 	@Override

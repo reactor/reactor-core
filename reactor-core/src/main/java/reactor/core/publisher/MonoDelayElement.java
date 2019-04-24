@@ -35,6 +35,18 @@ import reactor.util.annotation.Nullable;
  * @author Simon Baslé
  * TODO : Review impl
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: UNBOUNDED
+ * {BUFFERING}: OPERATION-VALUE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: MONO
+ * {OTHER}: time
+ */
 final class MonoDelayElement<T> extends MonoOperator<T, T> {
 
 	final Scheduler timedScheduler;

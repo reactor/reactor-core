@@ -36,6 +36,17 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: BACKPRESSURE
+ * {GEOMETRY}: SOURCE
+ * {SOURCE}: NONE
+ */
 final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 	static final Disposable TERMINATED = OperatorDisposables.DISPOSED;

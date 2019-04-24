@@ -32,6 +32,17 @@ import reactor.util.annotation.Nullable;
  * }
  * @param <I> delegate {@link Publisher} type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: ANY
+ */
 final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I>  {
 
 	final Publisher<? extends I> source;

@@ -24,6 +24,19 @@ import reactor.util.function.Tuple2;
 /**
  * @author Stephane Maldini
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: MONO
+ * {OTHER}: serviceability
+ * {OTHER}: time
+ */
 final class MonoElapsed<T> extends MonoOperator<T, Tuple2<Long, T>> implements Fuseable {
 
 	final Scheduler scheduler;

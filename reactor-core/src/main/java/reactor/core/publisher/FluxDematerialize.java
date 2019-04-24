@@ -28,6 +28,18 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: OPERATION-VALUE
+ * {BUFFERING}: BACKPRESSURE
+ * {GEOMETRY}: M-N
+ * {SOURCE}: FLUX
+ */
 final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 
 	FluxDematerialize(Flux<Signal<T>> source) {

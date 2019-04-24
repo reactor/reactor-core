@@ -42,6 +42,17 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: UNBOUNDED
+ * {PREFETCH}: NONE
+ * {BUFFERING}: OPERATION-VALUE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: MONO
+ */
 final class MonoSingleMono<T> extends MonoOperator<T, T>
 		implements Fuseable {
 

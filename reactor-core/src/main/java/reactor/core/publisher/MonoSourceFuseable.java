@@ -26,6 +26,18 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * ^ assumes Publisher has Mono semantics
+ * {SOURCE}: ANY
+ */
 final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable {
 
 	final Publisher<? extends I> source;

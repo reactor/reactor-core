@@ -24,6 +24,18 @@ import reactor.core.CoreSubscriber;
 /**
  * @author Stephane Maldini
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: UNBOUNDED
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: MONO
+ * {OTHER}: imperative
+ */
 final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements CoreSubscriber<T> {
 
 	final AtomicReference<Subscription> ref = new AtomicReference<>();

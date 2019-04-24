@@ -50,6 +50,19 @@ import static reactor.core.Fuseable.SYNC;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: BOUNDED
+ * {BUFFERING}: OPERATION-MULTIPLE
+ * {BUFFERING}: INNER-BACKPRESSURE
+ * {GEOMETRY}: SOURCE
+ * {GEOMETRY}: FAN-IN
+ * {SOURCE}: ANY
+ */
 final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 
 	final Publisher<? extends T>[] sources;

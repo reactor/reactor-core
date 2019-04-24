@@ -35,6 +35,18 @@ import reactor.util.function.Tuples;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SIDE-EFFECT
+ * {SOURCE}: FLUX
+ * {OTHER}: serviceability
+ */
 final class FluxName<T> extends FluxOperator<T, T> {
 
 	final String name;

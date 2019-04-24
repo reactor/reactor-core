@@ -31,6 +31,18 @@ import reactor.util.context.Context;
  * @param <T> the source value type
  * @param <R> the result value type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: OPERATION-VALUE
+ * ^ sink value
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: FLUX
+ */
 final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;

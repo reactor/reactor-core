@@ -25,6 +25,17 @@ import reactor.core.CoreSubscriber;
  * @author Simon Baslé
  * @author David Karnok
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: MAXIMUM
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: FLUX
+ */
 final class FluxLimitRequest<T> extends FluxOperator<T, T> {
 
 	final long cap;

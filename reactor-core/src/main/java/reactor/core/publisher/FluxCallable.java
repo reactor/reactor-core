@@ -27,6 +27,17 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the value type;
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: CALLABLE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SOURCE
+ * {SOURCE}: NONE
+ */
 final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable, SourceProducer<T> {
 
 	final Callable<T> callable;

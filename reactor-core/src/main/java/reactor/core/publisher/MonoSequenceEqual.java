@@ -33,6 +33,19 @@ import reactor.util.context.Context;
 
 import static reactor.core.publisher.Operators.cancelledSubscription;
 
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: BOUNDED
+ * {BUFFERING}: OPERATION-VALUE
+ * {GEOMETRY}: FAN-IN
+ * {GEOMETRY}: SOURCE
+ * {GEOMETRY}: N-1
+ * {SOURCE}: ANY
+ */
 final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer<Boolean>  {
 	final Publisher<? extends T>            first;
 	final Publisher<? extends T>            second;

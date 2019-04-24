@@ -36,6 +36,18 @@ import reactor.util.annotation.Nullable;
  * @author David Karnok
  */
 //adapted from RxJava2Extensions: https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableRefCountTimeout.java
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: FAN-OUT
+ * {SOURCE}: CONNECTABLEFLUX
+ * {OTHER}: time
+ */
 final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable {
 
 	final ConnectableFlux<T> source;

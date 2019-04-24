@@ -35,6 +35,18 @@ import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
  * @param <T> the value type passing through
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: CALLABLE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SIDE-EFFECT
+ * {SOURCE}: FLUX
+ * {OTHER}: serviceability
+ */
 final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 		implements Fuseable, Callable<T>, AssemblyOp {
 

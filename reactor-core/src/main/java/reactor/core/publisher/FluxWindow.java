@@ -40,6 +40,18 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: BACKPRESSURE
+ * {BUFFERING}: INNER-BACKPRESSURE
+ * {GEOMETRY}: WINDOWS
+ * {SOURCE}: FLUX
+ */
 final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 	final int size;

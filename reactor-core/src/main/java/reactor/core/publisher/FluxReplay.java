@@ -42,6 +42,22 @@ import reactor.util.context.Context;
  * @param <T>
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: BOUNDED
+ * ^ for SizeAndTimeBoundReplayBuffer, SizeBoundReplayBuffer
+ * {PREFETCH}: UNBOUNDED
+ * ^ for UnboundedReplayBuffer
+ * {BUFFERING}: OPERATOR-MULTIPLE
+ * {GEOMETRY}: FAN-OUT
+ * {SOURCE}: FLUX
+ * {OTHER}: time
+ * ^ for SizeAndTimeBoundReplayBuffer
+ */
 final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fuseable {
 
 	final Publisher<T>   source;

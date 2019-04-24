@@ -33,6 +33,17 @@ import reactor.util.context.Context;
  * @param <T>
  * @param <R>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: BOUNDED
+ * {BUFFERING}: OPERATION-VALUE
+ * {GEOMETRY}: 1-INNERS-N
+ * {SOURCE}: FLUX
+ */
 final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
     static final int STATE_INIT            = 0;

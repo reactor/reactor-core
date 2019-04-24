@@ -28,6 +28,18 @@ import reactor.core.scheduler.Scheduler;
  * @author Simon Baslé
  */
 //adapted from RxJava2 FlowableDelay: https://github.com/ReactiveX/RxJava/blob/2.x/src/main/java/io/reactivex/internal/operators/flowable/FlowableDelay.java
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: FLUX
+ * {OTHER}: time
+ */
 final class FluxDelaySequence<T> extends FluxOperator<T, T> {
 
 	final Duration  delay;

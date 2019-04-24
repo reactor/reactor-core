@@ -32,6 +32,13 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {SOURCE}: FLUX
+ */
 public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable {
 
 	protected final Flux<? extends I> source;

@@ -45,6 +45,17 @@ import reactor.util.context.Context;
  * @author Simon Baslé
  */
 //adapted from RxJava2Extensions: https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableExpand.java
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: BACKPRESSURE
+ * {GEOMETRY}: 1-INNERS-N
+ * {SOURCE}: FLUX
+ */
 final class FluxExpand<T> extends FluxOperator<T, T> {
 
 	final boolean                                               breadthFirst;

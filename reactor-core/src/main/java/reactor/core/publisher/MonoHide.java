@@ -27,6 +27,17 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * 
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SIDE-EFFECT
+ * {SOURCE}: MONO
+ */
 final class MonoHide<T> extends MonoOperator<T, T> {
 
     MonoHide(Mono<? extends T> source) {

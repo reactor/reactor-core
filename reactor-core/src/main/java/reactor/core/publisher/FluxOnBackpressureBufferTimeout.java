@@ -43,6 +43,18 @@ import reactor.util.context.Context;
  * @author David Karnok
  */
 //see https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableOnBackpressureTimeout.java
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: UNBOUNDED
+ * {BUFFERING}: BACKPRESSURE
+ * {GEOMETRY}: 1-1
+ * {SOURCE}: FLUX
+ * {OTHER}: time
+ */
 final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 
 	private static final Logger LOGGER =

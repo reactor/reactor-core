@@ -45,6 +45,19 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: BOUNDED
+ * {BUFFERING}: OPERATION-MULTIPLE
+ * ^ keeping track of open groups
+ * {BUFFERING}: INNER-BACKPRESSURE
+ * {GEOMETRY}: WINDOWS
+ * {SOURCE}: FLUX
+ */
 final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		implements Fuseable {
 

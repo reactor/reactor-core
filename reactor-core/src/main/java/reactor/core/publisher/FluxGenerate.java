@@ -38,6 +38,17 @@ import reactor.util.context.Context;
  * @param <S> the custom state per subscriber
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: OPERATION-VALUE
+ * {GEOMETRY}: SOURCE
+ * {SOURCE}: NONE
+ */
 final class FluxGenerate<T, S>
 extends Flux<T> implements Fuseable, SourceProducer<T> {
 

@@ -50,6 +50,18 @@ import reactor.util.function.Tuples;
  *
  * @author Simon Baslé
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SIDE-EFFECT
+ * {SOURCE}: FLUX
+ * {OTHER}: serviceability
+ */
 final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxMetrics.class);

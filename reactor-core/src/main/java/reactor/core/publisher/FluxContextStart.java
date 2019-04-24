@@ -25,6 +25,18 @@ import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SIDE-EFFECT
+ * {SOURCE}: FLUX
+ * {OTHER}: serviceability
+ */
 final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 
 	final Function<Context, Context> doOnContext;

@@ -29,6 +29,17 @@ import reactor.util.annotation.Nullable;
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
  */
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: CALLABLE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SOURCE
+ * {SOURCE}: NONE
+ */
 final class MonoRunnable<T> extends Mono<T> implements Callable<Void>, SourceProducer<T>  {
 
     final Runnable run;

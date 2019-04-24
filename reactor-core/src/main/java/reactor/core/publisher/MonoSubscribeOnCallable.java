@@ -31,7 +31,18 @@ import reactor.core.scheduler.Scheduler;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable, Scannable{
+/*
+ * The following comment is a operator codification meant to be searchable.
+ * See https://github.com/reactor/reactor-core/issues/1673 for a
+ * complete description of each element codified and the associated values.
+ *
+ * {REQUEST_SHAPING}: NONE
+ * {PREFETCH}: NONE
+ * {BUFFERING}: NONE
+ * {GEOMETRY}: SOURCE
+ * {SOURCE}: NONE
+ */
+final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable, Scannable{ //TODO shouldn't this be a SourceProducer ?
 
 	final Callable<? extends T> callable;
 
