@@ -79,7 +79,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map ⇢ reactor.HooksTraceTest.testTrace2(HooksTraceTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_      Mono.map ⇢ at reactor.HooksTraceTest.testTrace2(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -106,7 +106,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux.share ⇢ reactor.HooksTraceTest.testTrace3(HooksTraceTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_    Flux.share ⇢ at reactor.HooksTraceTest.testTrace3(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -130,7 +130,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.flatMap ⇢ reactor.HooksTraceTest.lambda$testTraceDefer$14(HooksTraceTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_  Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceDefer$14(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -155,7 +155,7 @@ public class HooksTraceTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage()
 			                                      .contains("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage()
-			                                      .contains("|_\tMono.flatMap ⇢ reactor.HooksTraceTest.testTraceComposed(HooksTraceTest.java:"));
+			                                      .contains("|_  Mono.flatMap ⇢ at reactor.HooksTraceTest.testTraceComposed(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -181,7 +181,7 @@ public class HooksTraceTest {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTraceTest.java:"));
-			assertThat(e.getSuppressed()[0].getMessage()).contains("|_\tFlux.flatMap ⇢ reactor.HooksTraceTest.testTraceComposed2(HooksTraceTest.java:");
+			assertThat(e.getSuppressed()[0].getMessage()).contains("|_  Flux.flatMap ⇢ at reactor.HooksTraceTest.testTraceComposed2(HooksTraceTest.java:");
 			return;
 		}
 		finally {
@@ -222,13 +222,14 @@ public class HooksTraceTest {
 			    })).flux().publish();
 
 			t.map(d -> d).subscribe(null,
-					e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-							("\t|_\tFlux.publish")));
+					e -> assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_ Flux.publish"));
 
-			t.filter(d -> true).subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("\t\t|_\tFlux.publish")));
-			t.distinct().subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("\t\t\t|_\tFlux.publish")));
+			t.filter(d -> true).subscribe(null, e -> {
+				assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_____ Flux.publish");
+			});
+			t.distinct().subscribe(null, e -> {
+				assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_________  Flux.publish");
+			});
 
 			t.connect();
 		}
