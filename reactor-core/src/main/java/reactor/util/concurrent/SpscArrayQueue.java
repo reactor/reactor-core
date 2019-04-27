@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2019 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import reactor.util.annotation.Nullable;
 
@@ -177,10 +178,10 @@ class SpscArrayQueueP1<T> extends SpscArrayQueueCold<T> {
 	/** */
 	private static final long serialVersionUID = -4461305682174876914L;
 	
-	volatile long p00, p01, p02, p03, p04, p05, p06, p07;
-	volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
+	long p00, p01, p02, p03, p04, p05, p06, p07;
+	long p08, p09, p0A, p0B, p0C, p0D, p0E;
 
-	public SpscArrayQueueP1(int length) {
+	SpscArrayQueueP1(int length) {
 		super(length);
 	}
 }
@@ -190,7 +191,7 @@ class SpscArrayQueueProducer<T> extends SpscArrayQueueP1<T> {
 	/** */
 	private static final long serialVersionUID = 1657408315616277653L;
 	
-	public SpscArrayQueueProducer(int length) {
+	SpscArrayQueueProducer(int length) {
 		super(length);
 	}
 
@@ -205,10 +206,10 @@ class SpscArrayQueueP2<T> extends SpscArrayQueueProducer<T> {
 	/** */
 	private static final long serialVersionUID = -5400235061461013116L;
 	
-	volatile long p00, p01, p02, p03, p04, p05, p06, p07;
-	volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
+	long p00, p01, p02, p03, p04, p05, p06, p07;
+	long p08, p09, p0A, p0B, p0C, p0D, p0E;
 
-	public SpscArrayQueueP2(int length) {
+	SpscArrayQueueP2(int length) {
 		super(length);
 	}
 }
@@ -218,7 +219,7 @@ class SpscArrayQueueConsumer<T> extends SpscArrayQueueP2<T> {
 	/** */
 	private static final long serialVersionUID = 4075549732218321659L;
 	
-	public SpscArrayQueueConsumer(int length) {
+	SpscArrayQueueConsumer(int length) {
 		super(length);
 	}
 
@@ -233,10 +234,10 @@ class SpscArrayQueueP3<T> extends SpscArrayQueueConsumer<T> {
 	/** */
 	private static final long serialVersionUID = -2684922090021364171L;
 	
-	volatile long p00, p01, p02, p03, p04, p05, p06, p07;
-	volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
+	long p00, p01, p02, p03, p04, p05, p06, p07;
+	long p08, p09, p0A, p0B, p0C, p0D, p0E;
 
-	public SpscArrayQueueP3(int length) {
+	SpscArrayQueueP3(int length) {
 		super(length);
 	}
 }
