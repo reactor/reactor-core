@@ -3032,7 +3032,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * choose the fallback depending on the error.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/onErrorReturnForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/onErrorResumeForMono.svg" alt="">
 	 *
 	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
 	 *
