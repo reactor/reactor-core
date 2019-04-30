@@ -74,9 +74,8 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
      */
     @Override
     public ScheduledExecutorService get() {
-        ScheduledThreadPoolExecutor poolExecutor = new ScheduledThreadPoolExecutor(1, factory);
+        ScheduledThreadPoolExecutor poolExecutor = SchedulerPoolFactory.create(factory);
         poolExecutor.setMaximumPoolSize(1);
-        poolExecutor.setRemoveOnCancelPolicy(true);
         return poolExecutor;
     }
     

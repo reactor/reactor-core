@@ -64,8 +64,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	 */
 	@Override
 	public ScheduledExecutorService get() {
-		ScheduledThreadPoolExecutor e = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1, this.factory);
-		e.setRemoveOnCancelPolicy(true);
+		ScheduledThreadPoolExecutor e = SchedulerPoolFactory.create(this.factory);
 		e.setMaximumPoolSize(1);
 		return e;
 	}
