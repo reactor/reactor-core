@@ -17,12 +17,17 @@ import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'org.unbroken-dome.test-sets'
 
 sourceSets {
   noMicrometerTest {
 	java.srcDir 'src/test/java'
 	resources.srcDir 'src/test/resources'
   }
+}
+
+testSets {
+  blockHoundTest
 }
 
 configurations {
@@ -49,6 +54,11 @@ dependencies {
   optional "io.micrometer:micrometer-core:$micrometerVersion"
 
   optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
+
+  //Optional BlockHound support
+  optional 'io.projectreactor.tools:blockhound:1.0.0.BUILD-SNAPSHOT'
+
+  blockHoundTestRuntime 'io.projectreactor.tools:blockhound:1.0.0.BUILD-SNAPSHOT'
 
   //Optional JDK 9 Converter
   jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
@@ -144,6 +154,11 @@ javadoc {
 
   maxMemory = "1024m"
   destinationDir = new File(project.buildDir, "docs/javadoc")
+
+  excludes = [
+		  // Must be public due to the ServiceLoader's requirements
+		  "reactor/core/scheduler/ReactorBlockHoundIntegration.java",
+  ]
 
   doLast {
 	// work around https://github.com/gradle/gradle/issues/4046
