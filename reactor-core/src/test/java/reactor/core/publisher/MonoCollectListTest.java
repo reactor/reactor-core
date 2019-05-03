@@ -16,23 +16,30 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.MonoCollectList.MonoCollectListSubscriber;
 import reactor.test.StepVerifier;
-import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
+import reactor.util.Logger;
+import reactor.util.Loggers;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
 public class MonoCollectListTest {
+
+	static final Logger LOGGER = Loggers.getLogger(MonoCollectListTest.class);
 
 	@Test
 	public void aFluxCanBeSorted(){
@@ -144,8 +151,7 @@ public class MonoCollectListTest {
 	@Test
 	public void scanBufferAllSubscriber() {
 		CoreSubscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoCollectList.MonoBufferAllSubscriber<String, List<String>> test = new MonoCollectList.MonoBufferAllSubscriber<String, List<String>>(
-				actual, new ArrayList<>());
+		MonoCollectListSubscriber<String> test = new MonoCollectListSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -194,100 +200,61 @@ public class MonoCollectListTest {
 		            .hasDiscardedExactly(0L, 1L);
 	}
 
+
 	@Test
-	public void discardOnNextPredicateMiss() {
-		StepVerifier.create(Flux.range(1, 10)
-		                        .hide() //hide both avoid the fuseable AND tryOnNext usage
-		                        .filter(i -> i % 2 == 0)
-		)
-		            .expectNextCount(5)
-		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1, 3, 5, 7, 9);
+	public void discardCancelNextRace() {
+		AtomicInteger doubleDiscardCounter = new AtomicInteger();
+		Context discardingContext = Operators.enableOnDiscard(null, o -> {
+			AtomicBoolean ab = (AtomicBoolean) o;
+			if (ab.getAndSet(true)) {
+				doubleDiscardCounter.incrementAndGet();
+				throw new RuntimeException("test");
+			}
+		});
+		for (int i = 0; i < 100_000; i++) {
+			AssertSubscriber<List<AtomicBoolean>> testSubscriber = new AssertSubscriber<>(discardingContext);
+			MonoCollectListSubscriber<AtomicBoolean> subscriber = new MonoCollectListSubscriber<>(testSubscriber);
+			subscriber.onSubscribe(Operators.emptySubscription());
+
+			AtomicBoolean extraneous = new AtomicBoolean(false);
+
+			RaceTestUtils.race(subscriber::cancel,
+					() -> subscriber.onNext(extraneous));
+
+			testSubscriber.assertNoValues();
+			if (!extraneous.get()) {
+				LOGGER.info(""+subscriber.list);
+			}
+			assertThat(extraneous).as("released " + i).isTrue();
+		}
+		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
 	}
 
 	@Test
-	public void discardTryOnNextPredicateFail() {
-		List<Object> discarded = new ArrayList<>();
-		CoreSubscriber<Integer> actual = new AssertSubscriber<>(Operators.enableOnDiscard(null, discarded::add));
-		FluxFilter.FilterSubscriber<Integer> subscriber =
-				new FluxFilter.FilterSubscriber<>(actual, i -> { throw new IllegalStateException("boom"); });
-		subscriber.onSubscribe(Operators.emptySubscription());
+	public void discardCancelCompleteRace() {
+		AtomicInteger doubleDiscardCounter = new AtomicInteger();
+		Context discardingContext = Operators.enableOnDiscard(null, o -> {
+			AtomicBoolean ab = (AtomicBoolean) o;
+			if (ab.getAndSet(true)) {
+				doubleDiscardCounter.incrementAndGet();
+				throw new RuntimeException("test");
+			}
+		});
+		for (int i = 0; i < 100_000; i++) {
+			AssertSubscriber<List<AtomicBoolean>> testSubscriber = new AssertSubscriber<>(discardingContext);
+			MonoCollectListSubscriber<AtomicBoolean> subscriber = new MonoCollectListSubscriber<>(testSubscriber);
+			subscriber.onSubscribe(Operators.emptySubscription());
 
-		subscriber.tryOnNext(1);
+			AtomicBoolean resource = new AtomicBoolean(false);
+			subscriber.onNext(resource);
 
-		assertThat(discarded).containsExactly(1);
+			RaceTestUtils.race(subscriber::cancel, subscriber::onComplete);
+
+			if (testSubscriber.values().isEmpty()) {
+				assertThat(resource).as("not completed and released " + i).isTrue();
+			}
+		}
+		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
 	}
 
-	@Test
-	public void discardTryOnNextPredicateMiss() {
-		List<Object> discarded = new ArrayList<>();
-		CoreSubscriber<Integer> actual = new AssertSubscriber<>(Operators.enableOnDiscard(null, discarded::add));
-		FluxFilter.FilterSubscriber<Integer> subscriber =
-				new FluxFilter.FilterSubscriber<>(actual, i -> i % 2 == 0);
-		subscriber.onSubscribe(Operators.emptySubscription());
-
-		subscriber.tryOnNext(1);
-		subscriber.tryOnNext(2);
-
-		assertThat(discarded).containsExactly(1);
-	}
-
-	@Test
-	public void discardConditionalOnNextPredicateFail() {
-		StepVerifier.create(Flux.range(1, 10)
-		                        .hide()
-		                        .filter(i -> { throw new IllegalStateException("boom"); })
-		                        .filter(i -> true)
-		)
-		            .expectErrorMessage("boom")
-		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1);
-	}
-
-	@Test
-	public void discardConditionalOnNextPredicateMiss() {
-		StepVerifier.create(Flux.range(1, 10)
-		                        .hide()
-		                        .filter(i -> i % 2 == 0)
-		                        .filter(i -> true)
-		)
-		            .expectNextCount(5)
-		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1, 3, 5, 7, 9);
-	}
-
-	@Test
-	public void discardConditionalTryOnNextPredicateFail() {
-		List<Object> discarded = new ArrayList<>();
-		Fuseable.ConditionalSubscriber<Integer> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<>(
-				Operators.enableOnDiscard(null, discarded::add));
-
-		FluxFilter.FilterConditionalSubscriber<Integer> subscriber =
-				new FluxFilter.FilterConditionalSubscriber<>(actual, i -> {
-					throw new IllegalStateException("boom");
-				});
-		subscriber.onSubscribe(Operators.emptySubscription());
-
-		subscriber.tryOnNext(1);
-
-		assertThat(discarded).containsExactly(1);
-	}
-
-	@Test
-	public void discardConditionalTryOnNextPredicateMiss() {
-		List<Object> discarded = new ArrayList<>();
-		Fuseable.ConditionalSubscriber<Integer> actual = new FluxPeekFuseableTest.ConditionalAssertSubscriber<>(
-				Operators.enableOnDiscard(null, discarded::add));
-
-		FluxFilter.FilterConditionalSubscriber<Integer> subscriber =
-				new FluxFilter.FilterConditionalSubscriber<>(actual, i -> i % 2 == 0);
-		subscriber.onSubscribe(Operators.emptySubscription());
-
-		subscriber.tryOnNext(1);
-		subscriber.tryOnNext(2);
-
-		assertThat(discarded).containsExactly(1);
-	}
 }

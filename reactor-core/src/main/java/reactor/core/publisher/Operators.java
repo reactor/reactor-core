@@ -462,7 +462,8 @@ public abstract class Operators {
 		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
-				multiple.forEach(hook);
+				multiple.filter(Objects::nonNull)
+				        .forEach(hook);
 			}
 			catch (Throwable t) {
 				log.warn("Error in discard hook while discarding multiple values", t);
@@ -486,7 +487,14 @@ public abstract class Operators {
 		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
 		if (hook != null) {
 			try {
-				multiple.forEach(hook);
+				if (multiple.isEmpty()) {
+					return;
+				}
+				for (Object o : multiple) {
+					if (o != null) {
+						hook.accept(o);
+					}
+				}
 			}
 			catch (Throwable t) {
 				log.warn("Error in discard hook while discarding multiple values", t);
@@ -1502,17 +1510,17 @@ public abstract class Operators {
 		protected final CoreSubscriber<? super O> actual;
 
 		protected O value;
-		volatile int state;
+		volatile int state; //see STATE field updater
+
 		public MonoSubscriber(CoreSubscriber<? super O> actual) {
 			this.actual = actual;
 		}
 
 		@Override
 		public void cancel() {
-			if (this.state <= HAS_REQUEST_NO_VALUE) {
+			if (STATE.getAndSet(this, CANCELLED) <= HAS_REQUEST_NO_VALUE) {
 				Operators.onDiscard(value, currentContext());
 			}
-			this.state = CANCELLED;
 			value = null;
 		}
 
@@ -1540,46 +1548,39 @@ public abstract class Operators {
 		 * @param v the value to emit
 		 */
 		public final void complete(O v) {
-			int state = this.state;
 			for (; ; ) {
-				if (state == FUSED_EMPTY) {
+				int state = this.state;
+				if (state == FUSED_EMPTY && STATE.compareAndSet(this, FUSED_EMPTY, FUSED_READY)) {
 					setValue(v);
-					STATE.lazySet(this, FUSED_READY);
-
 					Subscriber<? super O> a = actual;
 					a.onNext(v);
-					if (this.state != CANCELLED) {
-						a.onComplete();
-					}
+					a.onComplete();
 					return;
 				}
 
 				// if state is >= HAS_CANCELLED or bit zero is set (*_HAS_VALUE) case, return
 				if ((state & ~HAS_REQUEST_NO_VALUE) != 0) {
+					discard(v);
 					return;
 				}
 
-				if (state == HAS_REQUEST_NO_VALUE) {
-					STATE.lazySet(this, HAS_REQUEST_HAS_VALUE);
+				if (state == HAS_REQUEST_NO_VALUE && STATE.compareAndSet(this, HAS_REQUEST_NO_VALUE, HAS_REQUEST_HAS_VALUE)) {
+					this.value = null;
 					Subscriber<? super O> a = actual;
 					a.onNext(v);
-					this.value = null;
-					if (this.state != CANCELLED) {
-						a.onComplete();
-					}
+					a.onComplete();
 					return;
 				}
 				setValue(v);
-				if (STATE.compareAndSet(this, NO_REQUEST_NO_VALUE, NO_REQUEST_HAS_VALUE)) {
-					return;
-				}
-				state = this.state;
-				if (state == CANCELLED) {
-					Operators.onDiscard(value, actual.currentContext());
-					this.value = null;
+				if (state == NO_REQUEST_NO_VALUE && STATE.compareAndSet(this, NO_REQUEST_NO_VALUE, NO_REQUEST_HAS_VALUE)) {
 					return;
 				}
 			}
+		}
+
+		protected void discard(O v) {
+			this.value = null;
+			Operators.onDiscard(v, actual.currentContext());
 		}
 
 		@Override
@@ -1624,8 +1625,7 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public final O poll() {
-			if (STATE.get(this) == FUSED_READY) {
-				STATE.lazySet(this, FUSED_CONSUMED);
+			if (STATE.compareAndSet(this, FUSED_READY, FUSED_CONSUMED)) {
 				O v = value;
 				value = null;
 				return v;
@@ -1643,17 +1643,13 @@ public abstract class Operators {
 					if ((s & ~NO_REQUEST_HAS_VALUE) != 0) {
 						return;
 					}
-					if (s == NO_REQUEST_HAS_VALUE) {
-						if (STATE.compareAndSet(this, NO_REQUEST_HAS_VALUE, HAS_REQUEST_HAS_VALUE)) {
-							O v = value;
-							if (v != null) {
-								value = null;
-								Subscriber<? super O> a = actual;
-								a.onNext(v);
-								if (state != CANCELLED) {
-									a.onComplete();
-								}
-							}
+					if (s == NO_REQUEST_HAS_VALUE && STATE.compareAndSet(this, NO_REQUEST_HAS_VALUE, HAS_REQUEST_HAS_VALUE)) {
+						O v = value;
+						if (v != null) {
+							value = null;
+							Subscriber<? super O> a = actual;
+							a.onNext(v);
+							a.onComplete();
 						}
 						return;
 					}
