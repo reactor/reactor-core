@@ -51,6 +51,20 @@ public class FluxGenerateTest {
 	}
 
 	@Test
+	public void sinkNotUsed() {
+		StepVerifier.create(Flux.generate(sink -> {}))
+		            .expectFusion(Fuseable.NONE)
+		            .verifyErrorMessage("The generator didn't call any of the SynchronousSink method");
+	}
+
+	@Test
+	public void sinkNotUsedFusion() {
+		StepVerifier.create(Flux.generate(sink -> {}))
+		            .expectFusion(Fuseable.SYNC)
+		            .verifyErrorMessage("The generator didn't call any of the SynchronousSink method");
+	}
+
+	@Test
 	public void generateEmpty() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 

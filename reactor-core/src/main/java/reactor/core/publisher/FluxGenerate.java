@@ -354,7 +354,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 				cleanup(s);
 				
 				if (!terminate) {
-					throw new IllegalStateException("The generator didn't call any of the " + "FluxGenerateOutput method");
+					throw new IllegalStateException("The generator didn't call any of the SynchronousSink method");
 				}
 
 				Throwable e = generatedError;
