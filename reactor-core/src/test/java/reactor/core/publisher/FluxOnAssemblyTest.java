@@ -149,7 +149,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.FluxFilterFuseable] is identified by light checkpoint [foo].");
+		assertThat(debugStack).contains("reactor.core.publisher.FluxOnAssembly$OnAssemblyException: foo");
 	}
 
 	@Test
@@ -200,7 +200,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.MonoFilterFuseable] is identified by light checkpoint [foo].");
+		assertThat(debugStack).contains("reactor.core.publisher.FluxOnAssembly$OnAssemblyException: foo");
 	}
 
 	@Test
@@ -240,8 +240,8 @@ public class FluxOnAssemblyTest {
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
 				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:224)\n"
 				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n");
-		assertThat(debugStack).endsWith("Error has been observed by the following operator(s):\n"
-				+ "\t|_\tParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n\n");
+		assertThat(debugStack).endsWith("Error has been observed at the following site(s):\n"
+				+ "\t|_ ParallelFlux.checkpoint ⇢ at reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n\n");
 	}
 
 	@Test
@@ -259,7 +259,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).endsWith("Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [light checkpoint identifier].\n");
+		assertThat(debugStack).endsWith("reactor.core.publisher.FluxOnAssembly$OnAssemblyException: light checkpoint identifier\n");
 	}
 
 	@Test
@@ -324,18 +324,18 @@ public class FluxOnAssemblyTest {
 		                                  .iterator();
 
 		while (lines.hasNext()) {
-			if (lines.next().equals("Error has been observed by the following operator(s):")) {
+			if (lines.next().equals("Error has been observed at the following site(s):")) {
 				break;
 			}
 		}
 
 		assertThat(lines.next())
 				.as("first backtrace line")
-				.contains("Flux.single ⇢ reactor.core.publisher.FluxOnAssemblyTest.stackAndLightCheckpoint(FluxOnAssemblyTest.java:");
+				.contains("Flux.single ⇢ at reactor.core.publisher.FluxOnAssemblyTest.stackAndLightCheckpoint(FluxOnAssemblyTest.java:");
 
 		assertThat(lines.next())
 				.as("second backtrace line")
-				.endsWith("identified by light checkpoint [single].");
+				.endsWith("checkpoint ⇢ single");
 	}
 
 	private static int getBaseline() {

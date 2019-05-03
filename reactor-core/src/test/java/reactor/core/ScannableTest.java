@@ -557,18 +557,18 @@ public class ScannableTest {
 		}
 
 		assertThat(downstream).containsExactly(
-				"Flux.map ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
-				"Flux.delayElements ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
-				"Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
-				"Flux.reduce ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)",
+				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
+				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
+				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)",
 				"lambda");
 
 		assertThat(upstream).containsExactly(
 				"source(FluxSource)",
-				"Flux.map ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
-				"Flux.delayElements ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
-				"Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
-				"Flux.reduce ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)");
+				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
+				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
+				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)");
 	}
 
 	@Test
@@ -617,7 +617,7 @@ public class ScannableTest {
 		assertThat(Scannable.from(flux).steps())
 				.containsExactly(
 						"source(FluxJust)",
-						"Flux.checkpoint ⇢ reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:614)",
+						"Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:614)",
 						"map"
 				);
 	}
