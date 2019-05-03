@@ -336,7 +336,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 				if (e != null) {
 
 					generatedError = null;
-					Exceptions.bubble(e);
+					throw Exceptions.propagate(e);
 				}
 
 				return null;
@@ -361,7 +361,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 				if (e != null) {
 
 					generatedError = null;
-					throw Exceptions.bubble(e);
+					throw Exceptions.propagate(e);
 				}
 
 				return null;
