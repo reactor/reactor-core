@@ -207,6 +207,15 @@ public class FluxGenerateTest {
 	}
 
 	@Test
+	public void generatorThrowsFusion() {
+		StepVerifier.create(
+				Flux.<Integer>generate(o -> { throw new IllegalStateException("forced failure"); }))
+		            .expectFusion(Fuseable.SYNC)
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("forced failure"));
+	}
+
+	@Test
 	public void generatorMultipleOnErrors() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
