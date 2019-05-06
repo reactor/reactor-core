@@ -136,4 +136,12 @@ artifacts {
   archives kdocZip
 }
 
+jar {
+  manifest {
+    attributes 'Implementation-Title': 'reactor-test',
+            'Implementation-Version': version,
+            'Automatic-Module-Name': 'reactor.test'
+  }
+}
+
 jar.finalizedBy(downloadBaseline)
