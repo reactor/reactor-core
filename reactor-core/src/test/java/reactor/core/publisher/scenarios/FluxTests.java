@@ -16,7 +16,6 @@
 
 package reactor.core.publisher.scenarios;
 
-import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,7 +26,6 @@ import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,14 +44,12 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matcher;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -66,8 +62,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.Signal;
-import reactor.core.publisher.SignalType;
-import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -562,57 +556,6 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void konamiCode() throws InterruptedException {
-		final TopicProcessor<Integer> keyboardStream = TopicProcessor.create();
-
-		Mono<List<Boolean>> konamis = keyboardStream
-		                                     .skipWhile(key -> KeyEvent.VK_UP != key)
-		                                     .buffer(10, 1)
-		                                     .map(keys -> keys.size() == 10 &&
-				                                     keys.get(0) == KeyEvent.VK_UP &&
-				                                     keys.get(1) == KeyEvent.VK_UP &&
-				                                     keys.get(2) == KeyEvent.VK_DOWN &&
-				                                     keys.get(3) == KeyEvent.VK_DOWN &&
-				                                     keys.get(4) == KeyEvent.VK_LEFT &&
-				                                     keys.get(5) == KeyEvent.VK_RIGHT &&
-				                                     keys.get(6) == KeyEvent.VK_LEFT &&
-				                                     keys.get(7) == KeyEvent.VK_RIGHT &&
-				                                     keys.get(8) == KeyEvent.VK_B &&
-				                                     keys.get(9) == KeyEvent.VK_A)
-		                                     .collectList();
-
-		keyboardStream.onNext(KeyEvent.VK_UP);
-		keyboardStream.onNext(KeyEvent.VK_UP);
-		keyboardStream.onNext(KeyEvent.VK_UP);
-		keyboardStream.onNext(KeyEvent.VK_DOWN);
-		keyboardStream.onNext(KeyEvent.VK_DOWN);
-		keyboardStream.onNext(KeyEvent.VK_LEFT);
-		keyboardStream.onNext(KeyEvent.VK_RIGHT);
-		keyboardStream.onNext(KeyEvent.VK_LEFT);
-		keyboardStream.onNext(KeyEvent.VK_RIGHT);
-		keyboardStream.onNext(KeyEvent.VK_B);
-		keyboardStream.onNext(KeyEvent.VK_A);
-		keyboardStream.onNext(KeyEvent.VK_C);
-		keyboardStream.onComplete();
-
-		List<Boolean> res = konamis.block();
-
-		Assert.assertTrue(res.size() == 12);
-		Assert.assertFalse(res.get(0));
-		Assert.assertTrue(res.get(1));
-		Assert.assertFalse(res.get(2));
-		Assert.assertFalse(res.get(3));
-		Assert.assertFalse(res.get(4));
-		Assert.assertFalse(res.get(5));
-		Assert.assertFalse(res.get(6));
-		Assert.assertFalse(res.get(7));
-		Assert.assertFalse(res.get(8));
-		Assert.assertFalse(res.get(9));
-		Assert.assertFalse(res.get(10));
-		Assert.assertFalse(res.get(11));
-	}
-
-	@Test
 	public void parallelTests() throws InterruptedException {
 		parallelMapManyTest("sync", 1_000_000);
 		parallelMapManyTest("shared", 1_000_000);
@@ -661,7 +604,7 @@ public class FluxTests extends AbstractReactorTest {
 		System.out.println("Time spent: " + stop + "ms");
 		System.out.println("ev/ms: " + iterations / stop);
 		System.out.println("ev/s: " + iterations / stop * 1000);
-		System.out.println("");
+		System.out.println();
 		assertEquals(0, latch.getCount());
 	}
 
@@ -714,7 +657,7 @@ public class FluxTests extends AbstractReactorTest {
 		System.out.println("Time spent: " + stop + "ms");
 		System.out.println("ev/ms: " + iterations / stop);
 		System.out.println("ev/s: " + iterations / stop * 1000);
-		System.out.println("");
+		System.out.println();
 		assertEquals(0, latch.getCount());
 
 	}
@@ -767,7 +710,7 @@ public class FluxTests extends AbstractReactorTest {
 		System.out.println("Time spent: " + stop + "ms");
 		System.out.println("ev/ms: " + iterations / stop);
 		System.out.println("ev/s: " + iterations / stop * 1000);
-		System.out.println("");
+		System.out.println();
 	}
 
 	/**
@@ -1011,38 +954,6 @@ public class FluxTests extends AbstractReactorTest {
 
 		countDownLatch.await(5, TimeUnit.SECONDS);
 		Assert.assertEquals("Count max: "+ tasks.size(), 0, countDownLatch.getCount());
-	}
-
-	@Test
-	@Ignore
-	public void testDiamond() throws InterruptedException, IOException {
-		Flux<Point> points = Flux.<Double, Random>generate(Random::new, (r, sub) -> {
-			sub.next(r.nextDouble());
-			return r;
-		}).log("points")
-		  .buffer(2)
-		  .map(pairs -> new Point(pairs.get(0), pairs.get(1)))
-		  .subscribeWith(TopicProcessor.<Point>builder().name("tee").bufferSize(32).build());
-
-		Flux<InnerSample> innerSamples = points.log("inner-1")
-		                                          .filter(Point::isInner)
-		                                          .map(InnerSample::new)
-		                                          .log("inner-2");
-
-		Flux<OuterSample> outerSamples = points.log("outer-1")
-		                                          .filter(p -> !p.isInner())
-		                                          .map(OuterSample::new)
-		                                          .log("outer-2");
-
-		Flux.merge(innerSamples, outerSamples)
-		       .publishOn(asyncGroup)
-		       .scan(new SimulationState(0l, 0l), SimulationState::withNextSample)
-		       .log("result")
-		       .map(s -> System.out.printf("After %8d samples π is approximated as %.5f", s.totalSamples, s.pi()))
-		       .take(10000)
-		       .subscribe();
-
-		System.in.read();
 	}
 
 	private static final class Point {
@@ -1403,60 +1314,6 @@ public class FluxTests extends AbstractReactorTest {
 		public void onComplete() {
 			log.info("fluxion complete");
 		}
-
-	}
-
-	/**
-	 * Should work with {@link Processor} but it doesn't.
-     * @throws Exception for convenience
-	 */
-	//@Test
-	public void multiplexUsingProcessors1000() throws Exception {
-		for (int i = 0; i < 1000; i++) {
-			System.out.println("new test " + i);
-			multiplexUsingProcessors();
-			System.out.println();
-		}
-	}
-
-	@Test(timeout = TIMEOUT)
-	public void multiplexUsingProcessors() throws Exception {
-
-		final Flux<Integer> forkStream = Flux.just(1, 2, 3)
-		                                           .log("begin-computation");
-		final Flux<Integer> forkStream2 = Flux.just(1, 2, 3)
-		                                            .log("begin-persistence");
-
-		final TopicProcessor<Integer> computationEmitterProcessor = TopicProcessor.<Integer>builder()
-				.name("computation")
-				.bufferSize(BACKLOG)
-				.build();
-		final Flux<String> computationStream = computationEmitterProcessor
-		                                                 .map(i -> Integer.toString(i));
-
-		final TopicProcessor<Integer> persistenceEmitterProcessor = TopicProcessor.<Integer>builder()
-				.name("persistence")
-				.bufferSize(BACKLOG)
-				.build();
-		final Flux<String> persistenceStream = persistenceEmitterProcessor
-		                                                 .map(i -> "done " + i);
-
-		forkStream.subscribe(computationEmitterProcessor);
-		forkStream2.subscribe(persistenceEmitterProcessor);
-
-		final Semaphore doneSemaphore = new Semaphore(0);
-
-		final Flux<List<String>> joinStream =
-				Flux.zip(computationStream.log("log1"), persistenceStream.log("log2"), (a, b) -> Arrays.asList(a,b));
-
-		// Method chaining doesn't compile.
-		joinStream.log("log-final")
-		          .subscribe(list -> println("Joined: ", list), t -> println("Join failed: ", t.getMessage()), () -> {
-			          println("Join complete.");
-			          doneSemaphore.release();
-		          });
-
-		doneSemaphore.acquire();
 
 	}
 

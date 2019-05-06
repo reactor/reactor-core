@@ -73,10 +73,6 @@ data only through direct user action (calling their methods of their `Sink` dire
 * *synchronous* (`EmitterProcessor` and `ReplayProcessor`): These processors can either push data
 through user interaction or by subscribing to an upstream `Publisher` and synchronously
 draining it.
-* *asynchronous* (`WorkQueueProcessor` and `TopicProcessor`): These processors can either push
-data obtained from multiple upstream `Publishers` or through user interaction.
-They are more robust and are  backed by a `RingBuffer` data structure in order
-to deal with their multiple upstreams.
 
 The asynchronous processors are the most complex to instantiate and have a lot of different
 options. Consequently, they expose a `Builder` interface. The simpler processors have
@@ -146,61 +142,5 @@ It can be created in multiple configurations:
 * Caching a time-based replay window (`createTimeout(Duration)`).
 * Caching a combination of history size and time window
 (`createSizeOrTimeout(int, Duration)`).
-
-== Topic Processor
-
-A topic `Processor` is an asynchronous processor capable of relaying elements from
-multiple upstream `Publishers` when created in the `shared` configuration (see the
-`share(boolean)` option of the `builder()`).
-
-Note that the share option is mandatory if you intend to concurrently call the
-`onNext`, `onComplete`, or `onError` methods of `TopicProcessor` directly or from a
-concurrent upstream publisher.
-
-Otherwise, such concurrent calls are illegal, as the processor is then fully compliant
-with the Reactive Streams specification.
-
-A `TopicProcessor` is capable of fanning out to multiple `Subscribers`. It does so by
-associating a `Thread` to each `Subscriber`, which runs until an `onError` or
-`onComplete` signal is pushed through the processor or until the associated `Subscriber`
-is cancelled. The maximum number of downstream subscribers is driven by the `executor`
-builder option. You can provide a bounded `ExecutorService` to limit it to a specific number.
-
-The processor is backed by a `RingBuffer` data structure that stores pushed signals. Each
-`Subscriber` thread keeps track of its associated demand and the correct indexes in the
-`RingBuffer`.
-
-This processor also has an `autoCancel` builder option. If set to `true` (the default),
-it results in the source `Publisher`(s) being cancelled when all subscribers are
-cancelled.
-
-== WorkQueue Processor
-
-A work queue `Processor` is also an asynchronous processor capable of relaying elements
-from multiple upstream `Publishers` when created in the `shared` configuration (it shares
-most of its builder options with `TopicProcessor`).
-
-It relaxes its compliance with the Reactive Streams specification, but it acquires the
-benefit of requiring fewer resources than the `TopicProcessor`. It is still based on a
-`RingBuffer` but avoids the overhead of creating one consumer `Thread` per `Subscriber`.
-As a result, it scales better than the `TopicProcessor`.
-
-The trade-off is that its distribution pattern is a little bit different: Requests from
-each subscriber all add up together, and the processor relays signals to only one
-`Subscriber` at a time, in a kind of round-robin distribution rather than fan-out
-pattern.
-
-NOTE: A fair round-robin distribution is not guaranteed.
-
-The `WorkQueueProcessor` mostly has the same builder options as the `TopicProcessor`,
-such as `autoCancel`, `share`, and `waitStrategy`. The maximum number of downstream
-subscribers is also driven by a configurable `ExecutorService` with the `executor`
-option.
-
-WARNING: You should take care not to subscribe too many `Subscribers` to a
-`WorkQueueProcessor`, as doing so *can lock the processor*. If you need to limit the
-number of possible subscribers, prefer doing so by using a `ThreadPoolExecutor` or a
-`ForkJoinPool`. The processor can detect their capacity and throw an exception if you
-subscribe one too many times.
 
 //TODO == MonoProcessor

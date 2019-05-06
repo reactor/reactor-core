@@ -31,8 +31,7 @@ import reactor.util.annotation.Nullable;
 /**
  * A base processor that exposes {@link Flux} API for {@link Processor}.
  *
- * Implementors include {@link UnicastProcessor}, {@link EmitterProcessor},
- * {@link ReplayProcessor}, {@link WorkQueueProcessor} and {@link TopicProcessor}.
+ * Implementors include {@link UnicastProcessor}, {@link EmitterProcessor}, {@link ReplayProcessor}.
  *
  * @author Stephane Maldini
  *
