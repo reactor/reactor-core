@@ -269,7 +269,8 @@ if (!JavaVersion.current().isJava9Compatible()) {
 jar {
   manifest {
 	attributes 'Implementation-Title': 'reactor-core',
-			'Implementation-Version': version
+			'Implementation-Version': version,
+			'Automatic-Module-Name': 'reactor.core'
 	instruction 'Import-Package', bundleImportPackages.join(',')
   }
 }
