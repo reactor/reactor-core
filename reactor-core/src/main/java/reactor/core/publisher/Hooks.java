@@ -498,7 +498,7 @@ public abstract class Hooks {
 
 	//Hooks that are transformative
 	static Function<Publisher, Publisher> onEachOperatorHook;
-	static Function<Publisher, Publisher> onLastOperatorHook;
+	static volatile Function<Publisher, Publisher> onLastOperatorHook;
 	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
 
 	//Hooks that are just callbacks
