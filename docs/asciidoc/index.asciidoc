@@ -36,12 +36,6 @@ endif::[]
 
 //TODO see other sections from consuming.adoc
 
-include::kotlin.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/kotlin.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<kotlin>>"
-endif::[]
-
 include::testing.adoc[leveloffset=1]
 ifeval::["{backend}" == "html5"]
 https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/testing.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
