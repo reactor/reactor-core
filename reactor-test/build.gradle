@@ -63,9 +63,6 @@ task japicmp(type: JapicmpTask) {
   includeSynthetic = true
 
   //TODO after a release, remove the reactor-test exclusions below if any
-  classExcludes = [
-          "reactor.test.StepVerifierExtensionsKt",
-  ]
 }
 
 javadoc {
