@@ -124,7 +124,15 @@ task japicmp(type: JapicmpTask) {
 
   //TODO after a release, bump the gradle.properties baseline
   //TODO after a release, remove the reactor-core exclusions below if any
-//	classExcludes = []
+  classExcludes = [
+		  'reactor.core.publisher.FluxExtensionsKt',
+		  'reactor.core.publisher.FluxExtensionsKt$toFlux$1',
+		  'reactor.core.publisher.FluxExtensionsKt$toIterable$1',
+		  'reactor.core.publisher.MonoExtensionsKt',
+		  'reactor.core.publisher.MonoWhenFunctionsKt',
+		  'reactor.core.publisher.MonoWhenFunctionsKt$zip$1',
+		  'reactor.util.function.TupleExtensionsKt',
+  ]
 //	methodExcludes = ["reactor.core.Scannable#operatorName()"]
 }
 
