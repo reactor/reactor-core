@@ -178,13 +178,6 @@ public final class MonoProcessor<O> extends Mono<O>
 				delay = System.nanoTime() + timeout.toNanos();
 			}
 			for (; ; ) {
-				if (timeout != null && delay < System.nanoTime()) {
-					cancel();
-					throw new IllegalStateException("Timeout on Mono blocking read");
-				}
-
-				Thread.sleep(1);
-
 				NextInner<O>[] inners = subscribers;
 				if (inners == TERMINATED) {
 					if (error != null) {
@@ -197,6 +190,12 @@ public final class MonoProcessor<O> extends Mono<O>
 					}
 					return value;
 				}
+				if (timeout != null && delay < System.nanoTime()) {
+					cancel();
+					throw new IllegalStateException("Timeout on Mono blocking read");
+				}
+
+				Thread.sleep(1);
 			}
 
 		}
