@@ -27,9 +27,7 @@
     <!--<logger name="reactor.core.publisher.tck" level="debug"/>-->
     <logger name="reactor" level="info"/>
     <logger name="wqp" level="off"/>
-    <logger name="reactor.core.publisher.WorkQueueProcessor" level="off"/>
     <logger name="after-flatmap" level="debug"/>
-    <logger name="reactor.core.publisher.UnsafeSupport" level="trace"/>
     <logger name="logError.default" level="trace"/>
     <logger name="logError.fine" level="trace"/>
     <logger name="logError.finest" level="trace"/>

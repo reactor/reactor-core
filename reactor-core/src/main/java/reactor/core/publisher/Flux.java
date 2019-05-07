@@ -7950,7 +7950,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * {@link Subscriber} (eg. a {@link FluxProcessor}).
 	 *
 	 * <blockquote><pre>
-	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe() }
+	 * {@code flux.subscribeWith(EmitterProcessor.create()).subscribe() }
 	 * </pre></blockquote>
 	 *
 	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
