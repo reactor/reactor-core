@@ -1,4 +1,3 @@
-====
 [source,java]
 ----
 Flux<String> flux =
@@ -17,4 +16,3 @@ error.
 <3> To allow for three retries, indexes before 4 return a value to emit.
 <4> In order to terminate the sequence in error, we throw the original exception after
 these three retries.
-====

@@ -12,7 +12,6 @@ The first request comes from the final subscriber at subscription time, yet the 
 
 The simplest way of customizing the original request is to `subscribe` with a `BaseSubscriber` with the `hookOnSubscribe` method overridden, as the following example shows:
 
-====
 [source,java]
 ----
 Flux.range(1, 10)
@@ -31,17 +30,14 @@ Flux.range(1, 10)
       }
     });
 ----
-====
 
 The preceding snippets prints out the following:
 
-====
 [source]
 ----
 request of 1
 Cancelling after having received 1
 ----
-====
 
 WARNING: When manipulating a request, you must be careful to produce enough demand for
 the sequence to advance, or your Flux can get "`stuck`". That is why `BaseSubscriber`
