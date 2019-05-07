@@ -63,9 +63,6 @@ task japicmp(type: JapicmpTask) {
   includeSynthetic = true
 
   //TODO after a release, remove the reactor-test exclusions below if any
-  classExcludes = [
-          'reactor.test.StepVerifierExtensionsKt',
-  ]
 }
 
 javadoc {
@@ -84,6 +81,11 @@ javadoc {
 		  .plus("https://projectreactor.io/docs/core/release/api/") as String[])
   options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
 				   "implNote:a:Implementation Note:" ]
+
+  // In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
+  // And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
+  classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
+  classpath += sourceSets.main.compileClasspath
 
   maxMemory = "1024m"
   destinationDir = new File(project.buildDir, "docs/javadoc")
