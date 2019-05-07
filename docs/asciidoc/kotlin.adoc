@@ -7,7 +7,7 @@ which allows writing concise and elegant code while providing very good
 https://kotlinlang.org/docs/reference/java-interop.html[interoperability] with
 existing libraries written in Java.
 
-This section describes Reactor's first-class support for Kotlin.
+This section describes Reactor's support for Kotlin.
 
 [[kotlin-requirements]]
 == Requirements
@@ -20,6 +20,21 @@ or https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre8
 [[kotlin-extensions]]
 == Extensions
 
+[WARNING]
+====
+As of `Dysprosium-M1` (ie. `reactor-core 3.3.0.M1`), Kotlin extensions are deprecated in
+core and have been moved to https://github.com/reactor/reactor-kotlin-extensions. The package
+names start with `reactor.kotlin` instead of simply `reactor`.
+
+Please add the following dependency to your project:
+
+[source,gradle]
+----
+io.projectreactor.kotlin:reactor-kotlin-extensions:1.1.0.BUILD-SNAPSHOT
+----
+====
+
+
 Thanks to its great https://kotlinlang.org/docs/reference/java-interop.html[Java interoperability]
 and to https://kotlinlang.org/docs/reference/extensions.html[Kotlin extensions], Reactor
 Kotlin APIs leverage regular Java APIs and are additionally enhanced by a few Kotlin-specific APIs
@@ -27,7 +42,7 @@ that are available out of the box within Reactor artifacts.
 
 NOTE: Keep in mind that Kotlin extensions need to be imported to be used. This means
 for example that the `Throwable.toFlux` Kotlin extension
-is available only if `import reactor.core.publisher.toFlux` is imported.
+is available only if `import reactor.kotlin.core.publisher.toFlux` is imported.
 That said, similar to static imports, an IDE should automatically suggest the import in most cases.
 
 For example, https://kotlinlang.org/docs/reference/inline-functions.html#reified-type-parameters[Kotlin reified type parameters]
@@ -52,8 +67,9 @@ The following table compares Reactor with Java against Reactor with Kotlin and e
 |`flux.test().verifyComplete()`
 |===
 
-The https://projectreactor.io/docs/core/release/kdoc-api/[Reactor KDoc API] lists and documents
-all the available Kotlin extensions.
+//The https://projectreactor.io/docs/core/release/kdoc-api/[Reactor KDoc API] lists and documents
+//all the available Kotlin extensions.
+//TODO publish the dokka, make it a module and add the link back here
 
 [[kotlin-null-safety]]
 == Null Safety

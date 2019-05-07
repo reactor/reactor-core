@@ -31,7 +31,6 @@ buildscript {
 plugins {
   id 'org.asciidoctor.convert' version '1.5.9.2'
   id "me.champeau.gradle.jmh" version "0.4.7" apply false
-  id "org.jetbrains.dokka" version "0.9.16"
   id "me.champeau.gradle.japicmp" version "0.2.6"
   id "de.undercouch.download" version "3.4.3"
   id "org.unbroken-dome.test-sets" version "1.5.1" apply false // 2.x version does not work with Gradle 4.10
