@@ -47,14 +47,13 @@ dependencies {
   // JSR-305 annotations
   optional "com.google.code.findbugs:jsr305:3.0.2"
 
-  // For NotNull
-  optional 'org.jetbrains:annotations:13.0'
-
   //Optional Logging Operator
   optional "org.slf4j:slf4j-api:$slf4jVersion"
 
   //Optional Metrics
   optional "io.micrometer:micrometer-core:$micrometerVersion"
+
+  optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
 
   //Optional BlockHound support
   optional 'io.projectreactor.tools:blockhound:1.0.0.M3'
@@ -129,15 +128,9 @@ task japicmp(type: JapicmpTask) {
 		  'reactor.core.publisher.TopicProcessor',
 		  'reactor.core.publisher.EventLoopProcessor$Slot',
 		  'reactor.util.concurrent.WaitStrategy',
-		  'reactor.core.publisher.MonoProcessor',
-		  'reactor.core.publisher.FluxExtensionsKt',
-		  'reactor.core.publisher.FluxExtensionsKt$toFlux$1',
-		  'reactor.core.publisher.FluxExtensionsKt$toIterable$1',
-		  'reactor.core.publisher.MonoExtensionsKt',
-		  'reactor.core.publisher.MonoWhenFunctionsKt',
-		  'reactor.core.publisher.MonoWhenFunctionsKt$zip$1',
-		  'reactor.util.function.TupleExtensionsKt',
+		  'reactor.core.publisher.MonoProcessor'
   ]
+//	classExcludes = []
 //	methodExcludes = ["reactor.core.Scannable#operatorName()"]
 }
 
@@ -159,6 +152,11 @@ javadoc {
 				   "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
 				   "reactor.discard:m:onDiscard Support"]
 
+  // In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
+  // And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
+  classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
+  classpath += sourceSets.main.compileClasspath
+
   maxMemory = "1024m"
   destinationDir = new File(project.buildDir, "docs/javadoc")
 
@@ -175,6 +173,44 @@ javadoc {
 	  include "**/doc-files/**/*"
 	}
   }
+}
+
+// Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
+task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
+  dependsOn jar
+  group = "documentation"
+  description = "Generates Kotlin API documentation."
+  moduleName = "reactor-core"
+  jdkVersion = 8
+
+  outputFormat = "html"
+  outputDirectory = new File(project.buildDir, "docs/kdoc")
+
+  //this is needed so that links to java classes are resolved
+  doFirst {
+	classpath += project.jar.outputs.files.getFiles()
+	classpath += project.sourceSets.main.compileClasspath
+  }
+  //this is needed so that the kdoc only generates for kotlin classes
+  //(default kotlinTasks sourceSet also includes java)
+  kotlinTasks {
+
+  }
+  processConfigurations = []
+  sourceDirs = files("src/main/kotlin")
+
+  externalDocumentationLink {
+	url = new URL("https://projectreactor.io/docs/core/release/api/")
+  }
+  externalDocumentationLink {
+	url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+  }
+}
+
+task kdocZip(type: Zip, dependsOn: dokka) {
+  //ends up similar to javadoc jar: reactor-core-xxxx.RELEASE-kdoc.zip
+  classifier = 'kdoc'
+  from("${project.buildDir}/docs/kdoc")
 }
 
 task testStaticInit(type: Test, group: 'verification') {
@@ -250,6 +286,7 @@ artifacts {
   archives sourcesJar
   archives javadocJar
   archives rootProject.tasks.docsZip
+  archives kdocZip
 }
 
 jacocoTestReport.dependsOn test
