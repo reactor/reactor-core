@@ -67,9 +67,8 @@ The following table compares Reactor with Java against Reactor with Kotlin and e
 |`flux.test().verifyComplete()`
 |===
 
-//The https://projectreactor.io/docs/core/release/kdoc-api/[Reactor KDoc API] lists and documents
-//all the available Kotlin extensions.
-//TODO publish the dokka, make it a module and add the link back here
+The https://projectreactor.io/docs/kotlin/release/kdoc-api/[Reactor KDoc API] lists and documents
+all the available Kotlin extensions.
 
 [[kotlin-null-safety]]
 == Null Safety
