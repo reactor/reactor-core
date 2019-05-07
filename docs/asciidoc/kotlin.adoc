@@ -22,15 +22,16 @@ or https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre8
 
 [WARNING]
 ====
-As of `Dysprosium-M1` (ie. `reactor-core 3.3.0.M1`), Kotlin extensions are deprecated in
-core and have been moved to https://github.com/reactor/reactor-kotlin-extensions. The package
-names start with `reactor.kotlin` instead of simply `reactor`.
+As of `Dysprosium-M1` (ie. `reactor-core 3.3.0.M1`), Kotlin extensions are moved to a
+dedicated https://github.com/reactor/reactor-kotlin-extensions[`reactor-kotlin-extensions`]
+module with new package names that start with `reactor.kotlin` instead of simply `reactor`.
 
-Please add the following dependency to your project:
+As a consequence, Kotlin extensions in `reactor-core` module are deprecated.
+The new dependency's groupId and artifactId are:
 
 [source,gradle]
 ----
-io.projectreactor.kotlin:reactor-kotlin-extensions:1.1.0.BUILD-SNAPSHOT
+io.projectreactor.kotlin:reactor-kotlin-extensions
 ----
 ====
 
