@@ -88,7 +88,6 @@ and specify dependencies by their artifact versions.
 Maven natively supports the BOM concept. First, you need to import the BOM by
 adding the following snippet to your `pom.xml`:
 
-====
 [source,xml]
 ----
 <dependencyManagement> <1>
@@ -105,14 +104,12 @@ adding the following snippet to your `pom.xml`:
 ----
 <1> Notice the `dependencyManagement` tag. This is in addition to the regular
 `dependencies` section.
-====
 
 If the top section (`dependencyManagement`) already exists in your pom, add only the contents.
 
 Next, add your dependencies to the relevant reactor projects, as usual, except without a
 `<version>`, as follows:
 
-====
 [source,xml]
 ----
 <dependencies>
@@ -131,7 +128,6 @@ Next, add your dependencies to the relevant reactor projects, as usual, except w
 <1> Dependency on the core library.
 <2> No version tag here.
 <3> `reactor-test` provides facilities to unit test reactive streams.
-====
 
 === Gradle Installation
 
@@ -141,7 +137,6 @@ plugin.
 
 First, apply the plugin from the Gradle Plugin Portal, as follows:
 
-====
 [source,groovy]
 ----
 plugins {
@@ -150,11 +145,9 @@ plugins {
 ----
 <1> as of this writing, 1.0.6.RELEASE is the latest version of the plugin.
 Check for updates.
-====
 
 Then use it to import the BOM, as follows:
 
-====
 [source,groovy]
 ----
 dependencyManagement {
@@ -163,11 +156,9 @@ dependencyManagement {
      }
 }
 ----
-====
 
 Finally add a dependency to your project, without a version number, as follows:
 
-====
 [source,groovy]
 ----
 dependencies {
@@ -176,7 +167,6 @@ dependencies {
 ----
 <1> There is no third `:` separated section for the version. It is taken from
 the BOM.
-====
 
 === Milestones and Snapshots
 
@@ -184,7 +174,6 @@ Milestones and developer previews are distributed through the Spring Milestones
 repository rather than Maven Central. To add it to your build configuration
 file, use the following snippet:
 
-====
 .Milestones in Maven
 [source,xml]
 ----
@@ -196,11 +185,9 @@ file, use the following snippet:
 	</repository>
 </repositories>
 ----
-====
 
 For Gradle, use the following snippet:
 
-====
 .Milestones in Gradle
 [source,groovy]
 ----
@@ -209,11 +196,9 @@ repositories {
   mavenCentral()
 }
 ----
-====
 
 Similarly, snapshots are also available in a separate dedicated repository, as the following example show:
 
-====
 .BUILD-SNAPSHOTs in Maven
 [source,xml]
 ----
@@ -234,4 +219,3 @@ repositories {
   mavenCentral()
 }
 ----
-====

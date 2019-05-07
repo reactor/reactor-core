@@ -12,7 +12,6 @@ inside of the `reactor-core` repository.
 To use it in your tests, you must add it as a test dependency.
 The following example shows how to add `reactor-test` as a dependency in Maven:
 
-====
 .reactor-test in Maven, in `<dependencies>`
 [source,xml]
 ----
@@ -24,11 +23,9 @@ The following example shows how to add `reactor-test` as a dependency in Maven:
 </dependency>
 ----
 <1> If you use the <<getting,BOM>>, you do not need to specify a `<version>`.
-====
 
 The following example shows how to add `reactor-test` as a dependency in Gradle:
 
-====
 .reactor-test in Gradle, amend the `dependencies` block
 [source,groovy]
 ----
@@ -36,7 +33,6 @@ dependencies {
    testCompile 'io.projectreactor:reactor-test'
 }
 ----
-====
 
 The three main uses of `reactor-test` are as follows:
 
@@ -65,14 +61,12 @@ You can express all of that through the `StepVerifier` API.
 For instance, you could have the following utility method in your codebase that
 decorates a `Flux`:
 
-====
 [source,java]
 ----
 public <T> Flux<T> appendBoomError(Flux<T> source) {
   return source.concatWith(Mono.error(new IllegalArgumentException("boom")));
 }
 ----
-====
 
 In order to test it, you want to verify the following scenario:
 
@@ -81,7 +75,6 @@ error* with the message, `boom`. Subscribe and *verify* these expectations.
 
 In the `StepVerifier` API, this translates to the following test:
 
-====
 [source,java]
 ----
 @Test
@@ -104,7 +97,6 @@ of `thing1`.
 <5> The last signal we expect to happen is a termination of the sequence with an
 `onError`. The exception should have `boom` as a message.
 <6> It is important to trigger the test by calling `verify()`.
-====
 
 The API is a builder. You start by creating a `StepVerifier` and passing the
 sequence to be tested. This offers a choice of methods that let you:
@@ -169,13 +161,11 @@ corresponding tests. You can do so through the `StepVerifier.withVirtualTime` bu
 
 It looks like the following example:
 
-====
 [source,java]
 ----
 StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofDays(1)))
 //... continue expectations here
 ----
-====
 
 This virtual time feature plugs in a custom `Scheduler` in Reactor's `Schedulers`
 factory. Since these timed operators usually use the default `Schedulers.parallel()`
@@ -211,7 +201,6 @@ first step, it usually fails because the subscription signal is detected. Use
 In order to quickly evaluate the behavior of our `Mono.delay` above, we can finish
 writing our code as follows:
 
-====
 [source,java]
 ----
 StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofDays(1)))
@@ -224,7 +213,6 @@ StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofDays(1)))
 <2> Expect nothing to happen for a full day.
 <3> Then expect a delay that emits `0`.
 <4> Then expect completion (and trigger the verification).
-====
 
 We could have used `thenAwait(Duration.ofDays(1))` above, but `expectNoEvent` has the
 benefit of guaranteeing that nothing happened earlier than it should have.
@@ -272,7 +260,6 @@ using `StepVerifierOptions` to create the verifier.
 
 These features are demonstrated in the following snippet:
 
-====
 [source,java]
 ----
 StepVerifier.create(Mono.just(1).map(i -> i + 10),
@@ -289,7 +276,6 @@ StepVerifier.create(Mono.just(1).map(i -> i + 10),
 <3> An example of a `Context`-specific expectation. It must contain value "thing2" for key "thing1".
 <4> We `then()` switch back to setting up normal expectations on the data.
 <5> Let us not forget to `verify()` the whole set of expectations.
-====
 
 == Manually Emitting with `TestPublisher`
 
@@ -342,7 +328,6 @@ For instance, consider the following method, which builds a chain of operators f
 source and uses a `switchIfEmpty` to fall back to a particular alternative if the source
 is empty:
 
-====
 [source,java]
 ----
 public Flux<String> processOrFallback(Mono<String> source, Publisher<String> fallback) {
@@ -351,11 +336,9 @@ public Flux<String> processOrFallback(Mono<String> source, Publisher<String> fal
             .switchIfEmpty(fallback);
 }
 ----
-====
 
 You can test which logical branch of the switchIfEmpty was used, as follows:
 
-====
 [source,java]
 ----
 @Test
@@ -373,14 +356,12 @@ public void testEmptyPathIsUsed() {
                 .verifyComplete();
 }
 ----
-====
 
 However, think about an example where the method produces a `Mono<Void>` instead. It waits
 for the source to complete, performs an additional task, and completes. If the source
 is empty, a fallback `Runnable`-like task must be performed instead. The following example
 shows such a case:
 
-====
 [source,java]
 ----
 private Mono<String> executeCommand(String command) {
@@ -395,7 +376,6 @@ public Mono<Void> processOrFallback(Mono<String> commandSource, Mono<Void> doWhe
 ----
 <1> `then()` forgets about the command result. It cares only that it was completed.
 <2> How to distinguish between two cases that are both empty sequences?
-====
 
 To verify that your `processOrFallback` method does indeed go through the `doWhenEmpty` path,
 you need to write a bit of boilerplate. Namely you need a `Mono<Void>` that:
@@ -409,7 +389,6 @@ to evaluate. This could be a lot of boilerplate when having to apply this patter
 regularly. Fortunately, 3.1.0 introduced an alternative with `PublisherProbe`. The
 following example shows how to use it:
 
-====
 [source,java]
 ----
 @Test
@@ -430,7 +409,6 @@ public void testCommandEmptyPathIsUsed() {
 can check that is was subscribed to...
 <4> ...as well as actually requested data...
 <5> ...and whether or not it was cancelled.
-====
 
 You can also use the probe in place of a `Flux<T>` by calling `.flux()` instead of
 `.mono()`. For cases where you need to probe an execution path but also need the

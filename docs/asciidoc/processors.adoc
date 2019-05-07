@@ -31,23 +31,19 @@ for the `Processor` by calling `sink()` *once*.
 applications that generate data from multiple threads concurrently. For example, you can create a
 thread-safe serialized sink for `UnicastProcessor` by doing the following:
 
-====
 [source,java]
 ----
 UnicastProcessor<Integer> processor = UnicastProcessor.create();
 FluxSink<Integer> sink = processor.sink(overflowStrategy);
 ----
-====
 
 Multiple producer threads may concurrently generate data on the following serialized
 sink by doing the following:
 
-====
 [source,java]
 ----
 sink.next(n);
 ----
-====
 
 WARNING: Despite the `FluxSink` being adapted for multi-threaded *manual* feeding
 of the `Processor`, it is not possible to mix the subscriber approach with the
