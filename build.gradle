@@ -187,8 +187,6 @@ configure(subprojects) { p ->
 	}
 
 	systemProperty("java.awt.headless", "true")
-	systemProperty("reactor.trace.cancel", "true")
-	systemProperty("reactor.trace.nocapacity", "true")
 	systemProperty("testGroups", p.properties.get("testGroups"))
 	scanForTestClasses = false
 	exclude '**/*Abstract*.*'
