@@ -30,6 +30,8 @@ import kotlin.reflect.KClass
  * @author Simon Baslé
  * @since 3.1.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun <T : Any> Publisher<T>.toFlux(): Flux<T> = Flux.from(this)
 
 /**
@@ -38,6 +40,8 @@ fun <T : Any> Publisher<T>.toFlux(): Flux<T> = Flux.from(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun <T : Any> Iterator<T>.toFlux(): Flux<T> = toIterable().toFlux()
 
 /**
@@ -46,6 +50,8 @@ fun <T : Any> Iterator<T>.toFlux(): Flux<T> = toIterable().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun <T : Any> Iterable<T>.toFlux(): Flux<T> = Flux.fromIterable(this)
 
 /**
@@ -54,6 +60,8 @@ fun <T : Any> Iterable<T>.toFlux(): Flux<T> = Flux.fromIterable(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun <T : Any> Sequence<T>.toFlux(): Flux<T> = Flux.fromIterable(object : Iterable<T> {
     override fun iterator(): Iterator<T> = this@toFlux.iterator()
 })
@@ -64,6 +72,8 @@ fun <T : Any> Sequence<T>.toFlux(): Flux<T> = Flux.fromIterable(object : Iterabl
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun <T : Any> Stream<T>.toFlux(): Flux<T> = Flux.fromStream(this)
 
 /**
@@ -72,6 +82,8 @@ fun <T : Any> Stream<T>.toFlux(): Flux<T> = Flux.fromStream(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun BooleanArray.toFlux(): Flux<Boolean> = this.toList().toFlux()
 
 /**
@@ -80,6 +92,8 @@ fun BooleanArray.toFlux(): Flux<Boolean> = this.toList().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun ByteArray.toFlux(): Flux<Byte> = this.toList().toFlux()
 
 /**
@@ -88,6 +102,8 @@ fun ByteArray.toFlux(): Flux<Byte> = this.toList().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun ShortArray.toFlux(): Flux<Short> = this.toList().toFlux()
 
 /**
@@ -96,6 +112,8 @@ fun ShortArray.toFlux(): Flux<Short> = this.toList().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun IntArray.toFlux(): Flux<Int> = this.toList().toFlux()
 
 /**
@@ -104,6 +122,8 @@ fun IntArray.toFlux(): Flux<Int> = this.toList().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun LongArray.toFlux(): Flux<Long> = this.toList().toFlux()
 
 /**
@@ -112,6 +132,8 @@ fun LongArray.toFlux(): Flux<Long> = this.toList().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun FloatArray.toFlux(): Flux<Float> = this.toList().toFlux()
 
 /**
@@ -120,6 +142,8 @@ fun FloatArray.toFlux(): Flux<Float> = this.toList().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun DoubleArray.toFlux(): Flux<Double> = this.toList().toFlux()
 
 /**
@@ -128,6 +152,8 @@ fun DoubleArray.toFlux(): Flux<Double> = this.toList().toFlux()
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux()", "reactor.kotlin.core.publisher.toFlux"))
 fun <T> Array<out T>.toFlux(): Flux<T> = Flux.fromArray(this)
 
 private fun <T> Iterator<T>.toIterable() = object : Iterable<T> {
@@ -140,6 +166,8 @@ private fun <T> Iterator<T>.toIterable() = object : Iterable<T> {
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toFlux<T>()", "reactor.kotlin.core.publisher.toFlux"))
 fun <T> Throwable.toFlux(): Flux<T> = Flux.error(this)
 
 /**
@@ -148,6 +176,8 @@ fun <T> Throwable.toFlux(): Flux<T> = Flux.error(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("cast<T>()", "reactor.kotlin.core.publisher.cast"))
 inline fun <reified T : Any> Flux<*>.cast(): Flux<T> = cast(T::class.java)
 
 
@@ -157,6 +187,8 @@ inline fun <reified T : Any> Flux<*>.cast(): Flux<T> = cast(T::class.java)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("doOnError(exceptionType, onError)", "reactor.kotlin.core.publisher.doOnError"))
 fun <T, E : Throwable> Flux<T>.doOnError(exceptionType: KClass<E>, onError: (E) -> Unit): Flux<T> =
         doOnError(exceptionType.java) { onError(it) }
 
@@ -166,6 +198,8 @@ fun <T, E : Throwable> Flux<T>.doOnError(exceptionType: KClass<E>, onError: (E) 
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("onErrorMap(exceptionType, mapper)", "reactor.kotlin.core.publisher.onErrorMap"))
 fun <T, E : Throwable> Flux<T>.onErrorMap(exceptionType: KClass<E>, mapper: (E) -> Throwable): Flux<T> =
         onErrorMap(exceptionType.java) { mapper(it) }
 
@@ -175,6 +209,8 @@ fun <T, E : Throwable> Flux<T>.onErrorMap(exceptionType: KClass<E>, mapper: (E) 
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("ofType<T>()", "reactor.kotlin.core.publisher.ofType"))
 inline fun <reified T : Any> Flux<*>.ofType(): Flux<T> = ofType(T::class.java)
 
 /**
@@ -183,6 +219,8 @@ inline fun <reified T : Any> Flux<*>.ofType(): Flux<T> = ofType(T::class.java)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("onErrorResume(exceptionType, fallback)", "reactor.kotlin.core.publisher.onErrorResume"))
 fun <T : Any, E : Throwable> Flux<T>.onErrorResume(exceptionType: KClass<E>, fallback: (E) -> Publisher<T>): Flux<T> =
         onErrorResume(exceptionType.java) { fallback(it) }
 
@@ -192,6 +230,8 @@ fun <T : Any, E : Throwable> Flux<T>.onErrorResume(exceptionType: KClass<E>, fal
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("onErrorReturn(exceptionType, value)", "reactor.kotlin.core.publisher.onErrorReturn"))
 fun <T : Any, E : Throwable> Flux<T>.onErrorReturn(exceptionType: KClass<E>, value: T): Flux<T> =
         onErrorReturn(exceptionType.java, value)
 
@@ -201,6 +241,8 @@ fun <T : Any, E : Throwable> Flux<T>.onErrorReturn(exceptionType: KClass<E>, val
  * @author Igor Perikov
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("split()", "reactor.kotlin.core.publisher.split"))
 fun <T : Any> Flux<out Iterable<T>>.split(): Flux<T> = this.flatMapIterable { it }
 
 /**
@@ -210,4 +252,6 @@ fun <T : Any> Flux<out Iterable<T>>.split(): Flux<T> = this.flatMapIterable { it
  * @author Kevin Davin
  * @since 3.2
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("switchIfEmpty(s)", "reactor.kotlin.core.publisher.switchIfEmpty"))
 fun <T> Flux<T>.switchIfEmpty(s: () -> Publisher<T>): Flux<T> = this.switchIfEmpty(Flux.defer { s() })

@@ -23,6 +23,8 @@ package reactor.util.function
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions and import reactor.kotlin.core.util.function.component1",
+        ReplaceWith("component1()", "reactor.kotlin.core.util.function.component1"))
 operator fun <T> Tuple2<T, *>.component1(): T = t1
 
 /**
@@ -31,6 +33,8 @@ operator fun <T> Tuple2<T, *>.component1(): T = t1
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions and import reactor.kotlin.core.util.function.component2",
+        ReplaceWith("component2()", "reactor.kotlin.core.util.function.component2"))
 operator fun <T> Tuple2<*, T>.component2(): T = t2
 
 /**
@@ -39,6 +43,8 @@ operator fun <T> Tuple2<*, T>.component2(): T = t2
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions and import reactor.kotlin.core.util.function.component3",
+        ReplaceWith("component3()", "reactor.kotlin.core.util.function.component3"))
 operator fun <T> Tuple3<*, *, T>.component3(): T = t3
 
 /**
@@ -47,6 +53,8 @@ operator fun <T> Tuple3<*, *, T>.component3(): T = t3
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions and import reactor.kotlin.core.util.function.component4",
+        ReplaceWith("component4()", "reactor.kotlin.core.util.function.component4"))
 operator fun <T> Tuple4<*, *, *, T>.component4(): T = t4
 
 /**
@@ -55,6 +63,8 @@ operator fun <T> Tuple4<*, *, *, T>.component4(): T = t4
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions and import reactor.kotlin.core.util.function.component5",
+        ReplaceWith("component5()", "reactor.kotlin.core.util.function.component5"))
 operator fun <T> Tuple5<*, *, *, *, T>.component5(): T = t5
 
 /**
@@ -63,6 +73,8 @@ operator fun <T> Tuple5<*, *, *, *, T>.component5(): T = t5
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions and import reactor.kotlin.core.util.function.component6",
+        ReplaceWith("component6()", "reactor.kotlin.core.util.function.component6"))
 operator fun <T> Tuple6<*, *, *, *, *, T>.component6(): T = t6
 
 /**
@@ -71,6 +83,8 @@ operator fun <T> Tuple6<*, *, *, *, *, T>.component6(): T = t6
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions and import reactor.kotlin.core.util.function.component7",
+        ReplaceWith("component7()", "reactor.kotlin.core.util.function.component7"))
 operator fun <T> Tuple7<*, *, *, *, *, *, T>.component7(): T = t7
 
 /**
@@ -79,4 +93,6 @@ operator fun <T> Tuple7<*, *, *, *, *, *, T>.component7(): T = t7
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions and import reactor.kotlin.core.util.function.component8",
+        ReplaceWith("component8()", "reactor.kotlin.core.util.function.component8"))
 operator fun <T> Tuple8<*, *, *, *, *, *, *, T>.component8(): T = t8

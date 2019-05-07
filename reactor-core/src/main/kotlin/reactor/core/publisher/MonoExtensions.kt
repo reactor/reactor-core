@@ -32,6 +32,8 @@ import kotlin.reflect.KClass
  * @author Simon Baslé
  * @since 3.1.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toMono()", "reactor.kotlin.core.publisher.toMono"))
 fun <T> Publisher<T>.toMono(): Mono<T> = Mono.from(this)
 
 /**
@@ -39,6 +41,8 @@ fun <T> Publisher<T>.toMono(): Mono<T> = Mono.from(this)
  *
  * @author Sergio Dos Santos
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toMono()", "reactor.kotlin.core.publisher.toMono"))
 fun <T> (() -> T?).toMono(): Mono<T> = Mono.fromSupplier(this)
 
 /**
@@ -47,6 +51,8 @@ fun <T> (() -> T?).toMono(): Mono<T> = Mono.fromSupplier(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toMono()", "reactor.kotlin.core.publisher.toMono"))
 fun <T : Any> T.toMono(): Mono<T> = Mono.just(this)
 
 /**
@@ -55,6 +61,8 @@ fun <T : Any> T.toMono(): Mono<T> = Mono.just(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toMono()", "reactor.kotlin.core.publisher.toMono"))
 fun <T> CompletableFuture<out T?>.toMono(): Mono<T> = Mono.fromFuture(this)
 
 /**
@@ -63,6 +71,8 @@ fun <T> CompletableFuture<out T?>.toMono(): Mono<T> = Mono.fromFuture(this)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toMono()", "reactor.kotlin.core.publisher.toMono"))
 fun <T> Callable<T?>.toMono(): Mono<T> = Mono.fromCallable(this::call)
 
 /**
@@ -71,6 +81,8 @@ fun <T> Callable<T?>.toMono(): Mono<T> = Mono.fromCallable(this::call)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("toMono<T>()", "reactor.kotlin.core.publisher.toMono"))
 fun <T> Throwable.toMono(): Mono<T> = Mono.error(this)
 
 /**
@@ -79,6 +91,8 @@ fun <T> Throwable.toMono(): Mono<T> = Mono.error(this)
  * @author Sebastien
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("cast<T>()", "reactor.kotlin.core.publisher.cast"))
 inline fun <reified T : Any> Mono<*>.cast(): Mono<T> = cast(T::class.java)
 
 /**
@@ -87,6 +101,8 @@ inline fun <reified T : Any> Mono<*>.cast(): Mono<T> = cast(T::class.java)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("doOnError(exceptionType, onError)", "reactor.kotlin.core.publisher.doOnError"))
 fun <T, E : Throwable> Mono<T>.doOnError(exceptionType: KClass<E>, onError: (E) -> Unit): Mono<T> =
         doOnError(exceptionType.java) { onError(it) }
 
@@ -96,6 +112,8 @@ fun <T, E : Throwable> Mono<T>.doOnError(exceptionType: KClass<E>, onError: (E) 
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("onErrorMap(exceptionType, mapper)", "reactor.kotlin.core.publisher.onErrorMap"))
 fun <T, E : Throwable> Mono<T>.onErrorMap(exceptionType: KClass<E>, mapper: (E) -> Throwable): Mono<T> =
         onErrorMap(exceptionType.java) { mapper(it) }
 
@@ -105,6 +123,8 @@ fun <T, E : Throwable> Mono<T>.onErrorMap(exceptionType: KClass<E>, mapper: (E) 
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("ofType<T>()", "reactor.kotlin.core.publisher.ofType"))
 inline fun <reified T : Any> Mono<*>.ofType(): Mono<T> = ofType(T::class.java)
 
 /**
@@ -113,6 +133,8 @@ inline fun <reified T : Any> Mono<*>.ofType(): Mono<T> = ofType(T::class.java)
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("onErrorResume(exceptionType, fallback)", "reactor.kotlin.core.publisher.onErrorResume"))
 fun <T : Any, E : Throwable> Mono<T>.onErrorResume(exceptionType: KClass<E>, fallback: (E) -> Mono<T>): Mono<T> =
         onErrorResume(exceptionType.java) { fallback(it) }
 
@@ -122,6 +144,8 @@ fun <T : Any, E : Throwable> Mono<T>.onErrorResume(exceptionType: KClass<E>, fal
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("onErrorReturn(exceptionType, value)", "reactor.kotlin.core.publisher.onErrorReturn"))
 fun <T : Any, E : Throwable> Mono<T>.onErrorReturn(exceptionType: KClass<E>, value: T): Mono<T> =
         onErrorReturn(exceptionType.java, value)
 
@@ -132,4 +156,6 @@ fun <T : Any, E : Throwable> Mono<T>.onErrorReturn(exceptionType: KClass<E>, val
  * @author Kevin Davin
  * @since 3.2
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("switchIfEmpty(s)", "reactor.kotlin.core.publisher.switchIfEmpty"))
 fun <T> Mono<T>.switchIfEmpty(s: () -> Mono<T>): Mono<T> = this.switchIfEmpty(Mono.defer { s() })

@@ -29,6 +29,8 @@ import org.reactivestreams.Publisher
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("whenComplete()", "reactor.kotlin.core.publisher.whenComplete"))
 fun Iterable<Publisher<*>>.whenComplete(): Mono<Void> = Mono.`when`(this)
 
 /**
@@ -40,6 +42,8 @@ fun Iterable<Publisher<*>>.whenComplete(): Mono<Void> = Mono.`when`(this)
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("zip(combinator)", "reactor.kotlin.core.publisher.zip"))
 @Suppress("UNCHECKED_CAST")
 inline fun <T, R> Iterable<Mono<T>>.zip(crossinline combinator: (List<T>) -> R): Mono<R> =
         Mono.zip(this) { combinator(it.asList() as List<T>) }
@@ -52,6 +56,8 @@ inline fun <T, R> Iterable<Mono<T>>.zip(crossinline combinator: (List<T>) -> R):
  * @author Sebastien Deleuze
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("whenComplete(*sources)", "reactor.kotlin.core.publisher.whenComplete"))
 fun whenComplete(vararg sources: Publisher<*>): Mono<Void> = MonoBridges.`when`(sources)
 
 /**
@@ -60,6 +66,8 @@ fun whenComplete(vararg sources: Publisher<*>): Mono<Void> = MonoBridges.`when`(
  * @author DoHyung Kim
  * @since 3.1
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("zip(*monos, combinator)", "reactor.kotlin.core.publisher.zip"))
 @Suppress("UNCHECKED_CAST")
 fun <R> zip(vararg monos: Mono<*>, combinator: (Array<*>) -> R): Mono<R> =
         MonoBridges.zip(combinator, monos)

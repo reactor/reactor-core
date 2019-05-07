@@ -29,6 +29,8 @@ import kotlin.reflect.KClass
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("expectError(kClass)", "reactor.kotlin.test.expectError"))
 fun LastStep.expectError(kClass: KClass<out Throwable>): StepVerifier = expectError(kClass.java)
 
 /**
@@ -36,6 +38,8 @@ fun LastStep.expectError(kClass: KClass<out Throwable>): StepVerifier = expectEr
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("expectError()", "reactor.kotlin.test.expectError"))
 @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
 inline fun <reified T : Throwable> LastStep.expectError(): StepVerifier = expectError(T::class.java)
 
@@ -44,6 +48,8 @@ inline fun <reified T : Throwable> LastStep.expectError(): StepVerifier = expect
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("verifyError(kClass)", "reactor.kotlin.test.verifyError"))
 fun LastStep.verifyError(kClass: KClass<out Throwable>): Duration = verifyError(kClass.java)
 
 /**
@@ -51,6 +57,8 @@ fun LastStep.verifyError(kClass: KClass<out Throwable>): Duration = verifyError(
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("verifyError()", "reactor.kotlin.test.verifyError"))
 @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
 inline fun <reified T : Throwable> LastStep.verifyError(): Duration = verifyError(T::class.java)
 
@@ -59,6 +67,8 @@ inline fun <reified T : Throwable> LastStep.verifyError(): Duration = verifyErro
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("hasDroppedErrorOfType(kClass)", "reactor.kotlin.test.hasDroppedErrorOfType"))
 fun Assertions.hasDroppedErrorOfType(kClass: KClass<out Throwable>): Assertions = hasDroppedErrorOfType(kClass.java)
 
 /**
@@ -66,6 +76,8 @@ fun Assertions.hasDroppedErrorOfType(kClass: KClass<out Throwable>): Assertions 
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("hasDroppedErrorOfType()", "reactor.kotlin.test.hasDroppedErrorOfType"))
 @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
 inline fun <reified T : Throwable> Assertions.hasDroppedErrorOfType(): Assertions = hasDroppedErrorOfType(T::class.java)
 
@@ -74,6 +86,8 @@ inline fun <reified T : Throwable> Assertions.hasDroppedErrorOfType(): Assertion
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("hasOperatorErrorOfType(kClass)", "reactor.kotlin.test.hasOperatorErrorOfType"))
 fun Assertions.hasOperatorErrorOfType(kClass: KClass<out Throwable>): Assertions = hasOperatorErrorOfType(kClass.java)
 
 /**
@@ -81,6 +95,8 @@ fun Assertions.hasOperatorErrorOfType(kClass: KClass<out Throwable>): Assertions
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("hasDroppedErrorOfType()", "reactor.kotlin.test.hasDroppedErrorOfType"))
 @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
 inline fun <reified T : Throwable> Assertions.hasOperatorErrorOfType(): Assertions = hasOperatorErrorOfType(T::class.java)
 
@@ -89,6 +105,8 @@ inline fun <reified T : Throwable> Assertions.hasOperatorErrorOfType(): Assertio
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("test()", "reactor.kotlin.test.test"))
 fun <T> Flux<T>.test(): StepVerifier.FirstStep<T> = StepVerifier.create(this)
 
 /**
@@ -96,6 +114,8 @@ fun <T> Flux<T>.test(): StepVerifier.FirstStep<T> = StepVerifier.create(this)
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("test(n)", "reactor.kotlin.test.test"))
 fun <T> Flux<T>.test(n: Long): StepVerifier.FirstStep<T> = StepVerifier.create(this, n)
 
 /**
@@ -103,6 +123,8 @@ fun <T> Flux<T>.test(n: Long): StepVerifier.FirstStep<T> = StepVerifier.create(t
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("test()", "reactor.kotlin.test.test"))
 fun <T> Mono<T>.test(): StepVerifier.FirstStep<T> = StepVerifier.create(this)
 
 /**
@@ -110,4 +132,6 @@ fun <T> Mono<T>.test(): StepVerifier.FirstStep<T> = StepVerifier.create(this)
  *
  * @author Sebastien Deleuze
  */
+@Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
+        ReplaceWith("test(n)", "reactor.kotlin.test.test"))
 fun <T> Mono<T>.test(n: Long): StepVerifier.FirstStep<T> = StepVerifier.create(this, n)
