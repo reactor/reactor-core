@@ -15,8 +15,7 @@
  */
 
 /**
- * Queue {@link reactor.util.concurrent.Queues suppliers and utilities}, busy spin utils
- * {@link reactor.util.concurrent.WaitStrategy}.
+ * Queue {@link reactor.util.concurrent.Queues suppliers and utilities}
  * Used for operational serialization (serializing threads) or buffering (asynchronous boundary).
  *
  * @author Stephane Maldini

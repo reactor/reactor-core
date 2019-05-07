@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Processor;
@@ -32,7 +31,6 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
-import reactor.util.concurrent.WaitStrategy;
 import reactor.util.context.Context;
 
 /**
@@ -50,8 +48,7 @@ import reactor.util.context.Context;
  */
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
-		           Scannable,
-		           LongSupplier {
+		           Scannable {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -64,21 +61,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	public static <T> MonoProcessor<T> create() {
 		return new MonoProcessor<>(null);
 	}
-
-	/**
-	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
-	 * the eventual result for 1 or N subscribers.
-	 *
-	 * @param waitStrategy a {@link WaitStrategy} for blocking {@link #block} strategy
-	 * @param <T> type of the expected value
-	 *
-	 * @return A {@link MonoProcessor}.
-	 */
-	public static <T> MonoProcessor<T> create(WaitStrategy waitStrategy) {
-		return new MonoProcessor<>(null, waitStrategy);
-	}
-
-	final WaitStrategy       waitStrategy;
 
 
 	volatile NextInner<O>[] subscribers;
@@ -110,11 +92,6 @@ public final class MonoProcessor<O> extends Mono<O>
 					.class, "subscription");
 
 	MonoProcessor(@Nullable Publisher<? extends O> source) {
-		this(source, WaitStrategy.sleeping());
-	}
-
-	MonoProcessor(@Nullable Publisher<? extends O> source, WaitStrategy waitStrategy) {
-		this.waitStrategy = Objects.requireNonNull(waitStrategy, "waitStrategy");
 		this.source = source;
 		SUBSCRIBERS.lazySet(this, source != null ? EMPTY_WITH_SOURCE : EMPTY);
 	}
@@ -160,8 +137,6 @@ public final class MonoProcessor<O> extends Mono<O>
 				as.onError(e);
 			}
 		}
-
-		waitStrategy.signalAllWhenBlocking();
 	}
 
 	/**
@@ -173,7 +148,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	@Nullable
 	public O block() {
-		return block(WaitStrategy.NOOP_SPIN_OBSERVER);
+		return block(null);
 	}
 
 	/**
@@ -187,18 +162,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 */
 	@Override
 	@Nullable
-	public O block(Duration timeout) {
-		long delay = System.nanoTime() + timeout.toNanos();
-		Runnable spinObserver = () -> {
-			if (delay < System.nanoTime()) {
-				WaitStrategy.alert();
-			}
-		};
-		return block(spinObserver);
-	}
-
-	@Nullable
-	O block(Runnable spinObserver) {
+	public O block(@Nullable Duration timeout) {
 		try {
 			if (!isPending()) {
 				return peek();
@@ -206,75 +170,41 @@ public final class MonoProcessor<O> extends Mono<O>
 
 			connect();
 
-			try {
-				//wait for a terminated state (minimum 3)
-				long endState = waitStrategy.waitFor(3L, this, spinObserver);
-
-				switch ((int)endState) {
-					case 3: //terminated with value
-						return value;
-					case 4: //terminated without value
-						return null;
-					case 5: //terminated with error
-						RuntimeException re = Exceptions.propagate(error);
-						re = Exceptions.addSuppressed(re, new Exception("Mono#block terminated with an error"));
-						throw re;
-				}
-				throw new IllegalStateException("Mono has been cancelled");
+			long delay;
+			if (null == timeout) {
+				delay = 0L;
 			}
-			catch (RuntimeException ce) {
-				if(WaitStrategy.isAlert(ce)) {
+			else {
+				delay = System.nanoTime() + timeout.toNanos();
+			}
+			for (; ; ) {
+				if (timeout != null && delay < System.nanoTime()) {
 					cancel();
 					throw new IllegalStateException("Timeout on Mono blocking read");
 				}
-				throw ce;
+
+				Thread.sleep(1);
+
+				NextInner<O>[] inners = subscribers;
+				if (inners == TERMINATED) {
+					if (error != null) {
+						RuntimeException re = Exceptions.propagate(error);
+						re = Exceptions.addSuppressed(re, new Exception("Mono#block terminated with an error"));
+						throw re;
+					}
+					if (value == null) {
+						return null;
+					}
+					return value;
+				}
 			}
+
 		}
 		catch (InterruptedException ie) {
 			Thread.currentThread().interrupt();
 
 			throw new IllegalStateException("Thread Interruption on Mono blocking read");
 		}
-	}
-
-	/**
-	 * Returns the internal state as a long fulfilled.
-	 * <ul>
-	 *     <li>-1 : cancelled</li>
-	 *     <li>0 : ready</li>
-	 *     <li>2 : subscribed</li>
-	 *     <li>3 : terminated with value</li>
-	 *     <li>4 : terminated without value</li>
-	 *     <li>5 : terminated with error</li>
-	 * </ul>
-	 *
-	 * @return the internal state from -1 Cancelled to 5 errored, beyond 3 included is
-	 * fulfilled.
-	 * @deprecated  Should not use (to be removed in 3.2)
-	 */
-	@Override
-	public long getAsLong() {
-		//FIXME Should Be Removed alongside WaitStrategy
-		NextInner<O>[] inners = subscribers;
-		if (inners == TERMINATED) {
-			if (error != null) {
-				return 5L; // terminated with error
-			}
-			if (value == null) {
-				return 4L; // terminated without value
-			}
-			return 3L; //terminated with value
-		}
-
-		if (subscription == Operators.cancelledSubscription()) {
-			return -1L; //cancelled
-		}
-
-		if (subscribers != EMPTY && subscribers != EMPTY_WITH_SOURCE) {
-			return 2L; // subscribed
-		}
-
-		return 0L;
 	}
 
 	/**
@@ -353,8 +283,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		for (NextInner<O> as : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
 			as.onError(cause);
 		}
-
-		waitStrategy.signalAllWhenBlocking();
 	}
 
 	@Override
@@ -389,8 +317,6 @@ public final class MonoProcessor<O> extends Mono<O>
 				as.complete(value);
 			}
 		}
-
-		waitStrategy.signalAllWhenBlocking();
 	}
 
 	@Override
