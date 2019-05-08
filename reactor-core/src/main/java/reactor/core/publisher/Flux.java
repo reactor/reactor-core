@@ -934,7 +934,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				return empty();
 			}
 			catch (Exception e) {
-				return error(e);
+				return error(Exceptions.unwrap(e));
 			}
 		}
 		return wrap(source);
@@ -3155,7 +3155,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 					v = scalarCallable.call();
 				}
 				catch (Exception e) {
-					return Mono.error(e);
+					return Mono.error(Exceptions.unwrap(e));
 				}
 				if (v == null) {
 					return Mono.onAssembly(new MonoSupplier<>(listSupplier()));
@@ -5418,7 +5418,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				    v = c.call();
 			    }
 			    catch (Exception e) {
-				    return Mono.error(e);
+				    return Mono.error(Exceptions.unwrap(e));
 			    }
 			    if(v == null){
 			    	return Mono.just(defaultValue);
@@ -7372,7 +7372,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			        v = scalarCallable.call();
 		        }
 		        catch (Exception e) {
-			        return Mono.error(e);
+			        return Mono.error(Exceptions.unwrap(e));
 		        }
 		        if (v == null) {
                     return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
@@ -7410,7 +7410,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		            v = scalarCallable.call();
 	            }
 	            catch (Exception e) {
-		            return Mono.error(e);
+		            return Mono.error(Exceptions.unwrap(e));
 	            }
 	            if (v == null) {
 	                return Mono.just(defaultValue);
@@ -9321,7 +9321,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				v = scalarCallable.call();
 			}
 			catch (Exception e) {
-				return Mono.error(e);
+				return Mono.error(Exceptions.unwrap(e));
 			}
 			if (v == null) {
 				return Mono.empty();

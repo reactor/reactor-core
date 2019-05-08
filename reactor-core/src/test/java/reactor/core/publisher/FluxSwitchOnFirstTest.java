@@ -859,17 +859,7 @@ public class FluxSwitchOnFirstTest {
                                     throw npe;
                                 }))
                     .expectSubscription()
-                    .expectError(NullPointerException.class)
-                    .verifyThenAssertThat()
-                    .hasOperatorErrorsSatisfying(c -> {
-                        Iterator<Tuple2<Optional<Throwable>, Optional<?>>> iterator = c.iterator();
-                        iterator.next();
-                        Tuple2<Optional<Throwable>, Optional<?>> t = iterator.next();
-                        Assertions.assertThat(t.getT1())
-                                  .containsInstanceOf(NullPointerException.class);
-                        Assertions.assertThat(t.getT2())
-                                  .containsInstanceOf(RuntimeException.class);
-                    });
+                    .verifyError(NullPointerException.class);
 
 
         Assertions.assertThat(first).containsExactly(Signal.error(error));

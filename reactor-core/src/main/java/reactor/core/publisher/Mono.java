@@ -44,6 +44,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
@@ -2562,7 +2563,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			        v = block();
 		        }
 		        catch (Throwable t) {
-			        return Flux.error(t);
+			        return Flux.error(Exceptions.unwrap(t));
 		        }
 	            if (v == null) {
 	                return Flux.empty();
@@ -3561,7 +3562,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 					v = scalarCallable.call();
 				}
 				catch (Exception e) {
-					return Mono.error(e);
+					return Mono.error(Exceptions.unwrap(e));
 				}
 				if (v == null) {
 					return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
