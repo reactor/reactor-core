@@ -271,7 +271,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				}
 
 				StringBuilder sb = new StringBuilder(super.getMessage())
-						.append("Error has been observed at the following site(s):\n");
+						.append("\nError has been observed at the following site(s):\n");
 				for(Tuple4<Integer, String, String, Integer> t : chainOrder) {
 					Integer indent = t.getT4();
 					String operator = t.getT2();
@@ -373,30 +373,44 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		final Throwable fail(Throwable t) {
-			final String description;
-			final String[] backtrace;
-			if (snapshotStack.isLight()) {
-				description = snapshotStack.getDescription();
-				backtrace = new String[] { description };
-			}
-			else {
-				String assemblyInformation = snapshotStack.toAssemblyInformation();
+			boolean lightCheckpoint = snapshotStack.isLight();
 
-				StringBuilder sb = new StringBuilder();
-				fillStacktraceHeader(sb, parent.getClass(), snapshotStack.getDescription());
-				sb.append(assemblyInformation);
-				description = sb.toString();
-
-				backtrace = Traces.extractOperatorAssemblyInformationParts(assemblyInformation, false);
-			}
-
+			OnAssemblyException onAssemblyException = null;
 			for (Throwable e : t.getSuppressed()) {
 				if (e instanceof OnAssemblyException) {
-					((OnAssemblyException) e).add(parent, backtrace);
-					return t;
+					onAssemblyException = (OnAssemblyException) e;
+					break;
 				}
 			}
-			return Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack, description));
+
+			if (onAssemblyException != null) {
+				final String[] backtrace;
+				if (lightCheckpoint) {
+					backtrace = new String[] { snapshotStack.getDescription() };
+				}
+				else {
+					String assemblyInformation = snapshotStack.toAssemblyInformation();
+					backtrace = Traces.extractOperatorAssemblyInformationParts(assemblyInformation, false);
+				}
+
+				onAssemblyException.add(parent, backtrace);
+
+				return t;
+			}
+
+			if (lightCheckpoint) {
+				onAssemblyException = new OnAssemblyException(parent, snapshotStack, "");
+				onAssemblyException.add(parent, new String[] { snapshotStack.getDescription() });
+			}
+			else {
+				StringBuilder sb = new StringBuilder();
+				fillStacktraceHeader(sb, parent.getClass(), snapshotStack.getDescription());
+				sb.append(snapshotStack.toAssemblyInformation().replaceFirst("\\n$", ""));
+				String description = sb.toString();
+				onAssemblyException = new OnAssemblyException(parent, snapshotStack, description);
+			}
+
+			return Exceptions.addSuppressed(t, onAssemblyException);
 		}
 
 		@Override
