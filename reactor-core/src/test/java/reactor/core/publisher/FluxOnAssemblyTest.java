@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -149,7 +150,11 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("reactor.core.publisher.FluxOnAssembly$OnAssemblyException: foo");
+		Iterator<String> lines = seekToBacktrace(debugStack);
+
+		assertThat(lines.next())
+				.as("first backtrace line")
+				.endsWith("checkpoint ⇢ foo");
 	}
 
 	@Test
@@ -200,7 +205,11 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("reactor.core.publisher.FluxOnAssembly$OnAssemblyException: foo");
+		Iterator<String> lines = seekToBacktrace(debugStack);
+
+		assertThat(lines.next())
+				.as("first backtrace line")
+				.endsWith("checkpoint ⇢ foo");
 	}
 
 	@Test
@@ -259,7 +268,11 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).endsWith("reactor.core.publisher.FluxOnAssembly$OnAssemblyException: light checkpoint identifier\n");
+		Iterator<String> lines = seekToBacktrace(debugStack);
+
+		assertThat(lines.next())
+				.as("first backtrace line")
+				.endsWith("checkpoint ⇢ light checkpoint identifier");
 	}
 
 	@Test
@@ -336,6 +349,60 @@ public class FluxOnAssemblyTest {
 		assertThat(lines.next())
 				.as("second backtrace line")
 				.endsWith("checkpoint ⇢ single");
+	}
+
+	@Test
+	public void checkpointedPublisher() {
+		StringWriter sw = new StringWriter();
+		Publisher<?> tested = Flux
+				.just(1, 2)
+				.doOnNext(__ -> {
+					throw new RuntimeException("Boom");
+				})
+				.checkpoint("after1")
+				.checkpoint("after2")
+				.doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		Iterator<String> lines = seekToSupressedAssembly(debugStack);
+
+		assertThat(lines.next())
+				.as("backtrace header")
+				.isEqualTo("Error has been observed at the following site(s):");
+
+		assertThat(lines.next())
+				.as("first backtrace line")
+				.endsWith("checkpoint ⇢ after1");
+
+		assertThat(lines.next())
+				.as("second backtrace line")
+				.endsWith("checkpoint ⇢ after2");
+	}
+
+	private Iterator<String> seekToBacktrace(String debugStack) {
+		Iterator<String> lines = seekToSupressedAssembly(debugStack);
+
+		assertThat(lines.next())
+				.as("backtrace header")
+				.isEqualTo("Error has been observed at the following site(s):");
+		return lines;
+	}
+
+	private Iterator<String> seekToSupressedAssembly(String debugStack) {
+		Iterator<String> lines = Stream.of(debugStack.split("\n"))
+		                               .map(String::trim)
+		                               .iterator();
+		while (lines.hasNext()) {
+			String line = lines.next();
+			if (line.endsWith("Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:")) {
+				return lines;
+			}
+		}
+		throw new IllegalStateException("Not found!");
 	}
 
 	private static int getBaseline() {
