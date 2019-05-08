@@ -68,7 +68,7 @@ final class MonoErrorSupplied<T> extends Mono<T> implements Fuseable.ScalarCalla
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Throwable error = Objects.requireNonNull(errorSupplier.get(), "the errorSupplier returned null");
-		Operators.error(actual, Operators.onOperatorError(error, actual.currentContext()));
+		Operators.error(actual, error);
 	}
 
 	@Override

@@ -40,7 +40,7 @@ final class FluxError<T> extends Flux<T> implements Fuseable.ScalarCallable, Sou
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Operators.error(actual, Operators.onOperatorError(error, actual.currentContext()));
+		Operators.error(actual, error);
 	}
 
 	@Override

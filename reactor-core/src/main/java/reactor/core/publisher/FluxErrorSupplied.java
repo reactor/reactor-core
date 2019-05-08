@@ -58,7 +58,7 @@ final class FluxErrorSupplied<T> extends Flux<T> implements Fuseable.ScalarCalla
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Throwable error = Objects.requireNonNull(errorSupplier.get(), "errorSupplier produced a null Throwable");
-		Operators.error(actual, Operators.onOperatorError(error, actual.currentContext()));
+		Operators.error(actual, error);
 	}
 
 	@Override
