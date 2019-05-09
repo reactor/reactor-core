@@ -526,7 +526,7 @@ public class StepVerifierAssertionsTests {
 		}
 		catch (AssertionError ae) {
 			assertThat(ae).hasMessage("Expected operator error matching the given predicate, " +
-					"did not match: <[Optional[java.lang.IllegalStateException: boom1],Optional[test]>.");
+					"did not match: <[Optional[java.lang.IllegalStateException: boom1],Optional[test]]>.");
 		}
 	}
 
