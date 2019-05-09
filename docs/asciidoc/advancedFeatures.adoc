@@ -1084,7 +1084,7 @@ Some operators that deal with buffers or collect values as part of their operati
 If you use such operators with the type(s) that need cleanup, you need to perform cleanup in these handlers.
 
 For example, `distinct` has such a callback that is invoked when the operator terminates (or is cancelled) in order to clear the collection it uses to judge whether an element is distinct or not.
-By default, the collection is a `HashSet`, and the cleanup callback is a `Hashet::clear`.
+By default, the collection is a `HashSet`, and the cleanup callback is a `HashSet::clear`.
 However, if you deal with reference-counted objects, you might want to change that to a more involved handler that would `release` each element in the set before calling `clear()` on it.
 
 
