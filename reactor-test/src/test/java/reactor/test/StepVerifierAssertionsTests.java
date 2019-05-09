@@ -433,8 +433,10 @@ public class StepVerifierAssertionsTests {
 
 	@Test
 	public void assertOperatorErrorAllPass() {
-		Throwable err1 = new IllegalStateException("boom1");
-		StepVerifier.create(Flux.error(err1))
+		IllegalStateException err1 = new IllegalStateException("boom1");
+		StepVerifier.create(Flux.just("test").map(d -> {
+			throw err1;
+		}))
 		            .expectError()
 		            .verifyThenAssertThat()
 		            .hasOperatorErrors()
@@ -462,8 +464,10 @@ public class StepVerifierAssertionsTests {
 	@Test
 	public void assertOperatorErrorFailureWrongType() {
 		try {
-			Throwable err1 = new IllegalStateException("boom1");
-			StepVerifier.create(Flux.error(err1))
+			IllegalStateException err1 = new IllegalStateException("boom1");
+			StepVerifier.create(Flux.just("test").map(d -> {
+				throw err1;
+			}))
 			            .expectError()
 			            .verifyThenAssertThat()
 			            .hasOperatorErrorOfType(IllegalArgumentException.class);
@@ -477,8 +481,10 @@ public class StepVerifierAssertionsTests {
 	@Test
 	public void assertOperatorErrorFailureWrongContains() {
 		try {
-			Throwable err1 = new IllegalStateException("boom1");
-			StepVerifier.create(Flux.error(err1))
+			IllegalStateException err1 = new IllegalStateException("boom1");
+			StepVerifier.create(Flux.just("test").map(d -> {
+				throw err1;
+			}))
 			            .expectError()
 			            .verifyThenAssertThat()
 			            .hasOperatorErrorWithMessageContaining("foo");
@@ -492,8 +498,10 @@ public class StepVerifierAssertionsTests {
 	@Test
 	public void assertOperatorErrorFailureWrongMessage() {
 		try {
-			Throwable err1 = new IllegalStateException("boom1");
-			StepVerifier.create(Flux.error(err1))
+			IllegalStateException err1 = new IllegalStateException("boom1");
+			StepVerifier.create(Flux.just("test").map(d -> {
+				throw err1;
+			}))
 			            .expectError()
 			            .verifyThenAssertThat()
 			            .hasOperatorErrorWithMessage("boom2");
@@ -507,8 +515,10 @@ public class StepVerifierAssertionsTests {
 	@Test
 	public void assertOperatorErrorFailureWrongMatch() {
 		try {
-			Throwable err1 = new IllegalStateException("boom1");
-			StepVerifier.create(Flux.error(err1))
+			IllegalStateException err1 = new IllegalStateException("boom1");
+			StepVerifier.create(Flux.just("test").map(d -> {
+				throw err1;
+			}))
 			            .expectError()
 			            .verifyThenAssertThat()
 			            .hasOperatorErrorMatching(t -> t instanceof IllegalStateException && "foo".equals(t.getMessage()));
@@ -516,7 +526,7 @@ public class StepVerifierAssertionsTests {
 		}
 		catch (AssertionError ae) {
 			assertThat(ae).hasMessage("Expected operator error matching the given predicate, " +
-					"did not match: <[Optional[java.lang.IllegalStateException: boom1],Optional.empty]>.");
+					"did not match: <[Optional[java.lang.IllegalStateException: boom1],Optional[test]>.");
 		}
 	}
 
