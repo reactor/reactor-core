@@ -36,8 +36,7 @@ public final class ReactorBlockHoundIntegration implements BlockHoundIntegration
     public void applyTo(BlockHound.Builder builder) {
         builder.nonBlockingThreadPredicate(current -> current.or(NonBlocking.class::isInstance));
 
-        // `ScheduledThreadPoolExecutor$DelayedWorkQueue.offer` parks the Thread with Unsafe#park.
-        builder.allowBlockingCallsInside(ScheduledThreadPoolExecutor.class.getName(), "scheduleAtFixedRate");
+        builder.allowBlockingCallsInside("java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue", "offer");
 
         Schedulers.onScheduleHook("BlockHound", Wrapper::new);
         builder.disallowBlockingCallsInside(Wrapper.class.getName(), "run");
