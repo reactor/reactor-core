@@ -173,7 +173,7 @@ public final class UnicastProcessor<T>
 	static final AtomicLongFieldUpdater<UnicastProcessor> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(UnicastProcessor.class, "requested");
 
-	volatile boolean outputFused;
+	boolean outputFused;
 
 	public UnicastProcessor(Queue<T> queue) {
 		this.queue = Objects.requireNonNull(queue, "queue");
