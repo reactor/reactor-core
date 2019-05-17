@@ -17,6 +17,9 @@ configure(rootProject) {
 	apply plugin: 'org.asciidoctor.convert'
 
   configure(subprojects) { p ->
+	if (p.name == 'benchmarks')
+	  return
+	
 	p.tasks.withType(Javadoc).all {
 	  afterEvaluate {
 		println "JDK Javadoc link for ${p.name} is ${rootProject.jdkJavadoc}"
