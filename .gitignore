@@ -3,6 +3,7 @@
 
 .gradletasknamecache
 .DS_Store
+benchmarks.jar
 bin
 build
 .classpath

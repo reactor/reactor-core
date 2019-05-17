@@ -15,6 +15,8 @@
  */
 import me.champeau.gradle.japicmp.JapicmpTask
 
+apply plugin: 'osgi'
+
 description = 'Reactor Test support'
 
 dependencies {

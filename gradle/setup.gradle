@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-wrapper {
-	group = 'Project Setup'
-	gradleVersion = "4.10.2"
-}
-
 configure(subprojects) { p ->
+  
 	apply plugin: 'propdeps-maven'
 	apply plugin: 'maven'
 
@@ -101,9 +97,9 @@ def customizePom(pom, gradleProject) {
 					email = 'sbasle@pivotal.io'
 				}
 				developer {
-					id = 'rsivaram'
-					name = 'Rajini Sivaram'
-					email = 'rsivaram@pivotal.io'
+					id = 'bsideup'
+					name = 'Sergei Egorov'
+					email = 'segorov@pivotal.io'
 				}
 				developer {
 					id = 'sdeleuze'

@@ -16,24 +16,24 @@
 import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 buildscript {
-  ext.kotlinVersion = '1.2.51'
+  ext.kotlinVersion = '1.3.31'
   repositories {
 	maven { url "https://repo.spring.io/plugins-release" }
   }
   dependencies {
 	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
 	classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
-	classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.0'
+	classpath "com.github.jengelman.gradle.plugins:shadow:4.0.2"
+	classpath "me.champeau.gradle:jmh-gradle-plugin:0.4.8"
 	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
   }
 }
 
 plugins {
   id 'org.asciidoctor.convert' version '1.5.9.2'
-  id "me.champeau.gradle.jmh" version "0.4.7" apply false
   id "me.champeau.gradle.japicmp" version "0.2.6"
   id "de.undercouch.download" version "3.4.3"
-  id "org.unbroken-dome.test-sets" version "1.5.1" apply false // 2.x version does not work with Gradle 4.10
+  id "org.unbroken-dome.test-sets" version "2.1.1" apply false // 2.x version does not work with Gradle 4.10
 }
 
 apply from: "gradle/doc.gradle"
@@ -85,7 +85,7 @@ configure(subprojects) { p ->
   apply plugin: 'kotlin'
   apply plugin: 'jacoco'
   apply plugin: 'propdeps'
-  apply plugin: 'osgi'
+  
 
   description = 'Non-Blocking Reactive Foundation for the JVM'
   group = 'io.projectreactor'
@@ -216,12 +216,6 @@ configure(subprojects) { p ->
 		println('\n' + "${desc} Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)")
 	  }
 	}
-  }
-
-  // now that kotlin-gradle-plugin 1.1.60 is out with fix for https://youtrack.jetbrains.com/issue/KT-17564
-  // be wary and fail if the issue of source file duplication in jar comes up again
-  sourcesJar {
-	duplicatesStrategy = DuplicatesStrategy.FAIL
   }
 
 }
