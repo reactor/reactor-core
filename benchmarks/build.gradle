@@ -1,0 +1,35 @@
+apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: "me.champeau.gradle.jmh"
+
+
+dependencies{
+  compile project(':reactor-core')
+
+  compile "org.openjdk.jmh:jmh-core:1.21"
+  compile "org.openjdk.jmh:jmh-generator-annprocess:1.21"
+  compile "io.projectreactor.addons:reactor-extra:3.3.0.BUILD-SNAPSHOT"
+
+}
+
+
+// Safer to use the following to run benchmarks, otherwise you may get unexpected errors:
+// ./gradlew --no-daemon cleanJmhJar jmh -Pjmh="ShakespearePlaysScrabble"
+
+jmh {
+  jmhVersion = '1.21'
+  duplicateClassesStrategy DuplicatesStrategy.INCLUDE
+  failOnError = true
+  resultFormat = 'CSV'
+  if (project.hasProperty('jmh')) {
+	include = [".*" + project.jmh + ".*"]
+  }
+//  includeTests = false
+}
+
+//Do not use the default naming convention to avoid CI scan
+jmhJar {
+  baseName 'benchmarks'
+  classifier = null
+  version = null
+  destinationDir = file("$rootDir")
+}
