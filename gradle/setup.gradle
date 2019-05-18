@@ -16,6 +16,9 @@
 
 configure(subprojects) { p ->
   
+  	if (p.name == 'benchmarks')
+		return
+  
 	apply plugin: 'propdeps-maven'
 	apply plugin: 'maven'
 
