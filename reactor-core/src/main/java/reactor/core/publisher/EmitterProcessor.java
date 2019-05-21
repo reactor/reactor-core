@@ -32,7 +32,6 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
-import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 
 /**
@@ -53,6 +52,9 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @author Stephane Maldini
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
+
+	@SuppressWarnings("rawtypes")
+	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
@@ -150,6 +152,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		}
 		this.autoCancel = autoCancel;
 		this.prefetch = prefetch;
+		//doesn't use INIT/CANCELLED distinction, contrary to FluxPublish)
+		//see remove()
 		SUBSCRIBERS.lazySet(this, EMPTY);
 	}
 
@@ -535,6 +539,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 				System.arraycopy(a, j + 1, b, j, n - j - 1);
 			}
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+				//contrary to FluxPublish, there is a possibility of auto-cancel, which
+				//happens when the removed inner makes the subscribers array EMPTY
 				if (autoCancel && b == EMPTY && Operators.terminate(S, this)) {
 					if (WIP.getAndIncrement(this) != 0) {
 						return;

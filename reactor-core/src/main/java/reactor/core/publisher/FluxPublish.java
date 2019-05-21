@@ -179,8 +179,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				AtomicIntegerFieldUpdater.newUpdater(PublishSubscriber.class,
 						"connected");
 
+		//notes: FluxPublish needs to distinguish INIT from CANCELLED in order to correctly
+		//drop values in case of an early connect() without any subscribers.
 		@SuppressWarnings("rawtypes")
-		static final PubSubInner[] EMPTY      = new PublishInner[0];
+		static final PubSubInner[] INIT       = new PublishInner[0];
+		@SuppressWarnings("rawtypes")
+		static final PubSubInner[] CANCELLED  = new PublishInner[0];
 		@SuppressWarnings("rawtypes")
 		static final PubSubInner[] TERMINATED = new PublishInner[0];
 
@@ -202,7 +206,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		PublishSubscriber(int prefetch, FluxPublish<T> parent) {
 			this.prefetch = prefetch;
 			this.parent = parent;
-			SUBSCRIBERS.lazySet(this, EMPTY);
+			SUBSCRIBERS.lazySet(this, INIT);
 		}
 
 		boolean isTerminated(){
@@ -296,11 +300,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				if (WIP.getAndIncrement(this) != 0) {
 					return;
 				}
-				disconnectAction(terminate());
+				disconnectAction();
 			}
 		}
 
-		void disconnectAction(PubSubInner<T>[] inners) {
+		void disconnectAction() {
+			PubSubInner<T>[] inners = SUBSCRIBERS.getAndSet(this, CANCELLED);
 			if (inners.length > 0) {
 				queue.clear();
 				CancellationException ex = new CancellationException("Disconnected");
@@ -331,7 +336,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		public void remove(PubSubInner<T> inner) {
 			for (; ; ) {
 				PubSubInner<T>[] a = subscribers;
-				if (a == TERMINATED || a == EMPTY) {
+				if (a == TERMINATED || a == CANCELLED) {
 					return;
 				}
 				int n = a.length;
@@ -350,7 +355,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 				PubSubInner<?>[] b;
 				if (n == 1) {
-					b = EMPTY;
+					b = CANCELLED;
 				}
 				else {
 					b = new PubSubInner<?>[n - 1];
@@ -358,6 +363,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
 				}
 				if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+					//we don't assume autoCancel semantics, which will rather depend from
+					//downstream operators like autoConnect vs refCount, so we don't disconnect here
 					return;
 				}
 			}
@@ -393,7 +400,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 				PubSubInner<T>[] a = subscribers;
 
-				if (a != EMPTY && !empty) {
+				if (a != CANCELLED && !empty) {
 					long maxRequested = Long.MAX_VALUE;
 
 					int len = a.length;
@@ -499,7 +506,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 		boolean checkTerminated(boolean d, boolean empty) {
 			if (s == Operators.cancelledSubscription()) {
-				disconnectAction(terminate());
+				disconnectAction();
 				return true;
 			}
 			if (d) {
