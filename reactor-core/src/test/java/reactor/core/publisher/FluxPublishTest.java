@@ -667,4 +667,20 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(4));
 	}
+
+	@Test
+	public void removeUnknownInnerIgnored() {
+		FluxPublish.PublishSubscriber<Integer> subscriber = new FluxPublish.PublishSubscriber<>(1, null);
+		FluxPublish.PublishInner<Integer> inner = new FluxPublish.PublishInner<>(null);
+		FluxPublish.PublishInner<Integer> notInner = new FluxPublish.PublishInner<>(null);
+
+		subscriber.add(inner);
+		assertThat(subscriber.subscribers).as("adding inner").hasSize(1);
+
+		subscriber.remove(notInner);
+		assertThat(subscriber.subscribers).as("post remove notInner").hasSize(1);
+
+		subscriber.remove(inner);
+		assertThat(subscriber.subscribers).as("post remove inner").isEmpty();
+	}
 }
