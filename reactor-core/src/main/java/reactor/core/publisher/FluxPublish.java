@@ -335,7 +335,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					return;
 				}
 				int n = a.length;
-				int j = 0;
+				int j = -1;
 				for (int i = 0; i < n; i++) {
 					if (a[i] == inner) {
 						j = i;
@@ -343,7 +343,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					}
 				}
 
-				if (j < 0) { //TODO investigate condition always false
+				if (j < 0) {
+					//inner was not found
 					return;
 				}
 
