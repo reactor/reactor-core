@@ -43,36 +43,12 @@ import reactor.core.publisher.Flux;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class AssemblyTraceBenchmark {
 
-	static final String JAVA_8 = "/Library/Java/JavaVirtualMachines/jdk1.8.0_192.jdk/Contents/Home/bin/java";
-
-	static final String JAVA_11 = "/Library/Java/JavaVirtualMachines/openjdk-11.0.2.jdk/Contents/Home/bin/java";
-
 	@Param({"10", "40", "80"})
 	int stackSize;
 
 	@Benchmark
-	@Fork(
-			jvmArgsAppend = {"-XX:-OmitStackTraceInFastThrow", "-Dreactor.trace.operatorStacktrace=true"}
-	)
+	@Fork(jvmArgsAppend = {"-XX:-OmitStackTraceInFastThrow", "-Dreactor.trace.operatorStacktrace=true"})
 	public void withTracing(Blackhole bh) {
-		stack(stackSize, bh);
-	}
-
-//	@Benchmark
-//	@Fork(
-//			jvm = JAVA_8,
-//			jvmArgsAppend = {"-XX:-OmitStackTraceInFastThrow", "-Dreactor.trace.operatorStacktrace=true"}
-//	)
-//	public void withTracingOnJDK8(Blackhole bh) {
-//		stack(stackSize, bh);
-//	}
-
-//	@Benchmark
-//	@Fork(
-//			jvm = JAVA_11,
-//			jvmArgsAppend = {"-XX:-OmitStackTraceInFastThrow", "-Dreactor.trace.operatorStacktrace=true"}
-//	)
-	public void withTracingOnJDK11(Blackhole bh) {
 		stack(stackSize, bh);
 	}
 
@@ -97,7 +73,8 @@ public class AssemblyTraceBenchmark {
 			                    .blockLast();
 
 			bh.consume(result);
-		} else {
+		}
+		else {
 			stack(i - 1, bh);
 		}
 	}
