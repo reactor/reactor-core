@@ -76,7 +76,8 @@ dependencies {
 		  "org.mockito:mockito-core:$mockitoVersion",
 		  "org.openjdk.jol:jol-core:0.9",
 		  "pl.pragmatists:JUnitParams:$jUnitParamsVersion",
-		  "org.awaitility:awaitility:3.1.2"
+		  "org.awaitility:awaitility:$awaitilityVersion",
+		  "com.pivovarit:throwing-function:$throwingFunctionVersion"
 
   noMicrometerTestCompile sourceSets.main.output
   noMicrometerTestCompile sourceSets.test.output

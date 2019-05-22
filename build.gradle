@@ -61,6 +61,8 @@ ext {
   assertJVersion = '3.11.1'
   mockitoVersion = '2.23.0'
   jUnitParamsVersion = '1.1.1'
+  awaitilityVersion = '3.1.2'
+  throwingFunctionVersion = '1.5.0'
 
   jdk = JavaVersion.current().majorVersion
   jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"

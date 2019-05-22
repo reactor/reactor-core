@@ -16,10 +16,13 @@
 package reactor.core.scheduler;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.pivovarit.function.ThrowingRunnable;
 import org.junit.Test;
+
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
@@ -209,6 +212,52 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			worker.dispose();
 			scheduler.dispose();
+		}
+	}
+
+	@Test
+	public void lifoEviction() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newElastic("dequeueEviction", 1);
+		int activeAtStart = Thread.activeCount();
+		try {
+
+			int cacheSleep = 100;
+			int cacheCount = 10; //1s worth of slow tasks
+			int fastSleep = 10;
+			int fastCount = 200; //2s worth of fast tasks
+			CountDownLatch latch = new CountDownLatch(cacheCount + fastCount);
+			for (int i = 0; i < cacheCount; i++) {
+				Mono.fromRunnable(ThrowingRunnable.unchecked(() -> Thread.sleep(cacheSleep)))
+				    .subscribeOn(scheduler)
+				    .doFinally(sig -> latch.countDown())
+				    .subscribe();
+			}
+
+			int activeAtEnd = Integer.MAX_VALUE;
+			for (int i = 0; i < fastCount; i++) {
+				Mono.just(i)
+				    .subscribeOn(scheduler)
+				    .doFinally(sig -> latch.countDown())
+				    .subscribe();
+
+				if (i == 40) {
+					System.out.println((Thread.activeCount() - activeAtStart) + " threads active in round " + i + "/" + fastCount);
+				}
+
+				if (i == fastCount - 5) {
+					activeAtEnd = Thread.activeCount() - activeAtStart;
+					System.out.println(activeAtEnd + " threads active in round " + i + "/" + fastCount);
+				}
+
+				Thread.sleep(fastSleep);
+			}
+
+			assertThat(latch.await(3, TimeUnit.SECONDS)).as("latch 3s").isTrue();
+			assertThat(activeAtEnd).as("active in last rounds").isOne();
+		}
+		finally {
+			scheduler.dispose();
+			System.out.println((Thread.activeCount() - activeAtStart) + " threads active post shutdown");
 		}
 	}
 }
