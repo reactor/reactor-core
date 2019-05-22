@@ -32,7 +32,7 @@ buildscript {
 plugins {
   id 'org.asciidoctor.convert' version '1.5.9.2'
   id "me.champeau.gradle.jmh" version "0.4.7" apply false
-  id "org.jetbrains.dokka" version "0.9.18"
+  id "org.jetbrains.dokka" version "0.9.18" apply false
   id "me.champeau.gradle.japicmp" version "0.2.6"
 }
 
@@ -218,6 +218,7 @@ if (project.hasProperty('platformVersion')) {
 project('reactor-core') {
   apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
   apply plugin: 'me.champeau.gradle.jmh'
+  apply plugin: 'org.jetbrains.dokka'
 
   configurations {
 	compileOnly.extendsFrom jsr166backport
@@ -302,7 +303,7 @@ project('reactor-core') {
   }
 
   // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
-  task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
+  dokka {
 	dependsOn jar
 	group = "documentation"
 	description = "Generates Kotlin API documentation."
@@ -409,6 +410,8 @@ project('reactor-core') {
 
 
 project('reactor-test') {
+  apply plugin: 'org.jetbrains.dokka'
+
   description = 'Reactor Test support'
 
   configurations {
@@ -471,7 +474,7 @@ project('reactor-test') {
   }
 
   // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
-  task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
+  dokka {
 	dependsOn jar
 	group = "documentation"
 	description = "Generates Kotlin API documentation."
