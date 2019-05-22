@@ -907,4 +907,20 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(4));
 	}
+
+	@Test
+	public void removeUnknownInnerIgnored() {
+		EmitterProcessor<Integer> processor = EmitterProcessor.create();
+		EmitterProcessor.EmitterInner<Integer> inner = new EmitterProcessor.EmitterInner<>(null, processor);
+		EmitterProcessor.EmitterInner<Integer> notInner = new EmitterProcessor.EmitterInner<>(null, processor);
+
+		processor.add(inner);
+		assertThat(processor.subscribers).as("adding inner").hasSize(1);
+
+		processor.remove(notInner);
+		assertThat(processor.subscribers).as("post remove notInner").hasSize(1);
+
+		processor.remove(inner);
+		assertThat(processor.subscribers).as("post remove inner").isEmpty();
+	}
 }

@@ -31,6 +31,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
@@ -639,7 +640,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1528
-	@Test
+	@Test(timeout = 4000)
 	public void syncFusionFromInfiniteStream() {
 		final ConnectableFlux<Integer> publish =
 				Flux.fromStream(Stream.iterate(0, i -> i + 1))
@@ -654,7 +655,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1528
-	@Test
+	@Test(timeout = 4000)
 	public void syncFusionFromInfiniteStreamAndTake() {
 		final Flux<Integer> publish =
 				Flux.fromStream(Stream.iterate(0, i -> i + 1))
@@ -666,5 +667,57 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		            .expectNextCount(10)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(4));
+	}
+
+	@Test
+	public void dataDroppedIfConnectImmediately() {
+		TestPublisher<Integer> publisher = TestPublisher.create();
+		ConnectableFlux<Integer> connectableFlux = publisher.flux().publish();
+
+		connectableFlux.connect();
+
+		publisher.next(1);
+		publisher.next(2);
+		publisher.next(3);
+
+		StepVerifier.create(connectableFlux)
+		            .expectSubscription()
+		            .then(() -> publisher.next(99))
+		            .expectNext(99)
+		            .then(publisher::complete)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void dataDroppedIfAutoconnectZero() {
+		TestPublisher<Integer> publisher = TestPublisher.create();
+		Flux<Integer> flux = publisher.flux().publish().autoConnect(0);
+
+		publisher.next(1);
+		publisher.next(2);
+		publisher.next(3);
+
+		StepVerifier.create(flux)
+		            .expectSubscription()
+		            .then(() -> publisher.next(99))
+		            .expectNext(99)
+		            .then(publisher::complete)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void removeUnknownInnerIgnored() {
+		FluxPublish.PublishSubscriber<Integer> subscriber = new FluxPublish.PublishSubscriber<>(1, null);
+		FluxPublish.PublishInner<Integer> inner = new FluxPublish.PublishInner<>(null);
+		FluxPublish.PublishInner<Integer> notInner = new FluxPublish.PublishInner<>(null);
+
+		subscriber.add(inner);
+		assertThat(subscriber.subscribers).as("adding inner").hasSize(1);
+
+		subscriber.remove(notInner);
+		assertThat(subscriber.subscribers).as("post remove notInner").hasSize(1);
+
+		subscriber.remove(inner);
+		assertThat(subscriber.subscribers).as("post remove inner").isEmpty();
 	}
 }
