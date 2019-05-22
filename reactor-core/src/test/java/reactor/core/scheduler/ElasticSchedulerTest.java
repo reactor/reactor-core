@@ -28,6 +28,8 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,6 +38,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Simon Baslé
  */
 public class ElasticSchedulerTest extends AbstractSchedulerTest {
+
+	private static final Logger LOGGER = Loggers.getLogger(ElasticSchedulerTest.class);
 
 	@Override
 	protected Scheduler scheduler() {
@@ -241,23 +245,23 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 				    .subscribe();
 
 				if (i == 40) {
-					System.out.println((Thread.activeCount() - activeAtStart) + " threads active in round " + i + "/" + fastCount);
+					LOGGER.info("{} threads active in round {}/{}", Thread.activeCount() - activeAtStart, i, fastCount);
 				}
 
 				if (i == fastCount - 5) {
 					activeAtEnd = Thread.activeCount() - activeAtStart;
-					System.out.println(activeAtEnd + " threads active in round " + i + "/" + fastCount);
+					LOGGER.info("{} threads active in round {}/{}", activeAtEnd, i, fastCount);
 				}
 
 				Thread.sleep(fastSleep);
 			}
 
 			assertThat(latch.await(3, TimeUnit.SECONDS)).as("latch 3s").isTrue();
-			assertThat(activeAtEnd).as("active in last rounds").isOne();
+			assertThat(activeAtEnd).as("active in last rounds").isLessThan(10);
 		}
 		finally {
 			scheduler.dispose();
-			System.out.println((Thread.activeCount() - activeAtStart) + " threads active post shutdown");
+			LOGGER.info("{} threads active post shutdown", Thread.activeCount() - activeAtStart);
 		}
 	}
 }
