@@ -660,15 +660,17 @@ public class FluxRetryWhenTest {
 		final Duration EXPLICIT_MAX = Duration.ofSeconds(100_000);
 		final Duration INIT = Duration.ofSeconds(10);
 
-		Function<Flux<Throwable>, Publisher<Long>> backoffFunction = FluxRetryWhen.randomExponentialBackoffFunction(
-				80, //with pure exponential, this amount of retries would overflow Duration's capacity
-				INIT,
-				EXPLICIT_MAX,
-				0d,
-				Schedulers.parallel());
+		StepVerifier.withVirtualTime(() -> {
+			Function<Flux<Throwable>, Publisher<Long>> backoffFunction = FluxRetryWhen.randomExponentialBackoffFunction(
+					80, //with pure exponential, this amount of retries would overflow Duration's capacity
+					INIT,
+					EXPLICIT_MAX,
+					0d,
+					Schedulers.parallel());
 
-		StepVerifier.withVirtualTime(() -> Flux.error(new IllegalStateException("boom"))
-		                                       .retryWhen(backoffFunction))
+			return Flux.error(new IllegalStateException("boom"))
+			    .retryWhen(backoffFunction);
+		})
 		            .expectSubscription()
 		            .thenAwait(Duration.ofNanos(Long.MAX_VALUE))
 		            .expectErrorSatisfies(e -> assertThat(e).hasMessage("Retries exhausted: 80/80")
@@ -705,11 +707,12 @@ public class FluxRetryWhenTest {
 		//the fluxRetryBackoffWithGivenScheduler above is not suitable to verify the retry scheduler, as VTS is akin to immediate()
 		//and doesn't really change the Thread
 		Scheduler backoffScheduler = Schedulers.newSingle("backoffScheduler");
+		String main = Thread.currentThread().getName();
 		final IllegalStateException exception = new IllegalStateException("boom");
 		List<String> threadNames = new ArrayList<>(4);
 		try {
 			StepVerifier.create(Flux.concat(Flux.range(0, 2), Flux.error(exception))
-			                        .doOnError(e -> threadNames.add(Thread.currentThread().getName()))
+			                        .doOnError(e -> threadNames.add(Thread.currentThread().getName().replaceAll("-\\d+", "")))
 			                        .retryBackoff(2, Duration.ofMillis(10), Duration.ofMillis(100), 0.5d, backoffScheduler)
 
 			)
@@ -721,7 +724,7 @@ public class FluxRetryWhenTest {
 
 			assertThat(threadNames)
 					.as("retry runs on backoffScheduler")
-					.containsExactly("main", "backoffScheduler-1", "backoffScheduler-1");
+					.containsExactly(main, "backoffScheduler", "backoffScheduler");
 		}
 		finally {
 			backoffScheduler.dispose();

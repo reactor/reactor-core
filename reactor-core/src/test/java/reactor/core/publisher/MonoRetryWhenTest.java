@@ -287,11 +287,12 @@ public class MonoRetryWhenTest {
 		//the monoRetryBackoffWithGivenScheduler above is not suitable to verify the retry scheduler,
 		// as VTS is akin to immediate() and doesn't really change the Thread
 		Scheduler backoffScheduler = Schedulers.newSingle("backoffScheduler");
+		String main = Thread.currentThread().getName();
 		final IllegalStateException exception = new IllegalStateException("boom");
 		List<String> threadNames = new ArrayList<>(4);
 		try {
 			StepVerifier.create(Mono.error(exception)
-			                        .doOnError(e -> threadNames.add(Thread.currentThread().getName()))
+			                        .doOnError(e -> threadNames.add(Thread.currentThread().getName().replaceFirst("-\\d+", "")))
 			                        .retryBackoff(2, Duration.ofMillis(10), Duration.ofMillis(100), 0.5d, backoffScheduler)
 
 			)
@@ -302,7 +303,7 @@ public class MonoRetryWhenTest {
 
 			assertThat(threadNames)
 					.as("retry runs on backoffScheduler")
-					.containsExactly("main", "backoffScheduler-1", "backoffScheduler-1");
+					.containsExactly(main, "backoffScheduler", "backoffScheduler");
 		}
 		finally {
 			backoffScheduler.dispose();
