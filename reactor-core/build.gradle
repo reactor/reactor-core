@@ -17,6 +17,7 @@ import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'org.jetbrains.dokka'
 
 sourceSets {
   noMicrometerTest {
@@ -156,7 +157,7 @@ javadoc {
 }
 
 // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
-task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
+dokka {
   dependsOn jar
   group = "documentation"
   description = "Generates Kotlin API documentation."
