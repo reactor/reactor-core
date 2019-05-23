@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +29,9 @@ import reactor.core.publisher.Operators.MonoSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -170,6 +174,25 @@ public class MonoSubscriberTest {
 		if (errors[0] != null && errors[1] != null) {
 			errors[0].addSuppressed(errors[1]);
 			throw Exceptions.propagate(errors[0]);
+		}
+	}
+
+	@Test
+	public void issue1719() {
+		for (int i = 0; i < 10000; i++) {
+			Map<String, Mono<Integer>> input = new HashMap<>();
+			input.put("one", Mono.just(1));
+			input.put("two", Mono.create(
+					(sink) -> Schedulers.elastic().schedule(() -> sink.success(2))));
+			input.put("three", Mono.just(3));
+			int sum = Flux.fromIterable(input.entrySet())
+			              .flatMap((entry) -> Mono.zip(Mono.just(entry.getKey()), entry.getValue()))
+			              .collectMap(Tuple2::getT1, Tuple2::getT2).map((items) -> {
+						AtomicInteger result = new AtomicInteger();
+						items.values().forEach(result::addAndGet);
+						return result.get();
+					}).block();
+			assertThat(sum).as("Iteration %s", i).isEqualTo(6);
 		}
 	}
 }
