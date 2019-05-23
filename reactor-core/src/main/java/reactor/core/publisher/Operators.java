@@ -1490,12 +1490,17 @@ public abstract class Operators {
 		public final void complete(O v) {
 			for (; ; ) {
 				int state = this.state;
-				if (state == FUSED_EMPTY && STATE.compareAndSet(this, FUSED_EMPTY, FUSED_READY)) {
+				if (state == FUSED_EMPTY) {
 					setValue(v);
-					Subscriber<? super O> a = actual;
-					a.onNext(v);
-					a.onComplete();
-					return;
+					//sync memory since setValue is non volatile
+					if (STATE.compareAndSet(this, FUSED_EMPTY, FUSED_READY)) {
+						Subscriber<? super O> a = actual;
+						a.onNext(v);
+						a.onComplete();
+						return;
+					}
+					//refresh state if race occurred so we test if cancelled in the next comparison
+					state = this.state;
 				}
 
 				// if state is >= HAS_CANCELLED or bit zero is set (*_HAS_VALUE) case, return
