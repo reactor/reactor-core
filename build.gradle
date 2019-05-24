@@ -50,6 +50,13 @@ ext {
 	}
   }
 
+  def ciServers = ["CI", "CONTINUOUS_INTEGRATION", "TRAVIS", "CIRCLECI", "bamboo_planKey"]
+  ciServers.retainAll(System.getenv().keySet())
+  isCiServer = !ciServers.isEmpty()
+  if (isCiServer) {
+	println "Detected CI environment: $ciServers"
+  }
+
   // Metrics
   micrometerVersion = 'latest.release' //TODO specify a version of micrometer?
 
@@ -195,6 +202,27 @@ configure(subprojects) { p ->
 	  exceptionFormat "FULL"
 	  stackTraceFilters "ENTRY_POINT"
 	  maxGranularity 3
+	}
+
+	if (isCiServer) {
+	  def stdout = new LinkedList<TestOutputEvent>()
+	  beforeTest { TestDescriptor td ->
+		stdout.clear()
+	  }
+	  onOutput { TestDescriptor td, TestOutputEvent toe ->
+		stdout.add(toe)
+	  }
+	  afterTest { TestDescriptor td, TestResult tr ->
+		if (tr.resultType == TestResult.ResultType.FAILURE && stdout.size() > 0) {
+		  def stdOutput = stdout.collect {
+			it.getDestination().name() == "StdErr"
+					? "STD_ERR: ${it.getMessage()}"
+					: "STD_OUT: ${it.getMessage()}"
+		  }
+				  .join()
+		  println "This is the console output of the failing test below:\n$stdOutput"
+		}
+	  }
 	}
 
 	if (JavaVersion.current().isJava9Compatible()) {
