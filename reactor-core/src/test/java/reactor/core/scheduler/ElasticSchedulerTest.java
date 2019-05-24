@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.pivovarit.function.ThrowingRunnable;
+import org.assertj.core.data.Offset;
 import org.junit.Test;
 
 import reactor.core.Disposable;
@@ -222,13 +223,13 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void lifoEviction() throws InterruptedException {
 		Scheduler scheduler = Schedulers.newElastic("dequeueEviction", 1);
-		int activeAtStart = Thread.activeCount();
+		int otherThreads = Thread.activeCount();
 		try {
 
-			int cacheSleep = 100;
-			int cacheCount = 10; //1s worth of slow tasks
-			int fastSleep = 10;
-			int fastCount = 200; //2s worth of fast tasks
+			int cacheSleep = 100; //slow tasks last 100ms
+			int cacheCount = 100; //100 of slow tasks
+			int fastSleep = 10;   //interval between fastTask scheduling
+			int fastCount = 200;  //will schedule fast tasks up to 2s later
 			CountDownLatch latch = new CountDownLatch(cacheCount + fastCount);
 			for (int i = 0; i < cacheCount; i++) {
 				Mono.fromRunnable(ThrowingRunnable.unchecked(() -> Thread.sleep(cacheSleep)))
@@ -237,6 +238,8 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 				    .subscribe();
 			}
 
+			int oldActive = 0;
+			int activeAtBeginning = 0;
 			int activeAtEnd = Integer.MAX_VALUE;
 			for (int i = 0; i < fastCount; i++) {
 				Mono.just(i)
@@ -244,24 +247,35 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 				    .doFinally(sig -> latch.countDown())
 				    .subscribe();
 
-				if (i == 40) {
-					LOGGER.info("{} threads active in round {}/{}", Thread.activeCount() - activeAtStart, i, fastCount);
+				if (i == 0) {
+					activeAtBeginning = Thread.activeCount() - otherThreads;
+					oldActive = activeAtBeginning;
+					LOGGER.info("{} threads active in round 1/{}", activeAtBeginning, fastCount);
 				}
-
-				if (i == fastCount - 5) {
-					activeAtEnd = Thread.activeCount() - activeAtStart;
-					LOGGER.info("{} threads active in round {}/{}", activeAtEnd, i, fastCount);
+				else if (i == fastCount - 1) {
+					activeAtEnd = Thread.activeCount() - otherThreads;
+					LOGGER.info("{} threads active in round {}/{}", activeAtEnd, i + 1, fastCount);
 				}
-
+				else {
+					int newActive = Thread.activeCount() - otherThreads;
+					if (oldActive != newActive) {
+						oldActive = newActive;
+						LOGGER.info("{} threads active in round {}/{}", oldActive, i + 1, fastCount);
+					}
+				}
 				Thread.sleep(fastSleep);
 			}
 
 			assertThat(latch.await(3, TimeUnit.SECONDS)).as("latch 3s").isTrue();
-			assertThat(activeAtEnd).as("active in last rounds").isLessThan(10);
+			assertThat(activeAtBeginning).as("active in first round")
+			                       .isEqualTo(cacheCount + 1);
+			assertThat(activeAtEnd).as("active in last round")
+			                       .isLessThan(activeAtBeginning)
+			                       .isCloseTo(1, Offset.offset(5));
 		}
 		finally {
 			scheduler.dispose();
-			LOGGER.info("{} threads active post shutdown", Thread.activeCount() - activeAtStart);
+			LOGGER.info("{} threads active post shutdown", Thread.activeCount() - otherThreads);
 		}
 	}
 }
