@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -34,7 +35,10 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
@@ -656,14 +660,17 @@ public class FluxRetryWhenTest {
 		final Duration EXPLICIT_MAX = Duration.ofSeconds(100_000);
 		final Duration INIT = Duration.ofSeconds(10);
 
-		Function<Flux<Throwable>, Publisher<Long>> backoffFunction = FluxRetryWhen.randomExponentialBackoffFunction(
-				80, //with pure exponential, this amount of retries would overflow Duration's capacity
-				INIT,
-				EXPLICIT_MAX,
-				0d);
+		StepVerifier.withVirtualTime(() -> {
+			Function<Flux<Throwable>, Publisher<Long>> backoffFunction = FluxRetryWhen.randomExponentialBackoffFunction(
+					80, //with pure exponential, this amount of retries would overflow Duration's capacity
+					INIT,
+					EXPLICIT_MAX,
+					0d,
+					Schedulers.parallel());
 
-		StepVerifier.withVirtualTime(() -> Flux.error(new IllegalStateException("boom"))
-		                                       .retryWhen(backoffFunction))
+			return Flux.error(new IllegalStateException("boom"))
+			    .retryWhen(backoffFunction);
+		})
 		            .expectSubscription()
 		            .thenAwait(Duration.ofNanos(Long.MAX_VALUE))
 		            .expectErrorSatisfies(e -> assertThat(e).hasMessage("Retries exhausted: 80/80")
@@ -671,5 +678,56 @@ public class FluxRetryWhenTest {
 		                                                    .hasCause(new IllegalStateException("boom"))
 		            )
 		            .verify();
+	}
+
+	@Test
+	public void fluxRetryBackoffWithGivenScheduler() {
+		VirtualTimeScheduler backoffScheduler = VirtualTimeScheduler.create();
+
+		Exception exception = new IOException("boom retry");
+
+		StepVerifier.create(
+				Flux.concat(Flux.range(0, 2), Flux.error(exception))
+				    .log()
+				    .retryBackoff(4, Duration.ofHours(1), Duration.ofHours(1), 0, backoffScheduler)
+				.doOnNext(i -> System.out.println(i + " on " + Thread.currentThread().getName()))
+		)
+		            .expectNext(0, 1) //normal output
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .then(() -> backoffScheduler.advanceTimeBy(Duration.ofHours(4)))
+		            .expectNext(0, 1, 0, 1, 0, 1, 0, 1) //4 retry attempts
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Retries exhausted: 4/4")
+		                                                    .hasCause(exception))
+		            .verify(Duration.ofMillis(100)); //test should only take roughly the expectNoEvent time
+	}
+
+	@Test
+	public void fluxRetryBackoffRetriesOnGivenScheduler() {
+		//the fluxRetryBackoffWithGivenScheduler above is not suitable to verify the retry scheduler, as VTS is akin to immediate()
+		//and doesn't really change the Thread
+		Scheduler backoffScheduler = Schedulers.newSingle("backoffScheduler");
+		String main = Thread.currentThread().getName();
+		final IllegalStateException exception = new IllegalStateException("boom");
+		List<String> threadNames = new ArrayList<>(4);
+		try {
+			StepVerifier.create(Flux.concat(Flux.range(0, 2), Flux.error(exception))
+			                        .doOnError(e -> threadNames.add(Thread.currentThread().getName().replaceAll("-\\d+", "")))
+			                        .retryBackoff(2, Duration.ofMillis(10), Duration.ofMillis(100), 0.5d, backoffScheduler)
+
+			)
+			            .expectNext(0, 1, 0, 1, 0, 1)
+			            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+			                                                    .hasMessage("Retries exhausted: 2/2")
+			                                                    .hasCause(exception))
+			            .verify(Duration.ofMillis(200));
+
+			assertThat(threadNames)
+					.as("retry runs on backoffScheduler")
+					.containsExactly(main, "backoffScheduler", "backoffScheduler");
+		}
+		finally {
+			backoffScheduler.dispose();
+		}
 	}
 }

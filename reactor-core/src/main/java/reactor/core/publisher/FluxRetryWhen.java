@@ -27,6 +27,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -247,10 +248,11 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 
 	static Function<Flux<Throwable>, Publisher<Long>> randomExponentialBackoffFunction(
 			long numRetries, Duration firstBackoff, Duration maxBackoff,
-			double jitterFactor) {
+			double jitterFactor, Scheduler backoffScheduler) {
 		if (jitterFactor < 0 || jitterFactor > 1) throw new IllegalArgumentException("jitterFactor must be between 0 and 1 (default 0.5)");
 		Objects.requireNonNull(firstBackoff, "firstBackoff is required");
 		Objects.requireNonNull(maxBackoff, "maxBackoff is required");
+		Objects.requireNonNull(backoffScheduler, "backoffScheduler is required");
 
 		return t -> t.index()
 		             .flatMap(t2 -> {
@@ -301,7 +303,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 				             jitter = random.nextLong(lowBound, highBound);
 			             }
 			             Duration effectiveBackoff = nextBackoff.plusMillis(jitter);
-			             return Mono.delay(effectiveBackoff);
+			             return Mono.delay(effectiveBackoff, backoffScheduler);
 		             });
 	}
 }
