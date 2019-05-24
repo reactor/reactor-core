@@ -7075,6 +7075,44 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * In case of error, retry this {@link Flux} up to {@code numRetries} times using a
+	 * randomized exponential backoff strategy. The jitter factor is {@code 50%}
+	 * but the effective backoff delay cannot be less than {@code firstBackoff} nor more
+	 * than {@code maxBackoff}. The delays and subsequent attempts are materialized on the
+	 * provided backoff {@link Scheduler} (see {@link Mono#delay(Duration, Scheduler)}).
+	 <p>
+	 * The randomized exponential backoff is good at preventing two typical issues with
+	 * other simpler backoff strategies, namely:
+	 * <ul>
+	 *     <li>
+	 *      having an exponentially growing backoff delay with a small initial delay gives
+	 *      the best tradeoff between not overwhelming the server and serving the client as
+	 *      fast as possible
+	 *     </li>
+	 *     <li>
+	 *      having a jitter, or randomized backoff delay, is beneficial in avoiding "retry-storms"
+	 *      where eg. numerous clients would hit the server at the same time, causing it to
+	 *      display transient failures which would cause all clients to retry at the same
+	 *      backoff times, ultimately sparing no load on the server.
+	 *     </li>
+	 * </ul>
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/retryBackoffForFlux.svg" alt="">
+	 *
+	 * @param numRetries the maximum number of attempts before an {@link IllegalStateException}
+	 * is raised (having the original retry-triggering exception as cause).
+	 * @param firstBackoff the first backoff delay to apply then grow exponentially. Also
+	 * minimum delay even taking jitter into account.
+	 * @param maxBackoff the maximum delay to apply despite exponential growth and jitter.
+	 * @param backoffScheduler the {@link Scheduler} on which the delays and subsequent attempts are executed.
+	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
+	 */
+	public final Flux<T> retryBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff, Scheduler backoffScheduler) {
+		return retryBackoff(numRetries, firstBackoff, maxBackoff, 0.5d, backoffScheduler);
+	}
+
+	/**
+	 * In case of error, retry this {@link Flux} up to {@code numRetries} times using a
 	 * randomized exponential backoff strategy, randomized with a user-provided jitter
 	 * factor between {@code 0.d} (no jitter) and {@code 1.0} (default is {@code 0.5}).
 	 * Even with the jitter, the effective backoff delay cannot be less than
@@ -7108,7 +7146,48 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
 	 */
 	public final Flux<T> retryBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff, double jitterFactor) {
-		return retryWhen(FluxRetryWhen.randomExponentialBackoffFunction(numRetries, firstBackoff, maxBackoff, jitterFactor));
+		return retryBackoff(numRetries, firstBackoff, maxBackoff, jitterFactor, Schedulers.parallel());
+	}
+
+	/**
+	 * In case of error, retry this {@link Flux} up to {@code numRetries} times using a
+	 * randomized exponential backoff strategy, randomized with a user-provided jitter
+	 * factor between {@code 0.d} (no jitter) and {@code 1.0} (default is {@code 0.5}).
+	 * Even with the jitter, the effective backoff delay cannot be less than
+	 * {@code firstBackoff} nor more than {@code maxBackoff}. The delays and subsequent
+	 * attempts are executed on the provided backoff {@link Scheduler} (see
+	 * {@link Mono#delay(Duration, Scheduler)}).
+	 <p>
+	 * The randomized exponential backoff is good at preventing two typical issues with
+	 * other simpler backoff strategies, namely:
+	 * <ul>
+	 *     <li>
+	 *      having an exponentially growing backoff delay with a small initial delay gives
+	 *      the best tradeoff between not overwhelming the server and serving the client as
+	 *      fast as possible
+	 *     </li>
+	 *     <li>
+	 *      having a jitter, or randomized backoff delay, is beneficial in avoiding "retry-storms"
+	 *      where eg. numerous clients would hit the server at the same time, causing it to
+	 *      display transient failures which would cause all clients to retry at the same
+	 *      backoff times, ultimately sparing no load on the server.
+	 *     </li>
+	 * </ul>
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/retryBackoffForFlux.svg" alt="">
+	 *
+	 * @param numRetries the maximum number of attempts before an {@link IllegalStateException}
+	 * is raised (having the original retry-triggering exception as cause).
+	 * @param firstBackoff the first backoff delay to apply then grow exponentially. Also
+	 * minimum delay even taking jitter into account.
+	 * @param maxBackoff the maximum delay to apply despite exponential growth and jitter.
+	 * @param backoffScheduler the {@link Scheduler} on which the delays and subsequent attempts are executed.
+	 * @param jitterFactor the jitter percentage (as a double between 0.0 and 1.0).
+	 * @return a {@link Flux} that retries on onError with exponentially growing randomized delays between retries.
+	 */
+	public final Flux<T> retryBackoff(long numRetries, Duration firstBackoff, Duration maxBackoff, double jitterFactor, Scheduler backoffScheduler) {
+		return retryWhen(FluxRetryWhen.randomExponentialBackoffFunction(numRetries, firstBackoff, maxBackoff, jitterFactor, backoffScheduler));
 	}
 
 	/**

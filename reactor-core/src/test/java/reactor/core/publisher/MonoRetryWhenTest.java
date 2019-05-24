@@ -24,8 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
+
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -252,6 +255,59 @@ public class MonoRetryWhenTest {
 		assertThat(elapsedList.get(2) - elapsedList.get(1)).isEqualTo(200);
 		assertThat(elapsedList.get(3) - elapsedList.get(2)).isEqualTo(400);
 		assertThat(elapsedList.get(4) - elapsedList.get(3)).isEqualTo(800);
+	}
+
+
+	@Test
+	public void monoRetryBackoffWithGivenScheduler() {
+		VirtualTimeScheduler backoffScheduler = VirtualTimeScheduler.create();
+
+		Exception exception = new IOException("boom retry");
+		AtomicInteger errorCount = new AtomicInteger();
+
+		StepVerifier.create(
+				Mono.error(exception)
+				    .doOnError(t -> errorCount.incrementAndGet())
+				    .retryBackoff(4, Duration.ofMillis(10), Duration.ofMillis(100), 0, backoffScheduler)
+		)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(400))
+		            .then(() -> assertThat(errorCount).as("errorCount before advanceTime").hasValue(1))
+		            .then(() -> backoffScheduler.advanceTimeBy(Duration.ofMillis(400)))
+		            .then(() -> assertThat(errorCount).as("errorCount after advanceTime").hasValue(5))
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Retries exhausted: 4/4")
+		                                                    .hasCause(exception))
+		            .verify(Duration.ofMillis(400)); //test should only take roughly the expectNoEvent time
+	}
+
+
+	@Test
+	public void monoRetryBackoffRetriesOnGivenScheduler() {
+		//the monoRetryBackoffWithGivenScheduler above is not suitable to verify the retry scheduler,
+		// as VTS is akin to immediate() and doesn't really change the Thread
+		Scheduler backoffScheduler = Schedulers.newSingle("backoffScheduler");
+		String main = Thread.currentThread().getName();
+		final IllegalStateException exception = new IllegalStateException("boom");
+		List<String> threadNames = new ArrayList<>(4);
+		try {
+			StepVerifier.create(Mono.error(exception)
+			                        .doOnError(e -> threadNames.add(Thread.currentThread().getName().replaceFirst("-\\d+", "")))
+			                        .retryBackoff(2, Duration.ofMillis(10), Duration.ofMillis(100), 0.5d, backoffScheduler)
+
+			)
+			            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+			                                                    .hasMessage("Retries exhausted: 2/2")
+			                                                    .hasCause(exception))
+			            .verify(Duration.ofMillis(200));
+
+			assertThat(threadNames)
+					.as("retry runs on backoffScheduler")
+					.containsExactly(main, "backoffScheduler", "backoffScheduler");
+		}
+		finally {
+			backoffScheduler.dispose();
+		}
 	}
 
 }
