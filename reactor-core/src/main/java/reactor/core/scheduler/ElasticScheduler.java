@@ -158,20 +158,24 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	public Disposable schedule(Runnable task) {
 		CachedService cached = pick();
 
-		return Schedulers.directSchedule(cached.exec,
-				new DirectScheduleTask(task, cached),
+		DirectScheduleTask dst = new DirectScheduleTask(task, cached);
+
+		return Disposables.composite(Schedulers.directSchedule(cached.exec,
+				dst,
 				0L,
-				TimeUnit.MILLISECONDS);
+				TimeUnit.MILLISECONDS), dst);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		CachedService cached = pick();
 
-		return Schedulers.directSchedule(cached.exec,
-				new DirectScheduleTask(task, cached),
+		DirectScheduleTask dst = new DirectScheduleTask(task, cached);
+
+		return Disposables.composite(Schedulers.directSchedule(cached.exec,
+				dst,
 				delay,
-				unit);
+				unit), dst);
 	}
 
 	@Override
@@ -278,7 +282,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		}
 	}
 
-	static final class DirectScheduleTask implements Runnable {
+	static final class DirectScheduleTask extends AtomicBoolean implements Runnable, Disposable {
 
 		final Runnable      delegate;
 		final CachedService cached;
@@ -290,6 +294,10 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 
 		@Override
 		public void run() {
+			if (!compareAndSet(false, true)) {
+				// already disposed - should not run task
+				return;
+			}
 			try {
 				delegate.run();
 			}
@@ -297,6 +305,13 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 				Schedulers.handleError(ex);
 			}
 			finally {
+				cached.dispose();
+			}
+		}
+
+		@Override
+		public void dispose() {
+			if (compareAndSet(false, true)) {
 				cached.dispose();
 			}
 		}
