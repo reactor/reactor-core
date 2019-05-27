@@ -267,8 +267,6 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 			}
 
 			assertThat(latch.await(3, TimeUnit.SECONDS)).as("latch 3s").isTrue();
-			assertThat(activeAtBeginning).as("active in first round")
-			                       .isEqualTo(cacheCount + 1);
 			assertThat(activeAtEnd).as("active in last round")
 			                       .isLessThan(activeAtBeginning)
 			                       .isCloseTo(1, Offset.offset(5));
