@@ -18,6 +18,7 @@ package reactor.core.scheduler;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.pivovarit.function.ThrowingRunnable;
@@ -277,6 +278,64 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			scheduler.dispose();
 			LOGGER.info("{} threads active post shutdown", Thread.activeCount() - otherThreads);
+		}
+	}
+
+	@Test
+	public void doesntRecycleWhileRunningAfterDisposed() throws Exception {
+		Scheduler s = Schedulers.newElastic("test-recycle");
+		((ElasticScheduler)s).evictor.shutdownNow();
+
+		try{
+			AtomicBoolean stop = new AtomicBoolean(false);
+			Disposable d = s.schedule(() -> {
+				// simulate uninterruptible computation
+				for (;;) {
+					if (stop.get()) {
+						break;
+					}
+				}
+			});
+			Thread.sleep(100);
+			d.dispose();
+
+			Thread.sleep(100);
+			assertThat(((ElasticScheduler)s).cache).isEmpty();
+
+			stop.set(true);
+
+			Thread.sleep(100);
+			assertThat(((ElasticScheduler)s).cache.size()).isEqualTo(1);
+		}
+		finally {
+			s.dispose();
+			s.dispose();//noop
+		}
+	}
+
+	@Test
+	public void recycleOnce() throws Exception {
+		Scheduler s = Schedulers.newElastic("test-recycle");
+		((ElasticScheduler)s).evictor.shutdownNow();
+
+		try{
+			Disposable d = s.schedule(() -> {
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			});
+
+			d.dispose();
+			d.dispose();
+
+			Thread.sleep(100);
+			assertThat(((ElasticScheduler)s).cache.size()).isEqualTo(1);
+		}
+		finally {
+			s.dispose();
+			s.dispose();//noop
 		}
 	}
 }
