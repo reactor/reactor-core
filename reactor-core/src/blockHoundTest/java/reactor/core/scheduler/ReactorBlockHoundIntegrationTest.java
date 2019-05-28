@@ -26,8 +26,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import reactor.blockhound.BlockHound;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.ReactorBlockHoundIntegration;
-import reactor.core.scheduler.Schedulers;
 
 public class ReactorBlockHoundIntegrationTest {
 
