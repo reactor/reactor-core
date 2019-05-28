@@ -922,10 +922,11 @@ public abstract class Schedulers {
 
 	static Disposable directSchedule(ScheduledExecutorService exec,
 			Runnable task,
+			@Nullable Disposable parent,
 			long delay,
 			TimeUnit unit) {
 		task = onSchedule(task);
-		SchedulerTask sr = new SchedulerTask(task);
+		SchedulerTask sr = new SchedulerTask(task, parent);
 		Future<?> f;
 		if (delay <= 0L) {
 			f = exec.submit((Callable<?>) sr);

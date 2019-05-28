@@ -27,6 +27,8 @@ import reactor.util.annotation.Nullable;
 final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 
 	final Runnable task;
+	@Nullable
+	final Disposable parent;
 
 	static final Future<Void> FINISHED = new FutureTask<>(() -> null);
 	static final Future<Void> CANCELLED = new FutureTask<>(() -> null);
@@ -37,8 +39,9 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 
 	Thread thread;
 
-	SchedulerTask(Runnable task) {
+	SchedulerTask(Runnable task, @Nullable Disposable parent) {
 		this.task = task;
+		this.parent = parent;
 	}
 
 	@Override
@@ -58,7 +61,13 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 			Future f;
 			for (;;) {
 				f = future;
-				if (f == CANCELLED || FUTURE.compareAndSet(this, f, FINISHED)) {
+				if (f == FINISHED || f == CANCELLED) {
+					break;
+				}
+				if (FUTURE.compareAndSet(this, f, FINISHED)) {
+					if (parent != null) {
+						parent.dispose();
+					}
 					break;
 				}
 			}
@@ -103,6 +112,9 @@ final class SchedulerTask implements Runnable, Disposable, Callable<Void> {
 			if (FUTURE.compareAndSet(this, f, CANCELLED)) {
 				if (f != null) {
 					f.cancel(thread != Thread.currentThread());
+				}
+				if (parent != null) {
+					parent.dispose();
 				}
 				break;
 			}
