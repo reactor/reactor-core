@@ -763,17 +763,40 @@ public class OnNextFailureStrategyTest {
 
 	@Test
 	public void overrideInheritedErrorStrategyInFlatMap() {
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
 		Flux<Integer> test = Flux.just(1, 2, 3)
 				.flatMap(i -> Flux.range(0, i + 1)
 						.map(v -> 30 / v)
 						.onErrorReturn(100)
-						.onErrorStop())
-				.onErrorContinue(OnNextFailureStrategyTest::drop);
+						.onErrorStop()
+				)
+				.onErrorContinue((t, o) -> errorRef.compareAndSet(null, t));
 
 		StepVerifier.create(test)
 				.expectNext(100, 100, 100)
 				.expectComplete()
 				.verify();
+
+		assertThat(errorRef).hasValue(null);
+	}
+
+	@Test
+	public void overrideInheritedErrorStrategyInFlatMapMono() {
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		Mono<Integer> test = Mono.just(1)
+				.flatMap(i -> Mono.just(1 - i)
+						.map(v -> 30 / v)
+						.onErrorReturn(100)
+						.onErrorStop()
+				)
+				.onErrorContinue((t, o) -> errorRef.compareAndSet(null, t));
+
+		StepVerifier.create(test)
+				.expectNext(100)
+				.expectComplete()
+				.verify();
+
+		assertThat(errorRef).hasValue(null);
 	}
 
 	@Test

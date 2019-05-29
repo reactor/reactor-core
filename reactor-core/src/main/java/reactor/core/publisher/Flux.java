@@ -6163,14 +6163,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * If an {@link #onErrorContinue(BiConsumer)} variant has been used before, reverts to the default
-	 * 'STOP' mode where errors are terminal events. It can be used for easier scoping of
-	 * the on next failure strategy or to override the inherited strategy in a sub-stream
-	 * (for example in a flatMap). It has no effect if {@link #onErrorContinue(BiConsumer)} has not
-	 * been used.
+	 * If an {@link #onErrorContinue(BiConsumer)} variant has been used downstream, reverts
+	 * to the default 'STOP' mode where errors are terminal events upstream. It can be
+	 * used for easier scoping of the on next failure strategy or to override the
+	 * inherited strategy in a sub-stream (for example in a flatMap). It has no effect if
+	 * {@link #onErrorContinue(BiConsumer)} has not been used downstream.
 	 *
 	 * @return a {@link Flux} that terminates on errors, even if {@link #onErrorContinue(BiConsumer)}
-	 * was used before
+	 * was used downstream
 	 */
 	public final Flux<T> onErrorStop() {
 		return subscriberContext(Context.of(
