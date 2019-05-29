@@ -2978,6 +2978,22 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * If an {@link #onErrorContinue(BiConsumer)} variant has been used downstream, reverts
+	 * to the default 'STOP' mode where errors are terminal events upstream. It can be
+	 * used for easier scoping of the on next failure strategy or to override the
+	 * inherited strategy in a sub-stream (for example in a flatMap). It has no effect if
+	 * {@link #onErrorContinue(BiConsumer)} has not been used downstream.
+	 *
+	 * @return a {@link Mono} that terminates on errors, even if {@link #onErrorContinue(BiConsumer)}
+	 * was used downstream
+	 */
+	public final Mono<T> onErrorStop() {
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.stop()));
+	}
+
+	/**
 	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
 	 * to it if the error matches the given predicate. Otherwise let the error pass through.
 	 * <p>
