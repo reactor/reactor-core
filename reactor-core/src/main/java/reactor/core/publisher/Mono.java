@@ -2213,7 +2213,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/doOnTerminateForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/doOnSuccessOrError.svg" alt="">
 	 *
 	 * @param onSuccessOrError the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
