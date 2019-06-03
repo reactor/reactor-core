@@ -1961,6 +1961,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doAfterSuccessOrError(BiConsumer<? super T, Throwable> afterSuccessOrError) {
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(afterSuccessOrError, Fuseable.Composite.Type.DO_AFTER_TERMINATE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return onAssembly(new MonoPeekTerminal<>(this, null, null, afterSuccessOrError));
 	}
 
@@ -2019,6 +2026,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(onCancel, Fuseable.Composite.Type.DO_ON_CANCEL);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, null, onCancel);
 	}
 
@@ -2061,6 +2075,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(onNext, Fuseable.Composite.Type.DO_ON_NEXT);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, onNext, null, null, null, null);
 	}
 
@@ -2083,6 +2104,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
 		Objects.requireNonNull(onSuccess, "onSuccess");
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(onSuccess, Fuseable.Composite.Type.DO_ON_SUCCESS);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return onAssembly(new MonoPeekTerminal<>(this, onSuccess, null, null));
 	}
 
@@ -2125,6 +2153,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(onError, Fuseable.Composite.Type.DO_ON_ERROR);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, onError, null, null, null);
 	}
 
@@ -2184,6 +2219,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnRequest(final LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(consumer, Fuseable.Composite.Type.DO_ON_REQUEST);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, consumer, null);
 	}
 
@@ -2202,6 +2244,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(onSubscribe, Fuseable.Composite.Type.DO_ON_SUBSCRIBE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, onSubscribe, null, null,  null, null, null);
 	}
 
@@ -2223,6 +2272,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnSuccessOrError(BiConsumer<? super T, Throwable> onSuccessOrError) {
 		Objects.requireNonNull(onSuccessOrError, "onSuccessOrError");
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(onSuccessOrError, Fuseable.Composite.Type.DO_ON_TERMINATE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return onAssembly(new MonoPeekTerminal<>(this, null, onSuccessOrError, null));
 	}
 
@@ -2238,6 +2294,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(onTerminate, Fuseable.Composite.Type.DO_ON_TERMINATE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this,
 				null,
 				null,
@@ -2446,6 +2509,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a filtered {@link Mono}
 	 */
 	public final Mono<T> filter(final Predicate<? super T> tester) {
+		if (this instanceof Fuseable.Composite) {
+			Mono<T> composedFlux =
+				(Mono<T>)((Fuseable.Composite) this).tryCompose(tester, Fuseable.Composite.Type.FILTER);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoFilterFuseable<>(this, tester));
 		}
@@ -2796,6 +2866,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
+		if (this instanceof Fuseable.Composite) {
+			Mono<R> composedFlux =
+				(Mono<R>)((Fuseable.Composite) this).tryCompose(mapper, Fuseable.Composite.Type.MAP);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoMapFuseable<>(this, mapper));
 		}

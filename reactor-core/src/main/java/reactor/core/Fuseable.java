@@ -20,8 +20,10 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.publisher.Flux;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -64,6 +66,27 @@ public interface Fuseable {
 		 * @return true if consumed, false if dropped and a new value can be immediately sent
 		 */
 		boolean tryOnNext(T t);
+	}
+
+	interface Composite {
+	    enum Type {
+	        MAP, FILTER, HANDLE,
+            DO_ON_SUBSCRIBE, DO_ON_NEXT, DO_ON_ERROR, DO_ON_COMPLETE,
+		    DO_ON_REQUEST, DO_ON_CANCEL,
+		    DO_ON_SUCCESS, DO_ON_TERMINATE, DO_AFTER_TERMINATE,
+	    }
+
+        /**
+         *
+         * @param composite function to compose with
+         *
+         * @param type the type of composeable function
+         * @param <K> result type in case of re-mapping
+         *
+         * @return returns the result of composition or {@link null} in case it is impossible to compose {@link Flux}es.
+         */
+		@Nullable
+		<K> Publisher<K> tryCompose(Object composite, Type type);
 	}
 
 	/**

@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -34,7 +35,7 @@ import reactor.util.annotation.Nullable;
  * @author Simon Baslé
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable, Fuseable.Composite {
 
 	final BiConsumer<? super T, Throwable> onAfterTerminateCall;
 	final BiConsumer<? super T, Throwable> onTerminateCall;
@@ -61,21 +62,58 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 		source.subscribe(new MonoTerminalPeekSubscriber<>(actual, this));
 	}
 
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> MonoPeekTerminal<K> tryCompose(Object composite, Type type) {
+		if (composite instanceof BiConsumer) {
+			BiConsumer biConsumerComposable = (BiConsumer) composite;
+			switch (type) {
+				case DO_ON_TERMINATE: {
+					BiConsumer<? super T, Throwable> composed =
+						onTerminateCall == null ?
+							biConsumerComposable : onTerminateCall.andThen(biConsumerComposable);
+					return (MonoPeekTerminal) new MonoPeekTerminal<>(source,
+						onSuccessCall,
+						composed,
+						onAfterTerminateCall);
+				}
+				case DO_AFTER_TERMINATE: {
+					BiConsumer<? super T, Throwable> composed =
+						onAfterTerminateCall == null ? biConsumerComposable :
+							onAfterTerminateCall.andThen(biConsumerComposable);
+					return (MonoPeekTerminal) new MonoPeekTerminal<>(source,
+						onSuccessCall,
+						onTerminateCall,
+						composed);
+				}
+			}
+		}
+		else if (composite instanceof Consumer && type == Type.DO_ON_SUCCESS) {
+			Consumer<? super T> composed =
+				onSuccessCall == null ? (Consumer) composite : onSuccessCall.andThen((Consumer) composite);
+			return (MonoPeekTerminal) new MonoPeekTerminal<>(source,
+				composed,
+				onTerminateCall,
+				onAfterTerminateCall);
+		}
+		return null;
+	}
+
 	/*
-	The specificity of this operator's subscriber is that it is implemented as a single
-	class for all cases (fuseable or not, conditional or not). So subscription and actual
-	are duplicated to arrange for the special cases (QueueSubscription and ConditionalSubscriber).
+        The specificity of this operator's subscriber is that it is implemented as a single
+        class for all cases (fuseable or not, conditional or not). So subscription and actual
+        are duplicated to arrange for the special cases (QueueSubscription and ConditionalSubscriber).
 
-	A challenge for Fuseable: classes that rely only on `instanceof Fuseable` will always
-	think this operator is Fuseable, when they should also check `requestFusion`. This is
-	the case with StepVerifier in 3.0.3 for instance, but actual operators should otherwise
-	also call requestFusion, which will return NONE if the source isn't Fuseable.
+        A challenge for Fuseable: classes that rely only on `instanceof Fuseable` will always
+        think this operator is Fuseable, when they should also check `requestFusion`. This is
+        the case with StepVerifier in 3.0.3 for instance, but actual operators should otherwise
+        also call requestFusion, which will return NONE if the source isn't Fuseable.
 
-	A challenge for ConditionalSubscriber: since there is no `requestConditional` here,
-	the operators only rely on `instanceof`... So this subscriber will always seem conditional.
-	As a result, if the `tryOnNext` method is invoked while the `actualConditional` is null,
-	it falls back to calling `onNext` directly.
-	 */
+        A challenge for ConditionalSubscriber: since there is no `requestConditional` here,
+        the operators only rely on `instanceof`... So this subscriber will always seem conditional.
+        As a result, if the `tryOnNext` method is invoked while the `actualConditional` is null,
+        it falls back to calling `onNext` directly.
+         */
 	static final class MonoTerminalPeekSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           Fuseable.QueueSubscription<T> {

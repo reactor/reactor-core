@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 
 /**
@@ -27,13 +28,23 @@ import reactor.core.Fuseable.ConditionalSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFilter<T> extends MonoOperator<T, T> {
+final class MonoFilter<T> extends MonoOperator<T, T> implements Fuseable.Composite {
 
 	final Predicate<? super T> predicate;
 
 	MonoFilter(Mono<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> MonoFilter<K> tryCompose(Object composable, Type type) {
+		if (type == Type.FILTER && composable instanceof Predicate) {
+			Predicate<? super T> composed = predicate.and((Predicate) composable);
+			return (MonoFilter) new MonoFilter<T>(source, composed);
+		}
+		return null;
 	}
 
 	@Override

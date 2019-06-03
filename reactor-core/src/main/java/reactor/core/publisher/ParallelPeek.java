@@ -28,7 +28,8 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the value type
  */
-final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
+final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>,
+                                                               Fuseable.Composite {
 
 	final ParallelFlux<T> source;
 	
@@ -87,6 +88,144 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 		}
 		
 		source.subscribe(parents);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> ParallelPeek<K> tryCompose(Object composite, Fuseable.Composite.Type type) {
+		if (composite instanceof Consumer) {
+			Consumer consumerComposable = (Consumer) composite;
+			switch (type) {
+				case DO_ON_SUBSCRIBE: {
+					Consumer<? super Subscription> composed =
+						onSubscribe == null ? consumerComposable :
+							onSubscribe.andThen(consumerComposable);
+					return (ParallelPeek) new ParallelPeek<>(source,
+						onNext,
+						onAfterNext,
+						onError,
+						onComplete,
+						onAfterTerminated,
+						composed,
+						onRequest,
+						onCancel);
+				}
+				case DO_ON_NEXT: {
+					Consumer<? super T> composed =
+						onNext == null ?
+							consumerComposable : onNext.andThen(consumerComposable);
+					return (ParallelPeek) new ParallelPeek<>(source,
+						composed,
+						onAfterNext,
+						onError,
+						onComplete,
+						onAfterTerminated,
+						onSubscribe,
+						onRequest,
+						onCancel);
+				}
+				case DO_ON_ERROR: {
+					Consumer<? super Throwable> composed =
+						onError == null ?
+							consumerComposable : onError.andThen(consumerComposable);
+					return (ParallelPeek) new ParallelPeek<>(source,
+						onNext,
+						onAfterNext,
+						composed,
+						onComplete,
+						onAfterTerminated,
+						onSubscribe,
+						onRequest,
+						onCancel);
+				}
+			}
+		}
+		else if (composite instanceof Runnable) {
+			Runnable runnableComposable = (Runnable) composite;
+			switch (type) {
+				case DO_ON_COMPLETE: {
+					Runnable composed =
+						onComplete == null ? runnableComposable : () -> {
+							onComplete.run();
+							runnableComposable.run();
+						};
+					return (ParallelPeek) new ParallelPeek<>(source,
+						onNext,
+						onAfterNext,
+						onError,
+						composed,
+						onAfterTerminated,
+						onSubscribe,
+						onRequest,
+						onCancel);
+				}
+				case DO_ON_TERMINATE: {
+					Runnable composedCompletion =
+						onComplete == null ? runnableComposable : () -> {
+							onComplete.run();
+							runnableComposable.run();
+						};
+					Consumer<? super Throwable> composedError =
+						onError == null ? (e) -> runnableComposable.run() :
+							onError.andThen((e) -> runnableComposable.run());
+					return (ParallelPeek) new ParallelPeek<>(source,
+						onNext,
+						onAfterNext,
+						composedError,
+						composedCompletion,
+						onAfterTerminated,
+						onSubscribe,
+						onRequest,
+						onCancel);
+				}
+				case DO_AFTER_TERMINATE: {
+					Runnable composed =
+						onAfterTerminated == null ? runnableComposable : () -> {
+							onAfterTerminated.run();
+							runnableComposable.run();
+						};
+					return (ParallelPeek) new ParallelPeek<>(source,
+						onNext,
+						onAfterNext,
+						onError,
+						onComplete,
+						composed,
+						onSubscribe,
+						onRequest,
+						onCancel);
+				}
+				case DO_ON_CANCEL: {
+					Runnable composed =
+						onCancel == null ? runnableComposable : () -> {
+							onCancel.run();
+							runnableComposable.run();
+						};
+					return (ParallelPeek) new ParallelPeek<>(source,
+						onNext,
+						onAfterNext,
+						onError,
+						onComplete,
+						onAfterTerminated,
+						onSubscribe,
+						onRequest,
+						composed);
+				}
+			}
+		}
+		else if (type == Fuseable.Composite.Type.DO_ON_REQUEST && composite instanceof LongConsumer) {
+			LongConsumer composed =
+				onRequest == null ? (LongConsumer) composite : onRequest.andThen((LongConsumer) composite);
+			return (ParallelPeek) new ParallelPeek<>(source,
+				onNext,
+				onAfterNext,
+				onError,
+				onComplete,
+				onAfterTerminated,
+				onSubscribe,
+				composed,
+				onCancel);
+		}
+		return null;
 	}
 
 	@Override

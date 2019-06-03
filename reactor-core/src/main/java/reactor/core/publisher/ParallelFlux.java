@@ -39,6 +39,7 @@ import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
@@ -366,6 +367,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(afterTerminate, Fuseable.Composite.Type.DO_AFTER_TERMINATE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, afterTerminate, null, null, null);
 	}
 
@@ -378,6 +386,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(onCancel, Fuseable.Composite.Type.DO_ON_CANCEL);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, null, null, null, onCancel);
 	}
 
@@ -390,6 +405,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnComplete(Runnable onComplete) {
 		Objects.requireNonNull(onComplete, "onComplete");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(onComplete, Fuseable.Composite.Type.DO_ON_COMPLETE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, onComplete, null, null, null, null);
 	}
 
@@ -435,6 +457,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(onError, Fuseable.Composite.Type.DO_ON_ERROR);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, onError, null, null, null, null, null);
 	}
 
@@ -452,6 +481,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(onSubscribe, Fuseable.Composite.Type.DO_ON_SUBSCRIBE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, null, onSubscribe, null, null);
 	}
 
@@ -464,6 +500,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(onNext, Fuseable.Composite.Type.DO_ON_NEXT);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, onNext, null, null, null, null, null, null, null);
 	}
 
@@ -477,6 +520,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnRequest(LongConsumer onRequest) {
 		Objects.requireNonNull(onRequest, "onRequest");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(onRequest, Fuseable.Composite.Type.DO_ON_REQUEST);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, null, null, onRequest, null);
 	}
 
@@ -488,6 +538,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(onTerminate, Fuseable.Composite.Type.DO_ON_TERMINATE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this,
 				null,
 				null,
@@ -511,6 +568,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> filter(Predicate<? super T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<T> composedFlux =
+				(ParallelFlux<T>)((Fuseable.Composite) this).tryCompose(predicate, Fuseable.Composite.Type.FILTER);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return onAssembly(new ParallelFilter<>(this, predicate));
 	}
 
@@ -733,6 +797,13 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final <U> ParallelFlux<U> map(Function<? super T, ? extends U> mapper) {
 		Objects.requireNonNull(mapper, "mapper");
+		if (this instanceof Fuseable.Composite) {
+			ParallelFlux<U> composedFlux =
+				(ParallelFlux<U>)((Fuseable.Composite) this).tryCompose(mapper, Fuseable.Composite.Type.MAP);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return onAssembly(new ParallelMap<>(this, mapper));
 	}
 

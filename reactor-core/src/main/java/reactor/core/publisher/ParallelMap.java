@@ -28,7 +28,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the input value type
  * @param <R> the output value type
  */
-final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
+final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable, Fuseable.Composite {
 
 	final ParallelFlux<T> source;
 	
@@ -45,6 +45,16 @@ final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 
+		return null;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> ParallelMap<T, K> tryCompose(Object composite, Type type) {
+		if (type == Type.MAP && composite instanceof Function) {
+			Function<T, K> composed = mapper.andThen((Function) composite);
+			return new ParallelMap<>(source, composed);
+		}
 		return null;
 	}
 

@@ -31,7 +31,7 @@ import reactor.core.Fuseable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoMapFuseable<T, R> extends MonoOperator<T, R>
-		implements Fuseable {
+		implements Fuseable, Fuseable.Composite {
 
 	final Function<? super T, ? extends R> mapper;
 
@@ -59,4 +59,13 @@ final class MonoMapFuseable<T, R> extends MonoOperator<T, R>
 		source.subscribe(new FluxMapFuseable.MapFuseableSubscriber<>(actual, mapper));
 	}
 
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> MonoMapFuseable<T, K> tryCompose(Object composite, Fuseable.Composite.Type type) {
+		if (type == Fuseable.Composite.Type.MAP && composite instanceof Function) {
+			Function<T, K> composed = mapper.andThen((Function) composite);
+			return new MonoMapFuseable<>(source, composed);
+		}
+		return null;
+	}
 }

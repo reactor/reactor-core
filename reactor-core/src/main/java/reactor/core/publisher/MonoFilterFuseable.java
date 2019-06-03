@@ -28,13 +28,23 @@ import reactor.core.Fuseable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoFilterFuseable<T> extends MonoOperator<T, T>
-		implements Fuseable {
+		implements Fuseable, Fuseable.Composite {
 
 	final Predicate<? super T> predicate;
 
 	MonoFilterFuseable(Mono<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> MonoFilterFuseable<K> tryCompose(Object composable, Composite.Type type) {
+		if (type == Composite.Type.FILTER && composable instanceof Predicate) {
+			Predicate<? super T> composed = predicate.and((Predicate) composable);
+			return (MonoFilterFuseable) new MonoFilterFuseable<T>(source, composed);
+		}
+		return null;
 	}
 
 	@Override

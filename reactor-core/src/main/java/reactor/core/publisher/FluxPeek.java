@@ -21,6 +21,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
 import reactor.util.annotation.Nullable;
@@ -38,7 +39,7 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
+final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T>, Fuseable.Composite {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -81,6 +82,137 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 			return;
 		}
 		source.subscribe(new PeekSubscriber<>(actual, this));
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> FluxPeek<K> tryCompose(Object composite, Fuseable.Composite.Type type) {
+		if (composite instanceof Consumer) {
+			Consumer consumerComposable = (Consumer) composite;
+			switch (type) {
+				case DO_ON_SUBSCRIBE: {
+					Consumer<? super Subscription> composed =
+						onSubscribeCall == null
+							? consumerComposable
+							: onSubscribeCall.andThen(consumerComposable);
+					return (FluxPeek) new FluxPeek<>(source,
+						composed,
+						onNextCall,
+						onErrorCall,
+						onCompleteCall,
+						onAfterTerminateCall,
+						onRequestCall,
+						onCancelCall);
+				}
+				case DO_ON_NEXT: {
+					Consumer<? super T> composed =
+						onNextCall == null ?
+							consumerComposable : onNextCall.andThen(consumerComposable);
+					return (FluxPeek) new FluxPeek<>(source,
+						onSubscribeCall,
+						composed,
+						onErrorCall,
+						onCompleteCall,
+						onAfterTerminateCall,
+						onRequestCall,
+						onCancelCall);
+				}
+				case DO_ON_ERROR: {
+					Consumer<? super Throwable> composed =
+						onErrorCall == null ?
+							consumerComposable : onErrorCall.andThen(consumerComposable);
+					return (FluxPeek) new FluxPeek<>(source,
+						onSubscribeCall,
+						onNextCall,
+						composed,
+						onCompleteCall,
+						onAfterTerminateCall,
+						onRequestCall,
+						onCancelCall);
+				}
+			}
+		}
+		else if (composite instanceof Runnable) {
+			Runnable runnableComposable = (Runnable) composite;
+			switch (type) {
+				case DO_ON_COMPLETE: {
+					Runnable composed =
+						onCompleteCall == null ? runnableComposable : () -> {
+							onCompleteCall.run();
+							runnableComposable.run();
+						};
+					return (FluxPeek) new FluxPeek<>(source,
+						onSubscribeCall,
+						onNextCall,
+						onErrorCall,
+						composed,
+						onAfterTerminateCall,
+						onRequestCall,
+						onCancelCall);
+				}
+				case DO_ON_TERMINATE: {
+					Runnable composedCompletion =
+						onCompleteCall == null ? runnableComposable : () -> {
+							onCompleteCall.run();
+							runnableComposable.run();
+						};
+					Consumer<? super Throwable> composedError =
+						onErrorCall == null ? (e) -> runnableComposable.run() :
+							onErrorCall.andThen((e) -> runnableComposable.run());
+					return (FluxPeek) new FluxPeek<>(source,
+						onSubscribeCall,
+						onNextCall,
+						composedError,
+						composedCompletion,
+						onAfterTerminateCall,
+						onRequestCall,
+						onCancelCall);
+				}
+				case DO_AFTER_TERMINATE: {
+					Runnable composed =
+						onAfterTerminateCall == null ? runnableComposable : () -> {
+							onAfterTerminateCall.run();
+							runnableComposable.run();
+						};
+					return (FluxPeek) new FluxPeek<>(source,
+						onSubscribeCall,
+						onNextCall,
+						onErrorCall,
+						onCompleteCall,
+						composed,
+						onRequestCall,
+						onCancelCall);
+				}
+				case DO_ON_CANCEL: {
+					Runnable composed =
+						onCancelCall == null ? runnableComposable : () -> {
+							onCancelCall.run();
+							runnableComposable.run();
+						};
+					return (FluxPeek) new FluxPeek<>(source,
+						onSubscribeCall,
+						onNextCall,
+						onErrorCall,
+						onCompleteCall,
+						onAfterTerminateCall,
+						onRequestCall,
+						composed);
+				}
+			}
+		}
+		else if (type == Fuseable.Composite.Type.DO_ON_REQUEST && composite instanceof LongConsumer) {
+			LongConsumer composed =
+				onRequestCall == null ? (LongConsumer) composite : onRequestCall.andThen((LongConsumer) composite);
+			return (FluxPeek) new FluxPeek<>(source,
+				onSubscribeCall,
+				onNextCall,
+				onErrorCall,
+				onCompleteCall,
+				onAfterTerminateCall,
+				composed,
+				onCancelCall);
+		}
+		return null;
 	}
 
 	static final class PeekSubscriber<T> implements InnerOperator<T, T> {

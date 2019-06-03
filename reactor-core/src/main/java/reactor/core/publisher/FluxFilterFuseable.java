@@ -32,7 +32,8 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable,
+                                                                        Fuseable.Composite {
 
 	final Predicate<? super T> predicate;
 
@@ -40,6 +41,16 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <K> FluxFilterFuseable<K> tryCompose(Object composable, Type type) {
+        if (type == Type.FILTER && composable instanceof Predicate) {
+            Predicate<? super T> composed = predicate.and((Predicate) composable);
+            return (FluxFilterFuseable) new FluxFilterFuseable<T>(source, composed);
+        }
+        return null;
+    }
 
 	@Override
 	@SuppressWarnings("unchecked")

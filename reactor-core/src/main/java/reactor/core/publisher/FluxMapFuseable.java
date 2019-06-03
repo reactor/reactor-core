@@ -34,7 +34,8 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable {
+final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable,
+                                                                        Fuseable.Composite {
 
 	final Function<? super T, ? extends R> mapper;
 
@@ -61,6 +62,16 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 			return;
 		}
 		source.subscribe(new MapFuseableSubscriber<>(actual, mapper));
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> FluxMapFuseable<T, K> tryCompose(Object composite, Type type) {
+		if (type == Type.MAP && composite instanceof Function) {
+			Function<T, K> composed = mapper.andThen((Function) composite);
+			return new FluxMapFuseable<>(source, composed);
+		}
+		return null;
 	}
 
 	static final class MapFuseableSubscriber<T, R>

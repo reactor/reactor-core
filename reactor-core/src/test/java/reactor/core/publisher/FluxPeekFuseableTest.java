@@ -675,6 +675,7 @@ public class FluxPeekFuseableTest {
 		                                 .doOnError(e -> {
 			                                 throw new IllegalStateException("fromOnError", e);
 		                                 })
+		                                 .hide()
 		                                 .doOnError(e -> {
 			                                 throw new IllegalStateException("fromOnError2", e);
 		                                 })
@@ -743,6 +744,7 @@ public class FluxPeekFuseableTest {
 		                                 .doOnError(e -> {
 			                                 throw new IllegalStateException("fromOnError", e);
 		                                 })
+		                                 .hide()
 		                                 .doOnError(e -> {
 			                                 throw new IllegalStateException("fromOnError2", e);
 		                                 })

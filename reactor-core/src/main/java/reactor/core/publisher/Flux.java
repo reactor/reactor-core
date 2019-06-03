@@ -4074,6 +4074,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
+		if (this instanceof Fuseable.Composite) {
+			Flux<T> composedFlux = (Flux<T>)((Fuseable.Composite) this).tryCompose(afterTerminate, Fuseable.Composite.Type.DO_AFTER_TERMINATE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, afterTerminate, null, null);
 	}
 
@@ -4088,6 +4094,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
+		if (this instanceof Fuseable.Composite) {
+			Flux<T> composedFlux =
+				(Flux<T>)((Fuseable.Composite) this).tryCompose(onCancel, Fuseable.Composite.Type.DO_ON_CANCEL);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, null, null, onCancel);
 	}
 
@@ -4102,6 +4115,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnComplete(Runnable onComplete) {
 		Objects.requireNonNull(onComplete, "onComplete");
+		if (this instanceof Fuseable.Composite) {
+			Flux<T> composedFlux =
+				(Flux<T>)((Fuseable.Composite) this).tryCompose(onComplete, Fuseable.Composite.Type.DO_ON_COMPLETE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, onComplete, null, null, null);
 	}
 
@@ -4169,6 +4189,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
+		if (this instanceof Fuseable.Composite) {
+			Flux<T> composedFlux = (Flux<T>)((Fuseable.Composite) this).tryCompose(onError, Fuseable.Composite.Type.DO_ON_ERROR);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, onError, null, null, null, null);
 	}
 
@@ -4230,6 +4256,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
+		if (this instanceof Fuseable.Composite) {
+			Flux<T> composedFlux = (Flux<T>)((Fuseable.Composite) this).tryCompose(onNext, Fuseable.Composite.Type.DO_ON_NEXT);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, onNext, null, null, null, null, null);
 	}
 
@@ -4249,6 +4281,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnRequest(LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
+		if (this instanceof Fuseable.Composite) {
+			Flux<T> composedFlux = (Flux<T>)((Fuseable.Composite) this).tryCompose(consumer, Fuseable.Composite.Type.DO_ON_REQUEST);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, null, null, null, null, null, consumer, null);
 	}
 
@@ -4267,6 +4305,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
+		if (this instanceof Fuseable.Composite) {
+			Flux<T> composedFlux = (Flux<T>)((Fuseable.Composite) this).tryCompose(onSubscribe, Fuseable.Composite.Type.DO_ON_SUBSCRIBE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this, onSubscribe, null, null, null, null, null, null);
 	}
 
@@ -4282,6 +4326,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
+		if (this instanceof Fuseable.Composite) {
+			Flux<T> composedFlux =
+				(Flux<T>)((Fuseable.Composite) this).tryCompose(onTerminate, Fuseable.Composite.Type.DO_ON_TERMINATE);
+			if (composedFlux != null) {
+				return onAssembly(composedFlux);
+			}
+		}
 		return doOnSignal(this,
 				null,
 				null,
@@ -4559,6 +4610,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} containing only values that pass the predicate test
 	 */
 	public final Flux<T> filter(Predicate<? super T> p) {
+		if (this instanceof Fuseable.Composite) {
+            Flux<T> composedFlux = (Flux<T>)((Fuseable.Composite) this).tryCompose(p, Fuseable.Composite.Type.FILTER);
+            if (composedFlux != null) {
+                return onAssembly(composedFlux);
+            }
+        }
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxFilterFuseable<>(this, p));
 		}
@@ -5684,6 +5741,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a transformed {@link Flux}
 	 */
 	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
+	    if (this instanceof Fuseable.Composite) {
+            Flux<V> composedFlux = (Flux<V>)((Fuseable.Composite) this).tryCompose(mapper, Fuseable.Composite.Type.MAP);
+            if (composedFlux != null) {
+                return onAssembly(composedFlux);
+            }
+        }
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxMapFuseable<>(this, mapper));
 		}

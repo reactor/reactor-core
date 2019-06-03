@@ -27,7 +27,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the input value type
  */
-final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable{
+final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable, Fuseable.Composite {
 
 	final ParallelFlux<T> source;
 	
@@ -44,6 +44,16 @@ final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable{
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 
+		return null;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <K> ParallelFilter<K> tryCompose(Object composable, Type type) {
+		if (type == Type.FILTER && composable instanceof Predicate) {
+			Predicate<? super T> composed = predicate.and((Predicate) composable);
+			return (ParallelFilter) new ParallelFilter<>(source, composed);
+		}
 		return null;
 	}
 
