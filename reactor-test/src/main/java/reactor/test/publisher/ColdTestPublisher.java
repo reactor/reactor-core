@@ -272,6 +272,19 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	@Override
+	public ColdTestPublisher<T> assertMaxRequested(long n) {
+		ColdTestPublisherSubscription<T>[] subs = subscribers;
+		long maxRequest = Stream.of(subs)
+		                        .mapToLong(s -> s.requested)
+		                        .max()
+		                        .orElse(0);
+		if (maxRequest < n) {
+			throw new AssertionError("Expected maximum request of " + n + "; got " + maxRequest);
+		}
+		return this;
+	}
+
+	@Override
 	public ColdTestPublisher<T> assertSubscribers() {
 		ColdTestPublisherSubscription<T>[] s = subscribers;
 		if (s == EMPTY) {

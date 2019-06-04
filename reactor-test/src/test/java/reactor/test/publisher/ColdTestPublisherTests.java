@@ -258,6 +258,41 @@ public class ColdTestPublisherTests {
 	}
 
 	@Test
+	public void expectMaxRequestedNormal() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		Flux.from(publisher).limitRequest(5).subscribe();
+		publisher.assertMaxRequested(5);
+
+		Flux.from(publisher).limitRequest(10).subscribe();
+		publisher.assertSubscribers(2);
+		publisher.assertMaxRequested(10);
+	}
+
+	@Test
+	public void expectMaxRequestedWithUnbounded() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		Flux.from(publisher).limitRequest(5).subscribe();
+		publisher.assertMaxRequested(5);
+
+		Flux.from(publisher).subscribe();
+		publisher.assertSubscribers(2);
+		publisher.assertMaxRequested(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void expectMaxRequestedFailure() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		Flux.from(publisher).limitRequest(5).subscribe();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> publisher.assertMaxRequested(6))
+				.withMessage("Expected maximum request of 6; got 5");
+	}
+
+	@Test
 	public void emitCompletes() {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 		StepVerifier.create(publisher)
