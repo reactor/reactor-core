@@ -44,6 +44,7 @@ import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
@@ -78,9 +79,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @return the {@link ParallelFlux} instance
 	 */
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source) {
-		return from(source,
-				Runtime.getRuntime()
-				       .availableProcessors(), Queues.SMALL_BUFFER_SIZE,
+		return from(source, Schedulers.DEFAULT_POOL_SIZE, Queues.SMALL_BUFFER_SIZE,
 				Queues.small());
 	}
 

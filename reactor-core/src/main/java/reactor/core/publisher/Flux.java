@@ -6418,8 +6418,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> parallel() {
-		return parallel(Runtime.getRuntime()
-		                       .availableProcessors());
+		return parallel(Schedulers.DEFAULT_POOL_SIZE);
 	}
 
 	/**
