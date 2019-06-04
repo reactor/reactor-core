@@ -41,10 +41,7 @@ configure(rootProject) {
 		options = [
 				doctype: 'book'
 		]
-		attributes docinfo: '',
-				toc2: '',
-				'compat-mode': '',
-				'allow-uri-read': '',
+		attributes 'allow-uri-read': '',
 				imagesdir: "images/",
 				stylesdir: "stylesheets/",
 				stylesheet: 'reactor.css',
