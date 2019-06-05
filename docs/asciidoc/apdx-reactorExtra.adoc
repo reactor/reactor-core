@@ -7,6 +7,7 @@ users of `reactor-core` with advanced needs.
 As this is a separate artifact, you need to explicitly add it to your build. The following
 example shows how to do so in Gradle:
 
+====
 [source,groovy]
 ----
 dependencies {
@@ -16,6 +17,7 @@ dependencies {
 ----
 <1> Add the reactor extra artifact in addition to core. See <<getting>> for details
 about why you do not need to specify a version if you use the BOM, usage in Maven, and other details.
+====
 
 [[extra-tuples]]
 == `TupleUtils` and Functional Interfaces
@@ -28,6 +30,7 @@ interfaces to a similar interface on the corresponding `Tuple`.
 
 This lets you easily work with independent parts of any `Tuple`, as the following example shows:
 
+====
 [source,java]
 ----
 .map(tuple -> {
@@ -38,14 +41,17 @@ This lets you easily work with independent parts of any `Tuple`, as the followin
   return new Customer(firstName, lastName, address);
 });
 ----
+====
 
 You can rewrite the preceding example as follows:
 
+====
 [source,java]
 ----
 .map(TupleUtils.function(Customer::new)); // <1>
 ----
 <1> (as `Customer` constructor conforms to `Consumer3` functional interface signature)
+====
 
 [[extra-math]]
 == Math Operators With `MathFlux`

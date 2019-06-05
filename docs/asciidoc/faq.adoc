@@ -17,6 +17,7 @@ It is often the case that a source of information is synchronous and blocking.
 To deal with such sources in your Reactor applications, apply the following
 pattern:
 
+====
 [source,java]
 ----
 Mono blockingWrapper = Mono.fromCallable(() -> { <1>
@@ -29,6 +30,7 @@ blockingWrapper = blockingWrapper.subscribeOn(Schedulers.elastic()); <3>
 <2> Return the asynchronous, blocking resource.
 <3> Ensure each subscription happens on a dedicated single-threaded worker
 from `Schedulers.elastic()`.
+====
 
 You should use a `Mono`, because the source returns one value. You should use
 `Schedulers.elastic`, because it creates a dedicated thread to wait for the
@@ -50,6 +52,7 @@ operators is to _chain_ the calls.
 Compare the following two examples:
 
 .without chaining (incorrect)
+====
 [source,java]
 ----
 Flux<String> flux = Flux.just("something", "chain");
@@ -57,18 +60,22 @@ flux.map(secret -> secret.replaceAll(".", "*")); <1>
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
 <1> The mistake is here. The result is not attached to the `flux` variable.
+====
 
 .without chaining (correct)
+====
 [source,java]
 ----
 Flux<String> flux = Flux.just("something", "chain");
 flux = flux.map(secret -> secret.replaceAll(".", "*"));
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
+====
 
 The following sample is even better (because it is simpler):
 
 .with chaining (best)
+====
 [source,java]
 ----
 Flux<String> secrets = Flux
@@ -76,34 +83,41 @@ Flux<String> secrets = Flux
   .map(secret -> secret.replaceAll(".", "*"))
   .subscribe(next -> System.out.println("Received: " + next));
 ----
+====
 
 The first version outputs the following:
 
+====
 [source]
 ----
 Received: something
 Received: chain
 ----
+====
 
 The two other versions output the expected values, as follows:
 
+====
 [source]
 ----
 Received: *********
 Received: *****
 ----
+====
 
 [[faq.monoThen]]
 == My `Mono` `zipWith` or `zipWhen` is never called
 
 Consider the following example:
 
+====
 [source,java]
 ----
 myMethod.process("a") // this method returns Mono<Void>
         .zipWith(myMethod.process("b"), combinator) //this is never called
         .subscribe();
 ----
+====
 
 If the source `Mono` is either `empty` or a `Mono<Void>` (a `Mono<Void>` is
 empty for all intents and purposes), some combinations are never called.
@@ -127,6 +141,7 @@ which could help avoid some of these situations. Note that this does not apply t
 which is still guaranteed to be empty. The following example uses `defaultIfEmpty`:
 
 .use `defaultIfEmpty` before `zipWhen`
+====
 [source,java]
 ----
 myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
@@ -134,9 +149,10 @@ myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
         .zipWhen(aString -> myMethod.process("b")) //this is called with the empty String
         .subscribe();
 ----
+====
 
 [[faq.retryWhen]]
-== How to use `retryWhen` to emulate `retry(3)`?
+== How to Use `retryWhen` to Emulate `retry(3)`?
 
 The `retryWhen` operator can be quite complex. Hopefully the following snippet of code
 can help you understand how it works by attempting to emulate a simpler
@@ -160,6 +176,7 @@ The following example shows how to implement an exponential backoff with `retryW
 IT delays retries and increases the delay between each attempt (pseudocode:
 delay = attempt number * 100 milliseconds):
 
+====
 [source,java]
 ----
 Flux<String> flux =
@@ -179,9 +196,11 @@ Flux.<String>error(new IllegalArgumentException())
 retries.
 <3> Through `flatMap`, we cause a delay that depends on the attempt's index.
 <4> We also log the time at which the retry happens.
+====
 
 When subscribed to, this fails and terminates after printing out the following:
 
+====
 ----
 java.lang.IllegalArgumentException at 18:02:29.338
 retried at 18:02:29.459 <1>
@@ -194,6 +213,7 @@ java.lang.IllegalArgumentException at 18:02:29.964
 <1> First retry after about 100ms
 <2> Second retry after about 200ms
 <3> Third retry after about 300ms
+====
 
 [[faq.thread-affinity-publishon]]
 == How Do I Ensure Thread Affinity when I Use `publishOn()`?
@@ -205,6 +225,7 @@ occurrence of `publishOn`. So the placement of `publishOn` is significant.
 
 Consider the following example:
 
+====
 [source,java]
 ----
 EmitterProcessor<Integer> processor = EmitterProcessor.create();
@@ -214,6 +235,7 @@ processor.publishOn(scheduler1)
          .doOnNext(i -> processNext(i))
          .subscribe();
 ----
+====
 
 The `transform` function in `map()` is
 run on a worker of `scheduler1`, and the `processNext` method in
