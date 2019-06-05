@@ -102,7 +102,7 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 
 	/**
 	 * Assert that the current maximum request of all this publisher's subscribers
-	 * is &gt;= {@code n}. Can be {@link Long#MAX_VALUE} in case a subscriber has made
+	 * is &lt;= {@code n}. Can be {@link Long#MAX_VALUE} in case a subscriber has made
 	 * an unbounded request.
 	 *
 	 * @param n the expected maximum request including {@link Long#MAX_VALUE}
