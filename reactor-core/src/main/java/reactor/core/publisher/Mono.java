@@ -1978,6 +1978,46 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Add behavior (side-effect) triggered <strong>before</strong> the {@link Mono} is
+	 * <strong>subscribed to</strong>, which should be the first event after assembly time.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doFirstForMono.svg" alt="">
+	 * <p>
+	 * Note that when several {@link #doFirst(Runnable)} operators are used anywhere in a
+	 * chain of operators, their order of execution is reversed compared to the declaration
+	 * order (as subscribe signal flows backward, from the ultimate subscriber to the source
+	 * publisher):
+	 * <pre><code>
+	 * Mono.just(1v)
+	 *     .doFirst(() -> System.out.println("three"))
+	 *     .doFirst(() -> System.out.println("two"))
+	 *     .doFirst(() -> System.out.println("one"));
+	 * //would print one two three
+	 * </code>
+	 * </pre>
+	 * <p>
+	 * In case the {@link Runnable} throws an exception, said exception will be directly
+	 * propagated to the subscribing {@link Subscriber} along with a no-op {@link Subscription},
+	 * similarly to what {@link #error(Throwable)} does. Otherwise, after the handler has
+	 * executed, the {@link Subscriber} is directly subscribed to the original source
+	 * {@link Mono} ({@code this}).
+	 * <p>
+	 * This side-effect method provides stronger <i>first</i> guarantees compared to
+	 * {@link #doOnSubscribe(Consumer)}, which is triggered once the {@link Subscription}
+	 * has been set up and passed to the {@link Subscriber}.
+	 *
+	 * @param onFirst the callback to execute before the {@link Mono} is subscribed to
+	 * @return an observed {@link Mono}
+	 */
+	public final Mono<T> doFirst(Runnable onFirst) {
+		Objects.requireNonNull(onFirst, "onFirst");
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoDoFirstFuseable<>(this, onFirst));
+		}
+		return onAssembly(new MonoDoFirst<>(this, onFirst));
+	}
+
+	/**
 	 * Add behavior triggering <strong>after</strong> the {@link Mono} terminates for any reason,
 	 * including cancellation. The terminating event ({@link SignalType#ON_COMPLETE},
 	 * {@link SignalType#ON_ERROR} and {@link SignalType#CANCEL}) is passed to the consumer,
@@ -2186,7 +2226,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Add behavior triggered when the {@link Mono} is subscribed.
+	 * Add behavior (side-effect) triggered when the {@link Mono} is done being subscribed,
+	 * that is to say when a {@link Subscription} has been produced by the {@link Publisher}
+	 * and passed to the {@link Subscriber#onSubscribe(Subscription)}.
 	 * <p>
 	 * This method is <strong>not</strong> intended for capturing the subscription and calling its methods,
 	 * but for side effects like monitoring. For instance, the correct way to cancel a subscription is
@@ -2197,6 +2239,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe(Subscription)}
 	 *
 	 * @return a new {@link Mono}
+	 * @see #doFirst(Runnable)
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
