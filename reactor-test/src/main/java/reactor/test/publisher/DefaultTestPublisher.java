@@ -310,6 +310,19 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	@Override
+	public DefaultTestPublisher<T> assertMaxRequested(long n) {
+		TestPublisherSubscription<T>[] subs = subscribers;
+		long maxRequest = Stream.of(subs)
+		                        .mapToLong(s -> s.requested)
+		                        .max()
+		                        .orElse(0);
+		if (maxRequest < n) {
+			throw new AssertionError("Expected maximum request of " + n + "; got " + maxRequest);
+		}
+		return this;
+	}
+
+	@Override
 	public DefaultTestPublisher<T> assertSubscribers() {
 		TestPublisherSubscription<T>[] s = subscribers;
 		if (s == EMPTY || s == TERMINATED) {
