@@ -4253,7 +4253,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Add behavior (side-effect) triggered when the {@link Flux} is subscribed.
+	 * Add behavior (side-effect) triggered when the {@link Flux} is done being subscribed,
+	 * that is to say when a {@link Subscription} has been produced by the {@link Publisher}
+	 * and passed to the {@link Subscriber#onSubscribe(Subscription)}.
 	 * <p>
 	 * This method is <strong>not</strong> intended for capturing the subscription and calling its methods,
 	 * but for side effects like monitoring. For instance, the correct way to cancel a subscription is
@@ -4264,6 +4266,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe}
 	 *
 	 * @return an observed  {@link Flux}
+	 * @see #doFirst(Runnable)
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
@@ -4290,6 +4293,46 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				null,
 				null,
 				null);
+	}
+
+	/**
+	 * Add behavior (side-effect) triggered <strong>before</strong> the {@link Flux} is
+	 * <strong>subscribed to</strong>, which should be the first event after assembly time.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/doFirstForFlux.svg" alt="">
+	 * <p>
+	 * Note that when several {@link #doFirst(Runnable)} operators are used anywhere in a
+	 * chain of operators, their order of execution is reversed compared to the declaration
+	 * order (as subscribe signal flows backward, from the ultimate subscriber to the source
+	 * publisher):
+	 * <pre><code>
+	 * Flux.just(1, 2)
+	 *     .doFirst(() -> System.out.println("three"))
+	 *     .doFirst(() -> System.out.println("two"))
+	 *     .doFirst(() -> System.out.println("one"));
+	 * //would print one two three
+	 * </code>
+	 * </pre>
+	 * <p>
+	 * In case the {@link Runnable} throws an exception, said exception will be directly
+	 * propagated to the subscribing {@link Subscriber} along with a no-op {@link Subscription},
+	 * similarly to what {@link #error(Throwable)} does. Otherwise, after the handler has
+	 * executed, the {@link Subscriber} is directly subscribed to the original source
+	 * {@link Flux} ({@code this}).
+	 * <p>
+	 * This side-effect method provides stronger <i>first</i> guarantees compared to
+	 * {@link #doOnSubscribe(Consumer)}, which is triggered once the {@link Subscription}
+	 * has been set up and passed to the {@link Subscriber}.
+	 *
+	 * @param onFirst the callback to execute before the {@link Flux} is subscribed to
+	 * @return an observed {@link Flux}
+	 */
+	public final Flux<T> doFirst(Runnable onFirst) {
+		Objects.requireNonNull(onFirst, "onFirst");
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxDoFirstFuseable<>(this, onFirst));
+		}
+		return onAssembly(new FluxDoFirst<>(this, onFirst));
 	}
 
 	/**
