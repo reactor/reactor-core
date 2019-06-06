@@ -137,7 +137,10 @@ I want to deal with:
 *** completion: `Flux#doOnComplete`, `Mono#doOnSuccess` (includes the result if any)
 *** error termination: `doOnError`
 *** cancellation: `doOnCancel`
-*** subscription: `doOnSubscribe`
+*** "start" of the sequence: `doFirst`
+**** this is tied to `Publisher#subscribe(Subscriber)`
+*** subscription (as in `Subscription` acknowledgment after `subscribe`): `doOnSubscribe`
+****(tied to `Subscriber#onSubscribe(Subscription)`)
 *** request: `doOnRequest`
 *** completion or error: `doOnTerminate` (Mono version includes the result if any)
 **** but *after* it has been propagated downstream: `doAfterTerminate`
