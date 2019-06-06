@@ -101,6 +101,16 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	public abstract TestPublisher<T> assertMinRequested(long n);
 
 	/**
+	 * Assert that the current maximum request of all this publisher's subscribers
+	 * is &lt;= {@code n}. Can be {@link Long#MAX_VALUE} in case a subscriber has made
+	 * an unbounded request.
+	 *
+	 * @param n the expected maximum request including {@link Long#MAX_VALUE}
+	 * @return this {@link TestPublisher} for chaining.
+	 */
+	public abstract TestPublisher<T> assertMaxRequested(long n);
+
+	/**
 	 * Asserts that this publisher has subscribers.
 	 *
 	 * @return this {@link TestPublisher} for chaining.

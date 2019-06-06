@@ -250,11 +250,46 @@ public class ColdTestPublisherTests {
 		                                 .emit("foo"))
 		            .expectNext("foo").expectComplete() // N/A
 		            .verify())
-		        .withMessageContaining("Expected minimum request of 6; got 5");
+		        .withMessageContaining("Expected smallest requested amount to be >= 6; got 5");
 
 		publisher.assertCancelled();
 		publisher.assertNoSubscribers();
 		publisher.assertMinRequested(0);
+	}
+
+	@Test
+	public void expectMaxRequestedNormal() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		Flux.from(publisher).limitRequest(5).subscribe();
+		publisher.assertMaxRequested(5);
+
+		Flux.from(publisher).limitRequest(10).subscribe();
+		publisher.assertSubscribers(2);
+		publisher.assertMaxRequested(10);
+	}
+
+	@Test
+	public void expectMaxRequestedWithUnbounded() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		Flux.from(publisher).limitRequest(5).subscribe();
+		publisher.assertMaxRequested(5);
+
+		Flux.from(publisher).subscribe();
+		publisher.assertSubscribers(2);
+		publisher.assertMaxRequested(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void expectMaxRequestedFailure() {
+		TestPublisher<String> publisher = TestPublisher.createCold();
+
+		Flux.from(publisher).limitRequest(7).subscribe();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> publisher.assertMaxRequested(6))
+				.withMessage("Expected largest requested amount to be <= 6; got 7");
 	}
 
 	@Test

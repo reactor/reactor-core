@@ -304,7 +304,20 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		                        .min()
 		                        .orElse(0);
 		if (minRequest < n) {
-			throw new AssertionError("Expected minimum request of " + n + "; got " + minRequest);
+			throw new AssertionError("Expected smallest requested amount to be >= " + n + "; got " + minRequest);
+		}
+		return this;
+	}
+
+	@Override
+	public DefaultTestPublisher<T> assertMaxRequested(long n) {
+		TestPublisherSubscription<T>[] subs = subscribers;
+		long maxRequest = Stream.of(subs)
+		                        .mapToLong(s -> s.requested)
+		                        .max()
+		                        .orElse(0);
+		if (maxRequest > n) {
+			throw new AssertionError("Expected largest requested amount to be <= " + n + "; got " + maxRequest);
 		}
 		return this;
 	}
