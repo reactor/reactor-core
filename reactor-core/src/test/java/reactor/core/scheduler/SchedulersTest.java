@@ -125,6 +125,32 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void schedulerDecoratorIsReplaceable() throws InterruptedException {
+		AtomicInteger tracker = new AtomicInteger();
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator1 = (scheduler, serv) -> {
+			tracker.addAndGet(1);
+			return serv;
+		};
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator2 = (scheduler, serv) -> {
+			tracker.addAndGet(10);
+			return serv;
+		};
+		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator3 = (scheduler, serv) -> {
+			tracker.addAndGet(100);
+			return serv;
+		};
+		//decorators are cleared after test
+		Schedulers.setExecutorServiceDecorator("k1", decorator1);
+		Schedulers.setExecutorServiceDecorator("k1", decorator2);
+		Schedulers.setExecutorServiceDecorator("k1", decorator3);
+
+		//trigger the decorators
+		Schedulers.newSingle("foo").dispose();
+
+		assertThat(tracker).as("3 decorators invoked").hasValue(100);
+	}
+
+	@Test
 	public void schedulerDecoratorAddsSameIfDifferentKeys() {
 		AtomicInteger tracker = new AtomicInteger();
 		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator = (scheduler, serv) -> {
@@ -202,25 +228,6 @@ public class SchedulersTest {
 		assertThat(Schedulers.DECORATORS).isEmpty();
 		assertThatCode(() -> Schedulers.newSingle("foo").dispose())
 				.doesNotThrowAnyException();
-	}
-
-	@Test
-	@SuppressWarnings("deprecated")
-	public void schedulerDecoratorEmptyDecoratorsButCustomFactory() {
-		AtomicInteger factoryDecoratorCounter = new AtomicInteger();
-		Schedulers.setFactory(new Schedulers.Factory() {
-			@Override
-			public ScheduledExecutorService decorateExecutorService(String schedulerType,
-					Supplier<? extends ScheduledExecutorService> actual) {
-				factoryDecoratorCounter.incrementAndGet();
-				return actual.get();
-			}
-		});
-
-		//trigger the decorators
-		Schedulers.newSingle("foo").dispose();
-
-		assertThat(factoryDecoratorCounter).hasValue(1);
 	}
 
 	@Test
