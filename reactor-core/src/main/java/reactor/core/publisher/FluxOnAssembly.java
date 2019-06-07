@@ -144,6 +144,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			this(description != null, description, assemblyInformationSupplier);
 		}
 
+		AssemblySnapshot(String assemblyInformation) {
+			this.checkpointed = false;
+			this.description = null;
+			this.assemblyInformationSupplier = null;
+			this.cached = assemblyInformation;
+		}
+
 		private AssemblySnapshot(boolean checkpointed, @Nullable String description, Supplier<String> assemblyInformationSupplier) {
 			this.checkpointed = checkpointed;
 			this.description = description;
@@ -157,6 +164,10 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		public boolean isLight() {
 			return false;
+		}
+
+		public String lightPrefix() {
+			return "";
 		}
 
 		String toAssemblyInformation() {
@@ -184,6 +195,30 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Override
+		public String lightPrefix() {
+			return "checkpoint";
+		}
+
+		@Override
+		String operatorAssemblyInformation() {
+			return cached;
+		}
+
+	}
+
+	static final class MethodReturnSnapshot extends AssemblySnapshot {
+
+		MethodReturnSnapshot(String method) {
+			super(true, method, () -> "");
+			cached = method;
+		}
+
+		@Override
+		public boolean isLight() {
+			return true;
+		}
+
+		@Override
 		String operatorAssemblyInformation() {
 			return cached;
 		}
@@ -203,7 +238,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			super(message);
 			//skip the "error seen by" if light (no stack)
 			if (!ase.isLight()) {
-				chainOrder.add(toTuple(parent, Traces.extractOperatorAssemblyInformationParts(message, true), 0));
+				String[] parts = Traces.extractOperatorAssemblyInformationParts(message, true);
+				if (parts.length == 0) {
+					return;
+				}
+				String prefix = parts.length > 1 ? parts[0] : "";
+				String line = parts[parts.length - 1];
+				chainOrder.add(toTuple(parent, prefix, line, 0));
 			}
 		}
 
@@ -212,16 +253,11 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			return this;
 		}
 
-		Tuple4<Integer, String, String, Integer> toTuple(Publisher<?> parent, String[] callSite, int depth) {
-			if (callSite.length == 2) {
-				return Tuples.of(parent.hashCode(), callSite[0], callSite[1], depth);
-			}
-			else {
-				return Tuples.of(parent.hashCode(), "checkpoint", callSite[0], depth);
-			}
+		Tuple4<Integer, String, String, Integer> toTuple(Publisher<?> parent, String prefix, String line, int depth) {
+			return Tuples.of(parent.hashCode(), prefix, line, depth);
 		}
 
-		void add(Publisher<?> parent, String[] callSite) {
+		void add(Publisher<?> parent, String prefix, String line) {
 			//noinspection ConstantConditions
 			int key = getParentOrThis(Scannable.from(parent));
 			synchronized (chainOrder) {
@@ -243,7 +279,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 
 				for(;;){
-					Tuple4<Integer, String, String, Integer> t = toTuple(parent, callSite, i);
+					Tuple4<Integer, String, String, Integer> t = toTuple(parent, prefix, line, i);
 
 					if(!chainOrder.contains(t)){
 						chainOrder.add(t);
@@ -384,23 +420,27 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			}
 
 			if (onAssemblyException != null) {
-				final String[] backtrace;
 				if (lightCheckpoint) {
-					backtrace = new String[] { snapshotStack.getDescription() };
+					onAssemblyException.add(parent, snapshotStack.lightPrefix(), snapshotStack.getDescription());
 				}
 				else {
 					String assemblyInformation = snapshotStack.toAssemblyInformation();
-					backtrace = Traces.extractOperatorAssemblyInformationParts(assemblyInformation, false);
-				}
+					String[] parts = Traces.extractOperatorAssemblyInformationParts(assemblyInformation, false);
 
-				onAssemblyException.add(parent, backtrace);
+					if (parts.length > 0) {
+						String prefix = parts.length > 1 ? parts[0] : "";
+						String line = parts[parts.length - 1];
+
+						onAssemblyException.add(parent, prefix, line);
+					}
+				}
 
 				return t;
 			}
 
 			if (lightCheckpoint) {
 				onAssemblyException = new OnAssemblyException(parent, snapshotStack, "");
-				onAssemblyException.add(parent, new String[] { snapshotStack.getDescription() });
+				onAssemblyException.add(parent, snapshotStack.lightPrefix(), snapshotStack.getDescription());
 			}
 			else {
 				StringBuilder sb = new StringBuilder();

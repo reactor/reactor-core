@@ -21,7 +21,11 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Iterator;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,7 +69,7 @@ public class ReactorDebugAgentTest {
 		Mono<Integer> mono = methodReturningMono(Mono.just(1));
 
 		assertThat(Scannable.from(mono).stepName())
-				.startsWith("checkpoint(\"reactor.tools.agent.ReactorDebugAgentTest.methodReturningMono(ReactorDebugAgentTest.java:" + (methodReturningMonoBaseline + 2));
+				.startsWith("at reactor.tools.agent.ReactorDebugAgentTest.methodReturningMono(ReactorDebugAgentTest.java:" + (methodReturningMonoBaseline + 2));
 	}
 
 	@Test
@@ -82,6 +86,42 @@ public class ReactorDebugAgentTest {
 		Mono<Integer> mono = methodReturningNullMono();
 
 		assertThat(mono).isNull();
+	}
+
+	@Test
+	public void stackTrace() {
+		StringWriter sw = new StringWriter();
+		int baseline = getBaseline();
+		Mono.just(5)
+				.map(i -> i < 3 ? i : null)
+				.as(this::methodReturningMono)
+				.onErrorResume(t -> {
+					t.printStackTrace();
+					t.printStackTrace(new PrintWriter(sw));
+					return Mono.empty();
+				})
+				.block();
+
+		String debugStack = sw.toString();
+
+		Iterator<String> lines = Stream.of(debugStack.split("\n"))
+				.map(String::trim)
+				.iterator();
+
+		while (lines.hasNext()) {
+			String line = lines.next();
+			if (line.endsWith("Error has been observed at the following site(s):")) {
+				break;
+			}
+		}
+
+		assertThat(lines.next())
+				.as("first backtrace line")
+				.endsWith("|_ Mono.map ⇢ at reactor.tools.agent.ReactorDebugAgentTest.stackTrace(ReactorDebugAgentTest.java:" + (baseline + 2) + ")");
+
+		assertThat(lines.next())
+				.as("second backtrace line")
+				.endsWith("|_          ⇢ at reactor.tools.agent.ReactorDebugAgentTest.methodReturningMono(ReactorDebugAgentTest.java:" + (methodReturningMonoBaseline + 2) + ")");
 	}
 
 	static final int methodReturningMonoBaseline = getBaseline();

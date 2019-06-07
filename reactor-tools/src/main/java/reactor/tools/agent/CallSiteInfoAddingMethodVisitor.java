@@ -32,12 +32,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * </pre>
  * After:
  * <pre>
- *     Flux flux = Hooks.addCallSiteInfo(Flux.just(1), "Flux.just -> MyClass.myMethod(MyClass.java:12);
- *     flux = Hooks.addCallSiteInfo(flux.map(it -> it), "Flux.map -> MyClass.myMethod(MyClass.java:13);
+ *     Flux flux = Hooks.addCallSiteInfo(Flux.just(1), "Flux.just -> MyClass.myMethod(MyClass.java:12)");
+ *     flux = Hooks.addCallSiteInfo(flux.map(it -> it), "Flux.map -> MyClass.myMethod(MyClass.java:13)");
  * </pre>
  *
  */
 class CallSiteInfoAddingMethodVisitor extends MethodVisitor {
+
+    static final String ADD_CALLSITE_INFO_METHOD = "(Lorg/reactivestreams/Publisher;Ljava/lang/String;)Lorg/reactivestreams/Publisher;";
 
     static boolean isCorePublisher(String className) {
         switch (className) {
@@ -105,7 +107,7 @@ class CallSiteInfoAddingMethodVisitor extends MethodVisitor {
                     Opcodes.INVOKESTATIC,
                     "reactor/core/publisher/Hooks",
                     "addCallSiteInfo",
-                    HooksClassVisitor.ADD_CALLSITE_INFO_METHOD,
+                    ADD_CALLSITE_INFO_METHOD,
                     false
             );
             super.visitTypeInsn(Opcodes.CHECKCAST, returnType);
