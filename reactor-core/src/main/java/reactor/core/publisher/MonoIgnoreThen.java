@@ -227,7 +227,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
         @Override
         public void onNext(Object t) {
             // ignored
-            Operators.onDiscard(t, currentContext()); //FIXME cache Context
+            Operators.onDiscard(t, parent.currentContext()); //FIXME cache Context
         }
         
         @Override
