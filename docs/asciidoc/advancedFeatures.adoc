@@ -30,6 +30,7 @@ augment it with the encapsulated operators. Doing so applies the same operations
 the subscribers of a sequence and is basically equivalent to chaining the operators
 directly. The following code shows an example:
 
+====
 [source,java]
 ----
 Function<Flux<String>, Flux<String>> filterAndMap =
@@ -41,6 +42,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 	.transform(filterAndMap)
 	.subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 ----
+====
 
 The following image shows how the `transform` operator encapsulates flows:
 
@@ -48,6 +50,7 @@ image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src
 
 The preceding example produces the following output:
 
+====
 ----
 blue
 Subscriber to Transformed MapAndFilter: BLUE
@@ -57,6 +60,7 @@ orange
 purple
 Subscriber to Transformed MapAndFilter: PURPLE
 ----
+====
 
 === Using the `compose` Operator
 
@@ -66,6 +70,7 @@ sequence _on a per-subscriber basis_. It means that the function can actually pr
 different operator chain for each subscription (by maintaining some state). The
 following code shows an example:
 
+====
 [source,java]
 ----
 AtomicInteger ai = new AtomicInteger();
@@ -86,6 +91,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
 ----
+====
 
 The following image shows how the `compose` operator works with per-subscriber transformations:
 
@@ -93,6 +99,7 @@ image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src
 
 The preceding example produces the following output:
 
+====
 ----
 blue
 Subscriber 1 to Composed MapAndFilter :BLUE
@@ -109,9 +116,10 @@ orange
 Subscriber 2 to Composed MapAndFilter: ORANGE
 purple
 ----
+====
 
 [[reactor.hotCold]]
-== Hot vs Cold
+== Hot Versus Cold
 
 So far, we have considered that all `Flux` (and `Mono`) are the same: They all represent
 an asynchronous sequence of data, and nothing happens before you subscribe.
@@ -143,6 +151,7 @@ NOTE: Most other hot publishers in Reactor extend `Processor`.
 
 Consider two other examples. The following code shows the first example:
 
+====
 [source,java]
 ----
 Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
@@ -151,9 +160,11 @@ Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange",
 source.subscribe(d -> System.out.println("Subscriber 1: "+d));
 source.subscribe(d -> System.out.println("Subscriber 2: "+d));
 ----
+====
 
 This first example produces the following output:
 
+====
 ----
 Subscriber 1: BLUE
 Subscriber 1: GREEN
@@ -164,6 +175,7 @@ Subscriber 2: GREEN
 Subscriber 2: ORANGE
 Subscriber 2: PURPLE
 ----
+====
 
 The following image shows the replay behavior:
 
@@ -174,6 +186,7 @@ process defined by the operators on the `Flux` to run.
 
 Compare the first example to the second example, shown in the following code:
 
+====
 [source,java]
 ----
 DirectProcessor<String> hotSource = DirectProcessor.create();
@@ -192,9 +205,11 @@ hotSource.onNext("orange");
 hotSource.onNext("purple");
 hotSource.onComplete();
 ----
+====
 
 The second example produces the following output:
 
+====
 ----
 Subscriber 1 to Hot Source: BLUE
 Subscriber 1 to Hot Source: GREEN
@@ -203,6 +218,7 @@ Subscriber 2 to Hot Source: ORANGE
 Subscriber 1 to Hot Source: PURPLE
 Subscriber 2 to Hot Source: PURPLE
 ----
+====
 
 The following image shows how a subscription is broadcast:
 
@@ -247,6 +263,7 @@ allowing for enough new subscribers to come in and cross the connection threshol
 
 Consider the following example:
 
+====
 [source,java]
 ----
 Flux<Integer> source = Flux.range(1, 3)
@@ -263,9 +280,11 @@ System.out.println("will now connect");
 
 co.connect();
 ----
+====
 
 The preceding code produces the following output:
 
+====
 ----
 done subscribing
 will now connect
@@ -277,9 +296,11 @@ subscribed to source
 3
 3
 ----
+====
 
 The following code uses `autoConnect`:
 
+====
 [source,java]
 ----
 Flux<Integer> source = Flux.range(1, 3)
@@ -293,9 +314,11 @@ Thread.sleep(500);
 System.out.println("subscribing second");
 autoCo.subscribe(System.out::println, e -> {}, () -> {});
 ----
+====
 
 The preceding code produces the following output:
 
+====
 ----
 subscribed first
 subscribing second
@@ -307,6 +330,7 @@ subscribed to source
 3
 3
 ----
+====
 
 [[advanced-three-sorts-batching]]
 == Three Sorts of Batching
@@ -338,6 +362,7 @@ This means that groups:
 
 The following example groups values by whether they are even or odd:
 
+====
 [source,java]
 ----
 StepVerifier.create(
@@ -351,6 +376,7 @@ StepVerifier.create(
 	.expectNext("even", "2", "4", "6", "12")
 	.verifyComplete();
 ----
+====
 
 WARNING: Grouping is best suited for when you have a medium to low number of groups. The
 groups must also imperatively be consumed (such as by a `flatMap`) so that `groupBy`
@@ -377,6 +403,7 @@ closes and the two windows overlap.
 
 The following example shows overlapping windows:
 
+====
 [source,java]
 ----
 StepVerifier.create(
@@ -390,6 +417,7 @@ StepVerifier.create(
 		.expectNext(10)
 		.verifyComplete();
 ----
+====
 
 NOTE: With the reverse configuration (`maxSize` < `skip`), some elements from
 the source are dropped and are not part of any window.
@@ -398,6 +426,7 @@ In the case of predicate-based windowing through `windowUntil` and `windowWhile`
 having subsequent source elements that do not match the predicate can also lead
 to empty windows, as demonstrated in the following example:
 
+====
 [source,java]
 ----
 StepVerifier.create(
@@ -411,6 +440,7 @@ StepVerifier.create(
 		// however, no empty completion window is emitted (would contain extra matching elements)
 		.verifyComplete();
 ----
+====
 
 === Buffering with `Flux<List<T>>`
 
@@ -428,6 +458,7 @@ operator emits the collection.
 Buffering can also lead to dropping source elements or having overlapping buffers, as
 the following example shows:
 
+====
 [source,java]
 ----
 StepVerifier.create(
@@ -440,10 +471,12 @@ StepVerifier.create(
 		.expectNext(Collections.singletonList(10))
 		.verifyComplete();
 ----
+====
 
 Unlike in windowing, `bufferUntil` and `bufferWhile` do not emit an empty buffer, as
 the following example shows:
 
+====
 [source,java]
 ----
 StepVerifier.create(
@@ -454,6 +487,7 @@ StepVerifier.create(
 	.expectNext(Collections.singletonList(12)) // triggered by 13
 	.verifyComplete();
 ----
+====
 
 [[advanced-parallelizing-parralelflux]]
 == Parallelizing Work with `ParallelFlux`
@@ -472,6 +506,7 @@ there is a recommended dedicated `Scheduler` for parallel work: `Schedulers.para
 
 Compare the next two examples:
 
+====
 [source,java]
 ----
 Flux.range(1, 10)
@@ -479,7 +514,9 @@ Flux.range(1, 10)
     .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
 ----
 <1> We force a number of rails instead of relying on the number of CPU cores.
+====
 
+====
 [source,java]
 ----
 Flux.range(1, 10)
@@ -487,9 +524,11 @@ Flux.range(1, 10)
     .runOn(Schedulers.parallel())
     .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
 ----
+====
 
 The first example produces the following output:
 
+====
 ----
 main -> 1
 main -> 2
@@ -502,9 +541,11 @@ main -> 8
 main -> 9
 main -> 10
 ----
+====
 
 The second correctly parallelizes on two threads, as shown in the following output:
 
+====
 ----
 parallel-1 -> 1
 parallel-2 -> 2
@@ -517,6 +558,7 @@ parallel-1 -> 9
 parallel-2 -> 8
 parallel-2 -> 10
 ----
+====
 
 If, once you process your sequence in parallel, you want to revert back to a "`normal`"
 `Flux` and apply the rest of the operator chain in a sequential manner, you can use the
@@ -691,6 +733,7 @@ This feature is called `Context`.
 As an illustration of what it looks like, the following example both writes from and
 writes to `Context`:
 
+====
 [source,java]
 ----
 String key = "message";
@@ -703,6 +746,7 @@ StepVerifier.create(r)
             .expectNext("Hello World")
             .verifyComplete();
 ----
+====
 
 In the following sections, we cover `Context` and how to use it, so that you
 can eventually understand the preceding example.
@@ -782,6 +826,7 @@ using a `Context`.
 We first look back at our simple example from the introduction in a bit more detail, as
 the following example shows:
 
+====
 [source,java]
 ----
 String key = "message";
@@ -800,6 +845,7 @@ StepVerifier.create(r)
 <3> We then use `map` to extract the data associated to `"message"` and concatenate that with
 the original word.
 <4> The resulting `Mono<String>` emits `"Hello World"`.
+====
 
 IMPORTANT: The numbering above versus the actual line order is not a mistake. It represents
 the execution order. Even though `subscriberContext` is the last piece of the chain, it is
@@ -811,6 +857,7 @@ IMPORTANT: In your chain of operators, the relative positions of where you write
 is immutable and its content can only be seen by operators above it, as demonstrated in
 the following example:
 
+====
 [source,java]
 ----
 String key = "message";
@@ -827,10 +874,12 @@ StepVerifier.create(r)
 <2> As a result, in the `flatMap`, there is no value associated with our key. A default value
 is used instead.
 <3> The resulting `Mono<String>` thus emits `"Hello Stranger"`.
+====
 
 The following example also demonstrates the immutable nature of the `Context`, and how
 `Mono.subscriberContext()` always returns the `Context` set by `subscriberContext` calls:
 
+====
 [source,java]
 ----
 String key = "message";
@@ -849,11 +898,13 @@ StepVerifier.create(r)
 <3> We re-materialize the `Context` in a `flatMap`
 <4> We read the attempted key in the `Context`
 <5> The key was never set to `"Hello"`.
+====
 
 Similarly, in the case of several attempts to write the same key to the `Context`, the
 relative order of the writes matters, too. Operators that read the `Context` see
 the value that was set closest to being under them, as demonstrated in the following example:
 
+====
 [source,java]
 ----
 String key = "message";
@@ -870,6 +921,7 @@ StepVerifier.create(r)
 <1> A write attempt on key `"message"`.
 <2> Another write attempt on key `"message"`.
 <3> The `map` only saw the value set closest to it (and below it): `"Reactor"`.
+====
 
 In the preceding example, the `Context` is populated with `"World"` during subscription.
 Then the subscription signal moves upstream and another write happens. This produces a
@@ -881,6 +933,7 @@ You might wonder if the `Context` is propagated along with the data signal. If t
 the case, putting another `flatMap` between these two writes would use the value from
 the top `Context`. But this is not the case, as demonstrated by the following example:
 
+====
 [source,java]
 ----
 String key = "message";
@@ -901,6 +954,7 @@ StepVerifier.create(r)
 <3> The first `flatMap` sees second write.
 <4> The second `flatMap` concatenates the result from first one with the value from the first write.
 <5> The `Mono` emits `"Hello Reactor World"`.
+====
 
 The reason is that the `Context` is associated to the `Subscriber` and each operator
 accesses the `Context` by requesting it from its downstream `Subscriber`.
@@ -908,6 +962,7 @@ accesses the `Context` by requesting it from its downstream `Subscriber`.
 One last interesting propagation case is the one where the `Context` is also written to
 inside a `flatMap`, as in the following example:
 
+====
 [source,java]
 ----
 String key = "message";
@@ -928,6 +983,7 @@ StepVerifier.create(r)
 ----
 <1> This `subscriberContext` does not impact anything outside of its `flatMap`.
 <2> This `subscriberContext` impacts the main sequence's `Context`.
+====
 
 In the preceding example, the final emitted value is `"Hello World Reactor"` and not "Hello
 Reactor World", because the `subscriberContext` that writes `"Reactor"` does so as part of
@@ -943,18 +999,22 @@ also looks for a particular Context key to add a correlation ID to the request's
 
 From the user perspective, it is called as follows:
 
+====
 [source,java]
 ----
 doPut("www.example.com", Mono.just("Walter"))
 ----
+====
 
 In order to propagate a correlation ID, it would be called as follows:
 
+====
 [source,java]
 ----
 doPut("www.example.com", Mono.just("Walter"))
 	.subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
 ----
+====
 
 As the preceding snippets show, the user code uses `subscriberContext` to populate
 a `Context` with an `HTTP_CORRELATION_ID` key-value pair. The upstream of the operator is
@@ -965,6 +1025,7 @@ user code to the library code.
 The following example shows mock code from the library's perspective that reads the
 context and "`augments the request`" if it can find the correlation ID:
 
+====
 [source,java]
 ----
 static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
@@ -990,6 +1051,7 @@ Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
 <1> Materialize the `Context` through `Mono.subscriberContext()`.
 <2> Extract a value for a the correlation ID key, as an `Optional`.
 <3> If the key was present in the context, use the correlation ID as a header.
+====
 
 The library snippet zips the data `Mono` with
 `Mono.subscriberContext()`. This gives the library a `Tuple2<String, Context>`, and that
@@ -1003,6 +1065,7 @@ That last part is simulated by the `handle`.
 The whole test that validates the library code used the correlation ID can be written as
 follows:
 
+====
 [source,java]
 ----
 @Test
@@ -1017,6 +1080,7 @@ public void contextForLibraryReactivePut() {
 	            .verifyComplete();
 }
 ----
+====
 
 [[cleanup]]
 == Dealing with Objects that Need Cleanup
@@ -1072,7 +1136,7 @@ When the error happens during the processing of an `onNext` signal, the element 
 
 If that type of element needs cleanup, you need to implement it in the `onOperatorError` hook, possibly on top of error-rewriting code.
 
-=== The `onNextDropped` hook
+=== The `onNextDropped` Hook
 
 With malformed `Publishers`, there could be cases where an operator receives an element when it expected none (typically, after having received the `onError` or `onComplete` signals).
 In such cases, the unexpected element is "`dropped`" -- that is, passed to the `onNextDropped` hook.

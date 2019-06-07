@@ -21,7 +21,7 @@ or https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre8
 == Extensions
 
 [WARNING]
-====
+=====
 As of `Dysprosium-M1` (ie. `reactor-core 3.3.0.M1`), Kotlin extensions are moved to a
 dedicated https://github.com/reactor/reactor-kotlin-extensions[`reactor-kotlin-extensions`]
 module with new package names that start with `reactor.kotlin` instead of simply `reactor`.
@@ -29,12 +29,13 @@ module with new package names that start with `reactor.kotlin` instead of simply
 As a consequence, Kotlin extensions in `reactor-core` module are deprecated.
 The new dependency's groupId and artifactId are:
 
+====
 [source,gradle]
 ----
 io.projectreactor.kotlin:reactor-kotlin-extensions
 ----
 ====
-
+=====
 
 Thanks to its great https://kotlinlang.org/docs/reference/java-interop.html[Java interoperability]
 and to https://kotlinlang.org/docs/reference/extensions.html[Kotlin extensions], Reactor

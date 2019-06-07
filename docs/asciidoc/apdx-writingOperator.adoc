@@ -1,1 +1,1 @@
-== A primer at writing an operator
+== A Primer on Writing an Operator

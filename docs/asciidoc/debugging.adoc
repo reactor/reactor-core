@@ -20,6 +20,7 @@ When you shift to asynchronous code, things can get much more complicated.
 Consider the following stack trace:
 
 .A typically Reactor stack trace
+====
 [source]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
@@ -43,6 +44,7 @@ java.lang.IndexOutOfBoundsException: Source emitted more than one item
 	at reactor.core.publisher.Mono.subscribe(Mono.java:3029)
 	at reactor.guide.GuideTests.debuggingCommonStacktrace(GuideTests.java:995)
 ----
+====
 
 There is a lot going on there. We get an `IndexOutOfBoundsException`, which tells us that
 a `source emitted more than one item`.
@@ -71,18 +73,22 @@ line refers to some of our code. Finally, we are getting close.
 Hold on, though. When we go to the source file, all we see is that a
 pre-existing `Flux` is subscribed to, as follows:
 
+====
 [source,java]
 ----
 toDebug.subscribe(System.out::println, Throwable::printStackTrace);
 ----
+====
 
 All of this happened at subscription time, but the `Flux` itself was not
 declared there. Worse, when we go to where the variable is declared, we see the following:
 
+====
 [source,java]
 ----
 public Mono<String> toDebug; //please overlook the public class attribute
 ----
+====
 
 The variable is not instantiated where it is declared. We must assume a worst-case
 scenario where we find out that there could be a few different code paths that set it in
@@ -106,10 +112,12 @@ Fortunately, Reactor comes with  assembly-time instrumentation that is designed 
 This is done by customizing the `Hooks.onOperator` hook at application start (or at
 least before the incriminated `Flux` or `Mono` can be instantiated), as follows:
 
+====
 [source,java]
 ----
 Hooks.onOperatorDebug();
 ----
+====
 
 This starts instrumenting the calls to the `Flux` (and `Mono`) operator  methods (where
 they are assembled into the chain) by wrapping the construction of the operator and
@@ -128,6 +136,7 @@ that new information.
 When we reuse our initial example but activate the `operatorStacktrace` debug feature,
 the stack trace is as follows:
 
+====
 [source]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
@@ -160,6 +169,7 @@ part, showing a bit of the operator's internals (so we removed a bit of the snip
 from first to last (error site to subscribe site).
 <6> Each operator that saw the error is mentioned along with the user class and line where it
 was used.
+====
 
 The captured stack trace is appended to the original error as a
 suppressed `OnAssemblyException`. There are two parts to it, but the first section is the
@@ -171,6 +181,7 @@ through JUnit.
 Now that we are armed with enough information to find the culprit, we can have
 a meaningful look at that `scatterAndGather` method:
 
+====
 [source,java]
 ----
 private Mono<String> scatterAndGather(Flux<String> urls) {
@@ -179,6 +190,7 @@ private Mono<String> scatterAndGather(Flux<String> urls) {
 }
 ----
 <1> Sure enough, here is our `single`.
+====
 
 Now we can see what the root cause of the error was a `flatMap` that performs
 several HTTP calls to a few URLs but that is chained with `single`, which is too
@@ -189,16 +201,19 @@ We have solved our problem.
 
 Now consider the following line in the stack trace:
 
+====
 [source]
 ----
 Error has been observed by the following operator(s):
 ----
+====
 
 That second part of the debug stack trace was not necessarily interesting in
 this particular example, because the error was actually happening in the last
 operator in the chain (the one closest to `subscribe`). Considering another
 example might make it more clear:
 
+====
 [source,java]
 ----
 FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
@@ -206,10 +221,12 @@ FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
               .transform(FakeUtils2.enrichUser)
               .blockLast();
 ----
+====
 
 Now imagine that, inside `findAllUserByName`, there is a `map` that fails. Here,
 we would see the following final traceback:
 
+====
 [source,java]
 ----
 Error has been observed by the following operator(s):
@@ -220,6 +237,7 @@ Error has been observed by the following operator(s):
 	|_	Flux.elapsed ⇢ reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)
 	|_	Flux.transform ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:41)
 ----
+====
 
 This corresponds to the section of the chain of operators that gets notified of the error:
 
@@ -269,11 +287,13 @@ cost than a regular `checkpoint`.
 `checkpoint(String)` includes "`light`" in its output (which can be handy when
 searching), as shown in the following example:
 
+====
 ----
 ...
 	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
 Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [light checkpoint identifier].
 ----
+====
 
 Last but not least, if you want to add a more generic description to the checkpoint but
 still rely on the stack trace mechanism to identify the assembly site, you can force that
@@ -281,6 +301,7 @@ behavior by using the `checkpoint("description", true)` version. We are now back
 initial message for the traceback, augmented with a `description`, as shown in the
 following example:
 
+====
 ----
 Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] : <1>
 	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:215)
@@ -289,6 +310,7 @@ Error has been observed by the following operator(s):
 	|_	ParallelFlux.checkpoint ⇢ reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:225)
 ----
 <1> `descriptionCorrelation1234` is the description provided in the `checkpoint`.
+====
 
 The description could be a static identifier or user-readable description or a wider
 correlation ID (for instance, coming from a header in the case of an HTTP request).
@@ -328,6 +350,7 @@ For instance, suppose we have Logback activated and configured and a chain like
 insight into how it works and what kind of events it propagates upstream to the range,
 as the following example shows:
 
+====
 [source,java]
 ----
 Flux<Integer> flux = Flux.range(1, 10)
@@ -335,9 +358,11 @@ Flux<Integer> flux = Flux.range(1, 10)
                          .take(3);
 flux.subscribe();
 ----
+====
 
 This prints out the following (through the logger's console appender):
 
+====
 ----
 10:45:20.200 [main] INFO  reactor.Flux.Range.1 - | onSubscribe([Synchronous Fuseable] FluxRange.RangeSubscription) <1>
 10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | request(unbounded) <2>
@@ -364,6 +389,7 @@ synchronous or asynchronous fusion.
 downstream.
 <3> Then the range sends three values in a row.
 <4> On the last line, we see `cancel()`.
+====
 
 The last line, (4), is the most interesting. We can see the `take` in action there. It
 operates by cutting the sequence short after it has seen enough elements emitted. In

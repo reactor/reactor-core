@@ -38,10 +38,12 @@ calling `onNext`) but can also signal an error (by calling `onError`) or complet
 calling `onComplete`). Both errors and completion terminate the sequence. This can
 be summed up as follows:
 
+====
 [source]
 ----
 onNext x 0..N [onError | onComplete]
 ----
+====
 
 This approach is very flexible. The pattern supports use cases where there is no value,
 one value, or n values (including an infinite sequence of values, such as the continuing
@@ -106,6 +108,7 @@ the second fetches favorite details, and the third offers suggestions with detai
 follows:
 
 .Example of Callback Hell
+====
 [source,java]
 ----
 userService.getFavorites(userId, new Callback<List<String>>() { //<1>
@@ -161,11 +164,13 @@ go to the `favoriteService` to get detailed `Favorite` objects. Since we want on
 we first stream the list of IDs to limit it to five.
 <9> Once again, a callback. This time we get a fully-fledged `Favorite` object that we
 push to the UI inside the UI thread.
+====
 
 That is a lot of code, and it is a bit hard to follow and has repetitive parts.
 Consider its equivalent in Reactor:
 
 .Example of Reactor code equivalent to callback code
+====
 [source,java]
 ----
 userService.getFavorites(userId) // <1>
@@ -184,12 +189,14 @@ userService.getFavorites(userId) // <1>
 <5> At the end, we want to process each piece of data in the UI thread.
 <6> We trigger the flow by describing what to do with the final form of the data
 (show it in a UI list) and what to do in case of an error (show a popup).
+====
 
 What if you want to ensure the favorite IDs are retrieved in less than 800ms or, if it
 takes longer, get them from a cache? In the callback-based code, that is a complicated
 task. In Reactor it becomes as easy as adding a `timeout` operator in the chain, as follows:
 
 .Example of Reactor code with timeout and fallback
+====
 [source,java]
 ----
 userService.getFavorites(userId)
@@ -204,6 +211,7 @@ userService.getFavorites(userId)
 <1> If the part above emits nothing for more than 800ms, propagate an error.
 <2> In case of an error, fall back to the `cacheService`.
 <3> The rest of the chain is similar to the previous example.
+====
 
 `Future` objects are a bit better than callbacks, but they still do not do well at composition,
 despite the improvements brought in Java 8 by `CompletableFuture`. Orchestrating multiple
@@ -219,6 +227,7 @@ statistic and combine these pair-wise, all of it asynchronously. The following e
 does so with a list of type `CompletableFuture`:
 
 .Example of `CompletableFuture` combination
+====
 [source,java]
 ----
 CompletableFuture<List<String>> ids = ifhIds(); // <1>
@@ -263,11 +272,13 @@ reiterate over the list of futures, collecting their results by using `join()`
 (which, here, does not block, since `allOf` ensures the futures are all done).
 <10> Once the whole asynchronous pipeline has been triggered, we wait for it to
 be processed and return the list of results that we can assert.
+====
 
 Since Reactor has more combination operators out of the box, this process can be
 simplified, as follows:
 
 .Example of Reactor code equivalent to future code
+====
 [source,java]
 ----
 Flux<String> ids = ifhrIds(); // <1>
@@ -305,6 +316,7 @@ combining it or subscribing to it. Most probably, we would return the `result` `
 Since we are in a test, we instead block, waiting for the processing to finish, and then
 directly return the aggregated list of values.
 <8> Assert the result.
+====
 
 The perils of using callbacks and `Future` objects are similar and are what reactive programming
 addresses with the `Publisher-Subscriber` pair.

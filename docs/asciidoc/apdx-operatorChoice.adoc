@@ -136,7 +136,7 @@ I want to deal with:
 == Peeking into a Sequence
 
 * Without modifying the final sequence, I want to:
-** get notified of / execute additional behavior footnote:[sometimes referred to as "side-effects"] on:
+** get notified of / execute additional behavior (sometimes referred to as "side-effects") on:
 *** emissions: `doOnNext`
 *** completion: `Flux#doOnComplete`, `Mono#doOnSuccess` (includes the result, if any)
 *** error termination: `doOnError`
@@ -230,7 +230,7 @@ I want to deal with:
 *** ...triggered by a companion control Flux: `retryWhen`
 *** ... using a standard backoff strategy (exponential backoff with jitter): `retryBackoff`
 
-* I want to deal with backpressure "errors"footnote:[request max from upstream and apply the strategy when downstream does not produce enough request]...
+* I want to deal with backpressure "errors" (request max from upstream and apply the strategy when downstream does not produce enough request)...
 ** by throwing a special `IllegalStateException`: `Flux#onBackpressureError`
 ** by dropping excess values: `Flux#onBackpressureDrop`
 *** ...except the last one seen: `Flux#onBackpressureLatest`
