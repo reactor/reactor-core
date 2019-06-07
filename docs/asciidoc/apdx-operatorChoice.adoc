@@ -143,8 +143,9 @@ I want to deal with:
 *** cancellation: `doOnCancel`
 *** "start" of the sequence: `doFirst`
 **** this is tied to `Publisher#subscribe(Subscriber)`
-*** subscription (as in `Subscription` acknowledgment after `subscribe`): `doOnSubscribe`
-****(tied to `Subscriber#onSubscribe(Subscription)`)
+*** post-subscription : `doOnSubscribe`
+**** as in `Subscription` acknowledgment after `subscribe`
+**** this is tied to `Subscriber#onSubscribe(Subscription)`
 *** request: `doOnRequest`
 *** completion or error: `doOnTerminate` (Mono version includes the result, if any)
 **** but *after* it has been propagated downstream: `doAfterTerminate`
