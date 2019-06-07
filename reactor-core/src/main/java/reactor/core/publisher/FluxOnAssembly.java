@@ -433,7 +433,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					onAssemblyException = new OnAssemblyException(description);
 				}
 
-				t.addSuppressed(onAssemblyException);
+				t = Exceptions.addSuppressed(t, onAssemblyException);
 			}
 
 			onAssemblyException.add(parent, snapshotStack);
