@@ -185,7 +185,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	static final class AssemblyLightSnapshot extends AssemblySnapshot {
 
 		AssemblyLightSnapshot(@Nullable String description) {
-			super(true, description, () -> "");
+			super(true, description, null);
 			cached = "checkpoint(\"" + description + "\")";
 		}
 
@@ -209,7 +209,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	static final class MethodReturnSnapshot extends AssemblySnapshot {
 
 		MethodReturnSnapshot(String method) {
-			super(true, method, () -> "");
+			super(true, method, null);
 			cached = method;
 		}
 
