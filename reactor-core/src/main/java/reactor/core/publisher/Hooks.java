@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
+import reactor.core.publisher.FluxOnAssembly.MethodReturnSnapshot;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -568,6 +569,32 @@ public abstract class Hooks {
 	}
 
 	Hooks() {
+	}
+
+	/**
+	 *
+	 * @deprecated Should only be used by the instrumentation, DOES NOT guarantee any compatibility
+	 */
+	@Nullable
+	@Deprecated
+	public static <T, P extends Publisher<T>> Publisher<T> addReturnInfo(@Nullable P publisher, String method) {
+		if (publisher == null) {
+			return null;
+		}
+		return addAssemblyInfo(publisher, new MethodReturnSnapshot(method));
+	}
+
+	/**
+	 *
+	 * @deprecated Should only be used by the instrumentation, DOES NOT guarantee any compatibility
+	 */
+	@Nullable
+	@Deprecated
+	public static <T, P extends Publisher<T>> Publisher<T> addCallSiteInfo(@Nullable P publisher, String callSite) {
+		if (publisher == null) {
+			return null;
+		}
+		return addAssemblyInfo(publisher, new AssemblySnapshot(callSite));
 	}
 
 	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {

@@ -18,7 +18,6 @@ package reactor.tools.agent;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.lang.instrument.UnmodifiableClassException;
 import java.security.ProtectionDomain;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -30,7 +29,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import reactor.core.publisher.Hooks;
 
 public class ReactorDebugAgent {
 
@@ -43,37 +41,6 @@ public class ReactorDebugAgent {
 		instrumentation = ByteBuddyAgent.install();
 
 		ClassFileTransformer transformer = new ClassFileTransformer() {
-			@Override
-			public byte[] transform(
-					ClassLoader loader,
-					String className,
-					Class<?> classBeingRedefined,
-					ProtectionDomain protectionDomain,
-					byte[] bytes
-			) {
-				if ("reactor/core/publisher/Hooks".equals(className)) {
-					ClassReader cr = new ClassReader(bytes);
-					ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
-
-					ClassVisitor classVisitor = new HooksClassVisitor(cw);
-
-					cr.accept(classVisitor, 0);
-					return cw.toByteArray();
-				}
-
-				return null;
-			}
-		};
-		instrumentation.addTransformer(transformer, true);
-		try {
-			instrumentation.retransformClasses(Hooks.class);
-		}
-		catch (UnmodifiableClassException e) {
-			throw new RuntimeException(e);
-		}
-		instrumentation.removeTransformer(transformer);
-
-		transformer = new ClassFileTransformer() {
 			@Override
 			public byte[] transform(
 					ClassLoader loader,

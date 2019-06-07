@@ -95,25 +95,20 @@ class ReturnHandlingMethodVisitor extends MethodVisitor {
         if (!checkpointed && Opcodes.ARETURN == opcode) {
             changed.set(true);
 
-            super.visitInsn(Opcodes.DUP);
-            Label atReturn = new Label();
-            super.visitJumpInsn(Opcodes.IFNULL, atReturn); // skip if null
-
             String callSite = String.format(
-                    "%s.%s(%s:%d)",
+                    "at %s.%s(%s:%d)",
                     currentClassName.replace("/", "."), currentMethod, currentSource, currentLine
             );
             super.visitLdcInsn(callSite);
+
             super.visitMethodInsn(
-                    Opcodes.INVOKEVIRTUAL,
-                    returnType,
-                    "checkpoint",
-                    "(Ljava/lang/String;)L" + returnType + ";",
+                    Opcodes.INVOKESTATIC,
+                    "reactor/core/publisher/Hooks",
+                    "addReturnInfo",
+                    "(Lorg/reactivestreams/Publisher;Ljava/lang/String;)Lorg/reactivestreams/Publisher;",
                     false
             );
-
-            super.visitLabel(atReturn);
-            super.visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[] { returnType });
+            super.visitTypeInsn(Opcodes.CHECKCAST, returnType);
         }
 
         super.visitInsn(opcode);
