@@ -33,7 +33,6 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.core.publisher.Traces;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -149,24 +148,6 @@ public class TracesTest {
 
 		assertThat(Traces.extractOperatorAssemblyInformation(stack))
 				.isEqualTo("Flux.delayElements ⇢ at reactor.foo.Bar.baz(Bar.java:123)");
-	}
-
-	@Test
-	public void extractOperatorLine_skipFirst() {
-		String stack = "    "
-				+ "\n"
-				+ "\n   "
-				+ "\t"
-				+ "\t   "
-				+ "\t\n"
-				+ "\t  \n  "
-				+ "\treactor.core.publisher.Flux.concatMap(Flux.java:3071)\n"
-				+ "\treactor.foo.Bar.baz(Bar.java:123)\n"
-				+ "\treactor.foo.Bar.baz2(Bar.java:456)\n"
-				+ "\treactor.foo.Bar.baz3(Bar.java:789)\n";
-
-		assertThat(Traces.extractOperatorAssemblyInformationParts(stack, true))
-				.containsOnly("reactor.foo.Bar.baz(Bar.java:123)");
 	}
 
 	@Test

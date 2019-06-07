@@ -588,8 +588,9 @@ public abstract class Hooks {
 	 *
 	 * @deprecated Should only be used by the instrumentation, DOES NOT guarantee any compatibility
 	 */
+	@Nullable
 	@Deprecated
-	public static <T, P extends Publisher<T>> Publisher<T> addCallSiteInfo(P publisher, String callSite) {
+	public static <T, P extends Publisher<T>> Publisher<T> addCallSiteInfo(@Nullable P publisher, String callSite) {
 		if (publisher == null) {
 			return null;
 		}

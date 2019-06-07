@@ -315,7 +315,7 @@ final class Traces {
 	 * from the assembly stack trace.
 	 */
 	static String extractOperatorAssemblyInformation(String source) {
-		String[] parts = extractOperatorAssemblyInformationParts(source, false);
+		String[] parts = extractOperatorAssemblyInformationParts(source);
 		switch (parts.length) {
 			case 0:
 				return "[no operator assembly information]";
@@ -350,12 +350,11 @@ final class Traces {
 	 * @return a {@link String} representing operator and operator assembly site extracted
 	 * from the assembly stack trace.
 	 */
-	static String[] extractOperatorAssemblyInformationParts(String source, boolean skipFirst) {
+	static String[] extractOperatorAssemblyInformationParts(String source) {
 		String[] uncleanTraces = source.split("\n");
 		final List<String> traces = Stream.of(uncleanTraces)
 		                                  .map(String::trim)
 		                                  .filter(s -> !s.isEmpty())
-		                                  .skip(skipFirst ? 1 : 0)
 		                                  .collect(Collectors.toList());
 
 		if (traces.isEmpty()) {

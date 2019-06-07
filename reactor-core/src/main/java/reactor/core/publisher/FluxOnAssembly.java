@@ -234,18 +234,8 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
 
-		OnAssemblyException(Publisher<?> parent, AssemblySnapshot ase, String message) {
+		OnAssemblyException(String message) {
 			super(message);
-			//skip the "error seen by" if light (no stack)
-			if (!ase.isLight()) {
-				String[] parts = Traces.extractOperatorAssemblyInformationParts(message, true);
-				if (parts.length == 0) {
-					return;
-				}
-				String prefix = parts.length > 1 ? parts[0] : "";
-				String line = parts[parts.length - 1];
-				chainOrder.add(toTuple(parent, prefix, line, 0));
-			}
 		}
 
 		@Override
@@ -253,8 +243,20 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			return this;
 		}
 
-		Tuple4<Integer, String, String, Integer> toTuple(Publisher<?> parent, String prefix, String line, int depth) {
-			return Tuples.of(parent.hashCode(), prefix, line, depth);
+		public void add(Publisher<?> parent, AssemblySnapshot snapshot) {
+			if (snapshot.isLight()) {
+				add(parent, snapshot.lightPrefix(), snapshot.getDescription());
+			}
+			else {
+				String assemblyInformation = snapshot.toAssemblyInformation();
+				String[] parts = Traces.extractOperatorAssemblyInformationParts(assemblyInformation);
+				if (parts.length > 0) {
+					String prefix = parts.length > 1 ? parts[0] : "";
+					String line = parts[parts.length - 1];
+
+					add(parent, prefix, line);
+				}
+			}
 		}
 
 		void add(Publisher<?> parent, String prefix, String line) {
@@ -279,7 +281,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 
 				for(;;){
-					Tuple4<Integer, String, String, Integer> t = toTuple(parent, prefix, line, i);
+					Tuple4<Integer, String, String, Integer> t = Tuples.of(parent.hashCode(), prefix, line, i);
 
 					if(!chainOrder.contains(t)){
 						chainOrder.add(t);
@@ -419,36 +421,20 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				}
 			}
 
-			if (onAssemblyException != null) {
+			if (onAssemblyException == null) {
 				if (lightCheckpoint) {
-					onAssemblyException.add(parent, snapshotStack.lightPrefix(), snapshotStack.getDescription());
+					onAssemblyException = new OnAssemblyException("");
 				}
 				else {
-					String assemblyInformation = snapshotStack.toAssemblyInformation();
-					String[] parts = Traces.extractOperatorAssemblyInformationParts(assemblyInformation, false);
-
-					if (parts.length > 0) {
-						String prefix = parts.length > 1 ? parts[0] : "";
-						String line = parts[parts.length - 1];
-
-						onAssemblyException.add(parent, prefix, line);
-					}
+					StringBuilder sb = new StringBuilder();
+					fillStacktraceHeader(sb, parent.getClass(), snapshotStack.getDescription());
+					sb.append(snapshotStack.toAssemblyInformation().replaceFirst("\\n$", ""));
+					String description = sb.toString();
+					onAssemblyException = new OnAssemblyException(description);
 				}
-
-				return t;
 			}
 
-			if (lightCheckpoint) {
-				onAssemblyException = new OnAssemblyException(parent, snapshotStack, "");
-				onAssemblyException.add(parent, snapshotStack.lightPrefix(), snapshotStack.getDescription());
-			}
-			else {
-				StringBuilder sb = new StringBuilder();
-				fillStacktraceHeader(sb, parent.getClass(), snapshotStack.getDescription());
-				sb.append(snapshotStack.toAssemblyInformation().replaceFirst("\\n$", ""));
-				String description = sb.toString();
-				onAssemblyException = new OnAssemblyException(parent, snapshotStack, description);
-			}
+			onAssemblyException.add(parent, snapshotStack);
 
 			return Exceptions.addSuppressed(t, onAssemblyException);
 		}
