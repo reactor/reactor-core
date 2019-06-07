@@ -243,7 +243,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			return this;
 		}
 
-		public void add(Publisher<?> parent, AssemblySnapshot snapshot) {
+		void add(Publisher<?> parent, AssemblySnapshot snapshot) {
 			if (snapshot.isLight()) {
 				add(parent, snapshot.lightPrefix(), snapshot.getDescription());
 			}
@@ -259,7 +259,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			}
 		}
 
-		void add(Publisher<?> parent, String prefix, String line) {
+		private void add(Publisher<?> parent, String prefix, String line) {
 			//noinspection ConstantConditions
 			int key = getParentOrThis(Scannable.from(parent));
 			synchronized (chainOrder) {
@@ -432,11 +432,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					String description = sb.toString();
 					onAssemblyException = new OnAssemblyException(description);
 				}
+
+				t.addSuppressed(onAssemblyException);
 			}
 
 			onAssemblyException.add(parent, snapshotStack);
 
-			return Exceptions.addSuppressed(t, onAssemblyException);
+			return t;
 		}
 
 		@Override
