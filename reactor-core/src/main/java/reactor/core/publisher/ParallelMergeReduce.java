@@ -111,6 +111,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ERROR) return error;
+			if (key == Attr.TERMINATED) return REMAINING.get(this) == 0;
 
 			return super.scanUnsafe(key);
 		}
