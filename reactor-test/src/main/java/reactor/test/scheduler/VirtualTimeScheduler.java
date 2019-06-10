@@ -230,6 +230,20 @@ public class VirtualTimeScheduler implements Scheduler {
 		advanceTime(targetTime - nanoTime);
 	}
 
+	/**
+	 * Get the number of scheduled tasks.
+	 * <p>
+	 * This count includes tasks that have already performed as well as ones scheduled in future.
+	 * For periodical task, initial task is first scheduled and counted as one. Whenever
+	 * subsequent repeat happens this count gets incremented for the one that is scheduled
+	 * for the next run.
+	 *
+	 * @return number of tasks that have scheduled on this scheduler.
+	 */
+	public long getScheduledTaskCount() {
+		return this.counter;
+	}
+
 	@Override
 	public VirtualTimeWorker createWorker() {
 		if (shutdown) {
