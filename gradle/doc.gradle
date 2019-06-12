@@ -48,7 +48,6 @@ configure(rootProject) {
 				imagesdir: "images/",
 				stylesdir: "stylesheets/",
 				stylesheet: 'reactor.css',
-				appversion: version,
 				'source-highlighter': 'highlightjs',
 				'highlightjsdir': "./highlight",
 				'highlightjs-theme': 'railscasts'
