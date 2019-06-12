@@ -64,7 +64,7 @@ import reactor.util.concurrent.WaitStrategy;
  *
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
- * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+
+ * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+ and will be removed in 3.4.0
  */
 @Deprecated
 public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
@@ -77,7 +77,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * {@code WorkQueueProcessor<String> processor = WorkQueueProcessor.<String>builder().build()}
 	 *
 	 * @param <T> Type of dispatched signal
+	 * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+ and will be removed in 3.4.0
 	 */
+	@Deprecated
 	public final static class Builder<T> {
 
 		String          name;
