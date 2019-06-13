@@ -135,7 +135,7 @@ Next, add your dependencies to the relevant reactor projects, as usual, except w
 
 === Gradle Installation
 
-Gradle has no core support for Maven BOMs, but you can use Spring's
+Prior to version 5.0, Gradle has no core support for Maven BOMs, but you can use Spring's
 https://github.com/spring-gradle-plugins/dependency-management-plugin[gradle-dependency-management]
 plugin.
 
@@ -145,10 +145,10 @@ First, apply the plugin from the Gradle Plugin Portal, as follows:
 [source,groovy]
 ----
 plugins {
-    id "io.spring.dependency-management" version "1.0.6.RELEASE" <1>
+    id "io.spring.dependency-management" version "1.0.7.RELEASE" <1>
 }
 ----
-<1> as of this writing, 1.0.6.RELEASE is the latest version of the plugin.
+<1> as of this writing, 1.0.7.RELEASE is the latest version of the plugin.
 Check for updates.
 ====
 
@@ -171,12 +171,27 @@ Finally add a dependency to your project, without a version number, as follows:
 [source,groovy]
 ----
 dependencies {
-     compile 'io.projectreactor:reactor-core' <1>
+     implementation 'io.projectreactor:reactor-core' <1>
 }
 ----
 <1> There is no third `:` separated section for the version. It is taken from
 the BOM.
 ====
+
+Since Gadle 5.0, you can use the native Gradle support for BOMs:
+
+====
+[source,groovy]
+----
+dependencies {
+     implementation platform('io.projectreactor:reactor-bom:Bismuth-RELEASE')
+     implementation 'io.projectreactor:reactor-core' <1>
+}
+----
+<1> There is no third `:` separated section for the version. It is taken from
+the BOM.
+====
+
 
 === Milestones and Snapshots
 
