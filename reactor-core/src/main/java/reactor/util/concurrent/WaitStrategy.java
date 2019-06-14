@@ -25,7 +25,7 @@ import java.util.function.LongSupplier;
 
 /**
  * Strategy employed to wait for specific {@link LongSupplier} values with various spinning strategies.
- * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+
+ * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+ and will be removed in 3.4.0
  */
 @Deprecated
 public abstract class WaitStrategy {

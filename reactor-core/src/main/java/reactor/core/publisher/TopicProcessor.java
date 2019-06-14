@@ -67,7 +67,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
- * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+
+ * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+ and will be removed in 3.4.0
  */
 @Deprecated
 public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
@@ -80,7 +80,9 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * {@code TopicProcessor<String> processor = TopicProcessor.<String>builder().build()}
 	 *
 	 * @param <T> Type of dispatched signal
+	 * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+ and will be removed in 3.4.0
 	 */
+	@Deprecated
 	public final static class Builder<T> {
 
 		String          name;

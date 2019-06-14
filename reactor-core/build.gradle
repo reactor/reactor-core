@@ -135,6 +135,7 @@ javadoc {
 
   options.addStringOption('charSet', 'UTF-8')
 
+  options.addBooleanOption('nodeprecated', true)
   options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
   options.author = true
   options.header = "$project.name"
