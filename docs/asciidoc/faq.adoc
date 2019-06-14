@@ -173,7 +173,7 @@ instability.
 Since `3.2.0.RELEASE`, Reactor comes with such a retry baked in: `Flux.retryBackoff`.
 
 The following example shows how to implement an exponential backoff with `retryWhen`.
-IT delays retries and increases the delay between each attempt (pseudocode:
+It delays retries and increases the delay between each attempt (pseudocode:
 delay = attempt number * 100 milliseconds):
 
 ====
