@@ -56,7 +56,7 @@ dependencies {
   optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
 
   //Optional BlockHound support
-  optional 'io.projectreactor.tools:blockhound:1.0.0.M3'
+  optional 'io.projectreactor.tools:blockhound:1.0.0.M4'
 
   //Optional JDK 9 Converter
   jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
