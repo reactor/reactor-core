@@ -19,9 +19,9 @@ When you shift to asynchronous code, things can get much more complicated.
 
 Consider the following stack trace:
 
-.A typically Reactor stack trace
+.A typical Reactor stack trace
 ====
-[source]
+[source,java]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
 	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:129)
@@ -137,7 +137,7 @@ When we reuse our initial example but activate the `operatorStacktrace` debug fe
 the stack trace is as follows:
 
 ====
-[source]
+[source,java]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
 	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:129)
