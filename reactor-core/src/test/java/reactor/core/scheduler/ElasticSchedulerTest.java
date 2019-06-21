@@ -73,7 +73,8 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 				Disposable d = s.schedule(() -> {
 					try {
 						Thread.sleep(10000);
-					} catch (InterruptedException e) {
+					}
+					catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
 					}
 				});
@@ -286,9 +287,11 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		Scheduler s = Schedulers.newElastic("test-recycle");
 		((ElasticScheduler)s).evictor.shutdownNow();
 
-		try{
+		try {
 			AtomicBoolean stop = new AtomicBoolean(false);
+			CountDownLatch started = new CountDownLatch(1);
 			Disposable d = s.schedule(() -> {
+				started.countDown();
 				// simulate uninterruptible computation
 				for (;;) {
 					if (stop.get()) {
@@ -296,7 +299,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 					}
 				}
 			});
-			Thread.sleep(100);
+			started.await();
 			d.dispose();
 
 			Thread.sleep(100);
@@ -309,7 +312,6 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		}
 		finally {
 			s.dispose();
-			s.dispose();//noop
 		}
 	}
 
@@ -318,15 +320,17 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		Scheduler s = Schedulers.newElastic("test-recycle");
 		((ElasticScheduler)s).evictor.shutdownNow();
 
-		try{
+		try {
 			Disposable d = s.schedule(() -> {
 				try {
 					Thread.sleep(10000);
-				} catch (InterruptedException e) {
+				}
+				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
 			});
 
+			// Dispose twice to test that the executor is returned to the pool only once
 			d.dispose();
 			d.dispose();
 
@@ -335,7 +339,6 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		}
 		finally {
 			s.dispose();
-			s.dispose();//noop
 		}
 	}
 }
