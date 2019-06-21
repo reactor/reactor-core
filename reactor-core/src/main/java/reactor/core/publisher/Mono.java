@@ -1759,7 +1759,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 * @see #transform(Function)
+	 * @deprecated use {@link #as(Function)} with {@link #defer(Supplier)}
 	 */
+	@Deprecated
 	public final <V> Mono<V> compose(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> from(transformer.apply(this)));
 	}

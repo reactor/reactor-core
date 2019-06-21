@@ -3406,7 +3406,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux}
 	 * @see #transform  transform() for immmediate transformation of {@link Flux}
 	 * @see #as as() for a loose conversion to an arbitrary type
+	 * @deprecated use {@link #as(Function)} with {@link #defer(Supplier)}
 	 */
+	@Deprecated
 	public final <V> Flux<V> compose(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> transformer.apply(this));
 	}
