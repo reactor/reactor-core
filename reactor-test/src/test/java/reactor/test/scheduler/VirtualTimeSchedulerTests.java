@@ -250,6 +250,71 @@ public class VirtualTimeSchedulerTests {
 		}
 	}
 
+	@Test
+	public void scheduledTaskCount() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		assertThat(vts.getScheduledTaskCount()).as("initial value").isEqualTo(0);
+
+		vts.schedule(() -> {
+		});
+		assertThat(vts.getScheduledTaskCount()).as("a task scheduled").isEqualTo(1);
+	}
+
+	@Test
+	public void scheduledTaskCountWithInitialDelay() {
+		// schedule with delay
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		vts.schedule(() -> {
+		}, 10, TimeUnit.DAYS);
+		assertThat(vts.getScheduledTaskCount()).as("scheduled in future").isEqualTo(1);
+
+		vts.advanceTimeBy(Duration.ofDays(11));
+		assertThat(vts.getScheduledTaskCount()).as("time advanced").isEqualTo(1);
+	}
+
+	@Test
+	public void scheduledTaskCountWithNoInitialDelay() {
+		// schedulePeriodically with no initial delay
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		vts.schedulePeriodically(() -> {
+		}, 0, 5, TimeUnit.DAYS);
+
+		assertThat(vts.getScheduledTaskCount())
+			.as("initial delay task performed and scheduled for the first periodical task")
+			.isEqualTo(2);
+
+		vts.advanceTimeBy(Duration.ofDays(5));
+		assertThat(vts.getScheduledTaskCount())
+			.as("scheduled for the second periodical task")
+			.isEqualTo(3);
+	}
+
+	@Test
+	public void scheduledTaskCountBySchedulePeriodically() {
+		// schedulePeriodically with initial delay
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		vts.schedulePeriodically(() -> {
+		}, 10, 5, TimeUnit.DAYS);
+		assertThat(vts.getScheduledTaskCount())
+			.as("scheduled for initial delay task")
+			.isEqualTo(1);
+
+		vts.advanceTimeBy(Duration.ofDays(1));
+		assertThat(vts.getScheduledTaskCount())
+			.as("Still on initial delay")
+			.isEqualTo(1);
+
+		vts.advanceTimeBy(Duration.ofDays(10));
+		assertThat(vts.getScheduledTaskCount())
+			.as("first periodical task scheduled after initial one")
+			.isEqualTo(2);
+
+		vts.advanceTimeBy(Duration.ofDays(5));
+		assertThat(vts.getScheduledTaskCount())
+			.as("second periodical task scheduled")
+			.isEqualTo(3);
+	}
+
 	@SuppressWarnings("unchecked")
 	private static Scheduler uncache(Scheduler potentialCached) {
 		if (potentialCached instanceof Supplier) {
