@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -27,7 +28,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <I> Upstream type
  */
-final class FluxSource<I> extends Flux<I> implements SourceProducer<I> {
+final class FluxSource<I> extends Flux<I> implements SourceProducer<I>, ForwardingCorePublisher<I, I> {
 
 
 	final Publisher<? extends I> source;
@@ -50,6 +51,16 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I> {
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super I> actual) {
 		source.subscribe(actual);
+	}
+
+	@Override
+	public Publisher<? extends I> getSource() {
+		return source;
+	}
+
+	@Override
+	public CoreSubscriber<? super I> mapSubscriber(CoreSubscriber<? super I> actual) {
+		return actual;
 	}
 
 	@Override

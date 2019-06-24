@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -48,7 +49,7 @@ import reactor.util.function.Tuples;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
-                                                                    AssemblyOp {
+                                                                    AssemblyOp, ForwardingCorePublisher<T, T> {
 
 	final AssemblySnapshot snapshotStack;
 
@@ -91,36 +92,49 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> void subscribe(CoreSubscriber<? super T> s,
-			Flux<? extends T> source,
-			@Nullable AssemblySnapshot snapshotStack) {
+	static <T> CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super T> s,
+																		Flux<? extends T> source,
+																		@Nullable AssemblySnapshot snapshotStack) {
 
 		if(snapshotStack != null) {
 			if (s instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
+				return new OnAssemblyConditionalSubscriber<>(cs,
 						snapshotStack,
-						source));
+						source);
 			}
 			else {
-				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, source));
+				return new OnAssemblySubscriber<>(s, snapshotStack, source);
 			}
+		} else {
+			return s;
 		}
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(mapSubscriber(actual));
+	}
+
+	@Override
+	public CorePublisher<? extends T> getSource() {
+		return source;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super T> actual) {
 		if(snapshotStack != null) {
 			if (actual instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
-				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
-						snapshotStack,
-						source));
+				return new OnAssemblyConditionalSubscriber<>(cs, snapshotStack, source);
 			}
 			else {
-				source.subscribe(new OnAssemblySubscriber<>(actual, snapshotStack, source));
+				return new OnAssemblySubscriber<>(actual, snapshotStack, source);
 			}
+		}
+		else {
+			return actual;
 		}
 	}
 

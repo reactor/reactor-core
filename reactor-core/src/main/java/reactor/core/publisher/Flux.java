@@ -7919,7 +7919,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
+		Publisher<T> publisher = Operators.onLastAssembly(this);
+
+		CoreSubscriber<? super T> subscriber = Operators.toCoreSubscriber(actual);
+		while (publisher instanceof ForwardingCorePublisher) {
+			ForwardingCorePublisher forwardingSubscriber = (ForwardingCorePublisher) publisher;
+			publisher = forwardingSubscriber.getSource();
+			subscriber = forwardingSubscriber.mapSubscriber(subscriber);
+		}
+		if (publisher instanceof CorePublisher) {
+			((CorePublisher) publisher).subscribe(subscriber);
+		}
+		else {
+			publisher.subscribe(subscriber);
+		}
 	}
 
 	/**

@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -32,7 +33,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMap<T, R> extends FluxOperator<T, R> {
+final class FluxMap<T, R> extends FluxOperator<T, R> implements ForwardingCorePublisher<R, T> {
 
 	final Function<? super T, ? extends R> mapper;
 
@@ -51,15 +52,24 @@ final class FluxMap<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super R> actual) {
+		source.subscribe(mapSubscriber(actual));
+	}
+
+	@Override
+	public CorePublisher<? extends T> getSource() {
+		return source;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super R> actual) {
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super R> cs =
 					(Fuseable.ConditionalSubscriber<? super R>) actual;
-			source.subscribe(new MapConditionalSubscriber<>(cs, mapper));
-			return;
+			return new MapConditionalSubscriber<>(cs, mapper);
 		}
-		source.subscribe(new MapSubscriber<>(actual, mapper));
+		return new MapSubscriber<>(actual, mapper);
 	}
 
 	static final class MapSubscriber<T, R>

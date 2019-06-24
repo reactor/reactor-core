@@ -57,7 +57,7 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		FluxOnAssembly.subscribe(actual, source, stacktrace);
+		source.subscribe(FluxOnAssembly.mapSubscriber(actual, source, stacktrace));
 	}
 
 	@Override
