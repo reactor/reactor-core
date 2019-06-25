@@ -60,8 +60,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(createSubscriber(actual, onSignal, false, false));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return createSubscriber(actual, onSignal, false, false);
 	}
 
 	static class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {

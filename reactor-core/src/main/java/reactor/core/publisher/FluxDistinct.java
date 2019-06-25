@@ -61,7 +61,7 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		C collection;
 
 		try {
@@ -70,18 +70,18 @@ final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
+			return new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					collection,
 					keyExtractor,
-					distinctPredicate, cleanupCallback));
+					distinctPredicate, cleanupCallback);
 		}
 		else {
-			source.subscribe(new DistinctSubscriber<>(actual, collection, keyExtractor, distinctPredicate,
-					cleanupCallback));
+			return new DistinctSubscriber<>(actual, collection, keyExtractor, distinctPredicate,
+					cleanupCallback);
 		}
 	}
 

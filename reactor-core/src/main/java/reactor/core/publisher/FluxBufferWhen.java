@@ -77,7 +77,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super BUFFER> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super BUFFER> actual) {
 		BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER> main =
 				new BufferWhenMainSubscriber<>(actual, bufferSupplier, queueSupplier, start, end);
 
@@ -86,7 +86,10 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		BufferWhenOpenSubscriber<OPEN> bos = new BufferWhenOpenSubscriber<>(main);
 		if (main.subscribers.add(bos)) {
 			start.subscribe(bos);
-			source.subscribe(main);
+			return main;
+		}
+		else {
+			return null;
 		}
 	}
 

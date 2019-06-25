@@ -41,7 +41,7 @@ import reactor.util.context.Context;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPeekFuseable<T> extends FluxOperator<T, T>
-		implements Fuseable, SignalPeek<T>, ForwardingCorePublisher<T, T> {
+		implements Fuseable, SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -77,18 +77,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(mapSubscriber(actual));
-	}
-
-	@Override
-	public CorePublisher<? extends T> getSource() {
-		return source;
-	}
-
-	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			return new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, this);
 		}

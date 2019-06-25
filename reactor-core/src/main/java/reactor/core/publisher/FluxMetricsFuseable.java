@@ -66,13 +66,12 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		MeterRegistry registry = Metrics.globalRegistry;
 		if (registryCandidate != null) {
 			registry = registryCandidate;
 		}
-		source.subscribe(new FluxMetrics.MicrometerFluxMetricsFuseableSubscriber<>(actual, registry,
-				Clock.SYSTEM, this.name, this.tags));
+		return new FluxMetrics.MicrometerFluxMetricsFuseableSubscriber<>(actual, registry,
+				Clock.SYSTEM, this.name, this.tags);
 	}
-
 }

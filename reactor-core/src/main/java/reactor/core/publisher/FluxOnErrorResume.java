@@ -43,8 +43,8 @@ final class FluxOnErrorResume<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new ResumeSubscriber<>(actual, nextFactory));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new ResumeSubscriber<>(actual, nextFactory);
 	}
 
 	static final class ResumeSubscriber<T>

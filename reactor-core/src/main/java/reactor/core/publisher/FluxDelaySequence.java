@@ -40,10 +40,10 @@ final class FluxDelaySequence<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Scheduler.Worker w = scheduler.createWorker();
 
-		source.subscribe(new DelaySubscriber<T>(actual, delay, w));
+		return new DelaySubscriber<T>(actual, delay, w);
 	}
 
 	@Override

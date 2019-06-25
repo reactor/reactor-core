@@ -38,10 +38,10 @@ final class FluxDetach<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new DetachSubscriber<>(actual));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new DetachSubscriber<>(actual);
 	}
-	
+
 	static final class DetachSubscriber<T> implements InnerOperator<T, T> {
 
 		CoreSubscriber<? super T> actual;

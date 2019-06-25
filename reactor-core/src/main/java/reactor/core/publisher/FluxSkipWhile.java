@@ -41,8 +41,8 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new SkipWhileSubscriber<>(actual, predicate));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new SkipWhileSubscriber<>(actual, predicate);
 	}
 
 	static final class SkipWhileSubscriber<T>

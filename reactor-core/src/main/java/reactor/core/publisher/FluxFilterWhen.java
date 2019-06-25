@@ -65,8 +65,8 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new FluxFilterWhenSubscriber<>(actual, asyncPredicate, bufferSize));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new FluxFilterWhenSubscriber<>(actual, asyncPredicate, bufferSize);
 	}
 
 	static final class FluxFilterWhenSubscriber<T> implements InnerOperator<T, T> {

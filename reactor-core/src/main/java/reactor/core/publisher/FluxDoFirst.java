@@ -43,14 +43,15 @@ final class FluxDoFirst<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+
 		try {
 			onFirst.run();
 		}
 		catch (Throwable error) {
 			Operators.error(actual, error);
-			return;
+			return null;
 		}
-		source.subscribe(actual);
+		return actual;
 	}
 }

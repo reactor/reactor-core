@@ -49,7 +49,7 @@ import reactor.util.function.Tuples;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
-                                                                    AssemblyOp, ForwardingCorePublisher<T, T> {
+                                                                    AssemblyOp {
 
 	final AssemblySnapshot snapshotStack;
 
@@ -112,18 +112,8 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(mapSubscriber(actual));
-	}
-
-	@Override
-	public CorePublisher<? extends T> getSource() {
-		return source;
-	}
-
-	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if(snapshotStack != null) {
 			if (actual instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;

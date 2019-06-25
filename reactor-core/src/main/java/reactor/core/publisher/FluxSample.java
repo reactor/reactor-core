@@ -45,7 +45,7 @@ import reactor.util.context.Context;
  * @param <U> the value type of the sampler (irrelevant)
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSample<T, U> extends FluxOperator<T, T> implements ForwardingCorePublisher<T, T> {
+final class FluxSample<T, U> extends FluxOperator<T, T> {
 
 	final Publisher<U> other;
 
@@ -60,17 +60,7 @@ final class FluxSample<T, U> extends FluxOperator<T, T> implements ForwardingCor
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(mapSubscriber(actual));
-	}
-
-	@Override
-	public CorePublisher<? extends T> getSource() {
-		return source;
-	}
-
-	@Override
-	public CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		SampleMainSubscriber<T> main = new SampleMainSubscriber<>(serial);

@@ -55,12 +55,12 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super O> actual) {
-		source.subscribe(new BackpressureBufferSubscriber<>(actual,
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super O> actual) {
+		return new BackpressureBufferSubscriber<>(actual,
 				bufferSize,
 				unbounded,
 				delayError,
-				onOverflow));
+				onOverflow);
 	}
 
 	@Override

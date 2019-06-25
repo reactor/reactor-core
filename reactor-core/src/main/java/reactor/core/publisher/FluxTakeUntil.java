@@ -40,8 +40,8 @@ final class FluxTakeUntil<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new TakeUntilPredicateSubscriber<>(actual, predicate));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new TakeUntilPredicateSubscriber<>(actual, predicate);
 	}
 
 	static final class TakeUntilPredicateSubscriber<T>

@@ -112,13 +112,12 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
-
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false)) {
-			return;
+			return null;
 		}
 
-		source.subscribe(subscriber(actual, mapper, queueSupplier, prefetch, errorMode));
+		return subscriber(actual, mapper, queueSupplier, prefetch, errorMode);
 	}
 
 	static final class ConcatMapImmediate<T, R>

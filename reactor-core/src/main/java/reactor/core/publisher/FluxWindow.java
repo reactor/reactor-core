@@ -85,20 +85,20 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		if (skip == size) {
-			source.subscribe(new WindowExactSubscriber<>(actual,
+			return new WindowExactSubscriber<>(actual,
 					size,
-					processorQueueSupplier));
+					processorQueueSupplier);
 		}
 		else if (skip > size) {
-			source.subscribe(new WindowSkipSubscriber<>(actual,
-					size, skip, processorQueueSupplier));
+			return new WindowSkipSubscriber<>(actual,
+					size, skip, processorQueueSupplier);
 		}
 		else {
-			source.subscribe(new WindowOverlapSubscriber<>(actual,
+			return new WindowOverlapSubscriber<>(actual,
 					size,
-					skip, processorQueueSupplier, overflowQueueSupplier.get()));
+					skip, processorQueueSupplier, overflowQueueSupplier.get());
 		}
 	}
 

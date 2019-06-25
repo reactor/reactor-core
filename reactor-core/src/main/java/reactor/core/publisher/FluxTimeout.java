@@ -74,7 +74,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		TimeoutMainSubscriber<T, V> main =
@@ -88,7 +88,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 
 		firstTimeout.subscribe(ts);
 
-		source.subscribe(main);
+		return main;
 	}
 
 	@Nullable

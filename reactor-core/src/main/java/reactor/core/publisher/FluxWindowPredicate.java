@@ -87,13 +87,13 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
-		source.subscribe(new WindowPredicateMain<>(actual,
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
+		return new WindowPredicateMain<>(actual,
 				mainQueueSupplier.get(),
 				groupQueueSupplier,
 				prefetch,
 				predicate,
-				mode));
+				mode);
 	}
 
 	@Override

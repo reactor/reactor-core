@@ -57,10 +57,10 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
-		source.subscribe(new WindowTimeoutSubscriber<>(actual, maxSize,
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
+		return new WindowTimeoutSubscriber<>(actual, maxSize,
 				timespan,
-				timer));
+				timer);
 	}
 
 	@Override

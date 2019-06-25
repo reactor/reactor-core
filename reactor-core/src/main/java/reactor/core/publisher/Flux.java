@@ -7918,20 +7918,25 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> actual) {
-		Publisher<T> publisher = Operators.onLastAssembly(this);
+		CorePublisher publisher = Operators.onLastAssembly(this);
 
 		CoreSubscriber<? super T> subscriber = Operators.toCoreSubscriber(actual);
-		while (publisher instanceof ForwardingCorePublisher) {
-			ForwardingCorePublisher forwardingSubscriber = (ForwardingCorePublisher) publisher;
-			publisher = forwardingSubscriber.getSource();
-			subscriber = forwardingSubscriber.mapSubscriber(subscriber);
-		}
-		if (publisher instanceof CorePublisher) {
-			((CorePublisher) publisher).subscribe(subscriber);
-		}
-		else {
-			publisher.subscribe(subscriber);
+
+		while (true) {
+			CoreSubscriber newSubscriber = publisher.subscribeOrReturn(subscriber);
+			if (newSubscriber == null) {
+				// null means "I will subscribe myself", returning...
+				return;
+			}
+			subscriber = newSubscriber;
+			Publisher newPublisher = publisher.getSubscribeTarget();
+			if (!(newPublisher instanceof CorePublisher)) {
+				newPublisher.subscribe(subscriber);
+				return;
+			}
+			publisher = (CorePublisher) newPublisher;
 		}
 	}
 

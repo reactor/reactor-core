@@ -39,7 +39,7 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T>, ForwardingCorePublisher<T, T> {
+final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -74,17 +74,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T>, For
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(mapSubscriber(actual));
-	}
-
-	@Override
-	public CorePublisher<? extends T> getSource() {
-		return source;
-	}
-
-	@Override
-	public CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
 					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) actual;

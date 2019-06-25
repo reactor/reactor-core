@@ -70,20 +70,23 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		WindowWhenMainSubscriber<T, U, V> main = new WindowWhenMainSubscriber<>(actual,
 				start, end, processorQueueSupplier);
 		actual.onSubscribe(main);
 
 		if (main.cancelled) {
-			return;
+			return null;
 		}
 		WindowWhenOpenSubscriber<T, U> os = new WindowWhenOpenSubscriber<>(main);
 
 		if (WindowWhenMainSubscriber.BOUNDARY.compareAndSet(main,null, os)) {
 			WindowWhenMainSubscriber.OPEN_WINDOW_COUNT.incrementAndGet(main);
 			start.subscribe(os);
-			source.subscribe(main);
+			return main;
+		}
+		else {
+			return null;
 		}
 	}
 

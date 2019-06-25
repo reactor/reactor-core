@@ -62,17 +62,16 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 		return Integer.MAX_VALUE;
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Queue<SampleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
 
 		SampleTimeoutMain<T, U> main = new SampleTimeoutMain<>(actual, throttler, q);
 
 		actual.onSubscribe(main);
 
-		source.subscribe(main);
+		return main;
 	}
 
 	static final class SampleTimeoutMain<T, U>implements InnerOperator<T, T> {

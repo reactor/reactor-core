@@ -33,7 +33,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable, ForwardingCorePublisher<T, T> {
+final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 
 	final Predicate<? super T> predicate;
 
@@ -43,18 +43,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(mapSubscriber(actual));
-	}
-
-	@Override
-	public CorePublisher<? extends T> getSource() {
-		return source;
-	}
-
-	@Override
-	public CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			return new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					predicate);

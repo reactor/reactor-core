@@ -60,7 +60,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super C> actual) {
 		C buffer;
 
 		try {
@@ -69,7 +69,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e,  actual.currentContext()));
-			return;
+			return null;
 		}
 
 		BufferBoundaryMain<T, U, C> parent =
@@ -82,7 +82,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		other.subscribe(parent.other);
 
-		source.subscribe(parent);
+		return parent;
 	}
 
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>

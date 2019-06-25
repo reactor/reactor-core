@@ -63,12 +63,14 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> actual) {
-		source.subscribe(new BufferTimeoutSubscriber<>(Operators.serialize(actual),
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super C> actual) {
+		return new BufferTimeoutSubscriber<>(
+				Operators.serialize(actual),
 				batchSize,
 				timespan,
 				timer.createWorker(),
-				bufferSupplier));
+				bufferSupplier
+		);
 	}
 
 	@Override

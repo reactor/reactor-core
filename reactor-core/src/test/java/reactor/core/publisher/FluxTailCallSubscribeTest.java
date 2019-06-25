@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-public class FluxForwardingCorePublisherTest {
+public class FluxTailCallSubscribeTest {
 
     @After
     public void tearDown() {
@@ -58,7 +58,7 @@ public class FluxForwardingCorePublisherTest {
                 .subscribe(new Subscriber<String>() {
                     @Override
                     public void onSubscribe(Subscription s) {
-                        s.request(Integer.MAX_VALUE);
+                        s.cancel();
                     }
 
                     @Override

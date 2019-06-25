@@ -55,8 +55,8 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new DropSubscriber<>(actual, onDrop));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new DropSubscriber<>(actual, onDrop);
 	}
 
 	static final class DropSubscriber<T>

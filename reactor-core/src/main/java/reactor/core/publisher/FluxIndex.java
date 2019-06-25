@@ -46,14 +46,14 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super I> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super I> cs =
 					(ConditionalSubscriber<? super I>) actual;
-			source.subscribe(new IndexConditionalSubscriber<>(cs, indexMapper));
+			return new IndexConditionalSubscriber<>(cs, indexMapper);
 		}
 		else {
-			source.subscribe(new IndexSubscriber<>(actual, indexMapper));
+			return new IndexSubscriber<>(actual, indexMapper);
 		}
 	}
 

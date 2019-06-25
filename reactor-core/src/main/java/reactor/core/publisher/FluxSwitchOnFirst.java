@@ -54,12 +54,12 @@ final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void subscribe(CoreSubscriber<? super R> actual) {
+    public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
         if (actual instanceof Fuseable.ConditionalSubscriber) {
             source.subscribe(new SwitchOnFirstConditionalInner<>((Fuseable.ConditionalSubscriber<? super R>) actual, transformer));
-            return;
+            return null;
         }
-        source.subscribe(new SwitchOnFirstInner<>(actual, transformer));
+        return new SwitchOnFirstInner<>(actual, transformer);
     }
 
     static abstract class AbstractSwitchOnFirstInner<T, R> extends Flux<T>

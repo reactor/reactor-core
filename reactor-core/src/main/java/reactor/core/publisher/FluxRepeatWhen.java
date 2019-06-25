@@ -53,7 +53,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
@@ -75,13 +75,16 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 		}
 		catch (Throwable e) {
 			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		p.subscribe(other);
 
 		if (!main.cancelled) {
-			source.subscribe(main);
+			return main;
+		}
+		else {
+			return null;
 		}
 	}
 

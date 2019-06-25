@@ -61,7 +61,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		WindowBoundaryMain<T, U> main = new WindowBoundaryMain<>(actual,
 				processorQueueSupplier, processorQueueSupplier.get());
 
@@ -70,7 +70,10 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		if (main.emit(main.window)) {
 			other.subscribe(main.boundary);
 
-			source.subscribe(main);
+			return main;
+		}
+		else {
+			return null;
 		}
 	}
 

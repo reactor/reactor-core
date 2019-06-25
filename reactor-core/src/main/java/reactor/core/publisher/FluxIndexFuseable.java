@@ -63,14 +63,14 @@ final class FluxIndexFuseable<T, I> extends FluxOperator<T, I>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super I> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super I> cs =
 					(ConditionalSubscriber<? super I>) actual;
-			source.subscribe(new IndexFuseableConditionalSubscriber<>(cs, indexMapper));
+			return new IndexFuseableConditionalSubscriber<>(cs, indexMapper);
 		}
 		else {
-			source.subscribe(new IndexFuseableSubscriber<>(actual, indexMapper));
+			return new IndexFuseableSubscriber<>(actual, indexMapper);
 		}
 	}
 

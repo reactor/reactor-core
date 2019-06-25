@@ -192,9 +192,9 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MicrometerFluxMetricsSubscriber<>(actual, registryCandidate,
-				Clock.SYSTEM, this.name, this.tags));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MicrometerFluxMetricsSubscriber<>(actual, registryCandidate,
+				Clock.SYSTEM, this.name, this.tags);
 	}
 
 	static class MicrometerFluxMetricsSubscriber<T> implements InnerOperator<T,T> {

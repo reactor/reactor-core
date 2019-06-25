@@ -55,7 +55,7 @@ final class FluxDistinctFuseable<T, K, C>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		C collection;
 
 		try {
@@ -64,10 +64,10 @@ final class FluxDistinctFuseable<T, K, C>
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
-		source.subscribe(new DistinctFuseableSubscriber<>(actual, collection, keyExtractor,
-				distinctPredicate, cleanupCallback));
+		return new DistinctFuseableSubscriber<>(actual, collection, keyExtractor,
+				distinctPredicate, cleanupCallback);
 	}
 }

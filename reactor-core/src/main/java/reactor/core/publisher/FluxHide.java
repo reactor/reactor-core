@@ -35,8 +35,8 @@ final class FluxHide<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new HideSubscriber<>(actual));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new HideSubscriber<>(actual);
 	}
 
 	static final class HideSubscriber<T> implements InnerOperator<T, T> {

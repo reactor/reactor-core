@@ -50,8 +50,8 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new ScanSubscriber<>(actual, accumulator));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new ScanSubscriber<>(actual, accumulator);
 	}
 
 	static final class ScanSubscriber<T>

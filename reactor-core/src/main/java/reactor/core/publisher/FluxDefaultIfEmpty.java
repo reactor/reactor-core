@@ -38,8 +38,8 @@ final class FluxDefaultIfEmpty<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new DefaultIfEmptySubscriber<>(actual, value));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new DefaultIfEmptySubscriber<>(actual, value);
 	}
 
 	static final class DefaultIfEmptySubscriber<T>

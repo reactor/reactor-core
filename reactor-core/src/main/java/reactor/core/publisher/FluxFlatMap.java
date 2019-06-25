@@ -88,18 +88,17 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
-
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (trySubscribeScalarMap(source, actual, mapper, false)) {
-			return;
+			return null;
 		}
 
-		source.subscribe(new FlatMapMain<>(actual,
+		return new FlatMapMain<>(actual,
 				mapper,
 				delayError,
 				maxConcurrency,
 				mainQueueSupplier,
-				prefetch, innerQueueSupplier));
+				prefetch, innerQueueSupplier);
 	}
 
 	/**

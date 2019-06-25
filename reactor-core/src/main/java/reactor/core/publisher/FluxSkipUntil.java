@@ -41,8 +41,8 @@ final class FluxSkipUntil<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new SkipUntilSubscriber<>(actual, predicate));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new SkipUntilSubscriber<>(actual, predicate);
 	}
 
 	static final class SkipUntilSubscriber<T>
