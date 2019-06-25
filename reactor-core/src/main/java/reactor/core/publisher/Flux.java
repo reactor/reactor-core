@@ -7921,8 +7921,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> actual) {
 		CorePublisher publisher = Operators.onLastAssembly(this);
-
-		CoreSubscriber<? super T> subscriber = Operators.toCoreSubscriber(actual);
+		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
 		while (true) {
 			CoreSubscriber newSubscriber = publisher.subscribeOrReturn(subscriber);
@@ -7931,6 +7930,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				return;
 			}
 			subscriber = newSubscriber;
+
 			Publisher newPublisher = publisher.getSubscribeTarget();
 			if (!(newPublisher instanceof CorePublisher)) {
 				newPublisher.subscribe(subscriber);
