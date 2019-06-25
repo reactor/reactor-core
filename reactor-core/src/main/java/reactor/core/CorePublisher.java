@@ -21,7 +21,6 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Hooks;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -45,14 +44,4 @@ public interface CorePublisher<T> extends Publisher<T> {
 	 * @see Publisher#subscribe(Subscriber)
 	 */
 	void subscribe(CoreSubscriber<? super T> subscriber);
-
-	@Nullable
-	default CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		subscribe(actual);
-		return null;
-	}
-
-	default Publisher getSubscribeTarget() {
-		return null;
-	}
 }

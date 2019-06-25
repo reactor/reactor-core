@@ -7924,14 +7924,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
 		while (true) {
-			CoreSubscriber newSubscriber = publisher.subscribeOrReturn(subscriber);
-			if (newSubscriber == null) {
+			if (!(publisher instanceof CoreOperator)) {
+				publisher.subscribe(subscriber);
+				return;
+			}
+			CoreOperator operator = (CoreOperator) publisher;
+
+			subscriber = operator.subscribeOrReturn(subscriber);
+			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			subscriber = newSubscriber;
-
-			Publisher newPublisher = publisher.getSubscribeTarget();
+			Publisher newPublisher = operator.getSubscribeTarget();
 			if (!(newPublisher instanceof CorePublisher)) {
 				newPublisher.subscribe(subscriber);
 				return;
