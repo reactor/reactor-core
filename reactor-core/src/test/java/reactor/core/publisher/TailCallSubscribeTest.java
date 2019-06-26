@@ -123,11 +123,8 @@ public class TailCallSubscribeTest {
         @Override
         public void subscribe(Subscriber<? super Object> subscriber) {
             new Exception().printStackTrace(System.out);
-            subscriber.onSubscribe(Operators.emptySubscription());
-            if (1 == 1) {
-                subscriber.onError(new RuntimeException("BOOM!"));
-            }
             complete(Thread.currentThread().getStackTrace());
+            subscriber.onSubscribe(Operators.emptySubscription());
             subscriber.onComplete();
         }
     }
