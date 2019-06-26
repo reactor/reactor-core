@@ -100,7 +100,7 @@ public class TailCalLSubscribeTest {
                 .as(manyOperatorsOnMono)
                 .flux()
                 .as(manyOperatorsOnFlux)
-                .transform(CustomOperator::new)
+                .transform(flux -> new CustomOperator(flux))
                 .as(manyOperatorsOnFlux)
                 .then()
                 .as(manyOperatorsOnMono)
