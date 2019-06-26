@@ -53,7 +53,7 @@ final class FluxMap<T, R> extends FluxOperator<T, R> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super R> cs =
 					(Fuseable.ConditionalSubscriber<? super R>) actual;

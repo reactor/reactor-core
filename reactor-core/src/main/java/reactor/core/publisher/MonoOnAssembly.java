@@ -49,7 +49,7 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super T> cs =
 					(ConditionalSubscriber<? super T>) actual;

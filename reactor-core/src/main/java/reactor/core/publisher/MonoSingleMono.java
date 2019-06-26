@@ -50,7 +50,7 @@ final class MonoSingleMono<T> extends MonoOperator<T, T>
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new MonoSingle.SingleSubscriber<>(actual, null, false);
 	}
 }

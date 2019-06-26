@@ -39,7 +39,7 @@ final class FluxElapsed<T> extends FluxOperator<T, Tuple2<Long, T>> implements F
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Tuple2<Long, T>> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Tuple2<Long, T>> actual) {
 		return new ElapsedSubscriber<>(actual, scheduler);
 	}
 

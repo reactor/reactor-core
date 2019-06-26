@@ -70,7 +70,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 
 		if (source instanceof Callable) {
 			T v;

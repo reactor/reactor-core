@@ -201,7 +201,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 	}
 
 	static final class RetryWhenOtherSubscriber extends Flux<Throwable>
-	implements InnerConsumer<Object>, CoreOperator<Throwable> {
+	implements InnerConsumer<Object>, CoreOperator<Throwable, Throwable> {
 		RetryWhenMainSubscriber<?> main;
 
 		final DirectProcessor<Throwable> completionSignal = new DirectProcessor<>();
@@ -246,7 +246,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Throwable> actual) {
+		public CoreSubscriber<? super Throwable> subscribeOrReturn(CoreSubscriber<? super Throwable> actual) {
 			return actual;
 		}
 

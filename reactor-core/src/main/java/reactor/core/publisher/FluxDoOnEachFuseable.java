@@ -40,7 +40,7 @@ final class FluxDoOnEachFuseable<T> extends FluxOperator<T, T> implements Fuseab
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return FluxDoOnEach.createSubscriber(actual, this.onSignal, true, false);
 	}
 }

@@ -43,7 +43,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new ReduceSubscriber<>(actual, aggregator);
 	}
 

@@ -31,7 +31,7 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable, CoreOperator<O> {
+abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable, CoreOperator<O, I> {
 
 	protected final Flux<? extends I> source;
 
@@ -63,10 +63,10 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable, 
 	}
 
 	@Override
-	public abstract CoreSubscriber subscribeOrReturn(CoreSubscriber<? super O> actual);
+	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
-	public final CorePublisher getSubscribeTarget() {
+	public final CorePublisher<? extends I> getSubscribeTarget() {
 		return source;
 	}
 

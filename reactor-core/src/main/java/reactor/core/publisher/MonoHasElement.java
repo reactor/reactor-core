@@ -31,7 +31,7 @@ final class MonoHasElement<T> extends MonoOperator<T, Boolean> implements Fuseab
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
 		return new HasElementSubscriber<>(actual);
 	}
 

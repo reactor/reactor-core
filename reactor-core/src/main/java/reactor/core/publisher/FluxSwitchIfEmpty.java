@@ -37,7 +37,7 @@ final class FluxSwitchIfEmpty<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		SwitchIfEmptySubscriber<T> parent = new SwitchIfEmptySubscriber<>(actual, other);
 
 		actual.onSubscribe(parent);

@@ -43,7 +43,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			return new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					predicate);

@@ -66,7 +66,7 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		MeterRegistry registry = Metrics.globalRegistry;
 		if (registryCandidate != null) {
 			registry = registryCandidate;

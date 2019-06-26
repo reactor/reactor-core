@@ -52,7 +52,7 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		SampleFirstMain<T, U> main = new SampleFirstMain<>(actual, throttler);
 
 		actual.onSubscribe(main);

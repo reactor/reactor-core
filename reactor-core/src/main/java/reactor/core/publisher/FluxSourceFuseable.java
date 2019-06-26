@@ -26,7 +26,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
-final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourceProducer<I>, CoreOperator<I> {
+final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourceProducer<I>, CoreOperator<I, I> {
 
 	final Publisher<? extends I> source;
 
@@ -46,12 +46,12 @@ final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourcePro
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super I> actual) {
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		return actual;
 	}
 
 	@Override
-	public Publisher getSubscribeTarget() {
+	public Publisher<? extends I> getSubscribeTarget() {
 		return source;
 	}
 

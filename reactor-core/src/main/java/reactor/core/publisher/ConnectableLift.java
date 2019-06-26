@@ -29,7 +29,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Simon Baslé
  */
-final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannable, CoreOperator<O> {
+final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannable, CoreOperator<O, I> {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;

@@ -31,7 +31,7 @@ final class FluxTakeLastOne<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new MonoTakeLastOne.TakeLastOneSubscriber<>(actual, null, false);
 	}
 

@@ -38,7 +38,7 @@ final class FluxDetach<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new DetachSubscriber<>(actual);
 	}
 

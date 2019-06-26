@@ -46,7 +46,7 @@ final class FluxNameFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return actual;
 	}
 

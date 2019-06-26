@@ -31,7 +31,7 @@ import java.util.function.Function;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-public class TailCalLSubscribeTest {
+public class TailCallSubscribeTest {
 
     private static Function<Flux<Object>, Flux<Object>> manyOperatorsOnFlux = flux -> {
         for (int i = 0; i < 5; i++) {
@@ -123,8 +123,11 @@ public class TailCalLSubscribeTest {
         @Override
         public void subscribe(Subscriber<? super Object> subscriber) {
             new Exception().printStackTrace(System.out);
-            complete(Thread.currentThread().getStackTrace());
             subscriber.onSubscribe(Operators.emptySubscription());
+            if (1 == 1) {
+                subscriber.onError(new RuntimeException("BOOM!"));
+            }
+            complete(Thread.currentThread().getStackTrace());
             subscriber.onComplete();
         }
     }

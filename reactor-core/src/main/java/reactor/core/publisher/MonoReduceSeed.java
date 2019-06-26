@@ -50,7 +50,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		R initialValue;
 
 		try {

@@ -45,7 +45,7 @@ final class MonoExpand<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> s) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> s) {
 		if (breadthFirst) {
 			FluxExpand.ExpandBreathSubscriber<T> parent =
 					new FluxExpand.ExpandBreathSubscriber<>(s, expander, capacityHint);

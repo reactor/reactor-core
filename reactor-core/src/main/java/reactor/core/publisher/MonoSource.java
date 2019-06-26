@@ -32,7 +32,7 @@ import reactor.util.annotation.Nullable;
  * }
  * @param <I> delegate {@link Publisher} type
  */
-final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I>, CoreOperator<I>  {
+final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I>, CoreOperator<I, I>  {
 
 	final Publisher<? extends I> source;
 
@@ -52,12 +52,12 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super I> actual) {
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		return actual;
 	}
 
 	@Override
-	public Publisher getSubscribeTarget() {
+	public Publisher<? extends I> getSubscribeTarget() {
 		return source;
 	}
 

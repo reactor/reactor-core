@@ -55,7 +55,7 @@ final class FluxDistinctFuseable<T, K, C>
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		C collection;
 
 		try {

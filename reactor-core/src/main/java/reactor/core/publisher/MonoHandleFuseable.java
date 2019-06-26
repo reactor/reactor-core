@@ -41,7 +41,7 @@ final class MonoHandleFuseable<T, R> extends MonoOperator<T, R>
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		return new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler);
 	}
 }

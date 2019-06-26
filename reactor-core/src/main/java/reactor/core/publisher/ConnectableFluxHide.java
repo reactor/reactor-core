@@ -29,7 +29,7 @@ import reactor.util.annotation.Nullable;
  *
  * @author Simon Baslé
  */
-final class ConnectableFluxHide<T> extends ConnectableFlux<T> implements Scannable, CoreOperator<T> {
+final class ConnectableFluxHide<T> extends ConnectableFlux<T> implements Scannable, CoreOperator<T, T> {
 
 	final ConnectableFlux<T> source;
 

@@ -40,7 +40,7 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
-final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator<T> {
+final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator<T, T> {
 
 	final Mono<T> source;
 
@@ -82,7 +82,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator
 	}
 
 	@Override
-	public final CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(actual, otherGenerators);
 		actual.onSubscribe(parent);
 		return parent;

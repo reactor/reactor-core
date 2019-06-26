@@ -77,7 +77,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super BUFFER> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super BUFFER> actual) {
 		BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER> main =
 				new BufferWhenMainSubscriber<>(actual, bufferSupplier, queueSupplier, start, end);
 

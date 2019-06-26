@@ -31,7 +31,7 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable, CoreOperator<O> {
+public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable, CoreOperator<O, I> {
 
 	protected final Flux<? extends I> source;
 
@@ -55,13 +55,13 @@ public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable, C
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super O> actual) {
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		subscribe(actual);
 		return null;
 	}
 
 	@Override
-    public CorePublisher getSubscribeTarget() {
+    public CorePublisher<? extends I> getSubscribeTarget() {
         return source;
     }
 

@@ -42,7 +42,7 @@ final class MonoSourceFlux<I> extends MonoFromFluxOperator<I, I> {
 	 * @param actual
 	 */
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super I> actual) {
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		return actual;
 	}
 

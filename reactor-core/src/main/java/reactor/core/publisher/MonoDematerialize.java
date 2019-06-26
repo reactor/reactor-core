@@ -27,7 +27,7 @@ final class MonoDematerialize<T> extends MonoOperator<Signal<T>, T> {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super Signal<T>> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new FluxDematerialize.DematerializeSubscriber<>(actual);
 	}
 }

@@ -26,7 +26,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <I> Upstream type
  */
-final class FluxSource<I> extends Flux<I> implements SourceProducer<I>, CoreOperator<I> {
+final class FluxSource<I> extends Flux<I> implements SourceProducer<I>, CoreOperator<I, I> {
 
 
 	final Publisher<? extends I> source;

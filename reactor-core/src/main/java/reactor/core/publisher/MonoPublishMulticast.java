@@ -50,7 +50,7 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		MonoPublishMulticaster<T> multicast = new MonoPublishMulticaster<>(actual.currentContext());
 
 		Mono<? extends R> out;

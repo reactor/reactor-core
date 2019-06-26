@@ -44,7 +44,7 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
 		return new AllSubscriber<T>(actual, predicate);
 	}
 

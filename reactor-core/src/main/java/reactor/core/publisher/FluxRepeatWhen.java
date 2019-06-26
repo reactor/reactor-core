@@ -53,7 +53,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
@@ -198,7 +198,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	}
 
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
-			implements InnerConsumer<Object>, CoreOperator<Long> {
+			implements InnerConsumer<Object>, CoreOperator<Long, Long> {
 
 		RepeatWhenMainSubscriber<?> main;
 

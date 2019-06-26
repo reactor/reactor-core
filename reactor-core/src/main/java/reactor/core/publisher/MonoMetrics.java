@@ -72,7 +72,7 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new MicrometerMonoMetricsSubscriber<>(actual, meterRegistry,
 				Clock.SYSTEM, this.name, this.tags);
 	}

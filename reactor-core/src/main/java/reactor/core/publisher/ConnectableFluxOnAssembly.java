@@ -45,7 +45,7 @@ import reactor.util.annotation.Nullable;
  */
 final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
                                                                     Fuseable, AssemblyOp,
-                                                                    Scannable, CoreOperator<T> {
+                                                                    Scannable, CoreOperator<T, T> {
 
 	final ConnectableFlux<T> source;
 
@@ -63,7 +63,7 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	}
 
 	@Override
-	public final CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return FluxOnAssembly.mapSubscriber(actual, source, stacktrace);
 	}
 

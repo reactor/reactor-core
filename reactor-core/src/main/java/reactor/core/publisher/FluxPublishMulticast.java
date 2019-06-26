@@ -70,7 +70,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 	}
 
 	@Override
-	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		FluxPublishMulticaster<T> multicast = new FluxPublishMulticaster<>(prefetch,
 				queueSupplier,
 				actual.currentContext());
