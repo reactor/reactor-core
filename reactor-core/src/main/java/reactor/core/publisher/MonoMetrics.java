@@ -72,9 +72,9 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MicrometerMonoMetricsSubscriber<>(actual, meterRegistry,
-				Clock.SYSTEM, this.name, this.tags));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MicrometerMonoMetricsSubscriber<>(actual, meterRegistry,
+				Clock.SYSTEM, this.name, this.tags);
 	}
 
 	static class MicrometerMonoMetricsSubscriber<T> implements InnerOperator<T,T> {

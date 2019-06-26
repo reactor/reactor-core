@@ -40,7 +40,7 @@ final class MonoOnErrorResume<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new FluxOnErrorResume.ResumeSubscriber<>(actual, nextFactory));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new FluxOnErrorResume.ResumeSubscriber<>(actual, nextFactory);
 	}
 }

@@ -32,9 +32,9 @@ final class MonoHide<T> extends MonoOperator<T, T> {
     MonoHide(Mono<? extends T> source) {
         super(source);
     }
-    
+
     @Override
-    public void subscribe(CoreSubscriber<? super T> actual) {
-        source.subscribe(new FluxHide.HideSubscriber<>(actual));
+    public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+        return new FluxHide.HideSubscriber<>(actual);
     }
 }

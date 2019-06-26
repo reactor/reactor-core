@@ -31,9 +31,9 @@ final class MonoDefaultIfEmpty<T> extends MonoOperator<T, T> {
         super(source);
         this.defaultValue = Objects.requireNonNull(defaultValue, "defaultValue");
     }
-    
+
     @Override
-    public void subscribe(CoreSubscriber<? super T> actual) {
-        source.subscribe(new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(actual, defaultValue));
+    public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+        return new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(actual, defaultValue);
     }
 }

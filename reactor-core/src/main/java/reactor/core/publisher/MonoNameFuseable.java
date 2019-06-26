@@ -45,8 +45,8 @@ final class MonoNameFuseable<T> extends MonoOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(actual);
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return actual;
 	}
 
 	@Nullable

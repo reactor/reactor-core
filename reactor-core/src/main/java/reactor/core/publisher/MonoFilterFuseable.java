@@ -39,11 +39,10 @@ final class MonoFilterFuseable<T> extends MonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new FluxFilterFuseable.FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, predicate));
-			return;
+			return new FluxFilterFuseable.FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, predicate);
 		}
-		source.subscribe(new FluxFilterFuseable.FilterFuseableSubscriber<>(actual, predicate));
+		return new FluxFilterFuseable.FilterFuseableSubscriber<>(actual, predicate);
 	}
 }

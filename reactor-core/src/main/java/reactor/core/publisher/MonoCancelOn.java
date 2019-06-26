@@ -29,8 +29,8 @@ final class MonoCancelOn<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new FluxCancelOn.CancelSubscriber<T>(actual, scheduler));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new FluxCancelOn.CancelSubscriber<T>(actual, scheduler);
 	}
 
 	@Override

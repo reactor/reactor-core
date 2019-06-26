@@ -34,17 +34,16 @@ final class MonoSubscriberContext<T> extends MonoOperator<T, T> implements Fusea
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Context c;
 		try {
 			c = doOnContext.apply(actual.currentContext());
 		}
 		catch (Throwable t) {
 			Operators.error(actual, Operators.onOperatorError(t, actual.currentContext()));
-			return;
+			return null;
 		}
 
-		source.subscribe(new FluxContextStart.ContextStartSubscriber<>(actual, c));
+		return new FluxContextStart.ContextStartSubscriber<>(actual, c);
 	}
-
 }

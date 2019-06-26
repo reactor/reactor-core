@@ -39,13 +39,13 @@ final class MonoTakeUntilOther<T, U> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxTakeUntilOther.TakeUntilMainSubscriber<T> mainSubscriber = new FluxTakeUntilOther.TakeUntilMainSubscriber<>(
 				actual);
 
 		FluxTakeUntilOther.TakeUntilOtherSubscriber<U> otherSubscriber = new FluxTakeUntilOther.TakeUntilOtherSubscriber<>(mainSubscriber);
 
 		other.subscribe(otherSubscriber);
-		source.subscribe(mainSubscriber);
+		return mainSubscriber;
 	}
 }

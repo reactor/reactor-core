@@ -96,8 +96,8 @@ final class MonoName<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(actual);
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return actual;
 	}
 
 	@Nullable

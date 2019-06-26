@@ -36,12 +36,12 @@ final class MonoLift<I, O> extends MonoOperator<I, O> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super O> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 
-		source.subscribe(input);
+		return input;
 	}
 }

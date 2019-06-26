@@ -44,12 +44,10 @@ final class MonoLogFuseable<T> extends MonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
-					log));
-			return;
+			return new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, log);
 		}
-		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, log));
+		return new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, log);
 	}
 }

@@ -41,7 +41,8 @@ final class MonoLiftFuseable<I, O> extends MonoOperator<I, O>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super O> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super O> actual) {
+
 		CoreSubscriber<? super I> input = lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
@@ -52,6 +53,6 @@ final class MonoLiftFuseable<I, O> extends MonoOperator<I, O>
 			input = new FluxHide.SuppressFuseableSubscriber<>(input);
 		}
 		//otherwise QS is not required or user already made a compatible conversion
-		source.subscribe(input);
+		return input;
 	}
 }

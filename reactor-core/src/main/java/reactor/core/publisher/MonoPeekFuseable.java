@@ -65,13 +65,12 @@ final class MonoPeekFuseable<T> extends MonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<?
-					super T>) actual, this));
-			return;
+			return new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<?
+					super T>) actual, this);
 		}
-		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, this));
+		return new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, this);
 	}
 
 	@Override

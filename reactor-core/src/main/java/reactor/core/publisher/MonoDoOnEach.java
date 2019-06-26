@@ -38,7 +38,7 @@ final class MonoDoOnEach<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(FluxDoOnEach.createSubscriber(actual, onSignal, false, true));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return FluxDoOnEach.createSubscriber(actual, onSignal, false, true);
 	}
 }

@@ -48,16 +48,15 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
-
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, true)) {
-			return;
+			return null;
 		}
 
 		FlatMapMain<T, R> manager = new FlatMapMain<>(actual, mapper);
 		actual.onSubscribe(manager);
 
-		source.subscribe(manager);
+		return manager;
 	}
 
 	static final class FlatMapMain<T, R> extends Operators.MonoSubscriber<T, R> {

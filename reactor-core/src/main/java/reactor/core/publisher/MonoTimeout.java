@@ -64,7 +64,7 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
@@ -81,6 +81,6 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 
 		firstTimeout.subscribe(ts);
 
-		source.subscribe(main);
+		return main;
 	}
 }

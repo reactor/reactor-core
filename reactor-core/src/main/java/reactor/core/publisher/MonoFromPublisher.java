@@ -30,7 +30,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFromPublisher<T> extends Mono<T> implements Scannable {
+final class MonoFromPublisher<T> extends Mono<T> implements Scannable, CoreOperator<T> {
 
 	final Publisher<? extends T> source;
 
@@ -39,8 +39,19 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MonoNext.NextSubscriber<>(actual));
+		source.subscribe(subscribeOrReturn(actual));
+	}
+
+	@Override
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MonoNext.NextSubscriber<>(actual);
+	}
+
+	@Override
+	public Publisher getSubscribeTarget() {
+		return source;
 	}
 
 	@Override

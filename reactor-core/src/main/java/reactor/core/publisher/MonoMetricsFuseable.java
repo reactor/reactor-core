@@ -66,13 +66,12 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		MeterRegistry registry = Metrics.globalRegistry;
 		if (registryCandidate != null) {
 			registry = registryCandidate;
 		}
-		source.subscribe(new MicrometerMonoMetricsFuseableSubscriber<>(actual, registry,
-				Clock.SYSTEM, this.name, this.tags));
+		return new MicrometerMonoMetricsFuseableSubscriber<>(actual, registry,
+				Clock.SYSTEM, this.name, this.tags);
 	}
-
 }

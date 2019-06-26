@@ -30,7 +30,7 @@ final class MonoIgnoreElement<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
 	}
 }

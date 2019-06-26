@@ -41,9 +41,7 @@ final class MonoHandleFuseable<T, R> extends MonoOperator<T, R>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super R> actual) {
-		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
+		return new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler);
 	}
-
 }

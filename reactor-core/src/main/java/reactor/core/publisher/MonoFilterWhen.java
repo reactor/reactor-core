@@ -52,8 +52,8 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MonoFilterWhenMain<>(actual, asyncPredicate));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MonoFilterWhenMain<>(actual, asyncPredicate);
 	}
 
 	static final class MonoFilterWhenMain<T> extends Operators.MonoSubscriber<T, T> {

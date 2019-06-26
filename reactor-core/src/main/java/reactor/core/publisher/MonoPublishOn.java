@@ -41,8 +41,8 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new PublishOnSubscriber<T>(actual, scheduler));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new PublishOnSubscriber<T>(actual, scheduler);
 	}
 
 	@Override

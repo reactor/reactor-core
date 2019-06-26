@@ -50,7 +50,7 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		MonoPublishMulticaster<T> multicast = new MonoPublishMulticaster<>(actual.currentContext());
 
 		Mono<? extends R> out;
@@ -60,7 +60,7 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 		}
 		catch (Throwable ex) {
 			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		if (out instanceof Fuseable) {
@@ -70,7 +70,7 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 			out.subscribe(new FluxPublishMulticast.CancelMulticaster<>(actual, multicast));
 		}
 
-		source.subscribe(multicast);
+		return multicast;
 	}
 
 	static final class MonoPublishMulticaster<T> extends Mono<T>

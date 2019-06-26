@@ -51,8 +51,8 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new DelayElementSubscriber<>(actual, timedScheduler, delay, unit));
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new DelayElementSubscriber<>(actual, timedScheduler, delay, unit);
 	}
 
 	@Override
