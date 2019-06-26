@@ -83,12 +83,24 @@ public class TailCalLSubscribeTest {
 
     @Test
     public void interop() throws Exception {
+        class CustomOperator implements Publisher<Object> {
+            final Flux<Object> flux;
+
+            CustomOperator(Flux<Object> flux) {
+                this.flux = flux;
+            }
+
+            @Override
+            public void subscribe(Subscriber<? super Object> subscriber) {
+                flux.subscribe(subscriber);
+            }
+        }
         StackCapturingPublisher stackCapturingPublisher = new StackCapturingPublisher();
         Mono.from(stackCapturingPublisher)
                 .as(manyOperatorsOnMono)
                 .flux()
                 .as(manyOperatorsOnFlux)
-                .transform(flux -> flux::subscribe)
+                .transform(CustomOperator::new)
                 .as(manyOperatorsOnFlux)
                 .then()
                 .as(manyOperatorsOnMono)
@@ -100,6 +112,7 @@ public class TailCalLSubscribeTest {
                         tuple(Thread.class.getName(), "getStackTrace"),
                         tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
                         tuple(Flux.class.getName(), "subscribe"),
+                        tuple(CustomOperator.class.getName(), "subscribe"),
                         tuple(Mono.class.getName(), "subscribe"),
                         tuple(this.getClass().getName(), "interop")
                 );

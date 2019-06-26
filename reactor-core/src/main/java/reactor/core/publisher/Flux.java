@@ -2341,7 +2341,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockFirst() {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
 
@@ -2364,7 +2364,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -2386,7 +2386,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockLast() {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
 
@@ -2410,7 +2410,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
