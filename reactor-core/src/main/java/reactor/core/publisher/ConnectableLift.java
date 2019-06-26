@@ -29,7 +29,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Simon Baslé
  */
-final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannable {
+final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannable, CoreOperator<O> {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;
@@ -61,12 +61,23 @@ final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannabl
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super O> actual) {
+		source.subscribe(subscribeOrReturn(actual));
+	}
+
+	@Override
+	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);
 
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 
-		source.subscribe(input);
+		return input;
+	}
+
+	@Override
+	public final ConnectableFlux<I> getSubscribeTarget() {
+		return source;
 	}
 }

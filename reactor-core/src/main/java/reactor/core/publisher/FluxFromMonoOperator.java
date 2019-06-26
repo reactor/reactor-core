@@ -19,6 +19,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
@@ -29,7 +31,7 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable {
+abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, CoreOperator<O> {
 
 	protected final Mono<? extends I> source;
 
@@ -48,6 +50,25 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		return null;
+	}
+
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public final void subscribe(CoreSubscriber<? super O> subscriber) {
+		CoreSubscriber nextSubscriber = subscribeOrReturn(subscriber);
+		if (nextSubscriber == null) {
+			return;
+		}
+		source.subscribe(nextSubscriber);
+	}
+
+	@Override
+	public abstract CoreSubscriber subscribeOrReturn(CoreSubscriber<? super O> actual);
+
+	@Override
+	public final CorePublisher getSubscribeTarget() {
+		return source;
 	}
 
 }

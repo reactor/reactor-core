@@ -41,9 +41,8 @@ final class FluxSourceMono<I> extends FluxFromMonoOperator<I, I> {
 	 * @param actual
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super I> actual) {
-		source.subscribe(actual);
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super I> actual) {
+		return actual;
 	}
 
 }

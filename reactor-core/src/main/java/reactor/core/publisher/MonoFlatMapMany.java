@@ -42,11 +42,11 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false)) {
-			return;
+			return null;
 		}
-		source.subscribe(new FlatMapManyMain<T, R>(actual, mapper));
+		return new FlatMapManyMain<T, R>(actual, mapper);
 	}
 
 	static final class FlatMapManyMain<T, R> implements InnerOperator<T, R> {

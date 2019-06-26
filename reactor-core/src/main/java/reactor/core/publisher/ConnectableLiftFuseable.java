@@ -31,7 +31,7 @@ import reactor.util.annotation.Nullable;
  * @author Simon Baslé
  */
 final class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
-		implements Scannable, Fuseable {
+		implements Scannable, Fuseable, CoreOperator<O> {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;
@@ -64,6 +64,11 @@ final class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
+		source.subscribe(subscribeOrReturn(actual));
+	}
+
+	@Override
+	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);
 
@@ -75,6 +80,11 @@ final class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
 			input = new FluxHide.SuppressFuseableSubscriber<>(input);
 		}
 		//otherwise QS is not required or user already made a compatible conversion
-		source.subscribe(input);
+		return input;
+	}
+
+	@Override
+	public ConnectableFlux<I> getSubscribeTarget() {
+		return source;
 	}
 }

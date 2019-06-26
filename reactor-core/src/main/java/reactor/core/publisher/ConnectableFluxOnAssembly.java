@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
@@ -44,7 +45,7 @@ import reactor.util.annotation.Nullable;
  */
 final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
                                                                     Fuseable, AssemblyOp,
-                                                                    Scannable {
+                                                                    Scannable, CoreOperator<T> {
 
 	final ConnectableFlux<T> source;
 
@@ -54,10 +55,21 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 		this.source = source;
 		this.stacktrace = stacktrace;
 	}
-	
+
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(FluxOnAssembly.mapSubscriber(actual, source, stacktrace));
+		source.subscribe(subscribeOrReturn(actual));
+	}
+
+	@Override
+	public final CoreSubscriber subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return FluxOnAssembly.mapSubscriber(actual, source, stacktrace);
+	}
+
+	@Override
+	public final CorePublisher<T> getSubscribeTarget() {
+		return source;
 	}
 
 	@Override

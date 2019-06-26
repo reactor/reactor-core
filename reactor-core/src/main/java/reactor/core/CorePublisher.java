@@ -44,4 +44,5 @@ public interface CorePublisher<T> extends Publisher<T> {
 	 * @see Publisher#subscribe(Subscriber)
 	 */
 	void subscribe(CoreSubscriber<? super T> subscriber);
+
 }
