@@ -41,7 +41,7 @@ public class TailCallBenchmark {
 
     Flux<Object> source;
 
-    @Param({"5", "10", "20", "50"})
+    @Param({"5", "10", "20", "50", "75", "100"})
     int operatorsCount;
 
     @Setup(Level.Trial)
@@ -69,14 +69,14 @@ public class TailCallBenchmark {
     @Benchmark
     public void with() {
         CancelSubscriber<Object> subscriber = new CancelSubscriber<Object>();
-        source.subscribe((Subscriber) subscriber);
+        source.subscribe(subscriber);
         subscriber.join();
     }
 
     /**
      * Dummy subscriber that will cancel right after the subscription
      */
-    static class CancelSubscriber<T> extends CompletableFuture<Void> implements CoreSubscriber<T> {
+    static class CancelSubscriber<T> extends CompletableFuture<Void> implements Subscriber<T> {
 
         @Override
         public void onSubscribe(Subscription subscription) {
