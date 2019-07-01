@@ -1,7 +1,7 @@
 apply plugin: "me.champeau.gradle.jmh"
 
 
-dependencies{
+dependencies {
   jmh project(':reactor-core')
 
   jmh "org.openjdk.jmh:jmh-core:1.21"

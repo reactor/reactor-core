@@ -445,9 +445,7 @@ public abstract class Schedulers {
 
 	/**
 	 * Set up an additional {@link ScheduledExecutorService} decorator for a given key
-	 * only if that key is not already present. Note that the {@link Factory}'s legacy
-	 * {@link Factory#decorateExecutorService(String, Supplier)} method will always be
-	 * invoked last after applying the decorators added via this method.
+	 * only if that key is not already present.
 	 * <p>
 	 * The decorator is a {@link BiFunction} taking the Scheduler and the backing
 	 * {@link ScheduledExecutorService} as second argument. It returns the
@@ -469,9 +467,7 @@ public abstract class Schedulers {
 
 	/**
 	 * Set up an additional {@link ScheduledExecutorService} decorator for a given key,
-	 * even if that key is already present. Note that the {@link Factory}'s legacy
-	 * {@link Factory#decorateExecutorService(String, Supplier)} method will always be
-	 * invoked last after applying the decorators added via this method.
+	 * even if that key is already present.
 	 * <p>
 	 * The decorator is a {@link BiFunction} taking the Scheduler and the backing
 	 * {@link ScheduledExecutorService} as second argument. It returns the
@@ -491,9 +487,7 @@ public abstract class Schedulers {
 
 	/**
 	 * Remove an existing {@link ScheduledExecutorService} decorator if it has been set up
-	 * via {@link #addExecutorServiceDecorator(String, BiFunction)}. Note that the {@link Factory}'s
-	 * legacy {@link Factory#decorateExecutorService(String, Supplier)} method is always
-	 * applied last, even if all other decorators have been removed via this method.
+	 * via {@link #addExecutorServiceDecorator(String, BiFunction)}.
 	 * <p>
 	 * In case the decorator implements {@link Disposable}, it is also
 	 * {@link Disposable#dispose() disposed}.
@@ -538,27 +532,7 @@ public abstract class Schedulers {
 			}
 		}
 
-		final ScheduledExecutorService beforeFactory = original;
-
-		// Backward compatibility
-		final String schedulerType;
-		if (owner instanceof SingleScheduler) {
-			schedulerType = Schedulers.SINGLE;
-		}
-		else if (owner instanceof ParallelScheduler) {
-			schedulerType = Schedulers.PARALLEL;
-		}
-		else if (owner instanceof ElasticScheduler) {
-			schedulerType = Schedulers.ELASTIC;
-		}
-		else if (owner instanceof DelegateServiceScheduler) {
-			schedulerType = "ExecutorService";
-		}
-		else {
-			schedulerType = owner.getClass().getName();
-		}
-
-		return factory.decorateExecutorService(schedulerType, () -> beforeFactory);
+		return original;
 	}
 
 	/**
@@ -693,26 +667,6 @@ public abstract class Schedulers {
 	 * Public factory hook to override Schedulers behavior globally
 	 */
 	public interface Factory {
-
-		/**
-		 * Override this method to decorate {@link ScheduledExecutorService} internally used by
-		 * Reactor's various {@link Scheduler} implementations, allowing to tune the
-		 * {@link ScheduledExecutorService} backing implementation.
-		 *
-		 * @param schedulerType a name hinting at the flavor of Scheduler being tuned.
-		 * @param actual the default backing implementation, provided lazily as a Supplier
-		 * so that you can bypass instantiation completely if you want to replace it.
-		 * @return the internal {@link ScheduledExecutorService} instance to use.
-		 * @deprecated use {@link Schedulers#addExecutorServiceDecorator(String, BiFunction)} and
-		 * {@link Schedulers#removeExecutorServiceDecorator(String)} instead, to compose
-		 * multiple decorators in addition to the one from the current
-		 * {@link Schedulers#setFactory(Factory) Factory}
-		 */
-		@Deprecated
-		default ScheduledExecutorService decorateExecutorService(String schedulerType,
-				Supplier<? extends ScheduledExecutorService> actual) {
-			return actual.get();
-		}
 
 		/**
 		 * {@link Scheduler} that dynamically creates Workers resources and caches

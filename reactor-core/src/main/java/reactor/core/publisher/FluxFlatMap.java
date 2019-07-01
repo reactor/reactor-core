@@ -189,7 +189,6 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		final Supplier<? extends Queue<R>>                          mainQueueSupplier;
 		final Supplier<? extends Queue<R>>                          innerQueueSupplier;
 		final CoreSubscriber<? super R>                             actual;
-		final Context                                               ctx;
 
 		volatile Queue<R> scalarQueue;
 
@@ -235,7 +234,6 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				int prefetch,
 				Supplier<? extends Queue<R>> innerQueueSupplier) {
 			this.actual = actual;
-			this.ctx = actual.currentContext();
 			this.mapper = mapper;
 			this.delayError = delayError;
 			this.maxConcurrency = maxConcurrency;
@@ -317,7 +315,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				cancelled = true;
 
 				if (WIP.getAndIncrement(this) == 0) {
-					Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
+					Operators.onDiscardQueueWithClear(scalarQueue, actual.currentContext(), null);
 					scalarQueue = null;
 					s.cancel();
 					unsubscribe();
@@ -339,7 +337,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, ctx);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -350,6 +348,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
+				Context ctx = actual.currentContext();
 				Throwable e_ = Operators.onNextError(t, e, ctx, s);
 				Operators.onDiscard(t, ctx);
 				if (e_ != null) {
@@ -403,7 +402,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, ctx);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -411,7 +410,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t, ctx);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 
@@ -607,7 +606,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
-							Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
+							Operators.onDiscardQueueWithClear(scalarQueue, actual.currentContext(), null);
 							scalarQueue = null;
 							s.cancel();
 							unsubscribe();
@@ -708,7 +707,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
-							Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
+							Operators.onDiscardQueueWithClear(scalarQueue, actual.currentContext(), null);
 							scalarQueue = null;
 							s.cancel();
 							unsubscribe();
@@ -754,7 +753,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
-				Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
+				Operators.onDiscardQueueWithClear(scalarQueue, actual.currentContext(), null);
 				scalarQueue = null;
 				s.cancel();
 				unsubscribe();
@@ -781,7 +780,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					Throwable e = error;
 					if (e != null && e != Exceptions.TERMINATED) {
 						e = Exceptions.terminate(ERROR, this);
-						Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
+						Operators.onDiscardQueueWithClear(scalarQueue, actual.currentContext(), null);
 						scalarQueue = null;
 						s.cancel();
 						unsubscribe();
@@ -976,7 +975,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		public void cancel() {
 			Operators.terminate(S, this);
-			Operators.onDiscardQueueWithClear(queue, parent.ctx, null);
+			Operators.onDiscardQueueWithClear(queue, parent.currentContext(), null);
 		}
 
 		@Override

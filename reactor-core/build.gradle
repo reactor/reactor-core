@@ -120,6 +120,7 @@ task japicmp(type: JapicmpTask) {
   //TODO after a release, bump the gradle.properties baseline
   //TODO after a release, remove the reactor-core exclusions below if any
   classExcludes = [
+		  'reactor.core.scheduler.Schedulers',
 		  'reactor.util.concurrent.WaitStrategy',
 		  'reactor.core.publisher.MonoProcessor'
   ]

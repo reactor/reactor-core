@@ -689,7 +689,7 @@ finally {
 
 .Imperative use of try-with-resource
 ====
-[source]
+[source,java]
 ----
 try (SomeAutoCloseable disposableInstance = new SomeAutoCloseable()) {
   return disposableInstance.toString();

@@ -84,7 +84,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 			implements InnerOperator<T, C> {
 
 		final CoreSubscriber<? super C> actual;
-		final Context                   ctx;
 
 		final static int NOT_TERMINATED          = 0;
 		final static int TERMINATED_WITH_SUCCESS = 1;
@@ -129,7 +128,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 				Scheduler.Worker timer,
 				Supplier<C> bufferSupplier) {
 			this.actual = actual;
-			this.ctx = actual.currentContext();
 			this.timespan = timespan;
 			this.timer = timer;
 			this.flushTask = () -> {
@@ -203,9 +201,10 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 					}
 				}
 
+				cancel();
 				actual.onError(Exceptions.failWithOverflow(
 						"Could not emit buffer due to lack of requests"));
-				Operators.onDiscardMultiple(v, this.ctx);
+				Operators.onDiscardMultiple(v, this.actual.currentContext());
 			}
 		}
 
@@ -238,9 +237,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 					timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
 				}
 				catch (RejectedExecutionException ree) {
-					onError(Operators.onRejectedExecution(ree, subscription, null, value,
-							 this.ctx));
-					Operators.onDiscard(value, this.ctx);
+					Context ctx = actual.currentContext();
+					onError(Operators.onRejectedExecution(ree, subscription, null, value, ctx));
+					Operators.onDiscard(value, ctx);
 					return;
 				}
 			}
@@ -320,10 +319,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		public void onError(Throwable throwable) {
 			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
 				timer.dispose();
+				Context ctx = actual.currentContext();
 				synchronized (this) {
 					C v = values;
 					if(v != null) {
-						Operators.onDiscardMultiple(v, this.ctx);
+						Operators.onDiscardMultiple(v, ctx);
 						v.clear();
 						values = null;
 					}
@@ -352,7 +352,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 				}
 				C v = values;
 				if (v != null) {
-					Operators.onDiscardMultiple(v, this.ctx);
+					Operators.onDiscardMultiple(v, actual.currentContext());
 					v.clear();
 				}
 			}
