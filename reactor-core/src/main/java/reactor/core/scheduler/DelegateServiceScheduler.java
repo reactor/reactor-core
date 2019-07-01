@@ -29,9 +29,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
+
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
@@ -43,9 +45,12 @@ import reactor.core.Scannable;
  */
 final class DelegateServiceScheduler implements Scheduler, Scannable {
 
+	@Nullable
+	final String executorName;
 	final ScheduledExecutorService executor;
 
-	DelegateServiceScheduler(ExecutorService executorService) {
+	DelegateServiceScheduler(@Nullable String executorName, ExecutorService executorService) {
+			this.executorName = executorName;
 			ScheduledExecutorService exec = convert(executorService);
 			this.executor = Schedulers.decorateExecutorService(this, exec);
 	}
@@ -98,9 +103,23 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
-		if (key == Attr.NAME) return Schedulers.FROM_EXECUTOR_SERVICE + "(" + executor + ")";
+		if (key == Attr.NAME) return toString();
 
 		return Schedulers.scanExecutor(executor, key);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder ts = new StringBuilder(Schedulers.FROM_EXECUTOR_SERVICE)
+				.append('(');
+		if (executorName != null) {
+			ts.append(executorName);
+		}
+		else {
+			ts.append("anonymous");
+		}
+		ts.append(')');
+		return ts.toString();
 	}
 
 	static final class UnsupportedScheduledExecutorService

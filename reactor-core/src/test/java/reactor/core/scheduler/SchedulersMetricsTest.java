@@ -3,23 +3,27 @@ package reactor.core.scheduler;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import reactor.core.Disposable;
+import reactor.core.Disposables;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SchedulersMetricsTest {
 
 	final SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
+	Disposable.Composite toCleanUp;
 
 	@Before
 	public void setUp() {
 		Metrics.addRegistry(simpleMeterRegistry);
 		Schedulers.enableMetrics();
+		toCleanUp = Disposables.composite();
 	}
 
 	@After
@@ -27,12 +31,13 @@ public class SchedulersMetricsTest {
 		Schedulers.disableMetrics();
 		Metrics.globalRegistry.forEachMeter(Metrics.globalRegistry::remove);
 		Metrics.removeRegistry(simpleMeterRegistry);
+		toCleanUp.dispose();
 	}
 
 	@Test
 	public void metricsActivatedHasDistinctNameTags() {
-		Schedulers.newParallel("A", 3);
-		Schedulers.newParallel("B", 2);
+		toCleanUp.add(Schedulers.newParallel("A", 3));
+		toCleanUp.add(Schedulers.newParallel("B", 2));
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()
@@ -50,11 +55,11 @@ public class SchedulersMetricsTest {
 
 	@Test
 	public void metricsActivatedHasDistinctSchedulerIdTags() {
-		Schedulers.newParallel("A", 4);
-		Schedulers.newParallel("A", 4);
-		Schedulers.newParallel("A", 3);
-		Schedulers.newSingle("B");
-		Schedulers.newElastic("C").createWorker();
+		toCleanUp.add(Schedulers.newParallel("A", 4));
+		toCleanUp.add(Schedulers.newParallel("A", 4));
+		toCleanUp.add(Schedulers.newParallel("A", 3));
+		toCleanUp.add(Schedulers.newSingle("B"));
+		toCleanUp.add(Schedulers.newElastic("C").createWorker());
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()
@@ -74,9 +79,9 @@ public class SchedulersMetricsTest {
 
 	@Test
 	public void metricsActivatedHandleNamingClash() {
-		Schedulers.newParallel("A", 1);
-		Schedulers.newParallel("A", 1);
-		Schedulers.newParallel("A", 1);
+		toCleanUp.add(Schedulers.newParallel("A", 1));
+		toCleanUp.add(Schedulers.newParallel("A", 1));
+		toCleanUp.add(Schedulers.newParallel("A", 1));
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()
@@ -89,9 +94,36 @@ public class SchedulersMetricsTest {
 				);
 	}
 
+	//see https://github.com/reactor/reactor-core/issues/1739
+	@Test
+	public void fromExecutorServiceSchedulerId() {
+		toCleanUp.add(Schedulers.newParallel("foo", 3));
+		toCleanUp.add(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor()));
+		toCleanUp.add(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor()));
+		toCleanUp.add(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor(), "testService"));
+		toCleanUp.add(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor(), "testService"));
+
+		assertThat(
+				simpleMeterRegistry.getMeters()
+				                   .stream()
+				                   .map(m -> m.getId().getTag("name"))
+				                   .distinct()
+		)
+				.containsExactlyInAnyOrder(
+						"parallel(3,\"foo\")-0",
+						"parallel(3,\"foo\")-2",
+						"parallel(3,\"foo\")-1",
+						"fromExecutorService(anonymous)-0",
+						"fromExecutorService(anonymous)#1-0",
+						"fromExecutorService(testService)-0",
+						"fromExecutorService(testService)#1-0"
+				);
+	}
+
 	@Test
 	public void decorateTwiceWithSameSchedulerInstance() {
 		Scheduler instance = Schedulers.newElastic("TWICE", 1);
+		toCleanUp.add(instance);
 
 		ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
 
@@ -110,9 +142,9 @@ public class SchedulersMetricsTest {
 
 	@Test
 	public void disablingMetricsRemovesSchedulerMeters() {
-		Schedulers.newParallel("A", 1);
-		Schedulers.newParallel("A", 1);
-		Schedulers.newParallel("A", 1);
+		toCleanUp.add(Schedulers.newParallel("A", 1));
+		toCleanUp.add(Schedulers.newParallel("A", 1));
+		toCleanUp.add(Schedulers.newParallel("A", 1));
 
 		Metrics.globalRegistry.counter("foo", "tagged", "bar");
 

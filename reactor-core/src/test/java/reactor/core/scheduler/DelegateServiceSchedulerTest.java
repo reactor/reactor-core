@@ -143,7 +143,7 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void scanName() {
+	public void scanNameAnonymous() {
 		Scheduler fixedThreadPool = Schedulers.fromExecutorService(Executors.newFixedThreadPool(3));
 		Scheduler cachedThreadPool = Schedulers.fromExecutorService(Executors.newCachedThreadPool());
 		Scheduler singleThread = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor());
@@ -151,16 +151,37 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 		try {
 			assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.NAME))
 					.as("fixedThreadPool")
-					.startsWith("fromExecutorService(java.util.concurrent.ThreadPoolExecutor@")
-					.endsWith("[Running, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0])");
+					.isEqualTo("fromExecutorService(anonymous)");
 			assertThat(Scannable.from(cachedThreadPool).scan(Scannable.Attr.NAME))
 					.as("cachedThreadPool")
-					.startsWith("fromExecutorService(java.util.concurrent.ThreadPoolExecutor@")
-					.endsWith("[Running, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0])");
+					.isEqualTo("fromExecutorService(anonymous)");
 			assertThat(Scannable.from(singleThread).scan(Scannable.Attr.NAME))
 					.as("singleThread")
-					.startsWith("fromExecutorService(java.util.concurrent.Executors$FinalizableDelegatedExecutorService@")
-					.endsWith(")");
+					.isEqualTo("fromExecutorService(anonymous)");
+		}
+		finally {
+			fixedThreadPool.dispose();
+			cachedThreadPool.dispose();
+			singleThread.dispose();
+		}
+	}
+
+	@Test
+	public void scanNameExplicit() {
+		Scheduler fixedThreadPool = Schedulers.fromExecutorService(Executors.newFixedThreadPool(3), "fixedThreadPool(3)");
+		Scheduler cachedThreadPool = Schedulers.fromExecutorService(Executors.newCachedThreadPool(), "cachedThreadPool");
+		Scheduler singleThread = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(), "singleThreadExecutor");
+
+		try {
+			assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.NAME))
+					.as("fixedThreadPool")
+					.isEqualTo("fromExecutorService(fixedThreadPool(3))");
+			assertThat(Scannable.from(cachedThreadPool).scan(Scannable.Attr.NAME))
+					.as("cachedThreadPool")
+					.isEqualTo("fromExecutorService(cachedThreadPool)");
+			assertThat(Scannable.from(singleThread).scan(Scannable.Attr.NAME))
+					.as("singleThread")
+					.isEqualTo("fromExecutorService(singleThreadExecutor)");
 		}
 		finally {
 			fixedThreadPool.dispose();
