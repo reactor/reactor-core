@@ -213,7 +213,7 @@ task testNoMicrometer(type: Test, group: 'verification') {
 //inherit basic test task + common configuration in root
 //always depend on testStaticInit, skip testNG on Travis, skip loops when not releasing
 //note that this way the tasks can be run individually
-test {
+check {
   dependsOn testStaticInit
   dependsOn testNoMicrometer
   if (System.env.TRAVIS != "true") {
