@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -92,28 +91,9 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> CoreSubscriber<? super T> mapSubscriber(CoreSubscriber<? super T> s,
-																		Flux<? extends T> source,
-																		@Nullable AssemblySnapshot snapshotStack) {
-
-		if(snapshotStack != null) {
-			if (s instanceof ConditionalSubscriber) {
-				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-				return new OnAssemblyConditionalSubscriber<>(cs,
-						snapshotStack,
-						source);
-			}
-			else {
-				return new OnAssemblySubscriber<>(s, snapshotStack, source);
-			}
-		} else {
-			return s;
-		}
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	static <T> CoreSubscriber<? super T> wrapSubscriber(CoreSubscriber<? super T> actual,
+														Flux<? extends T> source,
+														@Nullable AssemblySnapshot snapshotStack) {
 		if(snapshotStack != null) {
 			if (actual instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
@@ -126,6 +106,12 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		else {
 			return actual;
 		}
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return wrapSubscriber(actual, source, snapshotStack);
 	}
 
 	/**
