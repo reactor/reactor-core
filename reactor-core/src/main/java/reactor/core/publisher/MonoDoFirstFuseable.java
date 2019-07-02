@@ -34,7 +34,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class MonoDoFirstFuseable<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoDoFirstFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final Runnable onFirst;
 

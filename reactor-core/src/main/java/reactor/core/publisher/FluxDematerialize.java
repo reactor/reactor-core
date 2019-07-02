@@ -28,7 +28,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
-final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
+final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 
 	FluxDematerialize(Flux<Signal<T>> source) {
 		super(source);

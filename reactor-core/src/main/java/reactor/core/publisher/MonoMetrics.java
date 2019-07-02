@@ -41,7 +41,7 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
-final class MonoMetrics<T> extends MonoOperator<T, T> {
+final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 
 	final String    name;
 	final List<Tag> tags;

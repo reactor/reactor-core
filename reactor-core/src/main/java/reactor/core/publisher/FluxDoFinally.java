@@ -40,7 +40,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class FluxDoFinally<T> extends FluxOperator<T, T> {
+final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 
 	final Consumer<SignalType> onFinally;
 

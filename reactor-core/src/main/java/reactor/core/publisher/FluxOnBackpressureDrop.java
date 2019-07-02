@@ -31,7 +31,7 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
+final class FluxOnBackpressureDrop<T> extends InternalFluxOperator<T, T> {
 
 	static final Consumer<Object> NOOP = t -> {
 	};

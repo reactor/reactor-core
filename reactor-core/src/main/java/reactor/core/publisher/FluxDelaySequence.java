@@ -28,7 +28,7 @@ import reactor.core.scheduler.Scheduler;
  * @author Simon Baslé
  */
 //adapted from RxJava2 FlowableDelay: https://github.com/ReactiveX/RxJava/blob/2.x/src/main/java/io/reactivex/internal/operators/flowable/FlowableDelay.java
-final class FluxDelaySequence<T> extends FluxOperator<T, T> {
+final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 
 	final Duration  delay;
 	final Scheduler scheduler;

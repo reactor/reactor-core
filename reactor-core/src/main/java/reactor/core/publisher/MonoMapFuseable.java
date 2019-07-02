@@ -30,7 +30,7 @@ import reactor.core.Fuseable;
  * @param <R> the result value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoMapFuseable<T, R> extends MonoOperator<T, R>
+final class MonoMapFuseable<T, R> extends InternalMonoOperator<T, R>
 		implements Fuseable {
 
 	final Function<? super T, ? extends R> mapper;

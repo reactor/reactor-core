@@ -46,7 +46,7 @@ import reactor.util.context.Context;
  * @param <R> the output value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
+final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 
 	final ErrorMode errorMode;
 

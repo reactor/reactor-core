@@ -45,7 +45,7 @@ import reactor.util.context.Context;
  * @author Simon Baslé
  */
 //adapted from RxJava2Extensions: https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableExpand.java
-final class FluxExpand<T> extends FluxOperator<T, T> {
+final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 
 	final boolean                                               breadthFirst;
 	final Function<? super T, ? extends Publisher<? extends T>> expander;
@@ -61,7 +61,7 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> s) {
 		if (breadthFirst) {
 			ExpandBreathSubscriber<T> parent =
 					new ExpandBreathSubscriber<>(s, expander, capacityHint);
@@ -75,6 +75,7 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 			parent.source = source;
 			s.onSubscribe(parent);
 		}
+		return null;
 	}
 
 	static final class ExpandBreathSubscriber<T>

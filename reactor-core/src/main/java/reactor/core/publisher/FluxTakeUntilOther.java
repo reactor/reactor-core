@@ -33,7 +33,7 @@ import reactor.util.context.Context;
  * @param <U> the value type of the other Publisher
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTakeUntilOther<T, U> extends FluxOperator<T, T> {
+final class FluxTakeUntilOther<T, U> extends InternalFluxOperator<T, T> {
 
 	final Publisher<U> other;
 

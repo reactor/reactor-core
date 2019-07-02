@@ -37,7 +37,7 @@ import reactor.core.publisher.FluxDistinct.DistinctFuseableSubscriber;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxDistinctFuseable<T, K, C>
-		extends FluxOperator<T, T> implements Fuseable {
+		extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final Function<? super T, ? extends K> keyExtractor;
 	final Supplier<C>                      collectionSupplier;

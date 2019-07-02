@@ -34,7 +34,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class FluxDoFirstFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxDoFirstFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final Runnable onFirst;
 

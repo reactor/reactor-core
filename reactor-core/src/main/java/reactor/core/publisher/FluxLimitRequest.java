@@ -25,7 +25,7 @@ import reactor.core.CoreSubscriber;
  * @author Simon Baslé
  * @author David Karnok
  */
-final class FluxLimitRequest<T> extends FluxOperator<T, T> {
+final class FluxLimitRequest<T> extends InternalFluxOperator<T, T> {
 
 	final long cap;
 

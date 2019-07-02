@@ -33,7 +33,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class MonoDoFinally<T> extends MonoOperator<T, T> {
+final class MonoDoFinally<T> extends InternalMonoOperator<T, T> {
 
 	final Consumer<SignalType> onFinally;
 

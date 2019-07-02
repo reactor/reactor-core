@@ -31,7 +31,7 @@ import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoLog<T> extends MonoOperator<T, T> {
+final class MonoLog<T> extends InternalMonoOperator<T, T> {
 
 	final SignalPeek<T> log;
 

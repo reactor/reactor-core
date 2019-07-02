@@ -24,7 +24,7 @@ import reactor.core.CoreSubscriber;
  * Emits a default value if the wrapped Mono is empty.
  * @param <T> the value type
  */
-final class MonoDefaultIfEmpty<T> extends MonoOperator<T, T> {
+final class MonoDefaultIfEmpty<T> extends InternalMonoOperator<T, T> {
     final T defaultValue;
 
     MonoDefaultIfEmpty(Mono<? extends T> source, T defaultValue) {

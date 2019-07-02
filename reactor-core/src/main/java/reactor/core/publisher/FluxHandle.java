@@ -31,7 +31,7 @@ import reactor.util.context.Context;
  * @param <T> the source value type
  * @param <R> the result value type
  */
-final class FluxHandle<T, R> extends FluxOperator<T, R> {
+final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 

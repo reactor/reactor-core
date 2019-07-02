@@ -32,7 +32,7 @@ import reactor.core.Exceptions;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxOnErrorResume<T> extends FluxOperator<T, T> {
+final class FluxOnErrorResume<T> extends InternalFluxOperator<T, T> {
 
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 

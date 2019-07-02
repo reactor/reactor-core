@@ -39,7 +39,7 @@ import static reactor.core.publisher.FluxMetrics.resolveNameAndTags;
  *
  * @author Simon Baslé
  */
-final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final String    name;
 	final List<Tag> tags;

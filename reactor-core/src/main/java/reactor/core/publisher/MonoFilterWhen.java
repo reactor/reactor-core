@@ -41,7 +41,7 @@ import reactor.util.context.Context;
  * @param <T> the input value type
  * @author Simon Baslé
  */
-class MonoFilterWhen<T> extends MonoOperator<T, T> {
+class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 

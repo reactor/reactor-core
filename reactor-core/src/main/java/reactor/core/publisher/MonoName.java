@@ -34,7 +34,7 @@ import reactor.util.function.Tuples;
  *
  * @author Stephane Maldini
  */
-final class MonoName<T> extends MonoOperator<T, T> {
+final class MonoName<T> extends InternalMonoOperator<T, T> {
 
 	final String name;
 

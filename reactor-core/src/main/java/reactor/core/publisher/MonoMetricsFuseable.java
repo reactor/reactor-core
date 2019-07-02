@@ -38,7 +38,7 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
-final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final String    name;
 	final List<Tag> tags;

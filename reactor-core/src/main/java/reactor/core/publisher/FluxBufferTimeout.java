@@ -36,8 +36,7 @@ import reactor.util.context.Context;
 /**
  * @author Stephane Maldini
  */
-final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOperator<T,
-		C> {
+final class FluxBufferTimeout<T, C extends Collection<? super T>> extends InternalFluxOperator<T, C> {
 
 	final int            batchSize;
 	final Supplier<C>    bufferSupplier;

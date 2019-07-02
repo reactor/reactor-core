@@ -44,7 +44,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
+final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 
 	final Publisher<? extends U> other;
 

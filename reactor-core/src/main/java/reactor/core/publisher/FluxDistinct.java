@@ -40,7 +40,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDistinct<T, K, C> extends FluxOperator<T, T> {
+final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 
 	final Function<? super T, ? extends K> keyExtractor;
 	final Supplier<C>                      collectionSupplier;

@@ -45,7 +45,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
+final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, V>>
 		implements Fuseable {
 
 	final Function<? super T, ? extends K> keySelector;

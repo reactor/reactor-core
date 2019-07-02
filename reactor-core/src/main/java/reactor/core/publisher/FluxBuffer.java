@@ -37,7 +37,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<T, C> {
+final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxOperator<T, C> {
 
 	final int size;
 

@@ -24,7 +24,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoHasElement<T> extends MonoOperator<T, Boolean> implements Fuseable {
+final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implements Fuseable {
 
 	MonoHasElement(Mono<? extends T> source) {
 		super(source);

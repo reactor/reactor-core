@@ -43,7 +43,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
+final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<U>> throttler;
 

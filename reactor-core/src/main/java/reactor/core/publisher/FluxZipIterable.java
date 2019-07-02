@@ -33,7 +33,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
+final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 
 	final Iterable<? extends U> other;
 

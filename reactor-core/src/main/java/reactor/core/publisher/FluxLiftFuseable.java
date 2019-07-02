@@ -42,7 +42,7 @@ import reactor.core.Scannable;
 /**
  * @author Stephane Maldini
  */
-final class FluxLiftFuseable<I, O> extends FluxOperator<I, O>
+final class FluxLiftFuseable<I, O> extends InternalFluxOperator<I, O>
 		implements Fuseable {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>

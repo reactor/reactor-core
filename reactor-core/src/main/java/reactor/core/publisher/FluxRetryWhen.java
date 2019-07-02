@@ -41,7 +41,7 @@ import reactor.util.context.Context;
  * @param <T> the source value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRetryWhen<T> extends FluxOperator<T, T> {
+final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 	static final Duration MAX_BACKOFF = Duration.ofMillis(Long.MAX_VALUE);
 
@@ -88,8 +88,9 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		subscribe(actual, whenSourceFactory, source);
+		return null;
 	}
 
 	static final class RetryWhenMainSubscriber<T> extends

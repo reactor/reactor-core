@@ -22,7 +22,6 @@ import java.util.function.Function;
 
 
 import org.reactivestreams.Publisher;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -34,7 +33,7 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable, CoreOperator<O, I> {
+public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable {
 
 	protected final Mono<? extends I> source;
 
@@ -55,24 +54,4 @@ public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable, C
 		return null;
 	}
 
-	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super O> subscriber) {
-		CoreSubscriber nextSubscriber = subscribeOrReturn(subscriber);
-		if (nextSubscriber == null) {
-			return;
-		}
-		getSubscribeTarget().subscribe(nextSubscriber);
-	}
-
-	@Override
-	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
-		subscribe(actual);
-		return null;
-	}
-
-	@Override
-	public CorePublisher<? extends I> getSubscribeTarget() {
-		return source;
-	}
 }

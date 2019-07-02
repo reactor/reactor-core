@@ -37,7 +37,7 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
-class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
+class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 
 	private static final Logger LOGGER = Loggers.getLogger(MonoCacheTime.class);
 
@@ -92,7 +92,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
 		actual.onSubscribe(inner);
 		for(;;){
@@ -139,6 +139,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 				break;
 			}
 		}
+		return null;
 	}
 
 	static final class CoordinatorSubscriber<T> implements InnerConsumer<T>, Signal<T> {

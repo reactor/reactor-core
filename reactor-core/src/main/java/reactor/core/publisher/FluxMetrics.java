@@ -50,7 +50,7 @@ import reactor.util.function.Tuples;
  *
  * @author Simon Baslé
  */
-final class FluxMetrics<T> extends FluxOperator<T, T> {
+final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxMetrics.class);
 

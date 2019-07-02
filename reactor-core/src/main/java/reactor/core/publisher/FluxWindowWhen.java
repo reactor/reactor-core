@@ -45,7 +45,7 @@ import reactor.util.concurrent.Queues;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
+final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 
 	final Publisher<U> start;
 

@@ -35,7 +35,7 @@ import reactor.util.annotation.Nullable;
  * @author Simon Baslé
  * TODO : Review impl
  */
-final class MonoDelayElement<T> extends MonoOperator<T, T> {
+final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 
 	final Scheduler timedScheduler;
 

@@ -60,7 +60,7 @@ import reactor.util.context.Context;
  * @since 3.0
  */
 final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
-		extends FluxOperator<TLeft, R> {
+		extends InternalFluxOperator<TLeft, R> {
 
 	final Publisher<? extends TRight> other;
 
@@ -88,8 +88,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
-
+	public CoreSubscriber<? super TLeft> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
 				new GroupJoinSubscription<>(actual,
 						leftEnd,
@@ -106,6 +105,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		source.subscribe(left);
 		other.subscribe(right);
+		return null;
 	}
 
 	interface JoinSupport<T> extends InnerProducer<T> {

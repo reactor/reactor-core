@@ -32,7 +32,7 @@ import reactor.core.Fuseable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxLogFuseable<T> extends FluxOperator<T, T>
+final class FluxLogFuseable<T> extends InternalFluxOperator<T, T>
 		implements Fuseable {
 
 	final SignalPeek<T> log;

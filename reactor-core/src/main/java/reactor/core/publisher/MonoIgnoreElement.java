@@ -23,7 +23,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoIgnoreElement<T> extends MonoOperator<T, T> {
+final class MonoIgnoreElement<T> extends InternalMonoOperator<T, T> {
 
 	MonoIgnoreElement(Mono<? extends T> source) {
 		super(source);

@@ -28,7 +28,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoRetryPredicate<T> extends MonoOperator<T, T> {
+final class MonoRetryPredicate<T> extends InternalMonoOperator<T, T> {
 
 	final Predicate<? super Throwable> predicate;
 
@@ -39,7 +39,7 @@ final class MonoRetryPredicate<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 
 		FluxRetryPredicate.RetryPredicateSubscriber<T> parent =
 				new FluxRetryPredicate.RetryPredicateSubscriber<>(source,
@@ -50,5 +50,6 @@ final class MonoRetryPredicate<T> extends MonoOperator<T, T> {
 		if (!parent.isCancelled()) {
 			parent.resubscribe();
 		}
+		return null;
 	}
 }

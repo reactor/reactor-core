@@ -30,7 +30,7 @@ import reactor.core.Fuseable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDoOnEachFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxDoOnEachFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final Consumer<? super Signal<T>> onSignal;
 

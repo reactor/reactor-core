@@ -17,9 +17,10 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -31,7 +32,7 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable, CoreOperator<O, I> {
+public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable {
 
 	protected final Flux<? extends I> source;
 
@@ -45,27 +46,6 @@ public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable, C
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super O> subscriber) {
-		CoreSubscriber nextSubscriber = subscribeOrReturn(subscriber);
-		if (nextSubscriber == null) {
-			return;
-		}
-		getSubscribeTarget().subscribe(nextSubscriber);
-	}
-
-	@Override
-	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
-		subscribe(actual);
-		return null;
-	}
-
-	@Override
-    public CorePublisher<? extends I> getSubscribeTarget() {
-        return source;
-    }
-
-    @Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();

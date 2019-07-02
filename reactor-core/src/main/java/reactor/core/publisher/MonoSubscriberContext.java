@@ -23,7 +23,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
-final class MonoSubscriberContext<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoSubscriberContext<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final Function<Context, Context> doOnContext;
 

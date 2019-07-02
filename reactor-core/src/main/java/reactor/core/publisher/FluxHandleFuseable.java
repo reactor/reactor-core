@@ -36,7 +36,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fuseable {
+final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implements Fuseable {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 

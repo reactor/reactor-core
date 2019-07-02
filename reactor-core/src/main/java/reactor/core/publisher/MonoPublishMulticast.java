@@ -39,7 +39,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fuseable {
+final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implements Fuseable {
 
 	final Function<? super Mono<T>, ? extends Mono<? extends R>> transform;
 

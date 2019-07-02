@@ -27,7 +27,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFilterFuseable<T> extends MonoOperator<T, T>
+final class MonoFilterFuseable<T> extends InternalMonoOperator<T, T>
 		implements Fuseable {
 
 	final Predicate<? super T> predicate;

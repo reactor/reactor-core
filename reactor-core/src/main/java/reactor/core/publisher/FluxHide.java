@@ -28,7 +28,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxHide<T> extends FluxOperator<T, T> {
+final class FluxHide<T> extends InternalFluxOperator<T, T> {
 
 	FluxHide(Flux<? extends T> source) {
 		super(source);

@@ -27,7 +27,7 @@ import reactor.core.Fuseable.ConditionalSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFilter<T> extends MonoOperator<T, T> {
+final class MonoFilter<T> extends InternalMonoOperator<T, T> {
 
 	final Predicate<? super T> predicate;
 

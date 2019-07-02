@@ -20,7 +20,7 @@ import reactor.core.CoreSubscriber;
 /**
  * @author Stephane Maldini
  */
-final class MonoMaterialize<T> extends MonoOperator<T, Signal<T>> {
+final class MonoMaterialize<T> extends InternalMonoOperator<T, Signal<T>> {
 
 	MonoMaterialize(Mono<T> source) {
 		super(source);

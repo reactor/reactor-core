@@ -34,7 +34,7 @@ import static reactor.core.publisher.FluxTimeout.addNameToTimeoutDescription;
  * @param <V> the value type for the timeout for the subsequent items
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
+final class MonoTimeout<T, U, V> extends InternalMonoOperator<T, T> {
 
 	final Publisher<U> firstTimeout;
 

@@ -39,7 +39,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
+final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 	final Publisher<U> firstTimeout;
 

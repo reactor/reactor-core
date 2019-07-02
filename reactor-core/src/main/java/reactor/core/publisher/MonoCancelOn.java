@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 
-final class MonoCancelOn<T> extends MonoOperator<T, T> {
+final class MonoCancelOn<T> extends InternalMonoOperator<T, T> {
 
 	final Scheduler scheduler;
 

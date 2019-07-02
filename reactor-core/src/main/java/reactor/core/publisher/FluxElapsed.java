@@ -29,7 +29,7 @@ import reactor.util.function.Tuples;
 /**
  * @author Stephane Maldini
  */
-final class FluxElapsed<T> extends FluxOperator<T, Tuple2<Long, T>> implements Fuseable {
+final class FluxElapsed<T> extends InternalFluxOperator<T, Tuple2<Long, T>> implements Fuseable {
 
 	final Scheduler scheduler;
 

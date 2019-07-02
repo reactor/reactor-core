@@ -33,7 +33,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class FluxDoFirst<T> extends FluxOperator<T, T> {
+final class FluxDoFirst<T> extends InternalFluxOperator<T, T> {
 
 	final Runnable onFirst;
 

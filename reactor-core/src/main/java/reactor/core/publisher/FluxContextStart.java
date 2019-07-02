@@ -25,7 +25,7 @@ import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxContextStart<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final Function<Context, Context> doOnContext;
 

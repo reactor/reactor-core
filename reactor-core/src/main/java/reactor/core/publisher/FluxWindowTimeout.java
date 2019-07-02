@@ -37,7 +37,7 @@ import reactor.util.concurrent.Queues;
 /**
  * @author David Karnok
  */
-final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
+final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	final int            maxSize;
 	final long           timespan;

@@ -31,7 +31,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the value type
  */
-final class MonoPublishOn<T> extends MonoOperator<T, T> {
+final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 
 	final Scheduler scheduler;
 

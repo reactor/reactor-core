@@ -31,7 +31,7 @@ import reactor.util.annotation.Nullable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  *
  */
-final class MonoPeekFuseable<T> extends MonoOperator<T, T>
+final class MonoPeekFuseable<T> extends InternalMonoOperator<T, T>
 		implements Fuseable, SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;

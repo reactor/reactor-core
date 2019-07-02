@@ -36,7 +36,7 @@ import reactor.util.context.Context;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
+final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, O> {
 
 	final Consumer<? super O>    onBufferOverflow;
 	final int                    bufferSize;

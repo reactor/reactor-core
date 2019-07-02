@@ -50,7 +50,7 @@ import reactor.util.context.Context;
  * @author Simon Baslé
  */
 //adapted from RxJava2Extensions: https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableFilterAsync.java
-class FluxFilterWhen<T> extends FluxOperator<T, T> {
+class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 

@@ -26,7 +26,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDetach<T> extends MonoOperator<T, T> {
+final class MonoDetach<T> extends InternalMonoOperator<T, T> {
 
 	MonoDetach(Mono<? extends T> source) {
 		super(source);

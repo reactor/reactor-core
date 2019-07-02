@@ -43,7 +43,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fuseable {
+final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implements Fuseable {
 
 	final Function<? super Flux<T>, ? extends Publisher<? extends R>> transform;
 

@@ -24,7 +24,7 @@ import reactor.util.function.Tuple2;
 /**
  * @author Stephane Maldini
  */
-final class MonoElapsed<T> extends MonoOperator<T, Tuple2<Long, T>> implements Fuseable {
+final class MonoElapsed<T> extends InternalMonoOperator<T, Tuple2<Long, T>> implements Fuseable {
 
 	final Scheduler scheduler;
 

@@ -39,7 +39,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
+final class MonoCallableOnAssembly<T> extends InternalMonoOperator<T, T>
 		implements Callable<T>, AssemblyOp {
 
 	final AssemblySnapshot stacktrace;

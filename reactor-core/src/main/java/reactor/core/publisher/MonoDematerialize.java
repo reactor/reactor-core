@@ -20,7 +20,7 @@ import reactor.core.CoreSubscriber;
 /**
  * @author Stephane Maldini
  */
-final class MonoDematerialize<T> extends MonoOperator<Signal<T>, T> {
+final class MonoDematerialize<T> extends InternalMonoOperator<Signal<T>, T> {
 
 	MonoDematerialize(Mono<Signal<T>> source) {
 		super(source);

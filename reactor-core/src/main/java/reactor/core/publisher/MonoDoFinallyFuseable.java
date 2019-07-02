@@ -34,7 +34,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class MonoDoFinallyFuseable<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoDoFinallyFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final Consumer<SignalType> onFinally;
 

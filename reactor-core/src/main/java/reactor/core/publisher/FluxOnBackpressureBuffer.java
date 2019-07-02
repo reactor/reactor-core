@@ -33,7 +33,7 @@ import reactor.util.context.Context;
 /**
  * @author Stephane Maldini
  */
-final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fuseable {
+final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> implements Fuseable {
 
 	final Consumer<? super O> onOverflow;
 	final int                 bufferSize;

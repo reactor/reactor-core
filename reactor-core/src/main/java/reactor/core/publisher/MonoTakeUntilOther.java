@@ -29,7 +29,7 @@ import reactor.util.context.Context;
 /**
  * @author Simon Baslé
  */
-final class MonoTakeUntilOther<T, U> extends MonoOperator<T, T> {
+final class MonoTakeUntilOther<T, U> extends InternalMonoOperator<T, T> {
 
 	private final Publisher<U> other;
 

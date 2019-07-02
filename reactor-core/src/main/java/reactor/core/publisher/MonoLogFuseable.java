@@ -32,7 +32,7 @@ import reactor.core.Fuseable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoLogFuseable<T> extends MonoOperator<T, T>
+final class MonoLogFuseable<T> extends InternalMonoOperator<T, T>
 		implements Fuseable {
 
 	final SignalPeek<T> log;

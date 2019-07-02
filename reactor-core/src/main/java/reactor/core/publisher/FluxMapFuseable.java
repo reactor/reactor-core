@@ -35,7 +35,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable {
+final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends R> mapper;
 

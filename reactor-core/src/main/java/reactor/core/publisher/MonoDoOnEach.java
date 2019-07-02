@@ -28,7 +28,7 @@ import reactor.core.CoreSubscriber;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDoOnEach<T> extends MonoOperator<T, T> {
+final class MonoDoOnEach<T> extends InternalMonoOperator<T, T> {
 
 	final Consumer<? super Signal<T>> onSignal;
 

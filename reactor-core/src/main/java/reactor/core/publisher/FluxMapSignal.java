@@ -34,7 +34,7 @@ import reactor.util.annotation.Nullable;
  * @param <R> the result value type
  * @author Stephane Maldini
  */
-final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
+final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 
     final Function<? super T, ? extends R> mapperNext;
     final Function<? super Throwable, ? extends R> mapperError;

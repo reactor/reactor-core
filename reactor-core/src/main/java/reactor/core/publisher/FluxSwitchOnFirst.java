@@ -33,7 +33,7 @@ import reactor.util.context.Context;
  * @param <T>
  * @param <R>
  */
-final class FluxSwitchOnFirst<T, R> extends FluxOperator<T, R> {
+final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
     static final int STATE_INIT            = 0;
     static final int STATE_SUBSCRIBED_ONCE = 1;

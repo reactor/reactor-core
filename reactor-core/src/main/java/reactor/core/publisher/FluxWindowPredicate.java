@@ -54,7 +54,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
+final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		implements Fuseable{
 
 	final Supplier<? extends Queue<T>> groupQueueSupplier;

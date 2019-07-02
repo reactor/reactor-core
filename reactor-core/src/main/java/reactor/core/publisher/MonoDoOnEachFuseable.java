@@ -30,7 +30,7 @@ import reactor.core.Fuseable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDoOnEachFuseable<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoDoOnEachFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final Consumer<? super Signal<T>> onSignal;
 

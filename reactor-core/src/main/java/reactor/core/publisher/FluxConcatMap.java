@@ -43,7 +43,7 @@ import static reactor.core.Exceptions.TERMINATED;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
+final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 

@@ -29,7 +29,7 @@ import reactor.util.context.Context;
 /**
  * @author Stephane Maldini
  */
-final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
+final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
 
 	FluxMaterialize(Flux<T> source) {
 		super(source);

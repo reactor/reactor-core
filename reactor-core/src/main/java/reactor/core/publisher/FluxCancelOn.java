@@ -25,7 +25,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 
-final class FluxCancelOn<T> extends FluxOperator<T, T> {
+final class FluxCancelOn<T> extends InternalFluxOperator<T, T> {
 
 	final Scheduler scheduler;
 

@@ -30,7 +30,7 @@ import reactor.util.function.Tuple2;
  *
  * @author Stephane Maldini
  */
-final class MonoNameFuseable<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoNameFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final String name;
 

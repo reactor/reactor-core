@@ -25,7 +25,7 @@ import reactor.core.Scannable;
 /**
  * @author Stephane Maldini
  */
-final class FluxLift<I, O> extends FluxOperator<I, O> {
+final class FluxLift<I, O> extends InternalFluxOperator<I, O> {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;

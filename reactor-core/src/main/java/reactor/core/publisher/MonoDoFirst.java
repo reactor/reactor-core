@@ -33,7 +33,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class MonoDoFirst<T> extends MonoOperator<T, T> {
+final class MonoDoFirst<T> extends InternalMonoOperator<T, T> {
 
 	final Runnable onFirst;
 

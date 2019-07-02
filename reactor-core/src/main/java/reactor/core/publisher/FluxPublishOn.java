@@ -39,7 +39,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final Scheduler scheduler;
 

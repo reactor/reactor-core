@@ -35,7 +35,7 @@ import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
  * @param <T> the value type passing through
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
+final class FluxCallableOnAssembly<T> extends InternalFluxOperator<T, T>
 		implements Fuseable, Callable<T>, AssemblyOp {
 
 	final AssemblySnapshot stacktrace;
