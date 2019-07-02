@@ -151,12 +151,12 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
     @Override
     public Disposable schedule(Runnable task) {
-	    return Schedulers.directSchedule(pick(), task, 0L, TimeUnit.MILLISECONDS);
+	    return Schedulers.directSchedule(pick(), task, null, 0L, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-	    return Schedulers.directSchedule(pick(), task, delay, unit);
+	    return Schedulers.directSchedule(pick(), task, null, delay, unit);
     }
 
     @Override

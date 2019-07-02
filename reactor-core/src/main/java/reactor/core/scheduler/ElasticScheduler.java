@@ -159,7 +159,8 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		CachedService cached = pick();
 
 		return Schedulers.directSchedule(cached.exec,
-				new DirectScheduleTask(task, cached),
+				task,
+				cached,
 				0L,
 				TimeUnit.MILLISECONDS);
 	}
@@ -169,7 +170,8 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		CachedService cached = pick();
 
 		return Schedulers.directSchedule(cached.exec,
-				new DirectScheduleTask(task, cached),
+				task,
+				cached,
 				delay,
 				unit);
 	}
@@ -275,30 +277,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 				if (capacity == null || capacity == -1) return 1;
 			}
 			return Schedulers.scanExecutor(exec, key);
-		}
-	}
-
-	static final class DirectScheduleTask implements Runnable {
-
-		final Runnable      delegate;
-		final CachedService cached;
-
-		DirectScheduleTask(Runnable delegate, CachedService cached) {
-			this.delegate = delegate;
-			this.cached = cached;
-		}
-
-		@Override
-		public void run() {
-			try {
-				delegate.run();
-			}
-			catch (Throwable ex) {
-				Schedulers.handleError(ex);
-			}
-			finally {
-				cached.dispose();
-			}
 		}
 	}
 
