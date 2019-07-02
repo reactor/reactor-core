@@ -299,7 +299,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 					}
 				}
 			});
-			started.await();
+			assertThat(started.await(10, TimeUnit.SECONDS)).as("latch timeout").isTrue();
 			d.dispose();
 
 			Thread.sleep(100);
