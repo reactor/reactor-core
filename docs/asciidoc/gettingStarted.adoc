@@ -80,7 +80,7 @@ add the relevant dependencies to your project. Note that, when you add such a de
 you must omit the version so that the version gets picked up from the BOM.
 
 However, if you want to force the use of a specific artifact's version, you can specify
-it when adding your dependency, as you usually would. You can also forgo the BOM entirely
+it when adding your dependency, as you usually would. You can also forgot the BOM entirely
 and specify dependencies by their artifact versions.
 
 === Maven Installation
