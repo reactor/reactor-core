@@ -114,14 +114,14 @@ public abstract class Schedulers {
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
 	 * Runnables for async operators.
+	 * <p>
+	 * Prefer using {@link #fromExecutorService(ExecutorService, String)},
+	 * especially if you plan on using metrics as this gives the executor a meaningful identifier.
 	 *
 	 * @param executorService an {@link ExecutorService}
 	 *
 	 * @return a new {@link Scheduler}
-	 * @deprecated prefer using {@link #fromExecutorService(ExecutorService, String)},
-	 * especially if you plan on using metrics as this gives the executor a meaningful identifier
 	 */
-	@Deprecated
 	public static Scheduler fromExecutorService(ExecutorService executorService) {
 		String executorServiceHashcode = Integer.toHexString(System.identityHashCode(executorService));
 		return fromExecutorService(executorService, "anonymousExecutor@" + executorServiceHashcode);
