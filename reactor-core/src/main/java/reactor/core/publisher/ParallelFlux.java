@@ -316,6 +316,20 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Allows composing operators, in assembly time, on top of this {@link ParallelFlux}
+	 * and returns another {@link ParallelFlux} with composed features.
+	 *
+	 * @param <U> the output value type
+	 * @param composer the composer function from {@link ParallelFlux} (this) to another
+	 * ParallelFlux
+	 *
+	 * @return the {@link ParallelFlux} returned by the function
+	 */
+	public final <U> ParallelFlux<U> composeNow(Function<? super ParallelFlux<T>, ParallelFlux<U>> composer) {
+		return onAssembly(as(composer));
+	}
+
+	/**
 	 * Generates and concatenates Publishers on each 'rail', signalling errors immediately
 	 * and generating 2 publishers upfront.
 	 *
@@ -1107,9 +1121,11 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * ParallelFlux
 	 *
 	 * @return the {@link ParallelFlux} returned by the function
+	 * @deprecated will be removed in 3.4.0, use {@link #composeNow(Function)} instead
 	 */
+	@Deprecated
 	public final <U> ParallelFlux<U> transform(Function<? super ParallelFlux<T>, ParallelFlux<U>> composer) {
-		return onAssembly(as(composer));
+		return composeNow(composer);
 	}
 
 	@Override

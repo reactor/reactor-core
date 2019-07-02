@@ -156,19 +156,19 @@ public class GuideTests {
 	}
 
 	@Test
-	public void advancedCompose() {
+	public void advancedComposedNow() {
 		Function<Flux<String>, Flux<String>> filterAndMap =
 				f -> f.filter(color -> !color.equals("orange"))
 				      .map(String::toUpperCase);
 
 		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 		    .doOnNext(System.out::println)
-		    .transform(filterAndMap)
+		    .composeNow(filterAndMap)
 		    .subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 	}
 
 	@Test
-	public void advancedTransform() {
+	public void advancedComposedDefer() {
 		AtomicInteger ai = new AtomicInteger();
 		Function<Flux<String>, Flux<String>> filterAndMap = f -> {
 			if (ai.incrementAndGet() == 1) {
@@ -182,7 +182,7 @@ public class GuideTests {
 		Flux<String> composedFlux =
 				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 				    .doOnNext(System.out::println)
-				    .compose(filterAndMap);
+				    .composeLater(filterAndMap);
 
 		composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 		composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
