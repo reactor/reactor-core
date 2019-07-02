@@ -327,6 +327,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 					sb.append(message);
 					sb.append("\n");
 				}
+				sb.append("Original stack trace:");
 				return sb.toString();
 			}
 		}
@@ -434,6 +435,8 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				}
 
 				t = Exceptions.addSuppressed(t, onAssemblyException);
+				onAssemblyException.setStackTrace(t.getStackTrace());
+				t.setStackTrace(new StackTraceElement[0]);
 			}
 
 			onAssemblyException.add(parent, snapshotStack);
