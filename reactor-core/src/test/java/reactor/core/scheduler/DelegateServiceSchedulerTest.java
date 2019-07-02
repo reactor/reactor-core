@@ -16,6 +16,7 @@
 package reactor.core.scheduler;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -144,20 +145,28 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void scanNameAnonymous() {
-		Scheduler fixedThreadPool = Schedulers.fromExecutorService(Executors.newFixedThreadPool(3));
-		Scheduler cachedThreadPool = Schedulers.fromExecutorService(Executors.newCachedThreadPool());
-		Scheduler singleThread = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor());
+		final ExecutorService fixedExecutor = Executors.newFixedThreadPool(3);
+		final ExecutorService cachedExecutor = Executors.newCachedThreadPool();
+		final ExecutorService singleExecutor = Executors.newSingleThreadExecutor();
+
+		Scheduler fixedThreadPool = Schedulers.fromExecutorService(fixedExecutor);
+		Scheduler cachedThreadPool = Schedulers.fromExecutorService(cachedExecutor);
+		Scheduler singleThread = Schedulers.fromExecutorService(singleExecutor);
+
+		String fixedId = Integer.toHexString(System.identityHashCode(fixedExecutor));
+		String cachedId = Integer.toHexString(System.identityHashCode(cachedExecutor));
+		String singleId = Integer.toHexString(System.identityHashCode(singleExecutor));
 
 		try {
 			assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.NAME))
 					.as("fixedThreadPool")
-					.isEqualTo("fromExecutorService(anonymous)");
+					.isEqualTo("fromExecutorService(anonymousExecutor@" + fixedId + ")");
 			assertThat(Scannable.from(cachedThreadPool).scan(Scannable.Attr.NAME))
 					.as("cachedThreadPool")
-					.isEqualTo("fromExecutorService(anonymous)");
+					.isEqualTo("fromExecutorService(anonymousExecutor@" + cachedId + ")");
 			assertThat(Scannable.from(singleThread).scan(Scannable.Attr.NAME))
 					.as("singleThread")
-					.isEqualTo("fromExecutorService(anonymous)");
+					.isEqualTo("fromExecutorService(anonymousExecutor@" + singleId + ")");
 		}
 		finally {
 			fixedThreadPool.dispose();

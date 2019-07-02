@@ -45,11 +45,10 @@ import reactor.util.annotation.Nullable;
  */
 final class DelegateServiceScheduler implements Scheduler, Scannable {
 
-	@Nullable
 	final String executorName;
 	final ScheduledExecutorService executor;
 
-	DelegateServiceScheduler(@Nullable String executorName, ExecutorService executorService) {
+	DelegateServiceScheduler(String executorName, ExecutorService executorService) {
 			this.executorName = executorName;
 			ScheduledExecutorService exec = convert(executorService);
 			this.executor = Schedulers.decorateExecutorService(this, exec);
@@ -110,16 +109,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 
 	@Override
 	public String toString() {
-		StringBuilder ts = new StringBuilder(Schedulers.FROM_EXECUTOR_SERVICE)
-				.append('(');
-		if (executorName != null) {
-			ts.append(executorName);
-		}
-		else {
-			ts.append("anonymous");
-		}
-		ts.append(')');
-		return ts.toString();
+		return Schedulers.FROM_EXECUTOR_SERVICE + '(' + executorName + ')';
 	}
 
 	static final class UnsupportedScheduledExecutorService

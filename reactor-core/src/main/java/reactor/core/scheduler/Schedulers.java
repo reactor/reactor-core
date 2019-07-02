@@ -123,7 +123,8 @@ public abstract class Schedulers {
 	 */
 	@Deprecated
 	public static Scheduler fromExecutorService(ExecutorService executorService) {
-		return fromExecutorService(executorService, null);
+		String executorServiceHashcode = Integer.toHexString(System.identityHashCode(executorService));
+		return fromExecutorService(executorService, "anonymousExecutor@" + executorServiceHashcode);
 	}
 
 	/**
