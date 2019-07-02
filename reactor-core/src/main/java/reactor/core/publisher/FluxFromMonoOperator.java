@@ -56,11 +56,27 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
-		CoreSubscriber nextSubscriber = subscribeOrReturn(subscriber);
-		if (nextSubscriber == null) {
-			return;
+		Publisher publisher = this;
+
+		// do-while since `this` already implements `CoreOperator`
+		do {
+			CoreOperator operator = (CoreOperator) publisher;
+
+			subscriber = operator.subscribeOrReturn(subscriber);
+			if (subscriber == null) {
+				// null means "I will subscribe myself", returning...
+				return;
+			}
+			publisher = operator.getSubscribeTarget();
 		}
-		source.subscribe(nextSubscriber);
+		while (publisher instanceof CoreOperator);
+
+		if (publisher instanceof CorePublisher) {
+			((CorePublisher) publisher).subscribe(subscriber);
+		}
+		else {
+			publisher.subscribe(subscriber);
+		}
 	}
 
 	@Override
