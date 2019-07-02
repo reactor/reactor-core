@@ -17,13 +17,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SchedulersMetricsTest {
 
 	final SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
-	Disposable.Composite toCleanUp;
+	final Disposable.Composite toCleanUp = Disposables.composite();
 
 	@Before
 	public void setUp() {
 		Metrics.addRegistry(simpleMeterRegistry);
 		Schedulers.enableMetrics();
-		toCleanUp = Disposables.composite();
 	}
 
 	@After
@@ -31,13 +30,21 @@ public class SchedulersMetricsTest {
 		Schedulers.disableMetrics();
 		Metrics.globalRegistry.forEachMeter(Metrics.globalRegistry::remove);
 		Metrics.removeRegistry(simpleMeterRegistry);
-		toCleanUp.dispose();
+		toCleanUp.dispose(); //dispose all the resources added to this composite
+	}
+
+	/**
+	 * Add a newly constructed resource to the automatic cleanup list and return it.
+	 */
+	private <D extends Disposable> D autoCleanup(D resource) {
+		toCleanUp.add(resource);
+		return resource;
 	}
 
 	@Test
 	public void metricsActivatedHasDistinctNameTags() {
-		toCleanUp.add(Schedulers.newParallel("A", 3));
-		toCleanUp.add(Schedulers.newParallel("B", 2));
+		autoCleanup(Schedulers.newParallel("A", 3));
+		autoCleanup(Schedulers.newParallel("B", 2));
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()
@@ -55,11 +62,11 @@ public class SchedulersMetricsTest {
 
 	@Test
 	public void metricsActivatedHasDistinctSchedulerIdTags() {
-		toCleanUp.add(Schedulers.newParallel("A", 4));
-		toCleanUp.add(Schedulers.newParallel("A", 4));
-		toCleanUp.add(Schedulers.newParallel("A", 3));
-		toCleanUp.add(Schedulers.newSingle("B"));
-		toCleanUp.add(Schedulers.newElastic("C").createWorker());
+		autoCleanup(Schedulers.newParallel("A", 4));
+		autoCleanup(Schedulers.newParallel("A", 4));
+		autoCleanup(Schedulers.newParallel("A", 3));
+		autoCleanup(Schedulers.newSingle("B"));
+		autoCleanup(Schedulers.newElastic("C").createWorker());
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()
@@ -79,9 +86,9 @@ public class SchedulersMetricsTest {
 
 	@Test
 	public void metricsActivatedHandleNamingClash() {
-		toCleanUp.add(Schedulers.newParallel("A", 1));
-		toCleanUp.add(Schedulers.newParallel("A", 1));
-		toCleanUp.add(Schedulers.newParallel("A", 1));
+		autoCleanup(Schedulers.newParallel("A", 1));
+		autoCleanup(Schedulers.newParallel("A", 1));
+		autoCleanup(Schedulers.newParallel("A", 1));
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()
@@ -96,12 +103,18 @@ public class SchedulersMetricsTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1739
 	@Test
-	public void fromExecutorServiceSchedulerId() {
-		toCleanUp.add(Schedulers.newParallel("foo", 3));
-		toCleanUp.add(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor()));
-		toCleanUp.add(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor()));
-		toCleanUp.add(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor(), "testService"));
-		toCleanUp.add(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor(), "testService"));
+	public void fromExecutorServiceSchedulerId() throws InterruptedException {
+		ScheduledExecutorService anonymousExecutor1 = Executors.newSingleThreadScheduledExecutor();
+		ScheduledExecutorService anonymousExecutor2 = Executors.newSingleThreadScheduledExecutor();
+
+		String anonymousId1 = "anonymousExecutor@" + Integer.toHexString(System.identityHashCode(anonymousExecutor1));
+		String anonymousId2 = "anonymousExecutor@" + Integer.toHexString(System.identityHashCode(anonymousExecutor2));
+
+		autoCleanup(Schedulers.newParallel("foo", 3));
+		autoCleanup(Schedulers.fromExecutorService(anonymousExecutor1));
+		autoCleanup(Schedulers.fromExecutorService(anonymousExecutor2));
+		autoCleanup(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor(), "testService"));
+		autoCleanup(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor(), "testService"));
 
 		assertThat(
 				simpleMeterRegistry.getMeters()
@@ -113,8 +126,8 @@ public class SchedulersMetricsTest {
 						"parallel(3,\"foo\")-0",
 						"parallel(3,\"foo\")-2",
 						"parallel(3,\"foo\")-1",
-						"fromExecutorService(anonymous)-0",
-						"fromExecutorService(anonymous)#1-0",
+						"fromExecutorService(" + anonymousId1 + ")-0",
+						"fromExecutorService(" + anonymousId2 + ")-0",
 						"fromExecutorService(testService)-0",
 						"fromExecutorService(testService)#1-0"
 				);
@@ -122,10 +135,10 @@ public class SchedulersMetricsTest {
 
 	@Test
 	public void decorateTwiceWithSameSchedulerInstance() {
-		Scheduler instance = Schedulers.newElastic("TWICE", 1);
-		toCleanUp.add(instance);
+		Scheduler instance = autoCleanup(Schedulers.newElastic("TWICE", 1));
 
 		ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+		autoCleanup(service::shutdown);
 
 		Schedulers.decorateExecutorService(instance, service);
 		Schedulers.decorateExecutorService(instance, service);
@@ -142,9 +155,9 @@ public class SchedulersMetricsTest {
 
 	@Test
 	public void disablingMetricsRemovesSchedulerMeters() {
-		toCleanUp.add(Schedulers.newParallel("A", 1));
-		toCleanUp.add(Schedulers.newParallel("A", 1));
-		toCleanUp.add(Schedulers.newParallel("A", 1));
+		autoCleanup(Schedulers.newParallel("A", 1));
+		autoCleanup(Schedulers.newParallel("A", 1));
+		autoCleanup(Schedulers.newParallel("A", 1));
 
 		Metrics.globalRegistry.counter("foo", "tagged", "bar");
 

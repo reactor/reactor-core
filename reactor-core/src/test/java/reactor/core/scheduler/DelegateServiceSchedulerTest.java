@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
@@ -50,7 +51,7 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void notScheduledRejects() {
-		Scheduler s = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor());
+		Scheduler s = autoCleanup(Schedulers.fromExecutorService(Executors.newSingleThreadExecutor()));
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.isThrownBy(() -> s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct delayed scheduling")
@@ -60,7 +61,7 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 				.describedAs("direct periodic scheduling")
 				.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 
-		Worker w = s.createWorker();
+		Worker w = autoCleanup(s.createWorker());
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.isThrownBy(() -> w.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker delayed scheduling")
@@ -73,7 +74,7 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void scheduledDoesntReject() {
-		Scheduler s = Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor());
+		Scheduler s = autoCleanup(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor()));
 		assertThat(s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct delayed scheduling")
 				.isNotNull();
@@ -81,7 +82,7 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 				.describedAs("direct periodic scheduling")
 				.isNotNull();
 
-		Worker w = s.createWorker();
+		Worker w = autoCleanup(s.createWorker());
 		assertThat(w.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker delayed scheduling")
 				.isNotNull();
@@ -93,54 +94,44 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void smokeTestDelay() {
 		for (int i = 0; i < 20; i++) {
-			Scheduler s = Schedulers.fromExecutorService(Executors.newScheduledThreadPool(1));
+			Scheduler s = autoCleanup(Schedulers.fromExecutorService(Executors.newScheduledThreadPool(1)));
 			AtomicLong start = new AtomicLong();
 			AtomicLong end = new AtomicLong();
 
-			try {
-				StepVerifier.create(Mono
-						.delay(Duration.ofMillis(100), s)
-						.log()
-						.doOnSubscribe(sub -> start.set(System.nanoTime()))
-						.doOnTerminate(() -> end.set(System.nanoTime()))
-				)
-				            .expectSubscription()
-				            .expectNext(0L)
-				            .verifyComplete();
+			StepVerifier.create(Mono
+					.delay(Duration.ofMillis(100), s)
+					.log()
+					.doOnSubscribe(sub -> start.set(System.nanoTime()))
+					.doOnTerminate(() -> end.set(System.nanoTime()))
+			)
+			            .expectSubscription()
+			            .expectNext(0L)
+			            .verifyComplete();
 
-				long endValue = end.longValue();
-				long startValue = start.longValue();
-				long measuredDelay = endValue - startValue;
-				long measuredDelayMs = TimeUnit.NANOSECONDS.toMillis(measuredDelay);
-				assertThat(measuredDelayMs)
-						.as("iteration %s, measured delay %s nanos, start at %s nanos, end at %s nanos", i, measuredDelay, startValue, endValue)
-						.isGreaterThanOrEqualTo(100L)
-						.isLessThan(200L);
-			}
-			finally {
-				s.dispose();
-			}
+			long endValue = end.longValue();
+			long startValue = start.longValue();
+			long measuredDelay = endValue - startValue;
+			long measuredDelayMs = TimeUnit.NANOSECONDS.toMillis(measuredDelay);
+			assertThat(measuredDelayMs)
+					.as("iteration %s, measured delay %s nanos, start at %s nanos, end at %s nanos", i, measuredDelay, startValue, endValue)
+					.isGreaterThanOrEqualTo(100L)
+					.isLessThan(200L);
 		}
 	}
 
 	@Test
 	public void smokeTestInterval() {
-		Scheduler s = scheduler();
+		Scheduler s = autoCleanup(scheduler());
 
-		try {
-			StepVerifier.create(Flux.interval(Duration.ofMillis(100), Duration.ofMillis(200), s))
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .expectNext(0L)
-			            .expectNoEvent(Duration.ofMillis(200))
-			            .expectNext(1L)
-			            .expectNoEvent(Duration.ofMillis(200))
-			            .expectNext(2L)
-			            .thenCancel();
-		}
-		finally {
-			s.dispose();
-		}
+		StepVerifier.create(Flux.interval(Duration.ofMillis(100), Duration.ofMillis(200), s))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .expectNext(0L)
+		            .expectNoEvent(Duration.ofMillis(200))
+		            .expectNext(1L)
+		            .expectNoEvent(Duration.ofMillis(200))
+		            .expectNext(2L)
+		            .thenCancel();
 	}
 
 	@Test
@@ -149,62 +140,45 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 		final ExecutorService cachedExecutor = Executors.newCachedThreadPool();
 		final ExecutorService singleExecutor = Executors.newSingleThreadExecutor();
 
-		Scheduler fixedThreadPool = Schedulers.fromExecutorService(fixedExecutor);
-		Scheduler cachedThreadPool = Schedulers.fromExecutorService(cachedExecutor);
-		Scheduler singleThread = Schedulers.fromExecutorService(singleExecutor);
+		Scheduler fixedThreadPool = autoCleanup(Schedulers.fromExecutorService(fixedExecutor));
+		Scheduler cachedThreadPool = autoCleanup(Schedulers.fromExecutorService(cachedExecutor));
+		Scheduler singleThread = autoCleanup(Schedulers.fromExecutorService(singleExecutor));
 
 		String fixedId = Integer.toHexString(System.identityHashCode(fixedExecutor));
 		String cachedId = Integer.toHexString(System.identityHashCode(cachedExecutor));
 		String singleId = Integer.toHexString(System.identityHashCode(singleExecutor));
 
-		try {
-			assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.NAME))
-					.as("fixedThreadPool")
-					.isEqualTo("fromExecutorService(anonymousExecutor@" + fixedId + ")");
-			assertThat(Scannable.from(cachedThreadPool).scan(Scannable.Attr.NAME))
-					.as("cachedThreadPool")
-					.isEqualTo("fromExecutorService(anonymousExecutor@" + cachedId + ")");
-			assertThat(Scannable.from(singleThread).scan(Scannable.Attr.NAME))
-					.as("singleThread")
-					.isEqualTo("fromExecutorService(anonymousExecutor@" + singleId + ")");
-		}
-		finally {
-			fixedThreadPool.dispose();
-			cachedThreadPool.dispose();
-			singleThread.dispose();
-		}
+		assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.NAME))
+				.as("fixedThreadPool")
+				.isEqualTo("fromExecutorService(anonymousExecutor@" + fixedId + ")");
+		assertThat(Scannable.from(cachedThreadPool).scan(Scannable.Attr.NAME))
+				.as("cachedThreadPool")
+				.isEqualTo("fromExecutorService(anonymousExecutor@" + cachedId + ")");
+		assertThat(Scannable.from(singleThread).scan(Scannable.Attr.NAME))
+				.as("singleThread")
+				.isEqualTo("fromExecutorService(anonymousExecutor@" + singleId + ")");
 	}
 
 	@Test
 	public void scanNameExplicit() {
-		Scheduler fixedThreadPool = Schedulers.fromExecutorService(Executors.newFixedThreadPool(3), "fixedThreadPool(3)");
-		Scheduler cachedThreadPool = Schedulers.fromExecutorService(Executors.newCachedThreadPool(), "cachedThreadPool");
-		Scheduler singleThread = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(), "singleThreadExecutor");
+		Scheduler fixedThreadPool = autoCleanup(Schedulers.fromExecutorService(Executors.newFixedThreadPool(3), "fixedThreadPool(3)"));
+		Scheduler cachedThreadPool = autoCleanup(Schedulers.fromExecutorService(Executors.newCachedThreadPool(), "cachedThreadPool"));
+		Scheduler singleThread = autoCleanup(Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(), "singleThreadExecutor"));
 
-		try {
-			assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.NAME))
-					.as("fixedThreadPool")
-					.isEqualTo("fromExecutorService(fixedThreadPool(3))");
-			assertThat(Scannable.from(cachedThreadPool).scan(Scannable.Attr.NAME))
-					.as("cachedThreadPool")
-					.isEqualTo("fromExecutorService(cachedThreadPool)");
-			assertThat(Scannable.from(singleThread).scan(Scannable.Attr.NAME))
-					.as("singleThread")
-					.isEqualTo("fromExecutorService(singleThreadExecutor)");
-		}
-		finally {
-			fixedThreadPool.dispose();
-			cachedThreadPool.dispose();
-			singleThread.dispose();
-		}
+		assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.NAME))
+				.as("fixedThreadPool")
+				.isEqualTo("fromExecutorService(fixedThreadPool(3))");
+		assertThat(Scannable.from(cachedThreadPool).scan(Scannable.Attr.NAME))
+				.as("cachedThreadPool")
+				.isEqualTo("fromExecutorService(cachedThreadPool)");
+		assertThat(Scannable.from(singleThread).scan(Scannable.Attr.NAME))
+				.as("singleThread")
+				.isEqualTo("fromExecutorService(singleThreadExecutor)");
 	}
 
 	@Test
 	public void scanExecutorAttributes() {
-		Scheduler fixedThreadPool = Schedulers.fromExecutorService(Executors.newFixedThreadPool(3));
-
-		Long test = Integer.MAX_VALUE + 1L;
-		System.out.println(test.intValue() == Integer.MAX_VALUE);
+		Scheduler fixedThreadPool = autoCleanup(Schedulers.fromExecutorService(Executors.newFixedThreadPool(3)));
 
 		assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.CAPACITY)).isEqualTo(3);
 		assertThat(Scannable.from(fixedThreadPool).scan(Scannable.Attr.BUFFERED)).isZero();
