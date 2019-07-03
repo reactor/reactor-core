@@ -1631,14 +1631,18 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Turn this {@link Mono} into a hot source and cache last emitted signal for further
 	 * {@link Subscriber}, with an expiry timeout (TTL) that depends on said signal.
 	 * <p>
-	 * Empty completion and Error will also be replayed according to their respective TTL.
+	 * Empty completion and Error will also be replayed according to their respective TTL,
+	 * so transient errors can be "retried" by letting the {@link Function} return
+	 * {@link Duration#ZERO}. Such a transient exception would then be propagated to the first
+	 * subscriber but the following subscribers would trigger a new source subscription.
 	 * <p>
-	 * If the relevant TTL generator throws any {@link Exception}, that exception will be
-	 * propagated to the {@link Subscriber} that encountered the cache miss, but the cache
-	 * will be immediately cleared, so further Subscribers might re-populate the cache in
-	 * case the error was transient. In case the source was emitting an error, that error
-	 * is {@link Hooks#onErrorDropped(Consumer) dropped} and added as a suppressed exception.
-	 * In case the source was emitting a value, that value is {@link Hooks#onNextDropped(Consumer) dropped}.
+	 * Exceptions in the TTL generators themselves are processed like the {@link Duration#ZERO}
+	 * case, except the original signal is {@link Exceptions#addSuppressed(Throwable, Throwable)  suppressed}
+	 * (in case of onError) or {@link Hooks#onNextDropped(Consumer) dropped}
+	 * (in case of onNext).
+	 * <p>
+	 * Note that subscribers that come in perfectly simultaneously could receive the same
+	 * cached signal even if the TTL is set to zero.
 	 *
 	 * @param ttlForValue the TTL-generating {@link Function} invoked when source is valued
 	 * @param ttlForError the TTL-generating {@link Function} invoked when source is erroring
