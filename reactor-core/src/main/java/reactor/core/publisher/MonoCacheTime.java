@@ -284,7 +284,11 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 					}
 				}
 
-				if (ttl != null) {
+				if (ttl != null && ttl.isZero()) {
+					//immediate cache clear
+					main.run();
+				}
+				else if (ttl != null) {
 					main.clock.schedule(main, ttl.toMillis(), TimeUnit.MILLISECONDS);
 				}
 				else {
@@ -292,10 +296,8 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 					if (signal.isOnNext()) {
 						Operators.onNextDropped(signal.get(), currentContext());
 					}
-					else if (signal.isOnError()) {
-						Operators.onErrorDropped(signal.getThrowable(), currentContext());
-					}
-					//immediate cache clear
+					//if signal.isOnError(), avoid dropping the error. it is not really dropped but already suppressed
+					//in all cases, unless nextDropped hook throws, immediate cache clear
 					main.run();
 				}
 			}
