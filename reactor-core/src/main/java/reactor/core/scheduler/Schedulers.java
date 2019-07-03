@@ -46,7 +46,7 @@ import static reactor.core.Exceptions.unwrap;
 
 /**
  * {@link Schedulers} provides various {@link Scheduler} factories useable by {@link
- * reactor.core.publisher.Flux#publishOn publishOn} or {@link reactor.core.publisher.Mono#subscribeOn
+ * reactor.core.publisher.Flux#publishOn(Scheduler) publishOn} or {@link reactor.core.publisher.Mono#subscribeOn
  * subscribeOn} :
  * <p>
  * <ul> <li>{@link #fromExecutorService(ExecutorService)}}. </li> <li>{@link #newParallel}
@@ -114,13 +114,29 @@ public abstract class Schedulers {
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
 	 * Runnables for async operators.
+	 * <p>
+	 * Prefer using {@link #fromExecutorService(ExecutorService, String)},
+	 * especially if you plan on using metrics as this gives the executor a meaningful identifier.
 	 *
 	 * @param executorService an {@link ExecutorService}
 	 *
 	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler fromExecutorService(ExecutorService executorService) {
-		return new DelegateServiceScheduler(executorService);
+		String executorServiceHashcode = Integer.toHexString(System.identityHashCode(executorService));
+		return fromExecutorService(executorService, "anonymousExecutor@" + executorServiceHashcode);
+	}
+
+	/**
+	 * Create a {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
+	 * Runnables for async operators.
+	 *
+	 * @param executorService an {@link ExecutorService}
+	 *
+	 * @return a new {@link Scheduler}
+	 */
+	public static Scheduler fromExecutorService(ExecutorService executorService, String executorName) {
+		return new DelegateServiceScheduler(executorName, executorService);
 	}
 
 	/**
