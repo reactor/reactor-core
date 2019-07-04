@@ -435,8 +435,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				}
 
 				t = Exceptions.addSuppressed(t, onAssemblyException);
-				onAssemblyException.setStackTrace(t.getStackTrace());
-				t.setStackTrace(new StackTraceElement[0]);
+				final StackTraceElement[] stackTrace = t.getStackTrace();
+				if (stackTrace.length > 0) {
+					onAssemblyException.setStackTrace(stackTrace);
+					t.setStackTrace(new StackTraceElement[] {
+							stackTrace[0]
+					});
+				}
 			}
 
 			onAssemblyException.add(parent, snapshotStack);
