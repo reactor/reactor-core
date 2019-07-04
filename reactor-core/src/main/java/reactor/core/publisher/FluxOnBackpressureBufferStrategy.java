@@ -51,7 +51,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 		this.bufferSize = bufferSize;
 		this.onBufferOverflow = onBufferOverflow;
 		this.bufferOverflowStrategy = bufferOverflowStrategy;
-		this.delayError = onBufferOverflow != null;
+		this.delayError = onBufferOverflow != null || bufferOverflowStrategy == BufferOverflowStrategy.ERROR;
 	}
 
 	@Override

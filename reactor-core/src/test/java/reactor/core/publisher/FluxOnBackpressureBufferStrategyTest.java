@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -68,6 +69,36 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 		Hooks.resetOnOperatorError();
 	}
 
+	@Test
+	public void bufferOverflowOverflowDelayedWithErrorStrategy() {
+		TestPublisher<String> tp1 = TestPublisher.createNoncompliant(TestPublisher.Violation.REQUEST_OVERFLOW);
+		TestPublisher<String> tp2 = TestPublisher.createNoncompliant(TestPublisher.Violation.REQUEST_OVERFLOW);
+
+		final Flux<String> test1 = tp1.flux().onBackpressureBuffer(3, ERROR);
+		final Flux<String> test2 = tp2.flux().onBackpressureBuffer(3, s -> { }, ERROR);
+
+		StepVerifier.create(test1, StepVerifierOptions.create()
+		                                              .scenarioName("without consumer")
+		                                              .initialRequest(0))
+		            .expectSubscription()
+		            .then(() -> tp1.next("A", "B", "C", "D"))
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(3)
+		            .expectNext("A", "B", "C")
+		            .expectErrorMatches(Exceptions::isOverflow)
+		            .verify(Duration.ofSeconds(5));
+
+		StepVerifier.create(test2, StepVerifierOptions.create()
+		                                              .scenarioName("with consumer")
+		                                              .initialRequest(0))
+		            .expectSubscription()
+		            .then(() -> tp2.next("A", "B", "C", "D"))
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(3)
+		            .expectNext("A", "B", "C")
+		            .expectErrorMatches(Exceptions::isOverflow)
+		            .verify(Duration.ofSeconds(5));
+	}
 
 	@Test
 	public void drop() {
@@ -321,7 +352,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 	}
 
 	@Test
-	public void noCallbackWithErrorStrategyOnErrorImmediately() {
+	public void noCallbackWithErrorStrategyOverflowsAfterDrain() {
 		DirectProcessor<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -334,12 +365,14 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 			            processor.onNext("over1");
 			            processor.onNext("over2");
 			            processor.onNext("over3");
+			            processor.onNext("over4");
 			            processor.onComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
-		            .thenRequest(1)
-		            .expectErrorMessage("The receiver is overrun by more signals than expected (bounded queue...)")
+		            .thenRequest(2)
+		            .expectNext("over1", "over2")
+		            .expectErrorMatches(Exceptions::isOverflow)
 		            .verify();
 
 		assertNull("unexpected droppedValue", droppedValue);
