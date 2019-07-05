@@ -22,6 +22,7 @@ import org.assertj.core.api.Assumptions;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -81,7 +82,7 @@ public class MetricsNoMicrometerTest {
 			assertThatCode(() -> {
 				Schedulers.enableMetrics();
 				Scheduler s = Schedulers.newSingle("foo");
-				Schedulers.decorateExecutorService(s,
+				Schedulers.decorateExecutorService("SINGLE", Scannable.from(s).name(),
 						Executors.newSingleThreadScheduledExecutor());
 				s.schedule(() -> System.out.println("schedulers instrumentation no micrometer"));
 			})

@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
+import reactor.core.Scannable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,9 +62,9 @@ public class SchedulersMetricsTest {
 	}
 
 	@Test
-	public void metricsActivatedHasDistinctSchedulerIdTags() {
+	public void metricsActivatedHasDistinctSchedulerIdTagsOnlyForDifferentConfigs() {
 		autoCleanup(Schedulers.newParallel("A", 4));
-		autoCleanup(Schedulers.newParallel("A", 4));
+		autoCleanup(Schedulers.newParallel("A", 4)); //same config, same id
 		autoCleanup(Schedulers.newParallel("A", 3));
 		autoCleanup(Schedulers.newSingle("B"));
 		autoCleanup(Schedulers.newElastic("C").createWorker());
@@ -74,18 +75,14 @@ public class SchedulersMetricsTest {
 		                              .distinct())
 				.containsOnly(
 						"parallel(4,\"A\")",
-						"parallel(4,\"A\")#1",
-
 						"parallel(3,\"A\")",
-
 						"single(\"B\")",
-
 						"elastic(\"C\")"
 				);
 	}
 
 	@Test
-	public void metricsActivatedHandleNamingClash() {
+	public void metricsActivatedDoesntHandleNamingClash() {
 		autoCleanup(Schedulers.newParallel("A", 1));
 		autoCleanup(Schedulers.newParallel("A", 1));
 		autoCleanup(Schedulers.newParallel("A", 1));
@@ -96,8 +93,27 @@ public class SchedulersMetricsTest {
 		                              .distinct())
 				.containsOnly(
 						"parallel(1,\"A\")-0",
-						"parallel(1,\"A\")#1-0",
-						"parallel(1,\"A\")#2-0"
+						"parallel(1,\"A\")-1",
+						"parallel(1,\"A\")-2"
+				);
+	}
+
+	@Test
+	public void metricsActivatedHasSchedulerTypeTag() {
+		autoCleanup(Schedulers.newParallel("A", 1));
+		autoCleanup(Schedulers.newElastic("B", 1)).createWorker();
+		autoCleanup(Schedulers.newSingle("C"));
+		autoCleanup(Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(), "D"));
+
+		assertThat(simpleMeterRegistry.getMeters()
+		                              .stream()
+		                              .map(m -> m.getId().getTag(SchedulerMetricDecorator.TAG_SCHEDULER_TYPE))
+		                              .distinct())
+				.containsExactlyInAnyOrder(
+						Schedulers.SINGLE,
+						Schedulers.ELASTIC,
+						Schedulers.PARALLEL,
+						Schedulers.FROM_EXECUTOR_SERVICE
 				);
 	}
 
@@ -129,19 +145,22 @@ public class SchedulersMetricsTest {
 						"fromExecutorService(" + anonymousId1 + ")-0",
 						"fromExecutorService(" + anonymousId2 + ")-0",
 						"fromExecutorService(testService)-0",
-						"fromExecutorService(testService)#1-0"
+						"fromExecutorService(testService)-1"
 				);
 	}
 
 	@Test
-	public void decorateTwiceWithSameSchedulerInstance() {
+	public void decorateTwiceWithSameSchedulerInfoAggregatesMeters() {
 		Scheduler instance = autoCleanup(Schedulers.newElastic("TWICE", 1));
+		String name = Scannable.from(instance).scan(Scannable.Attr.NAME);
+
+		assertThat(name).isNotNull();
 
 		ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
 		autoCleanup(service::shutdown);
 
-		Schedulers.decorateExecutorService(instance, service);
-		Schedulers.decorateExecutorService(instance, service);
+		Schedulers.decorateExecutorService(Schedulers.ELASTIC, name, service);
+		Schedulers.decorateExecutorService(Schedulers.ELASTIC, name, service);
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()

@@ -15,7 +15,6 @@
  */
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -29,7 +28,7 @@ import reactor.core.Exceptions;
  * <p>
  * Implementations that use an underlying {@link ExecutorService} or
  * {@link ScheduledExecutorService} should decorate it with the relevant {@link Schedulers} hook
- * ({@link Schedulers#decorateExecutorService(Scheduler, ScheduledExecutorService)}.
+ * ({@link Schedulers#decorateExecutorService(String, String, ScheduledExecutorService)}.
  *
  * @author Stephane Maldini
  * @author Simon Baslé

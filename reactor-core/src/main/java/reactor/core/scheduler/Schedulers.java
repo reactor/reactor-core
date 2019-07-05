@@ -413,7 +413,7 @@ public abstract class Schedulers {
 	 */
 	public static void enableMetrics() {
 		if (Metrics.isInstrumentationAvailable()) {
-			addExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY, new SchedulerMetricDecorator());
+			addSchedulerExecutorDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY, new SchedulerMetricDecorator());
 		}
 	}
 
@@ -422,7 +422,7 @@ public abstract class Schedulers {
 	 * No-op if {@link #enableMetrics()} hasn't been called.
 	 */
 	public static void disableMetrics() {
-		removeExecutorServiceDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY);
+		removeSchedulerExecutorDecorator(SchedulerMetricDecorator.METRICS_DECORATOR_KEY);
 	}
 
 	/**
@@ -474,10 +474,12 @@ public abstract class Schedulers {
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
 	 * @see Schedulers#onScheduleHook(String, Function)
+	 * @deprecated This will be removed in 3.4, due to Scheduler references escaping their constructor. Use {@link #addSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)} instead.
 	 */
+	@Deprecated
 	public static boolean addExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
-		synchronized (DECORATORS) {
-			return DECORATORS.putIfAbsent(key, decorator) == null;
+		synchronized (DEPRECATED_DECORATORS) {
+			return DEPRECATED_DECORATORS.putIfAbsent(key, decorator) == null;
 		}
 	}
 
@@ -494,10 +496,12 @@ public abstract class Schedulers {
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
 	 * @see Schedulers#onScheduleHook(String, Function)
+	 * @deprecated This will be removed in 3.4, due to Scheduler references escaping their constructor. Use {@link #setSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)} instead.
 	 */
+	@Deprecated
 	public static void setExecutorServiceDecorator(String key, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator) {
-		synchronized (DECORATORS) {
-			DECORATORS.put(key, decorator);
+		synchronized (DEPRECATED_DECORATORS) {
+			DEPRECATED_DECORATORS.put(key, decorator);
 		}
 	}
 
@@ -512,11 +516,13 @@ public abstract class Schedulers {
 	 * @return the removed decorator, or null if none was set for that key
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #setExecutorServiceDecorator(String, BiFunction)
+	 * @deprecated This will be replaced in 3.4, due to Scheduler references escaping their constructor. Use {@link #removeSchedulerExecutorDecorator(String)} instead.
 	 */
+	@Deprecated
 	public static BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removeExecutorServiceDecorator(String key) {
 		BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> removed;
-		synchronized (DECORATORS) {
-			removed = DECORATORS.remove(key);
+		synchronized (DEPRECATED_DECORATORS) {
+			removed = DEPRECATED_DECORATORS.remove(key);
 		}
 		if (removed instanceof Disposable) {
 			((Disposable) removed).dispose();
@@ -540,11 +546,104 @@ public abstract class Schedulers {
 	 * @return the decorated {@link ScheduledExecutorService}, or the original if no decorator is set up
 	 * @see #addExecutorServiceDecorator(String, BiFunction)
 	 * @see #removeExecutorServiceDecorator(String)
+	 * @deprecated The Scheduler-based version of decorators will be removed in 3.4. In the meantime be sure
+	 * to also apply {@link #decorateExecutorService(String, String, ScheduledExecutorService)} to your custom {@link Scheduler Schedulers}.
 	 */
+	@Deprecated
 	public static ScheduledExecutorService decorateExecutorService(Scheduler owner, ScheduledExecutorService original) {
-		synchronized (DECORATORS) {
-			for (BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator : DECORATORS.values()) {
+		synchronized (DEPRECATED_DECORATORS) {
+			for (BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService> decorator : DEPRECATED_DECORATORS.values()) {
 				original = decorator.apply(owner, original);
+			}
+		}
+
+		return original;
+	}
+
+	/**
+	 * Set up an additional {@link ScheduledExecutorService} {@link SchedulerExecutorDecorator}
+	 * for a given key only if that key is not already present.
+	 *
+	 * @param key the key under which to set up the decorator
+	 * @param decorator the {@link SchedulerExecutorDecorator} to add, if key not already present.
+	 * @return true if the decorator was added, false if a decorator was already present
+	 * for this key.
+	 * @see #setSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)
+	 * @see #removeSchedulerExecutorDecorator(String)
+	 * @see Schedulers#onScheduleHook(String, Function)
+	 */
+	public static boolean addSchedulerExecutorDecorator(String key, SchedulerExecutorDecorator decorator) {
+		synchronized (DECORATORS) {
+			return DECORATORS.putIfAbsent(key, decorator) == null;
+		}
+	}
+
+	/**
+	 * Set up an additional {@link ScheduledExecutorService} {@link SchedulerExecutorDecorator}
+	 * for a given key, even if that key is already present.
+	 *
+	 * @param key the key under which to set up the decorator
+	 * @param decorator the {@link SchedulerExecutorDecorator} to add, if key not already present.
+	 * @see #addSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)
+	 * @see #removeSchedulerExecutorDecorator(String)
+	 * @see Schedulers#onScheduleHook(String, Function)
+	 */
+	public static void setSchedulerExecutorDecorator(String key, SchedulerExecutorDecorator decorator) {
+		synchronized (DECORATORS) {
+			DECORATORS.put(key, decorator);
+		}
+	}
+
+	/**
+	 * Remove an existing {@link ScheduledExecutorService} {@link SchedulerExecutorDecorator}
+	 * if it has been set up via {@link #addSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)}.
+	 * <p>
+	 * In case the decorator implements {@link Disposable}, it is also
+	 * {@link Disposable#dispose() disposed}.
+	 *
+	 * @param key the key for the executor service decorator to remove
+	 * @return the removed {@link SchedulerExecutorDecorator}, or null if none was set for that key
+	 * @see #addSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)
+	 * @see #setSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)
+	 */
+	public static SchedulerExecutorDecorator removeSchedulerExecutorDecorator(String key) {
+		SchedulerExecutorDecorator removed;
+		synchronized (DECORATORS) {
+			removed = DECORATORS.remove(key);
+		}
+		if (removed instanceof Disposable) {
+			((Disposable) removed).dispose();
+		}
+		return removed;
+	}
+
+	//TODO remove header note from javadoc when deprecated decorators are removed
+	/**
+	 * <strong>
+	 * consider always calling this method in conjunction with {@link #decorateExecutorService(Scheduler, ScheduledExecutorService)}
+	 * until 3.4, otherwise decorators of the {@link #addExecutorServiceDecorator(String, BiFunction) decorators} won't be applied.
+	 * </strong>
+	 * <p>
+	 * This method is aimed at {@link Scheduler} implementors, enabling custom implementations that are backed by a
+	 * {@link ScheduledExecutorService} to also have said executors decorated (ie. for instrumentation purposes).
+	 * <p>
+	 * It <strong>applies</strong> the decorators added via
+	 * {@link #addSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)}, so it shouldn't be added as a
+	 * decorator. Note also that decorators are not guaranteed to be idempotent, so this method should be called
+	 * only once per executor.
+	 *
+	 * @param schedulerType a {@link String} representing the type of {@link Scheduler} that owns the {@link ScheduledExecutorService}
+	 * @param schedulerIdOrDescription a {@link String} that can further help identify the owning {@link Scheduler} (either a unique id
+	 * or at least a representation of the specific configuration of the scheduler)
+	 * @param original the {@link ScheduledExecutorService} that the {@link Scheduler} wants to use originally
+	 * @return the decorated {@link ScheduledExecutorService}, or the original if no decorator is set up
+	 * @see #addSchedulerExecutorDecorator(String, SchedulerExecutorDecorator)
+	 * @see #removeSchedulerExecutorDecorator(String)
+	 */
+	public static ScheduledExecutorService decorateExecutorService(String schedulerType, String schedulerIdOrDescription, ScheduledExecutorService original) {
+		synchronized (DECORATORS) {
+			for (SchedulerExecutorDecorator decorator : DECORATORS.values()) {
+				original = decorator.apply(schedulerType, schedulerIdOrDescription, original);
 			}
 		}
 
@@ -729,6 +828,29 @@ public abstract class Schedulers {
 		}
 	}
 
+	/**
+	 * A decorator interface to be applied when constructing {@link Scheduler} instances
+	 * that are backed by {@link ScheduledExecutorService}. This decorator targets said
+	 * backing executors, allowing for customization/replacement with information about the
+	 * {@link Scheduler} being constructed (type and configuration/id).
+	 */
+	public interface SchedulerExecutorDecorator {
+
+		/**
+		 * Apply a decoration to a {@link ScheduledExecutorService} that is being attached
+		 * to a {@link Scheduler} (possibly under construction). The type and identifier
+		 * of the {@link Scheduler} is provided in addition to the original executor.
+		 *
+		 * @param schedulerType a {@link String} representing the type of {@link Scheduler} (eg. "PARALLEL")
+		 * @param schedulerIdOrDescription a {@link String} description or identifier for the owning {@link Scheduler}.
+		 * Not guaranteed to be uniquely identifying the scheduler, but should help differentiate instances.
+		 * @param original the just created {@link ScheduledExecutorService} that is about to be added to the {@link Scheduler}
+		 * @return the decorated {@link ScheduledExecutorService}, or the original if decorator is irrelevant
+		 */
+		ScheduledExecutorService apply(String schedulerType, String schedulerIdOrDescription,
+				ScheduledExecutorService original);
+	}
+
 	// Internals
 	static final String ELASTIC               = "elastic"; // IO stuff
 	static final String PARALLEL              = "parallel"; //scale up common tasks
@@ -754,7 +876,8 @@ public abstract class Schedulers {
 	static final Factory DEFAULT = new Factory() { };
 
 	static final Map<String, BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>>
-			DECORATORS = new LinkedHashMap<>();
+			DEPRECATED_DECORATORS = new LinkedHashMap<>();
+	static final Map<String, SchedulerExecutorDecorator> DECORATORS = new LinkedHashMap<>();
 
 	static volatile Factory factory = DEFAULT;
 
