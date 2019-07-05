@@ -68,7 +68,9 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * {@link Schedulers} factories.
 	 */
 	public static VirtualTimeScheduler create(boolean defer) {
-		return new VirtualTimeScheduler(defer);
+		VirtualTimeScheduler instance = new VirtualTimeScheduler(defer);
+		instance.start();
+		return instance;
 	}
 
 	/**
@@ -163,7 +165,7 @@ public class VirtualTimeScheduler implements Scheduler {
 			}
 			VirtualTimeScheduler newS = schedulerSupplier.get();
 			if (newS == CURRENT.get()) {
-				return newS; //nothing to do, it has already been set in the past
+				return newS; //nothing to do, it has already been set and started in the past
 			}
 
 			if (CURRENT.compareAndSet(s, newS)) {
