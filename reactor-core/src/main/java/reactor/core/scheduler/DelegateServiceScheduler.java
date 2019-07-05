@@ -45,14 +45,15 @@ import reactor.util.annotation.Nullable;
  */
 final class DelegateServiceScheduler implements Scheduler, Scannable {
 
-	final String executorName;
+	final String schedulerName;
 	final ScheduledExecutorService executor;
 
 	DelegateServiceScheduler(String executorName, ExecutorService executorService) {
-			this.executorName = executorName;
+			this.schedulerName = Schedulers.FROM_EXECUTOR_SERVICE + '(' + executorName + ')';
+			String schedulerId = schedulerName + '@' + Integer.toHexString(System.identityHashCode(this));
 			ScheduledExecutorService exec = convert(executorService);
 			exec = Schedulers.decorateExecutorService(this, exec);
-			exec = Schedulers.decorateExecutorService(Schedulers.FROM_EXECUTOR_SERVICE, executorName, exec);
+			exec = Schedulers.decorateExecutorService(Schedulers.FROM_EXECUTOR_SERVICE, schedulerId, exec);
 			this.executor = exec;
 	}
 
@@ -104,14 +105,14 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
-		if (key == Attr.NAME) return toString();
+		if (key == Attr.NAME) return schedulerName;
 
 		return Schedulers.scanExecutor(executor, key);
 	}
 
 	@Override
 	public String toString() {
-		return Schedulers.FROM_EXECUTOR_SERVICE + '(' + executorName + ')';
+		return schedulerName;
 	}
 
 	static final class UnsupportedScheduledExecutorService

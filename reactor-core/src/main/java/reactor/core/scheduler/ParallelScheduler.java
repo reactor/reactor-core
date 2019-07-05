@@ -81,11 +81,12 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     }
     
     void init(int n) {
+        String schedulerId = this.name() + '@' + Integer.toHexString(System.identityHashCode(this));
         ScheduledExecutorService[] a = new ScheduledExecutorService[n];
         for (int i = 0; i < n; i++) {
             ScheduledExecutorService exec = this.get();
             exec = Schedulers.decorateExecutorService(this, exec);
-            exec = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this.name(), exec);
+            exec = Schedulers.decorateExecutorService(Schedulers.PARALLEL, schedulerId, exec);
             a[i] = exec;
         }
         EXECUTORS.lazySet(this, a);
@@ -111,11 +112,12 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             }
 
             if (b == null) {
+                String schedulerId = this.name() + '@' + Integer.toHexString(System.identityHashCode(this));
                 b = new ScheduledExecutorService[n];
                 for (int i = 0; i < n; i++) {
                     ScheduledExecutorService exec = this.get();
                     exec = Schedulers.decorateExecutorService(this, exec);
-                    exec = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this.name(), exec);
+                    exec = Schedulers.decorateExecutorService(Schedulers.PARALLEL, schedulerId, exec);
                     b[i] = exec;
                 }
             }
@@ -186,6 +188,11 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         }
         ts.append(')');
         return ts.toString();
+    }
+
+    @Override
+    public String name() {
+        return this.toString();
     }
 
     @Override

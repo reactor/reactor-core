@@ -71,9 +71,10 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	private void init() {
+		String schedulerId = this.name() + '@' + Integer.toHexString(System.identityHashCode(this));
 		ScheduledExecutorService exec = this.get();
 		exec = Schedulers.decorateExecutorService(this, exec);
-		exec = Schedulers.decorateExecutorService(Schedulers.SINGLE, this.name(), exec);
+		exec = Schedulers.decorateExecutorService(Schedulers.SINGLE, schedulerId, exec);
 		EXECUTORS.lazySet(this, exec);
 	}
 
@@ -96,9 +97,10 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 
 			if (b == null) {
+				String schedulerId = this.name() + '@' + Integer.toHexString(System.identityHashCode(this));
 				b = this.get();
 				b = Schedulers.decorateExecutorService(this, b);
-				b = Schedulers.decorateExecutorService(Schedulers.SINGLE, this.name(), b);
+				b = Schedulers.decorateExecutorService(Schedulers.SINGLE, schedulerId, b);
 			}
 
 			if (EXECUTORS.compareAndSet(this, a, b)) {
@@ -147,7 +149,12 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		if (factory instanceof ReactorThreadFactory) {
 			ts.append('\"').append(((ReactorThreadFactory) factory).get()).append('\"');
 		}
-		return ts.append(')').toString();
+		return ts.toString();
+	}
+
+	@Override
+	public String name() {
+		return this.toString();
 	}
 
 	@Override

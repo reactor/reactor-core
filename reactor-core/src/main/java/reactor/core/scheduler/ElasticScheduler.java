@@ -199,6 +199,11 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	}
 
 	@Override
+	public String name() {
+		return this.toString();
+	}
+
+	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.CAPACITY) return Integer.MAX_VALUE;
@@ -242,8 +247,9 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 			this.parent = parent;
 			if (parent != null) {
 				ScheduledExecutorService exec = parent.get();
+				String schedulerId = parent.name() + '@' + Integer.toHexString(System.identityHashCode(this));
 				exec = Schedulers.decorateExecutorService(parent, exec);
-				exec = Schedulers.decorateExecutorService(Schedulers.ELASTIC, parent.name(), exec);
+				exec = Schedulers.decorateExecutorService(Schedulers.ELASTIC, schedulerId, exec);
 				this.exec = exec;
 			}
 			else {

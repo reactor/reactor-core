@@ -91,10 +91,10 @@ public class SchedulersMetricsTest {
 		                              .stream()
 		                              .map(m -> m.getId().getTag("name"))
 		                              .distinct())
-				.containsOnly(
-						"parallel(1,\"A\")-0",
-						"parallel(1,\"A\")-1",
-						"parallel(1,\"A\")-2"
+				.hasSize(3)
+				.allSatisfy(name -> assertThat(name)
+						.startsWith("parallel(1,\"A\")@")
+						.endsWith("-0")
 				);
 	}
 
