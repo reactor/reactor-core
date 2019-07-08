@@ -65,7 +65,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         }
         this.n = n;
         this.factory = factory;
-        init(n);
     }
 
     /**
@@ -80,14 +79,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         return poolExecutor;
     }
     
-    void init(int n) {
-        ScheduledExecutorService[] a = new ScheduledExecutorService[n];
-        for (int i = 0; i < n; i++) {
-            a[i] = Schedulers.decorateExecutorService(this, this.get());
-        }
-        EXECUTORS.lazySet(this, a);
-    }
-
 	@Override
 	public boolean isDisposed() {
 		return executors == SHUTDOWN;
@@ -98,7 +89,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         ScheduledExecutorService[] b = null;
         for (;;) {
             ScheduledExecutorService[] a = executors;
-            if (a != SHUTDOWN) {
+            if (a != SHUTDOWN && a != null) {
                 if (b != null) {
                     for (ScheduledExecutorService exec : b) {
                         exec.shutdownNow();
@@ -125,7 +116,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         ScheduledExecutorService[] a = executors;
         if (a != SHUTDOWN) {
             a = EXECUTORS.getAndSet(this, SHUTDOWN);
-            if (a != SHUTDOWN) {
+            if (a != SHUTDOWN && a != null) {
                 for (ScheduledExecutorService exec : a) {
                     exec.shutdownNow();
                 }
@@ -135,6 +126,13 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     
     ScheduledExecutorService pick() {
         ScheduledExecutorService[] a = executors;
+        if (a == null) {
+            start();
+            a = executors;
+            if (a == null) {
+                throw new IllegalStateException("executors uninitialized after implicit start()");
+            }
+        }
         if (a != SHUTDOWN) {
             // ignoring the race condition here, its already random who gets which executor
             int idx = roundRobin;

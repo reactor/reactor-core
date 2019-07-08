@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
@@ -47,6 +48,31 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected boolean shouldCheckDisposeTask() {
 		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckSupportRestart() {
+		return false;
+	}
+
+	@Test
+	public void startAndDecorationImplicit() {
+		AtomicInteger decorationCount = new AtomicInteger();
+		Schedulers.setExecutorServiceDecorator("startAndDecorationImplicit", (s, srv) -> {
+			decorationCount.incrementAndGet();
+			return srv;
+		});
+		final Scheduler scheduler = new DelegateServiceScheduler("startAndDecorationImplicitExecutorService", Executors.newSingleThreadExecutor());
+
+		try {
+			assertThat(decorationCount).as("before schedule").hasValue(0);
+			scheduler.schedule(() -> {});
+			assertThat(decorationCount).as("after schedule").hasValue(1);
+		}
+		finally {
+			scheduler.dispose();
+			Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit");
+		}
 	}
 
 	@Test

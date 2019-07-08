@@ -1119,6 +1119,11 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void restartBoundedElastic() {
+		restart(Schedulers.newBoundedElastic(1, 10, "test"));
+	}
+
+	@Test
 	public void restartSingle(){
 		restart(Schedulers.newSingle("test"));
 	}

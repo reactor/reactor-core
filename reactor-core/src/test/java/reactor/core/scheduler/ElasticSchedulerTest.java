@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.pivovarit.function.ThrowingRunnable;
@@ -33,7 +34,7 @@ import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Stephane Maldini
@@ -49,19 +50,48 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		return Schedulers.newElastic("ElasticSchedulerTest");
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
-	public void unsupportedStart() {
-		Schedulers.elastic().start();
+	@Override
+	protected boolean shouldCheckInterrupted() {
+		return true;
+	}
+
+	@Override
+	protected boolean shouldCheckSupportRestart() {
+		return false;
+	}
+
+	@Test
+	public void bothStartAndRestartAreNoOp() {
+		Scheduler scheduler = scheduler();
+		assertThatCode(scheduler::start).as("start").doesNotThrowAnyException();
+
+		scheduler.dispose();
+		assertThatCode(scheduler::start).as("restart").doesNotThrowAnyException();
+	}
+
+	@Test
+	public void startAndDecorationImplicit() {
+		AtomicInteger decorationCount = new AtomicInteger();
+		Schedulers.setExecutorServiceDecorator("startAndDecorationImplicit", (s, srv) -> {
+			decorationCount.incrementAndGet();
+			return srv;
+		});
+		final Scheduler scheduler = new ElasticScheduler(Thread::new, 10);
+
+		try {
+			assertThat(decorationCount).as("before schedule").hasValue(0);
+			scheduler.schedule(() -> {});
+			assertThat(decorationCount).as("after schedule").hasValue(1);
+		}
+		finally {
+			scheduler.dispose();
+			Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit");
+		}
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void negativeTime() throws Exception {
 		Schedulers.newElastic("test", -1);
-	}
-
-	@Override
-	protected boolean shouldCheckInterrupted() {
-		return true;
 	}
 
 	@Test(timeout = 10000)

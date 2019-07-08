@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
@@ -40,14 +41,35 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 		return Schedulers.newParallel("ParallelSchedulerTest");
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void negativeParallelism() throws Exception {
-		Schedulers.newParallel("test", -1);
-	}
-
 	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
+	}
+
+	@Test
+	public void startAndDecorationImplicit() {
+		AtomicInteger decorationCount = new AtomicInteger();
+		Schedulers.setExecutorServiceDecorator("startAndDecorationImplicit", (s, srv) -> {
+			decorationCount.incrementAndGet();
+			return srv;
+		});
+		final Scheduler scheduler = new ParallelScheduler(4, Thread::new);
+
+		try {
+			assertThat(decorationCount).as("before schedule").hasValue(0);
+			scheduler.schedule(() -> {});
+			assertThat(decorationCount).as("after schedule").hasValue(4);
+		}
+		finally {
+			scheduler.dispose();
+			Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit");
+		}
+	}
+
+
+	@Test(expected = IllegalArgumentException.class)
+	public void negativeParallelism() throws Exception {
+		Schedulers.newParallel("test", -1);
 	}
 
 	@Test

@@ -129,12 +129,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		this.clock = Objects.requireNonNull(clock, "A Clock must be provided");
 		this.ttlMillis = ttlMillis;
 
-		this.boundedServices = new BoundedServices(this);
-		this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);
-		evictor.scheduleAtFixedRate(boundedServices::eviction,
-				ttlMillis,
-				ttlMillis,
-				TimeUnit.MILLISECONDS);
+		this.boundedServices = SHUTDOWN; //initially disposed, EVICTOR is also null
 	}
 
 	/**

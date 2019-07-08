@@ -107,7 +107,8 @@ final class ElasticScheduler implements Scheduler, Scannable {
 
 	@Override
 	public void start() {
-		throw new UnsupportedOperationException("Restarting not supported yet");
+		// NO-OP, executors are initialized on task submission
+		// no exception is thrown if shutdown, but this operation is also a no-op
 	}
 
 	@Override

@@ -55,6 +55,11 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected boolean shouldCheckSupportRestart() {
+		return false;
+	}
+
+	@Override
 	protected Scheduler scheduler() {
 		return Schedulers.fromExecutor(Runnable::run);
 	}

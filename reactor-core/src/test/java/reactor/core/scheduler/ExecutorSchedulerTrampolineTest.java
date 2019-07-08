@@ -47,6 +47,11 @@ public class ExecutorSchedulerTrampolineTest extends AbstractSchedulerTest {
 		return false;
 	}
 
+	@Override
+	protected boolean shouldCheckSupportRestart() {
+		return false;
+	}
+
 	@Test
 	public void scanParent() {
 		Executor plainExecutor = new ExecutorSchedulerTest.PlainExecutor();
