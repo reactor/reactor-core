@@ -199,7 +199,7 @@ public class SchedulersMetricsTest {
 				.tag(TAG_SCHEDULER_ID, scheduler.toString())
 				.functionCounter();
 
-		// Use Awaitility instead of Phaser because "count" is reported "eventually"
+		// Use Awaitility because "count" is reported "eventually"
 		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
 			assertThat(counter)
 					.isNotNull()
@@ -239,13 +239,16 @@ public class SchedulersMetricsTest {
 				.tag(TAG_SCHEDULER_ID, scheduler.toString())
 				.timer();
 
-		assertThat(timer)
-				.isNotNull()
-				.satisfies(it -> {
-					assertThat(it.count()).as("count").isEqualTo(taskCount);
-					assertThat(it.max(TimeUnit.MILLISECONDS))
-							.as("min")
-							.isEqualTo(60, offset(10.0d));
-				});
+		// Use Awaitility because "count" is reported "eventually"
+		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+			assertThat(timer)
+					.isNotNull()
+					.satisfies(it -> {
+						assertThat(it.count()).as("count").isEqualTo(taskCount);
+						assertThat(it.max(TimeUnit.MILLISECONDS))
+								.as("min")
+								.isEqualTo(60, offset(10.0d));
+					});
+		});
 	}
 }
