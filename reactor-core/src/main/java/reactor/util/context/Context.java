@@ -62,16 +62,16 @@ public interface Context {
 		return new Context1(key, value);
 	}
 
+	/**
+	 * Checks for duplicate keys. This method is intended for a short space of keys in the
+	 * 4-10 range. Shorter number of keys can easily be checked with direct equals comparison(s),
+	 * saving on allocating a vararg array (although this method would still behave correctly).
+	 *
+	 * @param keys the keys to check for duplicates, by looping over the combinations
+	 */
 	static void checkDuplicateKeys(Object... keys) {
 		int size = keys.length;
 		if (size < 2) return;
-
-		if (size == 2) {
-			if (keys[0].equals(keys[1])) {
-				throw new IllegalArgumentException("Found duplicate key in Context.of() with 2 key-value pairs: " + keys[0]);
-			}
-			return;
-		}
 
 		for (int i = 0; i < keys.length - 1; i++) {
 			Object key = keys[i];
@@ -96,7 +96,10 @@ public interface Context {
 	 */
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2) {
-		checkDuplicateKeys(key1, key2);
+		//prefer direct check for the simple 2 keys case over checkDuplicateKeys (saves up 1 array allocation)
+		if (key1.equals(key2)) {
+			throw new IllegalArgumentException("Found duplicate key in Context.of() with 2 key-value pairs: " + key1);
+		}
 		return new Context2(key1, value1, key2, value2);
 	}
 
@@ -115,7 +118,13 @@ public interface Context {
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2,
 			Object key3, Object value3) {
-		checkDuplicateKeys(key1, key2, key3);
+		//prefer direct check for the simple 3 keys case over checkDuplicateKeys (saves up 1 array allocation)
+		if (key1.equals(key2) || key1.equals(key3)) {
+			throw new IllegalArgumentException("Found duplicate key in Context.of() with 3 key-value pairs: " + key1);
+		}
+		else if (key2.equals(key3)) {
+			throw new IllegalArgumentException("Found duplicate key in Context.of() with 3 key-value pairs: " + key2);
+		}
 		return new Context3(key1, value1, key2, value2, key3, value3);
 	}
 
