@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -38,7 +39,6 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 	final Consumer<? super O> onOverflow;
 	final int                 bufferSize;
 	final boolean             unbounded;
-	final boolean             delayError;
 
 	FluxOnBackpressureBuffer(Flux<? extends O> source,
 			int bufferSize,
@@ -51,7 +51,6 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		this.bufferSize = bufferSize;
 		this.unbounded = unbounded;
 		this.onOverflow = onOverflow;
-		this.delayError = unbounded || onOverflow != null;
 	}
 
 	@Override
@@ -59,7 +58,6 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		source.subscribe(new BackpressureBufferSubscriber<>(actual,
 				bufferSize,
 				unbounded,
-				delayError,
 				onOverflow));
 	}
 
@@ -76,7 +74,6 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		final Queue<T>                  queue;
 		final int                       capacityOrSkip;
 		final Consumer<? super T>       onOverflow;
-		final boolean                   delayError;
 
 		Subscription s;
 
@@ -100,11 +97,9 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		BackpressureBufferSubscriber(CoreSubscriber<? super T> actual,
 				int bufferSize,
 				boolean unbounded,
-				boolean delayError,
 				@Nullable Consumer<? super T> onOverflow) {
 			this.actual = actual;
 			this.ctx = actual.currentContext();
-			this.delayError = delayError;
 			this.onOverflow = onOverflow;
 
 			Queue<T> q;
@@ -138,7 +133,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			if (key == Attr.BUFFERED) return queue.size();
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == Attr.DELAY_ERROR) return delayError;
+			if (key == Attr.DELAY_ERROR) return true;
 			if (key == Attr.CAPACITY) return capacityOrSkip == Integer.MAX_VALUE ? Queues.capacity(queue) : capacityOrSkip;
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -370,29 +365,16 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				return true;
 			}
 			if (d) {
-				if (delayError) {
-					if (empty) {
-						Throwable e = error;
-						if (e != null) {
-							a.onError(e);
-						}
-						else {
-							a.onComplete();
-						}
-						return true;
-					}
-				}
-				else {
+				//the operator always delays the errors, particularly overflow one
+				if (empty) {
 					Throwable e = error;
 					if (e != null) {
-						Operators.onDiscardQueueWithClear(queue, ctx, null);
 						a.onError(e);
-						return true;
 					}
-					else if (empty) {
+					else {
 						a.onComplete();
-						return true;
 					}
+					return true;
 				}
 			}
 			return false;

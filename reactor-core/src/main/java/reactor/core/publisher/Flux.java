@@ -5894,13 +5894,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * The first element past this buffer to arrive out of sync with the downstream
 	 * subscriber's demand (the "overflowing" element) immediately triggers an overflow
 	 * error and cancels the source.
+	 * The {@link Flux} is going to terminate with an overflow error, but this error is
+	 * delayed, which lets the subscriber make more requests for the content of the buffer.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onBackpressureBufferWithMaxSize.svg" alt="">
 	 *
 	 * @reactor.discard This operator discards the buffered overflow elements upon cancellation or error triggered by a data signal,
 	 * as well as elements that are rejected by the buffer due to {@code maxSize}.
 	 *
-	 * @param maxSize maximum buffer backlog size before immediate error
+	 * @param maxSize maximum number of elements overflowing request before the source is cancelled
 	 *
 	 * @return a backpressured {@link Flux} that buffers with bounded capacity
 	 *
@@ -5927,7 +5929,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * as well as elements that are rejected by the buffer due to {@code maxSize} (even though
 	 * they are passed to the {@code onOverflow} {@link Consumer} first).
 	 *
-	 * @param maxSize maximum buffer backlog size before overflow callback is called and source is cancelled
+	 * @param maxSize maximum number of elements overflowing request before callback is called and source is cancelled
 	 * @param onOverflow callback to invoke on overflow
 	 *
 	 * @return a backpressured {@link Flux} that buffers with a bounded capacity

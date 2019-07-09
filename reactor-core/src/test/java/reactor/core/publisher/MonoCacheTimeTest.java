@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -233,11 +234,111 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 				            .hasSuppressedException(exception))
 		            .verifyThenAssertThat()
 		            .hasNotDroppedElements()
-		            .hasDroppedErrorWithMessage("foo");
+		            .hasNotDroppedErrors();
 	}
 
 	@Test
 	public void nextTtlGeneratorTransientFailure() {
+		AtomicInteger count = new AtomicInteger();
+
+		Mono<Integer> cached = new MonoCacheTime<>(Mono.fromCallable(count::incrementAndGet),
+				v -> {
+					if (v == 1) throw new IllegalStateException("transient");
+					return Duration.ofMillis(200 * v);
+				},
+				t -> Duration.ofSeconds(10),
+				() -> Duration.ofSeconds(10),
+				Schedulers.parallel());
+
+		StepVerifier.create(cached)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IllegalStateException.class)
+				            .hasMessage("transient")
+				            .hasNoSuppressedExceptions())
+		            .verify();
+
+		StepVerifier.create(cached)
+		            .expectNext(2)
+		            .expectComplete()
+		            .verify();
+
+		assertThat(cached.block())
+				.as("cached after cache miss")
+				.isEqualTo(2);
+
+		assertThat(count).as("source invocations")
+		                 .hasValue(2);
+	}
+
+	@Test
+	public void emptyTtlGeneratorTransientFailure() {
+		AtomicInteger count = new AtomicInteger();
+
+		Mono<Integer> cached = new MonoCacheTime<>(Mono.empty(),
+				v -> Duration.ofSeconds(10),
+				t -> Duration.ofSeconds(10),
+				() -> {
+					if (count.incrementAndGet() == 1) throw new IllegalStateException("transient");
+					return Duration.ofMillis(100);
+				},
+				Schedulers.parallel());
+
+		StepVerifier.create(cached)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IllegalStateException.class)
+				            .hasMessage("transient")
+				            .hasNoSuppressedExceptions())
+		            .verify();
+
+		StepVerifier.create(cached)
+		            .expectComplete()
+		            .verify();
+
+		assertThat(cached.block())
+				.as("cached after cache miss")
+				.isNull();
+
+		assertThat(count).as("source invocations")
+		                 .hasValue(2);
+	}
+
+	@Test
+	public void errorTtlGeneratorTransientFailure() {
+		Throwable exception = new IllegalArgumentException("foo");
+		AtomicInteger count = new AtomicInteger();
+
+		Mono<Integer> cached = new MonoCacheTime<>(Mono.error(exception),
+				v -> Duration.ofSeconds(10),
+				t -> {
+					if (count.incrementAndGet() == 1) throw new IllegalStateException("transient");
+					return Duration.ofMillis(100);
+				},
+				() -> Duration.ofSeconds(10),
+				Schedulers.parallel());
+
+		StepVerifier.create(cached)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IllegalStateException.class)
+				            .hasMessage("transient")
+				            .hasSuppressedException(exception))
+		            .verify();
+
+		StepVerifier.create(cached)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IllegalArgumentException.class)
+				            .hasMessage("foo"))
+		            .verify();
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.as("cached after cache miss")
+				.isThrownBy(cached::block);
+
+		assertThat(count).as("source invocations")
+		                 .hasValue(2);
+	}
+
+	@Test
+	public void nextTtlGeneratorTransientFailureCheckHooks() {
 		AtomicInteger count = new AtomicInteger();
 
 		Mono<Integer> cached = new MonoCacheTime<>(Mono.fromCallable(count::incrementAndGet),
@@ -274,7 +375,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	}
 
 	@Test
-	public void emptyTtlGeneratorTransientFailure() {
+	public void emptyTtlGeneratorTransientFailureCheckHooks() {
 		AtomicInteger count = new AtomicInteger();
 
 		Mono<Integer> cached = new MonoCacheTime<>(Mono.empty(),
@@ -310,7 +411,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	}
 
 	@Test
-	public void errorTtlGeneratorTransientFailure() {
+	public void errorTtlGeneratorTransientFailureCheckHooks() {
 		Throwable exception = new IllegalArgumentException("foo");
 		AtomicInteger count = new AtomicInteger();
 
@@ -330,7 +431,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 				            .hasSuppressedException(exception))
 		            .verifyThenAssertThat()
 		            .hasNotDroppedElements()
-		            .hasDroppedErrorWithMessage("foo");
+		            .hasNotDroppedErrors();
 
 		StepVerifier.create(cached)
 		            .expectErrorSatisfies(e -> assertThat(e)
@@ -343,6 +444,42 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		assertThatExceptionOfType(IllegalArgumentException.class)
 				.as("cached after cache miss")
 				.isThrownBy(cached::block);
+
+		assertThat(count).as("source invocations")
+		                 .hasValue(2);
+	}
+
+	@Test
+	public void transientErrorWithZeroTtlIsNotCached() {
+		IllegalStateException exception = new IllegalStateException("boom");
+		AtomicInteger count = new AtomicInteger();
+
+		Mono<Integer> source = Mono.fromCallable(() -> {
+			int c = count.incrementAndGet();
+			if (c == 1) throw exception;
+			return c;
+		});
+
+		Mono<Integer> cached = new MonoCacheTime<>(source,
+				v -> Duration.ofSeconds(10),
+				t -> Duration.ZERO,
+				() -> Duration.ofSeconds(10),
+				Schedulers.parallel());
+
+		StepVerifier.create(cached)
+		            .expectErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IllegalStateException.class)
+				            .hasMessage("boom"))
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasNotDroppedErrors();
+
+		StepVerifier.create(cached)
+		            .expectNext(2)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasNotDroppedErrors()
+		            .hasNotDroppedElements();
 
 		assertThat(count).as("source invocations")
 		                 .hasValue(2);
