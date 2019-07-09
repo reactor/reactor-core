@@ -39,6 +39,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxRefCountTest {
 
+	//see https://github.com/reactor/reactor-core/issues/1738
+	@Test
+	public void avoidUnexpectedDoubleCancel() {
+		AtomicBoolean unexpectedCancellation = new AtomicBoolean();
+
+		Flux<Integer> test = Flux.range(0, 100)
+		                         .delayElements(Duration.ofMillis(2))
+		                         .publish()
+		                         .refCount()
+		                         .onBackpressureBuffer(); //known to potentially cancel twice, but that's another issue
+
+		test.subscribe(v -> {}, e -> unexpectedCancellation.set(true));
+
+		StepVerifier.create(test.take(3))
+		            .expectNextCount(3)
+		            .verifyComplete();
+
+		assertThat(unexpectedCancellation).as("unexpected cancellation").isFalse();
+	}
+
 	//see https://github.com/reactor/reactor-core/issues/1385
 	@Test
 	public void sizeOneCanRetry() {
@@ -403,5 +423,32 @@ public class FluxRefCountTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isEqualTo(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+
+		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after complete").isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after complete").isTrue();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after complete, cancel() ignored").isFalse();
+	}
+
+	@Test
+	public void scanInnerCancelled() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
+		FluxRefCount<Integer> main = new FluxRefCount<Integer>(Flux.just(10).publish(), 17);
+		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual, new FluxRefCount.RefCountMonitor<>(main));
+		Subscription sub = Operators.emptySubscription();
+		test.onSubscribe(sub);
+		test.cancel();
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED))
+				.as("CANCELLED after cancel")
+				.isNotEqualTo(test.scan(Scannable.Attr.TERMINATED))
+				.isTrue();
+
+		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel+onComplete").isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after cancel+onComplete").isFalse();
 	}
 }

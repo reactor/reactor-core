@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,6 +34,26 @@ import reactor.test.util.RaceTestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxRefCountGraceTest {
+
+	//see https://github.com/reactor/reactor-core/issues/1738
+	@Test
+	public void avoidUnexpectedDoubleCancel() {
+		AtomicBoolean unexpectedCancellation = new AtomicBoolean();
+
+		Flux<Integer> test = Flux.range(0, 100)
+		                         .delayElements(Duration.ofMillis(2))
+		                         .publish()
+		                         .refCount(1, Duration.ofMillis(1))
+		                         .onBackpressureBuffer(); //known to potentially cancel twice, but that's another issue
+
+		test.subscribe(v -> {}, e -> unexpectedCancellation.set(true));
+
+		StepVerifier.create(test.take(3))
+		            .expectNextCount(3)
+		            .verifyComplete();
+
+		assertThat(unexpectedCancellation).as("unexpected cancellation").isFalse();
+	}
 
 	//see https://github.com/reactor/reactor-core/issues/1385
 	@Test
