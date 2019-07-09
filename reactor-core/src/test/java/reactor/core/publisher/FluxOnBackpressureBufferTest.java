@@ -42,6 +42,37 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 public class FluxOnBackpressureBufferTest
 		extends FluxOperatorTest<String, String> {
 
+	@Test
+	public void bufferOverflowErrorDelayed() {
+		TestPublisher<String> tp1 = TestPublisher.createNoncompliant(TestPublisher.Violation.REQUEST_OVERFLOW);
+		TestPublisher<String> tp2 = TestPublisher.createNoncompliant(TestPublisher.Violation.REQUEST_OVERFLOW);
+
+		final Flux<String> test1 = tp1.flux().onBackpressureBuffer(3);
+		final Flux<String> test2 = tp2.flux().onBackpressureBuffer(3, s -> { });
+
+		StepVerifier.create(test1, StepVerifierOptions.create()
+		                                              .scenarioName("without consumer")
+		                                              .initialRequest(0))
+		            .expectSubscription()
+		            .then(() -> tp1.next("A", "B", "C", "D"))
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(3)
+		            .expectNext("A", "B", "C")
+		            .expectErrorMatches(Exceptions::isOverflow)
+		            .verify(Duration.ofSeconds(5));
+
+		StepVerifier.create(test2, StepVerifierOptions.create()
+		                                             .scenarioName("with consumer")
+		                                             .initialRequest(0))
+		            .expectSubscription()
+		            .then(() -> tp2.next("A", "B", "C", "D"))
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenRequest(3)
+		            .expectNext("A", "B", "C")
+		            .expectErrorMatches(Exceptions::isOverflow)
+		            .verify(Duration.ofSeconds(5));
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeHistory(){
 		Flux.never().onBackpressureBuffer(-1);
@@ -82,10 +113,10 @@ public class FluxOnBackpressureBufferTest
 	public void onBackpressureBufferMax() {
 		StepVerifier.create(Flux.range(1, 100)
 		                        .hide()
-		                        .onBackpressureBuffer(3), 0)
-		            .thenRequest(7)
-		            .expectNext(1, 2, 3, 4, 5, 6, 7)
-		            .thenAwait()
+		                        .onBackpressureBuffer(8), 0)
+		            .thenAwait() //be sure to delay the first request enough that the buffer overflows
+		            .thenRequest(9)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8)
 		            .verifyErrorMatches(Exceptions::isOverflow);
 	}
 
@@ -97,11 +128,9 @@ public class FluxOnBackpressureBufferTest
 		                        .hide()
 		                        .onBackpressureBuffer(8, last::set), 0)
 
-		            .thenRequest(7)
-		            .expectNext(1, 2, 3, 4, 5, 6, 7)
-		            .then(() -> assertThat(last.get()).isEqualTo(16))
+		            .thenAwait() //be sure to delay the first request enough that the buffer overflows
 		            .thenRequest(9)
-		            .expectNextCount(8)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8)
 		            .verifyErrorMatches(Exceptions::isOverflow);
 	}
 
@@ -235,7 +264,7 @@ public class FluxOnBackpressureBufferTest
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxOnBackpressureBuffer.BackpressureBufferSubscriber<Integer> test =
         		new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(actual,
-        				123, false, true, t -> {});
+        				123, false, t -> {});
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -263,7 +292,7 @@ public class FluxOnBackpressureBufferTest
 	    CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 	    FluxOnBackpressureBuffer.BackpressureBufferSubscriber<Integer> test =
 			    new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(actual,
-					    123, true, true, t -> {});
+					    123, true, t -> {});
 
 	    assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(Integer.MAX_VALUE);
     }
@@ -275,7 +304,7 @@ public class FluxOnBackpressureBufferTest
 	    CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 	    FluxOnBackpressureBuffer.BackpressureBufferSubscriber<Integer> test =
 			    new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(actual,
-					    exactCapacity, false, true, t -> {});
+					    exactCapacity, false, t -> {});
 
 	    assumeThat(Queues.capacity(test.queue)).as("Queue has exact required capacity").isEqualTo(exactCapacity);
 
@@ -289,7 +318,7 @@ public class FluxOnBackpressureBufferTest
 	    CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 	    FluxOnBackpressureBuffer.BackpressureBufferSubscriber<Integer> test =
 			    new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(actual,
-					    desiredCapacity, false, true, t -> {});
+					    desiredCapacity, false, t -> {});
 
 	    assumeThat(Queues.capacity(test.queue)).as("Queue has greater than required capacity").isGreaterThan(desiredCapacity);
 
