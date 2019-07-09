@@ -62,6 +62,28 @@ public interface Context {
 		return new Context1(key, value);
 	}
 
+	static void checkDuplicateKeys(Object... keys) {
+		int size = keys.length;
+		if (size < 2) return;
+
+		if (size == 2) {
+			if (keys[0].equals(keys[1])) {
+				throw new IllegalArgumentException("Found duplicate key in Context.of() with 2 key-value pairs: " + keys[0]);
+			}
+			return;
+		}
+
+		for (int i = 0; i < keys.length - 1; i++) {
+			Object key = keys[i];
+			for (int j = i + 1; j < keys.length; j++) {
+				Object otherKey = keys[j];
+				if (key.equals(otherKey)) {
+					throw new IllegalArgumentException("Found duplicate key in Context.of() with " + keys.length + " key-value pairs: " + key);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Create a {@link Context} pre-initialized with two key-value pairs.
 	 *
@@ -74,6 +96,7 @@ public interface Context {
 	 */
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2) {
+		checkDuplicateKeys(key1, key2);
 		return new Context2(key1, value1, key2, value2);
 	}
 
@@ -92,6 +115,7 @@ public interface Context {
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2,
 			Object key3, Object value3) {
+		checkDuplicateKeys(key1, key2, key3);
 		return new Context3(key1, value1, key2, value2, key3, value3);
 	}
 
@@ -113,6 +137,7 @@ public interface Context {
 			Object key2, Object value2,
 			Object key3, Object value3,
 			Object key4, Object value4) {
+		checkDuplicateKeys(key1, key2, key3, key4);
 		return new Context4(key1, value1, key2, value2, key3, value3, key4, value4);
 	}
 
@@ -137,6 +162,7 @@ public interface Context {
 			Object key3, Object value3,
 			Object key4, Object value4,
 			Object key5, Object value5) {
+		checkDuplicateKeys(key1, key2, key3, key4, key5);
 		return new Context5(key1, value1, key2, value2, key3, value3, key4, value4, key5, value5);
 	}
 

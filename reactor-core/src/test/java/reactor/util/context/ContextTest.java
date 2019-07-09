@@ -19,8 +19,7 @@ package reactor.util.context;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.*;
 
 public class ContextTest {
 
@@ -108,7 +107,7 @@ public class ContextTest {
 		assertThat(c.isEmpty()).as("isEmpty").isFalse();
 		assertThat(c.stream()).hasSize(5);
 	}
-	
+
 	@Test
 	public void of1NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 1))
@@ -116,7 +115,7 @@ public class ContextTest {
 		assertThatNullPointerException().as("value1").isThrownBy(() -> Context.of(1, null))
 		                                .withMessage("value");
 	}
-	
+
 	@Test
 	public void of2NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 2, 2, 2))
@@ -128,7 +127,7 @@ public class ContextTest {
 		assertThatNullPointerException().as("value2").isThrownBy(() -> Context.of(2, 2, 2, null))
 		                                .withMessage("value2");
 	}
-	
+
 	@Test
 	public void of3NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 3, 3, 3, 3, 3))
@@ -144,7 +143,7 @@ public class ContextTest {
 		assertThatNullPointerException().as("value3").isThrownBy(() -> Context.of(3, 3, 3, 3, 3, null))
 		                                .withMessage("value3");
 	}
-	
+
 	@Test
 	public void of4NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 4, 4, 4, 4, 4, 4, 4))
@@ -164,7 +163,7 @@ public class ContextTest {
 		assertThatNullPointerException().as("value4").isThrownBy(() -> Context.of(4, 4, 4, 4, 4, 4, 4, null))
 		                                .withMessage("value4");
 	}
-	
+
 	@Test
 	public void of5NullChecks() {
 		assertThatNullPointerException().as("key1").isThrownBy(() -> Context.of(null, 5, 5, 5, 5, 5, 5, 5, 5, 5))
@@ -187,6 +186,132 @@ public class ContextTest {
 		                                .withMessage("key5");
 		assertThatNullPointerException().as("value5").isThrownBy(() -> Context.of(5, 5, 5, 5, 5, 5, 5, 5, 5, null))
 		                                .withMessage("value5");
+	}
+
+	@Test
+	public void checkDuplicateKeysZeroOne() {
+		assertThatCode(Context::checkDuplicateKeys).as("zero").doesNotThrowAnyException();
+		assertThatCode(() -> Context.checkDuplicateKeys("one")).as("one").doesNotThrowAnyException();
+	}
+
+	@Test
+	public void checkDuplicateKeysTwo() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 1))
+				.withMessage("Found duplicate key in Context.of() with 2 key-value pairs: 1");
+	}
+
+	@Test
+	public void checkDuplicateKeysThree() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 1, 3))
+				.withMessage("Found duplicate key in Context.of() with 3 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 1))
+				.withMessage("Found duplicate key in Context.of() with 3 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 2))
+				.withMessage("Found duplicate key in Context.of() with 3 key-value pairs: 2");
+	}
+
+	@Test
+	public void checkDuplicateKeysFour() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 1, 3, 4))
+				.withMessage("Found duplicate key in Context.of() with 4 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 1, 4))
+				.withMessage("Found duplicate key in Context.of() with 4 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 1))
+				.withMessage("Found duplicate key in Context.of() with 4 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 2, 4))
+				.withMessage("Found duplicate key in Context.of() with 4 key-value pairs: 2");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 2))
+				.withMessage("Found duplicate key in Context.of() with 4 key-value pairs: 2");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 3))
+				.withMessage("Found duplicate key in Context.of() with 4 key-value pairs: 3");
+	}
+
+	@Test
+	public void checkDuplicateKeysFive() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 1, 3, 4, 5))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 1, 4, 5))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 1, 5))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 4, 1))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 1");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 2, 4, 5))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 2");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 2, 5))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 2");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 4, 2))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 2");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 3, 5))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 3");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 4, 3))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 3");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.checkDuplicateKeys(1, 2, 3, 4, 4))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 4");
+	}
+
+	@Test
+	public void ofTwoRejectsSimpleDuplicate() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.of(1, 0, 1, 0))
+				.withMessage("Found duplicate key in Context.of() with 2 key-value pairs: 1");
+	}
+
+	@Test
+	public void ofThreeRejectsSimpleDuplicate() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.of(1, 0, 2, 0, 2, 0))
+				.withMessage("Found duplicate key in Context.of() with 3 key-value pairs: 2");
+	}
+
+	@Test
+	public void ofFourRejectsSimpleDuplicate() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.of(1, 0, 2, 0, 3, 0, 3, 0))
+				.withMessage("Found duplicate key in Context.of() with 4 key-value pairs: 3");
+	}
+
+	@Test
+	public void ofFiveRejectsSimpleDuplicate() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context.of(1, 0, 2, 0, 3, 0, 4, 0, 4, 0))
+				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 4");
 	}
 
 }
