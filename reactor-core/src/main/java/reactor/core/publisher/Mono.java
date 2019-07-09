@@ -1501,7 +1501,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * received or a timeout expires. Returns that value, or null if the Mono completes
 	 * empty. In case the Mono errors, the original exception is thrown (wrapped in a
 	 * {@link RuntimeException} if it was a checked exception).
-	 * If the provided timeout expires,a {@link RuntimeException} is thrown.
+	 * If the provided timeout expires, a {@link RuntimeException} is thrown.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/blockWithTimeout.svg" alt="">
