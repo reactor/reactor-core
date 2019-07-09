@@ -16,6 +16,9 @@
 
 package reactor.util.context;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 
@@ -312,6 +315,104 @@ public class ContextTest {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> Context.of(1, 0, 2, 0, 3, 0, 4, 0, 4, 0))
 				.withMessage("Found duplicate key in Context.of() with 5 key-value pairs: 4");
+	}
+
+	@Test
+	public void ofMapZero() {
+		Map<String, Integer> map = new HashMap<>(0);
+
+		assertThat(Context.of(map)).isInstanceOf(Context0.class);
+	}
+
+	@Test
+	public void ofMapOne() {
+		Map<String, Integer> map = new HashMap<>(1);
+		map.put("k1", 1);
+		Context context = Context.of(map);
+
+		assertThat(context).is(SIZE_1);
+		assertThat(context.getOrDefault("k1", 0)).isEqualTo(1);
+	}
+
+	@Test
+	public void ofMapTwo() {
+		Map<String, Integer> map = new HashMap<>(2);
+		map.put("k1", 1);
+		map.put("k2", 2);
+		Context context = Context.of(map);
+
+		assertThat(context).is(SIZE_2);
+		assertThat(context.getOrDefault("k1", 0)).isEqualTo(1);
+		assertThat(context.getOrDefault("k2", 0)).isEqualTo(2);
+	}
+
+	@Test
+	public void ofMapThree() {
+		Map<String, Integer> map = new HashMap<>(3);
+		map.put("k1", 1);
+		map.put("k2", 2);
+		map.put("k3", 3);
+		Context context = Context.of(map);
+
+		assertThat(context).is(SIZE_3);
+		assertThat(context.getOrDefault("k1", 0)).isEqualTo(1);
+		assertThat(context.getOrDefault("k2", 0)).isEqualTo(2);
+		assertThat(context.getOrDefault("k3", 0)).isEqualTo(3);
+	}
+
+	@Test
+	public void ofMapFour() {
+		Map<String, Integer> map = new HashMap<>(4);
+		map.put("k1", 1);
+		map.put("k2", 2);
+		map.put("k3", 3);
+		map.put("k4", 4);
+		Context context = Context.of(map);
+
+		assertThat(context).is(SIZE_4);
+		assertThat(context.getOrDefault("k1", 0)).isEqualTo(1);
+		assertThat(context.getOrDefault("k2", 0)).isEqualTo(2);
+		assertThat(context.getOrDefault("k3", 0)).isEqualTo(3);
+		assertThat(context.getOrDefault("k4", 0)).isEqualTo(4);
+	}
+
+	@Test
+	public void ofMapFive() {
+		Map<String, Integer> map = new HashMap<>(5);
+		map.put("k1", 1);
+		map.put("k2", 2);
+		map.put("k3", 3);
+		map.put("k4", 4);
+		map.put("k5", 5);
+		Context context = Context.of(map);
+
+		assertThat(context).is(SIZE_5);
+		assertThat(context.getOrDefault("k1", 0)).isEqualTo(1);
+		assertThat(context.getOrDefault("k2", 0)).isEqualTo(2);
+		assertThat(context.getOrDefault("k3", 0)).isEqualTo(3);
+		assertThat(context.getOrDefault("k4", 0)).isEqualTo(4);
+		assertThat(context.getOrDefault("k5", 0)).isEqualTo(5);
+	}
+
+	@Test
+	public void ofMapSix() {
+		Map<String, Integer> map = new HashMap<>(6);
+		map.put("k1", 1);
+		map.put("k2", 2);
+		map.put("k3", 3);
+		map.put("k4", 4);
+		map.put("k5", 5);
+		map.put("k6", 6);
+		Context context = Context.of(map);
+
+		assertThat(context).isInstanceOf(ContextN.class);
+		assertThat(context.size()).as("size").isEqualTo(6);
+		assertThat(context.getOrDefault("k1", 0)).isEqualTo(1);
+		assertThat(context.getOrDefault("k2", 0)).isEqualTo(2);
+		assertThat(context.getOrDefault("k3", 0)).isEqualTo(3);
+		assertThat(context.getOrDefault("k4", 0)).isEqualTo(4);
+		assertThat(context.getOrDefault("k5", 0)).isEqualTo(5);
+		assertThat(context.getOrDefault("k6", 0)).isEqualTo(6);
 	}
 
 }

@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -173,6 +174,38 @@ public interface Context {
 			Object key5, Object value5) {
 		checkDuplicateKeys(key1, key2, key3, key4, key5);
 		return new Context5(key1, value1, key2, value2, key3, value3, key4, value4, key5, value5);
+	}
+
+	/**
+	 * Create a {@link Context} out of a {@link Map}. Prefer this method if you're somehow
+	 * incapable of checking keys are all distinct in other {@link #of(Object, Object, Object, Object, Object, Object, Object, Object)}
+	 * implementations.
+	 *
+	 * @implNote this method compacts smaller maps into a relevant fields-based implementation
+	 * when number of key-value pairs is under 6.
+	 */
+	static Context of(Map<?, ?> keyValuePairs) {
+		int size = keyValuePairs.size();
+		if (size == 0) return Context.empty();
+		if (size <= 5) {
+			Map.Entry[] entries = keyValuePairs.entrySet().toArray(new Map.Entry[size]);
+			if (size == 1) return new Context1(entries[0].getKey(), entries[0].getValue());
+			if (size == 2) return new Context2(entries[0].getKey(), entries[0].getValue(),
+					entries[1].getKey(), entries[1].getValue());
+			if (size == 3) return new Context3(entries[0].getKey(), entries[0].getValue(),
+					entries[1].getKey(), entries[1].getValue(),
+					entries[2].getKey(), entries[2].getValue());
+			if (size == 4) return new Context4(entries[0].getKey(), entries[0].getValue(),
+					entries[1].getKey(), entries[1].getValue(),
+					entries[2].getKey(), entries[2].getValue(),
+					entries[3].getKey(), entries[3].getValue());
+			return new Context5(entries[0].getKey(), entries[0].getValue(),
+					entries[1].getKey(), entries[1].getValue(),
+					entries[2].getKey(), entries[2].getValue(),
+					entries[3].getKey(), entries[3].getValue(),
+					entries[4].getKey(), entries[4].getValue());
+		}
+		return new ContextN(Collections.emptyMap(), keyValuePairs);
 	}
 
 	/**
