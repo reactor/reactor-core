@@ -26,8 +26,8 @@ final class Context1 implements Context, Map.Entry<Object, Object> {
 	final Object value;
 
 	Context1(Object key, Object value) {
-		this.key = key;
-		this.value = value;
+		this.key = Objects.requireNonNull(key, "key");
+		this.value = Objects.requireNonNull(value, "value");
 	}
 
 	@Override
