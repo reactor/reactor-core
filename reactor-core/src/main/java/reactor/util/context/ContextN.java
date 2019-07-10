@@ -16,11 +16,11 @@
 package reactor.util.context;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,31 +28,42 @@ import java.util.stream.Stream;
 import reactor.util.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
-final class ContextN extends ConcurrentHashMap<Object, Object>
+final class ContextN extends HashMap<Object, Object>
 		implements Context, Function<Entry<Object, Object>, Entry<Object, Object>> {
 
 	ContextN(Object key1, Object value1, Object key2, Object value2,
 			Object key3, Object value3, Object key4, Object value4,
 			Object key5, Object value5, Object key6, Object value6) {
 		super(6, 1f);
-		super.put(key1, value1);
-		super.put(key2, value2);
-		super.put(key3, value3);
-		super.put(key4, value4);
-		super.put(key5, value5);
-		super.put(key6, value6);
+		innerPut(key1, value1);
+		innerPut(key2, value2);
+		innerPut(key3, value3);
+		innerPut(key4, value4);
+		innerPut(key5, value5);
+		innerPut(key6, value6);
 	}
 
 	ContextN(Map<Object, Object> map, Object key, Object value) {
 		super(map.size() + 1, 1f);
-		super.putAll(map);
-		super.put(key, value);
+		innerPutAll(map);
+		innerPut(key, value);
 	}
 
 	ContextN(Map<Object, Object> sourceMap, Map<?, ?> other) {
 		super(sourceMap.size() + other.size(), 1f);
-		super.putAll(sourceMap);
-		super.putAll(other);
+		innerPutAll(sourceMap);
+		innerPutAll(other);
+	}
+
+	private void innerPut(Object key, Object value) {
+		super.put(Objects.requireNonNull(key, "null key passed to constructor"),
+				Objects.requireNonNull(value, "null value passed to constructor"));
+	}
+
+	private void innerPutAll(Map<?, ?> map) {
+		Objects.requireNonNull(map, "map in constructor")
+		       .forEach((k,v) -> super.put(Objects.requireNonNull(k, "map in constructor contains null key"),
+				       Objects.requireNonNull(v, "map in constructor contains null value")));
 	}
 
 	@Override
@@ -94,8 +105,7 @@ final class ContextN extends ConcurrentHashMap<Object, Object>
 
 	@Override
 	public boolean hasKey(Object key) {
-		//explicitly duplicate what ConcurrentHashMap does
-		return super.get(key) != null;
+		return super.containsKey(key);
 	}
 
 	@Override
