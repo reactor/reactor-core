@@ -74,7 +74,7 @@ public interface Context {
 		int size = keys.length;
 		if (size < 2) return;
 
-		for (int i = 0; i < keys.length - 1; i++) {
+		for (int i = 0; i < size - 1; i++) {
 			Object key = keys[i];
 			for (int j = i + 1; j < keys.length; j++) {
 				Object otherKey = keys[j];
