@@ -226,26 +226,6 @@ public class MonoMetricsTest {
 	}
 
 	@Test
-	public void malformedOnComplete() {
-		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
-		Mono<Integer> source = testPublisher.mono().hide();
-
-		new MonoMetrics<>(source, registry)
-				.subscribe(v -> assertThat(v).isEqualTo(1),
-						e -> assertThat(e).hasMessage("malformedOnComplete"));
-
-		testPublisher.error(new IllegalStateException("malformedOnComplete"))
-		             .complete();
-
-		Counter malformedMeter = registry
-				.find(METER_MALFORMED)
-				.counter();
-
-		assertThat(malformedMeter).isNotNull();
-		assertThat(malformedMeter.count()).isEqualTo(1);
-	}
-
-	@Test
 	public void subscribeToComplete() {
 		Mono<Long> source = Mono.delay(Duration.ofMillis(100))
 		                          .hide();
