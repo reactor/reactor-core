@@ -39,6 +39,8 @@ final class Context5 implements Context {
 			Object key3, Object value3,
 			Object key4, Object value4,
 			Object key5, Object value5) {
+		//TODO merge null check and duplicate check in the util method
+		Context4.checkKeys(key1, key2, key3, key4, key5);
 		this.key1 = Objects.requireNonNull(key1, "key1");
 		this.value1 = Objects.requireNonNull(value1, "value1");
 		this.key2 = Objects.requireNonNull(key2, "key2");
