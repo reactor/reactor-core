@@ -16,12 +16,11 @@
 package reactor.util.context;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,7 +28,7 @@ import java.util.stream.Stream;
 import reactor.util.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
-final class ContextN extends HashMap<Object, Object>
+final class ContextN extends ConcurrentHashMap<Object, Object>
 		implements Context, Function<Entry<Object, Object>, Entry<Object, Object>> {
 
 	ContextN(Object key1, Object value1, Object key2, Object value2,
@@ -95,13 +94,15 @@ final class ContextN extends HashMap<Object, Object>
 
 	@Override
 	public boolean hasKey(Object key) {
-		return super.containsKey(key);
+		//explicitly duplicate what ConcurrentHashMap does
+		return super.get(key) != null;
 	}
 
 	@Override
 	public Object get(Object key) {
-		if (hasKey(key)) {
-			return super.get(key);
+		Object o = super.get(key);
+		if (o != null) {
+			return o;
 		}
 		throw new NoSuchElementException("Context does not contain key: "+key);
 	}
@@ -109,7 +110,11 @@ final class ContextN extends HashMap<Object, Object>
 	@Override
 	@Nullable
 	public Object getOrDefault(Object key, @Nullable Object defaultValue) {
-		return Context.super.getOrDefault(key, defaultValue);
+		Object o = super.get(key);
+		if (o != null) {
+			return o;
+		}
+		return defaultValue;
 	}
 
 	@Override
