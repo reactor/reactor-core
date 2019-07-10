@@ -76,7 +76,7 @@ public interface Context {
 
 		for (int i = 0; i < size - 1; i++) {
 			Object key = keys[i];
-			for (int j = i + 1; j < keys.length; j++) {
+			for (int j = i + 1; j < size; j++) {
 				Object otherKey = keys[j];
 				if (key.equals(otherKey)) {
 					throw new IllegalArgumentException("Found duplicate key in Context.of() with " + keys.length + " key-value pairs: " + key);
