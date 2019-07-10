@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.assertj.core.api.SoftAssertions;
@@ -100,7 +101,7 @@ public class FluxMetricsTest {
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
-		assertThat(subRef.get()).isInstanceOf(MicrometerFluxMetricsSubscriber.class);
+		assertThat(subRef.get()).isInstanceOf(MetricsSubscriber.class);
 	}
 
 	@Test
@@ -120,15 +121,15 @@ public class FluxMetricsTest {
 
 		Timer unnamedMeter = registry
 				.find(METER_FLOW_DURATION)
-				.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
-				.tag(TAG_EXCEPTION, ArithmeticException.class.getName())
+				.tags(Tags.of(TAG_ON_ERROR))
+				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
 				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
 				.timer();
 
 		Timer namedMeter = registry
 				.find(METER_FLOW_DURATION)
-				.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
-				.tag(TAG_EXCEPTION, ArithmeticException.class.getName())
+				.tags(Tags.of(TAG_ON_ERROR))
+				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
 				.tag(TAG_SEQUENCE_NAME, "foo")
 				.timer();
 
@@ -272,15 +273,15 @@ public class FluxMetricsTest {
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
-		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
 		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
-		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
 		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
-		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
@@ -309,15 +310,15 @@ public class FluxMetricsTest {
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
-		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
 		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
-		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
 		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
-		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
@@ -345,15 +346,15 @@ public class FluxMetricsTest {
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
-		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
 		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
-		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
 		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
-		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
