@@ -47,9 +47,9 @@ import reactor.core.Fuseable;
  */
 final class MonoErrorSupplied<T> extends Mono<T> implements Fuseable.ScalarCallable, SourceProducer<T> {
 
-	final Supplier<Throwable> errorSupplier;
+	final Supplier<? extends Throwable> errorSupplier;
 
-	MonoErrorSupplied(Supplier<Throwable> errorSupplier) {
+	MonoErrorSupplied(Supplier<? extends Throwable> errorSupplier) {
 		this.errorSupplier = Objects.requireNonNull(errorSupplier, "errorSupplier");
 	}
 
