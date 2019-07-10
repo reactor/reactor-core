@@ -64,28 +64,6 @@ public interface Context {
 	}
 
 	/**
-	 * Checks for duplicate keys. This method is intended for a short space of keys in the
-	 * 4-10 range. Shorter number of keys can easily be checked with direct equals comparison(s),
-	 * saving on allocating a vararg array (although this method would still behave correctly).
-	 *
-	 * @param keys the keys to check for duplicates, by looping over the combinations
-	 */
-	static void checkDuplicateKeys(Object... keys) {
-		int size = keys.length;
-		if (size < 2) return;
-
-		for (int i = 0; i < size - 1; i++) {
-			Object key = keys[i];
-			for (int j = i + 1; j < size; j++) {
-				Object otherKey = keys[j];
-				if (key.equals(otherKey)) {
-					throw new IllegalArgumentException("Found duplicate key in Context.of() with " + keys.length + " key-value pairs: " + key);
-				}
-			}
-		}
-	}
-
-	/**
 	 * Create a {@link Context} pre-initialized with two key-value pairs.
 	 *
 	 * @param key1 the first key to initialize.
@@ -97,10 +75,6 @@ public interface Context {
 	 */
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2) {
-		//prefer direct check for the simple 2 keys case over checkDuplicateKeys (saves up 1 array allocation)
-		if (key1.equals(key2)) {
-			throw new IllegalArgumentException("Found duplicate key in Context.of() with 2 key-value pairs: " + key1);
-		}
 		return new Context2(key1, value1, key2, value2);
 	}
 
@@ -119,13 +93,6 @@ public interface Context {
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2,
 			Object key3, Object value3) {
-		//prefer direct check for the simple 3 keys case over checkDuplicateKeys (saves up 1 array allocation)
-		if (key1.equals(key2) || key1.equals(key3)) {
-			throw new IllegalArgumentException("Found duplicate key in Context.of() with 3 key-value pairs: " + key1);
-		}
-		else if (key2.equals(key3)) {
-			throw new IllegalArgumentException("Found duplicate key in Context.of() with 3 key-value pairs: " + key2);
-		}
 		return new Context3(key1, value1, key2, value2, key3, value3);
 	}
 
@@ -147,7 +114,6 @@ public interface Context {
 			Object key2, Object value2,
 			Object key3, Object value3,
 			Object key4, Object value4) {
-		checkDuplicateKeys(key1, key2, key3, key4);
 		return new Context4(key1, value1, key2, value2, key3, value3, key4, value4);
 	}
 
@@ -172,7 +138,6 @@ public interface Context {
 			Object key3, Object value3,
 			Object key4, Object value4,
 			Object key5, Object value5) {
-		checkDuplicateKeys(key1, key2, key3, key4, key5);
 		return new Context5(key1, value1, key2, value2, key3, value3, key4, value4, key5, value5);
 	}
 
@@ -182,30 +147,37 @@ public interface Context {
 	 * implementations.
 	 *
 	 * @implNote this method compacts smaller maps into a relevant fields-based implementation
-	 * when number of key-value pairs is under 6.
+	 * when map size is less than 6.
 	 */
-	static Context of(Map<?, ?> keyValuePairs) {
-		int size = keyValuePairs.size();
+	static Context of(Map<?, ?> map) {
+		int size = map.size();
 		if (size == 0) return Context.empty();
 		if (size <= 5) {
-			Map.Entry[] entries = keyValuePairs.entrySet().toArray(new Map.Entry[size]);
-			if (size == 1) return new Context1(entries[0].getKey(), entries[0].getValue());
-			if (size == 2) return new Context2(entries[0].getKey(), entries[0].getValue(),
+			Map.Entry[] entries = map.entrySet().toArray(new Map.Entry[size]);
+			switch (size) {
+				case 1:
+					return new Context1(entries[0].getKey(), entries[0].getValue());
+				case 2:
+					return new Context2(entries[0].getKey(), entries[0].getValue(),
 					entries[1].getKey(), entries[1].getValue());
-			if (size == 3) return new Context3(entries[0].getKey(), entries[0].getValue(),
+				case 3:
+					return new Context3(entries[0].getKey(), entries[0].getValue(),
 					entries[1].getKey(), entries[1].getValue(),
 					entries[2].getKey(), entries[2].getValue());
-			if (size == 4) return new Context4(entries[0].getKey(), entries[0].getValue(),
+				case 4:
+					return new Context4(entries[0].getKey(), entries[0].getValue(),
 					entries[1].getKey(), entries[1].getValue(),
 					entries[2].getKey(), entries[2].getValue(),
 					entries[3].getKey(), entries[3].getValue());
-			return new Context5(entries[0].getKey(), entries[0].getValue(),
+				case 5:
+					return new Context5(entries[0].getKey(), entries[0].getValue(),
 					entries[1].getKey(), entries[1].getValue(),
 					entries[2].getKey(), entries[2].getValue(),
 					entries[3].getKey(), entries[3].getValue(),
 					entries[4].getKey(), entries[4].getValue());
+			}
 		}
-		return new ContextN(Collections.emptyMap(), keyValuePairs);
+		return new ContextN(Collections.emptyMap(), map);
 	}
 
 	/**
