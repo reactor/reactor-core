@@ -846,7 +846,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new failing {@link Flux}
 	 */
-	public static <T> Flux<T> error(Supplier<Throwable> errorSupplier) {
+	public static <T> Flux<T> error(Supplier<? extends Throwable> errorSupplier) {
 		return onAssembly(new FluxErrorSupplied<>(errorSupplier));
 	}
 

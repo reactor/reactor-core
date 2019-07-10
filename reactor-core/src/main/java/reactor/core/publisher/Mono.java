@@ -275,7 +275,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a failing {@link Mono}
 	 */
-	public static <T> Mono<T> error(Supplier<Throwable> errorSupplier) {
+	public static <T> Mono<T> error(Supplier<? extends Throwable> errorSupplier) {
 		return onAssembly(new MonoErrorSupplied<>(errorSupplier));
 	}
 
