@@ -56,6 +56,7 @@ public interface Context {
 	 * @param key the key to initialize.
 	 * @param value the value for the key.
 	 * @return a {@link Context} with a single entry.
+	 * @throws NullPointerException if either key or value are null
 	 */
 	static Context of(Object key, Object value) {
 		return new Context1(key, value);
@@ -69,6 +70,7 @@ public interface Context {
 	 * @param key2 the second key to initialize.
 	 * @param value2 the value for the second key.
 	 * @return a {@link Context} with two entries.
+	 * @throws NullPointerException if any key or value is null
 	 */
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2) {
@@ -85,6 +87,7 @@ public interface Context {
 	 * @param key3 the third key to initialize.
 	 * @param value3 the value for the third key.
 	 * @return a {@link Context} with three entries.
+	 * @throws NullPointerException if any key or value is null
 	 */
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2,
@@ -104,6 +107,7 @@ public interface Context {
 	 * @param key4 the fourth key to initialize.
 	 * @param value4 the value for the fourth key.
 	 * @return a {@link Context} with four entries.
+	 * @throws NullPointerException if any key or value is null
 	 */
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2,
@@ -126,6 +130,7 @@ public interface Context {
 	 * @param key5 the fifth key to initialize.
 	 * @param value5 the value for the fifth key.
 	 * @return a {@link Context} with five entries.
+	 * @throws NullPointerException if any key or value is null
 	 */
 	static Context of(Object key1, Object value1,
 			Object key2, Object value2,
@@ -140,7 +145,6 @@ public interface Context {
 	 * a {@link NoSuchElementException} if the key is not present.
 	 *
 	 * @param key a lookup key to resolve the value within the context
-	 *
 	 * @param <T> an unchecked casted generic for fluent typing convenience
 	 *
 	 * @return the value resolved for this key (throws if key not found)
@@ -230,6 +234,7 @@ public interface Context {
 	 * @param value the value to associate to the key in the new {@link Context}
 	 *
 	 * @return a new {@link Context} including the provided key/value
+	 * @throws NullPointerException if either the key or value are null
 	 */
 	Context put(Object key, Object value);
 
@@ -242,6 +247,7 @@ public interface Context {
 	 * @param valueOrNull the value to associate to the key in the new {@link Context}, null to ignore the operation
 	 *
 	 * @return a new {@link Context} including the provided key/value, or the same {@link Context} if value is null
+	 * @throws NullPointerException if the key is null
 	 */
 	default Context putNonNull(Object key, @Nullable Object valueOrNull) {
 		if (valueOrNull != null) {

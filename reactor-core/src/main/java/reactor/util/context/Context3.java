@@ -33,12 +33,12 @@ final class Context3 implements Context {
 	Context3(Object key1, Object value1,
 			Object key2, Object value2,
 			Object key3, Object value3) {
-		this.key1 = key1;
-		this.value1 = value1;
-		this.key2 = key2;
-		this.value2 = value2;
-		this.key3 = key3;
-		this.value3 = value3;
+		this.key1 = Objects.requireNonNull(key1, "key1");
+		this.value1 = Objects.requireNonNull(value1, "value1");
+		this.key2 = Objects.requireNonNull(key2, "key2");
+		this.value2 = Objects.requireNonNull(value2, "value2");
+		this.key3 = Objects.requireNonNull(key3, "key3");
+		this.value3 = Objects.requireNonNull(value3, "value3");
 	}
 
 	@Override
