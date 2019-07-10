@@ -30,8 +30,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 
-import static reactor.core.publisher.FluxMetrics.resolveName;
-import static reactor.core.publisher.FluxMetrics.resolveTags;
+import static reactor.core.publisher.FluxMetrics.*;
 
 /**
  * Activate metrics gathering on a {@link Flux} (Fuseable version), assumes Micrometer is on the classpath.
@@ -119,7 +118,7 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 			}
 
 			if (done) {
-				this.malformedSourceCounter.increment();
+				recordMalformed(commonTags, registry);
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
@@ -142,8 +141,7 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 				T v = qs.poll();
 
 				if (v == null && mode == SYNC) {
-					//this is also a complete event
-					this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
+					recordOnComplete(commonTags, registry, subscribeToTerminateSample);
 				}
 				if (v != null) {
 					//this is an onNext event
@@ -155,10 +153,7 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 				return v;
 			}
 			catch (Throwable e) {
-				//register a timer for that particular exception
-				Timer timer = subscribeToErrorTimerFactory.apply(e);
-				//record error termination
-				this.subscribeToTerminateSample.stop(timer);
+				recordOnError(commonTags, registry, subscribeToTerminateSample, e);
 				throw e;
 			}
 		}
@@ -166,7 +161,7 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.subscribedCounter.increment();
+				recordOnSubscribe(commonTags, registry);
 				this.subscribeToTerminateSample = Timer.start(clock);
 				this.lastNextEventNanos = clock.monotonicTime();
 				this.qs = Operators.as(s);

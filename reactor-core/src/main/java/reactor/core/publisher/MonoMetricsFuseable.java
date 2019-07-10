@@ -110,7 +110,7 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.subscribedCounter.increment();
+				FluxMetrics.recordOnSubscribe(commonTags, registry);
 				this.subscribeToTerminateSample = Timer.start(clock);
 				this.qs = Operators.as(s);
 				this.s = s;
@@ -130,15 +130,12 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 
 				if (v == null && this.mode == SYNC) {
 					//this is also a complete event
-					this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
+					FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
 				}
 				return v;
 			}
 			catch (Throwable e) {
-				//register a timer for that particular exception
-				Timer timer = subscribeToErrorTimerFactory.apply(e);
-				//record error termination
-				this.subscribeToTerminateSample.stop(timer);
+				FluxMetrics.recordOnError(commonTags, registry, subscribeToTerminateSample, e);
 				throw e;
 			}
 		}

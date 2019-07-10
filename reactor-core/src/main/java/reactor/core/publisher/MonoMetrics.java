@@ -16,10 +16,7 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Function;
-
 import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
@@ -77,16 +74,12 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 
 	static class MetricsSubscriber<T> implements InnerOperator<T, T> {
 
-		final CoreSubscriber<? super T>  actual;
-		final Clock                      clock;
-		final Counter                    malformedSourceCounter;
-		final Counter                    subscribedCounter;
-		final Timer                      subscribeToCompleteTimer;
-		final Timer                      subscribeToCancelTimer;
-		final Function<Throwable, Timer> subscribeToErrorTimerFactory;
+		final CoreSubscriber<? super T> actual;
+		final Clock                     clock;
+		final Tags                      commonTags;
+		final MeterRegistry             registry;
 
 		Timer.Sample subscribeToTerminateSample;
-
 		boolean done;
 		Subscription s;
 
@@ -94,37 +87,8 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 				MeterRegistry registry, Clock clock, Tags commonTags) {
 			this.actual = actual;
 			this.clock = clock;
-
-
-			this.subscribeToCompleteTimer = Timer
-					.builder(FluxMetrics.METER_FLOW_DURATION)
-					.tags(commonTags.and(FluxMetrics.TAG_ON_COMPLETE))
-					.description("Times the duration elapsed between a subscription and the onComplete termination of the sequence")
-					.register(registry);
-			this.subscribeToCancelTimer = Timer
-					.builder(FluxMetrics.METER_FLOW_DURATION)
-					.tags(commonTags.and(FluxMetrics.TAG_CANCEL))
-					.description("Times the duration elapsed between a subscription and the cancellation of the sequence")
-					.register(registry);
-
-			//note that Builder ISN'T TRULY IMMUTABLE. This is ok though as there will only ever be one usage.
-			Timer.Builder subscribeToErrorTimerBuilder = Timer
-					.builder(FluxMetrics.METER_FLOW_DURATION)
-					.tags(commonTags.and(TAG_ON_ERROR))
-					.description("Times the duration elapsed between a subscription and the onError termination of the sequence, with the exception name as a tag.");
-			this.subscribeToErrorTimerFactory = e -> subscribeToErrorTimerBuilder.tag(FluxMetrics.TAG_KEY_EXCEPTION,
-					e.getClass()
-					 .getName())
-			                                                                     .register(registry);
-
-			this.subscribedCounter = Counter
-					.builder(FluxMetrics.METER_SUBSCRIBED)
-					.tags(commonTags)
-					.baseUnit("subscribers")
-					.description("Counts how many Reactor sequences have been subscribed to")
-					.register(registry);
-
-			this.malformedSourceCounter = registry.counter(FluxMetrics.METER_MALFORMED, commonTags);
+			this.commonTags = commonTags;
+			this.registry = registry;
 		}
 
 		@Override
@@ -134,59 +98,51 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 
 		@Override
 		final public void cancel() {
-			this.subscribeToTerminateSample.stop(subscribeToCancelTimer);
-
+			FluxMetrics.recordCancel(commonTags, registry, subscribeToTerminateSample);
 			s.cancel();
 		}
 
 		@Override
 		final public void onComplete() {
 			if (done) {
-				this.malformedSourceCounter.increment();
+				FluxMetrics.recordMalformed(commonTags, registry);
 				return;
 			}
 			done = true;
-			this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
-
+			FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
 			actual.onComplete();
 		}
 
 		@Override
 		final public void onError(Throwable e) {
 			if (done) {
-				this.malformedSourceCounter.increment();
+				FluxMetrics.recordMalformed(commonTags, registry);
 				Operators.onErrorDropped(e, actual.currentContext());
 				return;
 			}
 			done = true;
-			//register a timer for that particular exception
-			Timer timer = subscribeToErrorTimerFactory.apply(e);
-			//record error termination
-			this.subscribeToTerminateSample.stop(timer);
-
+			FluxMetrics.recordOnError(commonTags, registry, subscribeToTerminateSample, e);
 			actual.onError(e);
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.subscribedCounter.increment();
-				this.subscribeToTerminateSample = Timer.start(clock);
-				this.s = s;
-				actual.onSubscribe(this);
-
-			}
 		}
 
 		@Override
 		final public void onNext(T t) {
 			if (done) {
-				this.malformedSourceCounter.increment();
+				FluxMetrics.recordMalformed(commonTags, registry);
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
-
 			actual.onNext(t);
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				FluxMetrics.recordOnSubscribe(commonTags, registry);
+				this.subscribeToTerminateSample = Timer.start(clock);
+				this.s = s;
+				actual.onSubscribe(this);
+			}
 		}
 
 		@Override

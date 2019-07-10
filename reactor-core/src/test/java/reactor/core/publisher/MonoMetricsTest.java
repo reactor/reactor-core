@@ -272,9 +272,9 @@ public class MonoMetricsTest {
 				.as("subscribe to error timer is lazily registered")
 				.isNull();
 
-		assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+		assertThat(stcCancelTimer)
 				.as("subscribe to cancel timer")
-				.isZero();
+				.isNull();
 	}
 
 	@Test
@@ -299,17 +299,17 @@ public class MonoMetricsTest {
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
-			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCompleteTimer)
 					.as("subscribe to complete timer")
-					.isZero();
+					.isNull();
 
 			softly.assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
 					.as("subscribe to error timer")
 					.isGreaterThanOrEqualTo(100);
 
-			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+			assertThat(stcCancelTimer)
 					.as("subscribe to cancel timer")
-					.isZero();
+					.isNull();
 		});
 	}
 
@@ -334,9 +334,9 @@ public class MonoMetricsTest {
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
-			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCompleteTimer)
 					.as("subscribe to complete timer")
-					.isZero();
+					.isNull();
 
 			softly.assertThat(stcErrorTimer)
 					.as("subscribe to error timer is lazily registered")
