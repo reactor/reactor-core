@@ -244,27 +244,6 @@ public class FluxMetricsTest {
 	}
 
 	@Test
-	public void malformedOnComplete() {
-		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
-		Flux<Integer> source = testPublisher.flux().hide();
-
-		new FluxMetrics<>(source, registry)
-				.subscribe(v -> assertThat(v).isEqualTo(1),
-						e -> assertThat(e).hasMessage("malformedOnComplete"));
-
-		testPublisher.next(1)
-		             .error(new IllegalStateException("malformedOnComplete"))
-		             .complete();
-
-		Counter malformedMeter = registry
-				.find(METER_MALFORMED)
-				.counter();
-
-		assertThat(malformedMeter).isNotNull();
-		assertThat(malformedMeter.count()).isEqualTo(1);
-	}
-
-	@Test
 	public void subscribeToComplete() {
 		Flux<String> source = Flux.just("foo")
 		                          .delayElements(Duration.ofMillis(100))

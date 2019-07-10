@@ -159,7 +159,7 @@ public class MonoMetricsFuseableTest {
 		                          .timer();
 
 		assertThat(terminationTimer).isNotNull();
-		assertThat(terminationTimer.max(TimeUnit.MILLISECONDS)).as("terminate max delay").isEqualTo(323);
+		assertThat(terminationTimer.max(TimeUnit.MILLISECONDS)).as("terminate max delay").isEqualTo(200);
 	}
 
 	@Test

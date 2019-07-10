@@ -105,7 +105,6 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 		@Override
 		final public void onComplete() {
 			if (done) {
-				FluxMetrics.recordMalformed(commonTags, registry);
 				return;
 			}
 			done = true;
@@ -132,7 +131,10 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
+			done = true;
+			FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
 			actual.onNext(t);
+			actual.onComplete();
 		}
 
 		@Override

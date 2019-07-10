@@ -127,11 +127,10 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 			}
 			try {
 				T v = qs.poll();
-
-				if (v == null && this.mode == SYNC) {
-					//this is also a complete event
+				if (!done && (v != null || mode == SYNC)) {
 					FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
 				}
+				done = true;
 				return v;
 			}
 			catch (Throwable e) {

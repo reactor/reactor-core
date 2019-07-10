@@ -144,7 +144,6 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		@Override
 		final public void onComplete() {
 			if (done) {
-				recordMalformed(commonTags, registry);
 				return;
 			}
 			done = true;
