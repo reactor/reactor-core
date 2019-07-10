@@ -86,7 +86,8 @@ public class FluxErrorSuppliedTest {
 	@Test
 	public void supplierMethod() {
 		StepVerifier.create(Flux.error(illegalStateExceptionSupplier()))
-				.verifyErrorMessage("boom");
+				.verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+						.hasMessage("boom"));
 	}
 
 	private Supplier<IllegalStateException> illegalStateExceptionSupplier() {

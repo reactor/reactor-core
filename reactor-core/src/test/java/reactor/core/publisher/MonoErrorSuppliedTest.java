@@ -116,11 +116,9 @@ public class MonoErrorSuppliedTest {
 
 	@Test
 	public void supplierMethod() {
-		Mono<Object> error = Mono.error(illegalStateExceptionSupplier());
-
-		assertThatExceptionOfType(IllegalStateException.class)
-				.isThrownBy(() -> error.block(Duration.ofMillis(100)))
-				.withMessage("boom");
+		StepVerifier.create(Mono.error(illegalStateExceptionSupplier()))
+				.verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+						.hasMessage("boom"));
 	}
 
 	private Supplier<IllegalStateException> illegalStateExceptionSupplier() {
