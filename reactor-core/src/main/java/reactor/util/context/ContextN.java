@@ -56,14 +56,13 @@ final class ContextN extends HashMap<Object, Object>
 	}
 
 	private void innerPut(Object key, Object value) {
-		super.put(Objects.requireNonNull(key, "null key passed to constructor"),
-				Objects.requireNonNull(value, "null value passed to constructor"));
+		super.put(Objects.requireNonNull(key, "key"),
+				Objects.requireNonNull(value, "value"));
 	}
 
 	private void innerPutAll(Map<?, ?> map) {
-		Objects.requireNonNull(map, "map in constructor")
-		       .forEach((k,v) -> super.put(Objects.requireNonNull(k, "map in constructor contains null key"),
-				       Objects.requireNonNull(v, "map in constructor contains null value")));
+		Objects.requireNonNull(map, "map")
+		       .forEach(this::innerPut);
 	}
 
 	@Override
