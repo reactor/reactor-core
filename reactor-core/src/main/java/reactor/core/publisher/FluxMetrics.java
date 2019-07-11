@@ -244,8 +244,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	 * Tag bearing the sequence's name, as given by the {@link Flux#name(String)} operator.
 	 */
 	static final String TAG_SEQUENCE_NAME = "flow";
-	static final Tags   DEFAULT_TAGS_FLUX = Tags.of(Tag.of("type", "Flux"));
-	static final Tags   DEFAULT_TAGS_MONO = Tags.of(Tag.of("type", "Mono"));
+	static final Tags   DEFAULT_TAGS_FLUX = Tags.of("type", "Flux");
+	static final Tags   DEFAULT_TAGS_MONO = Tags.of("type", "Mono");
 
 	// === Operator ===
 	static final Tag  TAG_ON_ERROR    = Tag.of("status", "error");
