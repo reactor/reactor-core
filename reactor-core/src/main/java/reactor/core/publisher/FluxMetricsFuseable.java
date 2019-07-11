@@ -45,7 +45,6 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 
 	final String        name;
 	final Tags          tags;
-	@Nullable
 	final MeterRegistry registryCandidate;
 
 	FluxMetricsFuseable(Flux<? extends T> flux) {
@@ -63,16 +62,17 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 		this.name = resolveName(flux);
 		this.tags = resolveTags(flux, FluxMetrics.DEFAULT_TAGS_FLUX, this.name);
 
-		this.registryCandidate = candidate;
+		if (candidate == null) {
+			this.registryCandidate = Metrics.globalRegistry;
+		}
+		else {
+			this.registryCandidate = candidate;
+		}
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (registryCandidate != null) {
-			registry = registryCandidate;
-		}
-		source.subscribe(new MetricsFuseableSubscriber<>(actual, registry, Clock.SYSTEM, this.name, this.tags));
+		source.subscribe(new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags));
 	}
 
 	/**

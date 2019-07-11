@@ -43,7 +43,6 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 	final String name;
 	final Tags   tags;
 
-	@Nullable
 	final MeterRegistry registryCandidate;
 
 	MonoMetricsFuseable(Mono<? extends T> mono) {
@@ -61,16 +60,17 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 		this.name = resolveName(mono);
 		this.tags = resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO, this.name);
 
-		this.registryCandidate = registryCandidate;
+		if (registryCandidate == null) {
+			this.registryCandidate = Metrics.globalRegistry;
+		}
+		else {
+			this.registryCandidate = registryCandidate;
+		}
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (registryCandidate != null) {
-			registry = registryCandidate;
-		}
-		source.subscribe(new MetricsFuseableSubscriber<>(actual, registry, Clock.SYSTEM, this.tags));
+		source.subscribe(new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.tags));
 	}
 
 	/**
