@@ -19,6 +19,7 @@ package reactor.util.context;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -150,7 +151,7 @@ public interface Context {
 	 * when map size is less than 6.
 	 */
 	static Context of(Map<?, ?> map) {
-		int size = map.size();
+		int size = Objects.requireNonNull(map, "map").size();
 		if (size == 0) return Context.empty();
 		if (size <= 5) {
 			Map.Entry[] entries = map.entrySet().toArray(new Map.Entry[size]);

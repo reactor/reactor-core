@@ -47,18 +47,17 @@ final class ContextN extends HashMap<Object, Object>
 	}
 
 	ContextN(Map<Object, Object> map, Object key, Object value) {
-		super(map.size() + 1, 1f);
-		Objects.requireNonNull(map, "map")
-		       .forEach(this);
+		super(Objects.requireNonNull(map, "map").size() + 1, 1f);
+		map.forEach(this);
 		accept(key, value); //innerPut
 	}
 
 	ContextN(Map<Object, Object> sourceMap, Map<?, ?> other) {
-		super(sourceMap.size() + other.size(), 1f);
-		Objects.requireNonNull(sourceMap, "sourceMap")
-		       .forEach(this);
-		Objects.requireNonNull(other, "other")
-		       .forEach(this);
+		super(Objects.requireNonNull(sourceMap, "sourceMap").size()
+						+ Objects.requireNonNull(other, "other").size(),
+				1f);
+		sourceMap.forEach(this);
+		other.forEach(this);
 	}
 
 	//this performs an inner put to the actual hashmap, and also allows passing `this` directly to
