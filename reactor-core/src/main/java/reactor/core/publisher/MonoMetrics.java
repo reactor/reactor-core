@@ -41,7 +41,6 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 
 	final String        name;
 	final Tags          tags;
-	@Nullable
 	final MeterRegistry meterRegistry;
 
 	MonoMetrics(Mono<? extends T> mono) {
@@ -132,6 +131,7 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 				return;
 			}
 			done = true;
+			//TODO looks like we don't count onNext: `Mono.empty()` vs `Mono.just("foo")`
 			FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
 			actual.onNext(t);
 			actual.onComplete();
