@@ -41,7 +41,6 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 
 	final String        name;
 	final Tags          tags;
-	@Nullable
 	final MeterRegistry meterRegistry;
 
 	MonoMetrics(Mono<? extends T> mono) {
