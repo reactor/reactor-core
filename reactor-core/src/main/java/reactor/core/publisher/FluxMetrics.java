@@ -306,6 +306,12 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		return tags;
 	}
 
+	/*
+	 * This method calls the registry, which can be costly. However the cancel signal is only expected
+	 * once per Subscriber. So the net effect should be that the registry is only called once, which
+	 * is equivalent to registering the meter as a final field, with the added benefit of paying that
+	 * cost only in case of cancellation.
+	 */
 	static void recordCancel(Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
 		Timer timer = Timer.builder(METER_FLOW_DURATION)
 		                   .tags(commonTags.and(TAG_CANCEL))
@@ -316,11 +322,23 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		flowDuration.stop(timer);
 	}
 
+	/*
+	 * This method calls the registry, which can be costly. However a malformed signal is generally
+	 * not expected, or at most once per Subscriber. So the net effect should be that the registry
+	 * is only called once, which is equivalent to registering the meter as a final field,
+	 * with the added benefit of paying that cost only in case of onNext/onError after termination.
+	 */
 	static void recordMalformed(Tags commonTags, MeterRegistry registry) {
 		registry.counter(FluxMetrics.METER_MALFORMED, commonTags)
 		        .increment();
 	}
 
+	/*
+	 * This method calls the registry, which can be costly. However the onError signal is expected
+	 * at most once per Subscriber. So the net effect should be that the registry is only called once,
+	 * which is equivalent to registering the meter as a final field, with the added benefit of paying
+	 * that cost only in case of error.
+	 */
 	static void recordOnError(Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration, Throwable e) {
 		Timer timer = Timer.builder(METER_FLOW_DURATION)
 		                   .tags(commonTags.and(TAG_ON_ERROR))
@@ -334,6 +352,12 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		flowDuration.stop(timer);
 	}
 
+	/*
+	 * This method calls the registry, which can be costly. However the onComplete signal is expected
+	 * at most once per Subscriber. So the net effect should be that the registry is only called once,
+	 * which is equivalent to registering the meter as a final field, with the added benefit of paying
+	 * that cost only in case of completion (which is not always occurring).
+	 */
 	static void recordOnComplete(Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
 		Timer timer = Timer.builder(METER_FLOW_DURATION)
 		                   .tags(commonTags.and(TAG_ON_COMPLETE))
@@ -344,6 +368,12 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		flowDuration.stop(timer);
 	}
 
+	/*
+	 * This method calls the registry, which can be costly. However the onSubscribe signal is expected
+	 * at most once per Subscriber. So the net effect should be that the registry is only called once,
+	 * which is equivalent to registering the meter as a final field, with the added benefit of paying
+	 * that cost only in case of subscription.
+	 */
 	static void recordOnSubscribe(Tags commonTags, MeterRegistry registry) {
 		Counter.builder(METER_SUBSCRIBED)
 		       .tags(commonTags)
