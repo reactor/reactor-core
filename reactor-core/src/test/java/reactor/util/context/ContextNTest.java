@@ -55,55 +55,81 @@ public class ContextNTest {
 	}
 
 	@Test
+	public void constructFromMapNull() {
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(null, "foo", 1))
+		                                .withMessage("map");
+	}
+
+	@Test
 	public void constructFromMapWithNullKey() {
 		Map<Object, Object> map = new HashMap<>(1);
 		map.put(null, 0);
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(map, "foo", 1));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(map, "foo", 1))
+		                                .withMessage("key");
 	}
 
 	@Test
 	public void constructFromMapWithNullValue() {
 		Map<Object, Object> map = new HashMap<>(1);
 		map.put("key", null);
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(map, "foo", 1));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(map, "foo", 1))
+		                                .withMessage("value");
 	}
 
 	@Test
 	public void constructFromMapWithAdditionalNullKey() {
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), null, 1));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), null, 1))
+		                                .withMessage("key");
 	}
 
 	@Test
 	public void constructFromMapWithAdditionalNullValue() {
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), "foo", null));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), "foo", null))
+		                                .withMessage("value");
+	}
+
+	@Test
+	public void constructFromMapsLeftNull() {
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(null, Collections.emptyMap()))
+		                                .withMessage("sourceMap");
+	}
+
+	@Test
+	public void constructFromMapsRightNull() {
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), null))
+		                                .withMessage("other");
 	}
 
 	@Test
 	public void constructFromMapsWithLeftNullKey() {
 		Map<Object, Object> leftMap = new HashMap<>(1);
 		leftMap.put(null, "foo");
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(leftMap, Collections.emptyMap()));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(leftMap, Collections.emptyMap()))
+		                                .withMessage("key");
 	}
 
 	@Test
 	public void constructFromMapsWithLeftNullValue() {
 		Map<Object, Object> leftMap = new HashMap<>(1);
 		leftMap.put("key", null);
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(leftMap, Collections.emptyMap()));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(leftMap, Collections.emptyMap()))
+		                                .withMessage("value");
 	}
 
 	@Test
 	public void constructFromMapsWithRightNullKey() {
 		Map<Object, Object> rightMap = new HashMap<>(1);
 		rightMap.put(null, "foo");
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), rightMap));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), rightMap))
+		                                .withMessage("key");
 	}
 
 	@Test
 	public void constructFromMapsWithRightNullValue() {
 		Map<Object, Object> rightMap = new HashMap<>(1);
 		rightMap.put("key", null);
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), rightMap));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), rightMap))
+		                                .withMessage("value");
 	}
 
 	@Test

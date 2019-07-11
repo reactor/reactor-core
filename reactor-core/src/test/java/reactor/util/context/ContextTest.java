@@ -236,6 +236,13 @@ public class ContextTest {
 	}
 
 	@Test
+	public void ofMapNull() {
+		Map<String, Integer> nullMap = null;
+		assertThatNullPointerException().isThrownBy(() -> Context.of(nullMap))
+		                                .withMessage("map");
+	}
+
+	@Test
 	public void ofMapOne() {
 		Map<String, Integer> map = new HashMap<>(1);
 		map.put("k1", 1);
