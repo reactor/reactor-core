@@ -15,7 +15,6 @@
  */
 package reactor.core.scheduler;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -28,6 +27,7 @@ import java.util.function.BiFunction;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.core.instrument.internal.TimedExecutorService;
 import io.micrometer.core.instrument.search.Search;
@@ -72,7 +72,7 @@ final class SchedulerMetricDecorator
 				executorDifferentiator.computeIfAbsent(scheduler, key -> new AtomicInteger(0))
 				                      .getAndIncrement();
 
-		Iterable<Tag> tags = Collections.singleton(Tag.of(TAG_SCHEDULER_ID, schedulerId));
+		Tags tags = Tags.of(TAG_SCHEDULER_ID, schedulerId);
 
 		/*
 		Design note: we assume that a given Scheduler won't apply the decorator twice to the
