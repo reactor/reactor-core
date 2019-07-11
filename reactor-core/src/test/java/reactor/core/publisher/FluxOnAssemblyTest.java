@@ -255,7 +255,7 @@ public class FluxOnAssemblyTest {
 		assertThat(lines)
 				.startsWith(
 						"|_ ParallelFlux.checkpoint ⇢ at reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")",
-						"Original stack trace:"
+						"Stack trace:"
 				);
 	}
 
