@@ -256,7 +256,6 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 	static final BiFunction<Tags, Tuple2<String, String>, Tags> TAG_ACCUMULATOR =
 			(prev, tuple) -> prev.and(Tag.of(tuple.getT1(), tuple.getT2()));
-	static final BinaryOperator<Tags> TAG_COMBINER = (a, b) -> b;
 
 	/**
 	 * Extract the name from the upstream, and detect if there was an actual name (ie. distinct from {@link
@@ -298,7 +297,10 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 
 		if (scannable.isScanAvailable()) {
 			return scannable.tags()
-			                .reduce(tags, TAG_ACCUMULATOR, TAG_COMBINER);
+			                //Note the combiner below is for parallel streams, which won't be used
+			                //For the identity, `commonTags` should be ok (even if reduce uses it multiple times)
+			                //since it deduplicates
+			                .reduce(tags, TAG_ACCUMULATOR, Tags::and);
 		}
 
 		return tags;
