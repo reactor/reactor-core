@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.assertj.core.api.SoftAssertions;
@@ -100,7 +101,7 @@ public class FluxMetricsTest {
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
-		assertThat(subRef.get()).isInstanceOf(MicrometerFluxMetricsSubscriber.class);
+		assertThat(subRef.get()).isInstanceOf(MetricsSubscriber.class);
 	}
 
 	@Test
@@ -120,15 +121,15 @@ public class FluxMetricsTest {
 
 		Timer unnamedMeter = registry
 				.find(METER_FLOW_DURATION)
-				.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
-				.tag(TAG_EXCEPTION, ArithmeticException.class.getName())
+				.tags(Tags.of(TAG_ON_ERROR))
+				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
 				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
 				.timer();
 
 		Timer namedMeter = registry
 				.find(METER_FLOW_DURATION)
-				.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
-				.tag(TAG_EXCEPTION, ArithmeticException.class.getName())
+				.tags(Tags.of(TAG_ON_ERROR))
+				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
 				.tag(TAG_SEQUENCE_NAME, "foo")
 				.timer();
 
@@ -243,27 +244,6 @@ public class FluxMetricsTest {
 	}
 
 	@Test
-	public void malformedOnComplete() {
-		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
-		Flux<Integer> source = testPublisher.flux().hide();
-
-		new FluxMetrics<>(source, registry)
-				.subscribe(v -> assertThat(v).isEqualTo(1),
-						e -> assertThat(e).hasMessage("malformedOnComplete"));
-
-		testPublisher.next(1)
-		             .error(new IllegalStateException("malformedOnComplete"))
-		             .complete();
-
-		Counter malformedMeter = registry
-				.find(METER_MALFORMED)
-				.counter();
-
-		assertThat(malformedMeter).isNotNull();
-		assertThat(malformedMeter.count()).isEqualTo(1);
-	}
-
-	@Test
 	public void subscribeToComplete() {
 		Flux<String> source = Flux.just("foo")
 		                          .delayElements(Duration.ofMillis(100))
@@ -272,15 +252,15 @@ public class FluxMetricsTest {
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
-		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
 		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
-		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
 		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
-		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
@@ -292,9 +272,9 @@ public class FluxMetricsTest {
 					.as("subscribe to error timer is lazily registered")
 					.isNull();
 
-			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCancelTimer)
 					.as("subscribe to cancel timer")
-					.isZero();
+					.isNull();
 		});
 	}
 
@@ -309,29 +289,29 @@ public class FluxMetricsTest {
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
-		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
 		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
-		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
 		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
-		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
-			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCompleteTimer)
 					.as("subscribe to complete timer")
-					.isZero();
+					.isNull();
 
 			softly.assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
 					.as("subscribe to error timer")
 					.isGreaterThanOrEqualTo(100);
 
-			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCancelTimer)
 					.as("subscribe to cancel timer")
-					.isZero();
+					.isNull();
 		});
 	}
 
@@ -345,21 +325,21 @@ public class FluxMetricsTest {
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
-		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
 		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
-		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
 		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
-		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
-			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCompleteTimer)
 					.as("subscribe to complete timer")
-					.isZero();
+					.isNull();
 
 			softly.assertThat(stcErrorTimer)
 					.as("subscribe to error timer is lazily registered")

@@ -16,12 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
@@ -29,142 +26,34 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 /**
  * Activate metrics gathering on a {@link Flux}, assuming Micrometer is on the classpath.
  *
- * @implNote Metrics.isInstrumentationAvailable() test should be performed BEFORE instantiating
- * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
- * Micrometer is not there.
+ * @implNote Metrics.isInstrumentationAvailable() test should be performed BEFORE instantiating or referencing this
+ * class, otherwise a {@link NoClassDefFoundError} will be thrown if Micrometer is not there.
  *
  * @author Simon Baslé
+ * @author Stephane Maldini
  */
 final class FluxMetrics<T> extends FluxOperator<T, T> {
 
-	private static final Logger LOGGER = Loggers.getLogger(FluxMetrics.class);
-
-	//=== Constants ===
-
-	/**
-	 * The default sequence name that will be used for instrumented {@link Flux} and
-	 * {@link Mono} that don't have a {@link Flux#name(String) name}.
-	 *
-	 * @see #TAG_SEQUENCE_NAME
-	 */
-	static final String REACTOR_DEFAULT_NAME = "reactor";
+	final String name;
+	final Tags tags;
 
 	//Note: meters and tag names are normalized by micrometer on the basis that the word
 	// separator is the dot, not camelCase...
-	/**
-	 * Meter that counts the number of events received from a malformed source (ie an
-	 * onNext after an onComplete).
-	 */
-	static final String METER_MALFORMED     = "reactor.malformed.source";
-	/**
-	 * Meter that counts the number of subscriptions to a sequence.
-	 */
-	static final String METER_SUBSCRIBED    = "reactor.subscribed";
-	/**
-	 * Meter that times the duration between the subscription and the sequence's terminal
-	 * event. The timer is also using the {@link #TAG_STATUS} tag to determine
-	 * which kind of event terminated the sequence.
-	 */
-	static final String METER_FLOW_DURATION = "reactor.flow.duration";
-	/**
-	 * Meter that times the delays between each onNext (or between the first onNext and
-	 * the onSubscribe event).
-	 */
-	static final String METER_ON_NEXT_DELAY = "reactor.onNext.delay";
-	/**
-	 * Meter that tracks the request amount, in {@link Flux#name(String) named}
-	 * sequences only.
-	 */
-	static final String METER_REQUESTED     = "reactor.requested";
-
-	/**
-	 * Tag used by {@link #METER_FLOW_DURATION} to mark what kind of terminating
-	 * event occurred: {@link #TAGVALUE_ON_COMPLETE}, {@link #TAGVALUE_ON_ERROR} or
-	 * {@link #TAGVALUE_CANCEL}.
-	 */
-	static final String TAG_STATUS = "status";
-
-	/**
-	 * Tag used by {@link #METER_FLOW_DURATION} when {@link #TAG_STATUS}
-	 * is {@link #TAGVALUE_ON_ERROR}, to store the exception that occurred.
-	 */
-	static final String TAG_EXCEPTION = "exception";
-
-	/**
-	 * Tag bearing the sequence's name, as given by the {@link Flux#name(String)} operator.
-	 */
-	static final String TAG_SEQUENCE_NAME    = "flow";
-	/**
-	 * Tag bearing the sequence's type, {@link Flux} or {@link Mono}.
-	 * @see #TAGVALUE_FLUX
-	 * @see #TAGVALUE_MONO
-	 */
-	static final String TAG_SEQUENCE_TYPE    = "type";
-
-	//... tag values are free-for-all
-	static final String TAGVALUE_ON_ERROR    = "error";
-	static final String TAGVALUE_ON_COMPLETE = "completed";
-	static final String TAGVALUE_CANCEL      = "cancelled";
-	static final String TAGVALUE_FLUX        = "Flux";
-	static final String TAGVALUE_MONO        = "Mono";
-
-	// === Utility Methods ===
-
-	/**
-	 * Extract the name and tags from the upstream, and detect if there was an actual name
-	 * (ie. distinct from {@link Scannable#stepName()}) set by the user.
-	 *
-	 * @param source the upstream
-	 * @return a {@link Tuple2} of name and list of {@link Tag}
-	 */
-	static Tuple2<String, List<Tag>> resolveNameAndTags(Publisher<?> source) {
-		//resolve the tags and names at instantiation
-		String name;
-		List<Tag> tags;
-
-		Scannable scannable = Scannable.from(source);
-		if (scannable.isScanAvailable()) {
-			String nameOrDefault = scannable.name();
-			if (scannable.stepName().equals(nameOrDefault)) {
-				name = REACTOR_DEFAULT_NAME;
-			}
-			else {
-				name = nameOrDefault;
-			}
-			tags = scannable.tags()
-			                .map(tuple -> Tag.of(tuple.getT1(), tuple.getT2()))
-			                .collect(Collectors.toList());
-		}
-		else {
-			LOGGER.warn("Attempting to activate metrics but the upstream is not Scannable. " +
-					"You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
-			name = REACTOR_DEFAULT_NAME;
-			tags = Collections.emptyList();
-		}
-
-		return Tuples.of(name, tags);
-	}
-
-	// === Operator ===
-
-	final String    name;
-	final List<Tag> tags;
-	final MeterRegistry    registryCandidate;
+	final MeterRegistry registryCandidate;
 
 	FluxMetrics(Flux<? extends T> flux) {
 		this(flux, null);
@@ -178,9 +67,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	FluxMetrics(Flux<? extends T> flux, @Nullable MeterRegistry registry) {
 		super(flux);
 
-		Tuple2<String, List<Tag>> nameAndTags = resolveNameAndTags(flux);
-		this.name = nameAndTags.getT1();
-		this.tags = nameAndTags.getT2();
+		this.name = resolveName(flux);
+		this.tags = resolveTags(flux, DEFAULT_TAGS_FLUX, this.name);
 
 		if (registry == null) {
 			this.registryCandidate = Metrics.globalRegistry;
@@ -188,99 +76,51 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		else {
 			this.registryCandidate = registry;
 		}
-
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MicrometerFluxMetricsSubscriber<>(actual, registryCandidate,
-				Clock.SYSTEM, this.name, this.tags));
+		source.subscribe(new MetricsSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags));
 	}
 
-	static class MicrometerFluxMetricsSubscriber<T> implements InnerOperator<T,T> {
+	static class MetricsSubscriber<T> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 		final Clock                     clock;
-
-		final Counter             malformedSourceCounter;
-		final Counter             subscribedCounter;
-		final DistributionSummary requestedCounter;
+		final Tags                      commonTags;
+		final MeterRegistry             registry;
+		final DistributionSummary       requestedCounter;
+		final Timer                     onNextIntervalTimer;
 
 		Timer.Sample subscribeToTerminateSample;
-		long lastNextEventNanos = -1L;
-
-		boolean done;
-		@Nullable
-		Fuseable.QueueSubscription<T> qs;
+		long         lastNextEventNanos = -1L;
+		boolean      done;
 		Subscription s;
 
-		final Timer         onNextIntervalTimer;
-		final Timer         subscribeToCompleteTimer;
-		final Function<Throwable, Timer> subscribeToErrorTimerFactory;
-		final Timer         subscribeToCancelTimer;
-
-		MicrometerFluxMetricsSubscriber(CoreSubscriber<? super T> actual,
+		MetricsSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry,
 				Clock clock,
 				String sequenceName,
-				List<Tag> sequenceTags) {
+				Tags commonTags) {
 			this.actual = actual;
 			this.clock = clock;
+			this.commonTags = commonTags;
+			this.registry = registry;
 
-			List<Tag> commonTags = new ArrayList<>();
-			commonTags.add(Tag.of(TAG_SEQUENCE_NAME, sequenceName));
-			commonTags.add(Tag.of(TAG_SEQUENCE_TYPE, TAGVALUE_FLUX));
-			commonTags.addAll(sequenceTags);
 
-			this.subscribeToCompleteTimer = Timer
-					.builder(METER_FLOW_DURATION)
-					.tags(commonTags)
-					.tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
-					.tag(TAG_EXCEPTION, "")
-					.description("Times the duration elapsed between a subscription and the onComplete termination of the sequence")
-					.register(registry);
-			this.subscribeToCancelTimer = Timer
-					.builder(METER_FLOW_DURATION)
-					.tags(commonTags)
-					.tag(TAG_STATUS, TAGVALUE_CANCEL)
-					.tag(TAG_EXCEPTION, "")
-					.description("Times the duration elapsed between a subscription and the cancellation of the sequence")
-					.register(registry);
-
-			//note that Builder ISN'T TRULY IMMUTABLE. This is ok though as there will only ever be one usage.
-			Timer.Builder subscribeToErrorTimerBuilder = Timer
-					.builder(METER_FLOW_DURATION)
-					.tags(commonTags)
-					.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
-					.description("Times the duration elapsed between a subscription and the onError termination of the sequence, with the exception name as a tag");
-			this.subscribeToErrorTimerFactory = e -> {
-				return subscribeToErrorTimerBuilder
-						.tag(TAG_EXCEPTION, e.getClass().getName())
-						.register(registry);
-			};
-
-			this.onNextIntervalTimer = Timer
-					.builder(METER_ON_NEXT_DELAY)
-					.tags(commonTags)
-					.description("Measures delays between onNext signals (or between onSubscribe and first onNext)")
-					.register(registry);
-
-			this.subscribedCounter = Counter
-					.builder(METER_SUBSCRIBED)
-					.tags(commonTags)
-					.baseUnit("subscribers")
-					.description("Counts how many Reactor sequences have been subscribed to")
-					.register(registry);
-
-			this.malformedSourceCounter = registry.counter(METER_MALFORMED, commonTags);
+			this.onNextIntervalTimer = Timer.builder(METER_ON_NEXT_DELAY)
+			                                .tags(commonTags)
+			                                .description(
+					                                "Measures delays between onNext signals (or between onSubscribe and first onNext)")
+			                                .register(registry);
 
 			if (!REACTOR_DEFAULT_NAME.equals(sequenceName)) {
-				this.requestedCounter = DistributionSummary
-						.builder(METER_REQUESTED)
-						.tags(commonTags)
-						.description("Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount")
-						.baseUnit("requested amount")
-						.register(registry);
+				this.requestedCounter = DistributionSummary.builder(METER_REQUESTED)
+				                                           .tags(commonTags)
+				                                           .description(
+						                                           "Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount")
+				                                           .baseUnit("requested amount")
+				                                           .register(registry);
 			}
 			else {
 				requestedCounter = null;
@@ -288,14 +128,50 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public CoreSubscriber<? super T> actual() {
+		final public CoreSubscriber<? super T> actual() {
 			return actual;
+		}
+
+		@Override
+		final public void cancel() {
+			//we don't record the time between last onNext and cancel,
+			// because it would skew the onNext count by one
+			recordCancel(commonTags, registry, subscribeToTerminateSample);
+
+			s.cancel();
+		}
+
+		@Override
+		final public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
+			//we don't record the time between last onNext and onComplete,
+			// because it would skew the onNext count by one
+			recordOnComplete(commonTags, registry, subscribeToTerminateSample);
+
+			actual.onComplete();
+		}
+
+		@Override
+		final public void onError(Throwable e) {
+			if (done) {
+				recordMalformed(commonTags, registry);
+				Operators.onErrorDropped(e, actual.currentContext());
+				return;
+			}
+			done = true;
+			//we don't record the time between last onNext and onError,
+			// because it would skew the onNext count by one
+			recordOnError(commonTags, registry, subscribeToTerminateSample, e);
+			actual.onError(e);
 		}
 
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				this.malformedSourceCounter.increment();
+				recordMalformed(commonTags, registry);
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
@@ -309,49 +185,11 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public void onError(Throwable e) {
-			if (done) {
-				this.malformedSourceCounter.increment();
-				Operators.onErrorDropped(e, actual.currentContext());
-				return;
-			}
-			done = true;
-			//we don't record the time between last onNext and onError,
-			// because it would skew the onNext count by one
-
-			//register a timer for that particular exception
-			Timer timer = subscribeToErrorTimerFactory.apply(e);
-			//record error termination
-			this.subscribeToTerminateSample.stop(timer);
-
-			actual.onError(e);
-		}
-
-		@Override
-		public void onComplete() {
-			if (done) {
-				this.malformedSourceCounter.increment();
-				return;
-			}
-			done = true;
-			//we don't record the time between last onNext and onComplete,
-			// because it would skew the onNext count by one
-			this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
-
-			actual.onComplete();
-		}
-
-		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.subscribedCounter.increment();
+				recordOnSubscribe(commonTags, registry);
 				this.subscribeToTerminateSample = Timer.start(clock);
 				this.lastNextEventNanos = clock.monotonicTime();
-
-				if (s instanceof Fuseable.QueueSubscription) {
-					//noinspection unchecked
-					this.qs = (Fuseable.QueueSubscription<T>) s;
-				}
 				this.s = s;
 				actual.onSubscribe(this);
 
@@ -359,7 +197,7 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public void request(long l) {
+		final public void request(long l) {
 			if (Operators.validate(l)) {
 				if (requestedCounter != null) {
 					requestedCounter.record(l);
@@ -367,110 +205,183 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 				s.request(l);
 			}
 		}
-
-		@Override
-		public void cancel() {
-			//we don't record the time between last onNext and cancel,
-			// because it would skew the onNext count by one
-			this.subscribeToTerminateSample.stop(subscribeToCancelTimer);
-
-			s.cancel();
-		}
 	}
 
 	/**
-	 * @implNote we don't want to particularly track fusion-specific calls, as this
-	 * subscriber would only detect fused subsequences immediately upstream of it, so
-	 * Counters would be a bit irrelevant. We however want to instrument onNext counts.
+	 * The default sequence name that will be used for instrumented {@link Flux} and {@link Mono} that don't have a
+	 * {@link Flux#name(String) name}.
 	 *
-	 * @param <T>
+	 * @see #TAG_SEQUENCE_NAME
 	 */
-	static final class MicrometerFluxMetricsFuseableSubscriber<T> extends MicrometerFluxMetricsSubscriber<T>
-			implements Fuseable, Fuseable.QueueSubscription<T> {
+	static final String REACTOR_DEFAULT_NAME = "reactor";
+	/**
+	 * Meter that counts the number of events received from a malformed source (ie an onNext after an onComplete).
+	 */
+	static final String METER_MALFORMED      = "reactor.malformed.source";
+	/**
+	 * Meter that counts the number of subscriptions to a sequence.
+	 */
+	static final String METER_SUBSCRIBED     = "reactor.subscribed";
+	/**
+	 * Meter that times the duration between the subscription and the sequence's terminal event. The timer is also using
+	 * the "status" tag to determine which kind of event terminated the sequence.
+	 */
+	static final String METER_FLOW_DURATION  = "reactor.flow.duration";
+	/**
+	 * Meter that times the delays between each onNext (or between the first onNext and the onSubscribe event).
+	 */
+	static final String METER_ON_NEXT_DELAY  = "reactor.onNext.delay";
+	/**
+	 * Meter that tracks the request amount, in {@link Flux#name(String) named} sequences only.
+	 */
+	static final String METER_REQUESTED   = "reactor.requested";
+	/**
+	 * Tag used by {@link #METER_FLOW_DURATION} when "status" is {@link #TAG_ON_ERROR}, to store the
+	 * exception that occurred.
+	 */
+	static final String TAG_KEY_EXCEPTION = "exception";
+	/**
+	 * Tag bearing the sequence's name, as given by the {@link Flux#name(String)} operator.
+	 */
+	static final String TAG_SEQUENCE_NAME = "flow";
+	static final Tags   DEFAULT_TAGS_FLUX = Tags.of("type", "Flux");
+	static final Tags   DEFAULT_TAGS_MONO = Tags.of("type", "Mono");
 
-		private int fusionMode;
+	// === Operator ===
+	static final Tag  TAG_ON_ERROR    = Tag.of("status", "error");
+	static final Tags TAG_ON_COMPLETE = Tags.of("status", "completed", TAG_KEY_EXCEPTION, "");
+	static final Tags TAG_CANCEL      = Tags.of("status", "cancelled", TAG_KEY_EXCEPTION, "");
 
-		MicrometerFluxMetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
-				MeterRegistry registry, Clock clock, String sequenceName, List<Tag> sequenceTags) {
-			super(actual, registry, clock, sequenceName, sequenceTags);
-		}
+	static final Logger log = Loggers.getLogger(FluxMetrics.class);
 
-		@Override
-		public void onNext(T t) {
-			if (this.fusionMode == Fuseable.ASYNC) {
-				actual.onNext(null);
-				return;
+	static final BiFunction<Tags, Tuple2<String, String>, Tags> TAG_ACCUMULATOR =
+			(prev, tuple) -> prev.and(Tag.of(tuple.getT1(), tuple.getT2()));
+	static final BinaryOperator<Tags> TAG_COMBINER = Tags::and;
+
+	/**
+	 * Extract the name from the upstream, and detect if there was an actual name (ie. distinct from {@link
+	 * Scannable#stepName()}) set by the user.
+	 *
+	 * @param source the upstream
+	 *
+	 * @return a name
+	 */
+	static String resolveName(Publisher<?> source) {
+		Scannable scannable = Scannable.from(source);
+		if (scannable.isScanAvailable()) {
+			String nameOrDefault = scannable.name();
+			if (scannable.stepName()
+			             .equals(nameOrDefault)) {
+				return REACTOR_DEFAULT_NAME;
 			}
-
-			if (done) {
-				this.malformedSourceCounter.increment();
-				Operators.onNextDropped(t, actual.currentContext());
-				return;
-			}
-
-			//record the delay since previous onNext/onSubscribe. This also records the count.
-			long last = this.lastNextEventNanos;
-			this.lastNextEventNanos = clock.monotonicTime();
-			this.onNextIntervalTimer.record(lastNextEventNanos - last, TimeUnit.NANOSECONDS);
-
-			actual.onNext(t);
-		}
-
-		@Override
-		public int requestFusion(int mode) {
-			//Simply negotiate the fusion by delegating:
-			if (qs != null) {
-				this.fusionMode = qs.requestFusion(mode);
-				return fusionMode;
-			}
-			return Fuseable.NONE; //should not happen unless requestFusion called before subscribe
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			if (qs == null) {
-				return null;
-			}
-			try {
-				T v = qs.poll();
-
-				if (v == null && fusionMode == SYNC) {
-					//this is also a complete event
-					this.subscribeToTerminateSample.stop(subscribeToCompleteTimer);
-				}
-				if (v != null) {
-					//this is an onNext event
-					//record the delay since previous onNext/onSubscribe. This also records the count.
-					long last = this.lastNextEventNanos;
-					this.lastNextEventNanos = clock.monotonicTime();
-					this.onNextIntervalTimer.record(lastNextEventNanos - last, TimeUnit.NANOSECONDS);
-				}
-				return v;
-			} catch (Throwable e) {
-				//register a timer for that particular exception
-				Timer timer = subscribeToErrorTimerFactory.apply(e);
-				//record error termination
-				this.subscribeToTerminateSample.stop(timer);
-				throw e;
+			else {
+				return nameOrDefault;
 			}
 		}
-
-		@Override
-		public void clear() {
-			if (qs != null) {
-				qs.clear();
-			}
+		else {
+			log.warn("Attempting to activate metrics but the upstream is not Scannable. " + "You might want to use `name()` (and optionally `tags()`) right before `metrics()`");
+			return REACTOR_DEFAULT_NAME;
 		}
 
-		@Override
-		public boolean isEmpty() {
-			return qs == null || qs.isEmpty();
-		}
-
-		@Override
-		public int size() {
-			return qs == null ? 0 : qs.size();
-		}
 	}
+
+	/**
+	 * Extract the tags from the upstream
+	 *
+	 * @param source the upstream
+	 *
+	 * @return a {@link Tags} of {@link Tag}
+	 */
+	static Tags resolveTags(Publisher<?> source, Tags tags, String sequenceName) {
+		Scannable scannable = Scannable.from(source);
+		tags = tags.and(Tag.of(FluxMetrics.TAG_SEQUENCE_NAME, sequenceName));
+
+		if (scannable.isScanAvailable()) {
+			return scannable.tags()
+			                //Note the combiner below is for parallel streams, which won't be used
+			                //For the identity, `commonTags` should be ok (even if reduce uses it multiple times)
+			                //since it deduplicates
+			                .reduce(tags, TAG_ACCUMULATOR, TAG_COMBINER);
+		}
+
+		return tags;
+	}
+
+	/*
+	 * This method calls the registry, which can be costly. However the cancel signal is only expected
+	 * once per Subscriber. So the net effect should be that the registry is only called once, which
+	 * is equivalent to registering the meter as a final field, with the added benefit of paying that
+	 * cost only in case of cancellation.
+	 */
+	static void recordCancel(Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
+		Timer timer = Timer.builder(METER_FLOW_DURATION)
+		                   .tags(commonTags.and(TAG_CANCEL))
+		                   .description(
+				                   "Times the duration elapsed between a subscription and the cancellation of the sequence")
+		                   .register(registry);
+
+		flowDuration.stop(timer);
+	}
+
+	/*
+	 * This method calls the registry, which can be costly. However a malformed signal is generally
+	 * not expected, or at most once per Subscriber. So the net effect should be that the registry
+	 * is only called once, which is equivalent to registering the meter as a final field,
+	 * with the added benefit of paying that cost only in case of onNext/onError after termination.
+	 */
+	static void recordMalformed(Tags commonTags, MeterRegistry registry) {
+		registry.counter(FluxMetrics.METER_MALFORMED, commonTags)
+		        .increment();
+	}
+
+	/*
+	 * This method calls the registry, which can be costly. However the onError signal is expected
+	 * at most once per Subscriber. So the net effect should be that the registry is only called once,
+	 * which is equivalent to registering the meter as a final field, with the added benefit of paying
+	 * that cost only in case of error.
+	 */
+	static void recordOnError(Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration, Throwable e) {
+		Timer timer = Timer.builder(METER_FLOW_DURATION)
+		                   .tags(commonTags.and(TAG_ON_ERROR))
+		                   .tag(TAG_KEY_EXCEPTION,
+				                   e.getClass()
+				                    .getName())
+		                   .description(
+				                   "Times the duration elapsed between a subscription and the onError termination of the sequence, with the exception name as a tag.")
+		                   .register(registry);
+
+		flowDuration.stop(timer);
+	}
+
+	/*
+	 * This method calls the registry, which can be costly. However the onComplete signal is expected
+	 * at most once per Subscriber. So the net effect should be that the registry is only called once,
+	 * which is equivalent to registering the meter as a final field, with the added benefit of paying
+	 * that cost only in case of completion (which is not always occurring).
+	 */
+	static void recordOnComplete(Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration) {
+		Timer timer = Timer.builder(METER_FLOW_DURATION)
+		                   .tags(commonTags.and(TAG_ON_COMPLETE))
+		                   .description(
+				                   "Times the duration elapsed between a subscription and the onComplete termination of the sequence")
+		                   .register(registry);
+
+		flowDuration.stop(timer);
+	}
+
+	/*
+	 * This method calls the registry, which can be costly. However the onSubscribe signal is expected
+	 * at most once per Subscriber. So the net effect should be that the registry is only called once,
+	 * which is equivalent to registering the meter as a final field, with the added benefit of paying
+	 * that cost only in case of subscription.
+	 */
+	static void recordOnSubscribe(Tags commonTags, MeterRegistry registry) {
+		Counter.builder(METER_SUBSCRIBED)
+		       .tags(commonTags)
+		       .baseUnit("subscribers")
+		       .description("Counts how many Reactor sequences have been subscribed to")
+		       .register(registry)
+		       .increment();
+	}
+
 }

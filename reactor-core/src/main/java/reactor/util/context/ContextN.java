@@ -17,11 +17,11 @@ package reactor.util.context;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,30 +30,42 @@ import reactor.util.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends HashMap<Object, Object>
-		implements Context, Function<Entry<Object, Object>, Entry<Object, Object>> {
+		implements Context, Function<Entry<Object, Object>, Entry<Object, Object>>,
+		           BiConsumer<Object, Object> {
 
 	ContextN(Object key1, Object value1, Object key2, Object value2,
 			Object key3, Object value3, Object key4, Object value4,
 			Object key5, Object value5, Object key6, Object value6) {
 		super(6, 1f);
-		super.put(key1, value1);
-		super.put(key2, value2);
-		super.put(key3, value3);
-		super.put(key4, value4);
-		super.put(key5, value5);
-		super.put(key6, value6);
+		//accept below stands in for "inner put"
+		accept(key1, value1);
+		accept(key2, value2);
+		accept(key3, value3);
+		accept(key4, value4);
+		accept(key5, value5);
+		accept(key6, value6);
 	}
 
 	ContextN(Map<Object, Object> map, Object key, Object value) {
-		super(map.size() + 1, 1f);
-		super.putAll(map);
-		super.put(key, value);
+		super(Objects.requireNonNull(map, "map").size() + 1, 1f);
+		map.forEach(this);
+		accept(key, value); //innerPut
 	}
 
 	ContextN(Map<Object, Object> sourceMap, Map<?, ?> other) {
-		super(sourceMap.size() + other.size(), 1f);
-		super.putAll(sourceMap);
-		super.putAll(other);
+		super(Objects.requireNonNull(sourceMap, "sourceMap").size()
+						+ Objects.requireNonNull(other, "other").size(),
+				1f);
+		sourceMap.forEach(this);
+		other.forEach(this);
+	}
+
+	//this performs an inner put to the actual hashmap, and also allows passing `this` directly to
+	//Map#forEach
+	@Override
+	public void accept(Object key, Object value) {
+		super.put(Objects.requireNonNull(key, "key"),
+				Objects.requireNonNull(value, "value"));
 	}
 
 	@Override
@@ -100,8 +112,9 @@ final class ContextN extends HashMap<Object, Object>
 
 	@Override
 	public Object get(Object key) {
-		if (hasKey(key)) {
-			return super.get(key);
+		Object o = super.get(key);
+		if (o != null) {
+			return o;
 		}
 		throw new NoSuchElementException("Context does not contain key: "+key);
 	}
@@ -109,7 +122,11 @@ final class ContextN extends HashMap<Object, Object>
 	@Override
 	@Nullable
 	public Object getOrDefault(Object key, @Nullable Object defaultValue) {
-		return Context.super.getOrDefault(key, defaultValue);
+		Object o = super.get(key);
+		if (o != null) {
+			return o;
+		}
+		return defaultValue;
 	}
 
 	@Override

@@ -846,7 +846,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new failing {@link Flux}
 	 */
-	public static <T> Flux<T> error(Supplier<Throwable> errorSupplier) {
+	public static <T> Flux<T> error(Supplier<? extends Throwable> errorSupplier) {
 		return onAssembly(new FluxErrorSupplied<>(errorSupplier));
 	}
 
@@ -2350,7 +2350,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * signals its first value, completes or a timeout expires. Returns that value,
 	 * or null if the Flux completes empty. In case the Flux errors, the original
 	 * exception is thrown (wrapped in a {@link RuntimeException} if it was a checked
-	 * exception). If the provided timeout expires,a {@link RuntimeException} is thrown.
+	 * exception). If the provided timeout expires, a {@link RuntimeException} is thrown.
 	 * <p>
 	 * Note that each blockFirst() will trigger a new subscription: in other words,
 	 * the result might miss signal from hot publishers.
@@ -2396,7 +2396,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * signals its last value, completes or a timeout expires. Returns that value,
 	 * or null if the Flux completes empty. In case the Flux errors, the original
 	 * exception is thrown (wrapped in a {@link RuntimeException} if it was a checked
-	 * exception). If the provided timeout expires,a {@link RuntimeException} is thrown.
+	 * exception). If the provided timeout expires, a {@link RuntimeException} is thrown.
 	 * <p>
 	 * Note that each blockLast() will trigger a new subscription: in other words,
 	 * the result might miss signal from hot publishers.
