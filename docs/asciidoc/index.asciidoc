@@ -51,6 +51,12 @@ https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/debugging.adoc
 to "<<debugging>>"
 endif::[]
 
+include::metrics.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/metrics.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<metrics>>"
+endif::[]
+
 include::advancedFeatures.adoc[leveloffset=1]
 ifeval::["{backend}" == "html5"]
 https://github.com/reactor/reactor-core/edit/master/docs/asciidoc/advancedFeatures.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
