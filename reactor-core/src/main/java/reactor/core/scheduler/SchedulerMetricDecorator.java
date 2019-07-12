@@ -84,6 +84,8 @@ final class SchedulerMetricDecorator
 		to distinguish between two instances with the same name and configuration).
 		 */
 
+		//the result of `monitor` below is ignored on purpose (the equivalent wrapping is done right after).
+		//calling this method is still useful, as it binds some gauges from the executor to the registry...
 		ExecutorServiceMetrics.monitor(globalRegistry, service, executorId, tags);
 
 		// TODO return the result of ExecutorServiceMetrics#monitor
