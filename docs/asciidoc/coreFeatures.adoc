@@ -155,15 +155,17 @@ example runs a `Mono` in a new thread:
 ====
 [source,java]
 ----
-public static void main(String[] args) {
+public static void main(String[] args) throws InterruptedException {
   final Mono<String> mono = Mono.just("hello "); //<1>
 
-  new Thread(() -> mono
+  Thread t = new Thread(() -> mono
       .map(msg -> msg + "thread ")
       .subscribe(v -> //<2>
           System.out.println(v + Thread.currentThread().getName()) //<3>
       )
-  ).join();
+  )
+  t.start();
+  t.join();
 
 }
 ----
