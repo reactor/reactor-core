@@ -77,7 +77,7 @@ final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannabl
 	}
 
 	@Override
-	public final ConnectableFlux<I> getSubscribeTarget() {
+	public final ConnectableFlux<I> source() {
 		return source;
 	}
 }

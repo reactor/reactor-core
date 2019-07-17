@@ -84,7 +84,7 @@ final class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
 	}
 
 	@Override
-	public ConnectableFlux<I> getSubscribeTarget() {
+	public ConnectableFlux<I> source() {
 		return source;
 	}
 }

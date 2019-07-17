@@ -52,7 +52,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>, CoreOper
 	}
 
 	@Override
-	public Publisher<? extends I> getSubscribeTarget() {
+	public Publisher<? extends I> source() {
 		return source;
 	}
 

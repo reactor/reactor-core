@@ -3863,7 +3863,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			publisher = operator.getSubscribeTarget();
+			publisher = operator.source();
 		}
 		if (publisher instanceof CorePublisher) {
 			((CorePublisher) publisher).subscribe(subscriber);

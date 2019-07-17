@@ -252,7 +252,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public DirectProcessor<Throwable> getSubscribeTarget() {
+		public DirectProcessor<Throwable> source() {
 			return completionSignal;
 		}
 	}

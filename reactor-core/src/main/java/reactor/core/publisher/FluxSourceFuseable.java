@@ -51,7 +51,7 @@ final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourcePro
 	}
 
 	@Override
-	public Publisher<? extends I> getSubscribeTarget() {
+	public Publisher<? extends I> source() {
 		return source;
 	}
 

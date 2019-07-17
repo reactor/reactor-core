@@ -1293,7 +1293,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Publisher<? extends T> getSubscribeTarget() {
+		public Publisher<? extends T> source() {
 			return publisher;
 		}
 	}

@@ -51,7 +51,7 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 	}
 
 	@Override
-	public final Publisher<? extends I> getSubscribeTarget() {
+	public final Publisher<? extends I> source() {
 		return source;
 	}
 

@@ -1060,7 +1060,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		if (nextSubscriber == null) {
 			return;
 		}
-		getSubscribeTarget().subscribe(nextSubscriber);
+		source.subscribe(nextSubscriber);
 	}
 
 	@Override
@@ -1100,7 +1100,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public final CorePublisher<T> getSubscribeTarget() {
+	public final CorePublisher<T> source() {
 		return source;
 	}
 

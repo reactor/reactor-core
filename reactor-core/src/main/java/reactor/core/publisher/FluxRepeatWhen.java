@@ -249,7 +249,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public DirectProcessor<Long> getSubscribeTarget() {
+		public DirectProcessor<Long> source() {
 			return completionSignal;
 		}
 	}

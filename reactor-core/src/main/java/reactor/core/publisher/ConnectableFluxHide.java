@@ -63,7 +63,7 @@ final class ConnectableFluxHide<T> extends ConnectableFlux<T> implements Scannab
 	}
 
 	@Override
-	public final ConnectableFlux<T> getSubscribeTarget() {
+	public final ConnectableFlux<T> source() {
 		return source;
 	}
 

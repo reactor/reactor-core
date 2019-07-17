@@ -68,7 +68,7 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	}
 
 	@Override
-	public final CorePublisher<T> getSubscribeTarget() {
+	public final CorePublisher<T> source() {
 		return source;
 	}
 

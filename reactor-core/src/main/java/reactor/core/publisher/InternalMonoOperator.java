@@ -20,9 +20,6 @@ import org.reactivestreams.Publisher;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
-
-import java.util.Objects;
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an
@@ -51,7 +48,7 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			publisher = operator.getSubscribeTarget();
+			publisher = operator.source();
 		}
 		while (publisher instanceof CoreOperator);
 
@@ -67,7 +64,7 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
-	public final Mono<? extends I> getSubscribeTarget() {
+	public final Mono<? extends I> source() {
 		return source;
 	}
 }

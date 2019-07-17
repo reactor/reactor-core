@@ -47,7 +47,7 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable, CoreOpe
 	}
 
 	@Override
-	public final Publisher<? extends T> getSubscribeTarget() {
+	public final Publisher<? extends T> source() {
 		return source;
 	}
 

@@ -22,8 +22,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
-import java.util.Objects;
-
 abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements Scannable, CoreOperator<O, I> {
 
 	/**
@@ -49,7 +47,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			publisher = operator.getSubscribeTarget();
+			publisher = operator.source();
 		}
 		while (publisher instanceof CoreOperator);
 
@@ -65,7 +63,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
-    public final CorePublisher<? extends I> getSubscribeTarget() {
+    public final CorePublisher<? extends I> source() {
         return source;
     }
 

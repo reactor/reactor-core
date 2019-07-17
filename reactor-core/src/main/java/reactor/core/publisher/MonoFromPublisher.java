@@ -50,7 +50,7 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable, CoreOpera
 	}
 
 	@Override
-	public Publisher<? extends T> getSubscribeTarget() {
+	public Publisher<? extends T> source() {
 		return source;
 	}
 

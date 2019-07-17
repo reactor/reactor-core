@@ -43,5 +43,5 @@ interface CoreOperator<IN, OUT> {
 	 * @return {@link Publisher} to call {@link CorePublisher#subscribe(CoreSubscriber)} on
 	 * if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
 	 */
-	Publisher<? extends OUT> getSubscribeTarget();
+	Publisher<? extends OUT> source();
 }

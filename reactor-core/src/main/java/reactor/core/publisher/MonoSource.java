@@ -57,7 +57,7 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	}
 
 	@Override
-	public Publisher<? extends I> getSubscribeTarget() {
+	public Publisher<? extends I> source() {
 		return source;
 	}
 
