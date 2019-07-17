@@ -63,11 +63,11 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
-    public final CorePublisher<? extends I> source() {
-        return source;
-    }
+	public final CorePublisher<? extends I> source() {
+		return source;
+	}
 
-    @Override
+	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();

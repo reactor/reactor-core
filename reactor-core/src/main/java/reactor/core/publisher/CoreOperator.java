@@ -24,22 +24,18 @@ import reactor.util.annotation.Nullable;
 /**
  * A common interface of any operator in Reactor.
  *
- *
  * @param <IN> the {@link CoreSubscriber} data type
- *
  * @since 3.3.0
  */
 interface CoreOperator<IN, OUT> {
 
 	/**
-	 *
 	 * @return next {@link CoreSubscriber} or "null" if the subscription was already done inside the method
 	 */
 	@Nullable
 	CoreSubscriber<? super OUT> subscribeOrReturn(CoreSubscriber<? super IN> actual);
 
 	/**
-	 *
 	 * @return {@link Publisher} to call {@link CorePublisher#subscribe(CoreSubscriber)} on
 	 * if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
 	 */
