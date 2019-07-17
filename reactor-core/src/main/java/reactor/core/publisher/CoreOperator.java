@@ -33,7 +33,7 @@ interface CoreOperator<IN, OUT> {
 
 	/**
 	 *
-	 * @return next {@link CoreSubscriber} or "null" if it subscribed himself
+	 * @return next {@link CoreSubscriber} or "null" if the subscription was already done inside the method
 	 */
 	@Nullable
 	CoreSubscriber<? super OUT> subscribeOrReturn(CoreSubscriber<? super IN> actual);
