@@ -249,8 +249,14 @@ public class FluxOnAssemblyTest {
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
 				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:227)\n"
 				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n");
-		assertThat(debugStack).endsWith("Error has been observed at the following site(s):\n"
-				+ "\t|_ ParallelFlux.checkpoint ⇢ at reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n\n");
+
+		Iterator<String> lines = seekToBacktrace(debugStack);
+
+		assertThat(lines)
+				.startsWith(
+						"|_ ParallelFlux.checkpoint ⇢ at reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")",
+						"Stack trace:"
+				);
 	}
 
 	@Test
@@ -332,15 +338,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		Iterator<String> lines = Stream.of(debugStack.split("\n"))
-		                                  .map(String::trim)
-		                                  .iterator();
-
-		while (lines.hasNext()) {
-			if (lines.next().equals("Error has been observed at the following site(s):")) {
-				break;
-			}
-		}
+		Iterator<String> lines = seekToBacktrace(debugStack);
 
 		assertThat(lines.next())
 				.as("first backtrace line")
@@ -368,11 +366,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		Iterator<String> lines = seekToSupressedAssembly(debugStack);
-
-		assertThat(lines.next())
-				.as("backtrace header")
-				.isEqualTo("Error has been observed at the following site(s):");
+		Iterator<String> lines = seekToBacktrace(debugStack);
 
 		assertThat(lines.next())
 				.as("first backtrace line")
@@ -385,11 +379,13 @@ public class FluxOnAssemblyTest {
 
 	private Iterator<String> seekToBacktrace(String debugStack) {
 		Iterator<String> lines = seekToSupressedAssembly(debugStack);
-
-		assertThat(lines.next())
-				.as("backtrace header")
-				.isEqualTo("Error has been observed at the following site(s):");
-		return lines;
+		while (lines.hasNext()) {
+			String line = lines.next();
+			if (line.equals("Error has been observed at the following site(s):")) {
+				return lines;
+			}
+		}
+		throw new IllegalStateException("Not found!");
 	}
 
 	private Iterator<String> seekToSupressedAssembly(String debugStack) {
