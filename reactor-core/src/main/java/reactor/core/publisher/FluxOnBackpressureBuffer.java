@@ -34,7 +34,7 @@ import reactor.util.context.Context;
 /**
  * @author Stephane Maldini
  */
-final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fuseable {
+final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> implements Fuseable {
 
 	final Consumer<? super O> onOverflow;
 	final int                 bufferSize;
@@ -54,11 +54,11 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super O> actual) {
-		source.subscribe(new BackpressureBufferSubscriber<>(actual,
+	public CoreSubscriber<? super O> subscribeOrReturn(CoreSubscriber<? super O> actual) {
+		return new BackpressureBufferSubscriber<>(actual,
 				bufferSize,
 				unbounded,
-				onOverflow));
+				onOverflow);
 	}
 
 	@Override

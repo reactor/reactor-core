@@ -37,7 +37,7 @@ import static reactor.core.publisher.FluxMetrics.*;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-final class MonoMetrics<T> extends MonoOperator<T, T> {
+final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 
 	final String        name;
 	final Tags          tags;
@@ -67,8 +67,8 @@ final class MonoMetrics<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MetricsSubscriber<>(actual, meterRegistry, Clock.SYSTEM, this.tags));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MetricsSubscriber<>(actual, meterRegistry, Clock.SYSTEM, this.tags);
 	}
 
 	static class MetricsSubscriber<T> implements InnerOperator<T, T> {

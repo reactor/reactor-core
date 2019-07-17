@@ -38,7 +38,7 @@ import static reactor.core.publisher.FluxMetrics.resolveTags;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final String name;
 	final Tags   tags;
@@ -69,8 +69,8 @@ final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseabl
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.tags));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.tags);
 	}
 
 	/**
