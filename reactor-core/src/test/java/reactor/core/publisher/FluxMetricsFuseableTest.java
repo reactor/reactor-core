@@ -27,6 +27,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.MockClock;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -61,9 +62,9 @@ public class FluxMetricsFuseableTest {
 	@Test
 	public void queueClearEmptySizeDelegates() {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
-						registry, Clock.SYSTEM, "foo", Collections.emptyList());
+		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetricsFuseable.MetricsFuseableSubscriber<>(testSubscriber,
+						registry, Clock.SYSTEM, "foo", Tags.empty());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		testQueue.offer(1);
@@ -83,9 +84,9 @@ public class FluxMetricsFuseableTest {
 	@Test
 	public void queueClearEmptySizeWhenQueueSubscriptionNull() {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
-						registry, Clock.SYSTEM, "foo", Collections.emptyList());
+		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetricsFuseable.MetricsFuseableSubscriber<>(testSubscriber,
+						registry, Clock.SYSTEM, "foo", Tags.empty());
 
 		assertThat(fuseableSubscriber.size()).as("size").isEqualTo(0);
 		assertThat(fuseableSubscriber.isEmpty()).as("isEmpty").isTrue();
@@ -101,9 +102,9 @@ public class FluxMetricsFuseableTest {
 		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
-						registry, clock, "foo", Collections.emptyList());
+		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetricsFuseable.MetricsFuseableSubscriber<>(testSubscriber,
+						registry, clock, "foo", Tags.empty());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		testQueue.offer(1);
@@ -134,9 +135,9 @@ public class FluxMetricsFuseableTest {
 		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
-						registry, clock, "foo", Collections.emptyList());
+		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetricsFuseable.MetricsFuseableSubscriber<>(testSubscriber,
+						registry, clock, "foo", Tags.empty());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		testQueue.offer(1);
@@ -154,7 +155,7 @@ public class FluxMetricsFuseableTest {
 
 		//test meters
 		Timer terminationTimer = registry.find(METER_FLOW_DURATION)
-		                          .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                          .tags(Tags.of(TAG_ON_COMPLETE))
 		                          .timer();
 
 		assertThat(terminationTimer).isNotNull();
@@ -170,9 +171,9 @@ public class FluxMetricsFuseableTest {
 		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
-						registry, clock, "foo", Collections.emptyList());
+		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetricsFuseable.MetricsFuseableSubscriber<>(testSubscriber,
+						registry, clock, "foo", Tags.empty());
 
 		FluxPeekFuseableTest.AssertQueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		testQueue.setCompleteWithError(true);
@@ -191,7 +192,7 @@ public class FluxMetricsFuseableTest {
 
 		//test meters
 		Timer terminationTimer = registry.find(METER_FLOW_DURATION)
-		                          .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                          .tags(Tags.of(TAG_ON_ERROR))
 		                          .timer();
 
 		assertThat(terminationTimer).isNotNull();
@@ -201,9 +202,9 @@ public class FluxMetricsFuseableTest {
 	@Test
 	public void requestFusionDelegates() {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-		MicrometerFluxMetricsFuseableSubscriber<Integer> fuseableSubscriber =
-				new MicrometerFluxMetricsFuseableSubscriber<>(testSubscriber,
-						registry, Clock.SYSTEM, "foo", Collections.emptyList());
+		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
+				new FluxMetricsFuseable.MetricsFuseableSubscriber<>(testSubscriber,
+						registry, Clock.SYSTEM, "foo", Tags.empty());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		fuseableSubscriber.onSubscribe(testQueue);
@@ -227,7 +228,7 @@ public class FluxMetricsFuseableTest {
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
-		assertThat(subRef.get()).isInstanceOf(MicrometerFluxMetricsFuseableSubscriber.class);
+		assertThat(subRef.get()).isInstanceOf(FluxMetricsFuseable.MetricsFuseableSubscriber.class);
 	}
 
 	@Test
@@ -246,13 +247,13 @@ public class FluxMetricsFuseableTest {
 
 		Timer unnamedMeter = registry
 				.find(METER_FLOW_DURATION)
-				.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+				.tags(Tags.of(TAG_ON_ERROR))
 				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
 				.timer();
 
 		Timer namedMeter = registry
 				.find(METER_FLOW_DURATION)
-				.tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+				.tags(Tags.of(TAG_ON_ERROR))
 				.tag(TAG_SEQUENCE_NAME, "foo")
 				.timer();
 
@@ -332,15 +333,15 @@ public class FluxMetricsFuseableTest {
 		            .verifyComplete();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
-		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
 		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
-		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
 		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
-		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
@@ -352,9 +353,9 @@ public class FluxMetricsFuseableTest {
 				.as("subscribe to error timer lazily registered")
 				.isNull();
 
-			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCancelTimer)
 				.as("subscribe to cancel timer")
-				.isZero();
+				.isNull();
 		});
 	}
 
@@ -369,29 +370,29 @@ public class FluxMetricsFuseableTest {
 		    .blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
-		                                 .tag(TAG_STATUS, TAGVALUE_ON_COMPLETE)
+		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
 		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
-		                              .tag(TAG_STATUS, TAGVALUE_ON_ERROR)
+		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
 		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
-		                               .tag(TAG_STATUS, TAGVALUE_CANCEL)
+		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
 		SoftAssertions.assertSoftly(softly -> {
-			softly.assertThat(stcCompleteTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCompleteTimer)
 							.as("subscribe to complete timer")
-							.isZero();
+							.isNull();
 
 			softly.assertThat(stcErrorTimer.max(TimeUnit.MILLISECONDS))
 				.as("subscribe to error timer")
 				.isGreaterThanOrEqualTo(100);
 
-			softly.assertThat(stcCancelTimer.max(TimeUnit.MILLISECONDS))
+			softly.assertThat(stcCancelTimer)
 				.as("subscribe to cancel timer")
-				.isZero();
+				.isNull();
 		});
 	}
 

@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static reactor.util.context.ContextTest.key;
 import static reactor.util.context.ContextTest.keyValue;
 
@@ -221,5 +221,137 @@ public class Context4Test {
 	@Test
 	public void size() {
 		assertThat(c.size()).isEqualTo(4);
+	}
+
+	@Test
+	public void checkDuplicateKeysZeroOne() {
+		assertThatCode(Context4::checkKeys).as("zero").doesNotThrowAnyException();
+		assertThatCode(() -> Context4.checkKeys("one")).as("one").doesNotThrowAnyException();
+	}
+
+	@Test
+	public void checkNullKeysOne() {
+		assertThatNullPointerException()
+				.isThrownBy(() -> Context4.checkKeys((Object) null))
+				.withMessage("key1");
+	}
+
+	@Test
+	public void checkDuplicateKeysTwo() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 1))
+				.withMessage("Key #1 (1) is duplicated");
+	}
+
+	@Test
+	public void checkNullKeysTwo() {
+		assertThatNullPointerException().isThrownBy(() -> Context4.checkKeys("one", null))
+		                                .withMessage("key2");
+	}
+
+	@Test
+	public void checkDuplicateKeysThree() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 1, 3))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 1))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 2))
+				.withMessage("Key #2 (2) is duplicated");
+	}
+
+	@Test
+	public void checkNullKeysThree() {
+		assertThatNullPointerException()
+				.isThrownBy(() -> Context4.checkKeys("one", "two", null))
+				.withMessage("key3");
+	}
+
+	@Test
+	public void checkDuplicateKeysFour() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 1, 3, 4))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 1, 4))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 1))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 2, 4))
+				.withMessage("Key #2 (2) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 2))
+				.withMessage("Key #2 (2) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 3))
+				.withMessage("Key #3 (3) is duplicated");
+	}
+
+	@Test
+	public void checkNullKeysFour() {
+		assertThatNullPointerException()
+				.isThrownBy(() -> Context4.checkKeys("one", "two", "three", null))
+				.withMessage("key4");
+	}
+
+	@Test
+	public void checkDuplicateKeysFive() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 1, 3, 4, 5))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 1, 4, 5))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 1, 5))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 4, 1))
+				.withMessage("Key #1 (1) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 2, 4, 5))
+				.withMessage("Key #2 (2) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 2, 5))
+				.withMessage("Key #2 (2) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 4, 2))
+				.withMessage("Key #2 (2) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 3, 5))
+				.withMessage("Key #3 (3) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 4, 3))
+				.withMessage("Key #3 (3) is duplicated");
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> Context4.checkKeys(1, 2, 3, 4, 4))
+				.withMessage("Key #4 (4) is duplicated");
+	}
+
+	@Test
+	public void checkNullKeysFive() {
+		assertThatNullPointerException()
+				.isThrownBy(() -> Context4.checkKeys("one", "two", "three", "four", null))
+				.withMessage("key5");
 	}
 }

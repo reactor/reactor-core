@@ -29,9 +29,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
+
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
@@ -43,9 +45,11 @@ import reactor.core.Scannable;
  */
 final class DelegateServiceScheduler implements Scheduler, Scannable {
 
+	final String executorName;
 	final ScheduledExecutorService executor;
 
-	DelegateServiceScheduler(ExecutorService executorService) {
+	DelegateServiceScheduler(String executorName, ExecutorService executorService) {
+			this.executorName = executorName;
 			ScheduledExecutorService exec = convert(executorService);
 			this.executor = Schedulers.decorateExecutorService(this, exec);
 	}
@@ -57,12 +61,12 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		return Schedulers.directSchedule(executor, task, 0L, TimeUnit.MILLISECONDS);
+		return Schedulers.directSchedule(executor, task, null, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return Schedulers.directSchedule(executor, task, delay, unit);
+		return Schedulers.directSchedule(executor, task, null, delay, unit);
 	}
 
 	@Override
@@ -98,9 +102,14 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
-		if (key == Attr.NAME) return Schedulers.FROM_EXECUTOR_SERVICE + "(" + executor + ")";
+		if (key == Attr.NAME) return toString();
 
 		return Schedulers.scanExecutor(executor, key);
+	}
+
+	@Override
+	public String toString() {
+		return Schedulers.FROM_EXECUTOR_SERVICE + '(' + executorName + ')';
 	}
 
 	static final class UnsupportedScheduledExecutorService

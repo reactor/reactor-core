@@ -16,34 +16,33 @@
 
 package reactor.core.publisher;
 
-import java.util.List;
-
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.publisher.MonoMetrics.MicrometerMonoMetricsFuseableSubscriber;
 import reactor.util.annotation.Nullable;
-import reactor.util.function.Tuple2;
+
+import static reactor.core.publisher.FluxMetrics.resolveName;
+import static reactor.core.publisher.FluxMetrics.resolveTags;
 
 /**
- * Activate metrics gathering on a {@link Mono} (Fuseable version), assumes Micrometer is
- * on the classpath.
- *
- * @implNote Metrics.isInstrumentationAvailable() test should be performed BEFORE instantiating
- * or referencing this class, otherwise a {@link NoClassDefFoundError} will be thrown if
- * Micrometer is not there.
+ * Activate metrics gathering on a {@link Mono} (Fuseable version), assumes Micrometer is on the classpath.
+
+ * @implNote Metrics.isInstrumentationAvailable() test should be performed BEFORE instantiating or referencing this
+ * class, otherwise a {@link NoClassDefFoundError} will be thrown if Micrometer is not there.
  *
  * @author Simon Baslé
+ * @author Stephane Maldini
  */
-final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
+final class MonoMetricsFuseable<T> extends MonoOperator<T, T> implements Fuseable {
 
-	final String    name;
-	final List<Tag> tags;
+	final String name;
+	final Tags   tags;
 
-	@Nullable
 	final MeterRegistry registryCandidate;
 
 	MonoMetricsFuseable(Mono<? extends T> mono) {
@@ -58,20 +57,101 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 	MonoMetricsFuseable(Mono<? extends T> mono, @Nullable MeterRegistry registryCandidate) {
 		super(mono);
 
-		Tuple2<String, List<Tag>> nameAndTags = FluxMetrics.resolveNameAndTags(mono);
-		this.name = nameAndTags.getT1();
-		this.tags = nameAndTags.getT2();
+		this.name = resolveName(mono);
+		this.tags = resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO, this.name);
 
-		this.registryCandidate = registryCandidate;
+		if (registryCandidate == null) {
+			this.registryCandidate = Metrics.globalRegistry;
+		}
+		else {
+			this.registryCandidate = registryCandidate;
+		}
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		MeterRegistry registry = Metrics.globalRegistry;
-		if (registryCandidate != null) {
-			registry = registryCandidate;
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.tags));
+	}
+
+	/**
+	 * @param <T>
+	 *
+	 * @implNote we don't want to particularly track fusion-specific calls, as this subscriber would only detect fused
+	 * subsequences immediately upstream of it, so Counters would be a bit irrelevant. We however want to instrument
+	 * onNext counts.
+	 */
+	static final class MetricsFuseableSubscriber<T> extends MonoMetrics.MetricsSubscriber<T>
+			implements Fuseable, QueueSubscription<T> {
+
+		int mode;
+
+		@Nullable
+		Fuseable.QueueSubscription<T> qs;
+
+		MetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
+				MeterRegistry registry,
+				Clock clock,
+				Tags sequenceTags) {
+			super(actual, registry, clock, sequenceTags);
 		}
-		return new MicrometerMonoMetricsFuseableSubscriber<>(actual, registry,
-				Clock.SYSTEM, this.name, this.tags);
+
+		@Override
+		public void clear() {
+			if (qs != null) {
+				qs.clear();
+			}
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return qs == null || qs.isEmpty();
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				FluxMetrics.recordOnSubscribe(commonTags, registry);
+				this.subscribeToTerminateSample = Timer.start(clock);
+				this.qs = Operators.as(s);
+				this.s = s;
+				actual.onSubscribe(this);
+
+			}
+		}
+
+		@Override
+		@Nullable
+		public T poll() {
+			if (qs == null) {
+				return null;
+			}
+			try {
+				T v = qs.poll();
+				if (!done && (v != null || mode == SYNC)) {
+					FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
+				}
+				done = true;
+				return v;
+			}
+			catch (Throwable e) {
+				FluxMetrics.recordOnError(commonTags, registry, subscribeToTerminateSample, e);
+				throw e;
+			}
+		}
+
+		@Override
+		public int requestFusion(int mode) {
+			//Simply negotiate the fusion by delegating:
+			if (qs != null) {
+				this.mode = qs.requestFusion(mode);
+				return this.mode;
+			}
+			return Fuseable.NONE; //should not happen unless requestFusion called before subscribe
+		}
+
+		@Override
+		public int size() {
+			return qs == null ? 0 : qs.size();
+		}
 	}
 }

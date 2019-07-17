@@ -18,12 +18,18 @@ package reactor.core.scheduler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import io.micrometer.core.instrument.internal.TimedExecutorService;
 import io.micrometer.core.instrument.search.Search;
 
 import reactor.core.Disposable;
@@ -66,6 +72,8 @@ final class SchedulerMetricDecorator
 				executorDifferentiator.computeIfAbsent(scheduler, key -> new AtomicInteger(0))
 				                      .getAndIncrement();
 
+		Tags tags = Tags.of(TAG_SCHEDULER_ID, schedulerId);
+
 		/*
 		Design note: we assume that a given Scheduler won't apply the decorator twice to the
 		same ExecutorService. Even though, it would simply create an extraneous meter for
@@ -76,13 +84,14 @@ final class SchedulerMetricDecorator
 		to distinguish between two instances with the same name and configuration).
 		 */
 
+		//the result of `monitor` below is ignored on purpose (the equivalent wrapping is done right after).
+		//calling this method is still useful, as it binds some gauges from the executor to the registry...
+		ExecutorServiceMetrics.monitor(globalRegistry, service, executorId, tags);
+
 		// TODO return the result of ExecutorServiceMetrics#monitor
 		//  once ScheduledExecutorService gets supported by Micrometer
 		//  See https://github.com/micrometer-metrics/micrometer/issues/1021
-		ExecutorServiceMetrics.monitor(globalRegistry, service, executorId,
-				Tag.of(TAG_SCHEDULER_ID, schedulerId));
-
-		return service;
+		return new TimedScheduledExecutorService(globalRegistry, service, executorId, tags);
 	}
 
 	@Override
@@ -97,5 +106,36 @@ final class SchedulerMetricDecorator
 		this.seenSchedulers.clear();
 		this.schedulerDifferentiator.clear();
 		this.executorDifferentiator.clear();
+	}
+
+	static final class TimedScheduledExecutorService extends TimedExecutorService implements ScheduledExecutorService {
+
+		final ScheduledExecutorService delegate;
+
+		public TimedScheduledExecutorService(MeterRegistry registry, ScheduledExecutorService delegate, String executorServiceName, Iterable<Tag> tags) {
+			super(registry, delegate, executorServiceName, tags);
+
+			this.delegate = delegate;
+		}
+
+		@Override
+		public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+			return delegate.schedule(command, delay, unit);
+		}
+
+		@Override
+		public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+			return delegate.schedule(callable, delay, unit);
+		}
+
+		@Override
+		public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+			return delegate.scheduleAtFixedRate(command, initialDelay, period, unit);
+		}
+
+		@Override
+		public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+			return delegate.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+		}
 	}
 }

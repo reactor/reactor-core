@@ -115,12 +115,12 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		return Schedulers.directSchedule(executor, task, 0L, TimeUnit.MILLISECONDS);
+		return Schedulers.directSchedule(executor, task, null, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return Schedulers.directSchedule(executor, task, delay, unit);
+		return Schedulers.directSchedule(executor, task, null, delay, unit);
 	}
 
 	@Override
