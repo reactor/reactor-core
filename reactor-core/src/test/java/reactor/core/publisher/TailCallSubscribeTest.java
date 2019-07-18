@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -118,6 +119,114 @@ public class TailCallSubscribeTest {
                 );
     }
 
+	@Test
+	public void delaySubscription() throws Exception {
+		StackCapturingPublisher stackCapturingPublisher = new StackCapturingPublisher();
+
+		Flux.from(stackCapturingPublisher)
+		    .as(manyOperatorsOnFlux)
+		    .delaySubscription(Duration.ofMillis(10))
+		    .as(manyOperatorsOnFlux)
+		    .subscribe(new CancellingSubscriber());
+
+		assertThat(stackCapturingPublisher.get(1, TimeUnit.SECONDS))
+				.extracting(StackTraceElement::getClassName, StackTraceElement::getMethodName)
+				.startsWith(
+						tuple(Thread.class.getName(), "getStackTrace"),
+						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
+						tuple(InternalFluxOperator.class.getName(), "subscribe"),
+						tuple(FluxDelaySubscription.class.getName(), "accept")
+				);
+	}
+
+	@Test
+	public void doFirst() throws Exception {
+		StackCapturingPublisher stackCapturingPublisher = new StackCapturingPublisher();
+
+		Flux.from(stackCapturingPublisher)
+		    .as(manyOperatorsOnFlux)
+		    .doFirst(() -> {})
+		    .as(manyOperatorsOnFlux)
+		    .subscribe(new CancellingSubscriber());
+
+		assertThat(stackCapturingPublisher.get(1, TimeUnit.SECONDS))
+				.extracting(StackTraceElement::getClassName, StackTraceElement::getMethodName)
+				.startsWith(
+						tuple(Thread.class.getName(), "getStackTrace"),
+						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
+						tuple(Flux.class.getName(), "subscribe"),
+						tuple(this.getClass().getName(), "doFirst")
+				);
+	}
+
+	@Test
+	public void bufferWhen() throws Exception {
+		StackCapturingPublisher stackCapturingPublisher = new StackCapturingPublisher();
+
+		Flux.from(stackCapturingPublisher)
+		    .as(manyOperatorsOnFlux)
+		    .bufferWhen(Mono.just(1), __ -> Mono.just(2))
+		    .cast(Object.class)
+		    .as(manyOperatorsOnFlux)
+		    .subscribe(new CancellingSubscriber());
+
+		assertThat(stackCapturingPublisher.get(1, TimeUnit.SECONDS))
+				.extracting(StackTraceElement::getClassName, StackTraceElement::getMethodName)
+				.startsWith(
+						tuple(Thread.class.getName(), "getStackTrace"),
+						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
+						tuple(Flux.class.getName(), "subscribe"),
+						tuple(this.getClass().getName(), "bufferWhen")
+				);
+	}
+
+	@Test
+	public void repeat() throws Exception {
+		StackCapturingPublisher stackCapturingPublisher = new StackCapturingPublisher();
+
+		Flux.from(stackCapturingPublisher)
+		    .as(manyOperatorsOnFlux)
+		    .repeat(1)
+		    .as(manyOperatorsOnFlux)
+		    .subscribe(new CancellingSubscriber());
+
+		assertThat(stackCapturingPublisher.get(1, TimeUnit.SECONDS))
+				.extracting(StackTraceElement::getClassName, StackTraceElement::getMethodName)
+				.startsWith(
+						tuple(Thread.class.getName(), "getStackTrace"),
+						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
+						tuple(Flux.class.getName(), "subscribe"),
+						tuple(FluxRepeat.RepeatSubscriber.class.getName(), "resubscribe"),
+						tuple(FluxRepeat.RepeatSubscriber.class.getName(), "onComplete"),
+						tuple(FluxRepeat.class.getName(), "subscribeOrReturn"),
+						tuple(Flux.class.getName(), "subscribe"),
+						tuple(this.getClass().getName(), "repeat")
+				);
+	}
+
+	@Test
+	public void retry() throws Exception {
+		StackCapturingPublisher stackCapturingPublisher = new StackCapturingPublisher();
+
+		Flux.from(stackCapturingPublisher)
+		    .as(manyOperatorsOnFlux)
+		    .retry(1)
+		    .as(manyOperatorsOnFlux)
+		    .subscribe(new CancellingSubscriber());
+
+		assertThat(stackCapturingPublisher.get(1, TimeUnit.SECONDS))
+				.extracting(StackTraceElement::getClassName, StackTraceElement::getMethodName)
+				.startsWith(
+						tuple(Thread.class.getName(), "getStackTrace"),
+						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
+						tuple(Flux.class.getName(), "subscribe"),
+						tuple(FluxRetry.RetrySubscriber.class.getName(), "resubscribe"),
+						tuple(FluxRetry.class.getName(), "subscribeOrReturn"),
+						tuple(Flux.class.getName(), "subscribe"),
+						tuple(this.getClass().getName(), "retry")
+				);
+	}
+
     private static class StackCapturingPublisher extends CompletableFuture<StackTraceElement[]> implements Publisher<Object> {
 
         @Override
@@ -133,7 +242,7 @@ public class TailCallSubscribeTest {
 
         @Override
         public void onSubscribe(Subscription s) {
-            s.cancel();
+            Schedulers.parallel().schedule(s::cancel, 10, TimeUnit.MILLISECONDS);
         }
 
         @Override
