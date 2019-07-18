@@ -30,17 +30,15 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Simon Baslé
  */
-final class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
-		implements Scannable, Fuseable, CoreOperator<O, I> {
+final class ConnectableLiftFuseable<I, O> extends InternalConnectableFluxOperator<I, O>
+		implements Scannable, Fuseable {
 
 	final BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
 			lifter;
 
-	final ConnectableFlux<I> source;
-
 	ConnectableLiftFuseable(ConnectableFlux<I> p,
 			BiFunction<Publisher, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
-		this.source = Objects.requireNonNull(p, "source");
+		super(Objects.requireNonNull(p, "source"));
 		this.lifter = lifter;
 	}
 
@@ -63,11 +61,6 @@ final class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super O> actual) {
-		source.subscribe(subscribeOrReturn(actual));
-	}
-
-	@Override
 	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);
@@ -81,10 +74,5 @@ final class ConnectableLiftFuseable<I, O> extends ConnectableFlux<O>
 		}
 		//otherwise QS is not required or user already made a compatible conversion
 		return input;
-	}
-
-	@Override
-	public ConnectableFlux<I> source() {
-		return source;
 	}
 }
