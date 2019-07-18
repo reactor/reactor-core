@@ -1,17 +1,19 @@
 [[metrics]]
 = Exposing Reactor metrics
 
-Project Reactor is a framework designed for performance and better utilization of resources.
-But, to understand the performance of your system, you have to monitor and keep an eye on various performance aspects.
+Project Reactor is a library designed for performance and better utilization of resources.
+But to truly understand the performance of a system, it is best to be able to monitor its various components.
 
 This is why Reactor provides a built-in integration with https://micrometer.io[Micrometer].
+
+TIP: If Micrometer is not on classpath, metrics will be a no-op.
 
 == Scheduler metrics
 
 Every async operation in Reactor is scheduled via Schedulers abstraction described in <<schedulers>>.
 This is why it is important to monitor your schedulers and react accordingly when some of the key metrics start looking suspicious.
 
-To enable Schedulers' metrics, you will need to use the following method:
+To enable scheduler metrics, you will need to use the following method:
 ====
 [source,java]
 ----
@@ -19,11 +21,11 @@ Schedulers.enableMetrics();
 ----
 ====
 
-WARNING: The instrumentation is performed when a scheduler is created. It is recommended to call this method as easly as possible.
+WARNING: The instrumentation is performed when a scheduler is created. It is recommended to call this method as early as possible.
 
 TIP: If you're using Spring Boot, it is a good idea to place the invocation before `SpringApplication.run(Application.class, args)` call.
 
-After you enable the scheduler metrics, Reactor will instrument (with Micrometer's built-in instrumentation) the underlying executors.
+Once scheduler metrics are enabled and provided it is on the classpath, Reactor will use Micrometer's support for instrumenting the executors that back most schedulers.
 
 Please refer to http://micrometer.io/docs[Micrometer's documentation] for the exposed metrics, such as:
 
