@@ -22,9 +22,9 @@ patterns that can help you reuse and mutualize code, notably for operators or co
 of operators that you might want to apply regularly in your codebase. If you think of a
 chain of operators as a recipe, you can create a "`cookbook`" of operator recipes.
 
-=== Using the `transform` Operator
+=== Using the `composeNow` Operator
 
-The `transform` operator lets you encapsulate a piece of an operator chain into a
+The `composeNow` operator lets you encapsulate a piece of an operator chain into a
 function. That function is applied to an original operator chain at assembly time to
 augment it with the encapsulated operators. Doing so applies the same operations to all
 the subscribers of a sequence and is basically equivalent to chaining the operators
@@ -39,12 +39,12 @@ f -> f.filter(color -> !color.equals("orange"))
 
 Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 	.doOnNext(System.out::println)
-	.transform(filterAndMap)
+	.composeNow(filterAndMap)
 	.subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 ----
 ====
 
-The following image shows how the `transform` operator encapsulates flows:
+The following image shows how the `composeNow` operator encapsulates flows:
 
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
 
@@ -62,9 +62,9 @@ Subscriber to Transformed MapAndFilter: PURPLE
 ----
 ====
 
-=== Using the `compose` Operator
+=== Using the `composeLater` Operator
 
-The `compose` operator is similar to `transform` and also lets you encapsulate operators
+The `composeLater` operator is similar to `composeNow` and also lets you encapsulate operators
 in a function. The major difference is that this function is applied to the original
 sequence _on a per-subscriber basis_. It means that the function can actually produce a
 different operator chain for each subscription (by maintaining some state). The
@@ -86,14 +86,14 @@ return f.filter(color -> !color.equals("orange"))
 Flux<String> composedFlux =
 Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
     .doOnNext(System.out::println)
-    .compose(filterAndMap);
+    .composeLater(filterAndMap);
 
 composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
 ----
 ====
 
-The following image shows how the `compose` operator works with per-subscriber transformations:
+The following image shows how the `composeLater` operator works with per-subscriber transformations:
 
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
 

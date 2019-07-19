@@ -48,7 +48,7 @@ public abstract class AbstractFluxVerification
 			return Flux.range(1, (int) elements)
 			           .filter(integer -> true)
 			           .map(integer -> integer)
-			           .transform(this::transformFlux);
+			           .composeNow(this::transformFlux);
 		}
 		else {
 			final Random random = new Random();
@@ -56,14 +56,14 @@ public abstract class AbstractFluxVerification
 			return Mono.fromCallable(random::nextInt)
 			           .repeat()
 			           .map(Math::abs)
-			           .transform(this::transformFlux);
+			           .composeNow(this::transformFlux);
 		}
 	}
 
 	@Override
 	public Publisher<Integer> createFailedPublisher() {
 		return Flux.<Integer>error(new Exception("oops"))
-				.transform(this::transformFlux);
+				.composeNow(this::transformFlux);
 	}
 
 	protected void monitorThreadUse(Object val) {

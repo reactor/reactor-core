@@ -651,7 +651,7 @@ public class ParallelFluxTest {
 	@Test
 	public void transformChangesPrefetch() {
 		assertThat(ParallelFlux.from(Flux.range(1, 10), 3, 12, Queues.small())
-		                       .transform(pf -> pf.runOn(Schedulers.parallel(), 3)
+		                       .composeNow(pf -> pf.runOn(Schedulers.parallel(), 3)
 		                                          .log()
 		                                          .hide())
 		                       .getPrefetch())

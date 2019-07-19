@@ -185,7 +185,7 @@ public abstract class Operators {
 	/**
 	 * Create a function that can be used to support a custom operator via
 	 * {@link CoreSubscriber} decoration. The function is compatible with
-	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
+	 * {@link Flux#composeNow(Function)}, {@link Mono#composeNow(Function)},
 	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
 	 * but requires that the original {@link Publisher} be {@link Scannable}.
 	 * <p>
@@ -213,7 +213,7 @@ public abstract class Operators {
 	/**
 	 * Create a function that can be used to support a custom operator via
 	 * {@link CoreSubscriber} decoration. The function is compatible with
-	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
+	 * {@link Flux#composeNow(Function)}, {@link Mono#composeNow(Function)},
 	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
 	 * but requires that the original {@link Publisher} be {@link Scannable}.
 	 * <p>
@@ -249,7 +249,7 @@ public abstract class Operators {
 	/**
 	 * Create a function that can be used to support a custom operator via
 	 * {@link CoreSubscriber} decoration. The function is compatible with
-	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
+	 * {@link Flux#composeNow(Function)}, {@link Mono#composeNow(Function)},
 	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
 	 * and works with the raw {@link Publisher} as input, which is useful if you need to
 	 * detect the precise type of the source (eg. instanceof checks to detect Mono, Flux,
@@ -273,7 +273,7 @@ public abstract class Operators {
 	/**
 	 * Create a function that can be used to support a custom operator via
 	 * {@link CoreSubscriber} decoration. The function is compatible with
-	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
+	 * {@link Flux#composeNow(Function)}, {@link Mono#composeNow(Function)},
 	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)},
 	 * and works with the raw {@link Publisher} as input, which is useful if you need to
 	 * detect the precise type of the source (eg. instanceof checks to detect Mono, Flux,
