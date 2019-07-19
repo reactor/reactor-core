@@ -87,7 +87,7 @@ Just adding these two operators will expose a whole bunch of useful metrics!
 
 | reactor.onNext.delay | Timer | Measures delays between onNext signals (or between onSubscribe and first onNext)
 
-| reactor.flow.duration | Timer | Times the duration elapsed between a subscription and the cancellation of the sequence
+| reactor.flow.duration | Timer | Times the duration elapsed between a subscription and the termination or cancellation of the sequence. A status tag is added to specify what event caused the timer to end (`onComplete`, `onError`, `cancel`).
 |=======
 
 Want to know how many times your event processing have restarted due to some error? Read `reactor.subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
