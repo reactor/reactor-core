@@ -6,12 +6,12 @@ But to truly understand the performance of a system, it is best to be able to mo
 
 This is why Reactor provides a built-in integration with https://micrometer.io[Micrometer].
 
-TIP: If Micrometer is not on classpath, metrics will be a no-op.
+TIP: If Micrometer is not on the classpath, metrics will be a no-op.
 
 == Scheduler metrics
 
-Every async operation in Reactor is scheduled via Schedulers abstraction described in <<schedulers>>.
-This is why it is important to monitor your schedulers and react accordingly when some of the key metrics start looking suspicious.
+Every async operation in Reactor is done via the Scheduler abstraction described in <<schedulers>>.
+This is why it is important to monitor your schedulers, watch out for key metrics that start to look suspicious and react accordingly.
 
 To enable scheduler metrics, you will need to use the following method:
 ====
