@@ -156,6 +156,9 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 							actual.onNext(value);
 							actual.onComplete();
 						}
+						catch (Throwable t) {
+							actual.onError(t);
+						}
 						finally {
 							disposeResource(false);
 						}
