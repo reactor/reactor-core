@@ -27,7 +27,7 @@ TIP: If you're using Spring Boot, it is a good idea to place the invocation befo
 
 Once scheduler metrics are enabled and provided it is on the classpath, Reactor will use Micrometer's support for instrumenting the executors that back most schedulers.
 
-Please refer to http://micrometer.io/docs[Micrometer's documentation] for the exposed metrics, such as:
+Please refer to http://micrometer.io/docs/ref/jvm[Micrometer's documentation] for the exposed metrics, such as:
 
 - executor_active_threads
 - executor_completed_tasks_total
