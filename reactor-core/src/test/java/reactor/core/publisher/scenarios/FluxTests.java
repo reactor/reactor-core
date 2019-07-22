@@ -894,7 +894,7 @@ public class FluxTests extends AbstractReactorTest {
 			final String source = "ASYNC_TEST " + i;
 
 			Flux.just(source)
-			    .composeNow(operationStream -> operationStream.publishOn(asyncGroup)
+			    .transform(operationStream -> operationStream.publishOn(asyncGroup)
 			                                          .delayElements(Duration.ofMillis(100))
 			                                          .map(s -> s + " MODIFIED")
 			                                          .map(s -> {

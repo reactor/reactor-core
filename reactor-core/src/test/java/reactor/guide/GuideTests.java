@@ -163,7 +163,7 @@ public class GuideTests {
 
 		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 		    .doOnNext(System.out::println)
-		    .composeNow(filterAndMap)
+		    .transform(filterAndMap)
 		    .subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 	}
 
@@ -182,7 +182,7 @@ public class GuideTests {
 		Flux<String> composedFlux =
 				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 				    .doOnNext(System.out::println)
-				    .composeLater(filterAndMap);
+				    .transformDeferred(filterAndMap);
 
 		composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 		composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));

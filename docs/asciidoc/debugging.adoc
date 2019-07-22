@@ -217,8 +217,8 @@ example might make it more clear:
 [source,java]
 ----
 FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
-              .composeNow(FakeUtils1.applyFilters)
-              .composeNow(FakeUtils2.enrichUser)
+              .transform(FakeUtils1.applyFilters)
+              .transform(FakeUtils2.enrichUser)
               .blockLast();
 ----
 ====
@@ -233,9 +233,9 @@ Error has been observed by the following operator(s):
 	|_	Flux.map ⇢ reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)
 	|_	Flux.map ⇢ reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)
 	|_	Flux.filter ⇢ reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)
-	|_	Flux.composeNow ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)
+	|_	Flux.transform ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)
 	|_	Flux.elapsed ⇢ reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)
-	|_	Flux.composeNow ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:41)
+	|_	Flux.transform ⇢ reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:41)
 ----
 ====
 
@@ -244,10 +244,10 @@ This corresponds to the section of the chain of operators that gets notified of 
 . The exception originates in the first `map`.
 . It is seen by a second `map` (both in fact correspond to the `findAllUserByName`
 method).
-. It is then seen by a `filter` and a `composeNow`, which indicate that part of the chain
+. It is then seen by a `filter` and a `transform`, which indicate that part of the chain
 is constructed by a reusable transformation function (here, the `applyFilters` utility
 method).
-. Finally, it is seen by an `elapsed` and a `composeNow`. Once again, `elapsed` is applied
+. Finally, it is seen by an `elapsed` and a `transform`. Once again, `elapsed` is applied
 by the transformation function of that second transform.
 
 We deal with a form of instrumentation here, and creating a stack trace is costly. That

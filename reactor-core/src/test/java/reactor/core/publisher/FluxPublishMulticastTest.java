@@ -205,7 +205,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 	public void pairWise() {
 		AssertSubscriber<Tuple2<Integer, Integer>> ts = AssertSubscriber.create();
 
-		range(1, 9).composeNow(o -> zip(o, o.skip(1)))
+		range(1, 9).transform(o -> zip(o, o.skip(1)))
 		           .subscribe(ts);
 
 		ts.assertValues(Tuples.of(1, 2),
