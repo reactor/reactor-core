@@ -37,7 +37,7 @@ Please refer to http://micrometer.io/docs[Micrometer's documentation] for the ex
 
 Since one scheduler may have multiple executors, every executor metric has a `reactor_scheduler_id` tag.
 
-TIP: Grafana + Prometheus users can use https://raw.githubusercontent.com/reactor/reactor-monitoring-demo/master/dashboards/schedulers.json[a pre-built dashboard] which includes panels for threads, completed tasks, task queues and other handy metrics:
+TIP: Grafana + Prometheus users can use https://raw.githubusercontent.com/reactor/reactor-monitoring-demo/master/dashboards/schedulers.json[a pre-built dashboard] which includes panels for threads, completed tasks, task queues and other handy metrics.
 
 == Publisher metrics
 Sometimes it is useful to be able to record metrics at some stage in your reactive pipeline.
@@ -90,7 +90,7 @@ Just adding these two operators will expose a whole bunch of useful metrics!
 | reactor.flow.duration | Timer | Times the duration elapsed between a subscription and the termination or cancellation of the sequence. A status tag is added to specify what event caused the timer to end (`onComplete`, `onError`, `cancel`).
 |=======
 
-Want to know how many times your event processing have restarted due to some error? Read `reactor.subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
+Want to know how many times your event processing has restarted due to some error? Read `reactor.subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
 
 Interested in "events per second" metric? Measure the rate of `reactor.onNext.delay` 's count.
 
