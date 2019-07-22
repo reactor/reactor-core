@@ -301,11 +301,11 @@ public class MonoCreateTest {
 	@Test
 	public void delayUntilTriggerProviderThrows() {
 		Mono<String> triggerProviderThrows = Mono.<String>create(sink ->
-			sink.success("foo")
+				sink.success("foo")
 		)
-		.delayUntil(str -> {
-			throw new RuntimeException("boom");
-		});
+				.delayUntil(str -> {
+					throw new RuntimeException("boom");
+				});
 
 		StepVerifier.create(triggerProviderThrows)
 		            .verifyErrorMessage("boom");
