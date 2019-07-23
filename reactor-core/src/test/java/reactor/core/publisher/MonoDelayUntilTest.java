@@ -112,6 +112,13 @@ public class MonoDelayUntilTest {
 	}
 
 	@Test
+	public void triggerThrows() {
+		StepVerifier.create(Mono.just("foo")
+		                        .delayUntil(a -> {throw new IllegalStateException("boom");}))
+		            .verifyErrorMessage("boom");
+	}
+
+	@Test
 	public void sourceAndTriggerHaveErrorsNotDelayed() {
 		StepVerifier.create(Mono.<String>error(new IllegalStateException("boom1"))
 				.delayUntil(a -> Mono.<Integer>error(new IllegalStateException("boom2"))))
