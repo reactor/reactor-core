@@ -299,6 +299,19 @@ public class MonoCreateTest {
 	}
 
 	@Test
+	public void delayUntilTriggerProviderThrows() {
+		Mono<String> triggerProviderThrows = Mono.<String>create(sink ->
+				sink.success("foo")
+		)
+				.delayUntil(str -> {
+					throw new RuntimeException("boom");
+				});
+
+		StepVerifier.create(triggerProviderThrows)
+		            .verifyErrorMessage("boom");
+	}
+
+	@Test
 	public void scanDefaultMonoSink() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoCreate.DefaultMonoSink<String> test = new MonoCreate.DefaultMonoSink<>(actual);
