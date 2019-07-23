@@ -201,6 +201,21 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Create a {@link Mono} provider that will {@link Function#apply  supply} a target {@link Mono}
+	 * to subscribe to for each {@link Subscriber} downstream.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/deferForMono.svg" alt="">
+	 * <p>
+	 * @param supplier a {@link Mono} factory
+	 * @param <T> the element type of the returned Mono instance
+	 * @return a new {@link Mono} factory
+	 */
+	public static <T> Mono<T> defer(Function<Context, ? extends Mono<? extends T>> supplier) {
+		return onAssembly(new MonoDeferWithContext<>(supplier));
+	}
+
+	/**
 	 * Create a Mono which delays an onNext signal by a given {@link Duration duration}
 	 * on a default Scheduler and completes.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.

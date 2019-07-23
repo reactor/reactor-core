@@ -807,6 +807,25 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Lazily supply a {@link Publisher} every time a {@link Subscription} is made on the
+	 * resulting {@link Flux}, so the actual source instantiation is deferred until each
+	 * subscribe and the {@link Function} can create a subscriber-specific instance.
+	 * If the supplier doesn't generate a new instance however, this operator will
+	 * effectively behave like {@link #from(Publisher)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/deferForFlux.svg" alt="">
+	 *
+	 * @param supplier the {@link Publisher} {@link Function} to call on subscribe
+	 * @param <T>      the type of values passing through the {@link Flux}
+	 *
+	 * @return a deferred {@link Flux}
+	 */
+	public static <T> Flux<T> defer(Function<Context, ? extends Publisher<T>> supplier) {
+		return onAssembly(new FluxDeferWithContext<>(supplier));
+	}
+
+	/**
 	 * Create a {@link Flux} that completes without emitting any item.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/empty.svg" alt="">
