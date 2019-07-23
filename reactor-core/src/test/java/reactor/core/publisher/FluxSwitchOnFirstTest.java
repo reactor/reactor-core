@@ -674,7 +674,7 @@ public class FluxSwitchOnFirstTest {
     @Test
     public void shouldPropagateErrorCorrectly() {
         Flux<String> switchTransformed = Flux.error(new RuntimeException("hello"))
-                                             .composeNow(flux -> new FluxSwitchOnFirst<>(
+                                             .transform(flux -> new FluxSwitchOnFirst<>(
                                                      flux,
                                                      (first, innerFlux) -> innerFlux.map(
                                                              String::valueOf)));

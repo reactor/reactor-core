@@ -37,8 +37,8 @@ public class GuideDebuggingExtraTests {
 		try {
 			StringWriter sw = new StringWriter();
 			FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
-			              .composeNow(FakeUtils1.applyFilters)
-			              .composeNow(FakeUtils2.enrichUser)
+			              .transform(FakeUtils1.applyFilters)
+			              .transform(FakeUtils2.enrichUser)
 			              .subscribe(System.out::println,
 					              t -> t.printStackTrace(new PrintWriter(sw))
 			              );
@@ -47,12 +47,12 @@ public class GuideDebuggingExtraTests {
 
 			assertThat(debugStack.substring(0, debugStack.indexOf("Stack trace:")))
 					.endsWith("Error has been observed at the following site(s):\n"
-							+ "\t|_        Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)\n"
-							+ "\t|_        Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)\n"
-							+ "\t|_     Flux.filter ⇢ at reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)\n"
-							+ "\t|_ Flux.composeNow ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)\n"
-							+ "\t|_    Flux.elapsed ⇢ at reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)\n"
-							+ "\t|_ Flux.composeNow ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:41)\n");
+							+ "\t|_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:27)\n"
+							+ "\t|_       Flux.map ⇢ at reactor.guide.FakeRepository.findAllUserByName(FakeRepository.java:28)\n"
+							+ "\t|_    Flux.filter ⇢ at reactor.guide.FakeUtils1.lambda$static$1(FakeUtils1.java:29)\n"
+							+ "\t|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:40)\n"
+							+ "\t|_   Flux.elapsed ⇢ at reactor.guide.FakeUtils2.lambda$static$0(FakeUtils2.java:30)\n"
+							+ "\t|_ Flux.transform ⇢ at reactor.guide.GuideDebuggingExtraTests.debuggingActivatedWithDeepTraceback(GuideDebuggingExtraTests.java:41)\n");
 		}
 		finally {
 			Hooks.resetOnOperatorDebug();
