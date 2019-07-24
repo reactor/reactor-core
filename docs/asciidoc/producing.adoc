@@ -228,8 +228,8 @@ Flux<String> bridge = Flux.push(sink -> {
 <4> `error` event also generated from the same listener thread.
 ====
 
-=== An hybrid push/pull model
-Most Reactor operators, like `create`, follow an hybrid **push/pull** model.
+=== A hybrid push/pull model
+Most Reactor operators, like `create`, follow a hybrid **push/pull** model.
 What we mean by that is that despite most of the processing being asynchronous
 (suggesting a _push_ approach), there is a small _pull_ component to it: the
 request.
