@@ -1041,7 +1041,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			int i = 0;
 			while(i < subscribers.length){
 				subscribers[i++] =
-						new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+						new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe, null);
 			}
 
 			((ParallelFlux<T>) publisher).subscribe(subscribers);
@@ -1050,7 +1050,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 		}
 		else {
 			LambdaSubscriber<? super T> subscriber =
-					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe, null);
 
 			publisher.subscribe(Operators.toCoreSubscriber(new FluxHide.SuppressFuseableSubscriber<>(subscriber)));
 

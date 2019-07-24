@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.util.context.Context;
 
 /**
  * A simple base class for a {@link Subscriber} implementation that lets the user
@@ -51,6 +52,11 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 
 	static AtomicReferenceFieldUpdater<BaseSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(BaseSubscriber.class, Subscription.class, "subscription");
+
+	@Override
+	public final Context currentContext() {
+		return CoreSubscriber.super.currentContext();
+	}
 
 	/**
 	 * Return current {@link Subscription}
