@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.util.context.Context;
 
 public class MonoDeferTest {
 
@@ -28,6 +29,22 @@ public class MonoDeferTest {
 
 		Mono<Integer> source =
 				Mono.defer(() -> Mono.just(i.incrementAndGet()));
+
+		Assert.assertEquals(source.block().intValue(), 1);
+		Assert.assertEquals(source.block().intValue(), 2);
+		Assert.assertEquals(source.block().intValue(), 3);
+	}
+
+	@Test
+	public void deferMonoWithContext() {
+		Mono<Integer> source = Mono
+				.deferWithContext(ctx -> {
+					AtomicInteger i = ctx.get("i");
+					return Mono.just(i.incrementAndGet());
+				})
+				.subscriberContext(Context.of(
+						"i", new AtomicInteger()
+				));
 
 		Assert.assertEquals(source.block().intValue(), 1);
 		Assert.assertEquals(source.block().intValue(), 2);
