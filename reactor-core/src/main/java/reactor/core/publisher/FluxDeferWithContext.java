@@ -39,7 +39,6 @@ final class FluxDeferWithContext<T> extends Flux<T> implements SourceProducer<T>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T> p;
 

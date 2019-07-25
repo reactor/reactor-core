@@ -254,4 +254,4 @@ fun <T : Any> Flux<out Iterable<T>>.split(): Flux<T> = this.flatMapIterable { it
  */
 @Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
         ReplaceWith("switchIfEmpty(s)", "reactor.kotlin.core.publisher.switchIfEmpty"))
-fun <T> Flux<T>.switchIfEmpty(s: () -> Publisher<T>): Flux<T> = this.switchIfEmpty(Flux.defer { -> s() })
+fun <T> Flux<T>.switchIfEmpty(s: () -> Publisher<T>): Flux<T> = this.switchIfEmpty(Flux.defer { s() })

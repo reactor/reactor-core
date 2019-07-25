@@ -801,6 +801,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T>      the type of values passing through the {@link Flux}
 	 *
 	 * @return a deferred {@link Flux}
+	 * @see #deferWithContext(Function)
 	 */
 	public static <T> Flux<T> defer(Supplier<? extends Publisher<T>> supplier) {
 		return onAssembly(new FluxDefer<>(supplier));
@@ -821,7 +822,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a deferred {@link Flux}
 	 */
-	public static <T> Flux<T> defer(Function<Context, ? extends Publisher<T>> supplier) {
+	public static <T> Flux<T> deferWithContext(Function<Context, ? extends Publisher<T>> supplier) {
 		return onAssembly(new FluxDeferWithContext<>(supplier));
 	}
 

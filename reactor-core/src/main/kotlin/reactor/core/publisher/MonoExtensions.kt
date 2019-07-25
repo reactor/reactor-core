@@ -158,4 +158,4 @@ fun <T : Any, E : Throwable> Mono<T>.onErrorReturn(exceptionType: KClass<E>, val
  */
 @Deprecated("To be removed in 3.3.0.RELEASE, replaced by module reactor-kotlin-extensions",
         ReplaceWith("switchIfEmpty(s)", "reactor.kotlin.core.publisher.switchIfEmpty"))
-fun <T> Mono<T>.switchIfEmpty(s: () -> Mono<T>): Mono<T> = this.switchIfEmpty(Mono.defer { -> s() })
+fun <T> Mono<T>.switchIfEmpty(s: () -> Mono<T>): Mono<T> = this.switchIfEmpty(Mono.defer { s() })

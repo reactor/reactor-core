@@ -17,11 +17,9 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
@@ -29,7 +27,7 @@ public class FluxDeferTest {
 
 	@Test(expected = NullPointerException.class)
 	public void supplierNull() {
-		Flux.<Integer>defer((Supplier<? extends Publisher<Integer>>) null);
+		Flux.<Integer>defer(null);
 	}
 
 	@Test
@@ -84,7 +82,7 @@ public class FluxDeferTest {
 	@Test
 	public void deferFluxWithContext() {
 		Flux<Integer> source = Flux
-				.defer(ctx -> {
+				.deferWithContext(ctx -> {
 					AtomicInteger i = ctx.get("i");
 					return Mono.just(i.incrementAndGet());
 				})

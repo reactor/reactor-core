@@ -38,7 +38,7 @@ public class MonoDeferTest {
 	@Test
 	public void deferMonoWithContext() {
 		Mono<Integer> source = Mono
-				.defer(ctx -> {
+				.deferWithContext(ctx -> {
 					AtomicInteger i = ctx.get("i");
 					return Mono.just(i.incrementAndGet());
 				})
