@@ -223,8 +223,8 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 	 */
 	static final String METER_SUBSCRIBED     = "reactor.subscribed";
 	/**
-	 * Meter that times the duration between the subscription and the sequence's terminal event. The timer is also using
-	 * the "status" tag to determine which kind of event terminated the sequence.
+	 * Meter that times the duration elapsed between a subscription and the termination or cancellation of the sequence.
+	 * A status tag is added to specify what event caused the timer to end (onComplete, onError, cancel).
 	 */
 	static final String METER_FLOW_DURATION  = "reactor.flow.duration";
 	/**

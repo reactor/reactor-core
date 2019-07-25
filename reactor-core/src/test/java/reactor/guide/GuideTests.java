@@ -156,7 +156,7 @@ public class GuideTests {
 	}
 
 	@Test
-	public void advancedCompose() {
+	public void advancedComposedNow() {
 		Function<Flux<String>, Flux<String>> filterAndMap =
 				f -> f.filter(color -> !color.equals("orange"))
 				      .map(String::toUpperCase);
@@ -168,7 +168,7 @@ public class GuideTests {
 	}
 
 	@Test
-	public void advancedTransform() {
+	public void advancedComposedDefer() {
 		AtomicInteger ai = new AtomicInteger();
 		Function<Flux<String>, Flux<String>> filterAndMap = f -> {
 			if (ai.incrementAndGet() == 1) {
@@ -182,7 +182,7 @@ public class GuideTests {
 		Flux<String> composedFlux =
 				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 				    .doOnNext(System.out::println)
-				    .compose(filterAndMap);
+				    .transformDeferred(filterAndMap);
 
 		composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 		composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
@@ -980,7 +980,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:944)\n");
+						.hasMessageContaining("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:944)\n");
 			});
 		}
 	}

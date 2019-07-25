@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 public class FluxDeferTest {
 
@@ -76,5 +77,21 @@ public class FluxDeferTest {
 		Assert.assertEquals(source.blockLast().intValue(), 1);
 		Assert.assertEquals(source.blockLast().intValue(), 2);
 		Assert.assertEquals(source.blockLast().intValue(), 3);
+	}
+
+	@Test
+	public void deferFluxWithContext() {
+		Flux<Integer> source = Flux
+				.deferWithContext(ctx -> {
+					AtomicInteger i = ctx.get("i");
+					return Mono.just(i.incrementAndGet());
+				})
+				.subscriberContext(Context.of(
+						"i", new AtomicInteger()
+				));
+
+		Assert.assertEquals(source.blockFirst().intValue(), 1);
+		Assert.assertEquals(source.blockFirst().intValue(), 2);
+		Assert.assertEquals(source.blockFirst().intValue(), 3);
 	}
 }

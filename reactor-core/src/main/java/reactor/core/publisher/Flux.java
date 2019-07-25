@@ -801,9 +801,31 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T>      the type of values passing through the {@link Flux}
 	 *
 	 * @return a deferred {@link Flux}
+	 * @see #deferWithContext(Function)
 	 */
 	public static <T> Flux<T> defer(Supplier<? extends Publisher<T>> supplier) {
 		return onAssembly(new FluxDefer<>(supplier));
+	}
+
+	/**
+	 * Lazily supply a {@link Publisher} every time a {@link Subscription} is made on the
+	 * resulting {@link Flux}, so the actual source instantiation is deferred until each
+	 * subscribe and the {@link Function} can create a subscriber-specific instance.
+	 * This operator behaves the same way as {@link #defer(Supplier)},
+	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
+	 * If the supplier doesn't generate a new instance however, this operator will
+	 * effectively behave like {@link #from(Publisher)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/deferForFlux.svg" alt="">
+	 *
+	 * @param supplier the {@link Publisher} {@link Function} to call on subscribe
+	 * @param <T>      the type of values passing through the {@link Flux}
+	 *
+	 * @return a deferred {@link Flux}
+	 */
+	public static <T> Flux<T> deferWithContext(Function<Context, ? extends Publisher<T>> supplier) {
+		return onAssembly(new FluxDeferWithContext<>(supplier));
 	}
 
 	/**
@@ -3397,7 +3419,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * flux.compose(original -> original.log());
 	 * </pre></blockquote>
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/composeForFlux.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/transformDeferredForFlux.svg" alt="">
 	 *
 	 * @param transformer the {@link Function} to lazily map this {@link Flux} into a target {@link Publisher}
 	 * instance for each new subscriber
@@ -3406,7 +3428,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux}
 	 * @see #transform  transform() for immmediate transformation of {@link Flux}
 	 * @see #as as() for a loose conversion to an arbitrary type
+	 * @deprecated will be removed in 3.4.0, use {@link #transformDeferred(Function)} instead
 	 */
+	@Deprecated
 	public final <V> Flux<V> compose(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> transformer.apply(this));
 	}
@@ -8743,11 +8767,32 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Flux}
 	 *
 	 * @return a new {@link Flux}
-	 * @see #compose(Function) for deferred composition of {@link Flux} for each {@link Subscriber}
+	 * @see #transformDeferred(Function) for deferred composition of {@link Flux} for each {@link Subscriber}
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return onAssembly(from(transformer.apply(this)));
+	}
+
+	/**
+	 * Defer the transformation of this {@link Flux} in order to generate a target {@link Flux} type.
+	 * A transformation will occur for each {@link Subscriber}. For instance:
+	 * <blockquote><pre>
+	 * flux.transformDeferred(original -> original.log());
+	 * </pre></blockquote>
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/transformDeferredForFlux.svg" alt="">
+	 *
+	 * @param transformer the {@link Function} to lazily map this {@link Flux} into a target {@link Publisher}
+	 * instance for each new subscriber
+	 * @param <V> the item type in the returned {@link Publisher}
+	 *
+	 * @return a new {@link Flux}
+	 * @see #transform(Function) transform() for immmediate transformation of {@link Flux}
+	 * @see #as as() for a loose conversion to an arbitrary type
+	 */
+	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
+		return defer(() -> transformer.apply(this));
 	}
 
 	/**

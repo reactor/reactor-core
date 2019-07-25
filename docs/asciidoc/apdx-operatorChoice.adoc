@@ -7,7 +7,7 @@ is covered by a combination of operators, it is presented as a method call, with
 leading dot and parameters in parentheses, as follows: `.methodCall(parameter)`.
 
 //TODO flux:  publishOn/subscribeOn/cancelOn
-//compose/transform, repeatWhen, sort, startWith
+//transformDeferred/transform, repeatWhen, sort, startWith
 //TODO Mono.sequenceEqual
 
 I want to deal with:

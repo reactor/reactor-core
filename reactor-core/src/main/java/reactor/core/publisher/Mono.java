@@ -195,9 +195,27 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param supplier a {@link Mono} factory
 	 * @param <T> the element type of the returned Mono instance
 	 * @return a new {@link Mono} factory
+	 * @see #deferWithContext(Function)
 	 */
 	public static <T> Mono<T> defer(Supplier<? extends Mono<? extends T>> supplier) {
 		return onAssembly(new MonoDefer<>(supplier));
+	}
+
+	/**
+	 * Create a {@link Mono} provider that will {@link Function#apply supply} a target {@link Mono}
+	 * to subscribe to for each {@link Subscriber} downstream.
+	 * This operator behaves the same way as {@link #defer(Supplier)},
+	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/deferForMono.svg" alt="">
+	 * <p>
+	 * @param supplier a {@link Mono} factory
+	 * @param <T> the element type of the returned Mono instance
+	 * @return a new {@link Mono} factory
+	 */
+	public static <T> Mono<T> deferWithContext(Function<Context, ? extends Mono<? extends T>> supplier) {
+		return onAssembly(new MonoDeferWithContext<>(supplier));
 	}
 
 	/**
@@ -1754,7 +1772,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * mono.compose(original -> original.log());
 	 * </pre></blockquote>
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/composeForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/transformDeferredForMono.svg" alt="">
 	 *
 	 * @param transformer the {@link Function} to lazily map this {@link Mono} into a target {@link Mono}
 	 * instance upon subscription.
@@ -1763,9 +1781,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 * @see #transform(Function)
+	 * @deprecated will be removed in 3.4.0, use {@link #transformDeferred(Function)} instead
 	 */
+	@Deprecated
 	public final <V> Mono<V> compose(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
-		return defer(() -> from(transformer.apply(this)));
+		return transformDeferred(transformer);
 	}
 
 	/**
@@ -4349,11 +4369,34 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Mono}
 	 *
 	 * @return a new {@link Mono}
-	 * @see #compose(Function) compose(Function) for deferred composition of {@link Mono} for each {@link Subscriber}
+	 * @see #transformDeferred(Function) transformDeferred(Function) for deferred composition of {@link Mono} for each {@link Subscriber}
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return onAssembly(from(transformer.apply(this)));
+	}
+
+	/**
+	 * Defer the given transformation to this {@link Mono} in order to generate a
+	 * target {@link Mono} type. A transformation will occur for each
+	 * {@link Subscriber}. For instance:
+	 *
+	 * <blockquote><pre>
+	 * mono.transformDeferred(original -> original.log());
+	 * </pre></blockquote>
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/transformDeferredForMono.svg" alt="">
+	 *
+	 * @param transformer the {@link Function} to lazily map this {@link Mono} into a target {@link Mono}
+	 * instance upon subscription.
+	 * @param <V> the item type in the returned {@link Publisher}
+	 *
+	 * @return a new {@link Mono}
+	 * @see #as as() for a loose conversion to an arbitrary type
+	 * @see #transform(Function)
+	 */
+	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
+		return defer(() -> from(transformer.apply(this)));
 	}
 
 	/**

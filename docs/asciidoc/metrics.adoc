@@ -1,0 +1,129 @@
+[[metrics]]
+= Exposing Reactor metrics
+
+Project Reactor is a library designed for performance and better utilization of resources.
+But to truly understand the performance of a system, it is best to be able to monitor its various components.
+
+This is why Reactor provides a built-in integration with https://micrometer.io[Micrometer].
+
+TIP: If Micrometer is not on the classpath, metrics will be a no-op.
+
+== Scheduler metrics
+
+Every async operation in Reactor is done via the Scheduler abstraction described in <<schedulers>>.
+This is why it is important to monitor your schedulers, watch out for key metrics that start to look suspicious and react accordingly.
+
+To enable scheduler metrics, you will need to use the following method:
+====
+[source,java]
+----
+Schedulers.enableMetrics();
+----
+====
+
+WARNING: The instrumentation is performed when a scheduler is created. It is recommended to call this method as early as possible.
+
+TIP: If you're using Spring Boot, it is a good idea to place the invocation before `SpringApplication.run(Application.class, args)` call.
+
+Once scheduler metrics are enabled and provided it is on the classpath, Reactor will use Micrometer's support for instrumenting the executors that back most schedulers.
+
+Please refer to http://micrometer.io/docs/ref/jvm[Micrometer's documentation] for the exposed metrics, such as:
+
+- executor_active_threads
+- executor_completed_tasks_total
+- executor_pool_size_threads
+- executor_queued_tasks
+- executor_secounds_{count, max, sum}
+
+Since one scheduler may have multiple executors, every executor metric has a `reactor_scheduler_id` tag.
+
+TIP: Grafana + Prometheus users can use https://raw.githubusercontent.com/reactor/reactor-monitoring-demo/master/dashboards/schedulers.json[a pre-built dashboard] which includes panels for threads, completed tasks, task queues and other handy metrics.
+
+== Publisher metrics
+Sometimes it is useful to be able to record metrics at some stage in your reactive pipeline.
+
+One way to do it would be to manually push the values to your metrics backend of choice.
+Another option would be to use Reactor's built-in metrics integration for `Flux`/`Mono` and interpret them.
+
+Consider the following pipeline:
+====
+[source,java]
+----
+listenToEvents()
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+====
+
+To enable the metrics for this source `Flux` (returned from `listenToEvents()`), we need to give it a name and turn on the metrics collecting:
+====
+[source,java]
+----
+listenToEvents()
+    .name("events") <1>
+    .metrics() <2>
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+<1> Every metric at this stage will be identified as "events".
+<2> `Flux#metrics` operator enables the reporting of metrics and uses the last known name up in the pipeline.
+====
+
+Just adding these two operators will expose a whole bunch of useful metrics!
+
+[width="100%",options="header"]
+|=======
+| metric name | type | description
+
+| reactor.subscribed | Counter | Counts how many Reactor sequences have been subscribed to
+
+| reactor.malformed.source | Counter | Counts the number of events received from a malformed source (ie an onNext after an onComplete)
+
+| reactor.requested | DistributionSummary | Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount
+
+| reactor.onNext.delay | Timer | Measures delays between onNext signals (or between onSubscribe and first onNext)
+
+| reactor.flow.duration | Timer | Times the duration elapsed between a subscription and the termination or cancellation of the sequence. A status tag is added to specify what event caused the timer to end (`onComplete`, `onError`, `cancel`).
+|=======
+
+Want to know how many times your event processing has restarted due to some error? Read `reactor.subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
+
+Interested in "events per second" metric? Measure the rate of `reactor.onNext.delay` 's count.
+
+Want to be alerted when the listener throws an error? `reactor.flow.duration` with `status=error` tag is your friend.
+
+=== Common tags
+
+Every metric will have the following tags in common:
+[width="100%",options="header"]
+|=======
+| tag name | description | example
+
+| type | Publisher's type | "Mono"
+
+| flow | current flow's name, set by `.name()` operator | "events"
+|=======
+
+=== Custom tags
+
+Users are allowed to add custom tags to their reactive chains:
+====
+[source,java]
+----
+listenToEvents()
+    .tag("source", "kafka") <1>
+    .name("events")
+    .metrics() <2>
+    .doOnNext(event -> log.info("Received {}", event))
+    .delayUntil(this::processEvent)
+    .retry()
+    .subscribe();
+----
+<1> Set a custom tag "source" to value "kafka".
+<2> All reported metrics will have `source=kafka` tag assigned in addition to the common tags described above.
+
+====

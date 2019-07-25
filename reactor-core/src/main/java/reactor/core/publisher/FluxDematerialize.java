@@ -16,12 +16,8 @@
 
 package reactor.core.publisher;
 
-import java.util.AbstractQueue;
-import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.function.BooleanSupplier;
-
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
 
@@ -36,35 +32,23 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 
 	@Override
 	public CoreSubscriber<? super Signal<T>> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return new DematerializeSubscriber<>(actual);
+		return new DematerializeSubscriber<>(actual, false);
 	}
 
-	static final class DematerializeSubscriber<T> extends AbstractQueue<T>
-			implements InnerOperator<Signal<T>, T>,
-			           BooleanSupplier {
+	static final class DematerializeSubscriber<T> implements InnerOperator<Signal<T>, T> {
 
 		final CoreSubscriber<? super T> actual;
+		final boolean                   completeAfterOnNext;
 
 		Subscription s;
 
-		T value;
-
 		boolean done;
-
-		long produced;
-
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<DematerializeSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(DematerializeSubscriber.class,
-						"requested");
 
 		volatile boolean cancelled;
 
-		Throwable error;
-
-		DematerializeSubscriber(CoreSubscriber<? super T> subscriber) {
+		DematerializeSubscriber(CoreSubscriber<? super T> subscriber, boolean completeAfterOnNext) {
 			this.actual = subscriber;
+			this.completeAfterOnNext = completeAfterOnNext;
 		}
 
 		@Override
@@ -72,10 +56,8 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == Attr.ERROR) return error;
 			if (key == Attr.CANCELLED) return cancelled;
-			if (key == Attr.BUFFERED) return size();
+			if (key == Attr.PREFETCH) return 0;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -86,17 +68,17 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 				this.s = s;
 
 				actual.onSubscribe(this);
-
-				s.request(1);
 			}
 		}
 
 		@Override
 		public void onNext(Signal<T> t) {
 			if (done) {
+				//TODO interpret the Signal and drop differently?
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
+
 			if (t.isOnComplete()) {
 				s.cancel();
 				onComplete();
@@ -106,12 +88,9 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 				onError(t.getThrowable());
 			}
 			else if (t.isOnNext()) {
-				T v = value;
-				value = t.get();
-
-				if (v != null) {
-					produced++;
-					actual.onNext(v);
+				actual.onNext(t.get());
+				if (completeAfterOnNext) {
+					onComplete();
 				}
 			}
 		}
@@ -123,12 +102,7 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 				return;
 			}
 			done = true;
-			error = t;
-			long p = produced;
-			if (p != 0L) {
-				Operators.addCap(REQUESTED, this, -p);
-			}
-			DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
+			actual.onError(t);
 		}
 
 		@Override
@@ -137,79 +111,27 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 				return;
 			}
 			done = true;
-			long p = produced;
-			if (p != 0L) {
-				Operators.addCap(REQUESTED, this, -p);
-			}
-			DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
+			actual.onComplete();
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				if (!DrainUtils.postCompleteRequestDelayError(n,
-						actual,
-						this,
-						REQUESTED,
-						this,
-						this,
-						error)) {
-					s.request(n);
-				}
+				s.request(n);
 			}
 		}
 
 		@Override
 		public void cancel() {
-			cancelled = true;
-			s.cancel();
+			if (!cancelled) {
+				cancelled = true;
+				s.cancel();
+			}
 		}
 
 		@Override
 		public CoreSubscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public boolean getAsBoolean() {
-			return cancelled;
-		}
-
-		@Override
-		public int size() {
-			return value == null ? 0 : 1;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return value == null;
-		}
-
-		@Override
-		public boolean offer(T e) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		@Nullable
-		public T peek() {
-			return value;
-		}
-
-		@Override
-		@Nullable
-		public T poll() {
-			T v = value;
-			if (v != null) {
-				value = null;
-				return v;
-			}
-			return null;
-		}
-
-		@Override
-		public Iterator<T> iterator() {
-			throw new UnsupportedOperationException();
 		}
 	}
 }

@@ -176,7 +176,17 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator
 			}
 
 			Function<? super T, ? extends Publisher<?>> generator = otherGenerators[triggerIndex];
-			Publisher<?> p = generator.apply(value);
+
+			Publisher<?> p;
+
+			try {
+				p = generator.apply(value);
+			}
+			catch (Throwable t) {
+				onError(t);
+				return;
+			}
+
 			DelayUntilTrigger triggerSubscriber = new DelayUntilTrigger<>(this);
 
 			this.triggerSubscribers[triggerIndex] = triggerSubscriber;
