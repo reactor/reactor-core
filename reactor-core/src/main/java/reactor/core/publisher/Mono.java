@@ -3756,7 +3756,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			return s;
 		}
 		else{
-			return subscribeWith(new LambdaMonoSubscriber<>(null, null, null, null));
+			return subscribeWith(new LambdaMonoSubscriber<>(null, null, null, null, null));
 		}
 	}
 
@@ -3866,7 +3866,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			@Nullable Runnable completeConsumer,
 			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
 		return subscribe(consumer, errorConsumer,
-				completeConsumer, subscriptionConsumer, null));
+				completeConsumer, subscriptionConsumer, null);
 	}
 
 	/**

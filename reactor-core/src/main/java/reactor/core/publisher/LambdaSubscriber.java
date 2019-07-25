@@ -75,6 +75,27 @@ final class LambdaSubscriber<T>
 		this.initialContext = initialContext == null ? Context.empty() : initialContext;
 	}
 
+	/**
+	 * Create a {@link Subscriber} reacting onNext, onError and onComplete. If no
+	 * {@code subscriptionConsumer} is provided, the subscriber will automatically request
+	 * Long.MAX_VALUE in onSubscribe, as well as an initial {@link Context} that will be
+	 * visible by operators upstream in the chain.
+	 *
+	 * @param consumer A {@link Consumer} with argument onNext data
+	 * @param errorConsumer A {@link Consumer} called onError
+	 * @param completeConsumer A {@link Runnable} called onComplete with the actual
+	 * context if any
+	 * @param subscriptionConsumer A {@link Consumer} called with the {@link Subscription}
+	 * to perform initial request, or null to request max
+	 */ //left mainly for the benefit of tests
+	LambdaSubscriber(
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer,
+			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
+		this(consumer, errorConsumer, completeConsumer, subscriptionConsumer, null);
+	}
+
 	@Override
 	public Context currentContext() {
 		return this.initialContext;

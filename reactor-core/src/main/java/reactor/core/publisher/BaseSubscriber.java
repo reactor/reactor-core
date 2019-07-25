@@ -31,7 +31,8 @@ import reactor.util.context.Context;
  * perform a {@link #request(long)} and {@link #cancel()} on it directly. As the targeted
  * use case is to manually handle requests, the {@link #hookOnSubscribe(Subscription)} and
  * {@link #hookOnNext(Object)} hooks are expected to be implemented, but they nonetheless
- * default to an unbounded request at subscription time.
+ * default to an unbounded request at subscription time. If you need to define a {@link Context}
+ * for this {@link BaseSubscriber}, simply override its {@link #currentContext()} method.
  * <p>
  * Override the other optional hooks {@link #hookOnComplete()},
  * {@link #hookOnError(Throwable)} and {@link #hookOnCancel()}
@@ -52,11 +53,6 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 
 	static AtomicReferenceFieldUpdater<BaseSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(BaseSubscriber.class, Subscription.class, "subscription");
-
-	@Override
-	public final Context currentContext() {
-		return CoreSubscriber.super.currentContext();
-	}
 
 	/**
 	 * Return current {@link Subscription}
