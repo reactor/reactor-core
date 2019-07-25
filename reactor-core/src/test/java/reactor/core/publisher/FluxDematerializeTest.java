@@ -277,8 +277,6 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 		            	long dematerializeTimestamp = tupleDematerialize.getT1();
 		            	long originalTimestamp = tupleDematerialize.getT2().getT1();
 
-			            System.out.println(tupleDematerialize.getT2().getT2() + ": " + originalTimestamp + ", " + dematerializeTimestamp);
-
 		            	return dematerializeTimestamp == originalTimestamp;
 		            })
 		            .verifyComplete();
