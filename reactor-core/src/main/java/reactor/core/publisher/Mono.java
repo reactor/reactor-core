@@ -204,6 +204,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Create a {@link Mono} provider that will {@link Function#apply supply} a target {@link Mono}
 	 * to subscribe to for each {@link Subscriber} downstream.
+	 * This operator behaves the same way as {@link #defer(Supplier)},
+	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/deferForMono.svg" alt="">

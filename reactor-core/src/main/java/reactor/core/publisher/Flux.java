@@ -811,6 +811,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Lazily supply a {@link Publisher} every time a {@link Subscription} is made on the
 	 * resulting {@link Flux}, so the actual source instantiation is deferred until each
 	 * subscribe and the {@link Function} can create a subscriber-specific instance.
+	 * This operator behaves the same way as {@link #defer(Supplier)},
+	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
 	 * If the supplier doesn't generate a new instance however, this operator will
 	 * effectively behave like {@link #from(Publisher)}.
 	 *
