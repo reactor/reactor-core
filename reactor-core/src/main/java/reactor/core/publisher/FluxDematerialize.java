@@ -83,11 +83,11 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 				s.cancel();
 				onComplete();
 			}
-			else if (t.isOnError() && t.getThrowable() != null) {
+			else if (t.isOnError()) {
 				s.cancel();
 				onError(t.getThrowable());
 			}
-			else if (t.isOnNext() && t.get() != null) {
+			else if (t.isOnNext()) {
 				actual.onNext(t.get());
 				if (completeAfterOnNext) {
 					onComplete();
