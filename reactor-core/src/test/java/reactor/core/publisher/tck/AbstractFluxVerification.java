@@ -62,7 +62,7 @@ public abstract class AbstractFluxVerification
 
 	@Override
 	public Publisher<Integer> createFailedPublisher() {
-		return Flux.<Integer>error(new Exception("oops"))
+		return Flux.<Integer>error(new Exception("boom"))
 				.transform(this::transformFlux);
 	}
 
