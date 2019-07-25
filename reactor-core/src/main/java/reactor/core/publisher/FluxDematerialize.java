@@ -38,7 +38,7 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 	static final class DematerializeSubscriber<T> implements InnerOperator<Signal<T>, T> {
 
 		final CoreSubscriber<? super T> actual;
-		final boolean isMono;
+		final boolean                   completeAfterOnNext;
 
 		Subscription s;
 
@@ -46,9 +46,9 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 
 		volatile boolean cancelled;
 
-		DematerializeSubscriber(CoreSubscriber<? super T> subscriber, boolean isMono) {
+		DematerializeSubscriber(CoreSubscriber<? super T> subscriber, boolean completeAfterOnNext) {
 			this.actual = subscriber;
-			this.isMono = isMono;
+			this.completeAfterOnNext = completeAfterOnNext;
 		}
 
 		@Override
@@ -89,7 +89,7 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 			}
 			else if (t.isOnNext() && t.get() != null) {
 				actual.onNext(t.get());
-				if (isMono) {
+				if (completeAfterOnNext) {
 					onComplete();
 				}
 			}
