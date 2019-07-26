@@ -21,6 +21,8 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
@@ -127,7 +129,7 @@ public class TailCallSubscribeTest {
 		    .as(manyOperatorsOnFlux)
 		    .delaySubscription(Duration.ofMillis(1))
 		    .as(manyOperatorsOnFlux)
-		    .subscribe(new CancellingSubscriber());
+		    .subscribe(new CancellingSubscriber(Duration.ofMillis(100)));
 
 		assertThat(stackCapturingPublisher.get(1, TimeUnit.SECONDS))
 				.extracting(StackTraceElement::getClassName, StackTraceElement::getMethodName)
@@ -188,7 +190,7 @@ public class TailCallSubscribeTest {
 		    .as(manyOperatorsOnFlux)
 		    .repeat(1)
 		    .as(manyOperatorsOnFlux)
-		    .subscribe(new CancellingSubscriber());
+		    .subscribe(new CancellingSubscriber(Duration.ofMillis(10)));
 
 		assertThat(stackCapturingPublisher.get(1, TimeUnit.SECONDS))
 				.extracting(StackTraceElement::getClassName, StackTraceElement::getMethodName)
@@ -212,7 +214,7 @@ public class TailCallSubscribeTest {
 		    .as(manyOperatorsOnFlux)
 		    .retry(1)
 		    .as(manyOperatorsOnFlux)
-		    .subscribe(new CancellingSubscriber());
+		    .subscribe(new CancellingSubscriber(Duration.ofMillis(10)));
 
 		assertThat(stackCapturingPublisher.get(1, TimeUnit.SECONDS))
 				.extracting(StackTraceElement::getClassName, StackTraceElement::getMethodName)
@@ -240,10 +242,26 @@ public class TailCallSubscribeTest {
 
     private static class CancellingSubscriber implements Subscriber<Object> {
 
-        @Override
+    	final Duration cancellationDelay;
+
+	    volatile Disposable cancellation = Disposables.disposed();
+
+	    private CancellingSubscriber() {
+	    	this(Duration.ZERO);
+	    }
+
+	    private CancellingSubscriber(Duration delay) {
+		    cancellationDelay = delay;
+	    }
+
+	    @Override
         public void onSubscribe(Subscription s) {
-            Schedulers.parallel().schedule(s::cancel, 100, TimeUnit.MILLISECONDS);
-        }
+	    	if (cancellationDelay.isZero()) {
+	    		s.cancel();
+		    } else {
+			    cancellation = Schedulers.parallel().schedule(s::cancel, cancellationDelay.toMillis(), TimeUnit.MILLISECONDS);
+		    }
+	    }
 
         @Override
         public void onNext(Object s) {
@@ -252,10 +270,12 @@ public class TailCallSubscribeTest {
         @Override
         public void onError(Throwable throwable) {
             throwable.printStackTrace();
+	        cancellation.dispose();
         }
 
         @Override
         public void onComplete() {
+	        cancellation.dispose();
         }
     }
 }
