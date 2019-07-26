@@ -92,7 +92,7 @@ public class MonoDoOnEachTest {
 		Class<?> expected = FluxDoOnEach.DoOnEachConditionalSubscriber.class;
 		Stream<Class<?>> streamOfClasses = ref.get().actuals().map(Object::getClass);
 
-		assertThat(streamOfClasses).containsExactly(expected);
+		assertThat(streamOfClasses).contains(expected);
 	}
 
 	@Test
