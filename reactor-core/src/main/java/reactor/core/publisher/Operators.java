@@ -786,13 +786,11 @@ public abstract class Operators {
 	@SuppressWarnings("unchecked")
 	public static <T> CorePublisher<T> onLastAssembly(CorePublisher<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
-		final Publisher<T> publisher;
 		if (hook == null) {
-			publisher = source;
+			return source;
 		}
-		else {
-			publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
-		}
+
+		Publisher<T> publisher = Objects.requireNonNull(hook.apply(source),"LastOperator hook returned null");
 
 		if (publisher instanceof CorePublisher) {
 			return (CorePublisher<T>) publisher;
