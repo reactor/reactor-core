@@ -125,7 +125,7 @@ public class TailCallSubscribeTest {
 
 		Flux.from(stackCapturingPublisher)
 		    .as(manyOperatorsOnFlux)
-		    .delaySubscription(Duration.ofMillis(10))
+		    .delaySubscription(Duration.ofMillis(1))
 		    .as(manyOperatorsOnFlux)
 		    .subscribe(new CancellingSubscriber());
 
@@ -242,7 +242,7 @@ public class TailCallSubscribeTest {
 
         @Override
         public void onSubscribe(Subscription s) {
-            Schedulers.parallel().schedule(s::cancel, 10, TimeUnit.MILLISECONDS);
+            Schedulers.parallel().schedule(s::cancel, 100, TimeUnit.MILLISECONDS);
         }
 
         @Override
