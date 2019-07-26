@@ -22,59 +22,60 @@ import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDeferComposeTest {
+
     @Test
     public void perTrackable() {
-        
-        Mono<Integer> source = Mono.just(10).compose(f -> {
+
+        Mono<Integer> source = Mono.just(10).transformDeferred(f -> {
             AtomicInteger value = new AtomicInteger();
             return f.map(v -> v + value.incrementAndGet());
         });
-        
-        
+
+
         for (int i = 0; i < 10; i++) {
             AssertSubscriber<Integer> ts = AssertSubscriber.create();
-            
+
             source.subscribe(ts);
-            
+
             ts.assertValues(11)
             .assertComplete()
             .assertNoError();
         }
     }
-    
+
     @Test
     public void composerThrows() {
-        Mono<Integer> source = Mono.just(10).compose(f -> {
+        Mono<Integer> source = Mono.just(10).transformDeferred(f -> {
             throw new RuntimeException("Forced failure");
         });
-        
+
         for (int i = 0; i < 10; i++) {
             AssertSubscriber<Integer> ts = AssertSubscriber.create();
-            
+
             source.subscribe(ts);
-            
+
             ts.assertNoValues()
             .assertNotComplete()
             .assertError(RuntimeException.class);
         }
-        
+
     }
-    
+
     @Test
     public void composerReturnsNull() {
-        Mono<Integer> source = Mono.just(10).compose(f -> {
+        Mono<Integer> source = Mono.just(10).transformDeferred(f -> {
             return null;
         });
-        
+
         for (int i = 0; i < 10; i++) {
             AssertSubscriber<Integer> ts = AssertSubscriber.create();
-            
+
             source.subscribe(ts);
-            
+
             ts.assertNoValues()
             .assertNotComplete()
             .assertError(NullPointerException.class);
         }
-        
+
     }
 }

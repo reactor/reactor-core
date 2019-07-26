@@ -785,7 +785,7 @@ public class FluxUsingWhenTest {
 		    .as(StepVerifier::create)
 		    .expectAccessibleContext().contains(String.class, "contextual")
 		    .then()
-		    .verifyError(ArithmeticException.class);
+		    .verifyErrorMessage("boom");
 
 		testResource.commitProbe.assertWasNotSubscribed();
 		testResource.rollbackProbe.assertWasNotSubscribed();
@@ -1280,12 +1280,12 @@ public class FluxUsingWhenTest {
 						.subscriberContext()
 						.map(it -> it.get(String.class))
 						.hide()
-						.map(it -> { if (it.length() / 0 == 1) return it; return it + "foo"; })
+						.map(it -> { throw new IllegalStateException("boom"); })
 				},
 				new Object[] { Mono
 						.subscriberContext()
 						.map(it -> it.get(String.class))
-						.map(it -> { if (it.length() / 0 == 1) return it; return it + "foo"; })
+						.map(it -> { throw new IllegalStateException("boom"); })
 				}
 		};
 	}

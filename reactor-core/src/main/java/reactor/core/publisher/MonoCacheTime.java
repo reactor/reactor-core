@@ -54,8 +54,9 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		super(source);
 		this.ttlGenerator = ignoredSignal -> ttl;
 		this.clock = clock;
-		//noinspection unchecked
-		this.state = (Signal<T>) EMPTY;
+		@SuppressWarnings("unchecked")
+		Signal<T> state = (Signal<T>) EMPTY;
+		this.state = state;
 	}
 
 	MonoCacheTime(Mono<? extends T> source, Function<? super Signal<T>, Duration> ttlGenerator,
@@ -63,8 +64,9 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		super(source);
 		this.ttlGenerator = ttlGenerator;
 		this.clock = clock;
-		//noinspection unchecked
-		this.state = (Signal<T>) EMPTY;
+		@SuppressWarnings("unchecked")
+		Signal<T> state = (Signal<T>) EMPTY;
+		this.state = state;
 	}
 
 	MonoCacheTime(Mono<? extends T> source,

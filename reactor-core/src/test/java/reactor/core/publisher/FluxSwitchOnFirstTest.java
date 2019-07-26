@@ -167,6 +167,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnErrorSignalConditional() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         RuntimeException error = new RuntimeException();
@@ -188,6 +189,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnNextSignalConditional() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         StepVerifier.create(Flux.just(1L)
@@ -209,6 +211,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnErrorSignalWithDelaySubscription() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         RuntimeException error = new RuntimeException();
@@ -228,6 +231,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnCompleteSignalWithDelaySubscription() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         StepVerifier.create(Flux.<Long>empty()
@@ -246,6 +250,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnErrorSignal() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         RuntimeException error = new RuntimeException();
@@ -265,6 +270,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnNextSignal() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         StepVerifier.create(Flux.just(1L)
@@ -285,6 +291,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnNextAsyncSignal() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         StepVerifier.create(Flux.just(1L)
@@ -304,6 +311,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnNextAsyncSignalConditional() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         StepVerifier.create(Flux.just(1L)
@@ -432,6 +440,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldReturnCorrectContextOnEmptySource() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         Flux<Long> switchTransformed = Flux.<Long>empty()
@@ -825,7 +834,10 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldReturnNormallyIfExceptionIsThrownOnNextDuringSwitching() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
+
+        Optional<?> expectedCause = Optional.of(1L);
 
         StepVerifier.create(Flux.just(1L)
                                 .switchOnFirst((s, f) -> {
@@ -839,7 +851,7 @@ public class FluxSwitchOnFirstTest {
                         Assertions.assertThat(c)
                                   .hasOnlyOneElementSatisfying(t -> {
                                       Assertions.assertThat(t.getT1()).containsInstanceOf(NullPointerException.class);
-                                      Assertions.assertThat((Optional)t.getT2()).hasValue(1L);
+                                      Assertions.assertThat(t.getT2()).isEqualTo(expectedCause);
                                   })
                     );
 
@@ -849,6 +861,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldReturnNormallyIfExceptionIsThrownOnErrorDuringSwitching() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         NullPointerException npe = new NullPointerException();
@@ -867,6 +880,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldReturnNormallyIfExceptionIsThrownOnCompleteDuringSwitching() {
+        @SuppressWarnings("unchecked")
         Signal<? extends Long>[] first = new Signal[1];
 
         StepVerifier.create(Flux.<Long>empty()

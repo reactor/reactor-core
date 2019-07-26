@@ -25,6 +25,7 @@ import reactor.test.test
 import reactor.test.verifyError
 import java.io.IOException
 
+@Suppress("deprecation")
 class FluxExtensionsTests {
 
     @Test

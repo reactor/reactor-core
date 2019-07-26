@@ -19,8 +19,11 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -145,13 +148,7 @@ public class MonoCollectTest {
 
 	@Test
 	public void discardOnError() {
-		List<Integer> list = new ArrayList<>();
-		list.add(1);
-		list.add(2);
-		list.add(3);
-		list.add(4);
-
-		AtomicBoolean res = new AtomicBoolean();
+		final List<Object> discarded = new ArrayList<>();
 
 		Mono<List<Integer>> test = Flux.range(1, 10)
 		                               .hide()
@@ -161,42 +158,32 @@ public class MonoCollectTest {
 			                               }
 			                               return i;
 		                               })
-										.<List<Integer>>collect(ArrayList::new, List::add)
-										.doOnDiscard(List.class,
-						l -> {
-							l.removeAll(list);
-							res.set(l.isEmpty());
-						});
+										.collect((Supplier<List<Integer>>) ArrayList::new, List::add)
+										.doOnDiscard(List.class, l -> discarded.addAll((Collection<?>) l));
 
 		StepVerifier.create(test)
 		            .expectErrorMessage("boom")
 		            .verify();
 
-		Assert.assertTrue("all discarded", res.get());
+		assertThat(discarded).as("discarded all").containsExactly(1, 2, 3, 4);
 	}
 
 	@Test
 	public void discardOnCancel() {
-		List<Long> list = new ArrayList<>();
-		list.add(0L);
-		list.add(1L);
-
-		AtomicBoolean res = new AtomicBoolean();
+		List<Object> discarded = new ArrayList<>();
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofMillis(100))
-				    .take(10).<List<Long>>collect(ArrayList::new,
-						List::add).doOnDiscard(List.class,
-						l -> {
-							l.removeAll(list);
-							res.set(l.isEmpty());
-						}))
+				    .take(10)
+					.<List<Long>>collect(ArrayList::new, List::add)
+					.doOnDiscard(List.class, l -> discarded.addAll((Collection<?>) l))
+		)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(210))
 		            .thenCancel()
 		            .verify();
 
-		Assert.assertTrue("all discarded", res.get());
+		assertThat(discarded).as("all discarded").containsExactly(0L, 1L);
 	}
 
 }

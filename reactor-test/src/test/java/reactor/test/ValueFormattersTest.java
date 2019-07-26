@@ -293,6 +293,7 @@ public class ValueFormattersTest {
 				.isEqualTo("[1, 2.0, foo, bar]");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void arrayOnNonArrayTypeFails() {
 		Class fakeArrayClass = String.class;

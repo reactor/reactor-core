@@ -42,6 +42,7 @@ import static java.util.Arrays.copyOf;
  * This is an adaption of the original LMAX Disruptor RingBuffer code from
  * https://lmax-exchange.github.io/disruptor/.
  */
+@SuppressWarnings("deprecation")
 abstract class RingBuffer<E> implements LongSupplier {
 
 	static <T> void addSequence(final T holder,
@@ -633,6 +634,7 @@ enum  UnsafeSupport {
  * Base class for the various sequencer types (single/multi).  Provides common functionality like the management of
  * gating sequences (add/remove) and ownership of the current cursor.
  */
+@SuppressWarnings("deprecation")
 abstract class RingBufferProducer {
 
 	static final AtomicReferenceFieldUpdater<RingBufferProducer, RingBuffer.Sequence[]>
@@ -783,6 +785,7 @@ abstract class RingBufferProducer {
 abstract class SingleProducerSequencerPad extends RingBufferProducer
 {
 	protected long p1, p2, p3, p4, p5, p6, p7;
+	@SuppressWarnings("deprecation")
 	SingleProducerSequencerPad(int bufferSize, WaitStrategy waitStrategy, @Nullable Runnable spinObserver)
 	{
 		super(bufferSize, waitStrategy, spinObserver);
@@ -791,6 +794,7 @@ abstract class SingleProducerSequencerPad extends RingBufferProducer
 
 abstract class SingleProducerSequencerFields extends SingleProducerSequencerPad
 {
+	@SuppressWarnings("deprecation")
 	SingleProducerSequencerFields(int bufferSize, WaitStrategy waitStrategy, @Nullable Runnable spinObserver)
 	{
 		super(bufferSize, waitStrategy, spinObserver);
@@ -819,6 +823,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
 	 * @param waitStrategy for those waiting on sequences.
 	 * @param spinObserver the runnable to call on a spin-wait
 	 */
+	@SuppressWarnings("deprecation")
 	SingleProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, @Nullable Runnable spinObserver) {
 		super(bufferSize, waitStrategy, spinObserver);
 	}
@@ -1313,6 +1318,7 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	 * @param bufferSize the size of the buffer that this will sequence over.
 	 * @param waitStrategy for those waiting on sequences.
 	 */
+	@SuppressWarnings("deprecation")
 	MultiProducerRingBuffer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
 		super(bufferSize, waitStrategy, spinObserver);
 		availableBuffer = new int[bufferSize];

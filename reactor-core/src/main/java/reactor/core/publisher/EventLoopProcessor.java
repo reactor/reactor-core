@@ -44,6 +44,7 @@ import reactor.util.context.Context;
  *
  * @author Stephane Maldini
  */
+@SuppressWarnings("deprecation")
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		implements Runnable {
 

@@ -725,9 +725,10 @@ public class OperatorsTest {
 
 	@Test
 	public void convertConditionalToConditionalShouldReturnTheSameInstance() {
-		Fuseable.ConditionalSubscriber original = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		@SuppressWarnings("unchecked")
+		Fuseable.ConditionalSubscriber<String> original = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 
 		Assertions.assertThat(Operators.toConditionalSubscriber(original))
-		          .isEqualTo(original);
+		          .isSameAs(original);
 	}
 }

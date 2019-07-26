@@ -17,11 +17,13 @@
 package reactor.test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.junit.Test;
 
@@ -77,7 +79,7 @@ public class StepVerifierOptionsTest {
 
 			@Override
 			public Stream<Object> explode(String original) {
-				return Stream.of(original.split(" "));
+				return Arrays.stream(original.split(" "));
 			}
 		});
 
@@ -125,7 +127,7 @@ public class StepVerifierOptionsTest {
 
 			@Override
 			public Stream<Object> explode(String original) {
-				return Stream.of(original.split(" "));
+				return Arrays.stream(original.split(" "));
 			}
 		});
 
@@ -146,7 +148,7 @@ public class StepVerifierOptionsTest {
 
 			@Override
 			public Stream<Object> explode(String original) {
-				return Stream.of(original.split(" "));
+				return Arrays.stream(original.split(" "));
 			}
 		};
 		Extractor<String> extractorV2 = new Extractor<String>() {
@@ -157,7 +159,7 @@ public class StepVerifierOptionsTest {
 
 			@Override
 			public Stream<Object> explode(String original) {
-				return Stream.of(original.split(""));
+				return Arrays.stream(original.split(""));
 			}
 		};
 
@@ -185,7 +187,7 @@ public class StepVerifierOptionsTest {
 
 			@Override
 			public Stream<Object> explode(String original) {
-				return Stream.of(original.split(" "));
+				return Arrays.stream(original.split(" "));
 			}
 		});
 

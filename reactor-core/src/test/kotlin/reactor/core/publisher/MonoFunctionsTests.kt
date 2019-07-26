@@ -20,6 +20,7 @@ import org.junit.Test
 import reactor.test.StepVerifier
 import reactor.test.publisher.TestPublisher
 
+@Suppress("deprecation")
 class MonoFunctionsTests {
 
     @Test

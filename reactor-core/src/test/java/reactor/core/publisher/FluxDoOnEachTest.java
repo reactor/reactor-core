@@ -551,7 +551,7 @@ public class FluxDoOnEachTest {
 		                          .matches(s -> s.get() == Boolean.TRUE);
 		assertThat(signals.get(1)).matches(Signal::isOnComplete);
 
-		List<Boolean> actualTryNext = ((FluxPeekFuseableTest.ConditionalAssertSubscriber<Boolean>) actual).next;
+		List<Boolean> actualTryNext = actual.next;
 		assertThat(actualTryNext).hasSize(2);
 		assertThat(actualTryNext.get(0)).isTrue();
 		assertThat(actualTryNext.get(1)).isFalse();
