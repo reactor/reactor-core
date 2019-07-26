@@ -1027,9 +1027,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @param onError consumer of error signal
 	 * @param onComplete callback on completion signal
 	 * @param onSubscribe consumer of the subscription signal
-	 * @deprecated This method is deprecated as a way to discourage abuse of the onSubscribe {@link Consumer}
-	 */
-	@Deprecated
+	 */ //TODO maybe deprecate in 3.4, provided there is at least an alternative for tests
 	public final Disposable subscribe(
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super Throwable> onError,

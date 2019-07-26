@@ -7931,9 +7931,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
-	 * @deprecated This method is deprecated as a way to discourage abuse of the subscriptionConsumer
-	 */
-	@Deprecated
+	 */ //TODO maybe deprecate in 3.4, provided there is at least an alternative for tests
 	public final Disposable subscribe(
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
