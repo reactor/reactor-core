@@ -18,13 +18,14 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDeferComposeTest {
     @Test
     public void perSubscriberState() {
         
-        Flux<Integer> source = Flux.just(10).compose(f -> {
+        Flux<Integer> source = Flux.just(10).transformDeferred(f -> {
             AtomicInteger value = new AtomicInteger();
             return f.map(v -> v + value.incrementAndGet());
         });
@@ -43,7 +44,7 @@ public class FluxDeferComposeTest {
     
     @Test
     public void composerThrows() {
-        Flux<Integer> source = Flux.just(10).compose(f -> {
+        Flux<Integer> source = Flux.just(10).transformDeferred(f -> {
             throw new RuntimeException("Forced failure");
         });
         
@@ -61,7 +62,7 @@ public class FluxDeferComposeTest {
     
     @Test
     public void composerReturnsNull() {
-        Flux<Integer> source = Flux.just(10).compose(f -> {
+        Flux<Integer> source = Flux.just(10).transformDeferred(f -> {
             return null;
         });
         

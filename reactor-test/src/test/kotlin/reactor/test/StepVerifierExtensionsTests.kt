@@ -19,6 +19,7 @@ package reactor.test
 import org.junit.Test
 import reactor.core.publisher.toMono
 
+@Suppress("deprecation")
 class StepVerifierExtensionsTests {
 
     @Test

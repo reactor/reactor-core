@@ -305,6 +305,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		void disconnectAction() {
+			@SuppressWarnings("unchecked")
 			PubSubInner<T>[] inners = SUBSCRIBERS.getAndSet(this, CANCELLED);
 			if (inners.length > 0) {
 				queue.clear();

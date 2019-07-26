@@ -45,10 +45,12 @@ public class FluxDoFirstTest {
 	public void orderIsReversed_NoFusion() {
 		List<String> order = new ArrayList<>();
 
-		//noinspection divzero
+		@SuppressWarnings("divzero")
+		Function<Integer, Integer> divZero = i -> i / 0;
+
 		StepVerifier.create(
 				Flux.just(1)
-				    .map(i -> i / 0)
+				    .map(divZero)
 				    .hide()
 				    .doFirst(() -> order.add("one"))
 				    .doFirst(() -> order.add("two"))
@@ -64,10 +66,12 @@ public class FluxDoFirstTest {
 	public void orderIsReversed_Fused() {
 		List<String> order = new ArrayList<>();
 
-		//noinspection divzero
+		@SuppressWarnings("divzero")
+		Function<Integer, Integer> divZero = i -> i / 0;
+
 		StepVerifier.create(
 				Flux.just(1)
-				    .map(i -> i / 0)
+				    .map(divZero)
 				    .doFirst(() -> order.add("one"))
 				    .doFirst(() -> order.add("two"))
 				    .doFirst(() -> order.add("three"))

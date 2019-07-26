@@ -353,14 +353,14 @@ public class ParallelFluxTest {
 	}
 
 	@Test
-	public void composeGroup() {
+	public void transformGroups() {
 		Set<Integer> values = new ConcurrentSkipListSet<>();
 
 		Flux<Integer> flux = Flux.range(1, 10)
 		                         .parallel(3)
 		                         .runOn(Schedulers.parallel())
 		                         .doOnNext(values::add)
-		                         .composeGroup(p -> p.log("rail" + p.key())
+		                         .transformGroups(p -> p.log("rail" + p.key())
 		                                             .map(i -> (p.key() + 1) * 100 + i))
 		                         .sequential();
 
@@ -382,12 +382,12 @@ public class ParallelFluxTest {
 	}
 
 	@Test
-	public void composeGroupMaintainsParallelismAndPrefetch() {
+	public void transformGroupsMaintainsParallelismAndPrefetch() {
 		ParallelFlux<Integer> parallelFlux = Flux.range(1, 10)
 		                                         .parallel(3)
 		                                         .runOn(Schedulers.parallel(), 123);
 
-		ParallelFlux<Integer> composed = parallelFlux.composeGroup(rail -> rail.map(i -> i + 2));
+		ParallelFlux<Integer> composed = parallelFlux.transformGroups(rail -> rail.map(i -> i + 2));
 
 		assertThat(composed.parallelism())
 				.as("maintains parallelism")
@@ -401,12 +401,12 @@ public class ParallelFluxTest {
 	}
 
 	@Test
-	public void composeGroupMaintainsParallelism() {
+	public void transformGroupsMaintainsParallelism() {
 		ParallelFlux<Integer> parallelFlux = Flux.range(1, 10)
 		                                         .parallel(3)
 		                                         .map(i -> i + 2);
 
-		ParallelFlux<Integer> composed = parallelFlux.composeGroup(rail -> rail.map(i -> i + 2));
+		ParallelFlux<Integer> composed = parallelFlux.transformGroups(rail -> rail.map(i -> i + 2));
 
 		assertThat(composed.parallelism())
 				.as("maintains parallelism")

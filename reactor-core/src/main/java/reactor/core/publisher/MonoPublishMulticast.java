@@ -234,8 +234,9 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 						}
 
 						if (v == null) {
-							//noinspection unchecked
-							a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+							@SuppressWarnings("unchecked")
+							PublishMulticastInner<T>[] castedArray = SUBSCRIBERS.getAndSet(this, TERMINATED);
+							a = castedArray;
 							n = a.length;
 							for (int i = 0; i < n; i++) {
 								a[i].actual.onComplete();
@@ -243,8 +244,9 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 							return;
 						}
 						else {
-							//noinspection unchecked
-							a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+							@SuppressWarnings("unchecked")
+							PublishMulticastInner<T>[] castedArray = SUBSCRIBERS.getAndSet(this, TERMINATED);
+							a = castedArray;
 							n = a.length;
 							for (int i = 0; i < n; i++) {
 								a[i].actual.onNext(v);

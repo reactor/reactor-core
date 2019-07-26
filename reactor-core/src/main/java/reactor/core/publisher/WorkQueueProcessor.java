@@ -67,6 +67,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @deprecated Has been moved to io.projectreactor.addons:reactor-extra:3.3.0+ and will be removed in 3.4.0
  */
 @Deprecated
+@SuppressWarnings("deprecation")
 public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**

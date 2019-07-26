@@ -28,6 +28,7 @@ import java.io.IOException
 import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 
+@Suppress("deprecation")
 class MonoExtensionsTests {
 
     @Test

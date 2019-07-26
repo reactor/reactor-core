@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("DEPRECATION")
+
 package reactor.core.publisher
 
 import org.reactivestreams.Publisher

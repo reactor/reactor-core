@@ -315,7 +315,7 @@ public final class ValueFormatters {
 			}
 			else {
 				converted = null;
-				for (Extractor extractor : extractors) {
+				for (Extractor<?> extractor : extractors) {
 					if (extractor.test(arg)) {
 						converted = extractor.apply(arg, toStringConverter);
 						break;
