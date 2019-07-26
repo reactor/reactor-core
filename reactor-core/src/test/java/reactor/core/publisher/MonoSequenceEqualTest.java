@@ -189,8 +189,8 @@ public class MonoSequenceEqualTest {
 		                            .hide();
 
 		Mono.sequenceEqual(source1, source2)
-		    .subscribe(System.out::println, Throwable::printStackTrace, null,
-				    Subscription::cancel);
+		    .subscribeWith(new LambdaSubscriber<>(System.out::println, Throwable::printStackTrace, null,
+				    Subscription::cancel));
 
 		Assert.assertNotNull("left not subscribed", sub1.get());
 		Assert.assertTrue("left not cancelled", cancel1.get());
@@ -215,8 +215,8 @@ public class MonoSequenceEqualTest {
 		                            .hide();
 
 		Mono.sequenceEqual(source1, source2)
-		    .subscribe(System.out::println, Throwable::printStackTrace, null,
-				    s -> { s.cancel(); s.cancel(); });
+		    .subscribeWith(new LambdaSubscriber<>(System.out::println, Throwable::printStackTrace, null,
+				    s -> { s.cancel(); s.cancel(); }));
 
 		Assert.assertNotNull("left not subscribed", sub1.get());
 		assertThat(cancel1.get()).isEqualTo(1);
@@ -240,8 +240,8 @@ public class MonoSequenceEqualTest {
 		                            .doOnCancel(() -> cancel2.set(true));
 
 		Mono.sequenceEqual(source1, source2)
-		    .subscribe(System.out::println, Throwable::printStackTrace, null,
-				    Subscription::cancel);
+		    .subscribeWith(new LambdaSubscriber<>(System.out::println, Throwable::printStackTrace, null,
+				    Subscription::cancel));
 
 		Assert.assertNotNull("left not subscribed", sub1.get());
 		Assert.assertTrue("left not cancelled", cancel1.get());

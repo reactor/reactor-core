@@ -201,7 +201,7 @@ public class FluxDelayUntilTest {
 
 		Disposable s = Flux.just("foo", "bar")
 		                   .delayUntil(v -> Mono.just(1))
-		                   .subscribe(value::set, error::set, () -> {}, Subscription::cancel);
+		                   .subscribeWith(new LambdaSubscriber<>(value::set, error::set, () -> {}, Subscription::cancel));
 
 		assertThat(value.get()).isNull();
 		assertThat(error.get()).isNull(); //would be a NPE if trigger array wasn't pre-initialized

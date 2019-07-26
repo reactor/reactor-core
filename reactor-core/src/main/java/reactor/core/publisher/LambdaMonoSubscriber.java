@@ -37,6 +37,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	final Consumer<? super Throwable>    errorConsumer;
 	final Runnable                       completeConsumer;
 	final Consumer<? super Subscription> subscriptionConsumer;
+	final Context                        initialContext;
 
 	volatile Subscription subscription;
 	static final AtomicReferenceFieldUpdater<LambdaMonoSubscriber, Subscription> S =
@@ -57,15 +58,45 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	 * context if any
 	 * @param subscriptionConsumer A {@link Consumer} called with the {@link Subscription}
 	 * to perform initial request, or null to request max
+	 * @param initialContext A {@link Context} for this subscriber, or null to use the default
+	 * of an {@link Context#empty() empty Context}.
 	 */
 	LambdaMonoSubscriber(@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
-			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
+			@Nullable Consumer<? super Subscription> subscriptionConsumer,
+			@Nullable Context initialContext) {
 		this.consumer = consumer;
 		this.errorConsumer = errorConsumer;
 		this.completeConsumer = completeConsumer;
 		this.subscriptionConsumer = subscriptionConsumer;
+		this.initialContext = initialContext == null ? Context.empty() : initialContext;
+	}
+
+	/**
+	 * Create a {@link Subscriber} reacting onNext, onError and onComplete. The subscriber
+	 * will automatically request Long.MAX_VALUE onSubscribe.
+	 * <p>
+	 * The argument {@code subscriptionHandler} is executed once by new subscriber to
+	 * generate a context shared by every request calls.
+	 *
+	 * @param consumer A {@link Consumer} with argument onNext data
+	 * @param errorConsumer A {@link Consumer} called onError
+	 * @param completeConsumer A {@link Runnable} called onComplete with the actual
+	 * context if any
+	 * @param subscriptionConsumer A {@link Consumer} called with the {@link Subscription}
+	 * to perform initial request, or null to request max
+	 */ //left mainly for the benefit of tests
+	LambdaMonoSubscriber(@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer,
+			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
+		this(consumer, errorConsumer, completeConsumer, subscriptionConsumer, null);
+	}
+
+	@Override
+	public Context currentContext() {
+		return this.initialContext;
 	}
 
 	@Override
@@ -101,7 +132,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 				completeConsumer.run();
 			}
 			catch (Throwable t) {
-				Operators.onErrorDropped(t, Context.empty());
+				Operators.onErrorDropped(t, this.initialContext);
 			}
 		}
 	}
@@ -110,7 +141,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	public final void onError(Throwable t) {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
-			Operators.onErrorDropped(t, Context.empty());
+			Operators.onErrorDropped(t, this.initialContext);
 			return;
 		}
 		doError(t);
@@ -129,7 +160,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	public final void onNext(T x) {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
-			Operators.onNextDropped(x, Context.empty());
+			Operators.onNextDropped(x, this.initialContext);
 			return;
 		}
 		if (consumer != null) {
@@ -137,7 +168,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 				consumer.accept(x);
 			}
 			catch (Throwable t) {
-				Operators.onErrorDropped(t, Context.empty());
+				Operators.onErrorDropped(t, this.initialContext);
 				return;
 			}
 		}
@@ -146,7 +177,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 				completeConsumer.run();
 			}
 			catch (Throwable t) {
-				Operators.onErrorDropped(t, Context.empty());
+				Operators.onErrorDropped(t, this.initialContext);
 			}
 		}
 	}

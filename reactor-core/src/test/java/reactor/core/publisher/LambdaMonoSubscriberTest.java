@@ -19,16 +19,46 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 public class LambdaMonoSubscriberTest {
+
+
+	@Test
+	public void initialContextIsVisibleToUpstream() {
+		AtomicReference<Context> contextRef = new AtomicReference<>();
+
+		Mono.subscriberContext()
+		    .doOnNext(contextRef::set)
+		    .subscribe(null, null, null, Context.of("subscriber", "context"));
+
+		Assertions.assertThat(contextRef.get())
+		          .isNotNull()
+		          .matches(c -> c.hasKey("subscriber"));
+	}
+
+	@Test
+	public void initialContextIsUsedForOnErrorDropped() {
+		AtomicReference<Throwable> droppedRef = new AtomicReference<>();
+		Context ctx = Context.of(Hooks.KEY_ON_ERROR_DROPPED, (Consumer<Throwable>) droppedRef::set);
+		IllegalStateException expectDropped = new IllegalStateException("boom2");
+		LambdaMonoSubscriber<Object> sub = new LambdaMonoSubscriber<>(null, e -> { }, null, null, ctx);
+
+		sub.onError(new IllegalStateException("boom1"));
+		//now trigger drop
+		sub.onError(expectDropped);
+
+		Assertions.assertThat(droppedRef).hasValue(expectDropped);
+	}
 
 	@Test
 	public void consumeOnSubscriptionNotifiesError() {

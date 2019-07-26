@@ -7901,7 +7901,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer) {
-		return subscribe(consumer, errorConsumer, completeConsumer, null);
+		return subscribe(consumer, errorConsumer, completeConsumer, (Context) null);
 	}
 
 	/**
@@ -7931,7 +7931,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
-	 */
+	 */ //TODO maybe deprecate in 3.4, provided there is at least an alternative for tests
 	public final Disposable subscribe(
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
@@ -7939,7 +7939,45 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
 		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer,
 				completeConsumer,
-				subscriptionConsumer));
+				subscriptionConsumer,
+				null));
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Flux} that will respectively consume all the
+	 * elements in the sequence, handle errors and react to completion. Additionally, a {@link Context}
+	 * is tied to the subscription. At subscription, an unbounded request is implicitly made.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)},
+	 * {@link #doOnError(java.util.function.Consumer)}, {@link #doOnComplete(Runnable)}
+	 * and {@link #doOnSubscribe(Consumer)}.
+	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/subscribeForFlux.svg" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 * @param initialContext the base {@link Context} tied to the subscription that will
+	 * be visible to operators upstream
+	 *
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
+	 */
+	public final Disposable subscribe(
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer,
+			@Nullable Context initialContext) {
+		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer,
+				completeConsumer,
+				null,
+				initialContext));
 	}
 
 	@Override

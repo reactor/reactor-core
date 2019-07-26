@@ -3756,7 +3756,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			return s;
 		}
 		else{
-			return subscribeWith(new LambdaMonoSubscriber<>(null, null, null, null));
+			return subscribeWith(new LambdaMonoSubscriber<>(null, null, null, null, null));
 		}
 	}
 
@@ -3832,7 +3832,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer) {
-		return subscribe(consumer, errorConsumer, completeConsumer, null);
+		return subscribe(consumer, errorConsumer, completeConsumer, (Context) null);
 	}
 
 	/**
@@ -3859,14 +3859,45 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
-	 */
+	 */ //TODO maybe deprecate in 3.4, provided there is at least an alternative for tests
 	public final Disposable subscribe(
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
 			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
 		return subscribeWith(new LambdaMonoSubscriber<>(consumer, errorConsumer,
-				completeConsumer, subscriptionConsumer));
+				completeConsumer, subscriptionConsumer, null));
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Mono} that will respectively consume all the
+	 * elements in the sequence, handle errors and react to completion. Additionally, a {@link Context}
+	 * is tied to the subscription. At subscription, an unbounded request is implicitly made.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
+	 * {@link #doOnError(java.util.function.Consumer)}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/subscribeForMono.svg" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 * @param initialContext the {@link Context} for the subscription
+	 *
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
+	 */
+	public final Disposable subscribe(
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer,
+			@Nullable Context initialContext) {
+		return subscribeWith(new LambdaMonoSubscriber<>(consumer, errorConsumer,
+				completeConsumer, null, initialContext));
 	}
 
 	@Override
