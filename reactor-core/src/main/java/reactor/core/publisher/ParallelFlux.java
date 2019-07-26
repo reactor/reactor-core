@@ -57,7 +57,7 @@ import reactor.util.concurrent.Queues;
  * cover a subset of the original Publisher's data. {@link Flux#parallel()} is a
  * convenient shortcut to achieve that on a {@link Flux}.
  * <p>
- * Use {@link #runOn} to introduce where each 'rail' should run on thread-vise.
+ * Use {@link #runOn} to introduce where each 'rail' should run on thread-wise.
  * <p>
  * Use {@link #sequential)} to merge the sources back into a single {@link Flux}.
  * <p>
