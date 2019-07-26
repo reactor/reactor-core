@@ -1297,7 +1297,6 @@ final class UnsafeSequence extends RhsPadding
  * to {@code RingBufferProducer.next()}, to determine the highest available sequence that can be read, then
  * {@code RingBufferProducer.getHighestPublishedSequence(long, long)} should be used.
  */
-@SuppressWarnings({"deprecation"})
 final class MultiProducerRingBuffer extends RingBufferProducer
 {
 	private static final Unsafe UNSAFE = RingBuffer.getUnsafe();
@@ -1319,6 +1318,7 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	 * @param bufferSize the size of the buffer that this will sequence over.
 	 * @param waitStrategy for those waiting on sequences.
 	 */
+	@SuppressWarnings("deprecation")
 	MultiProducerRingBuffer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
 		super(bufferSize, waitStrategy, spinObserver);
 		availableBuffer = new int[bufferSize];
