@@ -33,7 +33,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class MonoDoFinally<T> extends MonoOperator<T, T> {
+final class MonoDoFinally<T> extends InternalMonoOperator<T, T> {
 
 	final Consumer<SignalType> onFinally;
 
@@ -43,8 +43,7 @@ final class MonoDoFinally<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(FluxDoFinally.createSubscriber(actual, onFinally, false));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return FluxDoFinally.createSubscriber(actual, onFinally, false);
 	}
-
 }

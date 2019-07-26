@@ -35,7 +35,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the value type passing through
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
+final class MonoOnAssembly<T> extends InternalMonoOperator<T, T> implements Fuseable,
                                                                     AssemblyOp {
 
 	final AssemblySnapshot stacktrace;
@@ -49,18 +49,14 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super T> cs =
 					(ConditionalSubscriber<? super T>) actual;
-			source.subscribe(new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
-					stacktrace,
-					source));
+			return new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs, stacktrace, source);
 		}
 		else {
-			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(actual,
-					stacktrace,
-					source));
+			return new FluxOnAssembly.OnAssemblySubscriber<>(actual, stacktrace, source);
 		}
 	}
 

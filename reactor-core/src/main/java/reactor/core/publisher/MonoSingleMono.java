@@ -42,7 +42,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoSingleMono<T> extends MonoOperator<T, T>
+final class MonoSingleMono<T> extends InternalMonoOperator<T, T>
 		implements Fuseable {
 
 	MonoSingleMono(Mono<? extends T> source) {
@@ -50,7 +50,7 @@ final class MonoSingleMono<T> extends MonoOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MonoSingle.SingleSubscriber<>(actual, null, false));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MonoSingle.SingleSubscriber<>(actual, null, false);
 	}
 }

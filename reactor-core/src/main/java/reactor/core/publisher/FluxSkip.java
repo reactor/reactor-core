@@ -27,7 +27,7 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSkip<T> extends FluxOperator<T, T> {
+final class FluxSkip<T> extends InternalFluxOperator<T, T> {
 
 	final long n;
 
@@ -40,8 +40,8 @@ final class FluxSkip<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new SkipSubscriber<>(actual, n));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new SkipSubscriber<>(actual, n);
 	}
 
 	//Fixme Does not implement ConditionalSubscriber until the full chain of operators

@@ -31,17 +31,17 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDetach<T> extends FluxOperator<T, T> {
+final class FluxDetach<T> extends InternalFluxOperator<T, T> {
 
 	FluxDetach(Flux<? extends T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new DetachSubscriber<>(actual));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new DetachSubscriber<>(actual);
 	}
-	
+
 	static final class DetachSubscriber<T> implements InnerOperator<T, T> {
 
 		CoreSubscriber<? super T> actual;

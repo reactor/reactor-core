@@ -48,7 +48,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		A container;
 		BiConsumer<? super A, ? super T> accumulator;
 		Function<? super A, ? extends R> finisher;
@@ -63,13 +63,10 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 		}
 		catch (Throwable ex) {
 			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
-			return;
+			return null;
 		}
 
-		source.subscribe(new StreamCollectorSubscriber<>(actual,
-				container,
-				accumulator,
-				finisher));
+		return new StreamCollectorSubscriber<>(actual, container, accumulator, finisher);
 	}
 
 	static final class StreamCollectorSubscriber<T, A, R>

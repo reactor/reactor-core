@@ -37,7 +37,7 @@ import reactor.util.concurrent.Queues;
 /**
  * @author David Karnok
  */
-final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
+final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	final int            maxSize;
 	final long           timespan;
@@ -57,10 +57,10 @@ final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
-		source.subscribe(new WindowTimeoutSubscriber<>(actual, maxSize,
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
+		return new WindowTimeoutSubscriber<>(actual, maxSize,
 				timespan,
-				timer));
+				timer);
 	}
 
 	@Override

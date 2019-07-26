@@ -25,7 +25,7 @@ import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxContextStart<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final Function<Context, Context> doOnContext;
 
@@ -36,17 +36,17 @@ final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Context c;
 		try {
 			c = doOnContext.apply(actual.currentContext());
 		}
 		catch (Throwable t) {
 			Operators.error(actual, Operators.onOperatorError(t, actual.currentContext()));
-			return;
+			return null;
 		}
 
-		source.subscribe(new ContextStartSubscriber<>(actual, c));
+		return new ContextStartSubscriber<>(actual, c);
 	}
 
 	static final class ContextStartSubscriber<T>

@@ -20,15 +20,14 @@ import reactor.core.CoreSubscriber;
 /**
  * @author Stephane Maldini
  */
-final class MonoMaterialize<T> extends MonoOperator<T, Signal<T>> {
+final class MonoMaterialize<T> extends InternalMonoOperator<T, Signal<T>> {
 
 	MonoMaterialize(Mono<T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Signal<T>> actual) {
-		source.subscribe(new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(
-				actual)));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Signal<T>> actual) {
+		return new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(actual));
 	}
 }

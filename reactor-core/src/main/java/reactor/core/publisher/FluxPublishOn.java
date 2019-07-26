@@ -39,7 +39,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final Scheduler scheduler;
 
@@ -82,7 +82,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Worker worker;
 
 		try {
@@ -91,7 +91,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		if (actual instanceof ConditionalSubscriber) {
@@ -103,15 +103,15 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					prefetch,
 					lowTide,
 					queueSupplier));
-			return;
+			return null;
 		}
-		source.subscribe(new PublishOnSubscriber<>(actual,
+		return new PublishOnSubscriber<>(actual,
 				scheduler,
 				worker,
 				delayError,
 				prefetch,
 				lowTide,
-				queueSupplier));
+				queueSupplier);
 	}
 
 	static final class PublishOnSubscriber<T>

@@ -51,7 +51,7 @@ import reactor.util.context.Context;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxBufferPredicate<T, C extends Collection<? super T>>
-		extends FluxOperator<T, C> {
+		extends InternalFluxOperator<T, C> {
 
 	public enum Mode {
 		UNTIL, UNTIL_CUT_BEFORE, WHILE
@@ -77,7 +77,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
 		C initialBuffer;
 
 		try {
@@ -86,13 +86,13 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		BufferPredicateSubscriber<T, C> parent = new BufferPredicateSubscriber<>(actual,
 				initialBuffer, bufferSupplier, predicate, mode);
 
-		source.subscribe(parent);
+		return parent;
 	}
 
 	static final class BufferPredicateSubscriber<T, C extends Collection<? super T>>

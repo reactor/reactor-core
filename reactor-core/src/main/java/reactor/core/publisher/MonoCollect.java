@@ -51,7 +51,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		R container;
 
 		try {
@@ -60,10 +60,10 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
-		source.subscribe(new CollectSubscriber<>(actual, action, container));
+		return new CollectSubscriber<>(actual, action, container);
 	}
 
 	static final class CollectSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {

@@ -34,7 +34,7 @@ import static reactor.core.publisher.FluxTimeout.addNameToTimeoutDescription;
  * @param <V> the value type for the timeout for the subsequent items
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
+final class MonoTimeout<T, U, V> extends InternalMonoOperator<T, T> {
 
 	final Publisher<U> firstTimeout;
 
@@ -64,7 +64,7 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
@@ -81,6 +81,6 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 
 		firstTimeout.subscribe(ts);
 
-		source.subscribe(main);
+		return main;
 	}
 }

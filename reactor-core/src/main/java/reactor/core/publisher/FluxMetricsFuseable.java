@@ -41,7 +41,7 @@ import static reactor.core.publisher.FluxMetrics.*;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final String        name;
 	final Tags          tags;
@@ -71,8 +71,8 @@ final class FluxMetricsFuseable<T> extends FluxOperator<T, T> implements Fuseabl
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags);
 	}
 
 	/**

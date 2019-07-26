@@ -32,7 +32,7 @@ import reactor.util.context.Context;
  * @param <K> the key type used for comparing subsequent elements
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
+final class FluxDistinctUntilChanged<T, K> extends InternalFluxOperator<T, T> {
 
 	final Function<? super T, K>            keyExtractor;
 	final BiPredicate<? super K, ? super K> keyComparator;
@@ -47,13 +47,13 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new DistinctUntilChangedConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
-					keyExtractor, keyComparator));
+			return new DistinctUntilChangedConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
+					keyExtractor, keyComparator);
 		}
 		else {
-			source.subscribe(new DistinctUntilChangedSubscriber<>(actual, keyExtractor, keyComparator));
+			return new DistinctUntilChangedSubscriber<>(actual, keyExtractor, keyComparator);
 		}
 	}
 

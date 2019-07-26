@@ -32,7 +32,7 @@ import reactor.util.annotation.Nullable;
  * }
  * @param <I> delegate {@link Publisher} type
  */
-final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I>  {
+final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I>, CoreOperator<I, I>  {
 
 	final Publisher<? extends I> source;
 
@@ -49,6 +49,16 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super I> actual) {
 		source.subscribe(actual);
+	}
+
+	@Override
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
+		return actual;
+	}
+
+	@Override
+	public Publisher<? extends I> source() {
+		return source;
 	}
 
 	@Override

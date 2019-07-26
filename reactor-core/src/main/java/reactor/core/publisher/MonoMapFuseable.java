@@ -30,7 +30,7 @@ import reactor.core.Fuseable;
  * @param <R> the result value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoMapFuseable<T, R> extends MonoOperator<T, R>
+final class MonoMapFuseable<T, R> extends InternalMonoOperator<T, R>
 		implements Fuseable {
 
 	final Function<? super T, ? extends R> mapper;
@@ -49,14 +49,11 @@ final class MonoMapFuseable<T, R> extends MonoOperator<T, R>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) actual;
-			source.subscribe(new FluxMapFuseable.MapFuseableConditionalSubscriber<>(cs, mapper));
-			return;
+			return new FluxMapFuseable.MapFuseableConditionalSubscriber<>(cs, mapper);
 		}
-		source.subscribe(new FluxMapFuseable.MapFuseableSubscriber<>(actual, mapper));
+		return new FluxMapFuseable.MapFuseableSubscriber<>(actual, mapper);
 	}
-
 }

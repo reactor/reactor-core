@@ -34,7 +34,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDoOnEach<T> extends FluxOperator<T, T> {
+final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 
 	final Consumer<? super Signal<T>> onSignal;
 
@@ -60,8 +60,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(createSubscriber(actual, onSignal, false, false));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return createSubscriber(actual, onSignal, false, false);
 	}
 
 	static class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {

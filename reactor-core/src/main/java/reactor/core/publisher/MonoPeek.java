@@ -30,7 +30,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoPeek<T> extends MonoOperator<T, T> implements SignalPeek<T> {
+final class MonoPeek<T> extends InternalMonoOperator<T, T> implements SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -62,13 +62,12 @@ final class MonoPeek<T> extends MonoOperator<T, T> implements SignalPeek<T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new PeekConditionalSubscriber<>(
-					(ConditionalSubscriber<? super T>) actual, this));
-			return;
+			return new PeekConditionalSubscriber<>(
+					(ConditionalSubscriber<? super T>) actual, this);
 		}
-		source.subscribe(new FluxPeek.PeekSubscriber<>(actual, this));
+		return new FluxPeek.PeekSubscriber<>(actual, this);
 	}
 
 	@Override

@@ -28,7 +28,7 @@ import reactor.core.publisher.FluxTake.TakeFuseableSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTakeFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxTakeFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final long n;
 
@@ -41,7 +41,7 @@ final class FluxTakeFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new TakeFuseableSubscriber<>(actual, n));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new TakeFuseableSubscriber<>(actual, n);
 	}
 }

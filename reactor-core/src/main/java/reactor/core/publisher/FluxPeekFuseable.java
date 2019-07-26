@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -39,7 +40,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPeekFuseable<T> extends FluxOperator<T, T>
+final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		implements Fuseable, SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
@@ -77,13 +78,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
-					this));
-			return;
+			return new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, this);
 		}
-		source.subscribe(new PeekFuseableSubscriber<>(actual, this));
+		return new PeekFuseableSubscriber<>(actual, this);
 	}
 
 	static final class PeekFuseableSubscriber<T>

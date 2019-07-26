@@ -47,7 +47,7 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxRepeatWhen.RepeatWhenOtherSubscriber other =
 				new FluxRepeatWhen.RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
@@ -70,13 +70,16 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 		}
 		catch (Throwable e) {
 			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		p.subscribe(other);
 
 		if (!main.cancelled) {
-			source.subscribe(main);
+			return main;
+		}
+		else {
+			return null;
 		}
 	}
 }

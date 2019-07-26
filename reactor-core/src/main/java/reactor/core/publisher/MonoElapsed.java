@@ -24,7 +24,7 @@ import reactor.util.function.Tuple2;
 /**
  * @author Stephane Maldini
  */
-final class MonoElapsed<T> extends MonoOperator<T, Tuple2<Long, T>> implements Fuseable {
+final class MonoElapsed<T> extends InternalMonoOperator<T, Tuple2<Long, T>> implements Fuseable {
 
 	final Scheduler scheduler;
 
@@ -34,8 +34,8 @@ final class MonoElapsed<T> extends MonoOperator<T, Tuple2<Long, T>> implements F
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Tuple2<Long, T>> actual) {
-		source.subscribe(new FluxElapsed.ElapsedSubscriber<T>(actual, scheduler));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Tuple2<Long, T>> actual) {
+		return new FluxElapsed.ElapsedSubscriber<T>(actual, scheduler);
 	}
 
 	@Override

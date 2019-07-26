@@ -40,7 +40,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class FluxDoFinally<T> extends FluxOperator<T, T> {
+final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 
 	final Consumer<SignalType> onFinally;
 
@@ -69,8 +69,8 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(createSubscriber(actual, onFinally, false));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return createSubscriber(actual, onFinally, false);
 	}
 
 	static class DoFinallySubscriber<T> implements InnerOperator<T, T> {

@@ -36,7 +36,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
+final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 
 	final Publisher<U> other;
 
@@ -46,14 +46,14 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		SkipUntilMainSubscriber<T> mainSubscriber = new SkipUntilMainSubscriber<>(actual);
 
 		SkipUntilOtherSubscriber<U> otherSubscriber = new SkipUntilOtherSubscriber<>(mainSubscriber);
 
 		other.subscribe(otherSubscriber);
 
-		source.subscribe(mainSubscriber);
+		return mainSubscriber;
 	}
 
 	static final class SkipUntilOtherSubscriber<U> implements InnerConsumer<U> {

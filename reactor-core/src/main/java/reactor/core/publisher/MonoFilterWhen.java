@@ -41,7 +41,7 @@ import reactor.util.context.Context;
  * @param <T> the input value type
  * @author Simon Baslé
  */
-class MonoFilterWhen<T> extends MonoOperator<T, T> {
+class MonoFilterWhen<T> extends InternalMonoOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 
@@ -52,8 +52,8 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MonoFilterWhenMain<>(actual, asyncPredicate));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MonoFilterWhenMain<>(actual, asyncPredicate);
 	}
 
 	static final class MonoFilterWhenMain<T> extends Operators.MonoSubscriber<T, T> {

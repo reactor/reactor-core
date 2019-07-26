@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
@@ -42,9 +42,9 @@ import reactor.util.context.Context;
  * @param <T>
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fuseable {
+final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fuseable, CoreOperator<T, T> {
 
-	final Publisher<T>   source;
+	final CorePublisher<T>   source;
 	final int            history;
 	final long           ttl;
 	final Scheduler scheduler;
@@ -992,7 +992,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 					ReplaySubscriber.class,
 					"connection");
 
-	FluxReplay(Publisher<T> source,
+	FluxReplay(CorePublisher<T> source,
 			int history,
 			long ttl,
 			@Nullable Scheduler scheduler) {
@@ -1054,8 +1054,17 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
+		CoreSubscriber nextSubscriber = subscribeOrReturn(actual);
+		if (nextSubscriber == null) {
+			return;
+		}
+		source.subscribe(nextSubscriber);
+	}
 
+	@Override
+	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		boolean expired;
 		for (; ; ) {
 			ReplaySubscriber<T> c = connection;
@@ -1075,18 +1084,24 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 			if (inner.isCancelled()) {
 				c.remove(inner);
-				return;
+				return null;
 			}
 
 			inner.parent = c;
 			c.buffer.replay(inner);
 
 			if (expired) {
-				source.subscribe(c);
+				return c;
 			}
 
 			break;
 		}
+		return null;
+	}
+
+	@Override
+	public final CorePublisher<T> source() {
+		return source;
 	}
 
 	@Override

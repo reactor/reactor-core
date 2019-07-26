@@ -40,7 +40,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the input and accumulated value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxScan<T> extends FluxOperator<T, T> {
+final class FluxScan<T> extends InternalFluxOperator<T, T> {
 
 	final BiFunction<T, ? super T, T> accumulator;
 
@@ -50,8 +50,8 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new ScanSubscriber<>(actual, accumulator));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new ScanSubscriber<>(actual, accumulator);
 	}
 
 	static final class ScanSubscriber<T>

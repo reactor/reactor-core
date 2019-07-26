@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
@@ -33,7 +34,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFilter<T> extends FluxOperator<T, T> {
+final class FluxFilter<T> extends InternalFluxOperator<T, T> {
 
 	final Predicate<? super T> predicate;
 
@@ -44,13 +45,12 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
-					predicate));
-			return;
+			return new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
+					predicate);
 		}
-		source.subscribe(new FilterSubscriber<>(actual, predicate));
+		return new FilterSubscriber<>(actual, predicate);
 	}
 
 	static final class FilterSubscriber<T>

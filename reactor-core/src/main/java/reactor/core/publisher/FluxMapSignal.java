@@ -34,7 +34,7 @@ import reactor.util.annotation.Nullable;
  * @param <R> the result value type
  * @author Stephane Maldini
  */
-final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
+final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 
     final Function<? super T, ? extends R> mapperNext;
     final Function<? super Throwable, ? extends R> mapperError;
@@ -65,14 +65,14 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
     }
 
     @Override
-    public void subscribe(CoreSubscriber<? super R> actual) {
-	    source.subscribe(new FluxMapSignalSubscriber<>(actual,
-			    mapperNext,
-			    mapperError,
-			    mapperComplete));
+    public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+        return new FluxMapSignalSubscriber<>(actual,
+                mapperNext,
+                mapperError,
+                mapperComplete);
     }
 
-    static final class FluxMapSignalSubscriber<T, R> 
+    static final class FluxMapSignalSubscriber<T, R>
     extends AbstractQueue<R>
 		    implements InnerOperator<T, R>,
 		               BooleanSupplier {

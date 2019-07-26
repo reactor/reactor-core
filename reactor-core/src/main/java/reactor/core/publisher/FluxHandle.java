@@ -31,7 +31,7 @@ import reactor.util.context.Context;
  * @param <T> the source value type
  * @param <R> the result value type
  */
-final class FluxHandle<T, R> extends FluxOperator<T, R> {
+final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
@@ -41,14 +41,13 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
+			@SuppressWarnings("unchecked")
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) actual;
-			source.subscribe(new HandleConditionalSubscriber<>(cs, handler));
-			return;
+			return new HandleConditionalSubscriber<>(cs, handler);
 		}
-		source.subscribe(new HandleSubscriber<>(actual, handler));
+		return new HandleSubscriber<>(actual, handler);
 	}
 
 	static final class HandleSubscriber<T, R>

@@ -48,7 +48,7 @@ import reactor.util.function.Tuples;
  * @param <T> the value type passing through
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
+final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuseable,
                                                                     AssemblyOp {
 
 	final AssemblySnapshot snapshotStack;
@@ -92,37 +92,27 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> void subscribe(CoreSubscriber<? super T> s,
-			Flux<? extends T> source,
-			@Nullable AssemblySnapshot snapshotStack) {
-
+	static <T> CoreSubscriber<? super T> wrapSubscriber(CoreSubscriber<? super T> actual,
+														Flux<? extends T> source,
+														@Nullable AssemblySnapshot snapshotStack) {
 		if(snapshotStack != null) {
-			if (s instanceof ConditionalSubscriber) {
-				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
-						snapshotStack,
-						source));
+			if (actual instanceof ConditionalSubscriber) {
+				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
+				return new OnAssemblyConditionalSubscriber<>(cs, snapshotStack, source);
 			}
 			else {
-				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, source));
+				return new OnAssemblySubscriber<>(actual, snapshotStack, source);
 			}
+		}
+		else {
+			return actual;
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		if(snapshotStack != null) {
-			if (actual instanceof ConditionalSubscriber) {
-				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
-				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
-						snapshotStack,
-						source));
-			}
-			else {
-				source.subscribe(new OnAssemblySubscriber<>(actual, snapshotStack, source));
-			}
-		}
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return wrapSubscriber(actual, source, snapshotStack);
 	}
 
 	/**

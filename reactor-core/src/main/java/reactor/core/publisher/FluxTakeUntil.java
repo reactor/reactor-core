@@ -30,7 +30,7 @@ import reactor.util.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTakeUntil<T> extends FluxOperator<T, T> {
+final class FluxTakeUntil<T> extends InternalFluxOperator<T, T> {
 
 	final Predicate<? super T> predicate;
 
@@ -40,8 +40,8 @@ final class FluxTakeUntil<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new TakeUntilPredicateSubscriber<>(actual, predicate));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new TakeUntilPredicateSubscriber<>(actual, predicate);
 	}
 
 	static final class TakeUntilPredicateSubscriber<T>

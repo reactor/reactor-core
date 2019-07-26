@@ -43,7 +43,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
+final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<U>> throttler;
 
@@ -62,17 +62,16 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 		return Integer.MAX_VALUE;
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Queue<SampleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
 
 		SampleTimeoutMain<T, U> main = new SampleTimeoutMain<>(actual, throttler, q);
 
 		actual.onSubscribe(main);
 
-		source.subscribe(main);
+		return main;
 	}
 
 	static final class SampleTimeoutMain<T, U>implements InnerOperator<T, T> {

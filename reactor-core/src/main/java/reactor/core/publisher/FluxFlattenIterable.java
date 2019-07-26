@@ -42,7 +42,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuseable {
+final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends Iterable<? extends R>> mapper;
 
@@ -68,9 +68,10 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 		return prefetch;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	@SuppressWarnings("unchecked")
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+
 		if (source instanceof Callable) {
 			T v;
 
@@ -80,12 +81,12 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 			catch (Throwable ex) {
 				Operators.error(actual, Operators.onOperatorError(ex,
 						actual.currentContext()));
-				return;
+				return null;
 			}
 
 			if (v == null) {
 				Operators.complete(actual);
-				return;
+				return null;
 			}
 
 			Iterator<? extends R> it;
@@ -99,17 +100,17 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 				Context ctx = actual.currentContext();
 				Operators.error(actual, Operators.onOperatorError(ex, ctx));
 				Operators.onDiscard(v, ctx);
-				return;
+				return null;
 			}
 
+			// TODO return subscriber (tail-call optimization)?
 			FluxIterable.subscribe(actual, it);
-
-			return;
+			return null;
 		}
-		source.subscribe(new FlattenIterableSubscriber<>(actual,
+		return new FlattenIterableSubscriber<>(actual,
 				mapper,
 				prefetch,
-				queueSupplier));
+				queueSupplier);
 	}
 
 	static final class FlattenIterableSubscriber<T, R>

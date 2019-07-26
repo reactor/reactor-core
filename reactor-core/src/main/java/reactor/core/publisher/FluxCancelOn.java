@@ -25,7 +25,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 
-final class FluxCancelOn<T> extends FluxOperator<T, T> {
+final class FluxCancelOn<T> extends InternalFluxOperator<T, T> {
 
 	final Scheduler scheduler;
 
@@ -35,8 +35,8 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new CancelSubscriber<T>(actual, scheduler));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new CancelSubscriber<T>(actual, scheduler);
 	}
 
 	@Override

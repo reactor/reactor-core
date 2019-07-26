@@ -44,7 +44,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
+final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 
 	final BiFunction<R, ? super T, R> accumulator;
 
@@ -59,7 +59,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		ScanSeedCoordinator<T, R> coordinator =
 				new ScanSeedCoordinator<>(actual, source, accumulator, initialSupplier);
 
@@ -68,6 +68,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 		if (!coordinator.isCancelled()) {
 			coordinator.onComplete();
 		}
+		return null;
 	}
 
 	static final class ScanSeedCoordinator<T, R>

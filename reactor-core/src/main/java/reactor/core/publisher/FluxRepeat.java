@@ -32,7 +32,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRepeat<T> extends FluxOperator<T, T> {
+final class FluxRepeat<T> extends InternalFluxOperator<T, T> {
 
 	final long times;
 
@@ -45,7 +45,7 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, actual, times  + 1);
 
 		actual.onSubscribe(parent);
@@ -53,6 +53,7 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 		if (!parent.isCancelled()) {
 			parent.onComplete();
 		}
+		return null;
 	}
 
 	static final class RepeatSubscriber<T>

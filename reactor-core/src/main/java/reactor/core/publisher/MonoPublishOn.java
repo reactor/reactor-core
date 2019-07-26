@@ -31,7 +31,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the value type
  */
-final class MonoPublishOn<T> extends MonoOperator<T, T> {
+final class MonoPublishOn<T> extends InternalMonoOperator<T, T> {
 
 	final Scheduler scheduler;
 
@@ -41,8 +41,8 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new PublishOnSubscriber<T>(actual, scheduler));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new PublishOnSubscriber<T>(actual, scheduler);
 	}
 
 	@Override

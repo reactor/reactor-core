@@ -35,7 +35,7 @@ import reactor.util.function.Tuples;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-final class FluxName<T> extends FluxOperator<T, T> {
+final class FluxName<T> extends InternalFluxOperator<T, T> {
 
 	final String name;
 
@@ -97,8 +97,8 @@ final class FluxName<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(actual);
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return actual;
 	}
 
 	@Nullable

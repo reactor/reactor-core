@@ -31,7 +31,7 @@ import reactor.util.function.Tuple2;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-final class FluxNameFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxNameFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final String name;
 
@@ -46,8 +46,8 @@ final class FluxNameFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(actual);
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return actual;
 	}
 
 	@Nullable

@@ -40,7 +40,7 @@ import reactor.util.context.Context;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
-		extends FluxOperator<T, C> {
+		extends InternalFluxOperator<T, C> {
 
 	final Publisher<U> other;
 
@@ -60,7 +60,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
 		C buffer;
 
 		try {
@@ -69,7 +69,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e,  actual.currentContext()));
-			return;
+			return null;
 		}
 
 		BufferBoundaryMain<T, U, C> parent =
@@ -82,7 +82,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		other.subscribe(parent.other);
 
-		source.subscribe(parent);
+		return parent;
 	}
 
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>

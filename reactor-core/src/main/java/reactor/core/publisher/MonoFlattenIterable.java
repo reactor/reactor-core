@@ -63,7 +63,7 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (source instanceof Callable) {
 			T v;
 
@@ -73,12 +73,12 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 			catch (Throwable ex) {
 				Operators.error(actual, Operators.onOperatorError(ex,
 						actual.currentContext()));
-				return;
+				return null;
 			}
 
 			if (v == null) {
 				Operators.complete(actual);
-				return;
+				return null;
 			}
 
 			Iterator<? extends R> it;
@@ -91,17 +91,16 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 			catch (Throwable ex) {
 				Operators.error(actual, Operators.onOperatorError(ex,
 						actual.currentContext()));
-				return;
+				return null;
 			}
 
 			FluxIterable.subscribe(actual, it);
 
-			return;
+			return null;
 		}
-		source.subscribe(new FluxFlattenIterable.FlattenIterableSubscriber<>(actual,
+		return new FluxFlattenIterable.FlattenIterableSubscriber<>(actual,
 				mapper,
 				prefetch,
-				queueSupplier));
+				queueSupplier);
 	}
-
 }

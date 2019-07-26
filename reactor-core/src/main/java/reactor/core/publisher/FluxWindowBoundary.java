@@ -42,7 +42,7 @@ import reactor.util.context.Context;
  * @param <U> the boundary publisher's type (irrelevant)
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
+final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 
 	final Publisher<U> other;
 
@@ -61,7 +61,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		WindowBoundaryMain<T, U> main = new WindowBoundaryMain<>(actual,
 				processorQueueSupplier, processorQueueSupplier.get());
 
@@ -70,7 +70,10 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		if (main.emit(main.window)) {
 			other.subscribe(main.boundary);
 
-			source.subscribe(main);
+			return main;
+		}
+		else {
+			return null;
 		}
 	}
 

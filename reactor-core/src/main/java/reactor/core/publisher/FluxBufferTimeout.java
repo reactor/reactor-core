@@ -36,8 +36,7 @@ import reactor.util.context.Context;
 /**
  * @author Stephane Maldini
  */
-final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOperator<T,
-		C> {
+final class FluxBufferTimeout<T, C extends Collection<? super T>> extends InternalFluxOperator<T, C> {
 
 	final int            batchSize;
 	final Supplier<C>    bufferSupplier;
@@ -63,12 +62,14 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> actual) {
-		source.subscribe(new BufferTimeoutSubscriber<>(Operators.serialize(actual),
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
+		return new BufferTimeoutSubscriber<>(
+				Operators.serialize(actual),
 				batchSize,
 				timespan,
 				timer.createWorker(),
-				bufferSupplier));
+				bufferSupplier
+		);
 	}
 
 	@Override

@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -44,7 +45,7 @@ import reactor.util.context.Context;
  * @param <U> the value type of the sampler (irrelevant)
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSample<T, U> extends FluxOperator<T, T> {
+final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 
 	final Publisher<U> other;
 
@@ -59,8 +60,7 @@ final class FluxSample<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		SampleMainSubscriber<T> main = new SampleMainSubscriber<>(serial);
@@ -68,8 +68,7 @@ final class FluxSample<T, U> extends FluxOperator<T, T> {
 		actual.onSubscribe(main);
 
 		other.subscribe(new SampleOther<>(main));
-
-		source.subscribe(main);
+		return main;
 	}
 
 	static final class SampleMainSubscriber<T> implements InnerOperator<T, T> {

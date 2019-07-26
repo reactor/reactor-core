@@ -36,7 +36,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fuseable {
+final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implements Fuseable {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
@@ -55,15 +55,13 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-
+			@SuppressWarnings("unchecked")
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) actual;
-			source.subscribe(new HandleFuseableConditionalSubscriber<>(cs, handler));
-			return;
+			return new HandleFuseableConditionalSubscriber<>(cs, handler);
 		}
-		source.subscribe(new HandleFuseableSubscriber<>(actual, handler));
+		return new HandleFuseableSubscriber<>(actual, handler);
 	}
 
 	static final class HandleFuseableSubscriber<T, R>

@@ -25,7 +25,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoSwitchIfEmpty<T> extends MonoOperator<T, T> {
+final class MonoSwitchIfEmpty<T> extends InternalMonoOperator<T, T> {
 
     final Mono<? extends T> other;
 
@@ -35,12 +35,12 @@ final class MonoSwitchIfEmpty<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxSwitchIfEmpty.SwitchIfEmptySubscriber<T> parent = new
 				FluxSwitchIfEmpty.SwitchIfEmptySubscriber<>(actual, other);
 
 		actual.onSubscribe(parent);
 
-		source.subscribe(parent);
+		return parent;
 	}
 }

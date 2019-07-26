@@ -32,7 +32,7 @@ import reactor.core.Fuseable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxLogFuseable<T> extends FluxOperator<T, T>
+final class FluxLogFuseable<T> extends InternalFluxOperator<T, T>
 		implements Fuseable {
 
 	final SignalPeek<T> log;
@@ -44,12 +44,10 @@ final class FluxLogFuseable<T> extends FluxOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
-					log));
-			return;
+			return new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, log);
 		}
-		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, log));
+		return new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, log);
 	}
 }

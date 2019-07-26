@@ -39,7 +39,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
+final class MonoCallableOnAssembly<T> extends InternalMonoOperator<T, T>
 		implements Callable<T>, AssemblyOp {
 
 	final AssemblySnapshot stacktrace;
@@ -70,16 +70,16 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super T>
 					cs = (Fuseable.ConditionalSubscriber<? super T>) actual;
-			source.subscribe(new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
+			return new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
 					stacktrace,
-					source));
+					source);
 		}
 		else {
-			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(actual, stacktrace, source));
+			return new FluxOnAssembly.OnAssemblySubscriber<>(actual, stacktrace, source);
 		}
 	}
 

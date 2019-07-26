@@ -41,7 +41,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
+final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<U>> throttler;
 
@@ -52,12 +52,12 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		SampleFirstMain<T, U> main = new SampleFirstMain<>(actual, throttler);
 
 		actual.onSubscribe(main);
 
-		source.subscribe(main);
+		return main;
 	}
 
 	@Override

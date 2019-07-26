@@ -24,15 +24,15 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
-final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
+final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 
 	FluxDematerialize(Flux<Signal<T>> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new DematerializeSubscriber<>(actual, false));
+	public CoreSubscriber<? super Signal<T>> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new DematerializeSubscriber<>(actual, false);
 	}
 
 	static final class DematerializeSubscriber<T> implements InnerOperator<Signal<T>, T> {

@@ -43,10 +43,10 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		this.defaultValue = Objects.requireNonNull(defaultValue, "defaultValue");
 	}
 
-    @Override
-    public void subscribe(CoreSubscriber<? super T> actual) {
-        source.subscribe(new TakeLastOneSubscriber<>(actual, defaultValue, true));
-    }
+	@Override
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new TakeLastOneSubscriber<>(actual, defaultValue, true);
+	}
 
 	static final class TakeLastOneSubscriber<T>
 			extends Operators.MonoSubscriber<T, T>  {

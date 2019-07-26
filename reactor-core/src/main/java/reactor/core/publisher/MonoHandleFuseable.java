@@ -30,7 +30,7 @@ import reactor.core.Fuseable;
  * @param <R> the result value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoHandleFuseable<T, R> extends MonoOperator<T, R>
+final class MonoHandleFuseable<T, R> extends InternalMonoOperator<T, R>
 		implements Fuseable {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
@@ -41,9 +41,7 @@ final class MonoHandleFuseable<T, R> extends MonoOperator<T, R>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super R> actual) {
-		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+		return new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, handler);
 	}
-
 }

@@ -29,7 +29,7 @@ import reactor.core.CoreSubscriber;
  * @param <R> the result value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoHandle<T, R> extends MonoOperator<T, R> {
+final class MonoHandle<T, R> extends InternalMonoOperator<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
@@ -39,7 +39,7 @@ final class MonoHandle<T, R> extends MonoOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
-		source.subscribe(new FluxHandle.HandleSubscriber<>(actual, handler));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+		return new FluxHandle.HandleSubscriber<>(actual, handler);
 	}
 }

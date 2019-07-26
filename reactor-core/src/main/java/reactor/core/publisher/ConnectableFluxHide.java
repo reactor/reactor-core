@@ -29,13 +29,10 @@ import reactor.util.annotation.Nullable;
  *
  * @author Simon Baslé
  */
-final class ConnectableFluxHide<T> extends ConnectableFlux<T> implements Scannable {
-
-	final ConnectableFlux<T> source;
+final class ConnectableFluxHide<T> extends InternalConnectableFluxOperator<T, T> implements Scannable {
 
 	ConnectableFluxHide(ConnectableFlux<T> source) {
-		super();
-		this.source = source;
+		super(source);
 	}
 
 	@Override
@@ -53,8 +50,8 @@ final class ConnectableFluxHide<T> extends ConnectableFlux<T> implements Scannab
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(actual);
+	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return actual;
 	}
 
 	@Override

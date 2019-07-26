@@ -40,7 +40,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
+final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	final int size;
 
@@ -85,20 +85,20 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		if (skip == size) {
-			source.subscribe(new WindowExactSubscriber<>(actual,
+			return new WindowExactSubscriber<>(actual,
 					size,
-					processorQueueSupplier));
+					processorQueueSupplier);
 		}
 		else if (skip > size) {
-			source.subscribe(new WindowSkipSubscriber<>(actual,
-					size, skip, processorQueueSupplier));
+			return new WindowSkipSubscriber<>(actual,
+					size, skip, processorQueueSupplier);
 		}
 		else {
-			source.subscribe(new WindowOverlapSubscriber<>(actual,
+			return new WindowOverlapSubscriber<>(actual,
 					size,
-					skip, processorQueueSupplier, overflowQueueSupplier.get()));
+					skip, processorQueueSupplier, overflowQueueSupplier.get());
 		}
 	}
 

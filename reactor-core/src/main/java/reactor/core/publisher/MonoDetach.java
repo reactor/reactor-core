@@ -26,15 +26,14 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDetach<T> extends MonoOperator<T, T> {
+final class MonoDetach<T> extends InternalMonoOperator<T, T> {
 
 	MonoDetach(Mono<? extends T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new FluxDetach.DetachSubscriber<>(actual));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new FluxDetach.DetachSubscriber<>(actual);
 	}
-
 }

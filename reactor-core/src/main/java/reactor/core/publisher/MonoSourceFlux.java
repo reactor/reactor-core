@@ -42,9 +42,8 @@ final class MonoSourceFlux<I> extends MonoFromFluxOperator<I, I> {
 	 * @param actual
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super I> actual) {
-		source.subscribe(actual);
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
+		return actual;
 	}
 
 }

@@ -33,7 +33,7 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
+final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 
 	final Iterable<? extends U> other;
 
@@ -48,7 +48,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		Iterator<? extends U> it;
 
 		try {
@@ -57,7 +57,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		boolean b;
@@ -67,15 +67,15 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		if (!b) {
 			Operators.complete(actual);
-			return;
+			return null;
 		}
 
-		source.subscribe(new ZipSubscriber<>(actual, it, zipper));
+		return new ZipSubscriber<>(actual, it, zipper);
 	}
 
 	static final class ZipSubscriber<T, U, R>

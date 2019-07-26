@@ -46,7 +46,7 @@ import reactor.util.function.Tuple2;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-final class FluxMetrics<T> extends FluxOperator<T, T> {
+final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 
 	final String name;
 	final Tags tags;
@@ -79,8 +79,8 @@ final class FluxMetrics<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new MetricsSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new MetricsSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags);
 	}
 
 	static class MetricsSubscriber<T> implements InnerOperator<T, T> {

@@ -41,7 +41,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
+final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
 
@@ -53,7 +53,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
@@ -75,13 +75,16 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 		}
 		catch (Throwable e) {
 			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-			return;
+			return null;
 		}
 
 		p.subscribe(other);
 
 		if (!main.cancelled) {
-			source.subscribe(main);
+			return main;
+		}
+		else {
+			return null;
 		}
 	}
 
@@ -195,7 +198,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	}
 
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
-			implements InnerConsumer<Object> {
+			implements InnerConsumer<Object>, CoreOperator<Long, Long> {
 
 		RepeatWhenMainSubscriber<?> main;
 
@@ -240,5 +243,14 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 			completionSignal.subscribe(actual);
 		}
 
+		@Override
+		public CoreSubscriber<? super Long> subscribeOrReturn(CoreSubscriber<? super Long> actual) {
+			return actual;
+		}
+
+		@Override
+		public DirectProcessor<Long> source() {
+			return completionSignal;
+		}
 	}
 }

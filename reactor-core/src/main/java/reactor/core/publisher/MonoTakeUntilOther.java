@@ -29,7 +29,7 @@ import reactor.util.context.Context;
 /**
  * @author Simon Baslé
  */
-final class MonoTakeUntilOther<T, U> extends MonoOperator<T, T> {
+final class MonoTakeUntilOther<T, U> extends InternalMonoOperator<T, T> {
 
 	private final Publisher<U> other;
 
@@ -39,13 +39,13 @@ final class MonoTakeUntilOther<T, U> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxTakeUntilOther.TakeUntilMainSubscriber<T> mainSubscriber = new FluxTakeUntilOther.TakeUntilMainSubscriber<>(
 				actual);
 
 		FluxTakeUntilOther.TakeUntilOtherSubscriber<U> otherSubscriber = new FluxTakeUntilOther.TakeUntilOtherSubscriber<>(mainSubscriber);
 
 		other.subscribe(otherSubscriber);
-		source.subscribe(mainSubscriber);
+		return mainSubscriber;
 	}
 }

@@ -34,7 +34,7 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
-final class FluxIndex<T, I> extends FluxOperator<T, I> {
+final class FluxIndex<T, I> extends InternalFluxOperator<T, I> {
 
 	private final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
@@ -46,14 +46,14 @@ final class FluxIndex<T, I> extends FluxOperator<T, I> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super I> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super I> cs =
 					(ConditionalSubscriber<? super I>) actual;
-			source.subscribe(new IndexConditionalSubscriber<>(cs, indexMapper));
+			return new IndexConditionalSubscriber<>(cs, indexMapper);
 		}
 		else {
-			source.subscribe(new IndexSubscriber<>(actual, indexMapper));
+			return new IndexSubscriber<>(actual, indexMapper);
 		}
 	}
 

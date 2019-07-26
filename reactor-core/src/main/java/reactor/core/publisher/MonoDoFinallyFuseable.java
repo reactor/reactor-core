@@ -34,7 +34,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class MonoDoFinallyFuseable<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoDoFinallyFuseable<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final Consumer<SignalType> onFinally;
 
@@ -44,8 +44,7 @@ final class MonoDoFinallyFuseable<T> extends MonoOperator<T, T> implements Fusea
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(FluxDoFinally.createSubscriber(actual, onFinally, true));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return FluxDoFinally.createSubscriber(actual, onFinally, true);
 	}
-
 }

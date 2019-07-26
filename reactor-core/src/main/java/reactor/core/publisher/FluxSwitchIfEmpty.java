@@ -26,7 +26,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSwitchIfEmpty<T> extends FluxOperator<T, T> {
+final class FluxSwitchIfEmpty<T> extends InternalFluxOperator<T, T> {
 
 	final Publisher<? extends T> other;
 
@@ -37,12 +37,12 @@ final class FluxSwitchIfEmpty<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		SwitchIfEmptySubscriber<T> parent = new SwitchIfEmptySubscriber<>(actual, other);
 
 		actual.onSubscribe(parent);
 
-		source.subscribe(parent);
+		return parent;
 	}
 
 	static final class SwitchIfEmptySubscriber<T>

@@ -33,7 +33,7 @@ import reactor.core.CoreSubscriber;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class FluxDoFirst<T> extends FluxOperator<T, T> {
+final class FluxDoFirst<T> extends InternalFluxOperator<T, T> {
 
 	final Runnable onFirst;
 
@@ -43,14 +43,15 @@ final class FluxDoFirst<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+
 		try {
 			onFirst.run();
 		}
 		catch (Throwable error) {
 			Operators.error(actual, error);
-			return;
+			return null;
 		}
-		source.subscribe(actual);
+		return actual;
 	}
 }

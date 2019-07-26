@@ -31,7 +31,7 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSkipWhile<T> extends FluxOperator<T, T> {
+final class FluxSkipWhile<T> extends InternalFluxOperator<T, T> {
 
 	final Predicate<? super T> predicate;
 
@@ -41,8 +41,8 @@ final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new SkipWhileSubscriber<>(actual, predicate));
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		return new SkipWhileSubscriber<>(actual, predicate);
 	}
 
 	static final class SkipWhileSubscriber<T>

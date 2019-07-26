@@ -2363,7 +2363,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockFirst() {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
 
@@ -2386,7 +2386,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -2408,7 +2408,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockLast() {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet();
 	}
 
@@ -2432,7 +2432,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Nullable
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		subscribe((Subscriber<T>) subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -7943,8 +7943,27 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> actual) {
-		Operators.onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
+		Publisher publisher = Operators.onLastAssembly(this);
+		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
+
+		while (publisher instanceof CoreOperator) {
+			CoreOperator operator = (CoreOperator) publisher;
+
+			subscriber = operator.subscribeOrReturn(subscriber);
+			if (subscriber == null) {
+				// null means "I will subscribe myself", returning...
+				return;
+			}
+			publisher = operator.source();
+		}
+		if (publisher instanceof CorePublisher) {
+			((CorePublisher) publisher).subscribe(subscriber);
+		}
+		else {
+			publisher.subscribe(subscriber);
+		}
 	}
 
 	/**

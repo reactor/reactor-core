@@ -37,7 +37,7 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<T, C> {
+final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxOperator<T, C> {
 
 	final int size;
 
@@ -68,18 +68,15 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
 		if (size == skip) {
-			source.subscribe(new BufferExactSubscriber<>(actual, size, bufferSupplier));
+			return new BufferExactSubscriber<>(actual, size, bufferSupplier);
 		}
 		else if (skip > size) {
-			source.subscribe(new BufferSkipSubscriber<>(actual, size, skip, bufferSupplier));
+			return new BufferSkipSubscriber<>(actual, size, skip, bufferSupplier);
 		}
 		else {
-			source.subscribe(new BufferOverlappingSubscriber<>(actual,
-					size,
-					skip,
-					bufferSupplier));
+			return new BufferOverlappingSubscriber<>(actual, size, skip, bufferSupplier);
 		}
 	}
 

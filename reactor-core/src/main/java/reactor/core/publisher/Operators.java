@@ -1269,7 +1269,7 @@ public abstract class Operators {
 	Operators() {
 	}
 
-	static final class CorePublisherAdapter<T> implements CorePublisher<T> {
+	static final class CorePublisherAdapter<T> implements CorePublisher<T>, CoreOperator<T, T> {
 
 		final Publisher<T> publisher;
 
@@ -1285,7 +1285,16 @@ public abstract class Operators {
 		@Override
 		public void subscribe(Subscriber<? super T> s) {
 			publisher.subscribe(s);
+		}
 
+		@Override
+		public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+			return actual;
+		}
+
+		@Override
+		public Publisher<? extends T> source() {
+			return publisher;
 		}
 	}
 

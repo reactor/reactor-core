@@ -43,7 +43,7 @@ import reactor.util.context.Context;
  * @author David Karnok
  */
 //see https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableOnBackpressureTimeout.java
-final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
+final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O> {
 
 	private static final Logger LOGGER =
 			Loggers.getLogger(FluxOnBackpressureBufferTimeout.class);
@@ -66,12 +66,12 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super O> actual) {
-		source.subscribe(new BackpressureBufferTimeoutSubscriber<>(actual,
+	public CoreSubscriber<? super O> subscribeOrReturn(CoreSubscriber<? super O> actual) {
+		return new BackpressureBufferTimeoutSubscriber<>(actual,
 				ttl,
 				ttlScheduler,
 				bufferSize,
-				onBufferEviction));
+				onBufferEviction);
 	}
 
 	@Override
