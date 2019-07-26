@@ -48,6 +48,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * A ParallelFlux publishes to an array of Subscribers, in parallel 'rails' (or
@@ -1005,7 +1006,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super Throwable> onError,
 			@Nullable Runnable onComplete) {
-		return subscribe(onNext, onError, onComplete, null);
+		return subscribe(onNext, onError, onComplete, (Context) null);
 	}
 
 	@Override
@@ -1026,13 +1027,42 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @param onError consumer of error signal
 	 * @param onComplete callback on completion signal
 	 * @param onSubscribe consumer of the subscription signal
+	 * @deprecated This method is deprecated as a way to discourage abuse of the onSubscribe {@link Consumer}
 	 */
+	@Deprecated
 	public final Disposable subscribe(
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super Throwable> onError,
 			@Nullable Runnable onComplete,
-			@Nullable Consumer<? super Subscription> onSubscribe){
+			@Nullable Consumer<? super Subscription> onSubscribe) {
+		return this.subscribe(onNext, onError, onComplete, onSubscribe, null);
+	}
 
+	/**
+	 * Subscribes to this {@link ParallelFlux} by providing an onNext, onError and
+	 * onComplete callback as well as an initial {@link Context}, then trigger the execution chain for all
+	 * 'rails'.
+	 *
+	 * @param onNext consumer of onNext signals
+	 * @param onError consumer of error signal
+	 * @param onComplete callback on completion signal
+	 * @param initialContext {@link Context} for the rails
+	 */
+	@Deprecated
+	public final Disposable subscribe(
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete,
+			@Nullable Context initialContext) {
+		return this.subscribe(onNext, onError, onComplete, null, initialContext);
+	}
+
+	final Disposable subscribe(
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete,
+			@Nullable Consumer<? super Subscription> onSubscribe,
+			@Nullable Context initialContext) {
 		CorePublisher<T> publisher = Operators.onLastAssembly(this);
 		if (publisher instanceof ParallelFlux) {
 			@SuppressWarnings("unchecked")
@@ -1041,7 +1071,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			int i = 0;
 			while(i < subscribers.length){
 				subscribers[i++] =
-						new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe, null);
+						new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe, initialContext);
 			}
 
 			((ParallelFlux<T>) publisher).subscribe(subscribers);
@@ -1050,7 +1080,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 		}
 		else {
 			LambdaSubscriber<? super T> subscriber =
-					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe, null);
+					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe, initialContext);
 
 			publisher.subscribe(Operators.toCoreSubscriber(new FluxHide.SuppressFuseableSubscriber<>(subscriber)));
 

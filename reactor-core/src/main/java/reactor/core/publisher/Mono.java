@@ -3832,7 +3832,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer) {
-		return subscribe(consumer, errorConsumer, completeConsumer, null);
+		return subscribe(consumer, errorConsumer, completeConsumer, (Context) null);
 	}
 
 	/**
@@ -3859,22 +3859,22 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
+	 * @deprecated This method is deprecated as a way to discourage abuse of the subscriptionConsumer
 	 */
+	@Deprecated
 	public final Disposable subscribe(
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
 			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
-		return subscribe(consumer, errorConsumer,
-				completeConsumer, subscriptionConsumer, null);
+		return subscribeWith(new LambdaMonoSubscriber<>(consumer, errorConsumer,
+				completeConsumer, subscriptionConsumer, null));
 	}
 
 	/**
 	 * Subscribe {@link Consumer} to this {@link Mono} that will respectively consume all the
-	 * elements in the sequence, handle errors, react to completion, and request upon subscription.
-	 * It will let the provided {@link Subscription subscriptionConsumer}
-	 * request the adequate amount of data, or request unbounded demand
-	 * {@code Long.MAX_VALUE} if no such consumer is provided.
+	 * elements in the sequence, handle errors and react to completion. Additionally, a {@link Context}
+	 * is tied to the subscription. At subscription, an unbounded request is implicitly made.
 	 * <p>
 	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
 	 * {@link #doOnError(java.util.function.Consumer)}.
@@ -3889,8 +3889,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param consumer the consumer to invoke on each value
 	 * @param errorConsumer the consumer to invoke on error signal
 	 * @param completeConsumer the consumer to invoke on complete signal
-	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
-	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 * @param initialContext the {@link Context} for the subscription
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
@@ -3899,10 +3897,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
-			@Nullable Consumer<? super Subscription> subscriptionConsumer,
 			@Nullable Context initialContext) {
 		return subscribeWith(new LambdaMonoSubscriber<>(consumer, errorConsumer,
-				completeConsumer, subscriptionConsumer, initialContext));
+				completeConsumer, null, initialContext));
 	}
 
 	@Override

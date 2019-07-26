@@ -135,11 +135,11 @@ public class MonoHasElementsTest {
 
 		Mono.just("foo").hide()
 		    .hasElement()
-		    .subscribe(v -> {}, e -> {}, () -> {},
+		    .subscribeWith(new LambdaSubscriber<>(v -> {}, e -> {}, () -> {},
 				    s -> {
 					    sub.set(s);
 					    s.request(Long.MAX_VALUE);
-				    });
+				    }));
 
 		assertThat(sub.get()).isInstanceOf(MonoHasElement.HasElementSubscriber.class);
 		assertThat(Scannable.from(sub.get()).scan(Scannable.Attr.PARENT).getClass()).isEqualTo(FluxHide.HideSubscriber.class);
@@ -151,11 +151,11 @@ public class MonoHasElementsTest {
 
 		Flux.just("foo", "bar").hide()
 		    .hasElements()
-		    .subscribe(v -> {}, e -> {}, () -> {},
+		    .subscribeWith(new LambdaSubscriber<>(v -> {}, e -> {}, () -> {},
 				    s -> {
 					    sub.set(s);
 					    s.request(Long.MAX_VALUE);
-				    });
+				    }));
 
 		assertThat(sub.get()).isInstanceOf(MonoHasElements.HasElementsSubscriber.class);
 		Scannable.from(sub.get())
@@ -173,8 +173,8 @@ public class MonoHasElementsTest {
 		    .doOnCancel(() -> cancelled.set(true))
 		    .log()
 		    .hasElement()
-		    .subscribe(v -> {}, e -> {}, () -> {},
-				    Subscription::cancel);
+		    .subscribeWith(new LambdaSubscriber<>(v -> {}, e -> {}, () -> {},
+				    Subscription::cancel));
 
 		assertThat(cancelled.get()).isTrue();
 	}
@@ -186,8 +186,8 @@ public class MonoHasElementsTest {
 		Flux.just("foo", "bar").hide()
 		    .doOnCancel(() -> cancelled.set(true))
 		    .hasElements()
-		    .subscribe(v -> {}, e -> {}, () -> {},
-				    Subscription::cancel);
+		    .subscribeWith(new LambdaSubscriber<>(v -> {}, e -> {}, () -> {},
+				    Subscription::cancel));
 
 		assertThat(cancelled.get()).isTrue();
 	}

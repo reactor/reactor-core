@@ -38,7 +38,7 @@ public class LambdaSubscriberTest {
 		Flux.just("foo")
 		    .flatMap(c -> Mono.subscriberContext())
 		    .doOnNext(contextRef::set)
-		    .subscribe(null, null, null, null, Context.of("subscriber", "context"));
+		    .subscribe(null, null, null, Context.of("subscriber", "context"));
 
 		Assertions.assertThat(contextRef.get())
 		          .isNotNull()

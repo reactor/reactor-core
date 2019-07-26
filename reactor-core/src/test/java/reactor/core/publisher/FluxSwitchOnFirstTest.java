@@ -344,7 +344,7 @@ public class FluxSwitchOnFirstTest {
         publisher.next(1L);
         publisher.complete();
 
-        switchTransformed.subscribe(capture::set, __ -> {}, latch::countDown, s -> s.request(1));
+        switchTransformed.subscribeWith(new LambdaSubscriber<>(capture::set, __ -> {}, latch::countDown, s -> s.request(1)));
 
         latch.await(5, TimeUnit.SECONDS);
 
@@ -366,7 +366,7 @@ public class FluxSwitchOnFirstTest {
         publisher.next(1L);
         publisher.complete();
 
-        switchTransformed.subscribe(capture::set, __ -> {}, latch::countDown, s -> s.request(1));
+        switchTransformed.subscribeWith(new LambdaSubscriber<>(capture::set, __ -> {}, latch::countDown, s -> s.request(1)));
 
         latch.await(5, TimeUnit.SECONDS);
 
@@ -388,7 +388,7 @@ public class FluxSwitchOnFirstTest {
         publisher.next(1L);
         publisher.complete();
 
-        switchTransformed.subscribe(capture::add, __ -> {}, latch::countDown, s -> s.request(1));
+        switchTransformed.subscribeWith(new LambdaSubscriber<>(capture::add, __ -> {}, latch::countDown, s -> s.request(1)));
 
         latch.await(5, TimeUnit.SECONDS);
 
@@ -409,7 +409,7 @@ public class FluxSwitchOnFirstTest {
         publisher.next(1L);
         publisher.complete();
 
-        switchTransformed.subscribe(capture::add, __ -> {}, latch::countDown, s -> s.request(Long.MAX_VALUE));
+        switchTransformed.subscribe(capture::add, __ -> {}, latch::countDown);
 
         latch.await(5, TimeUnit.SECONDS);
 
@@ -430,7 +430,7 @@ public class FluxSwitchOnFirstTest {
         publisher.next(1L);
         publisher.complete();
 
-        switchTransformed.subscribe(capture::add, __ -> {}, latch::countDown, s -> s.request(Long.MAX_VALUE));
+        switchTransformed.subscribe(capture::add, __ -> {}, latch::countDown);
 
         latch.await(5, TimeUnit.SECONDS);
 
@@ -813,14 +813,14 @@ public class FluxSwitchOnFirstTest {
                                                         .doOnCancel(latch::countDown)
                                                         .switchOnFirst((first, innerFlux) -> innerFlux);
 
-                switchTransformed.subscribe(
+                switchTransformed.subscribeWith(new LambdaSubscriber<>(
                     captureElement::set,
                     __ -> { },
                     () -> captureCompletion.set(true),
                     s -> ForkJoinPool.commonPool().execute(() ->
                         RaceTestUtils.race(s::cancel, () -> s.request(1), Schedulers.parallel())
                     )
-                );
+                ));
 
                 Assertions.assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
                 capturedElements.add(captureElement.get());

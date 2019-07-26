@@ -247,7 +247,7 @@ public class FluxOnAssemblyTest {
 		String debugStack = sw.toString();
 
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] :\n"
-				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:227)\n"
+				+ "\treactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:228)\n"
 				+ "\treactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescriptionAndForceStack(FluxOnAssemblyTest.java:" + (baseline + 4) + ")\n");
 
 		Iterator<String> lines = seekToBacktrace(debugStack);
