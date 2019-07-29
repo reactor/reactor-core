@@ -31,8 +31,8 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     dependencies {
       //compile "io.projectreactor:reactor-core:3.3.0.BUILD-SNAPSHOT"
       //testCompile("io.projectreactor:reactor-test:3.3.0.BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.3.0.M2"
-      testCompile("io.projectreactor:reactor-test:3.3.0.M2")
+      compile "io.projectreactor:reactor-core:3.3.0.M3"
+      testCompile("io.projectreactor:reactor-test:3.3.0.M3")
     }
 ```
 
@@ -166,7 +166,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The repository contains a `reactor-test` project with test features like the [`StepVerifier`](https://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
+"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The repository contains a `reactor-test` project with test features like the [`StepVerifier`](https://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
 
 -------------------------------------
 
