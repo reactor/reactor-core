@@ -46,7 +46,7 @@ essential features) and https://github.com/reactor/reactor-addons/issues[reactor
 NOTE: All of Reactor is open source,
 https://github.com/reactor/reactor-core/tree/master/docs/asciidoc[including this
 documentation]. If you find problems with the docs or if you want to improve them,
-please https://github.com/reactor/reactor-core/blob/master/CONTRIBUTING.md[get involved].
+please https://github.com/reactor/.github/blob/master/CONTRIBUTING.md[get involved].
 
 == Where to Go from Here
 * Head to <<getting-started>> if you feel like jumping straight into the code.
