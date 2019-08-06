@@ -16,9 +16,14 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+
 import org.junit.Test;
+import org.reactivestreams.Subscription;
 import org.testng.Assert;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -189,5 +194,58 @@ public class MonoFilterTest {
 		            .then(() -> assertThat(mp.peek()).isNull())
 		            .then(() -> assertThat(mp.isTerminated()).isTrue())
 		            .verifyComplete();
+	}
+
+	@Test
+	public void macroFusionNormal() {
+		Predicate<Object> notArray = o -> !o.getClass().isArray();
+		Predicate<Number> isEven = n -> n.intValue() % 2 == 0;
+		Predicate<Integer> isSmall = i -> i < 4;
+
+		final Mono<Integer> filter = Mono.just(2)
+		                                 .hide()
+		                                 .filter(notArray)
+		                                 .filter(isSmall)
+		                                 .filter(isEven);
+
+		assertThat(Scannable.from(filter).steps())
+				.as("only one filter publisher")
+				.containsExactly("source(MonoJust)", "hide", "filter");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		filter.doOnSubscribe(subRef::set).subscribe();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.containsOnlyOnce("filter");
+
+		filter.as(StepVerifier::create)
+		      .expectNoFusionSupport()
+		      .expectNext(2)
+		      .verifyComplete();
+	}
+
+	@Test
+	public void macroFusionWithFuseable() {
+		Predicate<Object> notArray = o -> !o.getClass().isArray();
+		Predicate<Number> isEven = n -> n.intValue() % 2 == 0;
+		Predicate<Integer> isSmall = i -> i < 4;
+
+		final Mono<Integer> filter = Mono.just(2)
+		                                 .filter(notArray)
+		                                 .filter(isSmall)
+		                                 .filter(isEven);
+
+		assertThat(Scannable.from(filter).steps())
+				.as("only one filter publisher")
+				.containsExactly("source(MonoJust)", "filter");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		filter.doOnSubscribe(subRef::set).subscribe();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.containsOnlyOnce("filter");
+
+		filter.as(StepVerifier::create)
+		      .expectFusion()
+		      .expectNext(2)
+		      .verifyComplete();
 	}
 }

@@ -36,6 +36,12 @@ final class MonoFilter<T> extends InternalMonoOperator<T, T> {
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
+	Mono<T> macroFuse(Predicate<? super T> p) {
+		@SuppressWarnings("unchecked")
+		Predicate<T> thisPredicate = (Predicate<T>) this.predicate;
+		return new MonoFilter<>(this.source, thisPredicate.and(p));
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {

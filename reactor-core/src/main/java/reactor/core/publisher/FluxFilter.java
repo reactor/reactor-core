@@ -43,6 +43,12 @@ final class FluxFilter<T> extends InternalFluxOperator<T, T> {
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
+	Flux<T> macroFuse(Predicate<? super T> p) {
+		@SuppressWarnings("unchecked")
+		Predicate<T> thisPredicate = (Predicate<T>) this.predicate;
+		return new FluxFilter<>(this.source, thisPredicate.and(p));
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {

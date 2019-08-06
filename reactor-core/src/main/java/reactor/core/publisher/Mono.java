@@ -2513,6 +2513,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a filtered {@link Mono}
 	 */
 	public final Mono<T> filter(final Predicate<? super T> tester) {
+		if (this instanceof MonoFilter) {
+			return ((MonoFilter<T>) this).macroFuse(tester);
+		} else if (this instanceof MonoFilterFuseable) {
+			return ((MonoFilterFuseable<T>) this).macroFuse(tester);
+		}
+
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoFilterFuseable<>(this, tester));
 		}
@@ -2863,6 +2869,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
+		if (this instanceof MonoMap) {
+			return ((MonoMap<?, T>) this).macroFuse(mapper);
+		} else if (this instanceof MonoMapFuseable) {
+			return ((MonoMapFuseable<?, T>) this).macroFuse(mapper);
+		}
+
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoMapFuseable<>(this, mapper));
 		}

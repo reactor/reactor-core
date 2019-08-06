@@ -4626,6 +4626,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} containing only values that pass the predicate test
 	 */
 	public final Flux<T> filter(Predicate<? super T> p) {
+		if (this instanceof FluxFilter) {
+			return ((FluxFilter<T>) this).macroFuse(p);
+		} else if (this instanceof FluxFilterFuseable) {
+			return ((FluxFilterFuseable<T>) this).macroFuse(p);
+		}
+
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxFilterFuseable<>(this, p));
 		}
@@ -5755,6 +5761,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a transformed {@link Flux}
 	 */
 	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
+		if (this instanceof FluxMap) {
+			return ((FluxMap<?, T>) this).macroFuse(mapper);
+		} else if (this instanceof FluxMapFuseable) {
+			return ((FluxMapFuseable<?, T>) this).macroFuse(mapper);
+		}
+
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxMapFuseable<>(this, mapper));
 		}
