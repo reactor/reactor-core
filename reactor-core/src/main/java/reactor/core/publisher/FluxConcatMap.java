@@ -114,7 +114,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 	@Override
 	public void subscribe(CoreSubscriber<? super R> actual) {
 
-		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false)) {
+		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false, true)) {
 			return;
 		}
 

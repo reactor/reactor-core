@@ -49,8 +49,8 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super R> actual) {
-
-		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, true)) {
+		//for now Mono in general doesn't support onErrorContinue, so the scalar version shouldn't either
+		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, true, false)) {
 			return;
 		}
 
