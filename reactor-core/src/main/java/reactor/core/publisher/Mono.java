@@ -2982,7 +2982,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
-	 * support it).
+	 * support it). In particular, this operator is offered on {@link Mono} mainly as a
+	 * way to propagate the configuration to upstream {@link Flux}. The mode doesn't really
+	 * make sense on a {@link Mono}, since we're sure there will be no further value to
+	 * continue with: {@link #onErrorResume(Function)} is a more classical fit then.
 	 *
 	 * @param type the {@link Class} of {@link Exception} that are resumed from.
 	 * @param errorConsumer a {@link BiConsumer} fed with errors matching the {@link Class}
@@ -3004,7 +3007,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
-	 * support it).
+	 * support it). In particular, this operator is offered on {@link Mono} mainly as a
+	 * way to propagate the configuration to upstream {@link Flux}. The mode doesn't really
+	 * make sense on a {@link Mono}, since we're sure there will be no further value to
+	 * continue with: {@link #onErrorResume(Function)} is a more classical fit then.
 	 *
 	 * @param errorPredicate a {@link Predicate} used to filter which errors should be resumed from.
 	 * This MUST be idempotent, as it can be used several times.
