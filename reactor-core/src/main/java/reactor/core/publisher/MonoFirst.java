@@ -49,7 +49,7 @@ final class MonoFirst<T> extends Mono<T> implements SourceProducer<T>  {
 	}
 
 	@Nullable
-	Mono<T> orAdditionalSource(Mono<? extends T> other) {
+	Mono<T> newMacroFused(Mono<? extends T> other) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[n + 1];

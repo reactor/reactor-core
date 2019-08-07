@@ -66,7 +66,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator
 	 * @return a new {@link MonoDelayUntil} instance with same source but additional trigger generator
 	 */
 	@SuppressWarnings("unchecked")
-	MonoDelayUntil<T> copyWithNewTriggerGenerator(boolean delayError,
+	MonoDelayUntil<T> newMacroFused(boolean delayError,
 			Function<? super T, ? extends Publisher<?>> triggerGenerator) {
 		Objects.requireNonNull(triggerGenerator, "triggerGenerator");
 		Function<? super T, ? extends Publisher<?>>[] oldTriggers = this.otherGenerators;

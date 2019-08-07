@@ -3692,7 +3692,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			@SuppressWarnings({ "unchecked" })
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 
-			return fluxConcatArray.concatAdditionalSourceLast(other);
+			return fluxConcatArray.newMacroFused(other);
 		}
 		return concat(this, other);
 	}
@@ -4627,9 +4627,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> filter(Predicate<? super T> p) {
 		if (this instanceof FluxFilter) {
-			return ((FluxFilter<T>) this).macroFuse(p);
+			return ((FluxFilter<T>) this).newMacroFused(p);
 		} else if (this instanceof FluxFilterFuseable) {
-			return ((FluxFilterFuseable<T>) this).macroFuse(p);
+			return ((FluxFilterFuseable<T>) this).newMacroFused(p);
 		}
 
 		if (this instanceof Fuseable) {
@@ -5762,9 +5762,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
 		if (this instanceof FluxMap) {
-			return ((FluxMap<?, T>) this).macroFuse(mapper);
+			return ((FluxMap<?, T>) this).newMacroFused(mapper);
 		} else if (this instanceof FluxMapFuseable) {
-			return ((FluxMapFuseable<?, T>) this).macroFuse(mapper);
+			return ((FluxMapFuseable<?, T>) this).newMacroFused(mapper);
 		}
 
 		if (this instanceof Fuseable) {
@@ -5816,7 +5816,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			Comparator<? super T> otherComparator) {
 		if (this instanceof FluxMergeOrdered) {
 			FluxMergeOrdered<T> fluxMerge = (FluxMergeOrdered<T>) this;
-			return fluxMerge.mergeAdditionalSource(other, otherComparator);
+			return fluxMerge.newMacroFused(other, otherComparator);
 		}
 		return mergeOrdered(otherComparator, this, other);
 	}
@@ -5840,7 +5840,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final Flux<T> mergeWith(Publisher<? extends T> other) {
 		if (this instanceof FluxMerge) {
 			FluxMerge<T> fluxMerge = (FluxMerge<T>) this;
-			return fluxMerge.mergeAdditionalSource(other, Queues::get);
+			return fluxMerge.newMacroFused(other, Queues::get);
 		}
 		return merge(this, other);
 	}
@@ -6441,7 +6441,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (this instanceof FluxFirstEmitting) {
 			FluxFirstEmitting<T> publisherAmb = (FluxFirstEmitting<T>) this;
 
-			FluxFirstEmitting<T> result = publisherAmb.ambAdditionalSource(other);
+			FluxFirstEmitting<T> result = publisherAmb.newMacroFused(other);
 			if (result != null) {
 				return result;
 			}
@@ -7818,7 +7818,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final Flux<T> startWith(Publisher<? extends T> publisher) {
 		if (this instanceof FluxConcatArray) {
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
-			return fluxConcatArray.concatAdditionalSourceFirst(publisher);
+			return fluxConcatArray.newMacroFusedInFirstPosition(publisher);
 		}
 		return concat(publisher, this);
 	}
@@ -8511,7 +8511,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (this instanceof FluxConcatArray) {
 			@SuppressWarnings({ "unchecked" })
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
-			return fluxConcatArray.concatAdditionalIgnoredLast(other);
+			return fluxConcatArray.newMacroFusedIgnoringLast(other);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -9323,7 +9323,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		if (this instanceof FluxZip) {
 			@SuppressWarnings("unchecked")
 			FluxZip<T, V> o = (FluxZip<T, V>) this;
-			Flux<V> result = o.zipAdditionalSource(source2, combinator);
+			Flux<V> result = o.newMacroFused(source2, combinator);
 			if (result != null) {
 				return result;
 			}

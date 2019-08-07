@@ -1484,7 +1484,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Mono<Void> and(Publisher<?> other) {
 		if (this instanceof MonoWhen) {
 			@SuppressWarnings("unchecked") MonoWhen o = (MonoWhen) this;
-			Mono<Void> result = o.whenAdditionalSource(other);
+			Mono<Void> result = o.newMacroFused(other);
 			if (result != null) {
 				return result;
 			}
@@ -1892,7 +1892,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Mono<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		Objects.requireNonNull(triggerProvider, "triggerProvider required");
 		if (this instanceof MonoDelayUntil) {
-			return ((MonoDelayUntil<T>) this).copyWithNewTriggerGenerator(false,triggerProvider);
+			return ((MonoDelayUntil<T>) this).newMacroFused(false,triggerProvider);
 		}
 		return onAssembly(new MonoDelayUntil<>(this, triggerProvider));
 	}
@@ -2514,9 +2514,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> filter(final Predicate<? super T> tester) {
 		if (this instanceof MonoFilter) {
-			return ((MonoFilter<T>) this).macroFuse(tester);
+			return ((MonoFilter<T>) this).newMacroFused(tester);
 		} else if (this instanceof MonoFilterFuseable) {
-			return ((MonoFilterFuseable<T>) this).macroFuse(tester);
+			return ((MonoFilterFuseable<T>) this).newMacroFused(tester);
 		}
 
 		if (this instanceof Fuseable) {
@@ -2870,9 +2870,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
 		if (this instanceof MonoMap) {
-			return ((MonoMap<?, T>) this).macroFuse(mapper);
+			return ((MonoMap<?, T>) this).newMacroFused(mapper);
 		} else if (this instanceof MonoMapFuseable) {
-			return ((MonoMapFuseable<?, T>) this).macroFuse(mapper);
+			return ((MonoMapFuseable<?, T>) this).newMacroFused(mapper);
 		}
 
 		if (this instanceof Fuseable) {
@@ -2958,7 +2958,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Mono<T> or(Mono<? extends T> other) {
 		if (this instanceof MonoFirst) {
 			MonoFirst<T> a = (MonoFirst<T>) this;
-			Mono<T> result =  a.orAdditionalSource(other);
+			Mono<T> result =  a.newMacroFused(other);
 			if (result != null) {
 				return result;
 			}
@@ -4161,7 +4161,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final <V> Mono<V> then(Mono<V> other) {
 		if (this instanceof MonoIgnoreThen) {
             MonoIgnoreThen<T> a = (MonoIgnoreThen<T>) this;
-            return a.shift(other);
+            return a.newMacroFused(other);
 		}
 		return onAssembly(new MonoIgnoreThen<>(new Publisher[] { this }, other));
 	}
@@ -4520,7 +4520,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			BiFunction<? super T, ? super T2, ? extends O> combinator) {
 		if (this instanceof MonoZip) {
 			@SuppressWarnings("unchecked") MonoZip<T, O> o = (MonoZip<T, O>) this;
-			Mono<O> result = o.zipAdditionalSource(other, combinator);
+			Mono<O> result = o.newMacroFused(other, combinator);
 			if (result != null) {
 				return result;
 			}

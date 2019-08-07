@@ -44,7 +44,7 @@ final class MonoMap<T, R> extends InternalMonoOperator<T, R> {
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}
 
-	<R2> Mono<R2> macroFuse(Function<? super R, ? extends R2> mapper) {
+	<R2> Mono<R2> newMacroFused(Function<? super R, ? extends R2> mapper) {
 		return new MonoMap<>(this.source, this.mapper.andThen(mapper));
 	}
 

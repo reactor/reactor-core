@@ -42,7 +42,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
-	Flux<T> macroFuse(Predicate<? super T> p) {
+	Flux<T> newMacroFused(Predicate<? super T> p) {
 		@SuppressWarnings("unchecked")
 		Predicate<T> thisPredicate = (Predicate<T>) this.predicate;
 		return new FluxFilterFuseable<>(this.source, thisPredicate.and(p));

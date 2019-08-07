@@ -55,7 +55,7 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 
 	@SuppressWarnings("unchecked")
 	@Nullable
-	Mono<Void> whenAdditionalSource(Publisher<?> source) {
+	Mono<Void> newMacroFused(Publisher<?> source) {
 		Publisher[] oldSources = sources;
 		if (oldSources != null) {
 			int oldLen = oldSources.length;

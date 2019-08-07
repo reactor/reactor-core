@@ -62,7 +62,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
      * @param newLast the new last Mono instance
      * @return the new operator set up
      */
-    <U> MonoIgnoreThen<U> shift(Mono<U> newLast) {
+    <U> MonoIgnoreThen<U> newMacroFused(Mono<U> newLast) {
         Objects.requireNonNull(newLast, "newLast");
         Publisher<?>[] a = ignore;
         int n = a.length;

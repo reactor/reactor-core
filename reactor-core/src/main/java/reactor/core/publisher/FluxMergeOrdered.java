@@ -75,7 +75,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 	 * @param source the new source to merge with the others
 	 * @return the new {@link FluxMergeOrdered} instance
 	 */
-	FluxMergeOrdered<T> mergeAdditionalSource(Publisher<? extends T> source,
+	FluxMergeOrdered<T> newMacroFused(Publisher<? extends T> source,
 			Comparator<? super T> otherComparator) {
 		int n = sources.length;
 		@SuppressWarnings("unchecked")
