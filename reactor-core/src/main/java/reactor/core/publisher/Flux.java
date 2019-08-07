@@ -9526,6 +9526,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			@Nullable Runnable onAfterTerminate,
 			@Nullable LongConsumer onRequest,
 			@Nullable Runnable onCancel) {
+		if (source instanceof FluxPeekFuseable) {
+			return ((FluxPeekFuseable<T>) source).newMacroFused(onSubscribe, onNext, onError, onComplete, onAfterTerminate, onRequest, onCancel);
+		}
+		else if (source instanceof FluxPeek) {
+			return ((FluxPeek<T>) source).newMacroFused(onSubscribe, onNext, onError, onComplete, onAfterTerminate, onRequest, onCancel);
+		}
+
 		if (source instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(source,
 					onSubscribe,

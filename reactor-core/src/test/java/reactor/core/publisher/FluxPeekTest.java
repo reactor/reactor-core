@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -152,7 +153,8 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		List<Scenario<String, String>> combinedScenarios = new ArrayList<>();
 
 		combinedScenarios.addAll(scenarios_operatorSuccess());
-		combinedScenarios.addAll(Arrays.asList(scenario(f -> f.doAfterTerminate(() -> {
+		combinedScenarios.addAll(Arrays.asList(
+				scenario(f -> f.doAfterTerminate(() -> {
 					throw droppedException();
 				})).fusionMode(Fuseable.NONE)
 		           .verifier(step -> {
@@ -196,10 +198,12 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 				}, null, () -> {
 					throw droppedException();
 				}, null, null)
+				                  .map(v -> v)  //eliminate macro-fusion from the equation
 				                  .doOnError(s -> {
 					                  throw Exceptions.errorCallbackNotImplemented(new Exception(
 							                  "unsupported"));
-				                  })).verifier(step -> {
+				                  }))
+						.verifier(step -> {
 					try {
 						step.thenCancel()
 						    .verify();
@@ -219,6 +223,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 				}, null, () -> {
 					throw droppedException();
 				}, null, null)
+				                  .map(Function.identity()) //eliminate macro-fusion from the equation
 				                  .doOnError(s -> {
 					                  throw Exceptions.errorCallbackNotImplemented(s);
 				                  })).verifier(step -> {
@@ -1003,4 +1008,134 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	    assertThat(resumedValues).containsExactly(1, 2);
 	    assertThat(resumedErrors).containsExactly(nextError, nextError);
     }
+
+	@Test
+	public void macroFusionNormal() {
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		AtomicInteger requestHit = new AtomicInteger();
+		AtomicInteger cancelHit = new AtomicInteger();
+		AtomicInteger nextHit = new AtomicInteger();
+		AtomicInteger errorHit = new AtomicInteger();
+		AtomicInteger otherSignalHit = new AtomicInteger();
+
+
+		final Flux<Integer> combiningWithNulls = Flux
+				.just(1, 2, 3)
+				.hide()
+				.doOnSubscribe(subRef::set) //basis for first operator, all other handlers are null so far
+				.doOnSubscribe(sub -> otherSignalHit.incrementAndGet()) //combine the subscribe handlers
+				.doOnNext(v -> nextHit.incrementAndGet())
+				.doOnError(e -> errorHit.incrementAndGet())
+				.doOnComplete(otherSignalHit::incrementAndGet)
+				.doOnTerminate(otherSignalHit::incrementAndGet)
+				.doAfterTerminate(otherSignalHit::incrementAndGet)
+				.doOnRequest(r -> requestHit.incrementAndGet())
+				.doOnCancel(cancelHit::incrementAndGet);
+
+		combiningWithNulls.as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .expectNext(1, 2, 3)
+		    .verifyComplete();
+
+		assertThat(otherSignalHit).as("sub/complete/terminate/afterTerminate").hasValue(4);
+		assertThat(requestHit).as("request hit").hasValue(1);
+		assertThat(cancelHit).as("cancel never hit").hasValue(0);
+		assertThat(nextHit).as("onNext hit 3 times").hasValue(3);
+		assertThat(errorHit).as("error never hit").hasValue(0);
+
+		final Flux<Integer> combiningWithNonNulls =
+				combiningWithNulls.doOnSubscribe(subRef::set) //basis for first operator, all other handlers are null so far
+				                  .doOnSubscribe(sub -> otherSignalHit.incrementAndGet()) //combine the subscribe handlers
+				                  .doOnNext(v -> nextHit.incrementAndGet())
+				                  .doOnError(e -> errorHit.incrementAndGet())
+				                  .doOnComplete(otherSignalHit::incrementAndGet)
+				                  .doOnTerminate(otherSignalHit::incrementAndGet)
+				                  .doAfterTerminate(otherSignalHit::incrementAndGet)
+				                  .doOnRequest(r -> requestHit.incrementAndGet())
+				                  .doOnCancel(cancelHit::incrementAndGet);
+		requestHit.set(0); cancelHit.set(0); nextHit.set(0); errorHit.set(0); otherSignalHit.set(0);
+		combiningWithNonNulls.as(StepVerifier::create)
+		                     .expectNoFusionSupport()
+		                     .expectNext(1, 2, 3)
+		                     .verifyComplete();
+
+		assertThat(otherSignalHit).as("sub/complete/terminate/afterTerminate x 2").hasValue(8);
+		assertThat(requestHit).as("request hit twice").hasValue(2);
+		assertThat(cancelHit).as("cancel never hit").hasValue(0);
+		assertThat(nextHit).as("onNext hit 2x3 times").hasValue(6);
+		assertThat(errorHit).as("error never hit").hasValue(0);
+
+		assertThat(Scannable.from(combiningWithNonNulls).steps())
+				.as("only one peek publisher")
+				.containsExactly("source(FluxArray)", "hide", "peek");
+
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("only one peek subscriber")
+				.containsOnlyOnce("peek");
+	}
+
+	@Test
+	public void macroFusionNormal_error() {
+		AtomicInteger errorHit = new AtomicInteger();
+		AtomicInteger terminateHit = new AtomicInteger();
+		AtomicInteger afterTerminateHit = new AtomicInteger();
+
+		final Flux<Integer> combiningWithNulls = Flux.just(1, 0, 3)
+		                               .map(i -> 100 / i)
+		                               .hide()
+		                               .doOnSubscribe(sub -> {}) //init operator with most handlers null
+		                               .doOnError(e -> errorHit.incrementAndGet())
+		                               .doOnTerminate(terminateHit::incrementAndGet)
+		                               .doAfterTerminate(afterTerminateHit::incrementAndGet);
+
+		combiningWithNulls.as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .expectNext(100)
+		    .verifyError(ArithmeticException.class);
+
+		assertThat(errorHit).as("error hit").hasValue(1);
+		assertThat(terminateHit).as("terminate hit").hasValue(1);
+		assertThat(afterTerminateHit).as("after terminate hit").hasValue(1);
+
+		combiningWithNulls
+				.doOnError(e -> errorHit.incrementAndGet())
+				.doOnTerminate(terminateHit::incrementAndGet)
+				.doAfterTerminate(afterTerminateHit::incrementAndGet)
+				.as(StepVerifier::create)
+				.expectNoFusionSupport()
+				.expectNext(100)
+				.verifyError(ArithmeticException.class);
+
+		//3 because of the 1 hit before, plus the second round combining each counter hit twice
+		assertThat(errorHit).as("error hit twice").hasValue(3);
+		assertThat(terminateHit).as("terminate hit twice").hasValue(3);
+		assertThat(afterTerminateHit).as("after terminate hit twice").hasValue(3);
+	}
+
+	@Test
+	public void macroFusionNormal_cancel() {
+		AtomicInteger cancelHit = new AtomicInteger();
+
+		final Flux<Integer> combiningWithNulls = Flux
+				.just(1, 0, 3)
+				.hide()
+				.doOnSubscribe(sub -> {}) //init operator with most handlers null
+				.doOnCancel(cancelHit::incrementAndGet);
+
+		StepVerifier.create(combiningWithNulls.take(1))
+		            .expectNoFusionSupport()
+		            .expectNext(1)
+		            .verifyComplete();
+
+		assertThat(cancelHit).as("cancel hit").hasValue(1);
+
+		StepVerifier.create(combiningWithNulls.doOnCancel(cancelHit::incrementAndGet)
+		                                      .take(1))
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.verifyComplete();
+
+		//3 because of the 1 hit before, plus the second round combining cancel counter hit twice
+		assertThat(cancelHit).as("cancel hit twice").hasValue(3);
+	}
 }
