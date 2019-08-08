@@ -4595,6 +4595,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 			@Nullable Runnable onComplete,
 			@Nullable LongConsumer onRequest,
 			@Nullable Runnable onCancel) {
+		if (source instanceof MonoPeekFuseable) {
+			return ((MonoPeekFuseable<T>) source).newMacroFused(onSubscribe, onNext, onError, onComplete, onRequest, onCancel);
+		}
+		else if (source instanceof MonoPeek) {
+			return ((MonoPeek<T>) source).newMacroFused(onSubscribe, onNext, onError, onComplete, onRequest, onCancel);
+		}
+
 		if (source instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(source,
 					onSubscribe,

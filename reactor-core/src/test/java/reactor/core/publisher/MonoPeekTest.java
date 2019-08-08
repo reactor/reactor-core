@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -164,5 +165,238 @@ public class MonoPeekTest {
 						    .subscribe())
 				.withCauseInstanceOf(NullPointerException.class)
 				.matches(Exceptions::isErrorCallbackNotImplemented, "ErrorCallbackNotImplemented");
+	}
+
+	@Test
+	public void macroFusionNormal() {
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		AtomicInteger requestHit = new AtomicInteger();
+		AtomicInteger cancelHit = new AtomicInteger();
+		AtomicInteger nextHit = new AtomicInteger();
+		AtomicInteger errorHit = new AtomicInteger();
+		AtomicInteger otherSignalHit = new AtomicInteger();
+
+
+		final Mono<Integer> combiningWithNulls = Mono
+				.just(1)
+				.hide()
+				.doOnSubscribe(subRef::set) //basis for first operator, all other handlers are null so far
+				.doOnSubscribe(sub -> otherSignalHit.incrementAndGet()) //combine the subscribe handlers
+				.doOnNext(v -> nextHit.incrementAndGet())
+				.doOnError(e -> errorHit.incrementAndGet())
+				.doOnTerminate(otherSignalHit::incrementAndGet)
+				.doOnRequest(r -> requestHit.incrementAndGet())
+				.doOnCancel(cancelHit::incrementAndGet);
+
+		combiningWithNulls.as(StepVerifier::create)
+		                  .expectNoFusionSupport()
+		                  .expectNext(1)
+		                  .verifyComplete();
+
+		assertThat(otherSignalHit).as("sub/terminate").hasValue(2);
+		assertThat(requestHit).as("request hit").hasValue(1);
+		assertThat(cancelHit).as("cancel never hit").hasValue(0);
+		assertThat(nextHit).as("onNext hit").hasValue(1);
+		assertThat(errorHit).as("error never hit").hasValue(0);
+
+		final Mono<Integer> combiningWithNonNulls =
+				combiningWithNulls.doOnSubscribe(subRef::set) //basis for first operator, all other handlers are null so far
+				                  .doOnSubscribe(sub -> otherSignalHit.incrementAndGet()) //combine the subscribe handlers
+				                  .doOnNext(v -> nextHit.incrementAndGet())
+				                  .doOnError(e -> errorHit.incrementAndGet())
+				                  .doOnTerminate(otherSignalHit::incrementAndGet)
+				                  .doOnRequest(r -> requestHit.incrementAndGet())
+				                  .doOnCancel(cancelHit::incrementAndGet);
+		requestHit.set(0); cancelHit.set(0); nextHit.set(0); errorHit.set(0); otherSignalHit.set(0);
+		combiningWithNonNulls.as(StepVerifier::create)
+		                     .expectNoFusionSupport()
+		                     .expectNext(1)
+		                     .verifyComplete();
+
+		assertThat(otherSignalHit).as("sub/terminate x 2").hasValue(4);
+		assertThat(requestHit).as("request hit twice").hasValue(2);
+		assertThat(cancelHit).as("cancel never hit").hasValue(0);
+		assertThat(nextHit).as("onNext hit twice").hasValue(2);
+		assertThat(errorHit).as("error never hit").hasValue(0);
+
+		assertThat(Scannable.from(combiningWithNonNulls).steps())
+				.as("only one peek publisher")
+				.containsExactly("source(MonoJust)", "hide", "peek");
+
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("only one peek subscriber")
+				.containsOnlyOnce("peek");
+	}
+
+	@Test
+	public void macroFusionNormal_error() {
+		AtomicInteger errorHit = new AtomicInteger();
+		AtomicInteger terminateHit = new AtomicInteger();
+
+		final Mono<Integer> combiningWithNulls = Mono.just(0)
+		                                             .map(i -> 100 / i)
+		                                             .hide()
+		                                             .doOnSubscribe(sub -> {}) //init operator with most handlers null
+		                                             .doOnError(e -> errorHit.incrementAndGet())
+		                                             .doOnTerminate(terminateHit::incrementAndGet); //afterTerminate is not the same underlying operator
+
+		combiningWithNulls.as(StepVerifier::create)
+		                  .expectNoFusionSupport()
+		                  .verifyError(ArithmeticException.class);
+
+		assertThat(errorHit).as("error hit").hasValue(1);
+		assertThat(terminateHit).as("terminate hit").hasValue(1);
+
+		combiningWithNulls
+				.doOnError(e -> errorHit.incrementAndGet())
+				.doOnTerminate(terminateHit::incrementAndGet)
+				.as(StepVerifier::create)
+				.expectNoFusionSupport()
+				.verifyError(ArithmeticException.class);
+
+		//3 because of the 1 hit before, plus the second round combining each counter hit twice
+		assertThat(errorHit).as("error hit twice").hasValue(3);
+		assertThat(terminateHit).as("terminate hit twice").hasValue(3);
+	}
+
+	@Test
+	public void macroFusionNormal_cancel() {
+		AtomicInteger cancelHit = new AtomicInteger();
+
+		final Mono<Integer> combiningWithNulls = Mono
+				.just(1)
+				.hide()
+				.doOnSubscribe(sub -> {}) //init operator with most handlers null
+				.doOnCancel(cancelHit::incrementAndGet);
+
+		StepVerifier.create(combiningWithNulls)
+		            .expectNoFusionSupport()
+		            .thenCancel()
+		            .verify();
+
+		assertThat(cancelHit).as("cancel hit").hasValue(1);
+
+		StepVerifier.create(combiningWithNulls.doOnCancel(cancelHit::incrementAndGet))
+		            .expectNoFusionSupport()
+		            .thenCancel()
+		            .verify();
+
+		//3 because of the 1 hit before, plus the second round combining cancel counter hit twice
+		assertThat(cancelHit).as("cancel hit twice").hasValue(3);
+	}
+
+	@Test
+	public void macroFusionWithFuseable() {
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		AtomicInteger requestHit = new AtomicInteger();
+		AtomicInteger cancelHit = new AtomicInteger();
+		AtomicInteger nextHit = new AtomicInteger();
+		AtomicInteger errorHit = new AtomicInteger();
+		AtomicInteger otherSignalHit = new AtomicInteger();
+
+
+		final Mono<Integer> combiningWithNulls = Mono
+				.just(1)
+				.doOnSubscribe(subRef::set) //basis for first operator, all other handlers are null so far
+				.doOnSubscribe(sub -> otherSignalHit.incrementAndGet()) //combine the subscribe handlers
+				.doOnNext(v -> nextHit.incrementAndGet())
+				.doOnError(e -> errorHit.incrementAndGet())
+				.doOnTerminate(otherSignalHit::incrementAndGet)
+				.doOnRequest(r -> requestHit.incrementAndGet())
+				.doOnCancel(cancelHit::incrementAndGet);
+
+		combiningWithNulls.as(StepVerifier::create)
+		                  .expectFusion()
+		                  .expectNext(1)
+		                  .verifyComplete();
+
+		assertThat(otherSignalHit).as("sub/terminate").hasValue(2);
+		assertThat(requestHit).as("request never hit due to fusion").hasValue(0);
+		assertThat(cancelHit).as("cancel never hit").hasValue(0);
+		assertThat(nextHit).as("onNext hit").hasValue(1);
+		assertThat(errorHit).as("error never hit").hasValue(0);
+
+		final Mono<Integer> combiningWithNonNulls =
+				combiningWithNulls.doOnSubscribe(subRef::set) //basis for first operator, all other handlers are null so far
+				                  .doOnSubscribe(sub -> otherSignalHit.incrementAndGet()) //combine the subscribe handlers
+				                  .doOnNext(v -> nextHit.incrementAndGet())
+				                  .doOnError(e -> errorHit.incrementAndGet())
+				                  .doOnTerminate(otherSignalHit::incrementAndGet)
+				                  .doOnRequest(r -> requestHit.incrementAndGet())
+				                  .doOnCancel(cancelHit::incrementAndGet);
+		requestHit.set(0); cancelHit.set(0); nextHit.set(0); errorHit.set(0); otherSignalHit.set(0);
+		combiningWithNonNulls.as(StepVerifier::create)
+		                     .expectFusion()
+		                     .expectNext(1)
+		                     .verifyComplete();
+
+		assertThat(otherSignalHit).as("sub/terminate x 2").hasValue(4);
+		assertThat(requestHit).as("request still never hit due to fusion").hasValue(0);
+		assertThat(cancelHit).as("cancel still never hit").hasValue(0);
+		assertThat(nextHit).as("onNext hit twice").hasValue(2);
+		assertThat(errorHit).as("error never hit").hasValue(0);
+
+		assertThat(Scannable.from(combiningWithNonNulls).steps())
+				.as("only one peek publisher")
+				.containsExactly("source(MonoJust)", "peek");
+
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("only one peek subscriber")
+				.containsOnlyOnce("peek");
+	}
+
+	@Test
+	public void macroFusionWithFuseable_error() {
+		AtomicInteger errorHit = new AtomicInteger();
+		AtomicInteger terminateHit = new AtomicInteger();
+
+		final Mono<Integer> combiningWithNulls = Mono.just(0)
+		                                             .map(i -> 100 / i)
+		                                             .log()
+		                                             .doOnSubscribe(sub -> {}) //init operator with most handlers null
+		                                             .doOnError(e -> errorHit.incrementAndGet())
+		                                             .doOnTerminate(terminateHit::incrementAndGet);
+
+		combiningWithNulls.as(StepVerifier::create)
+		                  .expectFusion()
+		                  .verifyError(ArithmeticException.class);
+
+		assertThat(errorHit).as("error hit").hasValue(1);
+		assertThat(terminateHit).as("terminate hit").hasValue(1);
+
+		combiningWithNulls
+				.doOnError(e -> errorHit.incrementAndGet())
+				.doOnTerminate(terminateHit::incrementAndGet)
+				.as(StepVerifier::create)
+				.expectFusion()
+				.verifyError(ArithmeticException.class);
+
+		//3 because of the 1 hit before, plus the second round combining each counter hit twice
+		assertThat(errorHit).as("error hit twice").hasValue(3);
+		assertThat(terminateHit).as("terminate hit twice").hasValue(3);
+	}
+
+	@Test
+	public void macroFusionWithFuseable_cancel() {
+		AtomicInteger cancelHit = new AtomicInteger();
+
+		final Mono<Integer> combiningWithNulls = Mono.just(1)
+		                                             .doOnSubscribe(Subscription::cancel)
+		                                             .doOnCancel(cancelHit::incrementAndGet);
+
+		StepVerifier.create(combiningWithNulls)
+		            .expectFusion()
+		            .thenCancel()
+		            .verify();
+
+		assertThat(cancelHit).as("cancel hit").hasValue(1);
+
+		StepVerifier.create(combiningWithNulls.doOnCancel(cancelHit::incrementAndGet))
+		            .expectFusion()
+		            .thenCancel()
+		            .verify();
+
+		//3 because of the 1 hit before, plus the second round combining cancel counter hit twice
+		assertThat(cancelHit).as("cancel hit twice").hasValue(3);
 	}
 }
