@@ -98,7 +98,7 @@ task doDownloadBaseline(type: Download) {
   onlyIfNewer true
   compress true
 
-  src "${repositories.jCenter().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
+  src "${repositories.jcenter().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
   dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
 
   finalizedBy { japicmp }
