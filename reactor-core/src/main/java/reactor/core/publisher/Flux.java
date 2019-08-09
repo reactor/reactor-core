@@ -5516,6 +5516,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Note that the {@code prefetchRate} is an upper bound, and that this operator uses a
 	 * prefetch-and-replenish strategy, requesting a replenishing amount when 75% of the
 	 * prefetch amount has been emitted.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/limitRate.svg" alt="">
 	 *
 	 * @param prefetchRate the limit to apply to downstream's backpressure
 	 *
@@ -5552,6 +5554,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Using a {@code lowTide} equal to {@code highTide} reverts to the default 75% strategy,
 	 * while using a {@code lowTide} of {@literal 0} disables the lowTide, resulting in
 	 * all requests strictly adhering to the highTide.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/limitRateWithHighAndLowTide.svg" alt="">
 	 *
 	 * @param highTide the initial request amount
 	 * @param lowTide the subsequent (or replenishing) request amount, {@literal 0} to
