@@ -80,7 +80,7 @@ final class Traces {
 						                                                      .newInstance();
 						return Stream.of(function);
 					}
-					catch (Throwable e) {
+					catch (ReflectiveOperationException | LinkageError e) {
 						return Stream.empty();
 					}
 				})
