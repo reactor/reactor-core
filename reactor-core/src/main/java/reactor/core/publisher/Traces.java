@@ -70,6 +70,8 @@ final class Traces {
 				Traces.class.getName() + "$SharedSecretsCallSiteSupplierFactory",
 				Traces.class.getName() + "$ExceptionCallSiteSupplierFactory",
 		};
+		// find one available call-site supplier w.r.t. the jdk version to provide
+		// linkage-compatibility between jdk 8 and 9+
 		callSiteSupplierFactory = Stream
 				.of(strategyClasses)
 				.flatMap(className -> {
@@ -80,7 +82,12 @@ final class Traces {
 						                                                      .newInstance();
 						return Stream.of(function);
 					}
-					catch (ReflectiveOperationException | LinkageError e) {
+					// explicitly catch LinkageError to support static code analysis
+					// tools detect the attempt at finding out jdk environment
+					catch (LinkageError e) {
+						return Stream.empty();
+					}
+					catch (Throwable e) {
 						return Stream.empty();
 					}
 				})
