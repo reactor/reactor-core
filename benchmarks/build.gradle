@@ -1,35 +1,110 @@
-apply plugin: "me.champeau.gradle.jmh"
-
+apply plugin: 'java'
+apply plugin: 'idea'
 
 dependencies {
-  jmh project(':reactor-core')
+  implementation project(':reactor-core')
 
-  jmh "org.openjdk.jmh:jmh-core:1.21"
-  jmhAnnotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:1.21"
-  jmh "io.projectreactor.addons:reactor-extra:3.3.0.BUILD-SNAPSHOT", {
+  implementation "org.openjdk.jmh:jmh-core:1.21"
+  implementation "io.projectreactor.addons:reactor-extra:3.3.0.BUILD-SNAPSHOT", {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
+  annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:1.21"
 }
 
+task ('jmhHelp', description:'Print help for the jmh task') {
+  doLast {
+    println ""
+    println "Usage of jmh tasks:"
+    println ""
 
-// Safer to use the following to run benchmarks, otherwise you may get unexpected errors:
-// ./gradlew --no-daemon cleanJmhJar jmh -Pjmh="ShakespearePlaysScrabble"
+    println "Only execute specific benchmark(s):"
+    println "\t./gradlew jmh -Pinclude=\".*MyBenchmark.*\""
+    println "Only execute specific benchmark(s) without needing the wildcard:"
+    println "\t./gradlew jmh -Pjmh=My"
 
-jmh {
-  jmhVersion = '1.21'
-  duplicateClassesStrategy DuplicatesStrategy.INCLUDE
-  failOnError = true
-  resultFormat = 'CSV'
-  if (project.hasProperty('jmh')) {
-	include = [".*" + project.jmh + ".*"]
+
+    println ""
+    println "Specify extra profilers:"
+    println "\t./gradlew jmh -Pprofilers=\"gc,stack\""
+
+    println ""
+    println "Prominent profilers (for full list call jmhProfilers task):"
+    println "\tcomp - JitCompilations, tune your iterations"
+    println "\tstack - which methods used most time"
+    println "\tgc - print garbage collection stats"
+    println "\ths_thr - thread usage"
+
+    println ""
+    println "Change report format from JSON to one of [CSV, JSON, NONE, SCSV, TEXT]:"
+    println "\t./gradlew jmh -Pformat=csv"
+
+    println ""
+    println "Specify JVM arguments:"
+    println "\t./gradlew jmh -PjvmArgs=\"-Dtest.cluster=local\""
+
+    println ""
+    println "Run in verification mode (execute benchmarks with minimum of fork/warmup-/benchmark-iterations):"
+    println "\tgw jmh -Pverify"
+
+    println ""
+    println "Resources:"
+    println "\thttp://tutorials.jenkov.com/java-performance/jmh.html (Introduction)"
+    println "\thttp://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/ (Samples)"
   }
-//  includeTests = false
 }
 
-//Do not use the default naming convention to avoid CI scan
-jmhJar {
-  baseName 'benchmarks'
-  classifier = null
-  version = null
-  destinationDir = file("$rootDir")
+task jmhProfilers(type: JavaExec, description:'Lists the available profilers for the jmh task', group: 'Development') {
+  classpath = sourceSets.main.runtimeClasspath
+  main = 'org.openjdk.jmh.Main'
+  args '-lprof'
+}
+
+task jmh(type: JavaExec, description: 'Executing JMH benchmarks') {
+  classpath = sourceSets.main.runtimeClasspath
+  main = 'org.openjdk.jmh.Main'
+
+  def include = project.properties.get('include', '');
+  if (project.hasProperty('jmh')) {
+    include = [".*" + project.properties.get('jmh', '') + ".*"]
+  }
+
+  def exclude = project.properties.get('exclude');
+  def format = project.properties.get('format', 'json');
+  def profilers = project.properties.get('profilers');
+  def jvmArgs = project.properties.get('jvmArgs')
+  def verify =  project.properties.get('verify');
+
+  def resultFile = file("build/reports/jmh/result.${format}")
+
+  args include
+  if(exclude) {
+    args '-e', exclude
+  }
+  if(verify != null) { // execute benchmarks with the minimum amount of execution (only to check if they are working)
+    println "≥≥ Running in verify mode"
+    args '-f' , 1
+    args '-wi' , 1
+    args '-i' , 1
+  }
+  args '-foe', 'true'   //fail-on-error
+  args '-v', 'NORMAL'   //verbosity [SILENT, NORMAL, EXTRA]
+  if(profilers) {
+    profilers.split(',').each {
+      args '-prof', it
+    }
+  }
+  args '-jvmArgsPrepend', '-Xmx3072m'
+  args '-jvmArgsPrepend', '-Xms3072m'
+  if(jvmArgs) {
+    for(jvmArg in jvmArgs.split(' ')) {
+      args '-jvmArgsPrepend', jvmArg
+    }
+  }
+  args '-rf', format
+  args '-rff', resultFile
+
+  doFirst {
+    println "\nExecuting JMH with: $args \n"
+    resultFile.parentFile.mkdirs()
+  }
 }
