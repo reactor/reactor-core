@@ -19,7 +19,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 
 /**
- * Represents an never publisher which only calls onSubscribe.
+ * Represents a never publisher which only calls onSubscribe.
  * <p>
  * This Publisher is effectively stateless and only a single instance exists.
  * Use the {@link #instance()} method to obtain a properly type-parametrized view of it.
