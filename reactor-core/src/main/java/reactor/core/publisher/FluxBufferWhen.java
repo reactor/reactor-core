@@ -38,7 +38,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
- * buffers elements into possibly overlapping buffers whose boundaries are determined
+ * Buffers elements into possibly overlapping buffers whose boundaries are determined
  * by a start Publisher's element and a signal of a derived Publisher
  *
  * @param <T> the source value type
