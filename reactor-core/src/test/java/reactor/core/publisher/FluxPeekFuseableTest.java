@@ -592,11 +592,10 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void syncPollCompleteCalled() {
 		AtomicBoolean onComplete = new AtomicBoolean();
-		ConnectableFlux<Integer> f = Flux.just(1)
-		                                .doOnComplete(() -> onComplete.set(true))
-		                                .publish();
+		Flux<Integer> f = Flux.just(1)
+		                      .doOnComplete(() -> onComplete.set(true));
 		StepVerifier.create(f)
-		            .then(f::connect)
+		            .expectFusion()
 		            .expectNext(1)
 		            .verifyComplete();
 
@@ -606,12 +605,11 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void syncPollConditionalCompleteCalled() {
 		AtomicBoolean onComplete = new AtomicBoolean();
-		ConnectableFlux<Integer> f = Flux.just(1)
-		                                .doOnComplete(() -> onComplete.set(true))
-		                                .filter(v -> true)
-		                                .publish();
+		Flux<Integer> f = Flux.just(1)
+		                      .doOnComplete(() -> onComplete.set(true))
+		                      .filter(v -> true);
 		StepVerifier.create(f)
-		            .then(f::connect)
+		            .expectFusion()
 		            .expectNext(1)
 		            .verifyComplete();
 
@@ -619,13 +617,26 @@ public class FluxPeekFuseableTest {
 	}
 
 	@Test
-	public void syncPollAfterTerminateCalled() {
+	public void syncPollAfterTerminateCalledWhenComplete() {
 		AtomicBoolean onAfterTerminate = new AtomicBoolean();
-		ConnectableFlux<Integer> f = Flux.just(1)
-		                                .doAfterTerminate(() -> onAfterTerminate.set(true))
-		                                .publish();
+		Flux<Integer> f = Flux.just(1)
+		                      .doAfterTerminate(() -> onAfterTerminate.set(true));
 		StepVerifier.create(f)
-		            .then(f::connect)
+		            .expectFusion()
+                    .expectNext(1)
+		            .verifyComplete();
+
+		assertThat(onAfterTerminate.get()).withFailMessage("onAfterTerminate not called back").isTrue();
+	}
+
+	@Test
+	public void syncPollConditionalAfterTerminateCalledWhenComplete() {
+		AtomicBoolean onAfterTerminate = new AtomicBoolean();
+		Flux<Integer> f = Flux.just(1)
+		                      .doAfterTerminate(() -> onAfterTerminate.set(true))
+		                      .filter(v -> true);
+		StepVerifier.create(f)
+		            .expectFusion()
 		            .expectNext(1)
 		            .verifyComplete();
 
@@ -633,18 +644,63 @@ public class FluxPeekFuseableTest {
 	}
 
 	@Test
-	public void syncPollConditionalAfterTerminateCalled() {
+	public void syncPollAfterTerminateCalledWhenError() {
 		AtomicBoolean onAfterTerminate = new AtomicBoolean();
-		ConnectableFlux<Integer> f = Flux.just(1)
-		                                .doAfterTerminate(() -> onAfterTerminate.set(true))
-		                                .filter(v -> true)
-		                                .publish();
+		Flux<Integer> f = Flux.just(1, 0, 3)
+		                      .map(i -> 100 / i)
+		                      .doAfterTerminate(() -> onAfterTerminate.set(true));
 		StepVerifier.create(f)
-		            .then(f::connect)
-		            .expectNext(1)
-		            .verifyComplete();
+		            .expectFusion()
+		            .expectNext(100)
+		            .verifyError(ArithmeticException.class);
 
 		assertThat(onAfterTerminate.get()).withFailMessage("onAfterTerminate not called back").isTrue();
+	}
+
+	@Test
+	public void syncPollConditionalAfterTerminateCalledWhenError() {
+		AtomicBoolean onAfterTerminate = new AtomicBoolean();
+		Flux<Integer> f = Flux.just(1, 0, 3)
+		                      .map(i -> 100 / i)
+		                      .doAfterTerminate(() -> onAfterTerminate.set(true))
+		                      .filter(v -> true);
+		StepVerifier.create(f)
+		            .expectFusion()
+		            .expectNext(100)
+		            .verifyError(ArithmeticException.class);
+
+		assertThat(onAfterTerminate.get()).withFailMessage("onAfterTerminate not called back").isTrue();
+	}
+
+	@Test
+	public void syncPollAfterTerminateFailureWhenError() {
+		Flux<Integer> f = Flux.just(1, 0, 3)
+		                      .map(i -> 100 / i)
+		                      .doAfterTerminate(() -> { throw new IllegalStateException("doAfterTerminate boom"); });
+		StepVerifier.create(f)
+		            .expectFusion()
+		            .expectNext(100)
+		            .verifyErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IllegalStateException.class)
+				            .hasMessage("doAfterTerminate boom")
+				            .hasSuppressedException(new ArithmeticException("/ by zero"))
+		            );
+	}
+
+	@Test
+	public void syncPollConditionalAfterTerminateFailureWhenError() {
+		Flux<Integer> f = Flux.just(1, 0, 3)
+		                      .map(i -> 100 / i)
+		                      .doAfterTerminate(() -> { throw new IllegalStateException("doAfterTerminate boom"); })
+		                      .filter(v -> true);
+		StepVerifier.create(f)
+		            .expectFusion()
+		            .expectNext(100)
+		            .verifyErrorSatisfies(e -> assertThat(e)
+				            .isInstanceOf(IllegalStateException.class)
+				            .hasMessage("doAfterTerminate boom")
+				            .hasSuppressedException(new ArithmeticException("/ by zero"))
+		            );
 	}
 
 	@Test

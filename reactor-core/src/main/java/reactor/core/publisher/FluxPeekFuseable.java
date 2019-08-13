@@ -305,6 +305,16 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 								actual.currentContext()));
 					}
 				}
+				Runnable afterTerminateHook = parent.onAfterTerminateCall();
+				if (afterTerminateHook != null) {
+					try {
+						afterTerminateHook.run();
+					}
+					catch (Throwable afterTerminateCallbackError) {
+						throw Exceptions.propagate(Operators.onOperatorError(s, afterTerminateCallbackError, e,
+								actual.currentContext()));
+					}
+				}
 				throw Exceptions.propagate(Operators.onOperatorError(s, e,
 						actual.currentContext()));
 			}
@@ -609,6 +619,16 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 					}
 					catch (Throwable errorCallbackError) {
 						throw Exceptions.propagate(Operators.onOperatorError(s, errorCallbackError, e,
+								actual.currentContext()));
+					}
+				}
+				Runnable afterTerminateHook = parent.onAfterTerminateCall();
+				if (afterTerminateHook != null) {
+					try {
+						afterTerminateHook.run();
+					}
+					catch (Throwable afterTerminateCallbackError) {
+						throw Exceptions.propagate(Operators.onOperatorError(s, afterTerminateCallbackError, e,
 								actual.currentContext()));
 					}
 				}
