@@ -28,7 +28,7 @@ import reactor.core.Fuseable;
  * {@link CoreSubscriber}.
  *
  * <p>
- * Note that any exception thrown by the hook short circuit the subscription process and
+ * Note that any exceptions thrown by the hook short circuit the subscription process and
  * are forwarded to the {@link Subscriber}'s {@link Subscriber#onError(Throwable)} method.
  *
  * @param <T> the value type
