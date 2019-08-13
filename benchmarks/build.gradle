@@ -17,11 +17,10 @@ task ('jmhHelp', description:'Print help for the jmh task') {
     println "Usage of jmh tasks:"
     println ""
 
-    println "Only execute specific benchmark(s):"
-    println "\t./gradlew jmh -Pinclude=\".*MyBenchmark.*\""
-    println "Only execute specific benchmark(s) without needing the wildcard:"
-    println "\t./gradlew jmh -Pjmh=My"
-
+    println "Only execute specific benchmark(s) (wildcards are added before and after):"
+    println "\t./gradlew jmh -Pinclude=\"(BenchmarkPrimary|OtherBench)\""
+    println "If you want to specify the wildcards yourself, you can pass the full regexp:"
+    println "\t./gradlew jmh -PfullInclude=.*MyBenchmark.*"
 
     println ""
     println "Specify extra profilers:"
@@ -63,13 +62,16 @@ task jmh(type: JavaExec, description: 'Executing JMH benchmarks') {
   classpath = sourceSets.main.runtimeClasspath
   main = 'org.openjdk.jmh.Main'
 
-  def include = project.properties.get('include', '');
-  if (project.hasProperty('jmh')) {
-    include = [".*" + project.properties.get('jmh', '') + ".*"]
+  def include = ''
+  if (project.hasProperty('include')) {
+    include = [".*" + project.properties.get('include') + ".*"]
+  }
+  if (project.hasProperty('fullInclude')) {
+    include = project.properties.get('fullInclude');
   }
 
   def exclude = project.properties.get('exclude');
-  def format = project.properties.get('format', 'json');
+  def format = project.properties.getOrDefault('format', 'json');
   def profilers = project.properties.get('profilers');
   def jvmArgs = project.properties.get('jvmArgs')
   def verify =  project.properties.get('verify');
