@@ -355,7 +355,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	/**
 	 * Drain is a hot replication of the current buffer delivered if supported. Since it is hot there might be no
-	 * guarantee to see a end if the buffer keeps replenishing due to concurrent producing.
+	 * guarantee to see an end if the buffer keeps replenishing due to concurrent
+	 * producing.
 	 *
 	 * @return a {@link Flux} sequence possibly unbounded of incoming buffered values or empty if not supported.
 	 */
