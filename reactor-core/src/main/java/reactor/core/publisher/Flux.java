@@ -2818,6 +2818,61 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Collect subsequent repetitions of an element (that is, if they arrive right after
+	 * one another) into multiple {@link List} buffers that will be emitted by the
+	 * resulting {@link Flux}.
+	 *
+	 * TODO: Create marble diagram
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/bufferUntilChanged.svg" alt="">
+	 * <p>
+	 *
+	 * @return a microbatched {@link Flux} of {@link List}
+	 */
+	public final <V> Flux<List<T>> bufferUntilChanged() {
+		return bufferUntilChanged(identityFunction());
+	}
+
+	/**
+	 * Collect subsequent repetitions of an element (that is, if they arrive right after
+	 * one another), as compared by a key extracted through the user provided {@link
+	 * Function}, into multiple {@link List} buffers that will be emitted by the
+	 * resulting {@link Flux}.
+	 *
+	 * TODO: Create marble diagram
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/bufferUntilChanged.svg" alt="">
+	 * <p>
+	 *
+	 * @param keySelector function to compute comparison key for each element
+	 * @return a microbatched {@link Flux} of {@link List}
+	 */
+	public final <V> Flux<List<T>> bufferUntilChanged(Function<? super T, ? extends V> keySelector) {
+		return bufferUntilChanged(keySelector, equalPredicate());
+	}
+
+	/**
+	 * Collect subsequent repetitions of an element (that is, if they arrive right after
+	 * one another), as compared by a key extracted through the user provided {@link
+	 * Function} and compared using a supplied {@link BiPredicate}, into multiple
+	 * {@link List} buffers that will be emitted by the resulting {@link Flux}.
+	 *
+	 * TODO: Create marble diagram
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/bufferUntilChanged.svg" alt="">
+	 * <p>
+	 *
+	 * @param keySelector function to compute comparison key for each element
+	 * @param keyComparator predicate used to compare keys
+	 * @return a microbatched {@link Flux} of {@link List}
+	 */
+	public final <V> Flux<List<T>> bufferUntilChanged(Function<? super T, ? extends V> keySelector,
+			BiPredicate<? super V, ? super V> keyComparator) {
+		return onAssembly(new FluxBufferUntilChanged<>(this, keySelector,
+				keyComparator, listSupplier()));
+	}
+
+	/**
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the resulting {@link Flux}. Each buffer continues aggregating values while the
 	 * given predicate returns true, and a new buffer is created as soon as the
