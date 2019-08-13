@@ -32,8 +32,8 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
- * retries a source when a companion sequence signals
- * an item in response to the main's error signal
+ * Retries a source when a companion sequence signals
+ * an item in response to the main's error signal.
  * <p>
  * <p>If the companion sequence signals when the main source is active, the repeat
  * attempt is suppressed and any terminal signal will terminate the main source with the same signal immediately.
