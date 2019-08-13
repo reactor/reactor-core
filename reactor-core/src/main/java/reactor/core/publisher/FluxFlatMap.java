@@ -89,7 +89,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
-		if (trySubscribeScalarMap(source, actual, mapper, false)) {
+		if (trySubscribeScalarMap(source, actual, mapper, false, true)) {
 			return null;
 		}
 
@@ -117,7 +117,8 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 	static <T, R> boolean trySubscribeScalarMap(Publisher<? extends T> source,
 			CoreSubscriber<? super R> s,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
-			boolean fuseableExpected) {
+			boolean fuseableExpected,
+			boolean errorContinueExpected) {
 		if (source instanceof Callable) {
 			T t;
 
@@ -125,7 +126,17 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				t = ((Callable<? extends T>) source).call();
 			}
 			catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(e, s.currentContext()));
+				Context ctx = s.currentContext();
+				Throwable e_ = errorContinueExpected ?
+					Operators.onNextPollError(null, e, ctx) :
+					Operators.onOperatorError(e, ctx);
+				if (e_ != null) {
+					Operators.error(s, e_);
+				}
+				else {
+					//the error was recovered but we know there won't be any more value
+					Operators.complete(s);
+				}
 				return true;
 			}
 
@@ -141,7 +152,17 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 						"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(null, e, t, s.currentContext()));
+				Context ctx = s.currentContext();
+				Throwable e_ = errorContinueExpected ?
+						Operators.onNextPollError(t, e, ctx) :
+						Operators.onOperatorError(null, e, t, ctx);
+				if (e_ != null) {
+					Operators.error(s, e_);
+				}
+				else {
+					//the error was recovered but we know there won't be any more value
+					Operators.complete(s);
+				}
 				return true;
 			}
 
@@ -152,7 +173,17 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 					v = ((Callable<R>) p).call();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(null, e, t, s.currentContext()));
+					Context ctx = s.currentContext();
+					Throwable e_ = errorContinueExpected ?
+							Operators.onNextPollError(t, e, ctx) :
+							Operators.onOperatorError(null, e, t, ctx);
+					if (e_ != null) {
+						Operators.error(s, e_);
+					}
+					else {
+						//the error was recovered but we know there won't be any more value
+						Operators.complete(s);
+					}
 					return true;
 				}
 
