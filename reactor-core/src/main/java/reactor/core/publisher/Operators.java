@@ -759,7 +759,7 @@ public abstract class Operators {
 	 * terminal and cancelled the subscription, null if not.
 	 */
 	@Nullable
-	public static <T> RuntimeException onNextPollError(T value, Throwable error, Context context) {
+	public static <T> RuntimeException onNextPollError(@Nullable T value, Throwable error, Context context) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, value)) {

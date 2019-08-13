@@ -43,7 +43,10 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super R> actual) {
-		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false)) {
+		//for now Mono in general doesn't support onErrorContinue, so the scalar version shouldn't either
+		//even if the result is a Flux. once the mapper is applied, onErrorContinue will be taken care of by
+		//the mapped Flux if relevant.
+		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false, false)) {
 			return;
 		}
 		source.subscribe(new FlatMapManyMain<T, R>(actual, mapper));
@@ -154,6 +157,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 						"The mapper returned a null Publisher.");
 			}
 			catch (Throwable ex) {
+				//if the mapping fails, then there is nothing to be continued, since the source is a Mono
 				actual.onError(Operators.onOperatorError(this, ex, t,
 						actual.currentContext()));
 				return;
