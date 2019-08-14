@@ -104,8 +104,9 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * can be used for disconnecting.
 	 *
 	 * <p>The call should be idempotent in respect of connecting the first
-	 * and subsequent times. In addition the disconnection should be also tied
-	 * to a particular connection (so two different connection can't disconnect the other).
+	 * and subsequent times. In addition, the disconnection should be tied
+	 * to a particular connection (so two different connections can't disconnect the
+	 * other).
 	 *
 	 * @param cancelSupport the callback is called with a Disposable instance that can
 	 * be called to disconnect the source, even synchronously.

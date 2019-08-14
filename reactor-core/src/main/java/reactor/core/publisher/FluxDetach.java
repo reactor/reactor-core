@@ -26,7 +26,7 @@ import reactor.util.context.Context;
  * Detaches the both the child Subscriber and the Subscription on
  * termination or cancellation.
  * <p>This should help with odd retention scenarios when running
- * wit non Rx mentality based Publishers.
+ * with non Rx mentality based Publishers.
  * 
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>

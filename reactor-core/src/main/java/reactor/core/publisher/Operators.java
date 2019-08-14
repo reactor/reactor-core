@@ -45,7 +45,7 @@ import reactor.util.context.Context;
 import static reactor.core.Fuseable.NONE;
 
 /**
- * An helper to support "Operator" writing, handle noop subscriptions, validate request
+ * A helper to support "Operator" writing, handle noop subscriptions, validate request
  * size and to cap concurrent additive operations to Long.MAX_VALUE,
  * which is generic to {@link Subscription#request(long)} handling.
  *

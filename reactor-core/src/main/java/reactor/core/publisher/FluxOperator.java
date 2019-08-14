@@ -27,7 +27,7 @@ import reactor.util.annotation.Nullable;
 
 /**
  * A decorating {@link Flux} {@link Publisher} that exposes {@link Flux} API over an
- * arbitrary {@link Publisher} Useful to create operators which return a {@link Flux}.
+ * arbitrary {@link Publisher}. Useful to create operators which return a {@link Flux}.
  *
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
