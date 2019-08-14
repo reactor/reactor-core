@@ -1183,7 +1183,6 @@ public class FluxUsingWhenTest {
 		}
 
 		public Flux<Integer> commit() {
-			System.out.println("commit");
 			this.commitProbe = PublisherProbe.of(
 					Flux.just(3, 2, 1)
 					    .log("commit method used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));

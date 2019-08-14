@@ -386,7 +386,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-					actual.onError(_e);
+					//give a chance for the Mono implementation to discard the recorded value
+					deferredError(_e);
 					return;
 				}
 
@@ -419,7 +420,6 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 				}
 			}
 		}
-
 	}
 
 	static final class UsingWhenConditionalSubscriber<T, S>
