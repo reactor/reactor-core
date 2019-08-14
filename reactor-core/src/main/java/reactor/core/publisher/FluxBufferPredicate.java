@@ -22,7 +22,9 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -368,5 +370,40 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		public String toString() {
 			return "FluxBufferPredicate";
 		}
+	}
+
+	static class ChangedPredicate<T, K> implements Predicate<T>, Disposable {
+
+		private Function<? super T, ? extends K>  keySelector;
+		private BiPredicate<? super K, ? super K> keyComparator;
+		private K                                 lastKey;
+
+		ChangedPredicate(Function<? super T, ? extends K> keySelector,
+				BiPredicate<? super K, ? super K> keyComparator) {
+			this.keySelector = keySelector;
+			this.keyComparator = keyComparator;
+		}
+
+		@Override
+		public void dispose() {
+			lastKey = null;
+		}
+
+		@Override
+		public boolean test(T t) {
+			K k = keySelector.apply(t);
+
+			if (null == lastKey) {
+				lastKey = k;
+				return false;
+			}
+
+			boolean match;
+			match = keyComparator.test(lastKey, k);
+			lastKey = k;
+
+			return !match;
+		}
+
 	}
 }
