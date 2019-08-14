@@ -2868,8 +2868,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<List<T>> bufferUntilChanged(Function<? super T, ? extends V> keySelector,
 			BiPredicate<? super V, ? super V> keyComparator) {
-		return onAssembly(new FluxBufferUntilChanged<>(this, keySelector,
-				keyComparator, listSupplier()));
+		Predicate<? super T> changed = new ChangedPredicate<T, V>(keySelector,
+				keyComparator);
+		return bufferUntil(changed, true);
 	}
 
 	/**
