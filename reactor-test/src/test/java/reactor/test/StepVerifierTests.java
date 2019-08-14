@@ -35,6 +35,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -2209,5 +2210,53 @@ public class StepVerifierTests {
 						::verify)
 				.withMessage("Unexpected error during a no-event expectation: java.lang.IllegalStateException: boom")
 				.withCause(new IllegalStateException("boom"));
+	}
+
+	@Test
+	public void deferredVerifyCanVerifyConnectableFlux() {
+		Flux<Integer> autoconnectableFlux = Flux.just(1, 2, 3).publish().autoConnect(2);
+
+		StepVerifier deferred1 = StepVerifier.create(autoconnectableFlux)
+		                                     .expectNext(1, 2, 3)
+		                                     .expectComplete()
+		                                     .deferred();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> deferred1.verify(Duration.ofSeconds(1)))
+				.withMessageContaining("timed out");
+
+		StepVerifier deferred2 = StepVerifier.create(autoconnectableFlux)
+		                                     .expectNext(1, 2, 3)
+		                                     .expectComplete()
+		                                     .deferred()
+		                                     .deferred()
+		                                     .deferred()
+		                                     .deferred();
+
+		deferred1.verify(Duration.ofSeconds(1));
+		deferred2.verify(Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void deferredVerifyCanVerifyConnectableFlux_withAssertionErrors() {
+		Flux<Integer> autoconnectableFlux = Flux.just(1, 2, 3).publish().autoConnect(2);
+
+		StepVerifier deferred1 = StepVerifier.create(autoconnectableFlux)
+		                                     .expectNext(1, 2, 4)
+		                                     .expectComplete()
+		                                     .deferred();
+
+		StepVerifier deferred2 = StepVerifier.create(autoconnectableFlux)
+		                                     .expectNext(1, 2, 5)
+		                                     .expectComplete()
+		                                     .deferred();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> deferred1.verify(Duration.ofSeconds(10)))
+				.withMessage("expectation \"expectNext(4)\" failed (expected value: 4; actual value: 3)");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> deferred2.verify(Duration.ofSeconds(10)))
+				.withMessage("expectation \"expectNext(5)\" failed (expected value: 5; actual value: 3)");
 	}
 }

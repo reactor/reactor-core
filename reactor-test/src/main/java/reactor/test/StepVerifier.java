@@ -303,6 +303,15 @@ public interface StepVerifier {
 	StepVerifier log();
 
 	/**
+	 * Trigger the subscription and prepare for verifications but doesn't block. Calling one
+	 * of the {@link #verify()} methods afterwards will block until the sequence is validated
+	 * and throw if assertions fail.
+	 *
+	 * @return
+	 */
+	StepVerifier deferred();
+
+	/**
 	 * Verify the signals received by this subscriber. Unless a default timeout has been
 	 * set before construction of the {@link StepVerifier} via {@link StepVerifier#setDefaultTimeout(Duration)},
 	 * this method will <strong>block</strong> until the stream has been terminated
