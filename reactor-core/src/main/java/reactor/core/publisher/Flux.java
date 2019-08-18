@@ -2839,9 +2839,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Function}, into multiple {@link List} buffers that will be emitted by the
 	 * resulting {@link Flux}.
 	 *
-	 * TODO: Create marble diagram
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/bufferUntilChanged.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/bufferUntilChangedWithKey.svg" alt="">
 	 * <p>
 	 *
 	 * @param keySelector function to compute comparison key for each element
@@ -2857,9 +2856,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Function} and compared using a supplied {@link BiPredicate}, into multiple
 	 * {@link List} buffers that will be emitted by the resulting {@link Flux}.
 	 *
-	 * TODO: Create marble diagram
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/bufferUntilChanged.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/bufferUntilChangedWithKey.svg" alt="">
 	 * <p>
 	 *
 	 * @param keySelector function to compute comparison key for each element
