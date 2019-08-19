@@ -2822,7 +2822,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * one another) into multiple {@link List} buffers that will be emitted by the
 	 * resulting {@link Flux}.
 	 *
-	 * TODO: Create marble diagram
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/bufferUntilChanged.svg" alt="">
 	 * <p>
