@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -259,7 +260,7 @@ public class FluxUsingWhenTest {
 		StepVerifier.create(Flux.usingWhen(resourcePublisher,
 				Flux::just,
 				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
-				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)),
+				(tr, err) -> Mono.fromRunnable(() -> rollbackDone.set(true)),
 				tr -> Mono.fromRunnable(() -> cancelDone.set(true))))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(100))
@@ -286,7 +287,7 @@ public class FluxUsingWhenTest {
 		Mono<String> usingWhen = Mono.usingWhen(resourcePublisher,
 				Mono::just,
 				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
-				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)),
+				(tr, err) -> Mono.fromRunnable(() -> rollbackDone.set(true)),
 				tr -> Mono.fromRunnable(() -> cancelDone.set(true)));
 
 		StepVerifier.create(usingWhen)
@@ -308,7 +309,7 @@ public class FluxUsingWhenTest {
 		Disposable disposable = Flux.usingWhen(Flux.<String>never(),
 				Flux::just,
 				Flux::just,
-				Flux::just,
+				(res, err) -> Flux.just(res),
 				Flux::just)
 		                            .doFinally(f -> latch.countDown())
 		                            .subscribe();
@@ -709,7 +710,7 @@ public class FluxUsingWhenTest {
 
 		UsingWhenSubscriber<String, String>
 				test = new UsingWhenSubscriber<>(new LambdaSubscriber<>(null, null, null, null),
-				"resource", it -> Mono.empty(), it -> Mono.empty(), null, Mockito.mock(Operators.DeferredSubscription.class));
+				"resource", it -> Mono.empty(), (it, err) -> Mono.empty(), null, Mockito.mock(Operators.DeferredSubscription.class));
 
 		test.onSubscribe(assertQueueSubscription);
 
@@ -779,8 +780,8 @@ public class FluxUsingWhenTest {
 		Flux.usingWhen(resourceProvider,
 				r -> source,
 				TestResource::commit,
-				r -> contextHandler,
-				TestResource::rollback)
+				(r, err) -> contextHandler,
+				r -> r.rollback())
 		    .subscriberContext(Context.of(String.class, "contextual"))
 		    .as(StepVerifier::create)
 		    .expectAccessibleContext().contains(String.class, "contextual")
@@ -862,7 +863,7 @@ public class FluxUsingWhenTest {
 		LongAdder cleanupCount = new LongAdder();
 		Flux<String> flux = Flux.usingWhen(Mono.defer(() -> Mono.just("foo")), Mono::just,
 				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
-				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
+				(s, err) -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
 				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
 		);
 
@@ -895,7 +896,7 @@ public class FluxUsingWhenTest {
 		LongAdder cleanupCount = new LongAdder();
 		Flux<String> flux = Flux.usingWhen(Mono.just("foo"), v -> Mono.error(new IllegalStateException("boom")),
 				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
-				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
+				(s, err) -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
 				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
 		);
 
@@ -946,7 +947,7 @@ public class FluxUsingWhenTest {
 
 		Flux<String> flux = Flux.usingWhen(Mono.just("foo"), v -> badPublisher,
 				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
-				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
+				(s, err) -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
 				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
 		);
 
@@ -999,7 +1000,7 @@ public class FluxUsingWhenTest {
 
 		Flux<String> flux = Flux.usingWhen(Mono.just("foo"), v -> badPublisher,
 				s -> Mono.fromRunnable(() -> cleanupCount.add(10)), //10 for completion
-				s -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
+				(s, err) -> Mono.fromRunnable(() -> cleanupCount.add(100)), //100 for error
 				s -> Mono.fromRunnable(() -> cleanupCount.add(1000)) //1000 for cancel
 		);
 
@@ -1029,12 +1030,30 @@ public class FluxUsingWhenTest {
 		assertThat(cancelled).as("source cancelled").isTrue();
 	}
 
+	@Test
+	public void errorCallbackReceivesCause() {
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		NullPointerException npe = new NullPointerException("original error");
+
+		Flux.usingWhen(Flux.just("ignored"), s -> Flux.concat(Flux.just("ignored1", "ignored2"), Flux.error(npe)),
+				Mono::just,
+				(res, err) -> Mono.fromRunnable(() -> errorRef.set(err)),
+				Mono::just)
+		    .as(StepVerifier::create)
+		    .expectNext("ignored1", "ignored2")
+		    .verifyErrorSatisfies(e -> assertThat(e).isSameAs(npe)
+		                                            .hasNoCause()
+		                                            .hasNoSuppressedExceptions());
+
+		assertThat(errorRef).hasValue(npe);
+	}
+
 
 	// == scanUnsafe tests ==
 
 	@Test
 	public void scanOperator() {
-		FluxUsingWhen<Object, Object> op = new FluxUsingWhen<>(Mono.empty(), Mono::just, Mono::just, Mono::just, Mono::just);
+		FluxUsingWhen<Object, Object> op = new FluxUsingWhen<>(Mono.empty(), Mono::just, Mono::just, (s, err) -> Mono.just(s), Mono::just);
 
 		assertThat(op.scanUnsafe(Attr.ACTUAL))
 				.isSameAs(op.scanUnsafe(Attr.ACTUAL_METADATA))
@@ -1057,7 +1076,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanResourceSubscriber() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		ResourceSubscriber<String, Integer> op = new ResourceSubscriber<>(actual, s -> Flux.just(s.length()), Mono::just, Mono::just, Mono::just, true);
+		ResourceSubscriber<String, Integer> op = new ResourceSubscriber<>(actual, s -> Flux.just(s.length()), Mono::just, (s, err) -> Mono.just(s), Mono::just, true);
 		final Subscription parent = Operators.emptySubscription();
 		op.onSubscribe(parent);
 
@@ -1076,7 +1095,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanUsingWhenSubscriber() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenSubscriber<Integer, String> op = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just, null);
+		UsingWhenSubscriber<Integer, String> op = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, (s, err) -> Mono.just(s), Mono::just, null);
 		final Subscription parent = Operators.emptySubscription();
 		op.onSubscribe(parent);
 
@@ -1099,7 +1118,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanCommitInner() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just, null);
+		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, (s, err) -> Mono.just(s), Mono::just, null);
 		final Subscription parent = Operators.emptySubscription();
 		up.onSubscribe(parent);
 
@@ -1125,7 +1144,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanRollbackInner() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just, null);
+		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, (s, err) -> Mono.just(s), Mono::just, null);
 		final Subscription parent = Operators.emptySubscription();
 		up.onSubscribe(parent);
 
@@ -1149,7 +1168,7 @@ public class FluxUsingWhenTest {
 	@Test
 	public void scanCancelInner() {
 		CoreSubscriber<? super Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, Mono::just, Mono::just, null);
+		UsingWhenSubscriber<Integer, String> up = new UsingWhenSubscriber<>(actual, "RESOURCE", Mono::just, (s, err) -> Mono.just(s), Mono::just, null);
 		final Subscription parent = Operators.emptySubscription();
 		up.onSubscribe(parent);
 
@@ -1214,7 +1233,7 @@ public class FluxUsingWhenTest {
 		public Flux<Integer> rollback() {
 			this.rollbackProbe = PublisherProbe.of(
 					Flux.just(5, 4, 3, 2, 1)
-					    .log("rollback method used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
+					    .log("rollback me thod used", level, SignalType.ON_NEXT, SignalType.ON_COMPLETE));
 			return rollbackProbe.flux();
 		}
 

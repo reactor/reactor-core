@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -244,7 +245,7 @@ public class MonoUsingWhenTest {
 		StepVerifier.create(Mono.usingWhen(resourcePublisher,
 				Mono::just,
 				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
-				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)),
+				(tr, err) -> Mono.fromRunnable(() -> rollbackDone.set(true)),
 				tr -> Mono.fromRunnable(() -> cancelDone.set(true))))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(100))
@@ -271,7 +272,7 @@ public class MonoUsingWhenTest {
 		Mono<String> usingWhen = Mono.usingWhen(resourcePublisher,
 				Mono::just,
 				tr -> Mono.fromRunnable(() -> commitDone.set(true)),
-				tr -> Mono.fromRunnable(() -> rollbackDone.set(true)),
+				(tr, err) -> Mono.fromRunnable(() -> rollbackDone.set(true)),
 				tr -> Mono.fromRunnable(() -> cancelDone.set(true)));
 
 		StepVerifier.create(usingWhen)
@@ -293,7 +294,7 @@ public class MonoUsingWhenTest {
 		Disposable disposable = Mono.usingWhen(Mono.<String>never(),
 				Mono::just,
 				Flux::just,
-				Flux::just,
+				(res, err) -> Flux.just(res),
 				Flux::just)
 		                            .doFinally(f -> latch.countDown())
 		                            .subscribe();
@@ -349,12 +350,28 @@ public class MonoUsingWhenTest {
 		                   .map(ctx -> ctx.get(String.class)),
 				Mono::just,
 				Mono::just,
-				Mono::just,
+				(res, err) -> Mono.just(res),
 				Mono::just)
 		    .subscriberContext(Context.of(String.class, "contextual"))
 		    .as(StepVerifier::create)
 		    .expectNext("contextual")
 		    .verifyComplete();
+	}
+
+	@Test
+	public void errorCallbackReceivesCause() {
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		NullPointerException npe = new NullPointerException("original error");
+
+		Mono.usingWhen(Mono.just("ignored"), s -> Mono.error(npe), Mono::just,
+				(res, err) -> Mono.fromRunnable(() -> errorRef.set(err)),
+				Mono::just)
+		    .as(StepVerifier::create)
+		    .verifyErrorSatisfies(e -> assertThat(e).isSameAs(npe)
+		                                            .hasNoCause()
+		                                            .hasNoSuppressedExceptions());
+
+		assertThat(errorRef).hasValue(npe);
 	}
 
 	@Test
@@ -387,7 +404,7 @@ public class MonoUsingWhenTest {
 
 	@Test
 	public void scanOperator() {
-		MonoUsingWhen<Object, Object> op = new MonoUsingWhen<>(Mono.empty(), Mono::just, Mono::just, Mono::just, Mono::just);
+		MonoUsingWhen<Object, Object> op = new MonoUsingWhen<>(Mono.empty(), Mono::just, Mono::just, (res, err) -> Mono.just(res), Mono::just);
 
 		assertThat(op.scanUnsafe(Attr.ACTUAL))
 				.isSameAs(op.scanUnsafe(Attr.ACTUAL_METADATA))
@@ -410,7 +427,7 @@ public class MonoUsingWhenTest {
 	@Test
 	public void scanResourceSubscriber() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		ResourceSubscriber<String, Integer> op = new ResourceSubscriber<>(actual, s -> Mono.just(s.length()), Mono::just, Mono::just, Mono::just, true);
+		ResourceSubscriber<String, Integer> op = new ResourceSubscriber<>(actual, s -> Mono.just(s.length()), Mono::just, (res, err) -> Mono.just(res), Mono::just, true);
 		final Subscription parent = Operators.emptySubscription();
 		op.onSubscribe(parent);
 
