@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
@@ -30,8 +32,10 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
@@ -220,6 +224,115 @@ public class FluxBufferPredicateTest {
 					.expectErrorMessage("predicate failure")
 					.verify();
 		assertFalse(sp1.hasDownstreams());
+	}
+
+	@Test
+	public void untilChangedNoRepetition() {
+		StepVerifier.create(Flux.range(0, 5)
+		                        .bufferUntilChanged())
+		            .expectSubscription()
+		            .expectNext(Collections.singletonList(0))
+		            .expectNext(Collections.singletonList(1))
+		            .expectNext(Collections.singletonList(2))
+		            .expectNext(Collections.singletonList(3))
+		            .expectNext(Collections.singletonList(4))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void untilChangedWithKeySelector() {
+		StepVerifier.create(Flux.range(0, 5)
+		                        .bufferUntilChanged(i -> i / 2))
+		            .expectSubscription()
+		            .expectNext(Arrays.asList(0, 1))
+		            .expectNext(Arrays.asList(2, 3))
+		            .expectNext(Collections.singletonList(4))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void untilChangedSomeRepetition() {
+		StepVerifier.create(Flux.just(1, 1, 2, 2, 3, 3, 1)
+		                        .bufferUntilChanged())
+		            .expectSubscription()
+		            .expectNext(Arrays.asList(1, 1))
+		            .expectNext(Arrays.asList(2, 2))
+		            .expectNext(Arrays.asList(3, 3))
+		            .expectNext(Arrays.asList(1))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void untilChangedDisposesStateOnComplete() {
+		MemoryUtils.RetainedDetector retainedDetector = new MemoryUtils.RetainedDetector();
+		Flux<List<AtomicInteger>> test =
+				Flux.range(1, 100)
+				    .map(AtomicInteger::new) // wrap integer with object to test gc
+				    .map(retainedDetector::tracked)
+				    .bufferUntilChanged();
+
+		StepVerifier.create(test)
+		            .expectNextCount(100)
+		            .verifyComplete();
+
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount(),
+						is(100L)));
+	}
+
+	@Test
+	public void untilChangedDisposesStateOnError() {
+		MemoryUtils.RetainedDetector retainedDetector = new MemoryUtils.RetainedDetector();
+		Flux<List<AtomicInteger>> test =
+				Flux.range(1, 100)
+				    .map(AtomicInteger::new) // wrap integer with object to test gc
+				    .map(retainedDetector::tracked)
+				    .concatWith(Mono.error(new Throwable("expected")))
+				    .bufferUntilChanged();
+
+
+		StepVerifier.create(test)
+		            .expectNextCount(99) // last buffer discarded onError
+		            .verifyErrorMessage("expected");
+
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount(),
+						is(100L)));
+	}
+
+	@Test
+	public void untilChangedDisposesStateOnCancel() {
+		MemoryUtils.RetainedDetector retainedDetector = new MemoryUtils.RetainedDetector();
+		Flux<List<AtomicInteger>> test =
+				Flux.range(1, 100)
+				    .map(AtomicInteger::new) // wrap integer with object to test gc
+				    .map(retainedDetector::tracked)
+				    .concatWith(Mono.error(new Throwable("expected")))
+				    .bufferUntilChanged()
+				    .take(50);
+
+
+		StepVerifier.create(test)
+		            .expectNextCount(50)
+		            .verifyComplete();
+
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount(),
+						// 50 + 1 (taking 50 buffers requires having 51st element as a
+						// key in the predicate)
+						is(51L)));
 	}
 
 	@Test
