@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,6 +28,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class MonoUsingTest {
 
@@ -69,8 +72,10 @@ public class MonoUsingTest {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		Mono.using(() -> 1, r -> Mono.just(1), cleanup::set)
-		    .doAfterTerminate(() ->  Assert.assertEquals(0, cleanup.get()))
+		Mono.using(() -> 1, r -> Mono.just(1)
+		                             .doOnSuccessOrError((value, error) ->  Assert.assertEquals(0, cleanup.get())),
+				cleanup::set,
+				true)
 		    .subscribe(ts);
 
 		ts.assertValues(1)
@@ -243,5 +248,146 @@ public class MonoUsingTest {
 						            .hasMessage("resourceCleanup")
 						            .is(suppressingFactory) != null);
 
+	}
+
+	@Test
+	public void cleanupIsRunBeforeOnNext_fusedEager() {
+		Mono.using(() -> "resource", s -> Mono.just(s.length()),
+				res -> { throw new IllegalStateException("boom"); },
+				true)
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectErrorMessage("boom")
+		    .verifyThenAssertThat()
+		    .hasDiscarded(8)
+		    .hasNotDroppedElements()
+		    .hasNotDroppedErrors();
+	}
+
+	@Test
+	public void cleanupIsRunBeforeOnNext_normalEager() {
+		Mono.using(() -> "resource", s -> Mono.just(s.length()).hide(),
+				res -> { throw new IllegalStateException("boom"); })
+		    .as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .expectErrorMessage("boom")
+		    .verifyThenAssertThat()
+		    .hasDiscarded(8)
+		    .hasNotDroppedElements()
+		    .hasNotDroppedErrors();
+	}
+
+	@Test
+	public void cleanupDropsThrowable_fusedNotEager() {
+		Mono.using(() -> "resource", s -> Mono.just(s.length()),
+				res -> { throw new IllegalStateException("boom"); },
+				false)
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext(8)
+		    .expectComplete()
+		    .verifyThenAssertThat()
+		    .hasNotDiscardedElements()
+		    .hasNotDroppedElements()
+		    .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void cleanupDropsThrowable_normalNotEager() {
+		Mono.using(() -> "resource", s -> Mono.just(s.length()).hide(),
+				res -> { throw new IllegalStateException("boom"); },
+				false)
+		    .as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .expectNext(8)
+		    .expectComplete()
+		    .verifyThenAssertThat()
+		    .hasNotDiscardedElements()
+		    .hasNotDroppedElements()
+		    .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void smokeTestMapReduceGuardedByCleanup_normalEager() {
+		AtomicBoolean cleaned = new AtomicBoolean();
+		Mono.using(() -> cleaned,
+				ab -> Flux.just("foo", "bar", "baz")
+				          .delayElements(Duration.ofMillis(100))
+				          .count()
+				          .map(i -> "" + i + ab.get())
+				          .hide(),
+				ab -> ab.set(true),
+				true)
+		    .as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .expectNext("3false")
+		    .expectComplete()
+		    .verify();
+
+		assertThat(cleaned).isTrue();
+	}
+
+	@Test
+	public void smokeTestMapReduceGuardedByCleanup_fusedEager() {
+		AtomicBoolean cleaned = new AtomicBoolean();
+		Mono.using(() -> cleaned,
+				ab -> Flux.just("foo", "bar", "baz")
+				          .delayElements(Duration.ofMillis(100))
+				          .count()
+				          .map(i -> "" + i + ab.get()),
+				ab -> ab.set(true),
+				true)
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("3false")
+		    .expectComplete()
+		    .verify();
+
+		assertThat(cleaned).isTrue();
+	}
+
+	@Test
+	public void smokeTestMapReduceGuardedByCleanup_normalNotEager() {
+		AtomicBoolean cleaned = new AtomicBoolean();
+		Mono.using(() -> cleaned,
+				ab -> Flux.just("foo", "bar", "baz")
+				          .delayElements(Duration.ofMillis(100))
+				          .count()
+				          .map(i -> "" + i + ab.get())
+				          .hide(),
+				ab -> ab.set(true),
+				false)
+		    .as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .expectNext("3false")
+		    .expectComplete()
+		    .verify();
+
+		//since the handler is executed after onComplete, we allow some delay
+		await().atMost(100, TimeUnit.MILLISECONDS)
+		       .with().pollInterval(10, TimeUnit.MILLISECONDS)
+		       .untilAsserted(assertThat(cleaned)::isTrue);
+	}
+
+	@Test
+	public void smokeTestMapReduceGuardedByCleanup_fusedNotEager() {
+		AtomicBoolean cleaned = new AtomicBoolean();
+		Mono.using(() -> cleaned,
+				ab -> Flux.just("foo", "bar", "baz")
+				          .delayElements(Duration.ofMillis(100))
+				          .count()
+				          .map(i -> "" + i + ab.get()),
+				ab -> ab.set(true),
+				false)
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("3false")
+		    .expectComplete()
+		    .verify();
+
+		//since the handler is executed after onComplete, we allow some delay
+		await().atMost(100, TimeUnit.MILLISECONDS)
+		       .with().pollInterval(10, TimeUnit.MILLISECONDS)
+		       .untilAsserted(assertThat(cleaned)::isTrue);
 	}
 }

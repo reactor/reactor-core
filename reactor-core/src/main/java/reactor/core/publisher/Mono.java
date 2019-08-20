@@ -679,15 +679,20 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Mono derived from the same resource and makes sure the resource is released if the
 	 * sequence terminates or the Subscriber cancels.
 	 * <p>
-	 * <ul> <li>Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup
-	 * Consumer may override the terminal event.</li> <li>Non-eager cleanup will drop any exception.</li> </ul>
+	 * <ul>
+	 *     <li>For eager cleanup, unlike in {@link Flux#using(Callable, Function, Consumer, boolean) Flux},
+	 *     in the case of a valued {@link Mono} the cleanup happens just before passing the value to downstream.
+	 *     In all cases, exceptions raised by the eager cleanup {@link Consumer} may override the terminal event,
+	 *     discarding the element if the derived {@link Mono} was valued.</li>
+	 *     <li>Non-eager cleanup will drop any exception.</li>
+	 * </ul>
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/usingForMono.svg" alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to create the resource
 	 * @param sourceSupplier a {@link Mono} factory to create the Mono depending on the created resource
 	 * @param resourceCleanup invoked on completion to clean-up the resource
-	 * @param eager set to true to clean before terminating downstream subscribers
+	 * @param eager set to true to clean before any signal (including onNext) is passed downstream
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
@@ -706,8 +711,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Mono derived from the same resource and makes sure the resource is released if the
 	 * sequence terminates or the Subscriber cancels.
 	 * <p>
-	 * Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup Consumer
-	 * may override the terminal event.
+	 * Unlike in {@link Flux#using(Callable, Function, Consumer) Flux}, in the case of a valued {@link Mono} the cleanup
+	 * happens just before passing the value to downstream. In all cases, exceptions raised by the cleanup
+	 * {@link Consumer} may override the terminal event, discarding the element if the derived {@link Mono} was valued.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/usingForMono.svg" alt="">
 	 *
