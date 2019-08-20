@@ -49,6 +49,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -185,6 +186,7 @@ final class DefaultStepVerifierBuilder<T>
 	final         MessageFormatter                           messageFormatter;
 	final         long                                       initialRequest;
 	final         Supplier<? extends VirtualTimeScheduler>   vtsLookup;
+	@Nullable
 	final         Supplier<? extends Publisher<? extends T>> sourceSupplier;
 	private final StepVerifierOptions                        options;
 
@@ -756,6 +758,11 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
+		public StepVerifier verifyLater() {
+			return toVerifierAndSubscribe();
+		}
+
+		@Override
 		public Assertions verifyThenAssertThat() {
 			return verifyThenAssertThat(defaultVerifyTimeout);
 		}
@@ -785,46 +792,52 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Duration verify(Duration duration) {
 			Objects.requireNonNull(duration, "duration");
-			if (parent.sourceSupplier != null) {
-				VirtualTimeScheduler vts = null;
-				if (parent.vtsLookup != null) {
-					vtsLock.lock(); //wait for other virtualtime verifies to finish
-					vts = parent.vtsLookup.get();
-					//this works even for the default case where StepVerifier has created
-					// a vts through enable(false), because the CURRENT will already be that vts
-					VirtualTimeScheduler.set(vts);
-				}
-				try {
-					Publisher<? extends T> publisher = parent.sourceSupplier.get();
-					Instant now = Instant.now();
+			Instant now = Instant.now();
 
-					DefaultVerifySubscriber<T> newVerifier = new DefaultVerifySubscriber<>(
-							this.parent.script,
-							this.parent.messageFormatter,
-							this.parent.initialRequest,
-							this.requestedFusionMode,
-							this.expectedFusionMode,
-							this.debugEnabled,
-							this.parent.options.getInitialContext(),
-							vts);
+			DefaultVerifySubscriber<T> newVerifier = toVerifierAndSubscribe();
+			newVerifier.verify(duration);
 
-					publisher.subscribe(newVerifier);
-					newVerifier.verify(duration);
+			return Duration.between(now, Instant.now());
+		}
 
-					return Duration.between(now, Instant.now());
-				}
-				finally {
-					if (vts != null) {
-						vts.dispose();
-						//explicitly reset the factory, rather than rely on vts shutdown doing so
-						// because it could have been eagerly shut down in a test.
-						VirtualTimeScheduler.reset();
-						vtsLock.unlock();
-					}
-				}
-			} else {
-				return toSubscriber().verify(duration);
+		DefaultVerifySubscriber<T> toVerifierAndSubscribe() {
+			if (parent.sourceSupplier == null) {
+				throw new IllegalArgumentException("no source to automatically subscribe to for verification");
 			}
+			final VirtualTimeScheduler vts;
+			if (parent.vtsLookup != null) {
+				vtsLock.lock(); //wait for other virtualtime verifies to finish
+				vts = parent.vtsLookup.get();
+				//this works even for the default case where StepVerifier has created
+				// a vts through enable(false), because the CURRENT will already be that vts
+				VirtualTimeScheduler.set(vts);
+			}
+			else {
+				vts = null;
+			}
+			Publisher<? extends T> publisher = parent.sourceSupplier.get();
+
+			DefaultVerifySubscriber<T> newVerifier = new DefaultVerifySubscriber<>(
+					this.parent.script,
+					this.parent.messageFormatter,
+					this.parent.initialRequest,
+					this.requestedFusionMode,
+					this.expectedFusionMode,
+					this.debugEnabled,
+					this.parent.options.getInitialContext(),
+					vts,
+					() -> {
+						if (vts != null) {
+							vts.dispose();
+							//explicitly reset the factory, rather than rely on vts shutdown doing so
+							// because it could have been eagerly shut down in a test.
+							VirtualTimeScheduler.reset();
+							vtsLock.unlock();
+						}
+					});
+
+			publisher.subscribe(newVerifier);
+			return newVerifier;
 		}
 
 		/**
@@ -854,7 +867,8 @@ final class DefaultStepVerifierBuilder<T>
 					this.expectedFusionMode,
 					this.debugEnabled,
 					this.parent.options.getInitialContext(),
-					vts);
+					vts,
+					null);
 		}
 
 	}
@@ -871,6 +885,7 @@ final class DefaultStepVerifierBuilder<T>
 		final int                  expectedFusionMode;
 		final long                 initialRequest;
 		final VirtualTimeScheduler virtualTimeScheduler;
+		final Disposable           postVerifyCleanup;
 
 		Context                       initialContext;
 		@Nullable
@@ -910,7 +925,8 @@ final class DefaultStepVerifierBuilder<T>
 				int expectedFusionMode,
 				boolean debugEnabled,
 				@Nullable Context initialContext,
-				@Nullable VirtualTimeScheduler vts) {
+				@Nullable VirtualTimeScheduler vts,
+				@Nullable Disposable postVerifyCleanup) {
 			this.virtualTimeScheduler = vts;
 			this.requestedFusionMode = requestedFusionMode;
 			this.expectedFusionMode = expectedFusionMode;
@@ -935,6 +951,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.requested = initialRequest;
 			this.initialContext = initialContext == null ? Context.empty() : initialContext;
 			this.messageFormatter = messageFormatter;
+			this.postVerifyCleanup = postVerifyCleanup;
 		}
 
 		@Override
@@ -1166,6 +1183,12 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
+		public StepVerifier verifyLater() {
+			//intentionally NO-OP
+			return this;
+		}
+
+		@Override
 		public Assertions verifyThenAssertThat() {
 			return verifyThenAssertThat(defaultVerifyTimeout);
 		}
@@ -1195,17 +1218,24 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public Duration verify(Duration duration) {
-			Objects.requireNonNull(duration, "duration");
-			Instant now = Instant.now();
 			try {
-				pollTaskEventOrComplete(duration);
+				Objects.requireNonNull(duration, "duration");
+				Instant now = Instant.now();
+				try {
+					pollTaskEventOrComplete(duration);
+				}
+				catch (InterruptedException ex) {
+					Thread.currentThread()
+					      .interrupt();
+				}
+				validate();
+				return Duration.between(now, Instant.now());
 			}
-			catch (InterruptedException ex) {
-				Thread.currentThread()
-				      .interrupt();
+			finally {
+				if (postVerifyCleanup != null) {
+					postVerifyCleanup.dispose();
+				}
 			}
-			validate();
-			return Duration.between(now, Instant.now());
 		}
 
 		/**

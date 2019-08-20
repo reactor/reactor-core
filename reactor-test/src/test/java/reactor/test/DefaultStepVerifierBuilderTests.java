@@ -33,8 +33,7 @@ import reactor.test.DefaultStepVerifierBuilder.TaskEvent;
 import reactor.test.DefaultStepVerifierBuilder.WaitEvent;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Stephane Maldini
@@ -109,6 +108,14 @@ public class DefaultStepVerifierBuilderTests {
 		catch (IllegalStateException e) {
 			assertThat(e).hasMessageContaining("VirtualTimeScheduler");
 		}
+	}
+
+	@Test
+	public void noSourceSupplierFailsFastWhenAttemptingVerify() {
+		StepVerifier stepVerifier = new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create(), null).expectComplete();
+
+		assertThatIllegalArgumentException().isThrownBy(stepVerifier::verify)
+		                                    .withMessage("no source to automatically subscribe to for verification");
 	}
 
 	@Test

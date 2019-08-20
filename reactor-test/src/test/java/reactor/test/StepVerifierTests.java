@@ -2210,4 +2210,52 @@ public class StepVerifierTests {
 				.withMessage("Unexpected error during a no-event expectation: java.lang.IllegalStateException: boom")
 				.withCause(new IllegalStateException("boom"));
 	}
+
+	@Test
+	public void verifyLaterCanVerifyConnectableFlux() {
+		Flux<Integer> autoconnectableFlux = Flux.just(1, 2, 3).publish().autoConnect(2);
+
+		StepVerifier deferred1 = StepVerifier.create(autoconnectableFlux)
+		                                     .expectNext(1, 2, 3)
+		                                     .expectComplete()
+		                                     .verifyLater();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> deferred1.verify(Duration.ofSeconds(1)))
+				.withMessageContaining("timed out");
+
+		StepVerifier deferred2 = StepVerifier.create(autoconnectableFlux)
+		                                     .expectNext(1, 2, 3)
+		                                     .expectComplete()
+		                                     .verifyLater()
+		                                     .verifyLater()
+		                                     .verifyLater()
+		                                     .verifyLater();
+
+		deferred1.verify(Duration.ofSeconds(1));
+		deferred2.verify(Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void verifyLaterCanVerifyConnectableFlux_withAssertionErrors() {
+		Flux<Integer> autoconnectableFlux = Flux.just(1, 2, 3).publish().autoConnect(2);
+
+		StepVerifier deferred1 = StepVerifier.create(autoconnectableFlux)
+		                                     .expectNext(1, 2, 4)
+		                                     .expectComplete()
+		                                     .verifyLater();
+
+		StepVerifier deferred2 = StepVerifier.create(autoconnectableFlux)
+		                                     .expectNext(1, 2, 5)
+		                                     .expectComplete()
+		                                     .verifyLater();
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> deferred1.verify(Duration.ofSeconds(10)))
+				.withMessage("expectation \"expectNext(4)\" failed (expected value: 4; actual value: 3)");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> deferred2.verify(Duration.ofSeconds(10)))
+				.withMessage("expectation \"expectNext(5)\" failed (expected value: 5; actual value: 3)");
+	}
 }
