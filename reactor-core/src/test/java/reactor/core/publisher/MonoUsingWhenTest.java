@@ -357,6 +357,32 @@ public class MonoUsingWhenTest {
 		    .verifyComplete();
 	}
 
+	@Test
+	public void failureInApplyAsyncCompleteDiscardsValue() {
+		Mono.usingWhen(Mono.just("foo"),
+				resource -> Mono.just("resource " + resource),
+				resource -> { throw new IllegalStateException("failure in Function"); },
+				resource -> Mono.empty())
+		    .as(StepVerifier::create)
+		    .expectErrorMessage("failure in Function")
+		    .verifyThenAssertThat()
+		    .hasDiscarded("resource foo");
+	}
+
+	@Test
+	public void onErrorAsyncCompleteDiscardsValue() {
+		Mono.usingWhen(Mono.just("foo"),
+				resource -> Mono.just("resource " + resource),
+				resource -> Mono.error(new IllegalStateException("erroring asyncComplete")),
+				resource -> Mono.empty())
+		    .as(StepVerifier::create)
+		    .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(RuntimeException.class)
+		                                            .hasMessage("Async resource cleanup failed after onComplete")
+		                                            .hasCause(new IllegalStateException("erroring asyncComplete")))
+		    .verifyThenAssertThat()
+		    .hasDiscarded("resource foo");
+	}
+
 	// == scanUnsafe tests ==
 
 	@Test

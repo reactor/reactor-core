@@ -24,6 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxUsingWhen.UsingWhenSubscriber;
 import reactor.core.publisher.Operators.DeferredSubscription;
@@ -118,31 +119,20 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		return p;
 	}
 
-	private static <RESOURCE, T> UsingWhenSubscriber<? super T, RESOURCE> prepareSubscriberForResource(
+	private static <RESOURCE, T> MonoUsingWhenSubscriber<? super T, RESOURCE> prepareSubscriberForResource(
 			RESOURCE resource,
 			CoreSubscriber<? super T> actual,
 			Function<? super RESOURCE, ? extends Publisher<?>> asyncComplete,
 			Function<? super RESOURCE, ? extends Publisher<?>> asyncError,
 			@Nullable Function<? super RESOURCE, ? extends Publisher<?>> asyncCancel,
 			@Nullable DeferredSubscription arbiter) {
-		if (actual instanceof ConditionalSubscriber) {
-			@SuppressWarnings("unchecked") ConditionalSubscriber<? super T>
-					conditionalActual =  (ConditionalSubscriber<? super T>) actual;
-			return new FluxUsingWhen.UsingWhenConditionalSubscriber<>(conditionalActual,
-					resource,
-					asyncComplete,
-					asyncError,
-					asyncCancel,
-					arbiter);
-		}
-		else {
-			return new UsingWhenSubscriber<>(actual,
-					resource,
-					asyncComplete,
-					asyncError,
-					asyncCancel,
-					arbiter);
-		}
+		//MonoUsingWhen cannot support ConditionalSubscriber as there's no way to defer tryOnNext
+		return new MonoUsingWhenSubscriber<>(actual,
+				resource,
+				asyncComplete,
+				asyncError,
+				asyncCancel,
+				arbiter);
 	}
 
 	//needed to correctly call prepareSubscriberForResource with Mono.from conversions
@@ -261,4 +251,38 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 		}
 	}
 
+	static class MonoUsingWhenSubscriber<T, S> extends FluxUsingWhen.UsingWhenSubscriber<T, S> {
+
+		MonoUsingWhenSubscriber(CoreSubscriber<? super T> actual,
+				S resource,
+				Function<? super S, ? extends Publisher<?>> asyncComplete,
+				Function<? super S, ? extends Publisher<?>> asyncError,
+				@Nullable Function<? super S, ? extends Publisher<?>> asyncCancel,
+				@Nullable DeferredSubscription arbiter) {
+			super(actual, resource, asyncComplete, asyncError, asyncCancel, arbiter);
+		}
+
+		T value;
+
+		@Override
+		public void onNext(T value) {
+			this.value = value;
+		}
+
+		@Override
+		public void deferredComplete() {
+			this.error = Exceptions.TERMINATED;
+			if (this.value != null) {
+				actual.onNext(value);
+			}
+			this.actual.onComplete();
+		}
+
+		@Override
+		public void deferredError(Throwable error) {
+			Operators.onDiscard(this.value, actual.currentContext());
+			this.error = error;
+			this.actual.onError(error);
+		}
+	}
 }
