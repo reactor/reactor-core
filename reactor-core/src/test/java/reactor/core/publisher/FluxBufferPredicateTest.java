@@ -21,10 +21,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
@@ -34,6 +38,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.contains;
@@ -250,6 +255,31 @@ public class FluxBufferPredicateTest {
 		            .expectNext(Collections.singletonList(4))
 		            .expectComplete()
 		            .verify();
+	}
+
+	@Test
+	public void untilChangedNoSharedState() {
+		List<List<Integer>> buffers = new CopyOnWriteArrayList<>();
+		List<Integer> list1 = Arrays.asList(1, 1, 1, 1);
+		List<Integer> list2 = Arrays.asList(3, 3, 2, 2, 2, 2, 2, 2, 2, 2);
+		AtomicBoolean first = new AtomicBoolean();
+
+		Flux<List<Integer>> source = Flux.defer(() -> {
+			if (first.compareAndSet(false, true)) {
+				return Flux.fromIterable(list1).delayElements(Duration.ofMillis(200));
+			}
+			first.set(false);
+			return Flux.fromIterable(list2).delayElements(Duration.ofMillis(50));
+		})
+				.bufferUntilChanged();
+
+		Mono.when(
+				source.map(buffers::add),
+				source.map(buffers::add)
+		).block();
+
+		List<Integer> flattened = buffers.stream().flatMap(List::stream).collect(Collectors.toList());
+		Assertions.assertThat(flattened).containsExactly(3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1);
 	}
 
 	@Test
