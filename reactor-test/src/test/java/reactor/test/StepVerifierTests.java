@@ -35,7 +35,6 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Fuseable;
-import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -2213,13 +2212,13 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void deferredVerifyCanVerifyConnectableFlux() {
+	public void verifyLaterCanVerifyConnectableFlux() {
 		Flux<Integer> autoconnectableFlux = Flux.just(1, 2, 3).publish().autoConnect(2);
 
 		StepVerifier deferred1 = StepVerifier.create(autoconnectableFlux)
 		                                     .expectNext(1, 2, 3)
 		                                     .expectComplete()
-		                                     .deferred();
+		                                     .verifyLater();
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> deferred1.verify(Duration.ofSeconds(1)))
@@ -2228,28 +2227,28 @@ public class StepVerifierTests {
 		StepVerifier deferred2 = StepVerifier.create(autoconnectableFlux)
 		                                     .expectNext(1, 2, 3)
 		                                     .expectComplete()
-		                                     .deferred()
-		                                     .deferred()
-		                                     .deferred()
-		                                     .deferred();
+		                                     .verifyLater()
+		                                     .verifyLater()
+		                                     .verifyLater()
+		                                     .verifyLater();
 
 		deferred1.verify(Duration.ofSeconds(1));
 		deferred2.verify(Duration.ofSeconds(1));
 	}
 
 	@Test
-	public void deferredVerifyCanVerifyConnectableFlux_withAssertionErrors() {
+	public void verifyLaterCanVerifyConnectableFlux_withAssertionErrors() {
 		Flux<Integer> autoconnectableFlux = Flux.just(1, 2, 3).publish().autoConnect(2);
 
 		StepVerifier deferred1 = StepVerifier.create(autoconnectableFlux)
 		                                     .expectNext(1, 2, 4)
 		                                     .expectComplete()
-		                                     .deferred();
+		                                     .verifyLater();
 
 		StepVerifier deferred2 = StepVerifier.create(autoconnectableFlux)
 		                                     .expectNext(1, 2, 5)
 		                                     .expectComplete()
-		                                     .deferred();
+		                                     .verifyLater();
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> deferred1.verify(Duration.ofSeconds(10)))

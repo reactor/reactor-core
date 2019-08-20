@@ -758,7 +758,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier deferred() {
+		public StepVerifier verifyLater() {
 			return toVerifierAndSubscribe();
 		}
 
@@ -1183,7 +1183,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier deferred() {
+		public StepVerifier verifyLater() {
 			//intentionally NO-OP
 			return this;
 		}

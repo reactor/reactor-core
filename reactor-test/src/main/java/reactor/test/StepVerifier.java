@@ -306,10 +306,13 @@ public interface StepVerifier {
 	 * Trigger the subscription and prepare for verifications but doesn't block. Calling one
 	 * of the {@link #verify()} methods afterwards will block until the sequence is validated
 	 * and throw if assertions fail.
+	 * <p>
+	 * Calling this method more than once in a row should be a NO-OP, returning the same
+	 * instance as the first call.
 	 *
-	 * @return
+	 * @return a {@link StepVerifier} that is in progress but on which one can chose to block later.
 	 */
-	StepVerifier deferred();
+	StepVerifier verifyLater();
 
 	/**
 	 * Verify the signals received by this subscriber. Unless a default timeout has been
