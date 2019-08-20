@@ -50,6 +50,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -805,39 +806,47 @@ final class DefaultStepVerifierBuilder<T>
 				throw new IllegalArgumentException("no source to automatically subscribe to for verification");
 			}
 			final VirtualTimeScheduler vts;
+			final Disposable vtsCleanup;
 			if (parent.vtsLookup != null) {
 				vtsLock.lock(); //wait for other virtualtime verifies to finish
 				vts = parent.vtsLookup.get();
 				//this works even for the default case where StepVerifier has created
 				// a vts through enable(false), because the CURRENT will already be that vts
 				VirtualTimeScheduler.set(vts);
+				vtsCleanup = () -> {
+						vts.dispose();
+				//explicitly reset the factory, rather than rely on vts shutdown doing so
+				// because it could have been eagerly shut down in a test.
+				VirtualTimeScheduler.reset();
+				vtsLock.unlock();
+				};
 			}
 			else {
 				vts = null;
+				vtsCleanup = Disposables.disposed();
 			}
-			Publisher<? extends T> publisher = parent.sourceSupplier.get();
+			try {
+				Publisher<? extends T> publisher = parent.sourceSupplier.get();
 
-			DefaultVerifySubscriber<T> newVerifier = new DefaultVerifySubscriber<>(
-					this.parent.script,
-					this.parent.messageFormatter,
-					this.parent.initialRequest,
-					this.requestedFusionMode,
-					this.expectedFusionMode,
-					this.debugEnabled,
-					this.parent.options.getInitialContext(),
-					vts,
-					() -> {
-						if (vts != null) {
-							vts.dispose();
-							//explicitly reset the factory, rather than rely on vts shutdown doing so
-							// because it could have been eagerly shut down in a test.
-							VirtualTimeScheduler.reset();
-							vtsLock.unlock();
-						}
-					});
+				DefaultVerifySubscriber<T> newVerifier = new DefaultVerifySubscriber<>(
+						this.parent.script,
+						this.parent.messageFormatter,
+						this.parent.initialRequest,
+						this.requestedFusionMode,
+						this.expectedFusionMode,
+						this.debugEnabled,
+						this.parent.options.getInitialContext(),
+						vts,
+						vtsCleanup);
 
-			publisher.subscribe(newVerifier);
-			return newVerifier;
+				publisher.subscribe(newVerifier);
+				return newVerifier;
+			}
+			catch (Throwable error) {
+				//in case the subscription fails, make sure to cleanup the VTS
+				vtsCleanup.dispose();
+				throw error;
+			}
 		}
 
 		/**
