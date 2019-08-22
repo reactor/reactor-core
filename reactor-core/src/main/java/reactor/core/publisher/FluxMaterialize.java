@@ -190,6 +190,11 @@ final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
             return terminalSignal == null || terminalSignal == empty ? 0 : 1;
         }
 
+		@Override
+		public String toString() {
+			return "MaterializeSubscriber";
+		}
+
 		static final Signal empty = new ImmutableSignal<>(Context.empty(), SignalType.ON_NEXT, null, null, null);
 	}
 }
