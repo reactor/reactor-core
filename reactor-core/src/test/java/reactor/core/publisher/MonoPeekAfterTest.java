@@ -622,9 +622,8 @@ public class MonoPeekAfterTest {
 	@Test
 	public void testCallbacksNoFusion() {
 		AtomicReference<Integer> successInvocation = new AtomicReference<>();
-		AtomicReference<Integer> onTerminateInvocation = new AtomicReference<>();
+		AtomicReference<Throwable> errorInvocation = new AtomicReference<>();
 		AtomicReference<Integer> afterTerminateInvocation = new AtomicReference<>();
-		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		Mono<Integer> source = Flux
 				.range(1, 10)
@@ -633,13 +632,10 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = new MonoPeekTerminal<>(source,
 				successInvocation::set,
-				(v, t) -> {
-					onTerminateInvocation.set(v);
-					error.set(t);
-				},
+				errorInvocation::set,
 				(v, t) -> {
 					afterTerminateInvocation.set(v);
-					error.set(t);
+					errorInvocation.set(t);
 				});
 
 		StepVerifier.create(mono)
@@ -649,29 +645,24 @@ public class MonoPeekAfterTest {
 		            .verify();
 
 		assertEquals(55, (Object) successInvocation.get());
-		assertEquals(55, (Object) onTerminateInvocation.get());
 		assertEquals(55, (Object) afterTerminateInvocation.get());
-		assertEquals(null, error.get());
+		assertEquals(null, errorInvocation.get());
 	}
 
 	@Test
 	public void testCallbacksFusionSync() {
 		AtomicReference<Integer> successInvocation = new AtomicReference<>();
-		AtomicReference<Integer> onTerminateInvocation = new AtomicReference<>();
 		AtomicReference<Integer> afterTerminateInvocation = new AtomicReference<>();
-		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Throwable> errorInvocation = new AtomicReference<>();
 
 		Mono<Integer> source = Mono.fromDirect(Flux.range(55, 1));
 
 		Mono<Integer> mono = new MonoPeekTerminal<>(source,
 				successInvocation::set,
-				(v, t) -> {
-					onTerminateInvocation.set(v);
-					error.set(t);
-				},
+				errorInvocation::set,
 				(v, t) -> {
 					afterTerminateInvocation.set(v);
-					error.set(t);
+					errorInvocation.set(t);
 				});
 
 		StepVerifier.create(mono)
@@ -681,17 +672,15 @@ public class MonoPeekAfterTest {
 		            .verify();
 
 		assertEquals(55, (Object) successInvocation.get());
-		assertEquals(55, (Object) onTerminateInvocation.get());
 		assertEquals(55, (Object) afterTerminateInvocation.get());
-		assertEquals(null, error.get());
+		assertEquals(null, errorInvocation.get());
 	}
 
 	@Test
 	public void testCallbacksFusionAsync() {
 		AtomicReference<Integer> successInvocation = new AtomicReference<>();
-		AtomicReference<Integer> onTerminateInvocation = new AtomicReference<>();
+		AtomicReference<Throwable> errorInvocation = new AtomicReference<>();
 		AtomicReference<Integer> afterTerminateInvocation = new AtomicReference<>();
-		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		Mono<Integer> source = Flux
 				.range(1, 10)
@@ -699,13 +688,10 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = new MonoPeekTerminal<>(source,
 				successInvocation::set,
-				(v, t) -> {
-					onTerminateInvocation.set(v);
-					error.set(t);
-				},
+				errorInvocation::set,
 				(v, t) -> {
 					afterTerminateInvocation.set(v);
-					error.set(t);
+					errorInvocation.set(t);
 				});
 
 		StepVerifier.create(mono)
@@ -715,9 +701,8 @@ public class MonoPeekAfterTest {
 		            .verify();
 
 		assertEquals(55, (Object) successInvocation.get());
-		assertEquals(55, (Object) onTerminateInvocation.get());
+		assertEquals(null, errorInvocation.get());
 		assertEquals(55, (Object) afterTerminateInvocation.get());
-		assertEquals(null, error.get());
 	}
 
 	@Test

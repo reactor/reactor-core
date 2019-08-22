@@ -16,17 +16,13 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoDematerializeTest {
 
@@ -173,8 +169,8 @@ public class MonoDematerializeTest {
 	public void sourceWithSignalButNeverCompletes() {
 		//the noncompliant TestPublisher should result in Mono.fromDirect, preventing it from sending an onComplete
 		TestPublisher<String> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		AtomicBoolean hasTerminated = new AtomicBoolean();
-		Mono<String> neverEndingSource = testPublisher.mono().doOnTerminate(() -> hasTerminated.set(true));
+
+		Mono<String> neverEndingSource = testPublisher.mono();
 
 		StepVerifier.create(neverEndingSource.materialize().dematerialize())
 		            .expectSubscription()
@@ -183,7 +179,6 @@ public class MonoDematerializeTest {
 		            .verifyComplete();
 
 		testPublisher.assertWasCancelled();
-		assertThat(hasTerminated).as("source never completes").isFalse();
 	}
 
 	@Test

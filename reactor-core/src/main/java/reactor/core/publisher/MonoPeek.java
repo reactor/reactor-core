@@ -36,10 +36,6 @@ final class MonoPeek<T> extends InternalMonoOperator<T, T> implements SignalPeek
 
 	final Consumer<? super T> onNextCall;
 
-	final Consumer<? super Throwable> onErrorCall;
-
-	final Runnable onCompleteCall;
-
 	final LongConsumer onRequestCall;
 
 	final Runnable onCancelCall;
@@ -47,15 +43,11 @@ final class MonoPeek<T> extends InternalMonoOperator<T, T> implements SignalPeek
 	MonoPeek(Mono<? extends T> source,
 			@Nullable Consumer<? super Subscription> onSubscribeCall,
 			@Nullable Consumer<? super T> onNextCall,
-			@Nullable Consumer<? super Throwable> onErrorCall,
-			@Nullable Runnable onCompleteCall,
 			@Nullable LongConsumer onRequestCall,
 			@Nullable Runnable onCancelCall) {
 		super(source);
 		this.onSubscribeCall = onSubscribeCall;
 		this.onNextCall = onNextCall;
-		this.onErrorCall = onErrorCall;
-		this.onCompleteCall = onCompleteCall;
 		this.onRequestCall = onRequestCall;
 		this.onCancelCall = onCancelCall;
 	}
@@ -85,13 +77,13 @@ final class MonoPeek<T> extends InternalMonoOperator<T, T> implements SignalPeek
 	@Override
 	@Nullable
 	public Consumer<? super Throwable> onErrorCall() {
-		return onErrorCall;
+		return null;
 	}
 
 	@Override
 	@Nullable
 	public Runnable onCompleteCall() {
-		return onCompleteCall;
+		return null;
 	}
 
 	@Override
