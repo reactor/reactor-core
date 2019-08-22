@@ -19,47 +19,6 @@ dependencies {
   baseline 'io.projectreactor:reactor-core:3.3.0.M3'
 }
 
-task ('jmhHelp', description:'Print help for the jmh task') {
-  doLast {
-    println ""
-    println "Usage of jmh tasks:"
-    println ""
-
-    println "Only execute specific benchmark(s) (wildcards are added before and after):"
-    println "\t./gradlew jmh -Pinclude=\"(BenchmarkPrimary|OtherBench)\""
-    println "If you want to specify the wildcards yourself, you can pass the full regexp:"
-    println "\t./gradlew jmh -PfullInclude=.*MyBenchmark.*"
-
-    println ""
-    println "Specify extra profilers:"
-    println "\t./gradlew jmh -Pprofilers=\"gc,stack\""
-
-    println ""
-    println "Prominent profilers (for full list call jmhProfilers task):"
-    println "\tcomp - JitCompilations, tune your iterations"
-    println "\tstack - which methods used most time"
-    println "\tgc - print garbage collection stats"
-    println "\ths_thr - thread usage"
-
-    println ""
-    println "Change report format from JSON to one of [CSV, JSON, NONE, SCSV, TEXT]:"
-    println "\t./gradlew jmh -Pformat=csv"
-
-    println ""
-    println "Specify JVM arguments:"
-    println "\t./gradlew jmh -PjvmArgs=\"-Dtest.cluster=local\""
-
-    println ""
-    println "Run in verification mode (execute benchmarks with minimum of fork/warmup-/benchmark-iterations):"
-    println "\tgw jmh -Pverify"
-
-    println ""
-    println "Resources:"
-    println "\thttp://tutorials.jenkov.com/java-performance/jmh.html (Introduction)"
-    println "\thttp://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/ (Samples)"
-  }
-}
-
 task jmhProfilers(type: JavaExec, description:'Lists the available profilers for the jmh task', group: 'Development') {
   classpath = sourceSets.main.runtimeClasspath
   main = 'org.openjdk.jmh.Main'
