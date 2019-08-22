@@ -2018,7 +2018,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doAfterSuccessOrError(BiConsumer<? super T, Throwable> afterSuccessOrError) {
-		return onAssembly(new MonoPeekTerminal<>(this, null, null, afterSuccessOrError));
+		return doOnTerminalSignal(this, null, null, afterSuccessOrError);
 	}
 
 	/**
@@ -2116,7 +2116,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
-		return doOnSignal(this, null, null, null, null, null, onCancel);
+		return doOnSignal(this, null, null, null, onCancel);
 	}
 
 	/**
@@ -2158,7 +2158,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
-		return doOnSignal(this, null, onNext, null, null, null, null);
+		return doOnSignal(this, null, onNext, null, null);
 	}
 
 	/**
@@ -2180,7 +2180,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
 		Objects.requireNonNull(onSuccess, "onSuccess");
-		return onAssembly(new MonoPeekTerminal<>(this, onSuccess, null, null));
+		return doOnTerminalSignal(this, onSuccess, null, null);
 	}
 
 	/**
@@ -2222,7 +2222,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
-		return doOnSignal(this, null, null, onError, null, null, null);
+		return doOnTerminalSignal(this, null, onError, null);
 	}
 
 
@@ -2241,9 +2241,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final <E extends Throwable> Mono<T> doOnError(Class<E> exceptionType,
 			final Consumer<? super E> onError) {
 		Objects.requireNonNull(exceptionType, "type");
-		@SuppressWarnings("unchecked")
-		Consumer<Throwable> handler = (Consumer<Throwable>)onError;
-		return doOnError(exceptionType::isInstance, handler);
+		Objects.requireNonNull(onError, "onError");
+		return doOnTerminalSignal(this, null,
+				error -> {
+					if (exceptionType.isInstance(error)) onError.accept(exceptionType.cast(error));
+				},
+				null);
 	}
 
 	/**
@@ -2260,11 +2263,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Mono<T> doOnError(Predicate<? super Throwable> predicate,
 			final Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(predicate, "predicate");
-		return doOnError(t -> {
-			if (predicate.test(t)) {
-				onError.accept(t);
-			}
-		});
+		Objects.requireNonNull(onError, "onError");
+		return doOnTerminalSignal(this, null,
+				error -> {
+					if (predicate.test(error)) onError.accept(error);
+				},
+				null);
 	}
 	/**
 	 * Add behavior triggering a {@link LongConsumer} when the {@link Mono} receives any request.
@@ -2281,7 +2285,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnRequest(final LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		return doOnSignal(this, null, null, null, null, consumer, null);
+		return doOnSignal(this, null, null, consumer, null);
 	}
 
 	/**
@@ -2302,7 +2306,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
-		return doOnSignal(this, onSubscribe, null, null,  null, null, null);
+		return doOnSignal(this, onSubscribe, null, null,  null);
 	}
 
 	/**
@@ -2323,11 +2327,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnSuccessOrError(BiConsumer<? super T, Throwable> onSuccessOrError) {
 		Objects.requireNonNull(onSuccessOrError, "onSuccessOrError");
-		return onAssembly(new MonoPeekTerminal<>(this, null, onSuccessOrError, null));
+		return doOnTerminalSignal(this, v -> onSuccessOrError.accept(v, null), e -> onSuccessOrError.accept(null, e), null);
 	}
 
 	/**
-	 * Add behavior triggered when the {@link Mono} terminates, either by completing successfully or with an error.
+	 * Add behavior triggered when the {@link Mono} terminates, either by completing with a value,
+	 * completing empty or completing with an error. Unlike in {@link Flux#doOnTerminate(Runnable)},
+	 * the simple fact that a {@link Mono} emits {@link Subscriber#onNext(Object) onNext} implies
+	 * completion, so the handler is invoked BEFORE the element is propagated (same as with {@link #doOnSuccess(Consumer)}).
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/doOnTerminateForMono.svg" alt="">
@@ -2338,13 +2345,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
-		return doOnSignal(this,
-				null,
-				null,
-				e -> onTerminate.run(),
-				onTerminate,
-				null,
-				null);
+		return doOnTerminalSignal(this, ignoreValue -> onTerminate.run(), ignoreError -> onTerminate.run(), null);
 	}
 
 	/**
@@ -4614,28 +4615,30 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return then;
 	}
 
-	@SuppressWarnings("unchecked")
 	static <T> Mono<T> doOnSignal(Mono<T> source,
 			@Nullable Consumer<? super Subscription> onSubscribe,
 			@Nullable Consumer<? super T> onNext,
-			@Nullable Consumer<? super Throwable> onError,
-			@Nullable Runnable onComplete,
 			@Nullable LongConsumer onRequest,
 			@Nullable Runnable onCancel) {
 		if (source instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(source,
 					onSubscribe,
 					onNext,
-					onError,
-					onComplete, onRequest,
+					onRequest,
 					onCancel));
 		}
 		return onAssembly(new MonoPeek<>(source,
 				onSubscribe,
 				onNext,
-				onError,
-				onComplete, onRequest,
+				onRequest,
 				onCancel));
+	}
+
+	static <T> Mono<T> doOnTerminalSignal(Mono<T> source,
+			@Nullable Consumer<? super T> onSuccess,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable BiConsumer<? super T, Throwable> onAfterTerminate) {
+		return onAssembly(new MonoPeekTerminal<>(source, onSuccess, onError, onAfterTerminate));
 	}
 
 	@SuppressWarnings("unchecked")

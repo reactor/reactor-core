@@ -15,6 +15,7 @@
  */
 package reactor.test.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
@@ -209,6 +210,21 @@ public class DefaultTestPublisherTests {
 
 		publisher.assertCancelled();
 		assertThat(emitCount.get()).isEqualTo(3);
+	}
+
+	@Test
+	public void misbehavingMonoCanAvoidCompleteAfterOnNext() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		AtomicLong terminalCount = new AtomicLong();
+
+		publisher.mono()
+		         .subscribe(countingSubscriber(terminalCount));
+
+		assertThat(terminalCount).as("before onNext").hasValue(0L);
+
+		publisher.next("foo");
+
+		assertThat(terminalCount).as("after onNext").hasValue(0L);
 	}
 
 	@Test

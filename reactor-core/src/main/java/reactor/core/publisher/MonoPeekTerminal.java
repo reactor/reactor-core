@@ -20,6 +20,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -37,17 +38,17 @@ import reactor.util.annotation.Nullable;
 final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final BiConsumer<? super T, Throwable> onAfterTerminateCall;
-	final BiConsumer<? super T, Throwable> onTerminateCall;
 	final Consumer<? super T>              onSuccessCall;
+	final Consumer<? super Throwable>      onErrorCall;
 
 	MonoPeekTerminal(Mono<? extends T> source,
 			@Nullable Consumer<? super T> onSuccessCall,
-			@Nullable BiConsumer<? super T, Throwable> onTerminateCall,
+			@Nullable Consumer<? super Throwable> onErrorCall,
 			@Nullable BiConsumer<? super T, Throwable> onAfterTerminateCall) {
 		super(source);
 		this.onAfterTerminateCall = onAfterTerminateCall;
-		this.onTerminateCall = onTerminateCall;
 		this.onSuccessCall = onSuccessCall;
+		this.onErrorCall = onErrorCall;
 	}
 
 	@Override
@@ -86,6 +87,7 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 
 		//TODO could go into a common base for all-in-one subscribers? (as well as actual above)
 		Subscription                  s;
+		@Nullable
 		Fuseable.QueueSubscription<T> queueSubscription;
 
 		int sourceMode;
@@ -135,19 +137,16 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 			s.cancel();
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
 			this.s = s;
-			this.queueSubscription =
-					Operators.as(s); //will set it to null if not Fuseable
+			this.queueSubscription = Operators.as(s); //will set it to null if not Fuseable
 
 			actual.onSubscribe(this);
 		}
 
 		@Override
 		public void onNext(T t) {
-
 			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
@@ -160,16 +159,6 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 				//so it doesn't check that valued has been set before
 				valued = true;
 
-				if (parent.onTerminateCall != null) {
-					try {
-						parent.onTerminateCall.accept(t, null);
-					}
-					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t,
-								actual.currentContext()));
-						return;
-					}
-				}
 				if (parent.onSuccessCall != null) {
 					try {
 						parent.onSuccessCall.accept(t);
@@ -212,15 +201,6 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 			//so it doesn't check that valued has been set before
 			valued = true;
 
-			if (parent.onTerminateCall != null) {
-				try {
-					parent.onTerminateCall.accept(t, null);
-				}
-				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
-					return false;
-				}
-			}
 			if (parent.onSuccessCall != null) {
 				try {
 					parent.onSuccessCall.accept(t);
@@ -256,11 +236,11 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 			}
 			done = true;
 
-			BiConsumer<? super T, Throwable> onTerminate = parent.onTerminateCall;
+			Consumer<? super Throwable> onError = parent.onErrorCall;
 
-			if (!valued && onTerminate != null) {
+			if (!valued && onError != null) {
 				try {
-					onTerminate.accept(null, t);
+					onError.accept(t);
 				}
 				catch (Throwable e) {
 					t = Operators.onOperatorError(null, e, t, actual.currentContext());
@@ -271,7 +251,7 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (onTerminate == null ||
+				if (onError == null ||
 						!Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
@@ -296,15 +276,7 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 				return;
 			}
 			if (sourceMode == NONE && !valued) {
-				if (parent.onTerminateCall != null) {
-					try {
-						parent.onTerminateCall.accept(null, null);
-					}
-					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, actual.currentContext()));
-						return;
-					}
-				}
+				//TODO maybe add an onEmpty call here
 				if (parent.onSuccessCall != null) {
 					try {
 						parent.onSuccessCall.accept(null);
@@ -340,19 +312,12 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 		@Override
 		@Nullable
 		public T poll() {
+			assert queueSubscription != null;
 			boolean d = done;
 			T v = queueSubscription.poll();
 			if (!valued && (v != null || d || sourceMode == SYNC)) {
 				valued = true;
-				if (parent.onTerminateCall != null) {
-					try {
-						parent.onTerminateCall.accept(v, null);
-					}
-					catch (Throwable e) {
-						throw Exceptions.propagate(Operators.onOperatorError(s, e, v,
-								actual.currentContext()));
-					}
-				}
+				//TODO include onEmptyCall here as well?
 				if (parent.onSuccessCall != null) {
 					try {
 						parent.onSuccessCall.accept(v);
@@ -378,11 +343,12 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 
 		@Override
 		public boolean isEmpty() {
-			return queueSubscription.isEmpty();
+			return queueSubscription == null || queueSubscription.isEmpty();
 		}
 
 		@Override
 		public void clear() {
+			assert queueSubscription != null;
 			queueSubscription.clear();
 		}
 
