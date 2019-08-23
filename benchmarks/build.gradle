@@ -1,55 +1,23 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 
+configurations {
+  current
+  baseline
+}
+
 dependencies {
-  implementation project(':reactor-core')
+  // Use the baseline to avoid using new APIs in the benchmarks
+  compileOnly "io.projectreactor:reactor-core:${perfBaselineVersion}"
 
   implementation "org.openjdk.jmh:jmh-core:1.21"
   implementation "io.projectreactor.addons:reactor-extra:3.3.0.BUILD-SNAPSHOT", {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
   annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:1.21"
-}
 
-task ('jmhHelp', description:'Print help for the jmh task') {
-  doLast {
-    println ""
-    println "Usage of jmh tasks:"
-    println ""
-
-    println "Only execute specific benchmark(s) (wildcards are added before and after):"
-    println "\t./gradlew jmh -Pinclude=\"(BenchmarkPrimary|OtherBench)\""
-    println "If you want to specify the wildcards yourself, you can pass the full regexp:"
-    println "\t./gradlew jmh -PfullInclude=.*MyBenchmark.*"
-
-    println ""
-    println "Specify extra profilers:"
-    println "\t./gradlew jmh -Pprofilers=\"gc,stack\""
-
-    println ""
-    println "Prominent profilers (for full list call jmhProfilers task):"
-    println "\tcomp - JitCompilations, tune your iterations"
-    println "\tstack - which methods used most time"
-    println "\tgc - print garbage collection stats"
-    println "\ths_thr - thread usage"
-
-    println ""
-    println "Change report format from JSON to one of [CSV, JSON, NONE, SCSV, TEXT]:"
-    println "\t./gradlew jmh -Pformat=csv"
-
-    println ""
-    println "Specify JVM arguments:"
-    println "\t./gradlew jmh -PjvmArgs=\"-Dtest.cluster=local\""
-
-    println ""
-    println "Run in verification mode (execute benchmarks with minimum of fork/warmup-/benchmark-iterations):"
-    println "\tgw jmh -Pverify"
-
-    println ""
-    println "Resources:"
-    println "\thttp://tutorials.jenkov.com/java-performance/jmh.html (Introduction)"
-    println "\thttp://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/ (Samples)"
-  }
+  current project(':reactor-core')
+  baseline "io.projectreactor:reactor-core:${perfBaselineVersion}"
 }
 
 task jmhProfilers(type: JavaExec, description:'Lists the available profilers for the jmh task', group: 'Development') {
@@ -58,55 +26,65 @@ task jmhProfilers(type: JavaExec, description:'Lists the available profilers for
   args '-lprof'
 }
 
-task jmh(type: JavaExec, description: 'Executing JMH benchmarks') {
-  classpath = sourceSets.main.runtimeClasspath
-  main = 'org.openjdk.jmh.Main'
+class JmhExec extends JavaExec {
 
-  def include = ''
-  if (project.hasProperty('include')) {
-    include = [".*" + project.properties.get('include') + ".*"]
-  }
-  if (project.hasProperty('fullInclude')) {
-    include = project.properties.get('fullInclude');
-  }
+  @TaskAction
+  void exec() {
+    main = 'org.openjdk.jmh.Main'
 
-  def exclude = project.properties.get('exclude');
-  def format = project.properties.getOrDefault('format', 'json');
-  def profilers = project.properties.get('profilers');
-  def jvmArgs = project.properties.get('jvmArgs')
-  def verify =  project.properties.get('verify');
-
-  def resultFile = file("build/reports/jmh/result.${format}")
-
-  args include
-  if(exclude) {
-    args '-e', exclude
-  }
-  if(verify != null) { // execute benchmarks with the minimum amount of execution (only to check if they are working)
-    println "≥≥ Running in verify mode"
-    args '-f' , 1
-    args '-wi' , 1
-    args '-i' , 1
-  }
-  args '-foe', 'true'   //fail-on-error
-  args '-v', 'NORMAL'   //verbosity [SILENT, NORMAL, EXTRA]
-  if(profilers) {
-    profilers.split(',').each {
-      args '-prof', it
+    def include = ''
+    if (project.hasProperty('include')) {
+      include = [".*" + project.properties.get('include') + ".*"]
     }
-  }
-  args '-jvmArgsPrepend', '-Xmx3072m'
-  args '-jvmArgsPrepend', '-Xms3072m'
-  if(jvmArgs) {
-    for(jvmArg in jvmArgs.split(' ')) {
-      args '-jvmArgsPrepend', jvmArg
+    if (project.hasProperty('fullInclude')) {
+      include = project.properties.get('fullInclude');
     }
-  }
-  args '-rf', format
-  args '-rff', resultFile
 
-  doFirst {
+    def exclude = project.properties.get('exclude');
+    def format = project.properties.getOrDefault('format', 'json');
+    def profilers = project.properties.get('profilers');
+    def jvmArgs = project.properties.get('jvmArgs')
+    def verify =  project.properties.get('verify');
+
+    def resultFile = project.file("build/reports/${this.name}/result.${format}")
+
+    args include
+    if(exclude) {
+      args '-e', exclude
+    }
+    if(verify != null) { // execute benchmarks with the minimum amount of execution (only to check if they are working)
+      println "≥≥ Running in verify mode"
+      args '-f' , 1
+      args '-wi' , 1
+      args '-i' , 1
+    }
+    args '-foe', 'true'   //fail-on-error
+    args '-v', 'NORMAL'   //verbosity [SILENT, NORMAL, EXTRA]
+    if(profilers) {
+      profilers.split(',').each {
+        args '-prof', it
+      }
+    }
+    args '-jvmArgsPrepend', '-Xmx3072m'
+    args '-jvmArgsPrepend', '-Xms3072m'
+    if(jvmArgs) {
+      for(jvmArg in jvmArgs.split(' ')) {
+        args '-jvmArgsPrepend', jvmArg
+      }
+    }
+    args '-rf', format
+    args '-rff', resultFile
+
     println "\nExecuting JMH with: $args \n"
     resultFile.parentFile.mkdirs()
+    super.exec()
   }
+}
+
+task jmh(type: JmhExec, description: 'Executing JMH benchmarks') {
+  classpath = sourceSets.main.runtimeClasspath + configurations.current
+}
+
+task jmhBaseline(type: JmhExec, description: 'Executing JMH baseline benchmarks') {
+  classpath = sourceSets.main.runtimeClasspath + configurations.baseline
 }
