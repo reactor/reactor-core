@@ -249,7 +249,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(Duration duration, Scheduler timer) {
-		return onAssembly(new MonoDelay(duration.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return onAssembly(new MonoDelay(duration, timer));
 	}
 
 	/**
@@ -1535,7 +1535,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
 		subscribe((Subscriber<T>) subscriber);
-		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		if (Operators.nanoPrecision(timeout)) {
+			return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
+		}
+		else {
+			return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		}
 	}
 
 	/**
@@ -1581,7 +1586,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public Optional<T> blockOptional(Duration timeout) {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
 		subscribe((Subscriber<T>) subscriber);
-		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		if (Operators.nanoPrecision(timeout)) {
+			return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
+		}
+		else {
+			return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		}
 	}
 
 	/**
@@ -1866,7 +1876,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a delayed {@link Mono}
 	 */
 	public final Mono<T> delayElement(Duration delay, Scheduler timer) {
-		return onAssembly(new MonoDelayElement<>(this, delay.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return onAssembly(new MonoDelayElement<>(this, delay, timer));
 	}
 
 	/**

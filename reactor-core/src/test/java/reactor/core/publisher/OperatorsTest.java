@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -87,6 +88,14 @@ public class OperatorsTest {
 		assertThat(Operators.addCap(1, 2)).isEqualTo(3);
 		assertThat(Operators.addCap(1, Long.MAX_VALUE)).isEqualTo(Long.MAX_VALUE);
 		assertThat(Operators.addCap(0, -1)).isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void nanoPrecision() {
+		final Duration MAX_NANOS = Duration.ofNanos(Long.MAX_VALUE);
+		assertThat(Operators.nanoPrecision(MAX_NANOS)).isFalse();
+		assertThat(Operators.nanoPrecision(MAX_NANOS.plusNanos(1))).isFalse();
+		assertThat(Operators.nanoPrecision(MAX_NANOS.minusNanos(1))).isTrue();
 	}
 
 	@Test

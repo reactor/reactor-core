@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -289,7 +290,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
 		}
 		return new ReplayProcessor<>(new FluxReplay.SizeAndTimeBoundReplayBuffer<>(size,
-				maxAge.toMillis(),
+				maxAge.toMillis(), TimeUnit.MILLISECONDS,
 				scheduler));
 	}
 

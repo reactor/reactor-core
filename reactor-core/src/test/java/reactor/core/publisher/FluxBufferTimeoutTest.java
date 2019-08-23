@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -108,7 +109,7 @@ public class FluxBufferTimeoutTest {
 		final Scheduler.Worker worker = Schedulers.elastic()
 		                                          .createWorker();
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-						actual, 123, 1000,
+						actual, 123, Duration.ofMillis(1000),
 				worker, ArrayList::new);
 
 		try {
@@ -152,7 +153,9 @@ public class FluxBufferTimeoutTest {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> subscriptionsHolder[0] = s);
 
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-				actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+				actual, 123, Duration.ofMillis(1000),
+				Schedulers.elastic().createWorker(),
+				ArrayList::new);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -168,7 +171,9 @@ public class FluxBufferTimeoutTest {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> subscriptionsHolder[0] = s);
 
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-				actual, 5, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+				actual, 5, Duration.ofMillis(1000),
+				Schedulers.elastic().createWorker(),
+				ArrayList::new);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -189,7 +194,8 @@ public class FluxBufferTimeoutTest {
 
 		VirtualTimeScheduler timeScheduler = VirtualTimeScheduler.getOrSet();
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-				actual, 5, 100, timeScheduler.createWorker(), ArrayList::new);
+				actual, 5, Duration.ofMillis(100), timeScheduler.createWorker(),
+				ArrayList::new);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -208,7 +214,9 @@ public class FluxBufferTimeoutTest {
 				actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+					actual, 123, Duration.ofMillis(1000),
+				Schedulers.elastic().createWorker(),
+				ArrayList::new);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -231,7 +239,9 @@ public class FluxBufferTimeoutTest {
 		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(consumer, null, null, null);
 
 		FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>>(
-				actual, 3, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+				actual, 3, Duration.ofMillis(1000),
+				Schedulers.elastic().createWorker(),
+				ArrayList::new);
 		test.onSubscribe(Operators.emptySubscription());
 
 		AtomicInteger counter = new AtomicInteger();

@@ -15,10 +15,12 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -93,6 +95,12 @@ public abstract class Operators {
 			}
 		}
 	}
+
+	public static boolean nanoPrecision(final Duration duration) {
+		final Duration MAX_NANOS = Duration.ofNanos(Long.MAX_VALUE);
+		return duration.compareTo(MAX_NANOS) < 0;
+	}
+
 	/**
 	 * Returns the subscription as QueueSubscription if possible or null.
 	 * @param <T> the value type of the QueueSubscription.

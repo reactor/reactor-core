@@ -178,7 +178,7 @@ public class FluxDelaySequenceTest {
 
 	@Test
 	public void longDelayInMillis() {
-		Duration longDelay = Duration.ofMinutes(1);
+		Duration longDelay = Duration.ofNanos(Long.MAX_VALUE).plusNanos(1);
 		long expected = longDelay.toMillis();
 
 		DelaySubscriber<String> subscriber = new DelaySubscriber<>(null, longDelay, null);

@@ -101,7 +101,7 @@ public class BlockingOptionalMonoSubscriberTest {
 
 		assertThatExceptionOfType(IllegalStateException.class)
 				.isThrownBy(() -> source.blockOptional(Duration.ofMillis(500)))
-				.withMessage("Timeout on blocking read for 500 MILLISECONDS");
+				.withMessageStartingWith("Timeout on blocking read for");
 	}
 
 	@Test

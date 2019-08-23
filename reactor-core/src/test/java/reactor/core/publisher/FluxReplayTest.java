@@ -454,7 +454,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanMain() {
         Flux<Integer> parent = Flux.just(1).map(i -> i);
-        FluxReplay<Integer> test = new FluxReplay<>(parent, 25, 1000, Schedulers.single());
+        FluxReplay<Integer> test = new FluxReplay<>(parent, 25, Duration.ofMillis(1000),
+		        Schedulers.single());
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(25);
@@ -464,7 +465,9 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxReplay<Integer> main = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
+        FluxReplay<Integer> main = new FluxReplay<>(Flux.just(1), 2,
+		        Duration.ofMillis(1000),
+		        Schedulers.single());
         FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual);
         FluxReplay.ReplaySubscriber<Integer> parent = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), main);
         parent.add(test);
@@ -490,7 +493,9 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSubscriber() {
-		FluxReplay<Integer> parent = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
+		FluxReplay<Integer> parent = new FluxReplay<>(Flux.just(1), 2,
+				Duration.ofMillis(1000),
+				Schedulers.single());
         FluxReplay.ReplaySubscriber<Integer> test = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), parent);
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);

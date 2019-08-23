@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
@@ -45,9 +46,10 @@ import reactor.util.context.Context;
 final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fuseable, CoreOperator<T, T> {
 
 	final CorePublisher<T>   source;
-	final int            history;
-	final long           ttl;
-	final Scheduler scheduler;
+	final int                history;
+	final long               ttl;
+	final TimeUnit           timeUnit;
+	final Scheduler          scheduler;
 
 	volatile ReplaySubscriber<T> connection;
 
@@ -128,6 +130,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		final int            limit;
 		final long           maxAge;
+		final TimeUnit       timeUnit;
 		final Scheduler scheduler;
 		int size;
 
@@ -142,9 +145,11 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		SizeAndTimeBoundReplayBuffer(int limit,
 				long maxAge,
+				TimeUnit timeUnit,
 				Scheduler scheduler) {
 			this.limit = limit;
 			this.maxAge = maxAge;
+			this.timeUnit = timeUnit;
 			this.scheduler = scheduler;
 			TimedNode<T> h = new TimedNode<>(null, 0L);
 			this.tail = h;
@@ -154,7 +159,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		@Override
 		public boolean isExpired() {
 			long done = this.done;
-			return done != NOT_DONE && scheduler.now(TimeUnit.MILLISECONDS) - maxAge > done;
+			return done != NOT_DONE && scheduler.now(timeUnit) - maxAge > done;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -169,7 +174,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 					node = head;
 					if (done == NOT_DONE) {
 						// skip old entries
-						long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+						long limit = scheduler.now(timeUnit) - maxAge;
 						TimedNode<T> next = node;
 						while (next != null) {
 							long ts = next.time;
@@ -290,7 +295,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onError(Throwable ex) {
-			done = scheduler.now(TimeUnit.MILLISECONDS);
+			done = scheduler.now(timeUnit);
 			error = ex;
 		}
 
@@ -302,7 +307,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onComplete() {
-			done = scheduler.now(TimeUnit.MILLISECONDS);
+			done = scheduler.now(timeUnit);
 		}
 
 		@Override
@@ -312,7 +317,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@SuppressWarnings("unchecked")
 		TimedNode<T> latestHead(ReplaySubscription<T> rs) {
-			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+			long now = scheduler.now(timeUnit) - maxAge;
 
 			TimedNode<T> h = (TimedNode<T>) rs.node();
 			if (h == null) {
@@ -333,7 +338,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		public T poll(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			TimedNode<T> next;
-			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+			long now = scheduler.now(timeUnit) - maxAge;
 			while ((next = node.get()) != null) {
 				if (next.time > now) {
 					node = next;
@@ -396,7 +401,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void add(T value) {
-			TimedNode<T> n = new TimedNode<>(value, scheduler.now(TimeUnit.MILLISECONDS));
+			TimedNode<T> n = new TimedNode<>(value, scheduler.now(timeUnit));
 			tail.set(n);
 			tail = n;
 			int s = size;
@@ -406,7 +411,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			else {
 				size = s + 1;
 			}
-			long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+			long limit = scheduler.now(timeUnit) - maxAge;
 
 			TimedNode<T> h = head;
 			TimedNode<T> next;
@@ -994,17 +999,24 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 	FluxReplay(CorePublisher<T> source,
 			int history,
-			long ttl,
+			Duration ttl,
 			@Nullable Scheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.history = history;
 		if(history < 0){
 			throw new IllegalArgumentException("History cannot be negative : " + history);
 		}
-		if (scheduler != null && ttl < 0) {
+		if (scheduler != null && ttl.isNegative()) {
 			throw new IllegalArgumentException("TTL cannot be negative : " + ttl);
 		}
-		this.ttl = ttl;
+		if (Operators.nanoPrecision(ttl)) {
+			this.ttl = ttl.toNanos();
+			this.timeUnit = TimeUnit.NANOSECONDS;
+		}
+		else {
+			this.ttl = ttl.toMillis();
+			this.timeUnit = TimeUnit.MILLISECONDS;
+		}
 		this.scheduler = scheduler;
 	}
 
@@ -1017,6 +1029,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		if (scheduler != null) {
 			return new ReplaySubscriber<>(new SizeAndTimeBoundReplayBuffer<>(history,
 					ttl,
+					timeUnit,
 					scheduler),
 					this);
 		}

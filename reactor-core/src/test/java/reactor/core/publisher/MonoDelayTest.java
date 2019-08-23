@@ -73,7 +73,7 @@ public class MonoDelayTest {
 
 	@Test
 	public void scanOperator() {
-		MonoDelay test = new MonoDelay(1, TimeUnit.SECONDS, Schedulers.immediate());
+		MonoDelay test = new MonoDelay(Duration.ofSeconds(1), Schedulers.immediate());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}

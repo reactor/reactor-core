@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -39,20 +40,17 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 
 	final Scheduler timedScheduler;
 
-	final long delay;
+	final Duration delay;
 
-	final TimeUnit unit;
-
-	MonoDelayElement(Mono<? extends T> source, long delay, TimeUnit unit, Scheduler timedScheduler) {
+	MonoDelayElement(Mono<? extends T> source, Duration delay, Scheduler timedScheduler) {
 		super(source);
 		this.delay = delay;
-		this.unit = Objects.requireNonNull(unit, "unit");
 		this.timedScheduler = Objects.requireNonNull(timedScheduler, "timedScheduler");
 	}
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return new DelayElementSubscriber<>(actual, timedScheduler, delay, unit);
+		return new DelayElementSubscriber<>(actual, timedScheduler, delay);
 	}
 
 	@Override
@@ -74,11 +72,17 @@ final class MonoDelayElement<T> extends InternalMonoOperator<T, T> {
 		boolean done;
 
 		DelayElementSubscriber(CoreSubscriber<? super T> actual, Scheduler scheduler,
-				long delay, TimeUnit unit) {
+				Duration delay) {
 			super(actual);
 			this.scheduler = scheduler;
-			this.delay = delay;
-			this.unit = unit;
+			if (Operators.nanoPrecision(delay)) {
+				this.delay = delay.toNanos();
+				this.unit = TimeUnit.NANOSECONDS;
+			}
+			else {
+				this.delay = delay.toMillis();
+				this.unit = TimeUnit.MILLISECONDS;
+			}
 		}
 
 		@Override

@@ -48,7 +48,8 @@ public class MonoDelayElementTest {
 	public void normalIsDelayed() {
 		Mono<String> source = Mono.just("foo").log().hide();
 
-		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS,
+		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
+				Duration.ofSeconds(2),
 				defaultSchedulerForDelay()).log())
 	                .expectSubscription()
 	                .expectNoEvent(Duration.ofSeconds(2))
@@ -64,7 +65,7 @@ public class MonoDelayElementTest {
 		Mono<String> source = Mono.just("foo").log().hide();
 
 		StepVerifier.withVirtualTime(
-				() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, vts)
+				() -> new MonoDelayElement<>(source, Duration.ofSeconds(2), vts)
 						.doOnCancel(() -> cancelled.set(true))
 						.log()
 						.doOnNext(n -> emitted.set(true)),
@@ -88,7 +89,7 @@ public class MonoDelayElementTest {
 		Mono<Long> source = Mono.delay(Duration.ofMillis(1000), vts);
 
 		StepVerifier.withVirtualTime(
-				() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, vts)
+				() -> new MonoDelayElement<>(source, Duration.ofSeconds(2), vts)
 						.doOnCancel(() -> cancelled.set(true))
 						.doOnNext(n -> emitted.set(true)),
 				() -> vts, Long.MAX_VALUE)
@@ -106,7 +107,8 @@ public class MonoDelayElementTest {
 	public void emptyIsImmediate() {
 		Mono<String> source = Mono.<String>empty().log().hide();
 
-		Duration d = StepVerifier.create(new MonoDelayElement<>(source, 10, TimeUnit.SECONDS,
+		Duration d = StepVerifier.create(new MonoDelayElement<>(source,
+				Duration.ofSeconds(10),
 				defaultSchedulerForDelay()).log())
 		            .expectSubscription()
 		            .verifyComplete();
@@ -118,7 +120,8 @@ public class MonoDelayElementTest {
 	public void errorIsImmediate() {
 		Mono<String> source = Mono.<String>error(new IllegalStateException("boom")).hide();
 
-		Duration d = StepVerifier.create(new MonoDelayElement<>(source, 10, TimeUnit.SECONDS, defaultSchedulerForDelay()).log())
+		Duration d = StepVerifier.create(new MonoDelayElement<>(source,
+				Duration.ofSeconds(10), defaultSchedulerForDelay()).log())
 		                         .expectSubscription()
 		                         .verifyErrorMessage("boom");
 
@@ -133,7 +136,8 @@ public class MonoDelayElementTest {
 
 		try {
 			StepVerifier.withVirtualTime(() ->
-					new MonoDelayElement<>(source.mono(), 2, TimeUnit.SECONDS, defaultSchedulerForDelay()))
+					new MonoDelayElement<>(source.mono(),
+							Duration.ofSeconds(2), defaultSchedulerForDelay()))
 			            .expectSubscription()
 			            .then(() -> source.next("foo").error(new IllegalStateException("boom")))
 			            .expectNoEvent(Duration.ofSeconds(2))
@@ -153,7 +157,8 @@ public class MonoDelayElementTest {
 		Mono<String> source = Mono.just("foo").hide();
 
 		try {
-			StepVerifier.create(new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, scheduler))
+			StepVerifier.create(new MonoDelayElement<>(source,
+					Duration.ofSeconds(2), scheduler))
 			            .expectSubscription()
 			            .verifyComplete(); //complete not relevant
 			fail("expected exception here");
@@ -178,7 +183,7 @@ public class MonoDelayElementTest {
 				.doOnCancel(() -> upstreamCancelCount.incrementAndGet());
 
 		StepVerifier.withVirtualTime(
-				() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, vts),
+				() -> new MonoDelayElement<>(source, Duration.ofSeconds(2), vts),
 				() -> vts, Long.MAX_VALUE)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(1))
@@ -200,7 +205,7 @@ public class MonoDelayElementTest {
 
 		try {
 			StepVerifier.withVirtualTime(
-					() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, vts).log(),
+					() -> new MonoDelayElement<>(source, Duration.ofSeconds(2), vts).log(),
 					() -> vts, Long.MAX_VALUE)
 			            .expectSubscription()
 			            .verifyComplete();
@@ -258,8 +263,7 @@ public class MonoDelayElementTest {
 
 		try {
 			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
-					2,
-					TimeUnit.SECONDS,
+					Duration.ofSeconds(2),
 					defaultSchedulerForDelay()))
 			            .expectSubscription()
 			            .expectNoEvent(Duration.ofSeconds(2))
@@ -281,8 +285,7 @@ public class MonoDelayElementTest {
 		});
 
 		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
-				2,
-				TimeUnit.SECONDS,
+				Duration.ofSeconds(2),
 				defaultSchedulerForDelay()))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(2))
@@ -303,8 +306,7 @@ public class MonoDelayElementTest {
 
 		try {
 			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
-					2,
-					TimeUnit.SECONDS,
+					Duration.ofSeconds(2),
 					defaultSchedulerForDelay()))
 			            .expectSubscription()
 			            .expectNoEvent(Duration.ofSeconds(2))
@@ -354,8 +356,7 @@ public class MonoDelayElementTest {
 
 
 		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
-				2,
-				TimeUnit.SECONDS,
+				Duration.ofSeconds(2),
 				defaultSchedulerForDelay())
 				.doOnCancel(onCancel::incrementAndGet)
 				.doOnSuccessOrError((v, e) -> onTerminate.incrementAndGet()))
@@ -372,7 +373,8 @@ public class MonoDelayElementTest {
 
 	@Test
 	public void scanOperator() {
-		MonoDelayElement<String> test = new MonoDelayElement<>(Mono.empty(), 1, TimeUnit.SECONDS, Schedulers.immediate());
+		MonoDelayElement<String> test = new MonoDelayElement<>(Mono.empty(),
+				Duration.ofSeconds(1), Schedulers.immediate());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}
@@ -381,7 +383,7 @@ public class MonoDelayElementTest {
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoDelayElement.DelayElementSubscriber<String> test = new MonoDelayElement.DelayElementSubscriber<>(
-				actual, Schedulers.single(), 10, TimeUnit.MILLISECONDS);
+				actual, Schedulers.single(), Duration.ofMillis(10));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
@@ -41,22 +42,22 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	final int            batchSize;
 	final Supplier<C>    bufferSupplier;
 	final Scheduler      timer;
-	final long           timespan;
+	final Duration       timespan;
 
 	FluxBufferTimeout(Flux<T> source,
 			int maxSize,
-			long timespan,
+			Duration timespan,
 			Scheduler timer,
 			Supplier<C> bufferSupplier) {
 		super(source);
-		if (timespan <= 0) {
+		if (timespan.isNegative()) {
 			throw new IllegalArgumentException("Timeout period must be strictly positive");
 		}
 		if (maxSize <= 0) {
 			throw new IllegalArgumentException("maxSize must be strictly positive");
 		}
-		this.timer = Objects.requireNonNull(timer, "Timer");
 		this.timespan = timespan;
+		this.timer = Objects.requireNonNull(timer, "Timer");
 		this.batchSize = maxSize;
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
 	}
@@ -91,6 +92,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 		final int                        batchSize;
 		final long                       timespan;
+		final TimeUnit                   timeUnit;
 		final Scheduler.Worker           timer;
 		final Runnable                   flushTask;
 
@@ -123,11 +125,18 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 		BufferTimeoutSubscriber(CoreSubscriber<? super C> actual,
 				int maxSize,
-				long timespan,
+				Duration timespan,
 				Scheduler.Worker timer,
 				Supplier<C> bufferSupplier) {
 			this.actual = actual;
-			this.timespan = timespan;
+			if (Operators.nanoPrecision(timespan)) {
+				this.timespan = timespan.toNanos();
+				this.timeUnit = TimeUnit.NANOSECONDS;
+			}
+			else {
+				this.timespan = timespan.toMillis();
+				this.timeUnit = TimeUnit.MILLISECONDS;
+			}
 			this.timer = timer;
 			this.flushTask = () -> {
 				if (terminated == NOT_TERMINATED) {
@@ -233,7 +242,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 			if (index == 1) {
 				try {
-					timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+					timespanRegistration = timer.schedule(flushTask, timespan, timeUnit);
 				}
 				catch (RejectedExecutionException ree) {
 					Context ctx = actual.currentContext();

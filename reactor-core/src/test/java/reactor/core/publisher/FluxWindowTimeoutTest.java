@@ -221,7 +221,8 @@ public class FluxWindowTimeoutTest {
 
 	@Test
 	public void scanOperator() {
-		FluxWindowTimeout<Integer> test = new FluxWindowTimeout<>(Flux.just(1), 123, 100, Schedulers.immediate());
+		FluxWindowTimeout<Integer> test = new FluxWindowTimeout<>(Flux.just(1), 123,
+				Duration.ofMillis(100),	Schedulers.immediate());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}
@@ -264,7 +265,7 @@ public class FluxWindowTimeoutTest {
 		Scheduler scheduler = new MyScheduler();
 		CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxWindowTimeout.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeout.WindowTimeoutSubscriber<>(actual,
-				123, Long.MAX_VALUE, scheduler);
+				123, Duration.ofMillis(Long.MAX_VALUE), scheduler);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

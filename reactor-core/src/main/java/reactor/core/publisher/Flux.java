@@ -1146,7 +1146,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} emitting increasing numbers at regular intervals
 	 */
 	public static Flux<Long> interval(Duration period, Scheduler timer) {
-		return onAssembly(new FluxInterval(period.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return onAssembly(new FluxInterval(period, period, timer));
 	}
 
 	/**
@@ -1166,7 +1166,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} emitting increasing numbers at regular intervals
 	 */
 	public static Flux<Long> interval(Duration delay, Duration period, Scheduler timer) {
-		return onAssembly(new FluxInterval(delay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return onAssembly(new FluxInterval(delay, period, timer));
 	}
 
 	/**
@@ -2387,7 +2387,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
 		subscribe((Subscriber<T>) subscriber);
-		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		if (Operators.nanoPrecision(timeout)) {
+			return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
+		}
+		else {
+			return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		}
 	}
 
 	/**
@@ -2433,7 +2438,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
 		subscribe((Subscriber<T>) subscriber);
-		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		if (Operators.nanoPrecision(timeout)) {
+			return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
+		}
+		else {
+			return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		}
 	}
 
 	/**
@@ -2766,7 +2776,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
 			Scheduler timer, Supplier<C> bufferSupplier) {
-		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toMillis(), timer, bufferSupplier));
+		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime,
+				timer, bufferSupplier));
 	}
 
 	/**
@@ -6941,7 +6952,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 */
 	public final ConnectableFlux<T> replay(int history) {
-		return onAssembly(new FluxReplay<>(this, history, 0L, null));
+		return onAssembly(new FluxReplay<>(this, history, Duration.ZERO, null));
 	}
 
 	/**
@@ -7020,7 +7031,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final ConnectableFlux<T> replay(int history, Duration ttl, Scheduler timer) {
 		Objects.requireNonNull(timer, "timer");
-		return onAssembly(new FluxReplay<>(this, history, ttl.toMillis(), timer));
+		return onAssembly(new FluxReplay<>(this, history, ttl, timer));
 	}
 
 	/**
@@ -9092,7 +9103,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime) {
-		return windowTimeout(maxSize, maxTime , Schedulers.parallel());
+		return windowTimeout(maxSize, maxTime, Schedulers.parallel());
 	}
 
 	/**
@@ -9115,7 +9126,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime, Scheduler timer) {
-		return onAssembly(new FluxWindowTimeout<>(this, maxSize, maxTime.toMillis(), timer));
+		return onAssembly(new FluxWindowTimeout<>(this, maxSize, maxTime, timer));
 	}
 
 	/**

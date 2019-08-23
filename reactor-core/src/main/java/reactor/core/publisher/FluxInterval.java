@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -44,16 +45,22 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 	final TimeUnit unit;
 
 	FluxInterval(
-			long initialDelay, 
-			long period, 
-			TimeUnit unit, 
+			Duration initialDelay,
+			Duration period,
 			Scheduler timedScheduler) {
-		if (period < 0L) {
+		if (period.isNegative()) {
 			throw new IllegalArgumentException("period >= 0 required but it was " + period);
 		}
-		this.initialDelay = initialDelay;
-		this.period = period;
-		this.unit = Objects.requireNonNull(unit, "unit");
+		if (Operators.nanoPrecision(initialDelay) && Operators.nanoPrecision(period)) {
+			this.unit = TimeUnit.NANOSECONDS;
+			this.initialDelay = initialDelay.toNanos();
+			this.period = period.toNanos();
+		}
+		else {
+			this.unit = TimeUnit.MILLISECONDS;
+			this.initialDelay = initialDelay.toMillis();
+			this.period = period.toMillis();
+		}
 		this.timedScheduler = Objects.requireNonNull(timedScheduler, "timedScheduler");
 	}
 	
