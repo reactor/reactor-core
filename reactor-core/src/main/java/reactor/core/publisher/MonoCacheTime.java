@@ -207,6 +207,11 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 			throw new UnsupportedOperationException("illegal signal use: getContext");
 		}
 
+		@Override
+		public boolean isOnEmptyComplete() {
+			throw new UnsupportedOperationException("illegal signal use: isOnEmptyComplete");
+		}
+
 		final boolean add(Operators.MonoSubscriber<T, T> toAdd) {
 			for (; ; ) {
 				Operators.MonoSubscriber<T, T>[] a = subscribers;

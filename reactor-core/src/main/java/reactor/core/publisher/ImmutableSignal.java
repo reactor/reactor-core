@@ -40,17 +40,29 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 
 	private final SignalType type;
 	private final Throwable  throwable;
+	private final boolean    markEmptySource;
 
 	private final T value;
 
 	private transient final Subscription subscription;
 
-	ImmutableSignal(Context context, SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription) {
+	ImmutableSignal(Context context, SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription,
+			boolean markEmptySource) {
 		this.context = context;
 		this.value = value;
 		this.subscription = subscription;
 		this.throwable = e;
 		this.type = type;
+		this.markEmptySource = markEmptySource;
+	}
+
+	ImmutableSignal(Context context, SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription) {
+		this(context, type, value, e, subscription, false);
+	}
+
+	@Override
+	public boolean isOnEmptyComplete() {
+		return this.type == SignalType.ON_COMPLETE && this.markEmptySource;
 	}
 
 	@Override

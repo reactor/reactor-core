@@ -526,4 +526,63 @@ public class MonoDoOnEachTest {
 
 		assertThat(errorHandlerCount).as("error handler invoked on top on complete").hasValue(1);
 	}
+
+
+	@Test
+	public void canTellIfEmpty() {
+		List<Tuple2<SignalType, Boolean>> typesAndEmpty = new ArrayList<>();
+		Mono.empty()
+		    .doOnEach(s -> typesAndEmpty.add(Tuples.of(s.getType(), s.isOnEmptyComplete())))
+		    .as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .verifyComplete();
+
+		assertThat(typesAndEmpty).contains(Tuples.of(SignalType.ON_COMPLETE, true));
+	}
+
+	@Test
+	public void canTellIfValued() {
+		List<Tuple2<SignalType, ?>> typesAndEmpty = new ArrayList<>();
+		Mono.just("foo")
+		    .hide()
+		    .doOnEach(s -> typesAndEmpty.add(Tuples.of(s.getType(), s.isOnEmptyComplete())))
+		    .as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .expectNext("foo")
+		    .verifyComplete();
+
+		assertThat(typesAndEmpty).containsExactly(
+				Tuples.of(SignalType.ON_NEXT, false),
+				Tuples.of(SignalType.ON_COMPLETE, false)
+		);
+	}
+
+	@Test
+	public void canTellIfEmpty_fused() {
+		List<Tuple2<SignalType, Boolean>> typesAndEmpty = new ArrayList<>();
+		Mono.just(10)
+		    .filter(i -> i > 100)
+		    .doOnEach(s -> typesAndEmpty.add(Tuples.of(s.getType(), s.isOnEmptyComplete())))
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .verifyComplete();
+
+		assertThat(typesAndEmpty).contains(Tuples.of(SignalType.ON_COMPLETE, true));
+	}
+
+	@Test
+	public void canTellIfValued_fused() {
+		List<Tuple2<SignalType, ?>> typesAndEmpty = new ArrayList<>();
+		Mono.just("foo")
+		    .doOnEach(s -> typesAndEmpty.add(Tuples.of(s.getType(), s.isOnEmptyComplete())))
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("foo")
+		    .verifyComplete();
+
+		assertThat(typesAndEmpty).containsExactly(
+				Tuples.of(SignalType.ON_NEXT, false),
+				Tuples.of(SignalType.ON_COMPLETE, false)
+		);
+	}
 }

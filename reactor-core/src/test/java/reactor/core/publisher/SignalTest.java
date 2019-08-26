@@ -352,6 +352,11 @@ public class SignalTest {
 			public SignalType getType() {
 				return SignalType.AFTER_TERMINATE;
 			}
+
+			@Override
+			public boolean isOnEmptyComplete() {
+				return false;
+			}
 		})).isFalse();
 	}
 

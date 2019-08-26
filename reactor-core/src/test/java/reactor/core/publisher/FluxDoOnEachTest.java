@@ -44,6 +44,8 @@ import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
@@ -604,6 +606,65 @@ public class FluxDoOnEachTest {
 
 
 		StepVerifier.create(result).expectError().verify();
+	}
+
+	@Test
+	public void canTellIfEmpty() {
+		List<Tuple2<SignalType, Boolean>> typesAndEmpty = new ArrayList<>();
+		Flux.empty()
+		    .hide()
+		    .doOnEach(s -> typesAndEmpty.add(Tuples.of(s.getType(), s.isOnEmptyComplete())))
+		    .as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .verifyComplete();
+
+		assertThat(typesAndEmpty).contains(Tuples.of(SignalType.ON_COMPLETE, true));
+	}
+
+	@Test
+	public void canTellIfValued() {
+		List<Tuple2<SignalType, ?>> typesAndEmpty = new ArrayList<>();
+		Flux.just("foo")
+		    .hide()
+		    .doOnEach(s -> typesAndEmpty.add(Tuples.of(s.getType(), s.isOnEmptyComplete())))
+		    .as(StepVerifier::create)
+		    .expectNoFusionSupport()
+		    .expectNext("foo")
+		    .verifyComplete();
+
+		assertThat(typesAndEmpty).containsExactly(
+				Tuples.of(SignalType.ON_NEXT, false),
+				Tuples.of(SignalType.ON_COMPLETE, false)
+		);
+	}
+
+	@Test
+	public void canTellIfEmpty_fused() {
+		List<Tuple2<SignalType, Boolean>> typesAndEmpty = new ArrayList<>();
+		Flux.range(1, 10)
+		    .filter(i -> i > 10)
+		    .doOnEach(s -> typesAndEmpty.add(Tuples.of(s.getType(), s.isOnEmptyComplete())))
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .verifyComplete();
+
+		assertThat(typesAndEmpty).contains(Tuples.of(SignalType.ON_COMPLETE, true));
+	}
+
+	@Test
+	public void canTellIfValued_fused() {
+		List<Tuple2<SignalType, ?>> typesAndEmpty = new ArrayList<>();
+		Flux.just("foo")
+		    .doOnEach(s -> typesAndEmpty.add(Tuples.of(s.getType(), s.isOnEmptyComplete())))
+		    .as(StepVerifier::create)
+		    .expectFusion()
+		    .expectNext("foo")
+		    .verifyComplete();
+
+		assertThat(typesAndEmpty).containsExactly(
+				Tuples.of(SignalType.ON_NEXT, false),
+				Tuples.of(SignalType.ON_COMPLETE, false)
+		);
 	}
 
 }

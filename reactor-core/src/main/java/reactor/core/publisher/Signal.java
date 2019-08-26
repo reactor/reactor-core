@@ -66,6 +66,13 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 		return new ImmutableSignal<>(context, SignalType.ON_COMPLETE, null, null, null);
 	}
 
+	static <T> Signal<T> complete(Context context, boolean markEmptySource) {
+		if (context.isEmpty() && !markEmptySource) {
+			return (Signal<T>) ImmutableSignal.ON_COMPLETE;
+		}
+		return new ImmutableSignal<>(context, SignalType.ON_COMPLETE, null, null, null, markEmptySource);
+	}
+
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.FAILED}, which holds
 	 * the error.
@@ -256,6 +263,8 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	default boolean isOnComplete() {
 		return getType() == SignalType.ON_COMPLETE;
 	}
+
+	boolean isOnEmptyComplete();
 
 	/**
 	 * Indicates whether this signal represents an {@code onSubscribe} event.

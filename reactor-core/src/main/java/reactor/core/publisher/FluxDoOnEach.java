@@ -197,7 +197,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			state = STATE_DONE;
 			if (oldState < STATE_SKIP_HANDLER) {
 				try {
-					onSignal.accept(Signal.complete(cachedContext));
+					onSignal.accept(Signal.complete(cachedContext, this.t == null));
 				}
 				catch (Throwable e) {
 					state = oldState;
@@ -240,6 +240,11 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public SignalType getType() {
 			return SignalType.ON_NEXT;
+		}
+
+		@Override
+		public boolean isOnEmptyComplete() {
+			return false; //default to false, this is used for onNext anyway
 		}
 
 		@Override
@@ -291,7 +296,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			if (v == null && syncFused) {
 				state = STATE_DONE;
 				try {
-					onSignal.accept(Signal.complete(cachedContext));
+					onSignal.accept(Signal.complete(cachedContext, this.t == null));
 				}
 				catch (Throwable e) {
 					throw e;
