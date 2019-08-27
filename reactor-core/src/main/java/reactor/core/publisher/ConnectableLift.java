@@ -49,7 +49,7 @@ final class ConnectableLift<I, O> extends ConnectableFlux<O> implements Scannabl
 
 	@Override
 	public void connect(Consumer<? super Disposable> cancelSupport) {
-		this.source.connect();
+		this.source.connect(cancelSupport);
 	}
 
 	@Override
