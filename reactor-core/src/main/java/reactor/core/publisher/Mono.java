@@ -2010,7 +2010,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param afterSuccessOrError the callback to call after {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
 	 * @return a new {@link Mono}
+	 * @deprecated prefer using {@link #doAfterTerminate(Runnable)}. will be removed in 3.4.0
 	 */
+	@Deprecated
 	public final Mono<T> doAfterSuccessOrError(BiConsumer<? super T, Throwable> afterSuccessOrError) {
 		return onAssembly(new MonoPeekTerminal<>(this, null, null, afterSuccessOrError));
 	}
@@ -2027,7 +2029,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Mono<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
-		return doAfterSuccessOrError((s, e)  -> afterTerminate.run());
+		return onAssembly(new MonoPeekTerminal<>(this, null, null, (s, e)  -> afterTerminate.run()));
 	}
 
 	/**
@@ -2314,7 +2316,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param onSuccessOrError the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
 	 * @return a new {@link Mono}
+	 * @deprecated prefer using {@link #doOnNext(Consumer)}, {@link #doOnError(Consumer)}, {@link #doOnTerminate(Runnable)} or {@link #doOnSuccess(Consumer)}. will be removed in 3.4.0
 	 */
+	@Deprecated
 	public final Mono<T> doOnSuccessOrError(BiConsumer<? super T, Throwable> onSuccessOrError) {
 		Objects.requireNonNull(onSuccessOrError, "onSuccessOrError");
 		return onAssembly(new MonoPeekTerminal<>(this, null, onSuccessOrError, null));
