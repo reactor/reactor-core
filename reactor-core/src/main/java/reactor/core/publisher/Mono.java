@@ -770,8 +770,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <D> the type of the resource object
 	 * @return a new {@link Mono} built around a "transactional" resource, with deferred emission until the
 	 * asynchronous cleanup sequence relevant to the termination signal completes
-	 * @see #usingWhen(Publisher, Function, Function, BiFunction, Function)
+	 * @deprecated prefer using the {@link #usingWhen(Publisher, Function, Function, BiFunction, Function)} version which is more explicit about all termination cases,
+	 * will be removed in 3.4.0
 	 */
+	@Deprecated
 	public static <T, D> Mono<T> usingWhen(Publisher<D> resourceSupplier,
 			Function<? super D, ? extends Mono<? extends T>> resourceClosure,
 			Function<? super D, ? extends Publisher<?>> asyncComplete,
@@ -828,8 +830,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <D> the type of the resource object
 	 * @return a new {@link Mono} built around a "transactional" resource, with deferred emission until the
 	 * asynchronous cleanup sequence relevant to the termination signal completes
-	 * @see #usingWhen(Publisher, Function, Function, BiFunction, Function)
+	 * @deprecated prefer using the {@link #usingWhen(Publisher, Function, Function, BiFunction, Function)} version which is more explicit about all termination cases,
+	 * will be removed in 3.4.0
 	 */
+	@Deprecated
 	public static <T, D> Mono<T> usingWhen(Publisher<D> resourceSupplier,
 			Function<? super D, ? extends Mono<? extends T>> resourceClosure,
 			Function<? super D, ? extends Publisher<?>> asyncComplete,

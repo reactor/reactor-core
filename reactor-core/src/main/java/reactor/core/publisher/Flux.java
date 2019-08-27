@@ -1774,8 +1774,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <D> the type of the resource object
 	 * @return a new {@link Flux} built around a "transactional" resource, with asynchronous
 	 * cleanup on all terminations (onComplete, onError, cancel)
-	 * @see #usingWhen(Publisher, Function, Function, BiFunction, Function)
+	 * @deprecated prefer using the {@link #usingWhen(Publisher, Function, Function, BiFunction, Function)} version which is more explicit about all termination cases,
+	 * will be removed in 3.4.0
 	 */
+	@Deprecated
 	public static <T, D> Flux<T> usingWhen(Publisher<D> resourceSupplier,
 			Function<? super D, ? extends Publisher<? extends T>> resourceClosure,
 			Function<? super D, ? extends Publisher<?>> asyncCleanup) {
@@ -1827,8 +1829,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <D> the type of the resource object
 	 * @return a new {@link Flux} built around a "transactional" resource, with several
 	 * termination path triggering asynchronous cleanup sequences
-	 * @see #usingWhen(Publisher, Function, Function, BiFunction, Function)
+	 * @deprecated prefer using the {@link #usingWhen(Publisher, Function, Function, BiFunction, Function)} version which is more explicit about all termination cases,
+	 * will be removed in 3.4.0
 	 */
+	@Deprecated
 	public static <T, D> Flux<T> usingWhen(Publisher<D> resourceSupplier,
 			Function<? super D, ? extends Publisher<? extends T>> resourceClosure,
 			Function<? super D, ? extends Publisher<?>> asyncComplete,
@@ -1884,8 +1888,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <D> the type of the resource object
 	 * @return a new {@link Flux} built around a "transactional" resource, with several
 	 * termination path triggering asynchronous cleanup sequences
-	 * @see #usingWhen(Publisher, Function, Function, Function)
+	 * @deprecated prefer using the {@link #usingWhen(Publisher, Function, Function, BiFunction, Function)} version which is more explicit about all termination cases,
+	 * will be removed in 3.4.0
 	 */
+	@Deprecated
 	public static <T, D> Flux<T> usingWhen(Publisher<D> resourceSupplier,
 			Function<? super D, ? extends Publisher<? extends T>> resourceClosure,
 			Function<? super D, ? extends Publisher<?>> asyncComplete,
