@@ -47,7 +47,7 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 
 	@Override
 	public void connect(Consumer<? super Disposable> cancelSupport) {
-		this.source.connect();
+		this.source.connect(cancelSupport);
 	}
 
 	@Override

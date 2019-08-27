@@ -18,7 +18,10 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.awaitility.Awaitility;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -97,6 +100,27 @@ public class LiftFunctionTest {
 
 		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {}))
 				.doesNotThrowAnyException();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1860
+	@Test
+	public void liftConnectableFluxWithCancelSupport() {
+		AtomicBoolean cancelSupportInvoked = new AtomicBoolean();
+
+		ConnectableFlux<Integer> source = Flux.just(1)
+		                                      .publish(); //TODO hide if ConnectableFlux gets a hide function
+
+		Operators.LiftFunction<Integer, Integer> liftFunction =
+				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+		Publisher<Integer> liftOperator = liftFunction.apply(source);
+
+		assertThat(liftOperator)
+				.isExactlyInstanceOf(ConnectableLift.class);
+
+		((ConnectableLift) liftOperator).connect(d -> cancelSupportInvoked.set(true));
+
+		Awaitility.await().atMost(1, TimeUnit.SECONDS)
+		          .untilAsserted(() -> assertThat(cancelSupportInvoked).isTrue());
 	}
 
 	@Ignore("GroupedFlux is always fuseable for now")
