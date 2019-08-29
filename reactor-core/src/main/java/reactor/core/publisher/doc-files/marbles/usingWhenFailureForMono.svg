@@ -1,21 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="20 34 525 399" width="525" height="399" id="svg150">
  <defs id="defs42">
   <marker orient="auto" refY="0" refX="0" id="DotM" overflow="visible">
-   <path id="path1761" d="M1.96 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".4pt" stroke-opacity="1" fill="#5b1d88" fill-opacity="1"/>
+   <path id="path1761" d="M1.96 0a2 2 0 11-4 0 2 2 0 014 0z" fill-rule="evenodd" stroke="#5b1d88" stroke-width=".4pt" stroke-opacity="1" fill="#5b1d88" fill-opacity="1"/>
   </marker>
   <marker orient="auto" refY="0" refX="0" id="DiamondSstart" overflow="visible">
    <path id="path40747" d="M1-1L0 0l1 1 2-1z" fill-rule="evenodd" stroke="#000" stroke-width="0"/>
   </marker>
-  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 9 2 3 0 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="501" cap-height="682" ascent="923" descent="-235" font-weight="700" id="font-face2" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
-   <font-face-src>
-    <font-face-name name="Tahoma-Bold"/>
-   </font-face-src>
-  </font-face>
-  <linearGradient x1="0" x2="1" id="Gradient" gradientUnits="userSpaceOnUse">
-   <stop offset="0" stop-color="#fff" id="stop4"/>
-   <stop offset="1" stop-color="#b6e900" id="stop6"/>
-  </linearGradient>
-  <linearGradient id="Obj_Gradient" xlink:href="#Gradient" gradientTransform="matrix(0 54 -54 0 311 46)"/>
   <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-miterlimit="10" viewBox="-1 -6 14 12" markerWidth="14" markerHeight="12" color="#bbea0e" stroke-linejoin="miter">
    <g id="g12">
     <path d="M12 0L0-4v9z" id="path10" fill="currentColor" stroke="currentColor" stroke-width="1"/>
@@ -41,11 +31,6 @@
     <path d="M-8 0l8 3v-6z" id="path30" fill="currentColor" stroke="currentColor" stroke-width="1"/>
    </g>
   </marker>
-  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="16" panose-1="2 11 5 2 2 1 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="450" cap-height="687" ascent="918" descent="-230" font-weight="400" id="font-face35" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
-   <font-face-src>
-    <font-face-name name="Tahoma"/>
-   </font-face-src>
-  </font-face>
   <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker_6" stroke-miterlimit="10" viewBox="-10 -5 11 10" markerWidth="11" markerHeight="10" color="#55c1fd" stroke-linejoin="miter">
    <g id="g39">
     <path d="M-8 0l8 3v-6z" id="path37" fill="currentColor" stroke="currentColor" stroke-width="1"/>
@@ -246,6 +231,21 @@
     <path d="M8 0L0-3v6z" id="path63590" fill="currentColor" stroke="currentColor" stroke-width="1"/>
    </g>
   </marker>
+  <linearGradient x1="0" x2="1" id="Gradient" gradientUnits="userSpaceOnUse">
+   <stop offset="0" stop-color="#fff" id="stop4"/>
+   <stop offset="1" stop-color="#b6e900" id="stop6"/>
+  </linearGradient>
+  <linearGradient id="Obj_Gradient" xlink:href="#Gradient" gradientTransform="matrix(0 54 -54 0 311 46)"/>
+  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="24" panose-1="2 11 9 2 3 0 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="501" cap-height="682" ascent="923" descent="-235" font-weight="700" id="font-face2" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma-Bold"/>
+   </font-face-src>
+  </font-face>
+  <font-face font-family="'Tahoma','Nimbus Sans L'" font-size="16" panose-1="2 11 5 2 2 1 4 2 2 3" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="450" cap-height="687" ascent="918" descent="-230" font-weight="400" id="font-face35" stemv="0" stemh="0" accent-height="0" ideographic="0" alphabetic="0" mathematical="0" hanging="0" v-ideographic="0" v-alphabetic="0" v-mathematical="0" v-hanging="0" strikethrough-position="0" strikethrough-thickness="0" overline-position="0" overline-thickness="0">
+   <font-face-src>
+    <font-face-name name="Tahoma"/>
+   </font-face-src>
+  </font-face>
  </defs>
  <path id="line115" d="M482 291v91.78" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.00000007,6.00000018" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_4-7)"/>
  <path id="line1136" d="M27 410h482" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_3-1)"/>
@@ -295,7 +295,7 @@
    <g id="g36007" transform="translate(825 59)" stroke-dasharray="none" stroke-opacity="1">
     <path stroke-miterlimit="4" d="M-202 292h80" id="path1318" fill="none" fill-rule="evenodd" stroke="#000" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#FilledArrow_Marker-7)"/>
     <path d="M-133 280l1 1v23l-1 2-2-2v-23z" id="path1300" fill="#34302c" fill-opacity="1" stroke="none" stroke-width="1"/>
-    <ellipse ry="12" rx="12" cx="-162" cy="293" id="ellipse42-0-1" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="-162" cy="293" id="ellipse42-0-1" fill="#fff" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" r="12"/>
    </g>
    <path id="path35999" d="M573 352h39" fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" marker-end="url(#Arrow2Lend-62)"/>
    <path d="M535 337h30v31h-30z" stroke-miterlimit="4" id="path39672" opacity="1" fill="#45b8de" fill-opacity="1" stroke="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" stroke-dashoffset="1" stroke-opacity="1"/>
@@ -354,10 +354,19 @@
  <text y="385" x="-234" transform="rotate(-90)" id="text41910" fill="#45b8de" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
   <tspan font-size="14" font-weight="400" x="-234" y="398" id="tspan41908" font-family="Tahoma,'Nimbus Sans L'" fill="#45b8de">subscribe()</tspan>
  </text>
- <text id="text1364-9" x="387.29" y="114.06" font-size="7" fill="#885ba9" fill-opacity="1" stroke="none" stroke-width="1" stroke-dasharray="none" stroke-opacity="1">
-  <tspan id="tspan1362-2" y="121.06" x="387.29" font-weight="400" font-size="8" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">rollback()</tspan>
- </text>
  <path id="path52114" d="M142 121l1 101" fill="none" fill-opacity="1" stroke="#34302c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,5.99999998" stroke-opacity="1" marker-end="url(#FilledArrow_Marker_4-7-5)"/>
  <path id="path21397" d="M482 82.97v22.97" fill="none" fill-opacity="1" stroke="#ef2200" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4" stroke-dasharray=".74668571,2.24005717999999998" stroke-dashoffset="0" stroke-opacity="1"/>
  <path id="path21397-3" d="M123.44 83.31v24.3" fill="none" fill-opacity="1" stroke="#45b8de" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4" stroke-dasharray=".74668567,2.24005708000000014" stroke-dashoffset="0" stroke-opacity="1"/>
+ <g transform="translate(-.19)" id="g9014" fill-opacity="1" stroke="none" stroke-dasharray="none" stroke-opacity="1">
+  <text font-size="7" y="114.24" x="387.47" id="text1364-9-4" fill="#885ba9" stroke-width="1">
+   <tspan font-size="8" font-weight="400" x="387.47" y="121.24" id="tspan1362-2-1" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">rollback(</tspan>
+  </text>
+  <g transform="matrix(.25209 0 0 .29135 285.4 6.15)" id="g29077-7" fill="#ef2200" stroke-width="2.67">
+   <path d="M567 403l-2 2h-3l-31-31v-3l2-2h3l31 31z" id="path29073-5"/>
+   <path d="M565 369l2 2v3l-31 31h-3l-2-2v-3l31-31z" id="path29075-86"/>
+  </g>
+  <text id="text9005" x="429.86" y="114.24" font-size="7" fill="#885ba9" stroke-width="1">
+   <tspan id="tspan9003" y="121.24" x="429.86" font-weight="400" font-size="8" font-family="Tahoma,'Nimbus Sans L'" fill="#885ba9" fill-opacity="1" stroke-width="1">)</tspan>
+  </text>
+ </g>
 </svg>
