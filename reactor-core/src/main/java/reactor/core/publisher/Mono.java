@@ -2010,7 +2010,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param afterSuccessOrError the callback to call after {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
 	 * @return a new {@link Mono}
-	 * @deprecated prefer using {@link #doAfterTerminate(Runnable)}. will be removed in 3.4.0
+	 * @deprecated prefer using {@link #doAfterTerminate(Runnable)} or {@link #doFinally(Consumer)}. will be removed in 3.4.0
 	 */
 	@Deprecated
 	public final Mono<T> doAfterSuccessOrError(BiConsumer<? super T, Throwable> afterSuccessOrError) {
