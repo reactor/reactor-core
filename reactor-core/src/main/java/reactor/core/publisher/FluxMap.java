@@ -39,15 +39,20 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 		if (source instanceof Fuseable) {
 			if (source instanceof FluxMapFuseable) {
 				FluxMapFuseable sourceFluxMap = (FluxMapFuseable) source;
-				source = sourceFluxMap.source;
-				mapper = sourceFluxMap.mapper.andThen(mapper);
+				return new FluxMapFuseable<Object, R>(
+						sourceFluxMap.source,
+						it -> mapper.apply((T) sourceFluxMap.mapper.apply(it))
+				);
 			}
 			return new FluxMapFuseable<>(source, mapper);
-		} else {
+		}
+		else {
 			if (source instanceof FluxMap) {
 				FluxMap sourceFluxMap = (FluxMap) source;
-				source = sourceFluxMap.source;
-				mapper = sourceFluxMap.mapper.andThen(mapper);
+				return new FluxMap<Object, R>(
+						sourceFluxMap.source,
+						it -> mapper.apply((T) sourceFluxMap.mapper.apply(it))
+				);
 			}
 			return new FluxMap<>(source, mapper);
 		}
