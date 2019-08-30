@@ -1072,7 +1072,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that emits long values starting with 0 and incrementing at
 	 * specified time intervals on the global timer. The first element is emitted after
-	 * an initial delay equal to the  {@code period}. If demand is not produced in time,
+	 * an initial delay equal to the {@code period}. If demand is not produced in time,
 	 * an onError will be signalled with an {@link Exceptions#isOverflow(Throwable) overflow}
 	 * {@code IllegalStateException} detailing the tick that couldn't be emitted.
 	 * In normal conditions, the {@link Flux} will never complete.
