@@ -53,6 +53,15 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}
 
+
+	@Override
+	<V> Flux<V> doMap(Function<? super R, ? extends V> mapper) {
+		return new FluxMapFuseable<>(
+				source,
+				this.mapper.andThen(mapper)
+		);
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {

@@ -168,7 +168,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 		if (sources.length == 1) {
             Publisher<? extends T> source = sources[0];
-            return onAssembly(FluxMap.create(from(source), v -> combinator.apply(new Object[]{v})));
+            return from(source).map(v -> combinator.apply(new Object[]{v}));
 		}
 
 		return onAssembly(new FluxCombineLatest<>(sources,
@@ -2302,7 +2302,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		}
 		if (sources.length == 1) {
 		    Publisher<? extends I> source = sources[0];
-		    return onAssembly(FluxMap.create(from(source), v -> combinator.apply(new Object[]{v})));
+		    return from(source).map(v -> combinator.apply(new Object[]{v}));
 		}
 
 		return onAssembly(new FluxZip<>(sources,
@@ -5866,7 +5866,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a transformed {@link Flux}
 	 */
 	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
-		return onAssembly(FluxMap.create(this, mapper));
+		return onAssembly(doMap(mapper));
+	}
+
+	<V> Flux<V> doMap(Function<? super T, ? extends V> mapper) {
+		if (this instanceof Fuseable) {
+			return new FluxMapFuseable<>(this, mapper);
+		}
+		else {
+			return new FluxMap<>(this, mapper);
+		}
 	}
 
 	/**

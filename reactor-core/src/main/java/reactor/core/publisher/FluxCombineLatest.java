@@ -161,7 +161,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable, SourceP
 				return;
 			}
 			else if (!(actual instanceof QueueSubscription)) {
-				FluxMap.create(from(a[0]), f).subscribe(actual);
+				// Use doMap to avoid onAssembly
+				from(a[0]).doMap(f).subscribe(actual);
 				return;
 			}
 		}

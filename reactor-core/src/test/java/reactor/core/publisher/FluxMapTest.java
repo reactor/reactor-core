@@ -65,7 +65,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
 	@Test(expected = NullPointerException.class)
 	public void nullSource() {
-		FluxMap.create(null, v -> v);
+		new FluxMap<Integer, Integer>(null, v -> v);
 	}
 
 	@Test(expected = NullPointerException.class)
