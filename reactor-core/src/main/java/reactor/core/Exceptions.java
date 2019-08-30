@@ -44,7 +44,7 @@ public abstract class Exceptions {
 	 * don't leak this!
 	 */
 	@SuppressWarnings("ThrowableInstanceNeverThrown")
-	public static final Throwable TERMINATED = new Throwable("Operator has been terminated");
+	public static final Throwable TERMINATED = new TerminatedThrowable("Operator has been terminated");
 
 	/**
 	 * Update an empty atomic reference with the given exception, or combine further added
