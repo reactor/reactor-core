@@ -35,6 +35,13 @@ import reactor.util.annotation.Nullable;
  */
 final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 
+	static <T, R> Flux<R> create(Flux<? extends T> source, Function<? super T, ? extends R> mapper) {
+		if (source instanceof Fuseable) {
+			return new FluxMapFuseable<>(source, mapper);
+		}
+		return new FluxMap<>(source, mapper);
+	}
+
 	final Function<? super T, ? extends R> mapper;
 
 	/**
@@ -45,7 +52,7 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 	 *
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	FluxMap(Flux<? extends T> source,
+	private FluxMap(Flux<? extends T> source,
 			Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
