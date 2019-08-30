@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.reactivestreams.Subscription;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -35,11 +34,23 @@ import reactor.util.annotation.Nullable;
  */
 final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 
+	@SuppressWarnings("unchecked")
 	static <T, R> Flux<R> create(Flux<? extends T> source, Function<? super T, ? extends R> mapper) {
 		if (source instanceof Fuseable) {
+			if (source instanceof FluxMapFuseable) {
+				FluxMapFuseable sourceFluxMap = (FluxMapFuseable) source;
+				source = sourceFluxMap.source;
+				mapper = sourceFluxMap.mapper.andThen(mapper);
+			}
 			return new FluxMapFuseable<>(source, mapper);
+		} else {
+			if (source instanceof FluxMap) {
+				FluxMap sourceFluxMap = (FluxMap) source;
+				source = sourceFluxMap.source;
+				mapper = sourceFluxMap.mapper.andThen(mapper);
+			}
+			return new FluxMap<>(source, mapper);
 		}
-		return new FluxMap<>(source, mapper);
 	}
 
 	final Function<? super T, ? extends R> mapper;

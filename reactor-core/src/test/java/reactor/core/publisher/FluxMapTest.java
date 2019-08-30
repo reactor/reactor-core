@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -486,5 +486,23 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 		finally {
 			Hooks.resetOnNextError();
 		}
+	}
+
+	@Test
+	public void macroFusion() {
+		Flux<String> flux = just
+				.map(v -> v + 1)
+				.map(v -> v + 10)
+		        .map(Object::toString);
+
+		assertThat(Scannable.from(flux).steps()).containsExactly(
+				"source(FluxJust)",
+				"map"
+		);
+
+		flux
+		    .subscribeWith(AssertSubscriber.create())
+				.assertValues("12")
+				.assertComplete();
 	}
 }
