@@ -593,4 +593,14 @@ public abstract class Exceptions {
 		}
 	}
 
+	/**
+	 * Terminated Throwable to avoid classloader leaks in backtrace field
+	 */
+	static final class TerminatedThrowable extends Error {
+
+		public TerminatedThrowable(String message) {
+			super(message, null, false, false);
+		}
+	}
+
 }
