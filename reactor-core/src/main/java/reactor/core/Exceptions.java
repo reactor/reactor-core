@@ -499,11 +499,10 @@ public abstract class Exceptions {
 	Exceptions() {
 	}
 
-	static final RejectedExecutionException REJECTED_EXECUTION = new RejectedExecutionException("Scheduler unavailable");
+	static final RejectedExecutionException REJECTED_EXECUTION = new StaticRejectedExecutionException("Scheduler unavailable");
 
 	static final RejectedExecutionException NOT_TIME_CAPABLE_REJECTED_EXECUTION =
-			new RejectedExecutionException(
-					"Scheduler is not capable of time-based scheduling");
+			new StaticRejectedExecutionException("Scheduler is not capable of time-based scheduling");
 
 	static class CompositeException extends ReactiveException {
 
@@ -586,10 +585,34 @@ public abstract class Exceptions {
 		}
 	}
 
-	static final class ReactorRejectedExecutionException extends RejectedExecutionException {
+	static class ReactorRejectedExecutionException extends RejectedExecutionException {
 
 		ReactorRejectedExecutionException(String message, Throwable cause) {
 			super(message, cause);
+		}
+
+		ReactorRejectedExecutionException(String message) {
+			super(message);
+		}
+	}
+
+	/**
+	 * A {@link ReactorRejectedExecutionException} that is tailored for usage as a static final
+	 * field. It avoids {@link ClassLoader}-related leaks by bypassing stacktrace filling.
+	 */
+	static final class StaticRejectedExecutionException extends ReactorRejectedExecutionException {
+
+		StaticRejectedExecutionException(String message, Throwable cause) {
+			super(message, cause);
+		}
+
+		StaticRejectedExecutionException(String message) {
+			super(message);
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return this;
 		}
 	}
 
