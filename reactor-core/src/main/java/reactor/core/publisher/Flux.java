@@ -5588,7 +5588,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int prefetchRate) {
-		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
+		return limitRate(prefetchRate, false);
 	}
 
 	/**
@@ -5629,7 +5629,46 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int highTide, int lowTide) {
-		return onAssembly(this.publishOn(Schedulers.immediate(), true, highTide, lowTide));
+		return limitRate(highTide, lowTide, false);
+	}
+
+	/**
+	 * Ensure that backpressure signals from downstream subscribers are split into batches
+	 * capped at the provided {@code highLowTide} when propagated upstream, effectively
+	 * rate limiting the upstream {@link Publisher}.
+	 * <p>
+	 * Note that this is an upper bound, and that this operator uses a prefetch-and-replenish
+	 * strategy, requesting a replenishing amount when 75% of the prefetch amount has been
+	 * emitted.
+	 * <p>
+	 * Typically used for scenarios where consumer(s) request a large amount of data
+	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
+	 * with smaller requests (eg. database paging, etc...). All data is still processed,
+	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
+	 * amount.
+	 * <p>
+	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }.
+	 * Note that the {@code prefetchRate} is an upper bound, and that this operator uses a
+	 * prefetch-and-replenish strategy, requesting a replenishing amount when 75% of the
+	 * prefetch amount has been emitted.
+	 *
+	 * @param highLowTide the limit to apply to downstream's backpressure
+	 *
+	 * @return a {@link Flux} limiting downstream's backpressure
+	 * @see #publishOn(Scheduler, int)
+	 * @see #limitRequest(long)
+	 */
+	public final Flux<T> limitRate(int highLowTide, boolean passThroughLowerRequests) {
+		return limitRate(highLowTide, highLowTide, passThroughLowerRequests);
+	}
+
+	public final Flux<T> limitRate(int highTide, int lowTide, boolean passThroughLowerRequests) {
+		if (passThroughLowerRequests) {
+			return onAssembly(new FluxLimitRate<>(this, highTide, lowTide));
+		}
+		else {
+			return onAssembly(this.publishOn(Schedulers.immediate(), true, highTide, lowTide));
+		}
 	}
 
 	/**
