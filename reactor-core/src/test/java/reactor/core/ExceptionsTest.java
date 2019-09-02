@@ -296,7 +296,7 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	public void failWithRejectedSingletonReeWraps() {
+	public void failWithRejectedSingletonREEWraps() {
 		Throwable test = REJECTED_EXECUTION;
 		assertThat(Exceptions.failWithRejected(test))
 				.isInstanceOf(Exceptions.ReactorRejectedExecutionException.class)
@@ -305,7 +305,7 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	public void failWithRejectedNormalReeWraps() {
+	public void failWithRejectedNormalREEWraps() {
 		Throwable test = new RejectedExecutionException("boom");
 		assertThat(Exceptions.failWithRejected(test))
 				.isInstanceOf(Exceptions.ReactorRejectedExecutionException.class)
@@ -314,7 +314,7 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	public void failWithRejectedReactorReeNoOp() {
+	public void failWithRejectedReactorREENoOp() {
 		Throwable test = new Exceptions.ReactorRejectedExecutionException("boom", REJECTED_EXECUTION);
 		assertThat(Exceptions.failWithRejected(test))
 				.isSameAs(test)
