@@ -597,10 +597,10 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * A {@link ReactorRejectedExecutionException} that is tailored for usage as a static final
+	 * A {@link RejectedExecutionException} that is tailored for usage as a static final
 	 * field. It avoids {@link ClassLoader}-related leaks by bypassing stacktrace filling.
 	 */
-	static final class StaticRejectedExecutionException extends ReactorRejectedExecutionException {
+	static final class StaticRejectedExecutionException extends RejectedExecutionException {
 
 		StaticRejectedExecutionException(String message, Throwable cause) {
 			super(message, cause);
