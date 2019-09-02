@@ -44,7 +44,7 @@ public abstract class Exceptions {
 	 * don't leak this!
 	 */
 	@SuppressWarnings("ThrowableInstanceNeverThrown")
-	public static final Throwable TERMINATED = new TerminatedThrowable("Operator has been terminated");
+	public static final Throwable TERMINATED = new StaticThrowable("Operator has been terminated");
 
 	/**
 	 * Update an empty atomic reference with the given exception, or combine further added
@@ -594,12 +594,23 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Terminated Throwable to avoid classloader leaks in backtrace field
+	 * A general-purpose {@link Throwable} that is suitable for usage as a static final
+	 * field. It avoids {@link ClassLoader}-related leaks by bypassing stacktrace filling.
+	 * Exception {{@link Exception#addSuppressed(Throwable)} suppression} is also disabled.
 	 */
-	static final class TerminatedThrowable extends Error {
+	//see https://github.com/reactor/reactor-core/pull/1872
+	static final class StaticThrowable extends Error {
 
-		public TerminatedThrowable(String message) {
+		StaticThrowable(String message) {
 			super(message, null, false, false);
+		}
+
+		StaticThrowable(String message, Throwable cause) {
+			super(message, cause, false, false);
+		}
+
+		StaticThrowable(Throwable cause) {
+			super(cause.toString(), cause, false, false);
 		}
 	}
 
