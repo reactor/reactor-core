@@ -9300,7 +9300,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Function}, into multiple {@link Flux} windows.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/windowUntilChanged.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/windowUntilChangedWithKeySelector.svg" alt="">
 	 * <p>
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
@@ -9320,7 +9320,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * {@link Flux} windows.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/windowUntilChanged.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/windowUntilChangedWithKeySelector.svg" alt="">
 	 * <p>
 	 *
 	 * @reactor.discard This operator discards elements it internally queued for backpressure
@@ -9332,7 +9332,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<Flux<T>> windowUntilChanged(Function<? super T, ? extends V> keySelector,
 			BiPredicate<? super V, ? super V> keyComparator) {
-		return Flux.defer(() -> windowUntil(new FluxBufferPredicate.ChangedPredicate(keySelector, keyComparator), true));
+		return Flux.defer(() -> windowUntil(new FluxBufferPredicate.ChangedPredicate<T, V>
+				(keySelector, keyComparator), true));
 	}
 
 	/**
