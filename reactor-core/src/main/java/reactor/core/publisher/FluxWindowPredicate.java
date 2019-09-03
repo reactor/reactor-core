@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -267,6 +268,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
+				cleanup();
 				drain();
 			}
 			else {
@@ -279,6 +281,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			if(done) {
 				return;
 			}
+			cleanup();
 
 			WindowFlux<T> g = window;
 			if (g != null) {
@@ -288,6 +291,13 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			done = true;
 			WINDOW_COUNT.decrementAndGet(this);
 			drain();
+		}
+
+		void cleanup() {
+			// necessary cleanup if predicate contains a state
+			if (predicate instanceof Disposable) {
+				((Disposable) predicate).dispose();
+			}
 		}
 
 		@Override

@@ -9278,6 +9278,64 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Collect subsequent repetitions of an element (that is, if they arrive right after
+	 * one another) into multiple {@link Flux} windows.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/windowUntilChanged.svg" alt="">
+	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
+	 *
+	 * @return a microbatched {@link Flux} of {@link Flux} windows.
+	 */
+	public final <V> Flux<Flux<T>> windowUntilChanged() {
+		return windowUntilChanged(identityFunction());
+	}
+
+	/**
+	 * Collect subsequent repetitions of an element (that is, if they arrive right after
+	 * one another), as compared by a key extracted through the user provided {@link
+	 * Function}, into multiple {@link Flux} windows.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/windowUntilChanged.svg" alt="">
+	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
+	 *
+	 * @param keySelector function to compute comparison key for each element
+	 * @return a microbatched {@link Flux} of {@link Flux} windows.
+	 */
+	public final <V> Flux<Flux<T>> windowUntilChanged(Function<? super T, ? super V> keySelector) {
+		return windowUntilChanged(keySelector, equalPredicate());
+	}
+
+	/**
+	 * Collect subsequent repetitions of an element (that is, if they arrive right after
+	 * one another), as compared by a key extracted through the user provided {@link
+	 * Function} and compared using a supplied {@link BiPredicate}, into multiple
+	 * {@link Flux} windows.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/windowUntilChanged.svg" alt="">
+	 * <p>
+	 *
+	 * @reactor.discard This operator discards elements it internally queued for backpressure
+	 * upon cancellation or error triggered by a data signal.
+	 *
+	 * @param keySelector function to compute comparison key for each element
+	 * @param keyComparator predicate used to compare keys
+	 * @return a microbatched {@link Flux} of {@link Flux} windows.
+	 */
+	public final <V> Flux<Flux<T>> windowUntilChanged(Function<? super T, ? extends V> keySelector,
+			BiPredicate<? super V, ? super V> keyComparator) {
+		return Flux.defer(() -> windowUntil(new FluxBufferPredicate.ChangedPredicate(keySelector, keyComparator), true));
+	}
+
+	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that stay open
 	 * while a given predicate matches the source elements. Once the predicate returns
 	 * false, the window closes with an onComplete and the triggering element is discarded.
