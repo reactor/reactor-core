@@ -282,9 +282,9 @@ public class FluxWindowPredicateTest extends
 				    .concatWith(Mono.error(new Throwable("expected")))
 				    .windowUntilChanged();
 
-
 		StepVerifier.create(test)
-		            .expectNextCount(99) // last window discarded onError
+		            .expectSubscription()
+		            .expectNextCount(100)
 		            .verifyErrorMessage("expected");
 
 		System.gc();
