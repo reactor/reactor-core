@@ -41,8 +41,8 @@ configurations {
 
 dependencies {
   // Reactive Streams
-  compile "org.reactivestreams:reactive-streams:1.0.2"
-  testCompile "org.reactivestreams:reactive-streams-tck:1.0.2"
+  compile "org.reactivestreams:reactive-streams:1.0.3"
+  testCompile "org.reactivestreams:reactive-streams-tck:1.0.3"
 
   // JSR-305 annotations
   optional "com.google.code.findbugs:jsr305:3.0.2"
