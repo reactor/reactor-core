@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
@@ -55,24 +56,44 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 		try {
 			worker = Objects.requireNonNull(scheduler.createWorker(),
 					"The scheduler returned a null Function");
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return null;
 		}
 
-		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source,
-				actual, worker, requestOnSeparateThread);
-		actual.onSubscribe(parent);
+		if (actual instanceof ConditionalSubscriber) {
+			@SuppressWarnings("unchecked")
+			ConditionlSubscribeOnSubscriber<T> parent = new ConditionlSubscribeOnSubscriber<>(source,
+				(ConditionalSubscriber<? super T>)actual, worker, requestOnSeparateThread);
+			actual.onSubscribe(parent);
 
-		try {
-			worker.schedule(parent);
-		}
-		catch (RejectedExecutionException ree) {
-			if (parent.s != Operators.cancelledSubscription()) {
-				actual.onError(Operators.onRejectedExecution(ree, parent, null, null,
+			try {
+				worker.schedule(parent);
+			}
+			catch (RejectedExecutionException ree) {
+				if (parent.s != Operators.cancelledSubscription()) {
+					actual.onError(Operators.onRejectedExecution(ree, parent, null, null,
 						actual.currentContext()));
+				}
 			}
 		}
+		else {
+			SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source,
+				actual, worker, requestOnSeparateThread);
+			actual.onSubscribe(parent);
+
+			try {
+				worker.schedule(parent);
+			}
+			catch (RejectedExecutionException ree) {
+				if (parent.s != Operators.cancelledSubscription()) {
+					actual.onError(Operators.onRejectedExecution(ree, parent, null, null,
+						actual.currentContext()));
+				}
+			}
+		}
+
 		return null;
 	}
 
@@ -149,6 +170,158 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			actual.onNext(t);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			try {
+				actual.onError(t);
+			}
+			finally {
+				worker.dispose();
+			}
+		}
+
+		@Override
+		public void onComplete() {
+			actual.onComplete();
+			worker.dispose();
+		}
+
+		@Override
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				Subscription s = S.get(this);
+				if (s != null) {
+					requestUpstream(n, s);
+				}
+				else {
+					Operators.addCap(REQUESTED, this, n);
+					s = S.get(this);
+					if (s != null) {
+						long r = REQUESTED.getAndSet(this, 0L);
+						if (r != 0L) {
+							requestUpstream(r, s);
+						}
+					}
+
+				}
+			}
+		}
+
+		@Override
+		public void run() {
+			THREAD.lazySet(this, Thread.currentThread());
+			source.subscribe(this);
+		}
+
+		@Override
+		public void cancel() {
+			Subscription a = s;
+			if (a != Operators.cancelledSubscription()) {
+				a = S.getAndSet(this, Operators.cancelledSubscription());
+				if (a != null && a != Operators.cancelledSubscription()) {
+					a.cancel();
+				}
+			}
+			worker.dispose();
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return actual;
+		}
+
+	}
+
+	static final class ConditionlSubscribeOnSubscriber<T>
+		implements InnerOperator<T, T>, ConditionalSubscriber<T>, Runnable {
+
+		final ConditionalSubscriber<? super T> actual;
+
+		final Publisher<? extends T> source;
+
+		final Worker  worker;
+		final boolean requestOnSeparateThread;
+
+		volatile Subscription s;
+		static final AtomicReferenceFieldUpdater<ConditionlSubscribeOnSubscriber, Subscription> S =
+			AtomicReferenceFieldUpdater.newUpdater(ConditionlSubscribeOnSubscriber.class,
+				Subscription.class,
+				"s");
+
+
+		volatile long requested;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<ConditionlSubscribeOnSubscriber> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(ConditionlSubscribeOnSubscriber.class,
+				"requested");
+
+		volatile Thread thread;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<ConditionlSubscribeOnSubscriber, Thread> THREAD =
+			AtomicReferenceFieldUpdater.newUpdater(ConditionlSubscribeOnSubscriber.class,
+				Thread.class,
+				"thread");
+
+		ConditionlSubscribeOnSubscriber(Publisher<? extends T> source, ConditionalSubscriber<? super T> actual,
+			Worker worker, boolean requestOnSeparateThread) {
+			this.actual = actual;
+			this.worker = worker;
+			this.source = source;
+			this.requestOnSeparateThread = requestOnSeparateThread;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.setOnce(S, this, s)) {
+				long r = REQUESTED.getAndSet(this, 0L);
+				if (r != 0L) {
+					requestUpstream(r, s);
+				}
+			}
+		}
+
+		void requestUpstream(final long n, final Subscription s) {
+			if (!requestOnSeparateThread || Thread.currentThread() == THREAD.get(this)) {
+				s.request(n);
+			}
+			else {
+				try {
+					worker.schedule(() -> s.request(n));
+				}
+				catch (RejectedExecutionException ree) {
+					if(!worker.isDisposed()) {
+						//FIXME should not throw but if we implement strict
+						// serialization like in StrictSubscriber, onNext will carry an
+						// extra cost
+						throw Operators.onRejectedExecution(ree, this, null, null,
+							actual.currentContext());
+					}
+				}
+			}
+		}
+
+		@Override
+		public void onNext(T t) {
+			actual.onNext(t);
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			return actual.tryOnNext(t);
 		}
 
 		@Override
