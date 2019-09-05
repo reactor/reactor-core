@@ -731,6 +731,7 @@ public abstract class Schedulers {
 
 	// Internals
 	static final String ELASTIC               = "elastic"; // IO stuff
+	static final String CAPPED                = "capped"; // Blocking stuff with scale to zero
 	static final String PARALLEL              = "parallel"; //scale up common tasks
 	static final String SINGLE                = "single"; //non blocking tasks
 	static final String IMMEDIATE             = "immediate";

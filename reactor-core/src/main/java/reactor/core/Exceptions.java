@@ -250,6 +250,16 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return a new {@link RejectedExecutionException} with given message.
+	 *
+	 * @param message the rejection message
+	 * @return a new {@link RejectedExecutionException} with custom message
+	 */
+	public static RejectedExecutionException failWithRejected(String message) {
+		return new ReactorRejectedExecutionException(message);
+	}
+
+	/**
 	 * Check if the given exception represents an {@link #failWithOverflow() overflow}.
 	 * @param t the {@link Throwable} error to check
 	 * @return true if the given {@link Throwable} represents an overflow.
