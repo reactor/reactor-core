@@ -174,63 +174,6 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void scanName() {
-		Scheduler withNamedFactory = Schedulers.newCapped(3, "scanName", 1);
-		Scheduler withBasicFactory = Schedulers.newCapped(3, Thread::new, 1);
-		//TODO add test for the cached version when there is a default capped()
-//		Scheduler cached = Schedulers.elastic();
-
-		Scheduler.Worker workerWithNamedFactory = withNamedFactory.createWorker();
-		Scheduler.Worker workerWithBasicFactory = withBasicFactory.createWorker();
-
-		try {
-			assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
-					.as("withNamedFactory")
-					.isEqualTo("capped(\"scanName\")");
-
-			assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
-					.as("withBasicFactory")
-					.isEqualTo("capped()");
-
-			//TODO reactivate assertions when there is a default capped()
-//			assertThat(cached)
-//					.as("capped() is cached")
-//					.is(SchedulersTest.CACHED_SCHEDULER);
-//			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
-//					.as("default capped()")
-//					.isEqualTo("capped(\"capped\")");
-
-			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
-					.as("workerWithNamedFactory")
-					.isEqualTo("capped(\"scanName\").worker");
-
-			assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
-					.as("workerWithBasicFactory")
-					.isEqualTo("capped().worker");
-		}
-		finally {
-			withNamedFactory.dispose();
-			withBasicFactory.dispose();
-			workerWithNamedFactory.dispose();
-			workerWithBasicFactory.dispose();
-		}
-	}
-
-	@Test
-	public void scanCapacity() {
-		Scheduler scheduler = Schedulers.newCapped(2, Thread::new, 2);
-		Scheduler.Worker worker = scheduler.createWorker();
-		try {
-			assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler capped").isEqualTo(2);
-			assertThat(Scannable.from(worker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(1);
-		}
-		finally {
-			worker.dispose();
-			scheduler.dispose();
-		}
-	}
-
-	@Test
 	public void lifoEviction() throws InterruptedException {
 		Scheduler scheduler = autoCleanup(new CappedScheduler(200, r -> new Thread(r, "dequeueEviction"), 1));
 		int otherThreads = Thread.activeCount();
@@ -318,5 +261,80 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 			          assertThat(Arrays.stream(tarray).map(Thread::getName))
 					          .doesNotContain(threadName.get());
 				    });
+	}
+
+	@Test
+	public void deferredWorkerDisposedEarly() {
+		CappedScheduler s = autoCleanup(new reactor.core.scheduler.CappedScheduler(1, Thread::new,10));
+		Scheduler.Worker firstWorker = autoCleanup(s.createWorker());
+		Scheduler.Worker worker = s.createWorker();
+
+		assertThat(s.deferredWorkers).as("deferred workers before inverted dispose").hasSize(1);
+		assertThat(s.idleServicesWithExpiry).as("threads before inverted dispose").isEmpty();
+
+		worker.dispose();
+		firstWorker.dispose();
+
+		assertThat(s.deferredWorkers).as("deferred workers after inverted dispose").isEmpty();
+		assertThat(s.idleServicesWithExpiry).as("threads after inverted dispose").hasSize(1);
+	}
+
+	@Test
+	public void scanName() {
+		Scheduler withNamedFactory = autoCleanup(Schedulers.newCapped(1, "scanName", 1));
+		Scheduler withBasicFactory = autoCleanup(Schedulers.newCapped(1, Thread::new, 1));
+		//TODO add test for the cached version when there is a default capped()
+//		Scheduler cached = Schedulers.elastic();
+
+		Scheduler.Worker workerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
+		Scheduler.Worker deferredWorkerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
+		Scheduler.Worker workerWithBasicFactory = autoCleanup(withBasicFactory.createWorker());
+		Scheduler.Worker deferredWorkerWithBasicFactory = autoCleanup(withBasicFactory.createWorker());
+
+		assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
+				.as("withNamedFactory")
+				.isEqualTo("capped(\"scanName\")");
+
+		assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
+				.as("withBasicFactory")
+				.isEqualTo("capped()");
+
+		//TODO reactivate assertions when there is a default capped()
+//			assertThat(cached)
+//					.as("capped() is cached")
+//					.is(SchedulersTest.CACHED_SCHEDULER);
+//			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
+//					.as("default capped()")
+//					.isEqualTo("capped(\"capped\")");
+
+		assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
+				.as("workerWithNamedFactory")
+				.isEqualTo("capped(\"scanName\").worker");
+
+		assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
+				.as("workerWithBasicFactory")
+				.isEqualTo("capped().worker");
+
+		assertThat(Scannable.from(deferredWorkerWithNamedFactory).scan(Scannable.Attr.NAME))
+				.as("deferredWorkerWithNamedFactory")
+				.isEqualTo("capped(\"scanName\").deferredWorker");
+
+		assertThat(Scannable.from(deferredWorkerWithBasicFactory).scan(Scannable.Attr.NAME))
+				.as("deferredWorkerWithBasicFactory")
+				.isEqualTo("capped().deferredWorker");
+	}
+
+	@Test
+	public void scanCapacity() {
+		Scheduler scheduler = autoCleanup(Schedulers.newCapped(1, Thread::new, 2));
+		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
+		Scheduler.Worker deferredWorker = autoCleanup(scheduler.createWorker());
+
+		//smoke test that second worker is a DeferredWorker
+		assertThat(deferredWorker).as("check second worker is deferred").isExactlyInstanceOf(CappedScheduler.DeferredWorker.class);
+
+		assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler capped").isEqualTo(1);
+		assertThat(Scannable.from(activeWorker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(1);
+		assertThat(Scannable.from(deferredWorker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(Integer.MAX_VALUE);
 	}
 }

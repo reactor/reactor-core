@@ -187,7 +187,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			if (shutdown) {
 				return new ActiveWorker(SHUTDOWN);
 			}
-			DeferredWorker deferredWorker = new DeferredWorker();
+			DeferredWorker deferredWorker = new DeferredWorker(this.toString());
 			this.deferredWorkers.offer(deferredWorker);
 			return deferredWorker;
 		}
@@ -251,6 +251,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.CAPACITY) return cap;
+		//TODO re-evaluate BUFFERED: should this include deferredWorkers?
 		if (key == Attr.BUFFERED) return idleServicesWithExpiry.size(); //BUFFERED: number of workers alive
 		if (key == Attr.NAME) return this.toString();
 
@@ -258,6 +259,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
+		//TODO re-evaluate the inners? should these include deferredWorkers? allServices?
 	public Stream<? extends Scannable> inners() {
 		return idleServicesWithExpiry.stream()
 		                             .map(cached -> cached.cached);
@@ -469,6 +471,12 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		static final AtomicIntegerFieldUpdater<DeferredWorker> DISPOSED =
 				AtomicIntegerFieldUpdater.newUpdater(DeferredWorker.class, "disposed");
 
+		final String workerName;
+
+		DeferredWorker(String parentName) {
+			this.workerName = parentName + ".deferredWorker";
+		}
+
 		public void setDelegate(ActiveWorker delegate) {
 			if (DISPOSED.get(this) == 1) {
 				delegate.dispose();
@@ -557,11 +565,15 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
-//			if (key == Attr.NAME) return delegate.scanUnsafe(key) + ".worker";
-//			if (key == Attr.PARENT) return parent;
-//
-//			return cached.scanUnsafe(key);
-			//FIXME
+			if (key == Attr.NAME) return workerName;
+			if (key == Attr.CAPACITY) return Integer.MAX_VALUE;
+			if (key == Attr.BUFFERED) return this.size();
+
+			ActiveWorker d = delegate;
+			if (d != null) {
+				if (key == Attr.PARENT) return d.cached.parent;
+				return d.cached.scanUnsafe(key);
+			}
 			return null;
 		}
 	}
