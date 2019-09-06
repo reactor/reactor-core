@@ -80,7 +80,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	static final AtomicIntegerFieldUpdater<CappedScheduler> REMAINING =
 			AtomicIntegerFieldUpdater.newUpdater(CappedScheduler.class, "remaining");
 
-	CappedScheduler(ThreadFactory factory, int ttlSeconds, int cap) {
+	CappedScheduler(int cap, ThreadFactory factory, int ttlSeconds) {
 		if (ttlSeconds < 0) {
 			throw new IllegalArgumentException("ttlSeconds must be positive, was: " + ttlSeconds);
 		}

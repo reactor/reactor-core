@@ -27,6 +27,7 @@ import org.awaitility.Awaitility;
 import org.junit.Test;
 
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -50,10 +51,10 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 		//TODO replace with Schedulers factory
 		return autoCleanup(
 				new CappedScheduler(
+						4,
 						new ReactorThreadFactory("cappedSchedulerTest", CappedScheduler.COUNTER,
 								false, false, Schedulers::defaultUncaughtException),
-						10,
-						4
+						10
 				));
 	}
 
@@ -125,24 +126,24 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void negativeTtl() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new CappedScheduler(null, -1, 1));
+				.isThrownBy(() -> new CappedScheduler(1,null, -1));
 	}
 
 	@Test
 	public void negativeCap() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new CappedScheduler(null, 1, -1));
+				.isThrownBy(() -> new CappedScheduler(-1, null, 1));
 	}
 
 	@Test
 	public void zeroCap() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new CappedScheduler(null, 1, 0));
+				.isThrownBy(() -> new CappedScheduler(0,null, 1));
 	}
 
 	@Test
 	public void eviction() {
-		CappedScheduler s = autoCleanup(new CappedScheduler(r -> new Thread(r, "eviction"), 1, 2));
+		CappedScheduler s = autoCleanup(new CappedScheduler(2, r -> new Thread(r, "eviction"), 1));
 
 		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
 		Scheduler.Worker worker2 = autoCleanup(s.createWorker());
@@ -170,116 +171,66 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 		          });
 	}
 
-//	@Test
-//	public void smokeTestDelay() {
-//		for (int i = 0; i < 20; i++) {
-//			Scheduler s = Schedulers.newElastic("test");
-//			AtomicLong start = new AtomicLong();
-//			AtomicLong end = new AtomicLong();
-//
-//			try {
-//				StepVerifier.create(Mono
-//						.delay(Duration.ofMillis(100), s)
-//						.doOnSubscribe(sub -> start.set(System.nanoTime()))
-//						.doOnTerminate(() -> end.set(System.nanoTime()))
-//				)
-//				            .expectSubscription()
-//				            .expectNext(0L)
-//				            .verifyComplete();
-//
-//				long endValue = end.longValue();
-//				long startValue = start.longValue();
-//				long measuredDelay = endValue - startValue;
-//				long measuredDelayMs = TimeUnit.NANOSECONDS.toMillis(measuredDelay);
-//				assertThat(measuredDelayMs)
-//						.as("iteration %s, measured delay %s nanos, start at %s nanos, end at %s nanos", i, measuredDelay, startValue, endValue)
-//						.isGreaterThanOrEqualTo(100L)
-//						.isLessThan(200L);
-//			}
-//			finally {
-//				s.dispose();
-//			}
-//		}
-//	}
-//
-//	@Test
-//	public void smokeTestInterval() {
-//		Scheduler s = scheduler();
-//
-//		try {
-//			StepVerifier.create(Flux.interval(Duration.ofMillis(100), Duration.ofMillis(200), s))
-//			            .expectSubscription()
-//			            .expectNoEvent(Duration.ofMillis(100))
-//			            .expectNext(0L)
-//			            .expectNoEvent(Duration.ofMillis(200))
-//			            .expectNext(1L)
-//			            .expectNoEvent(Duration.ofMillis(200))
-//			            .expectNext(2L)
-//			            .thenCancel();
-//		}
-//		finally {
-//			s.dispose();
-//		}
-//	}
-//
-//	@Test
-//	public void scanName() {
-//		Scheduler withNamedFactory = Schedulers.newElastic("scanName", 1);
-//		Scheduler withBasicFactory = Schedulers.newElastic(1, Thread::new);
+	@Test
+	public void scanName() {
+		Scheduler withNamedFactory = Schedulers.newCapped(3, "scanName", 1);
+		Scheduler withBasicFactory = Schedulers.newCapped(3, Thread::new, 1);
+		//TODO add test for the cached version when there is a default capped()
 //		Scheduler cached = Schedulers.elastic();
-//
-//		Scheduler.Worker workerWithNamedFactory = withNamedFactory.createWorker();
-//		Scheduler.Worker workerWithBasicFactory = withBasicFactory.createWorker();
-//
-//		try {
-//			assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
-//					.as("withNamedFactory")
-//					.isEqualTo("elastic(\"scanName\")");
-//
-//			assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
-//					.as("withBasicFactory")
-//					.isEqualTo("elastic()");
-//
+
+		Scheduler.Worker workerWithNamedFactory = withNamedFactory.createWorker();
+		Scheduler.Worker workerWithBasicFactory = withBasicFactory.createWorker();
+
+		try {
+			assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
+					.as("withNamedFactory")
+					.isEqualTo("capped(\"scanName\")");
+
+			assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
+					.as("withBasicFactory")
+					.isEqualTo("capped()");
+
+			//TODO reactivate assertions when there is a default capped()
 //			assertThat(cached)
-//					.as("elastic() is cached")
+//					.as("capped() is cached")
 //					.is(SchedulersTest.CACHED_SCHEDULER);
 //			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
-//					.as("default elastic()")
-//					.isEqualTo("elastic(\"elastic\")");
-//
-//			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
-//					.as("workerWithNamedFactory")
-//					.isEqualTo("elastic(\"scanName\").worker");
-//
-//			assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
-//					.as("workerWithBasicFactory")
-//					.isEqualTo("elastic().worker");
-//		}
-//		finally {
-//			withNamedFactory.dispose();
-//			withBasicFactory.dispose();
-//			workerWithNamedFactory.dispose();
-//			workerWithBasicFactory.dispose();
-//		}
-//	}
-//
-//	@Test
-//	public void scanCapacity() {
-//		Scheduler scheduler = Schedulers.newElastic(2, Thread::new);
-//		Scheduler.Worker worker = scheduler.createWorker();
-//		try {
-//			assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler unbounded").isEqualTo(Integer.MAX_VALUE);
-//			assertThat(Scannable.from(worker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(1);
-//		}
-//		finally {
-//			worker.dispose();
-//			scheduler.dispose();
-//		}
-//	}
-//
+//					.as("default capped()")
+//					.isEqualTo("capped(\"capped\")");
+
+			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithNamedFactory")
+					.isEqualTo("capped(\"scanName\").worker");
+
+			assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
+					.as("workerWithBasicFactory")
+					.isEqualTo("capped().worker");
+		}
+		finally {
+			withNamedFactory.dispose();
+			withBasicFactory.dispose();
+			workerWithNamedFactory.dispose();
+			workerWithBasicFactory.dispose();
+		}
+	}
+
+	@Test
+	public void scanCapacity() {
+		Scheduler scheduler = Schedulers.newCapped(2, Thread::new, 2);
+		Scheduler.Worker worker = scheduler.createWorker();
+		try {
+			assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler capped").isEqualTo(2);
+			assertThat(Scannable.from(worker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(1);
+		}
+		finally {
+			worker.dispose();
+			scheduler.dispose();
+		}
+	}
+
 	@Test
 	public void lifoEviction() throws InterruptedException {
-		Scheduler scheduler = autoCleanup(new CappedScheduler(r -> new Thread(r, "dequeueEviction"), 1, 200));
+		Scheduler scheduler = autoCleanup(new CappedScheduler(200, r -> new Thread(r, "dequeueEviction"), 1));
 		int otherThreads = Thread.activeCount();
 		try {
 
