@@ -264,6 +264,32 @@ public abstract class Schedulers {
 	/**
 	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
 	 * Workers, reusing them once the Workers have been shut down. The underlying (user) threads
+	 * can be evicted if idle for more than {@value CappedScheduler#DEFAULT_TTL_SECONDS} seconds.
+	 * <p>
+	 * The maximum number of created thread pools is bounded by the provided {@code cap}.
+	 * If a worker is requested while the cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
+	 * is provided which will enqueue the tasks submitted to it, deferring the actual submission
+	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
+	 * If a task is directly submitted to the {@link Scheduler} while the cap has been reached,
+	 * then it will be rejected with a {@link RejectedExecutionException}.
+	 * <p>
+	 * This scheduler is not restartable. Backing threads are user threads. so they will prevent the JVM
+	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
+	 * scheduler has been {@link Scheduler#dispose() disposed}.
+	 *
+	 * @param cap maximum number of underlying threads to create
+	 * @param name Thread prefix
+	 *
+	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
+	 * the number of backing threads, reuses threads and evict idle ones
+	 */
+	public static Scheduler newCapped(int cap, String name) {
+		return newCapped(cap, name, CappedScheduler.DEFAULT_TTL_SECONDS, false);
+	}
+
+	/**
+	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
+	 * Workers, reusing them once the Workers have been shut down. The underlying (user) threads
 	 * can be evicted if idle for more than {@code ttlSeconds}.
 	 * <p>
 	 * The maximum number of created thread pools is bounded by the provided {@code cap}.
