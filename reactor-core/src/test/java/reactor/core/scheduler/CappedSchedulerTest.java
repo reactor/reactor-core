@@ -16,10 +16,12 @@
 
 package reactor.core.scheduler;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.pivovarit.function.ThrowingRunnable;
 import org.assertj.core.data.Offset;
@@ -284,64 +286,37 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 			LOGGER.info("{} threads active post shutdown", Thread.activeCount() - otherThreads);
 		}
 	}
-//
-//	@Test
-//	public void doesntRecycleWhileRunningAfterDisposed() throws Exception {
-//		Scheduler s = Schedulers.newElastic("test-recycle");
-//		((ElasticScheduler)s).evictor.shutdownNow();
-//
-//		try {
-//			AtomicBoolean stop = new AtomicBoolean(false);
-//			CountDownLatch started = new CountDownLatch(1);
-//			Disposable d = s.schedule(() -> {
-//				started.countDown();
-//				// simulate uninterruptible computation
-//				for (;;) {
-//					if (stop.get()) {
-//						break;
-//					}
-//				}
-//			});
-//			assertThat(started.await(10, TimeUnit.SECONDS)).as("latch timeout").isTrue();
-//			d.dispose();
-//
-//			Thread.sleep(100);
-//			assertThat(((ElasticScheduler)s).cache).isEmpty();
-//
-//			stop.set(true);
-//
-//			Thread.sleep(100);
-//			assertThat(((ElasticScheduler)s).cache.size()).isEqualTo(1);
-//		}
-//		finally {
-//			s.dispose();
-//		}
-//	}
-//
-//	@Test
-//	public void recycleOnce() throws Exception {
-//		Scheduler s = Schedulers.newElastic("test-recycle");
-//		((ElasticScheduler)s).evictor.shutdownNow();
-//
-//		try {
-//			Disposable d = s.schedule(() -> {
-//				try {
-//					Thread.sleep(10000);
-//				}
-//				catch (InterruptedException e) {
-//					Thread.currentThread().interrupt();
-//				}
-//			});
-//
-//			// Dispose twice to test that the executor is returned to the pool only once
-//			d.dispose();
-//			d.dispose();
-//
-//			Thread.sleep(100);
-//			assertThat(((ElasticScheduler)s).cache.size()).isEqualTo(1);
-//		}
-//		finally {
-//			s.dispose();
-//		}
-//	}
+
+	@Test
+	public void userWorkerShutdownBySchedulerDisposal() throws InterruptedException {
+		Scheduler s = autoCleanup(Schedulers.newCapped(4, "cappedUserThread", 10, false));
+		Scheduler.Worker w = autoCleanup(s.createWorker());
+
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<String> threadName = new AtomicReference<>();
+
+		w.schedule(() -> {
+			threadName.set(Thread.currentThread().getName());
+			latch.countDown();
+		});
+
+		assertThat(latch.await(5, TimeUnit.SECONDS)).as("latch 5s").isTrue();
+
+		s.dispose();
+
+		Awaitility.with().pollInterval(100, TimeUnit.MILLISECONDS)
+		          .await().atMost(500, TimeUnit.MILLISECONDS)
+		          .untilAsserted(() -> {
+			          Thread[] tarray = new Thread[0];
+			          for(;;) {
+				          tarray = new Thread[Thread.activeCount()];
+				          int dumped = Thread.enumerate(tarray);
+				          if (dumped <= tarray.length) {
+					          break;
+				          }
+			          }
+			          assertThat(Arrays.stream(tarray).map(Thread::getName))
+					          .doesNotContain(threadName.get());
+				    });
+	}
 }
