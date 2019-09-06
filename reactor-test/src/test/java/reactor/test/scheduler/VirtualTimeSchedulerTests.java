@@ -51,18 +51,21 @@ public class VirtualTimeSchedulerTests {
 	public void allEnabled() {
 		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
+		Assert.assertFalse(Schedulers.newCapped(4, "") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
 
 		VirtualTimeScheduler.getOrSet();
 
 		Assert.assertTrue(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
 		Assert.assertTrue(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
+		Assert.assertTrue(Schedulers.newCapped(4, "") instanceof VirtualTimeScheduler);
 		Assert.assertTrue(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 
 		Assert.assertSame(Schedulers.newParallel(""), t);
 		Assert.assertSame(Schedulers.newElastic(""), t);
+		Assert.assertSame(Schedulers.newCapped(5, ""), t); //same even though different parameter
 		Assert.assertSame(Schedulers.newSingle(""), t);
 	}
 
