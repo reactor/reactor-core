@@ -1278,8 +1278,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
         test.requested = 35;
         Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
-        test.queue.add(1);
-        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
@@ -1289,6 +1287,12 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+
+        //once cancelled, there shouldn't be any draining left
+        // => better place to test that BUFFERED reflects the size of the queue
+        test.queue.add(1);
+        test.queue.add(1);
+        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
     }
 
 	@Test
