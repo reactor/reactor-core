@@ -62,7 +62,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super C> actual) {
 		return new BufferTimeoutSubscriber<>(
 				Operators.serialize(actual),
 				batchSize,

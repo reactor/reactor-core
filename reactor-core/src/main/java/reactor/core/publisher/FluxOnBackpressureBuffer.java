@@ -54,7 +54,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 	}
 
 	@Override
-	public CoreSubscriber<? super O> subscribeOrReturn(CoreSubscriber<? super O> actual) {
+	CoreSubscriber<? super O> internalSubscribeOrReturn(CoreSubscriber<? super O> actual) {
 		return new BackpressureBufferSubscriber<>(actual,
 				bufferSize,
 				unbounded,

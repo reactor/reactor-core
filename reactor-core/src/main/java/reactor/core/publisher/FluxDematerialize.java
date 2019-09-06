@@ -31,7 +31,7 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super Signal<T>> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super Signal<T>> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new DematerializeSubscriber<>(actual, false);
 	}
 

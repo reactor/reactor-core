@@ -64,7 +64,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Queue<SampleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
 
 		SampleTimeoutMain<T, U> main = new SampleTimeoutMain<>(actual, throttler, q);

@@ -64,7 +64,7 @@ final class MonoTimeout<T, U, V> extends InternalMonoOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 

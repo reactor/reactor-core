@@ -54,7 +54,7 @@ final class ConnectableFluxOnAssembly<T> extends InternalConnectableFluxOperator
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	final CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return FluxOnAssembly.wrapSubscriber(actual, source, stacktrace);
 	}
 

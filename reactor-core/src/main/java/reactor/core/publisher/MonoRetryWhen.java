@@ -46,7 +46,7 @@ final class MonoRetryWhen<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxRetryWhen.subscribe(actual, whenSourceFactory, source);
 		return null;
 	}

@@ -1271,8 +1271,12 @@ public abstract class Operators {
 
 		final Publisher<T> publisher;
 
+		@Nullable
+		final CoreOperator<?, T> coreOperator;
+
 		CorePublisherAdapter(Publisher<T> publisher) {
 			this.publisher = publisher;
+			this.coreOperator = publisher instanceof CoreOperator ? (CoreOperator) publisher : null;
 		}
 
 		@Override
@@ -1287,12 +1291,16 @@ public abstract class Operators {
 
 		@Override
 		public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+			if (coreOperator == null) {
+				publisher.subscribe(actual);
+				return null;
+			}
 			return actual;
 		}
 
 		@Override
-		public Publisher<? extends T> source() {
-			return publisher;
+		public final CoreOperator<?, ? extends T> source() {
+			return coreOperator;
 		}
 	}
 

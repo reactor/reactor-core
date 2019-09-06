@@ -54,7 +54,7 @@ final class MonoPeek<T> extends InternalMonoOperator<T, T> implements SignalPeek
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			return new PeekConditionalSubscriber<>(
 					(ConditionalSubscriber<? super T>) actual, this);

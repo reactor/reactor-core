@@ -19,7 +19,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 
 /**
@@ -41,7 +40,7 @@ final class MonoDelaySubscription<T, U> extends InternalMonoOperator<T, T>
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		other.subscribe(new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<>(
 				actual, this));
 		return null;

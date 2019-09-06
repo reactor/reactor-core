@@ -46,17 +46,22 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator
 
 	Function<? super T, ? extends Publisher<?>>[] otherGenerators;
 
+	@Nullable
+	final CoreOperator<?, T> coreOperator;
+
 	@SuppressWarnings("unchecked")
 	MonoDelayUntil(Mono<T> monoSource,
 			Function<? super T, ? extends Publisher<?>> triggerGenerator) {
 		this.source = Objects.requireNonNull(monoSource, "monoSource");
 		this.otherGenerators = new Function[] { Objects.requireNonNull(triggerGenerator, "triggerGenerator")};
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	MonoDelayUntil(Mono<T> monoSource,
 			Function<? super T, ? extends Publisher<?>>[] triggerGenerators) {
 		this.source = Objects.requireNonNull(monoSource, "monoSource");
 		this.otherGenerators = triggerGenerators;
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	/**
@@ -85,12 +90,17 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator
 	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(actual, otherGenerators);
 		actual.onSubscribe(parent);
+
+		if (coreOperator == null) {
+			source.subscribe(parent);
+			return null;
+		}
 		return parent;
 	}
 
 	@Override
-	public final Mono<T> source() {
-		return source;
+	public final CoreOperator<?, ? extends T> source() {
+		return coreOperator;
 	}
 
 	@Override

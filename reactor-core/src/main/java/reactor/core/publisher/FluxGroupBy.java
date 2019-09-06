@@ -78,7 +78,7 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super GroupedFlux<K, V>> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super GroupedFlux<K, V>> actual) {
 		return new GroupByMain<>(actual,
 				mainQueueSupplier.get(),
 				groupQueueSupplier,

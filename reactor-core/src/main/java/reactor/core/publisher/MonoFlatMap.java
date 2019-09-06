@@ -48,7 +48,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
 		//for now Mono in general doesn't support onErrorContinue, so the scalar version shouldn't either
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, true, false)) {
 			return null;

@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
@@ -70,7 +69,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 	}
 
 	@Override
-	public CoreSubscriber<? super TLeft> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	CoreSubscriber<? super TLeft> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
 
 		JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
 				new JoinSubscription<>(actual,

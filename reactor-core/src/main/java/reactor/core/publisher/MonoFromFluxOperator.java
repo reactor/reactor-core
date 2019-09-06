@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -35,6 +34,9 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable, 
 
 	protected final Flux<? extends I> source;
 
+	@Nullable
+	final CoreOperator<?, I> coreOperator;
+
 	/**
 	 * Build a {@link MonoFromFluxOperator} wrapper around the passed parent {@link Publisher}
 	 *
@@ -42,6 +44,7 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable, 
 	 */
 	protected MonoFromFluxOperator(Flux<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	@Override
@@ -55,35 +58,43 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable, 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
-		Publisher publisher = this;
-
-		// do-while since `this` already implements `CoreOperator`
-		do {
-			CoreOperator operator = (CoreOperator) publisher;
-
+		CoreOperator operator = this;
+		while (true) {
 			subscriber = operator.subscribeOrReturn(subscriber);
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			publisher = operator.source();
-		}
-		while (publisher instanceof CoreOperator);
-
-		if (publisher instanceof CorePublisher) {
-			((CorePublisher) publisher).subscribe(subscriber);
-		}
-		else {
-			publisher.subscribe(subscriber);
+			CoreOperator newSource = operator.source();
+			if (newSource == null) {
+				throw new NullPointerException("Operator's " + operator.getClass() + " source is 'null'");
+			}
+			operator = newSource;
 		}
 	}
 
 	@Override
-	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
+	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
+		CoreSubscriber<? super I> subscriber = internalSubscribeOrReturn(actual);
+		if (subscriber == null) {
+			// null means "I will subscribe myself", returning...
+			return null;
+		}
+
+		if (coreOperator == null) {
+			source.subscribe(subscriber);
+			return null;
+		}
+
+		return subscriber;
+	}
+
+	@Nullable
+	abstract CoreSubscriber<? super I> internalSubscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
-	public final CorePublisher<? extends I> source() {
-		return source;
+	public final CoreOperator<?, ? extends I> source() {
+		return coreOperator;
 	}
 
 }

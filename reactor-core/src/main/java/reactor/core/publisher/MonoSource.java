@@ -36,8 +36,12 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 
 	final Publisher<? extends I> source;
 
+	@Nullable
+	final CoreOperator<?, I> coreOperator;
+
 	MonoSource(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	/**
@@ -53,12 +57,16 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
+		if (coreOperator == null) {
+			source.subscribe(actual);
+			return null;
+		}
 		return actual;
 	}
 
 	@Override
-	public Publisher<? extends I> source() {
-		return source;
+	public final CoreOperator<?, ? extends I> source() {
+		return coreOperator;
 	}
 
 	@Override

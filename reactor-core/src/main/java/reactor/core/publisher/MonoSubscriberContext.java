@@ -34,7 +34,7 @@ final class MonoSubscriberContext<T> extends InternalMonoOperator<T, T> implemen
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Context c;
 		try {
 			c = doOnContext.apply(actual.currentContext());

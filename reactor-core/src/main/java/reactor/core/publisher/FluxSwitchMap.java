@@ -76,7 +76,7 @@ final class FluxSwitchMap<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
 		//for now switchMap doesn't support onErrorContinue, so the scalar version shouldn't either
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false, false)) {
 			return null;

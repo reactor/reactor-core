@@ -70,7 +70,7 @@ final class MonoCallableOnAssembly<T> extends InternalMonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super T>
 					cs = (Fuseable.ConditionalSubscriber<? super T>) actual;

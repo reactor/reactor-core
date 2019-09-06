@@ -50,7 +50,7 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
 		MonoPublishMulticaster<T> multicast = new MonoPublishMulticaster<>(actual.currentContext());
 
 		Mono<? extends R> out;

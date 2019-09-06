@@ -36,7 +36,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super List<T>> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super List<T>> actual) {
 		return new MonoCollectListSubscriber<>(actual);
 	}
 

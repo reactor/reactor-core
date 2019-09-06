@@ -17,9 +17,9 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
-import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an
@@ -30,41 +30,52 @@ import reactor.core.Scannable;
  */
 abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements Scannable, CoreOperator<O, I> {
 
+	@Nullable
+	final CoreOperator<?, I> coreOperator;
+
 	protected InternalMonoOperator(Mono<? extends I> source) {
 		super(source);
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
-		Publisher publisher = this;
-
-		// do-while since `this` already implements `CoreOperator`
-		do {
-			CoreOperator operator = (CoreOperator) publisher;
-
+		CoreOperator operator = this;
+		while (true) {
 			subscriber = operator.subscribeOrReturn(subscriber);
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			publisher = operator.source();
-		}
-		while (publisher instanceof CoreOperator);
-
-		if (publisher instanceof CorePublisher) {
-			((CorePublisher) publisher).subscribe(subscriber);
-		}
-		else {
-			publisher.subscribe(subscriber);
+			CoreOperator newSource = operator.source();
+			if (newSource == null) {
+				throw new NullPointerException("Operator's " + operator.getClass() + " source is 'null'");
+			}
+			operator = newSource;
 		}
 	}
 
 	@Override
-	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
+	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
+		CoreSubscriber<? super I> subscriber = internalSubscribeOrReturn(actual);
+		if (subscriber == null) {
+			return null;
+		}
+
+		if (coreOperator == null) {
+			source.subscribe(subscriber);
+			return null;
+		}
+
+		return subscriber;
+	}
+
+	@Nullable
+	abstract CoreSubscriber<? super I> internalSubscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
-	public final Mono<? extends I> source() {
-		return source;
+	public final CoreOperator<?, ? extends I> source() {
+		return coreOperator;
 	}
 }

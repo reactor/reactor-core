@@ -55,7 +55,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new ElementAtSubscriber<>(actual, index, defaultValue);
 	}
 

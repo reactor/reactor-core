@@ -85,7 +85,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		if (skip == size) {
 			return new WindowExactSubscriber<>(actual,
 					size,

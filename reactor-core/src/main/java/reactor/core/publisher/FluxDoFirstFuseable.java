@@ -44,7 +44,7 @@ final class FluxDoFirstFuseable<T> extends InternalFluxOperator<T, T> implements
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		try {
 			onFirst.run();
 		}

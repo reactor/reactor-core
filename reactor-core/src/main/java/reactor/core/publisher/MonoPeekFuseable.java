@@ -57,7 +57,7 @@ final class MonoPeekFuseable<T> extends InternalMonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			return new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<?
 					super T>) actual, this);

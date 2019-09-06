@@ -54,7 +54,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+    CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
         if (actual instanceof Fuseable.ConditionalSubscriber) {
             source.subscribe(new SwitchOnFirstConditionalInner<>((Fuseable.ConditionalSubscriber<? super R>) actual, transformer));
             return null;

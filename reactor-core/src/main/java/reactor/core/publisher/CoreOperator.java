@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
@@ -27,7 +26,7 @@ import reactor.util.annotation.Nullable;
  * @param <IN> the {@link CoreSubscriber} data type
  * @since 3.3.0
  */
-interface CoreOperator<IN, OUT> {
+interface CoreOperator<IN, OUT> extends CorePublisher<IN> {
 
 	/**
 	 * @return next {@link CoreSubscriber} or "null" if the subscription was already done inside the method
@@ -36,8 +35,7 @@ interface CoreOperator<IN, OUT> {
 	CoreSubscriber<? super OUT> subscribeOrReturn(CoreSubscriber<? super IN> actual);
 
 	/**
-	 * @return {@link Publisher} to call {@link CorePublisher#subscribe(CoreSubscriber)} on
-	 * if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
+	 * @return next {@link CoreOperator} if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
 	 */
-	Publisher<? extends OUT> source();
+	CoreOperator<?, ? extends OUT> source();
 }

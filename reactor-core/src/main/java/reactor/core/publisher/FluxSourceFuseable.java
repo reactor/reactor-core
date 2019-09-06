@@ -30,8 +30,12 @@ final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourcePro
 
 	final Publisher<? extends I> source;
 
+	@Nullable
+	final CoreOperator<?, I> coreOperator;
+
 	FluxSourceFuseable(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	/**
@@ -47,12 +51,16 @@ final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourcePro
 
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
+		if (coreOperator == null) {
+			source.subscribe(actual);
+			return null;
+		}
 		return actual;
 	}
 
 	@Override
-	public Publisher<? extends I> source() {
-		return source;
+	public final CoreOperator<?, ? extends I> source() {
+		return coreOperator;
 	}
 
 	@Override

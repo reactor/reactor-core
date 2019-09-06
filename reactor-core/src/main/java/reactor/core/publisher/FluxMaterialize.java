@@ -36,7 +36,7 @@ final class FluxMaterialize<T> extends InternalFluxOperator<T, Signal<T>> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Signal<T>> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super Signal<T>> actual) {
 		return new MaterializeSubscriber<>(actual);
 	}
 

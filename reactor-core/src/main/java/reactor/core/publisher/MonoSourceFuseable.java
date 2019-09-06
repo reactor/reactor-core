@@ -30,8 +30,12 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 
 	final Publisher<? extends I> source;
 
+	@Nullable
+	final CoreOperator<?, I> coreOperator;
+
 	MonoSourceFuseable(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	/**
@@ -47,12 +51,16 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 
 	@Override
 	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
+		if (coreOperator == null) {
+			source.subscribe(actual);
+			return null;
+		}
 		return actual;
 	}
 
 	@Override
-	public final Publisher<? extends I> source() {
-		return source;
+	public final CoreOperator<?, ? extends I> source() {
+		return coreOperator;
 	}
 
 	@Override

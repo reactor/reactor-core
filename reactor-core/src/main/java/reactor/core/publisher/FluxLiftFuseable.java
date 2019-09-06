@@ -37,7 +37,6 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 
 /**
  * @author Stephane Maldini
@@ -55,7 +54,7 @@ final class FluxLiftFuseable<I, O> extends InternalFluxOperator<I, O>
 	}
 
 	@Override
-	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
+	CoreSubscriber<? super I> internalSubscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);
 

@@ -59,7 +59,7 @@ final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
 		ScanSeedCoordinator<T, R> coordinator =
 				new ScanSeedCoordinator<>(actual, source, accumulator, initialSupplier);
 

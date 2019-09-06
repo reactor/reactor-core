@@ -34,24 +34,38 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable, CoreOpera
 
 	final Publisher<? extends T> source;
 
+	@Nullable
+	final CoreOperator<?, T> coreOperator;
+
 	MonoFromPublisher(Publisher<? extends T> source) {
 		this.source = Objects.requireNonNull(source, "publisher");
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(subscribeOrReturn(actual));
+		CoreSubscriber<? super T> subscriber = subscribeOrReturn(actual);
+		if (subscriber == null) {
+			return;
+		}
+		source.subscribe(subscriber);
 	}
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return new MonoNext.NextSubscriber<>(actual);
+		MonoNext.NextSubscriber<T> subscriber = new MonoNext.NextSubscriber<>(actual);
+
+		if (coreOperator == null) {
+			source.subscribe(subscriber);
+			return null;
+		}
+		return subscriber;
 	}
 
 	@Override
-	public Publisher<? extends T> source() {
-		return source;
+	public final CoreOperator<?, ? extends T> source() {
+		return coreOperator;
 	}
 
 	@Override

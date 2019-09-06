@@ -992,11 +992,15 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 					ReplaySubscriber.class,
 					"connection");
 
+	@Nullable
+	final CoreOperator<?, T> coreOperator;
+
 	FluxReplay(CorePublisher<T> source,
 			int history,
 			long ttl,
 			@Nullable Scheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 		this.history = history;
 		if(history < 0){
 			throw new IllegalArgumentException("History cannot be negative : " + history);
@@ -1091,6 +1095,10 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			c.buffer.replay(inner);
 
 			if (expired) {
+				if (coreOperator == null) {
+					source.subscribe(c);
+					return null;
+				}
 				return c;
 			}
 
@@ -1100,8 +1108,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public final CorePublisher<T> source() {
-		return source;
+	public final CoreOperator<?, ? extends T> source() {
+		return coreOperator;
 	}
 
 	@Override

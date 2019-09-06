@@ -32,23 +32,37 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable, CoreOpe
 
 	final Publisher<? extends T> source;
 
+	@Nullable
+	final CoreOperator<?, T> coreOperator;
+
 	MonoIgnorePublisher(Publisher<? extends T> source) {
 		this.source = Objects.requireNonNull(source, "publisher");
+		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(subscribeOrReturn(actual));
+		CoreSubscriber<? super T> subscriber = subscribeOrReturn(actual);
+		if (subscriber == null) {
+			return;
+		}
+		source.subscribe(subscriber);
 	}
 
 	@Override
 	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
+		MonoIgnoreElements.IgnoreElementsSubscriber<T> subscriber = new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
+
+		if (coreOperator == null) {
+			source.subscribe(subscriber);
+			return null;
+		}
+		return subscriber;
 	}
 
 	@Override
-	public final Publisher<? extends T> source() {
-		return source;
+	public final CoreOperator<?, ? extends T> source() {
+		return coreOperator;
 	}
 
 	@Override

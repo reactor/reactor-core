@@ -69,7 +69,7 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.tags);
 	}
 

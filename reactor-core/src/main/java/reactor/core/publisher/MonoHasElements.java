@@ -32,7 +32,7 @@ final class MonoHasElements<T> extends MonoFromFluxOperator<T, Boolean>
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
 		return new HasElementsSubscriber<>(actual);
 	}
 

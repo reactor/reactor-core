@@ -55,7 +55,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, 
 	}
 
 	@Override
-	public CoreSubscriber<? super O> subscribeOrReturn(CoreSubscriber<? super O> actual) {
+	CoreSubscriber<? super O> internalSubscribeOrReturn(CoreSubscriber<? super O> actual) {
 		return new BackpressureBufferDropOldestSubscriber<>(actual,
 				bufferSize,
 				delayError, onBufferOverflow, bufferOverflowStrategy);

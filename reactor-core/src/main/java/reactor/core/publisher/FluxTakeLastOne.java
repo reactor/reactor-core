@@ -31,7 +31,7 @@ final class FluxTakeLastOne<T> extends InternalFluxOperator<T, T> implements Fus
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new MonoTakeLastOne.TakeLastOneSubscriber<>(actual, null, false);
 	}
 

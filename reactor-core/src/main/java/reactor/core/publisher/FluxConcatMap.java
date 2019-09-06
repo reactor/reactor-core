@@ -112,7 +112,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false, true)) {
 			return null;
 		}

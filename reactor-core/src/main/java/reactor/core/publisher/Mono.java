@@ -4063,25 +4063,27 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> actual) {
-		Publisher publisher = Operators.onLastAssembly(this);
+		CorePublisher publisher = Operators.onLastAssembly(this);
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
-		while (publisher instanceof CoreOperator) {
+		if (publisher instanceof CoreOperator) {
 			CoreOperator operator = (CoreOperator) publisher;
+			while (true) {
+				subscriber = operator.subscribeOrReturn(subscriber);
+				if (subscriber == null) {
+					// null means "I will subscribe myself", returning...
+					return;
+				}
 
-			subscriber = operator.subscribeOrReturn(subscriber);
-			if (subscriber == null) {
-				// null means "I will subscribe myself", returning...
-				return;
+				CoreOperator newSource = operator.source();
+				if (newSource == null) {
+					throw new NullPointerException("Operator's " + operator.getClass() + " source is 'null'");
+				}
+				operator = newSource;
 			}
-			publisher = operator.source();
 		}
-		if (publisher instanceof CorePublisher) {
-			((CorePublisher) publisher).subscribe(subscriber);
-		}
-		else {
-			publisher.subscribe(subscriber);
-		}
+
+		publisher.subscribe(subscriber);
 	}
 
 	/**

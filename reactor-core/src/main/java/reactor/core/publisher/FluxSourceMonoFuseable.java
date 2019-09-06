@@ -33,7 +33,7 @@ final class FluxSourceMonoFuseable<I> extends FluxFromMonoOperator<I, I> impleme
 	 * @param actual
 	 */
 	@Override
-	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
+	CoreSubscriber<? super I> internalSubscribeOrReturn(CoreSubscriber<? super I> actual) {
 		return actual;
 	}
 }

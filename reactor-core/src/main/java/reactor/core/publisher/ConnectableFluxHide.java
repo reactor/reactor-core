@@ -50,7 +50,7 @@ final class ConnectableFluxHide<T> extends InternalConnectableFluxOperator<T, T>
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	final CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return actual;
 	}
 

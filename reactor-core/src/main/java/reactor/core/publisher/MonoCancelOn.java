@@ -29,7 +29,7 @@ final class MonoCancelOn<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new FluxCancelOn.CancelSubscriber<T>(actual, scheduler);
 	}
 
