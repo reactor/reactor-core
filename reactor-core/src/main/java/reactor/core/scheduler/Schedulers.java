@@ -151,8 +151,9 @@ public abstract class Schedulers {
 	 * <p>
 	 * This scheduler is not restartable.
 	 *
-	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
+	 * @return default instance of a {@link Scheduler} that dynamically creates ExecutorService-based
+	 * Workers and caches the threads, reusing them once the Workers have been shut
+	 * down
 	 */
 	public static Scheduler elastic() {
 		return cache(CACHED_ELASTIC, ELASTIC, ELASTIC_SUPPLIER);
@@ -163,7 +164,7 @@ public abstract class Schedulers {
 	 * workers and is suited for parallel work.
 	 *
 	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers
+	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler parallel() {
 		return cache(CACHED_PARALLEL, PARALLEL, PARALLEL_SUPPLIER);
@@ -191,8 +192,9 @@ public abstract class Schedulers {
 	 *
 	 * @param name Thread prefix
 	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
+	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
+	 * Workers and caches the thread pools, reusing them once the Workers have been shut
+	 * down
 	 */
 	public static Scheduler newElastic(String name) {
 		return newElastic(name, ElasticScheduler.DEFAULT_TTL_SECONDS);
@@ -209,8 +211,9 @@ public abstract class Schedulers {
 	 * @param name Thread prefix
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
 	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
+	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
+	 * Workers and caches the thread pools, reusing them once the Workers have been shut
+	 * down
 	 */
 	public static Scheduler newElastic(String name, int ttlSeconds) {
 		return newElastic(name, ttlSeconds, false);
@@ -229,8 +232,9 @@ public abstract class Schedulers {
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
 	 * Scheduler#dispose()} to exit the VM.
 	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
+	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
+	 * Workers and caches the thread pools, reusing them once the Workers have been shut
+	 * down
 	 */
 	public static Scheduler newElastic(String name, int ttlSeconds, boolean daemon) {
 		return newElastic(ttlSeconds,
@@ -251,7 +255,7 @@ public abstract class Schedulers {
 	 *
 	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
 	 * Workers and caches the thread pools, reusing them once the Workers have been shut
-	 * down.
+	 * down
 	 */
 	public static Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 		return factory.newElastic(ttlSeconds, threadFactory);
@@ -781,7 +785,7 @@ public abstract class Schedulers {
 		 * @param threadFactory a {@link ThreadFactory} to use
 		 *
 		 * @return a new {@link Scheduler} that dynamically creates Workers resources and
-		 * caches eventually, reusing them once the Workers have been shut down.
+		 * caches eventually, reusing them once the Workers have been shut down
 		 */
 		default Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 			return new ElasticScheduler(threadFactory, ttlSeconds);
