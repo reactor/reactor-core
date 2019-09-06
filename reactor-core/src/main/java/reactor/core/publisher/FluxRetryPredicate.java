@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 
-import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 
@@ -57,7 +57,7 @@ final class FluxRetryPredicate<T> extends InternalFluxOperator<T, T> {
 	static final class RetryPredicateSubscriber<T>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
-		final Publisher<? extends T> source;
+		final CorePublisher<? extends T> source;
 
 		final Predicate<? super Throwable> predicate;
 
@@ -68,7 +68,7 @@ final class FluxRetryPredicate<T> extends InternalFluxOperator<T, T> {
 
 		long produced;
 
-		RetryPredicateSubscriber(Publisher<? extends T> source,
+		RetryPredicateSubscriber(CorePublisher<? extends T> source,
 				CoreSubscriber<? super T> actual, Predicate<? super Throwable> predicate) {
 			super(actual);
 			this.source = source;

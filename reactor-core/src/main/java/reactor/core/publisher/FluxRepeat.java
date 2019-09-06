@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 
 /**
@@ -59,7 +59,7 @@ final class FluxRepeat<T> extends InternalFluxOperator<T, T> {
 	static final class RepeatSubscriber<T>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
-		final Publisher<? extends T> source;
+		final CorePublisher<? extends T> source;
 
 		long remaining;
 
@@ -70,7 +70,7 @@ final class FluxRepeat<T> extends InternalFluxOperator<T, T> {
 
 		long produced;
 
-		RepeatSubscriber(Publisher<? extends T> source, CoreSubscriber<? super T> actual, long remaining) {
+		RepeatSubscriber(CorePublisher<? extends T> source, CoreSubscriber<? super T> actual, long remaining) {
 			super(actual);
 			this.source = source;
 			this.remaining = remaining;
