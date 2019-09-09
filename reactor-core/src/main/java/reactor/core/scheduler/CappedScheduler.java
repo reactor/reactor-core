@@ -241,9 +241,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		StringBuilder ts = new StringBuilder(Schedulers.CAPPED)
 				.append('(');
 		if (factory instanceof ReactorThreadFactory) {
-			ts.append('\"').append(((ReactorThreadFactory) factory).get()).append('\"');
+			ts.append('\"').append(((ReactorThreadFactory) factory).get()).append("\",");
 		}
-		ts.append(cap).append(", ").append(ttlSeconds).append("s)");
+		ts.append(cap).append(',').append(ttlSeconds).append("s)");
 		return ts.toString();
 	}
 
