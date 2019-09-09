@@ -152,7 +152,7 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 					.is(SchedulersTest.CACHED_SCHEDULER);
 			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
 					.as("default single()")
-					.isEqualTo("single(\"single\")");
+					.isEqualTo("Schedulers.single()");
 
 			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
 					.as("workerWithNamedFactory")

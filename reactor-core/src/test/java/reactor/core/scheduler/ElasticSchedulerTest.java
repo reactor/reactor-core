@@ -193,7 +193,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 					.is(SchedulersTest.CACHED_SCHEDULER);
 			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
 					.as("default elastic()")
-					.isEqualTo("elastic(\"elastic\")");
+					.isEqualTo("Schedulers.elastic()");
 
 			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
 					.as("workerWithNamedFactory")
