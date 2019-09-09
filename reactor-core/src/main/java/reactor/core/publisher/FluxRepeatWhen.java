@@ -198,7 +198,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 	}
 
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
-			implements InnerConsumer<Object> {
+			implements InnerConsumer<Object>, CoreOperator<Long, Long> {
 
 		RepeatWhenMainSubscriber<?> main;
 
@@ -241,6 +241,21 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void subscribe(CoreSubscriber<? super Long> actual) {
 			completionSignal.subscribe(actual);
+		}
+
+		@Override
+		public CoreSubscriber<? super Long> subscribeOrReturn(CoreSubscriber<? super Long> actual) {
+			return actual;
+		}
+
+		@Override
+		public DirectProcessor<Long> source() {
+			return completionSignal;
+		}
+
+		@Override
+		public CoreOperator<?, ? extends Long> nextOperator() {
+			return null;
 		}
 	}
 }
