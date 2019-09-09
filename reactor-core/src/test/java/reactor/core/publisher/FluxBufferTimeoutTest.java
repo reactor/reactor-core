@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.junit.After;
@@ -200,6 +201,50 @@ public class FluxBufferTimeoutTest {
 		test.onNext(String.valueOf("0"));
 		timeScheduler.advanceTimeBy(Duration.ofMillis(100));
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+	}
+
+	@Test
+	public void requestedFromUpstreamShouldNotExceeddownstreamDemand() {
+		Subscription[] subscriptionsHolder = new Subscription[1];
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> subscriptionsHolder[0] = s);
+
+		VirtualTimeScheduler timeScheduler = VirtualTimeScheduler.getOrSet();
+		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
+				actual, 5, 100, timeScheduler.createWorker(), ArrayList::new);
+
+		AtomicLong requestedOutstanding = new AtomicLong(0);
+
+		Subscription subscription = new Subscription() {
+			@Override
+			public void request(long n) {
+				requestedOutstanding.addAndGet(n);
+			}
+
+			@Override
+			public void cancel() {
+				// No-op
+			}
+		};
+
+		test.onSubscribe(subscription);
+		subscriptionsHolder[0].request(1);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+		assertThat(requestedOutstanding.get()).isEqualTo(5L);
+
+		timeScheduler.advanceTimeBy(Duration.ofMillis(100));
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+		assertThat(requestedOutstanding.get()).isEqualTo(5L);
+
+		test.onNext(String.valueOf("0"));
+		requestedOutstanding.addAndGet(-1L);
+
+		timeScheduler.advanceTimeBy(Duration.ofMillis(100));
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(requestedOutstanding.get()).isEqualTo(4L);
+
+		subscriptionsHolder[0].request(1);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+		assertThat(requestedOutstanding.get()).isEqualTo(5L);
 	}
 
 	@Test
