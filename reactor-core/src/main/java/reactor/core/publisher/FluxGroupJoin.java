@@ -88,7 +88,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	@Override
-	CoreSubscriber<? super TLeft> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super TLeft> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
 				new GroupJoinSubscription<>(actual,
 						leftEnd,

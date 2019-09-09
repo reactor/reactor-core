@@ -73,7 +73,7 @@ public class TailCallSubscribeTest {
                 .startsWith(
                         tuple(Thread.class.getName(), "getStackTrace"),
                         tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
-                        tuple(MonoFromPublisher.class.getName(), "subscribeOrReturn"),
+                        tuple(MonoFromPublisher.class.getName(), "subscribe"),
                         tuple(Mono.class.getName(), "subscribe"),
                         tuple(this.getClass().getName(), "testStackDepth")
                 );
@@ -115,10 +115,10 @@ public class TailCallSubscribeTest {
                 .startsWith(
                         tuple(Thread.class.getName(), "getStackTrace"),
                         tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
-                        tuple(MonoFromPublisher.class.getName(), "subscribeOrReturn"),
+                        tuple(MonoFromPublisher.class.getName(), "subscribe"),
                         tuple(Flux.class.getName(), "subscribe"),
                         tuple(CustomOperator.class.getName(), "subscribe"),
-                        tuple(FluxSource.class.getName(), "subscribeOrReturn"),
+                        tuple(FluxSource.class.getName(), "subscribe"),
                         tuple(Mono.class.getName(), "subscribe"),
                         tuple(this.getClass().getName(), "interop")
                 );
@@ -139,7 +139,7 @@ public class TailCallSubscribeTest {
 				.startsWith(
 						tuple(Thread.class.getName(), "getStackTrace"),
 						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
-						tuple(FluxSource.class.getName(), "subscribeOrReturn"),
+						tuple(FluxSource.class.getName(), "subscribe"),
 						tuple(InternalFluxOperator.class.getName(), "subscribe"),
 						tuple(FluxDelaySubscription.class.getName(), "accept")
 				);
@@ -160,7 +160,7 @@ public class TailCallSubscribeTest {
 				.startsWith(
 						tuple(Thread.class.getName(), "getStackTrace"),
 						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
-						tuple(FluxSource.class.getName(), "subscribeOrReturn"),
+						tuple(FluxSource.class.getName(), "subscribe"),
 						tuple(Flux.class.getName(), "subscribe"),
 						tuple(this.getClass().getName(), "doFirst")
 				);
@@ -182,7 +182,7 @@ public class TailCallSubscribeTest {
 				.startsWith(
 						tuple(Thread.class.getName(), "getStackTrace"),
 						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
-						tuple(FluxSource.class.getName(), "subscribeOrReturn"),
+						tuple(FluxSource.class.getName(), "subscribe"),
 						tuple(Flux.class.getName(), "subscribe"),
 						tuple(this.getClass().getName(), "bufferWhen")
 				);
@@ -203,12 +203,11 @@ public class TailCallSubscribeTest {
 				.startsWith(
 						tuple(Thread.class.getName(), "getStackTrace"),
 						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
-						tuple(FluxSource.class.getName(), "subscribeOrReturn"),
+						tuple(FluxSource.class.getName(), "subscribe"),
 						tuple(Flux.class.getName(), "subscribe"),
 						tuple(FluxRepeat.RepeatSubscriber.class.getName(), "resubscribe"),
 						tuple(FluxRepeat.RepeatSubscriber.class.getName(), "onComplete"),
-						tuple(FluxRepeat.class.getName(), "internalSubscribeOrReturn"),
-						tuple(InternalFluxOperator.class.getName(), "subscribeOrReturn"),
+						tuple(FluxRepeat.class.getName(), "subscribeOrReturn"),
 						tuple(Flux.class.getName(), "subscribe"),
 						tuple(this.getClass().getName(), "repeat")
 				);
@@ -229,11 +228,10 @@ public class TailCallSubscribeTest {
 				.startsWith(
 						tuple(Thread.class.getName(), "getStackTrace"),
 						tuple(stackCapturingPublisher.getClass().getName(), "subscribe"),
-						tuple(FluxSource.class.getName(), "subscribeOrReturn"),
+						tuple(FluxSource.class.getName(), "subscribe"),
 						tuple(Flux.class.getName(), "subscribe"),
 						tuple(FluxRetry.RetrySubscriber.class.getName(), "resubscribe"),
-						tuple(FluxRetry.class.getName(), "internalSubscribeOrReturn"),
-						tuple(InternalFluxOperator.class.getName(), "subscribeOrReturn"),
+						tuple(FluxRetry.class.getName(), "subscribeOrReturn"),
 						tuple(Flux.class.getName(), "subscribe"),
 						tuple(this.getClass().getName(), "retry")
 				);

@@ -46,7 +46,7 @@ final class FluxNameFuseable<T> extends InternalFluxOperator<T, T> implements Fu
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return actual;
 	}
 

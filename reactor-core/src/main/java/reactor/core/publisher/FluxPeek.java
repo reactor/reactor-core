@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
@@ -73,7 +74,7 @@ final class FluxPeek<T> extends InternalFluxOperator<T, T> implements SignalPeek
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
 					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) actual;

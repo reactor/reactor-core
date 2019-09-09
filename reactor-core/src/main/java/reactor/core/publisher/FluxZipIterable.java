@@ -48,7 +48,7 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		Iterator<? extends U> it;
 
 		try {

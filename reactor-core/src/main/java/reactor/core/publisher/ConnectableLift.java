@@ -59,7 +59,7 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 	}
 
 	@Override
-	final CoreSubscriber<? super I> internalSubscribeOrReturn(CoreSubscriber<? super O> actual) {
+	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);
 

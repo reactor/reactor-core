@@ -35,7 +35,7 @@ final class MonoSwitchIfEmpty<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxSwitchIfEmpty.SwitchIfEmptySubscriber<T> parent = new
 				FluxSwitchIfEmpty.SwitchIfEmptySubscriber<>(actual, other);
 

@@ -61,7 +61,7 @@ final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		C collection;
 
 		try {

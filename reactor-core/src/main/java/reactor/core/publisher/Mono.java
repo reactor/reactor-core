@@ -4075,9 +4075,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 					return;
 				}
 
-				CoreOperator newSource = operator.source();
+				CoreOperator newSource = operator.nextOperator();
 				if (newSource == null) {
-					throw new NullPointerException("Operator's " + operator.getClass() + " source is 'null'");
+					publisher = operator.source();
+					break;
 				}
 				operator = newSource;
 			}

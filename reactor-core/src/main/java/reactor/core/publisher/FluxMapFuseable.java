@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
@@ -54,7 +55,7 @@ final class FluxMapFuseable<T, R> extends InternalFluxOperator<T, R> implements 
 
 	@Override
 	@SuppressWarnings("unchecked")
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) actual;
 			return new MapFuseableConditionalSubscriber<>(cs, mapper);

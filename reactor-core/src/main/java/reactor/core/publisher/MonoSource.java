@@ -18,6 +18,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -57,15 +59,16 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
-		if (coreOperator == null) {
-			source.subscribe(actual);
-			return null;
-		}
 		return actual;
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends I> source() {
+	public final CorePublisher<? extends I> source() {
+		return this;
+	}
+
+	@Override
+	public final CoreOperator<?, ? extends I> nextOperator() {
 		return coreOperator;
 	}
 

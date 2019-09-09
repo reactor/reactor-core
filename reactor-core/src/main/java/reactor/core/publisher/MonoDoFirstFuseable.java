@@ -44,7 +44,7 @@ final class MonoDoFirstFuseable<T> extends InternalMonoOperator<T, T> implements
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		try {
 			onFirst.run();
 		}

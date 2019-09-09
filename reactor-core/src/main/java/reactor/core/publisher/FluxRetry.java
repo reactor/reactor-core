@@ -42,7 +42,7 @@ final class FluxRetry<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		RetrySubscriber<T> parent = new RetrySubscriber<>(source, actual, times);
 
 		actual.onSubscribe(parent);

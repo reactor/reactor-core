@@ -46,7 +46,7 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		SkipUntilMainSubscriber<T> mainSubscriber = new SkipUntilMainSubscriber<>(actual);
 
 		SkipUntilOtherSubscriber<U> otherSubscriber = new SkipUntilOtherSubscriber<>(mainSubscriber);

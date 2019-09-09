@@ -94,7 +94,7 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual);
 		actual.onSubscribe(inner);
 		for(;;){

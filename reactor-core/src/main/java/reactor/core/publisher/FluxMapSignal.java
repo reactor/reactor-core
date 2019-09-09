@@ -65,7 +65,7 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
     }
 
     @Override
-    CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
+    public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
         return new FluxMapSignalSubscriber<>(actual,
                 mapperNext,
                 mapperError,

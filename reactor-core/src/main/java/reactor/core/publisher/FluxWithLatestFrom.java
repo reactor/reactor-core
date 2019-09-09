@@ -59,7 +59,7 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		CoreSubscriber<R> serial = Operators.serialize(actual);
 
 		WithLatestFromSubscriber<T, U, R> main =

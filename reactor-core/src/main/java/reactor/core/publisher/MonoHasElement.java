@@ -31,7 +31,7 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
 		return new HasElementSubscriber<>(actual);
 	}
 

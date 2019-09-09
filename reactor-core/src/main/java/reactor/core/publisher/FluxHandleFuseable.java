@@ -55,7 +55,7 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked")
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) actual;

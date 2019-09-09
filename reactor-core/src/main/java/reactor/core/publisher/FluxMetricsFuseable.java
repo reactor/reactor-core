@@ -16,11 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Subscription;
@@ -69,7 +71,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags);
 	}
 

@@ -40,7 +40,7 @@ final class MonoDoOnEachFuseable<T> extends InternalMonoOperator<T, T> implement
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return FluxDoOnEach.createSubscriber(actual, onSignal, true, true);
 	}
 }

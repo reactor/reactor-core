@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -91,15 +92,16 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator
 		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(actual, otherGenerators);
 		actual.onSubscribe(parent);
 
-		if (coreOperator == null) {
-			source.subscribe(parent);
-			return null;
-		}
 		return parent;
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends T> source() {
+	public final CorePublisher<? extends T> source() {
+		return source;
+	}
+
+	@Override
+	public final CoreOperator<?, ? extends T> nextOperator() {
 		return coreOperator;
 	}
 

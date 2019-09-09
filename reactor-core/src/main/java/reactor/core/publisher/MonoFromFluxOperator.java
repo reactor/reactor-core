@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -65,35 +66,26 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable, 
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			CoreOperator newSource = operator.source();
+			CoreOperator newSource = operator.nextOperator();
 			if (newSource == null) {
-				throw new NullPointerException("Operator's " + operator.getClass() + " source is 'null'");
+				operator.source().subscribe(subscriber);
+				return;
 			}
 			operator = newSource;
 		}
 	}
 
 	@Override
-	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
-		CoreSubscriber<? super I> subscriber = internalSubscribeOrReturn(actual);
-		if (subscriber == null) {
-			// null means "I will subscribe myself", returning...
-			return null;
-		}
-
-		if (coreOperator == null) {
-			source.subscribe(subscriber);
-			return null;
-		}
-
-		return subscriber;
-	}
-
 	@Nullable
-	abstract CoreSubscriber<? super I> internalSubscribeOrReturn(CoreSubscriber<? super O> actual);
+	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
-	public final CoreOperator<?, ? extends I> source() {
+	public final CorePublisher<? extends I> source() {
+		return source;
+	}
+
+	@Override
+	public final CoreOperator<?, ? extends I> nextOperator() {
 		return coreOperator;
 	}
 

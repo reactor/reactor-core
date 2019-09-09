@@ -70,7 +70,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		WindowWhenMainSubscriber<T, U, V> main = new WindowWhenMainSubscriber<>(actual,
 				start, end, processorQueueSupplier);
 		actual.onSubscribe(main);

@@ -34,7 +34,7 @@ final class MonoElapsed<T> extends InternalMonoOperator<T, Tuple2<Long, T>> impl
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super Tuple2<Long, T>> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Tuple2<Long, T>> actual) {
 		return new FluxElapsed.ElapsedSubscriber<T>(actual, scheduler);
 	}
 

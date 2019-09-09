@@ -37,5 +37,11 @@ interface CoreOperator<IN, OUT> extends CorePublisher<IN> {
 	/**
 	 * @return next {@link CoreOperator} if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
 	 */
-	CoreOperator<?, ? extends OUT> source();
+	@Nullable
+	CoreOperator<?, ? extends OUT> nextOperator();
+
+	/**
+	 * @return next {@link CoreOperator} if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
+	 */
+	CorePublisher<? extends OUT> source();
 }

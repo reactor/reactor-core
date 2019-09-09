@@ -27,7 +27,7 @@ final class MonoMaterialize<T> extends InternalMonoOperator<T, Signal<T>> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super Signal<T>> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Signal<T>> actual) {
 		return new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(actual));
 	}
 }

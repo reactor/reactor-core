@@ -18,6 +18,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
 
@@ -56,16 +58,17 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>, CoreOper
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends I> source() {
+	public final CorePublisher<? extends I> source() {
+		return this;
+	}
+
+	@Override
+	public final CoreOperator<?, ? extends I> nextOperator() {
 		return coreOperator;
 	}
 
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
-		if (coreOperator == null) {
-			source.subscribe(actual);
-			return null;
-		}
 		return actual;
 	}
 

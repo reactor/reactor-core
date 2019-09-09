@@ -38,7 +38,7 @@ final class MonoFilter<T> extends InternalMonoOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		if (actual instanceof ConditionalSubscriber) {
 			return new FluxFilter.FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, predicate);
 		}

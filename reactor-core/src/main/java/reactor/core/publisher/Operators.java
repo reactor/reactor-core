@@ -1291,15 +1291,16 @@ public abstract class Operators {
 
 		@Override
 		public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-			if (coreOperator == null) {
-				publisher.subscribe(actual);
-				return null;
-			}
 			return actual;
 		}
 
 		@Override
-		public final CoreOperator<?, ? extends T> source() {
+		public final CorePublisher<? extends T> source() {
+			return this;
+		}
+
+		@Override
+		public final CoreOperator<?, ? extends T> nextOperator() {
 			return coreOperator;
 		}
 	}

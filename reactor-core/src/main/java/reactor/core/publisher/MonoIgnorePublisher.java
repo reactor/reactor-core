@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -42,26 +43,21 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable, CoreOpe
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<? super T> subscriber = subscribeOrReturn(actual);
-		if (subscriber == null) {
-			return;
-		}
-		source.subscribe(subscriber);
+		source.subscribe(subscribeOrReturn(actual));
 	}
 
 	@Override
 	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		MonoIgnoreElements.IgnoreElementsSubscriber<T> subscriber = new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
-
-		if (coreOperator == null) {
-			source.subscribe(subscriber);
-			return null;
-		}
-		return subscriber;
+		return new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends T> source() {
+	public final CorePublisher<? extends T> source() {
+		return this;
+	}
+
+	@Override
+	public final CoreOperator<?, ? extends T> nextOperator() {
 		return coreOperator;
 	}
 

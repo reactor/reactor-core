@@ -41,7 +41,7 @@ final class FluxSourceMono<I> extends FluxFromMonoOperator<I, I> {
 	 * @param actual
 	 */
 	@Override
-	CoreSubscriber<? super I> internalSubscribeOrReturn(CoreSubscriber<? super I> actual) {
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		return actual;
 	}
 

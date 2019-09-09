@@ -70,7 +70,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super R> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		FluxPublishMulticaster<T> multicast = new FluxPublishMulticaster<>(prefetch,
 				queueSupplier,
 				actual.currentContext());

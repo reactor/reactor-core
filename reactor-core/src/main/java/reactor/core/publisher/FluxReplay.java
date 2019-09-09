@@ -1095,10 +1095,6 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			c.buffer.replay(inner);
 
 			if (expired) {
-				if (coreOperator == null) {
-					source.subscribe(c);
-					return null;
-				}
 				return c;
 			}
 
@@ -1108,7 +1104,12 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends T> source() {
+	public final CorePublisher<? extends T> source() {
+		return source;
+	}
+
+	@Override
+	public final CoreOperator<?, ? extends T> nextOperator() {
 		return coreOperator;
 	}
 

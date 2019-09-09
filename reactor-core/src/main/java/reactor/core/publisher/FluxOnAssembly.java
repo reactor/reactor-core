@@ -111,7 +111,7 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 	@Override
 	@SuppressWarnings("unchecked")
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return wrapSubscriber(actual, source, snapshotStack);
 	}
 

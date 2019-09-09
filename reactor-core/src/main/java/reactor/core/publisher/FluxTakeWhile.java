@@ -39,7 +39,7 @@ final class FluxTakeWhile<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new TakeWhileSubscriber<>(actual, predicate);
 	}
 

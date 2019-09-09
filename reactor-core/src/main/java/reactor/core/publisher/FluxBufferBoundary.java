@@ -60,7 +60,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super C> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
 		C buffer;
 
 		try {

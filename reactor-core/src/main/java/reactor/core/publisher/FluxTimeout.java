@@ -74,7 +74,7 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		TimeoutMainSubscriber<T, V> main =

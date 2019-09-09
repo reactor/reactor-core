@@ -61,7 +61,7 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> s) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> s) {
 		if (breadthFirst) {
 			ExpandBreathSubscriber<T> parent =
 					new ExpandBreathSubscriber<>(s, expander, capacityHint);

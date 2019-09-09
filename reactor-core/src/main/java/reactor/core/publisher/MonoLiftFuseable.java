@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 
 /**
  * @author Stephane Maldini
@@ -40,7 +41,7 @@ final class MonoLiftFuseable<I, O> extends InternalMonoOperator<I, O>
 	}
 
 	@Override
-	CoreSubscriber<? super I> internalSubscribeOrReturn(CoreSubscriber<? super O> actual) {
+	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 
 		CoreSubscriber<? super I> input = lifter.apply(source, actual);
 

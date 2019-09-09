@@ -40,7 +40,7 @@ final class MonoOnErrorResume<T> extends InternalMonoOperator<T, T> {
 	}
 
 	@Override
-	CoreSubscriber<? super T> internalSubscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new FluxOnErrorResume.ResumeSubscriber<>(actual, nextFactory);
 	}
 }
