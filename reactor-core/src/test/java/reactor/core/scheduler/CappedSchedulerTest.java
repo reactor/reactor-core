@@ -50,9 +50,8 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
-		//TODO replace with Schedulers factory
 		return autoCleanup(
-				new CappedScheduler(
+				Schedulers.newCapped(
 						4,
 						new ReactorThreadFactory("cappedSchedulerTest", CappedScheduler.COUNTER,
 								false, false, Schedulers::defaultUncaughtException),
@@ -280,11 +279,28 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
+	public void defaultCappedConfigurationIsConsistentWithJavadoc() {
+		Schedulers.CachedScheduler cachedCapped = (Schedulers.CachedScheduler) Schedulers.capped();
+		CappedScheduler capped = (CappedScheduler) cachedCapped.cached;
+
+		//10 x number of CPUs
+		assertThat(capped.cap)
+				.as("default capped size")
+				.isEqualTo(Schedulers.DEFAULT_CAPPED_SIZE)
+				.isEqualTo(Runtime.getRuntime().availableProcessors() * 10);
+
+		//60s TTL
+		assertThat(capped.ttlSeconds)
+				.as("default TTL")
+				.isEqualTo(CappedScheduler.DEFAULT_TTL_SECONDS)
+				.isEqualTo(60);
+	}
+
+	@Test
 	public void scanName() {
 		Scheduler withNamedFactory = autoCleanup(Schedulers.newCapped(1, "scanName", 1));
 		Scheduler withBasicFactory = autoCleanup(Schedulers.newCapped(1, Thread::new, 1));
-		//TODO add test for the cached version when there is a default capped()
-//		Scheduler cached = Schedulers.elastic();
+		Scheduler cached = Schedulers.capped();
 
 		Scheduler.Worker workerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
 		Scheduler.Worker deferredWorkerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
@@ -299,13 +315,12 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 				.as("withBasicFactory")
 				.isEqualTo("capped()");
 
-		//TODO reactivate assertions when there is a default capped()
-//			assertThat(cached)
-//					.as("capped() is cached")
-//					.is(SchedulersTest.CACHED_SCHEDULER);
-//			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
-//					.as("default capped()")
-//					.isEqualTo("capped(\"capped\")");
+		assertThat(cached)
+				.as("capped() is cached")
+				.is(SchedulersTest.CACHED_SCHEDULER);
+		assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
+				.as("default capped()")
+				.isEqualTo("capped(\"capped\")");
 
 		assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
 				.as("workerWithNamedFactory")
