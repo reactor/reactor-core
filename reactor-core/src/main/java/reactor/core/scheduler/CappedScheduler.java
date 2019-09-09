@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -71,7 +72,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	final int                        ttlSeconds;
 	final int                        cap;
 	final Deque<CachedServiceExpiry> idleServicesWithExpiry;
-	final Queue<DeferredWorker>      deferredWorkers;
+	final Queue<DeferredFacade>      deferredFacades;
 	final Queue<CachedService>       allServices;
 	final ScheduledExecutorService   evictor;
 
@@ -92,7 +93,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		this.remaining = cap;
 		this.factory = factory;
 		this.idleServicesWithExpiry = new ConcurrentLinkedDeque<>();
-		this.deferredWorkers = new ConcurrentLinkedQueue<>();
+		this.deferredFacades = new ConcurrentLinkedQueue<>();
 		this.allServices = new ConcurrentLinkedQueue<>();
 		this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);
 		this.evictor.scheduleAtFixedRate(this::eviction,
@@ -139,7 +140,8 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		}
 	}
 
-	CachedService directPick() {
+	@Nullable
+	CachedService tryPick() {
 		if (shutdown) {
 			return SHUTDOWN;
 		}
@@ -156,7 +158,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			if (shutdown) {
 				return SHUTDOWN;
 			}
-			throw Exceptions.failWithRejected("cannot directly schedule task, cap of " + this.cap + " reached");
+			return null;
 		}
 		else {
 			result = new CachedService(this);
@@ -188,7 +190,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				return new ActiveWorker(SHUTDOWN);
 			}
 			DeferredWorker deferredWorker = new DeferredWorker(this.toString());
-			this.deferredWorkers.offer(deferredWorker);
+			this.deferredFacades.offer(deferredWorker);
 			return deferredWorker;
 		}
 		else {
@@ -205,35 +207,55 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		CachedService cached = directPick();
-
-		return Schedulers.directSchedule(cached.exec,
-				task,
-				cached,
-				0L,
-				TimeUnit.MILLISECONDS);
+		CachedService cached = tryPick();
+		if (cached != null) {
+			return Schedulers.directSchedule(cached.exec,
+					task,
+					cached,
+					0L,
+					TimeUnit.MILLISECONDS);
+		}
+		else {
+			DeferredDirect deferredDirect = new DeferredDirect(task, 0L, 0L, TimeUnit.MILLISECONDS);
+			deferredFacades.offer(deferredDirect);
+			return deferredDirect;
+		}
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		CachedService cached = directPick();
+		CachedService cached = tryPick();
 
-		return Schedulers.directSchedule(cached.exec,
-				task,
-				cached,
-				delay,
-				unit);
+		if (cached != null) {
+			return Schedulers.directSchedule(cached.exec,
+					task,
+					cached,
+					delay,
+					unit);
+		}
+		else {
+			DeferredDirect deferredDirect = new DeferredDirect(task, delay, 0L, TimeUnit.MILLISECONDS);
+			deferredFacades.offer(deferredDirect);
+			return deferredDirect;
+		}
 	}
 
 	@Override
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		CachedService cached = directPick();
+		CachedService cached = tryPick();
 
-		return Disposables.composite(Schedulers.directSchedulePeriodically(cached.exec,
-				task,
-				initialDelay,
-				period,
-				unit), cached);
+		if (cached != null) {
+			return Disposables.composite(Schedulers.directSchedulePeriodically(cached.exec,
+					task,
+					initialDelay,
+					period,
+					unit), cached);
+		}
+		else {
+			DeferredDirect deferredDirect = new DeferredDirect(task, initialDelay, period, TimeUnit.MILLISECONDS);
+			deferredFacades.offer(deferredDirect);
+			return deferredDirect;
+		}
 	}
 
 	@Override
@@ -300,10 +322,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			if (exec != null) {
 				if (this != SHUTDOWN && !parent.shutdown) {
 					//in case of work, re-create an ActiveWorker
-					DeferredWorker deferredWorker = parent.deferredWorkers.poll();
-					if (deferredWorker != null) {
-						ActiveWorker successor = new ActiveWorker(this);
-						deferredWorker.setDelegate(successor);
+					DeferredFacade deferredFacade = parent.deferredFacades.poll();
+					if (deferredFacade != null) {
+						deferredFacade.setService(this);
 					}
 					else {
 						//if no more work, the service is put back at end of the cached queue and new expiry is started
@@ -406,6 +427,16 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	/**
+	 * Either a {@link reactor.core.scheduler.Scheduler.Worker} or a direct facade for tasks
+	 * that cannot be immediately scheduled due to a lack of available services.
+	 */
+	@FunctionalInterface
+	interface DeferredFacade {
+
+		void setService(CachedService service);
+	}
+
+	/**
 	 * Capture a submitted task, then its deferred execution when an ActiveWorker becomes available.
 	 * Propagates task cancellation, as this would be the outer world {@link Disposable} interface
 	 * even when the task is activated.
@@ -461,7 +492,8 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	 * Represent a synthetic worker that doesn't actually submit tasks until a proper {@link ActiveWorker} has
 	 * become available. Propagates cancellation of tasks and disposal of worker in early scenarios.
 	 */
-	static final class DeferredWorker extends ConcurrentLinkedQueue<DeferredWorkerTask> implements Worker, Scannable {
+	static final class DeferredWorker extends ConcurrentLinkedQueue<DeferredWorkerTask> implements Worker, Scannable,
+	                                                                                               DeferredFacade {
 
 		volatile ActiveWorker                                                  delegate;
 		static final AtomicReferenceFieldUpdater<DeferredWorker, ActiveWorker> DELEGATE =
@@ -477,11 +509,12 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			this.workerName = parentName + ".deferredWorker";
 		}
 
-		public void setDelegate(ActiveWorker delegate) {
+		public void setService(CachedService service) {
 			if (DISPOSED.get(this) == 1) {
-				delegate.dispose();
+				service.dispose();
 				return;
 			}
+			ActiveWorker delegate = new ActiveWorker(service);
 			if (DELEGATE.compareAndSet(this, null, delegate)) {
 				DeferredWorkerTask pendingTask;
 				while((pendingTask = this.poll()) != null) {
@@ -489,7 +522,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				}
 			}
 			else {
-				delegate.dispose();
+				service.dispose();
 			}
 		}
 
@@ -573,6 +606,91 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			if (d != null) {
 				if (key == Attr.PARENT) return d.cached.parent;
 				return d.cached.scanUnsafe(key);
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * Capture a task submitted directly to the {@link Scheduler}, then its deferred execution when a {@link CachedService} becomes available.
+	 * Propagates task cancellation, as this would be the outer world {@link Disposable} interface even when the task is activated.
+	 * Propagates cancellation of tasks in early scenarios.
+	 */
+	static final class DeferredDirect extends AtomicReference<CachedService> implements Scannable, Disposable,
+	                                                                                    DeferredFacade {
+
+		volatile Disposable                                                  activeTask;
+		static final AtomicReferenceFieldUpdater<DeferredDirect, Disposable> ACTIVE_TASK =
+				AtomicReferenceFieldUpdater.newUpdater(DeferredDirect.class, Disposable.class, "activeTask");
+
+		volatile int                                           disposed;
+		static final AtomicIntegerFieldUpdater<DeferredDirect> DISPOSED =
+				AtomicIntegerFieldUpdater.newUpdater(DeferredDirect.class, "disposed");
+
+		final Runnable task;
+		final long     delay;
+		final long     period;
+		final TimeUnit timeUnit;
+
+		DeferredDirect(Runnable task, long delay, long period, TimeUnit unit) {
+			this.task = task;
+			this.delay = delay;
+			this.period = period;
+			this.timeUnit = unit;
+		}
+
+		@Override
+		public void setService(CachedService service) {
+			if (DISPOSED.get(this) == 1) {
+				service.dispose();
+				return;
+			}
+			if (this.compareAndSet(null, service)) {
+				if (this.period == 0 && this.delay == 0) {
+					ACTIVE_TASK.set(this, Schedulers.directSchedule(service.exec, this.task, this, 0L, TimeUnit.SECONDS));
+				}
+				else if (this.period != 0) {
+					ACTIVE_TASK.set(this, Schedulers.directSchedulePeriodically(service.exec, this.task, this.delay, this.period, this.timeUnit));
+				}
+				else {
+					ACTIVE_TASK.set(this, Schedulers.directSchedule(service.exec, this.task, this, this.delay, this.timeUnit));
+				}
+			}
+			else {
+				service.dispose();
+			}
+		}
+
+		@Override
+		public void dispose() {
+			if (DISPOSED.compareAndSet(this, 0, 1)) {
+				Disposable at = ACTIVE_TASK.getAndSet(this, null);
+				if (at != null) {
+					at.dispose();
+				}
+				CachedService c = this.getAndSet(null);
+				if (c != null) {
+					c.dispose();
+				}
+			}
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return DISPOSED.get(this) == 1;
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+//			if (key == Attr.NAME) return workerName; //FIXME
+			if (key == Attr.CAPACITY) return Integer.MAX_VALUE;
+
+			CachedService d = this.get();
+			if (key == Attr.BUFFERED) return d == null ? 1 : 0;
+			if (d != null) {
+				if (key == Attr.PARENT) return d.parent;
+				return d.scanUnsafe(key);
 			}
 			return null;
 		}

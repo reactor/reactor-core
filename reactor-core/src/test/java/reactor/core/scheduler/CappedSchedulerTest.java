@@ -18,14 +18,15 @@ package reactor.core.scheduler;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import com.pivovarit.function.ThrowingRunnable;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import reactor.core.Disposable;
@@ -43,9 +44,26 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	private static final Logger LOGGER = Loggers.getLogger(CappedSchedulerTest.class);
 
+	static Stream<String> dumpThreadNames() {
+		Thread[] tarray;
+		for(;;) {
+			tarray = new Thread[Thread.activeCount()];
+			int dumped = Thread.enumerate(tarray);
+			if (dumped <= tarray.length) {
+				break;
+			}
+		}
+		return Arrays.stream(tarray).map(Thread::getName);
+	}
+
 	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
+	}
+
+	@AfterClass
+	public static void dumpThreads() {
+		dumpThreadNames().forEach(System.out::println);
 	}
 
 	@Override
@@ -99,7 +117,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void whenCapReachedDirectTasksAreRejected() throws InterruptedException {
+	public void whenCapReachedDirectTasksAreTurnedIntoDeferredFacades() throws InterruptedException {
 		Scheduler s = schedulerNotCached();
 		//reach the cap of workers
 		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
@@ -107,14 +125,25 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 		Scheduler.Worker worker3 = autoCleanup(s.createWorker());
 		Scheduler.Worker worker4 = autoCleanup(s.createWorker());
 
-		assertThatExceptionOfType(RejectedExecutionException.class)
-				.isThrownBy(() -> s.schedule(() -> {}));
+		Disposable extraDirect1 = autoCleanup(s.schedule(() -> { }));
+		Disposable extraDirect2 = autoCleanup(s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
+		Disposable extraDirect3 = autoCleanup(s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS));
 
-		assertThatExceptionOfType(RejectedExecutionException.class)
-				.isThrownBy(() -> s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
+		assertThat(extraDirect1)
+				.as("extraDirect1")
+				.isNotSameAs(extraDirect2)
+				.isNotSameAs(extraDirect3)
+				.isInstanceOf(CappedScheduler.DeferredDirect.class);
 
-		assertThatExceptionOfType(RejectedExecutionException.class)
-				.isThrownBy(() -> s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS));
+		assertThat(extraDirect2)
+				.as("extraDirect2")
+				.isNotSameAs(extraDirect1)
+				.isNotSameAs(extraDirect3)
+				.isInstanceOf(CappedScheduler.DeferredDirect.class);
+
+		assertThat(extraDirect3)
+				.as("extraDirect3")
+				.isInstanceOf(CappedScheduler.DeferredDirect.class);
 	}
 
 	// below tests similar to ElasticScheduler
@@ -143,7 +172,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void eviction() {
+	public void evictionForWorkerScheduling() {
 		CappedScheduler s = autoCleanup(new CappedScheduler(2, r -> new Thread(r, "eviction"), 1));
 
 		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
@@ -151,12 +180,12 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 		Scheduler.Worker worker3 = autoCleanup(s.createWorker());
 
 		assertThat(s.allServices).as("3 workers equals 2 executors").hasSize(2);
-		assertThat(s.deferredWorkers).as("3 workers equals 1 deferred").hasSize(1);
+		assertThat(s.deferredFacades).as("3 workers equals 1 deferred").hasSize(1);
 		assertThat(s.idleServicesWithExpiry).as("no worker expiry").isEmpty();
 
 		worker1.dispose();
 		assertThat(s.idleServicesWithExpiry).as("deferred worker activated: no expiry").isEmpty();
-		assertThat(s.deferredWorkers).as("deferred worker activated: no deferred").isEmpty();
+		assertThat(s.deferredFacades).as("deferred worker activated: no deferred").isEmpty();
 
 		worker2.dispose();
 		worker3.dispose();
@@ -168,7 +197,39 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 		          .between(1, TimeUnit.SECONDS, 2500, TimeUnit.MILLISECONDS)
 		          .untilAsserted(() -> {
 		          	assertThat(s.allServices).hasSize(0);
-		          	assertThat(s.deferredWorkers).hasSize(0);
+		          	assertThat(s.deferredFacades).hasSize(0);
+		          });
+	}
+
+	@Test
+	public void evictionForDirectScheduling() {
+		CappedScheduler s = autoCleanup(new CappedScheduler(2, r -> new Thread(r, "eviction"), 1));
+
+		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
+		Scheduler.Worker worker2 = autoCleanup(s.createWorker());
+
+		AtomicReference<String> taskRanIn = new AtomicReference<>();
+		autoCleanup(s.schedule(() -> taskRanIn.set(Thread.currentThread().getName())));
+
+		assertThat(taskRanIn).as("before thread freed")
+		                     .hasValue(null);
+
+		worker1.dispose();
+		worker2.dispose();
+
+		Awaitility.with()
+		          .pollInterval(50, TimeUnit.MILLISECONDS)
+		          .await()
+		          //the evictor in the background can and does have a shift, but not more than 1s
+		          .between(1, TimeUnit.SECONDS, 2500, TimeUnit.MILLISECONDS)
+		          .untilAsserted(() -> {
+			          assertThat(s.allServices).as("allServices").hasSize(0);
+			          assertThat(s.deferredFacades).as("deferredWorkers").hasSize(0);
+			          assertThat(taskRanIn).as("task ran").doesNotHaveValue(null);
+
+			          assertThat(dumpThreadNames())
+					          .as("threads")
+					          .doesNotContain(taskRanIn.get());
 		          });
 	}
 
@@ -248,18 +309,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 		Awaitility.with().pollInterval(100, TimeUnit.MILLISECONDS)
 		          .await().atMost(500, TimeUnit.MILLISECONDS)
-		          .untilAsserted(() -> {
-			          Thread[] tarray = new Thread[0];
-			          for(;;) {
-				          tarray = new Thread[Thread.activeCount()];
-				          int dumped = Thread.enumerate(tarray);
-				          if (dumped <= tarray.length) {
-					          break;
-				          }
-			          }
-			          assertThat(Arrays.stream(tarray).map(Thread::getName))
-					          .doesNotContain(threadName.get());
-				    });
+		          .untilAsserted(() -> assertThat(dumpThreadNames()).doesNotContain(threadName.get()));
 	}
 
 	@Test
@@ -268,13 +318,13 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 		Scheduler.Worker firstWorker = autoCleanup(s.createWorker());
 		Scheduler.Worker worker = s.createWorker();
 
-		assertThat(s.deferredWorkers).as("deferred workers before inverted dispose").hasSize(1);
+		assertThat(s.deferredFacades).as("deferred workers before inverted dispose").hasSize(1);
 		assertThat(s.idleServicesWithExpiry).as("threads before inverted dispose").isEmpty();
 
 		worker.dispose();
 		firstWorker.dispose();
 
-		assertThat(s.deferredWorkers).as("deferred workers after inverted dispose").isEmpty();
+		assertThat(s.deferredFacades).as("deferred workers after inverted dispose").isEmpty();
 		assertThat(s.idleServicesWithExpiry).as("threads after inverted dispose").hasSize(1);
 	}
 
