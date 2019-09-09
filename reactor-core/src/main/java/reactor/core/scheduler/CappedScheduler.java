@@ -243,7 +243,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		if (factory instanceof ReactorThreadFactory) {
 			ts.append('\"').append(((ReactorThreadFactory) factory).get()).append('\"');
 		}
-		ts.append(')');
+		ts.append(cap).append(", ").append(ttlSeconds).append("s)");
 		return ts.toString();
 	}
 

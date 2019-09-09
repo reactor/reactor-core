@@ -298,8 +298,8 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void scanName() {
-		Scheduler withNamedFactory = autoCleanup(Schedulers.newCapped(1, "scanName", 1));
-		Scheduler withBasicFactory = autoCleanup(Schedulers.newCapped(1, Thread::new, 1));
+		Scheduler withNamedFactory = autoCleanup(Schedulers.newCapped(3, "scanName", 1));
+		Scheduler withBasicFactory = autoCleanup(Schedulers.newCapped(3, Thread::new, 1));
 		Scheduler cached = Schedulers.capped();
 
 		Scheduler.Worker workerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
@@ -309,11 +309,11 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
 				.as("withNamedFactory")
-				.isEqualTo("capped(\"scanName\")");
+				.isEqualTo("capped(\"scanName\", 3, 1s)");
 
 		assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
 				.as("withBasicFactory")
-				.isEqualTo("capped()");
+				.isEqualTo("capped(3, 1s)");
 
 		assertThat(cached)
 				.as("capped() is cached")
