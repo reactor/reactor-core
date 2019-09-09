@@ -815,11 +815,11 @@ public abstract class Schedulers {
 	static class CachedScheduler implements Scheduler, Supplier<Scheduler>, Scannable {
 
 		final Scheduler cached;
-		final String    key;
+		final String    stringRepresentation;
 
 		CachedScheduler(String key, Scheduler cached) {
 			this.cached = cached;
-			this.key = key;
+			this.stringRepresentation = "Schedulers." + key + "()";
 		}
 
 		@Override
@@ -866,12 +866,12 @@ public abstract class Schedulers {
 
 		@Override
 		public String toString() {
-			return "Schedulers." + key + "()";
+			return stringRepresentation;
 		}
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (Attr.NAME == key) return toString();
+			if (Attr.NAME == key) return stringRepresentation;
 			return Scannable.from(cached).scanUnsafe(key);
 		}
 
