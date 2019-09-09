@@ -35,13 +35,14 @@ interface CoreOperator<IN, OUT> extends CorePublisher<IN> {
 	CoreSubscriber<? super OUT> subscribeOrReturn(CoreSubscriber<? super IN> actual);
 
 	/**
-	 * @return next {@link CoreOperator} if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
+	 * @return {@link CorePublisher} to call {@link CorePublisher#subscribe(CoreSubscriber)} on
+	 * if {@link #nextOperator()} have returned null result
 	 */
-	@Nullable
-	CoreOperator<?, ? extends OUT> nextOperator();
+	CorePublisher<? extends OUT> source();
 
 	/**
 	 * @return next {@link CoreOperator} if {@link #subscribeOrReturn(CoreSubscriber)} have returned non-null result
 	 */
-	CorePublisher<? extends OUT> source();
+	@Nullable
+	CoreOperator<?, ? extends OUT> nextOperator();
 }
