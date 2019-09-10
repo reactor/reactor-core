@@ -109,11 +109,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		static final AtomicLongFieldUpdater<BufferTimeoutSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "requested");
 
-		volatile long outstandingRequestedFromUpstream;
+		volatile long outstanding;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<BufferTimeoutSubscriber> OUTSTANDING_REQUESTED_FROM_UPSTREAM =
-				AtomicLongFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "outstandingRequestedFromUpstream");
+		static final AtomicLongFieldUpdater<BufferTimeoutSubscriber> OUTSTANDING =
+				AtomicLongFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "outstanding");
 
 		volatile int index = 0;
 
@@ -170,16 +170,14 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				v.add(value);
 
 				long next;
-				long o = outstandingRequestedFromUpstream;
+				long o = outstanding;
 				if (o != 0) {
 					for (; ; ) {
 						next = o - 1;
-						if (OUTSTANDING_REQUESTED_FROM_UPSTREAM.compareAndSet(this,
-								o,
-								next)) {
+						if (OUTSTANDING.compareAndSet(this, o, next)) {
 							break;
 						}
-						o = outstandingRequestedFromUpstream;
+						o = outstanding;
 						if (o <= 0L)
 						{
 							break;
@@ -314,7 +312,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				}
 				else {
 					long requestCap = Operators.multiplyCap(requested, batchSize);
-					requestMore(requestCap - outstandingRequestedFromUpstream);
+					requestMore(requestCap - outstanding);
 				}
 			}
 		}
@@ -323,7 +321,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			Subscription s = this.subscription;
 			if (s != null) {
 				s.request(n);
-				Operators.addCap(OUTSTANDING_REQUESTED_FROM_UPSTREAM, this, n);
+				Operators.addCap(OUTSTANDING, this, n);
 			}
 		}
 

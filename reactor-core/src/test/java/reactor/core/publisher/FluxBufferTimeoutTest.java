@@ -204,7 +204,7 @@ public class FluxBufferTimeoutTest {
 	}
 
 	@Test
-	public void requestedFromUpstreamShouldNotExceeddownstreamDemand() {
+	public void requestedFromUpstreamShouldNotExceedDownstreamDemand() {
 		Subscription[] subscriptionsHolder = new Subscription[1];
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> subscriptionsHolder[0] = s);
 
