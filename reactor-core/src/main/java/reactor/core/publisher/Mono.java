@@ -4587,7 +4587,21 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #transform(Function)
 	 */
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
-		return defer(() -> from(transformer.apply(this)));
+		return deferWithContext(ctx -> {
+			BiFunction<Publisher, CoreSubscriber<? super T>, CoreSubscriber<? super T>> lifter = (pub, actual) -> {
+				if (actual instanceof StrictSubscriber) {
+					return new FluxContextStart.ContextStartSubscriber<>(actual, ctx);
+				}
+				else {
+					return actual;
+				}
+			};
+			return from(transformer.apply(
+					this instanceof Fuseable
+							? new MonoLiftFuseable<>(this, lifter)
+							: new MonoLift<>(this, lifter)
+			));
+		});
 	}
 
 	/**
