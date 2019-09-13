@@ -62,7 +62,7 @@ public class SchedulersTest {
 	final static class TestSchedulers implements Schedulers.Factory {
 
 		final Scheduler      elastic  = Schedulers.Factory.super.newElastic(60, Thread::new);
-		final Scheduler      capped   = Schedulers.Factory.super.newCapped(2, Thread::new, 60);
+		final Scheduler      capped   = Schedulers.Factory.super.newCapped(2, Integer.MAX_VALUE, Thread::new, 60);
 		final Scheduler      single   = Schedulers.Factory.super.newSingle(Thread::new);
 		final Scheduler      parallel =	Schedulers.Factory.super.newParallel(1, Thread::new);
 
@@ -75,21 +75,25 @@ public class SchedulersTest {
 			}
 		}
 
+		@Override
 		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return elastic;
 		}
 
-		public final Scheduler newCapped(int cap, ThreadFactory threadFactory, int ttlSeconds) {
+		@Override
+		public final Scheduler newCapped(int threadCap, int taskCap, ThreadFactory threadFactory, int ttlSeconds) {
 			assertThat(((ReactorThreadFactory) threadFactory).get()).isEqualTo("unused");
 			return capped;
 		}
 
+		@Override
 		public final Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
 			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return parallel;
 		}
 
+		@Override
 		public final Scheduler newSingle(ThreadFactory threadFactory) {
 			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return single;

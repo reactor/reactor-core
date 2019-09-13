@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -70,33 +71,45 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	final ThreadFactory              factory;
 	final int                        ttlSeconds;
-	final int                        cap;
+	final int                        threadCap;
+	final int                        deferredTaskCap;
 	final Deque<CachedServiceExpiry> idleServicesWithExpiry;
 	final Queue<DeferredFacade>      deferredFacades;
 	final Queue<CachedService>       allServices;
 	final ScheduledExecutorService   evictor;
 
-	volatile boolean                                        shutdown;
-	volatile int                                            remaining;
-	static final AtomicIntegerFieldUpdater<CappedScheduler> REMAINING =
-			AtomicIntegerFieldUpdater.newUpdater(CappedScheduler.class, "remaining");
+	volatile boolean shutdown;
 
-	CappedScheduler(int cap, ThreadFactory factory, int ttlSeconds) {
+	volatile int                                            remainingThreads;
+	static final AtomicIntegerFieldUpdater<CappedScheduler> REMAINING_THREADS =
+			AtomicIntegerFieldUpdater.newUpdater(CappedScheduler.class, "remainingThreads");
+
+	volatile int                                            remainingDeferredTasks;
+	static final AtomicIntegerFieldUpdater<CappedScheduler> REMAINING_DEFERRED_TASKS =
+			AtomicIntegerFieldUpdater.newUpdater(CappedScheduler.class, "remainingDeferredTasks");
+
+
+	CappedScheduler(int threadCap, int deferredTaskCap, ThreadFactory factory, int ttlSeconds) {
 		if (ttlSeconds < 0) {
 			throw new IllegalArgumentException("ttlSeconds must be positive, was: " + ttlSeconds);
 		}
 		this.ttlSeconds = ttlSeconds;
-		if (cap < 1) {
-			throw new IllegalArgumentException("cap must be strictly positive, was: " + cap);
+		if (threadCap < 1) {
+			throw new IllegalArgumentException("threadCap must be strictly positive, was: " + threadCap);
 		}
-		this.cap = cap;
-		this.remaining = cap;
+		if (deferredTaskCap < 1) {
+			throw new IllegalArgumentException("deferredTaskCap must be strictly positive, was: " + deferredTaskCap);
+		}
+		this.threadCap = threadCap;
+		this.remainingThreads = threadCap;
+		this.deferredTaskCap = deferredTaskCap;
+		this.remainingDeferredTasks = deferredTaskCap;
 		this.factory = factory;
 		this.idleServicesWithExpiry = new ConcurrentLinkedDeque<>();
 		this.deferredFacades = new ConcurrentLinkedQueue<>();
 		this.allServices = new ConcurrentLinkedQueue<>();
 		this.evictor = Executors.newScheduledThreadPool(1, EVICTOR_FACTORY);
-		this.evictor.scheduleAtFixedRate(this::eviction,
+		this.evictor.scheduleAtFixedRate(() -> this.eviction(System::currentTimeMillis),
 				ttlSeconds,
 				ttlSeconds,
 				TimeUnit.SECONDS);
@@ -152,9 +165,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			return e.cached;
 		}
 
-		if (REMAINING.decrementAndGet(this) < 0) {
+		if (REMAINING_THREADS.decrementAndGet(this) < 0) {
 			//cap reached
-			REMAINING.incrementAndGet(this);
+			REMAINING_THREADS.incrementAndGet(this);
 			if (shutdown) {
 				return SHUTDOWN;
 			}
@@ -183,13 +196,13 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			return new ActiveWorker(e.cached);
 		}
 
-		if (REMAINING.decrementAndGet(this) < 0) {
+		if (REMAINING_THREADS.decrementAndGet(this) < 0) {
 			//cap reached
-			REMAINING.incrementAndGet(this);
+			REMAINING_THREADS.incrementAndGet(this);
 			if (shutdown) {
 				return new ActiveWorker(SHUTDOWN);
 			}
-			DeferredWorker deferredWorker = new DeferredWorker(this.toString());
+			DeferredWorker deferredWorker = new DeferredWorker(this);
 			this.deferredFacades.offer(deferredWorker);
 			return deferredWorker;
 		}
@@ -215,10 +228,23 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 					0L,
 					TimeUnit.MILLISECONDS);
 		}
-		else {
-			DeferredDirect deferredDirect = new DeferredDirect(task, 0L, 0L, TimeUnit.MILLISECONDS);
+		else if (deferredTaskCap == Integer.MAX_VALUE) {
+			DeferredDirect deferredDirect = new DeferredDirect(task, 0L, 0L, TimeUnit.MILLISECONDS, this);
 			deferredFacades.offer(deferredDirect);
 			return deferredDirect;
+		}
+		else {
+			for (;;) {
+				int remTasks = REMAINING_DEFERRED_TASKS.get(this);
+				if (remTasks <= 0) {
+					throw Exceptions.failWithRejected("hard cap on deferred tasks reached for " + this.toString());
+				}
+				if (REMAINING_DEFERRED_TASKS.compareAndSet(this, remTasks, remTasks - 1)) {
+					DeferredDirect deferredDirect = new DeferredDirect(task, 0L, 0L, TimeUnit.MILLISECONDS, this);
+					deferredFacades.offer(deferredDirect);
+					return deferredDirect;
+				}
+			}
 		}
 	}
 
@@ -233,10 +259,23 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 					delay,
 					unit);
 		}
-		else {
-			DeferredDirect deferredDirect = new DeferredDirect(task, delay, 0L, TimeUnit.MILLISECONDS);
+		else if (deferredTaskCap == Integer.MAX_VALUE) {
+			DeferredDirect deferredDirect = new DeferredDirect(task, delay, 0L, TimeUnit.MILLISECONDS, this);
 			deferredFacades.offer(deferredDirect);
 			return deferredDirect;
+		}
+		else {
+			for (;;) {
+				int remTasks = REMAINING_DEFERRED_TASKS.get(this);
+				if (remTasks <= 0) {
+					throw Exceptions.failWithRejected("hard cap on deferred tasks reached for " + this.toString());
+				}
+				if (REMAINING_DEFERRED_TASKS.compareAndSet(this, remTasks, remTasks - 1)) {
+					DeferredDirect deferredDirect = new DeferredDirect(task, delay, 0L, TimeUnit.MILLISECONDS, this);
+					deferredFacades.offer(deferredDirect);
+					return deferredDirect;
+				}
+			}
 		}
 	}
 
@@ -251,10 +290,23 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 					period,
 					unit), cached);
 		}
-		else {
-			DeferredDirect deferredDirect = new DeferredDirect(task, initialDelay, period, TimeUnit.MILLISECONDS);
+		else if (deferredTaskCap == Integer.MAX_VALUE) {
+			DeferredDirect deferredDirect = new DeferredDirect(task, initialDelay, period, TimeUnit.MILLISECONDS, this);
 			deferredFacades.offer(deferredDirect);
 			return deferredDirect;
+		}
+		else {
+			for (;;) {
+				int remTasks = REMAINING_DEFERRED_TASKS.get(this);
+				if (remTasks <= 0) {
+					throw Exceptions.failWithRejected("hard cap on deferred tasks reached for " + this.toString());
+				}
+				if (REMAINING_DEFERRED_TASKS.compareAndSet(this, remTasks, remTasks - 1)) {
+					DeferredDirect deferredDirect = new DeferredDirect(task, initialDelay, period, TimeUnit.MILLISECONDS, this);
+					deferredFacades.offer(deferredDirect);
+					return deferredDirect;
+				}
+			}
 		}
 	}
 
@@ -265,14 +317,16 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		if (factory instanceof ReactorThreadFactory) {
 			ts.append('\"').append(((ReactorThreadFactory) factory).get()).append("\",");
 		}
-		ts.append(cap).append(',').append(ttlSeconds).append("s)");
+		ts.append("maxThreads=").append(threadCap)
+		  .append(",maxTaskQueued=").append(deferredTaskCap == Integer.MAX_VALUE ? "unbounded" : deferredTaskCap)
+		  .append(",ttl=").append(ttlSeconds).append("s)");
 		return ts.toString();
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
-		if (key == Attr.CAPACITY) return cap;
+		if (key == Attr.CAPACITY) return threadCap;
 		//TODO re-evaluate BUFFERED: should this include deferredWorkers?
 		if (key == Attr.BUFFERED) return idleServicesWithExpiry.size(); //BUFFERED: number of workers alive
 		if (key == Attr.NAME) return this.toString();
@@ -287,15 +341,15 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		                             .map(cached -> cached.cached);
 	}
 
-	void eviction() {
-		long now = System.currentTimeMillis();
-
+	void eviction(LongSupplier nowSupplier) {
+		long now = nowSupplier.getAsLong();
 		List<CachedServiceExpiry> list = new ArrayList<>(idleServicesWithExpiry);
 		for (CachedServiceExpiry e : list) {
 			if (e.expireMillis < now) {
 				if (idleServicesWithExpiry.remove(e)) {
 					e.cached.exec.shutdownNow();
 					allServices.remove(e.cached);
+					REMAINING_THREADS.incrementAndGet(this);
 				}
 			}
 		}
@@ -463,6 +517,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		}
 
 		void activate(ActiveWorker delegate) {
+			if (parent.parent.deferredTaskCap != Integer.MAX_VALUE) {
+				REMAINING_DEFERRED_TASKS.incrementAndGet(parent.parent);
+			}
 			//pending task is implicitly removed because activate is called on a poll()
 			if (this.period == 0 && this.delay == 0) {
 				this.activated = delegate.schedule(this.task);
@@ -482,6 +539,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		}
 
 		void disposeInner() {
+			if (parent.parent.deferredTaskCap != Integer.MAX_VALUE) {
+				REMAINING_DEFERRED_TASKS.incrementAndGet(parent.parent);
+			}
 			if (this.activated != null) {
 				this.activated.dispose();
 			}
@@ -495,7 +555,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	static final class DeferredWorker extends ConcurrentLinkedQueue<DeferredWorkerTask> implements Worker, Scannable,
 	                                                                                               DeferredFacade {
 
-		volatile ActiveWorker                                                  delegate;
+		final CappedScheduler parent;
+
+		volatile ActiveWorker delegate;
 		static final AtomicReferenceFieldUpdater<DeferredWorker, ActiveWorker> DELEGATE =
 				AtomicReferenceFieldUpdater.newUpdater(DeferredWorker.class, ActiveWorker.class, "delegate");
 
@@ -505,8 +567,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 		final String workerName;
 
-		DeferredWorker(String parentName) {
-			this.workerName = parentName + ".deferredWorker";
+		DeferredWorker(CappedScheduler parent) {
+			this.parent = parent;
+			this.workerName = parent.toString() + ".deferredWorker";
 		}
 
 		public void setService(CachedService service) {
@@ -533,11 +596,24 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 			ActiveWorker aw = DELEGATE.get(this);
 			if (aw == null) {
-				DeferredWorkerTask
-						pendingTask = new DeferredWorkerTask(this, task, 0L, 0L, TimeUnit.MILLISECONDS);
-				offer(pendingTask);
-				return pendingTask;
-
+				if (parent.deferredTaskCap == Integer.MAX_VALUE) {
+					DeferredWorkerTask pendingTask = new DeferredWorkerTask(this, task, 0L, 0L, TimeUnit.MILLISECONDS);
+					offer(pendingTask);
+					return pendingTask;
+				}
+				else {
+					for (;;) {
+						int remTasks = REMAINING_DEFERRED_TASKS.get(parent);
+						if (remTasks <= 0) {
+							throw Exceptions.failWithRejected("hard cap on deferred tasks reached for " + this.toString());
+						}
+						if (REMAINING_DEFERRED_TASKS.compareAndSet(parent, remTasks, remTasks - 1)) {
+							DeferredWorkerTask pendingTask = new DeferredWorkerTask(this, task, 0L, 0L, TimeUnit.MILLISECONDS);
+							offer(pendingTask);
+							return pendingTask;
+						}
+					}
+				}
 			}
 			return aw.schedule(task);
 		}
@@ -549,11 +625,24 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 			ActiveWorker aw = DELEGATE.get(this);
 			if (aw == null) {
-				DeferredWorkerTask
-						pendingTask = new DeferredWorkerTask(this, task, delay, 0L, unit);
-				offer(pendingTask);
-				return pendingTask;
-
+				if (parent.deferredTaskCap == Integer.MAX_VALUE) {
+					DeferredWorkerTask pendingTask = new DeferredWorkerTask(this, task, delay, 0L, unit);
+					offer(pendingTask);
+					return pendingTask;
+				}
+				else {
+					for (;;) {
+						int remTasks = REMAINING_DEFERRED_TASKS.get(parent);
+						if (remTasks <= 0) {
+							throw Exceptions.failWithRejected("hard cap on deferred tasks reached for " + this.toString());
+						}
+						if (REMAINING_DEFERRED_TASKS.compareAndSet(parent, remTasks, remTasks - 1)) {
+							DeferredWorkerTask pendingTask = new DeferredWorkerTask(this, task, delay, 0L, unit);
+							offer(pendingTask);
+							return pendingTask;
+						}
+					}
+				}
 			}
 			return aw.schedule(task, delay, unit);
 		}
@@ -568,9 +657,24 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 			ActiveWorker aw = DELEGATE.get(this);
 			if (aw == null) {
-				DeferredWorkerTask pendingTask = new DeferredWorkerTask(this, task, initialDelay, period, unit);
-				offer(pendingTask);
-				return pendingTask;
+				if (parent.deferredTaskCap == Integer.MAX_VALUE) {
+						DeferredWorkerTask pendingTask = new DeferredWorkerTask(this, task, initialDelay, period, unit);
+						offer(pendingTask);
+						return pendingTask;
+				}
+				else {
+					for (;;) {
+						int remTasks = REMAINING_DEFERRED_TASKS.get(parent);
+						if (remTasks <= 0) {
+							throw Exceptions.failWithRejected("hard cap on deferred tasks reached for " + this.toString());
+						}
+						if (REMAINING_DEFERRED_TASKS.compareAndSet(parent, remTasks, remTasks - 1)) {
+							DeferredWorkerTask pendingTask = new DeferredWorkerTask(this, task, initialDelay, period, unit);
+							offer(pendingTask);
+							return pendingTask;
+						}
+					}
+				}
 			}
 			return aw.schedulePeriodically(task, initialDelay, period, unit);
 		}
@@ -578,6 +682,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		@Override
 		public void dispose() {
 			if (DISPOSED.compareAndSet(this, 0, 1)) {
+				parent.deferredFacades.remove(this);
+				//each inner task will decrement the remainingTask counter
+
 				DeferredWorkerTask pendingTask;
 				while((pendingTask = this.poll()) != null) {
 					pendingTask.disposeInner();
@@ -599,14 +706,10 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 			if (key == Attr.NAME) return workerName;
-			if (key == Attr.CAPACITY) return Integer.MAX_VALUE;
+			if (key == Attr.CAPACITY) return REMAINING_DEFERRED_TASKS.get(parent);
 			if (key == Attr.BUFFERED) return this.size();
+			if (key == Attr.PARENT) return parent;
 
-			ActiveWorker d = delegate;
-			if (d != null) {
-				if (key == Attr.PARENT) return d.cached.parent;
-				return d.cached.scanUnsafe(key);
-			}
 			return null;
 		}
 	}
@@ -631,12 +734,14 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		final long     delay;
 		final long     period;
 		final TimeUnit timeUnit;
+		final CappedScheduler parent;
 
-		DeferredDirect(Runnable task, long delay, long period, TimeUnit unit) {
+		DeferredDirect(Runnable task, long delay, long period, TimeUnit unit, CappedScheduler parent) {
 			this.task = task;
 			this.delay = delay;
 			this.period = period;
 			this.timeUnit = unit;
+			this.parent = parent;
 		}
 
 		@Override
@@ -646,6 +751,9 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				return;
 			}
 			if (this.compareAndSet(null, service)) {
+				if (parent.deferredTaskCap != Integer.MAX_VALUE) {
+					REMAINING_DEFERRED_TASKS.incrementAndGet(parent);
+				}
 				if (this.period == 0 && this.delay == 0) {
 					ACTIVE_TASK.set(this, Schedulers.directSchedule(service.exec, this.task, this, 0L, TimeUnit.SECONDS));
 				}
@@ -664,6 +772,10 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		@Override
 		public void dispose() {
 			if (DISPOSED.compareAndSet(this, 0, 1)) {
+				if (parent.deferredFacades.remove(this) && parent.deferredTaskCap != Integer.MAX_VALUE) {
+					REMAINING_DEFERRED_TASKS.incrementAndGet(parent);
+				}
+
 				Disposable at = ACTIVE_TASK.getAndSet(this, null);
 				if (at != null) {
 					at.dispose();
@@ -683,15 +795,13 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
-//			if (key == Attr.NAME) return workerName; //FIXME
-			if (key == Attr.CAPACITY) return Integer.MAX_VALUE;
+			if (key == Attr.NAME) return parent.toString() + ".deferredDirect";
+			if (key == Attr.CAPACITY) return 1;
+			if (key == Attr.PARENT) return parent;
 
 			CachedService d = this.get();
 			if (key == Attr.BUFFERED) return d == null ? 1 : 0;
-			if (d != null) {
-				if (key == Attr.PARENT) return d.parent;
-				return d.scanUnsafe(key);
-			}
+
 			return null;
 		}
 	}
