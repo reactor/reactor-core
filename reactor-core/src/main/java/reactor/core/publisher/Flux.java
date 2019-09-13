@@ -5673,7 +5673,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * between request and data production. And thus the more extraneous replenishment
 	 * requests this operator could make. For example, for a global downstream
 	 * request of 14, with a highTide of 10 and a lowTide of 2, the operator would perform
-	 * 7 low tide requests, whereas with the default lowTide of 8 it would only perform one.
+	 * 2 low tide requests, whereas with the default lowTide of 8 it would only perform one.
 	 * Using a {@code lowTide} equal to {@code highTide} reverts to the default 75% strategy,
 	 * while using a {@code lowTide} of {@literal 0} disables the lowTide, resulting in
 	 * all requests strictly adhering to the highTide.
