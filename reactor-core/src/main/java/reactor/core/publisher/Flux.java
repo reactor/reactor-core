@@ -8956,19 +8956,22 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctx -> {
-			BiFunction<Publisher, CoreSubscriber<? super T>, CoreSubscriber<? super T>> lifter = (pub, actual) -> {
-				if (actual instanceof StrictSubscriber) {
-					return new FluxContextStart.ContextStartSubscriber<>(actual, ctx);
-				}
-				else {
-					return actual;
-				}
-			};
-			return transformer.apply(
-					this instanceof Fuseable
-							? new FluxLiftFuseable<>(this, lifter)
-							: new FluxLift<>(this, lifter)
-			);
+			Flux<T> source = this;
+
+			if (!ctx.isEmpty()) {
+				BiFunction<Publisher, CoreSubscriber<? super T>, CoreSubscriber<? super T>> lifter = (pub, actual) -> {
+					if (actual instanceof StrictSubscriber) {
+						return new FluxContextStart.ContextStartSubscriber<>(actual, ctx);
+					}
+					else {
+						return actual;
+					}
+				};
+				source = source instanceof Fuseable
+						? new FluxLiftFuseable<>(this, lifter)
+						: new FluxLift<>(this, lifter);
+			}
+			return transformer.apply(source);
 		});
 	}
 
