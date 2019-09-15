@@ -47,6 +47,27 @@ public class FluxBufferTimeoutTest {
 		VirtualTimeScheduler.reset();
 	}
 
+	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSizeOrPredicate() {
+		final Scheduler worker = Schedulers.elastic();
+
+		return Flux.range(1, 6)
+		           .delayElements(Duration.ofMillis(300))
+		           .bufferTimeout(4, Duration.ofMillis(2000), worker, ArrayList::new,
+				           v -> v == 1);
+	}
+
+	@Test
+	public void bufferWithTimeoutAccumulateOnTimeOrSizeOrPredicate() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutAccumulateOnTimeOrSizeOrPredicate)
+		            .thenAwait(Duration.ofMillis(300))
+		            .assertNext(s -> assertThat(s).containsExactly(1))
+		            .thenAwait(Duration.ofMillis(1200))
+		            .assertNext(s -> assertThat(s).containsExactly(2,3,4,5))
+		            .thenAwait(Duration.ofMillis(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(6))
+		            .verifyComplete();
+	}
+
 	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize() {
 		return Flux.range(1, 6)
 		           .delayElements(Duration.ofMillis(300))
@@ -101,6 +122,27 @@ public class FluxBufferTimeoutTest {
 		            );
 	}
 
+	Flux<List<Integer>> scenario_bufferWithTimeoutThrowingExceptionOnPredicateIfDownstreamDemandIsLow() {
+		return Flux.range(1, 6)
+		           .delayElements(Duration.ofMillis(300))
+		           .bufferTimeout(5, Duration.ofMillis(2000), v -> true);
+	}
+
+	@Test
+	public void bufferWithTimeoutThrowingExceptionOnPredicateIfDownstreamDemandIsLow() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutThrowingExceptionOnPredicateIfDownstreamDemandIsLow, 0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(300))
+		            .thenRequest(1)
+		            .assertNext(s -> assertThat(s).containsExactly(1))
+		            .expectNoEvent(Duration.ofMillis(300))
+		            .verifyErrorSatisfies(e ->
+				            assertThat(e)
+						            .hasMessage("Could not emit buffer due to lack of requests")
+						            .isInstanceOf(IllegalStateException.class)
+		            );
+	}
+
 	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
@@ -109,7 +151,7 @@ public class FluxBufferTimeoutTest {
 		                                          .createWorker();
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
 						actual, 123, 1000,
-				worker, ArrayList::new);
+				worker, ArrayList::new, null);
 
 		try {
 			Subscription subscription = Operators.emptySubscription();
@@ -152,7 +194,8 @@ public class FluxBufferTimeoutTest {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> subscriptionsHolder[0] = s);
 
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-				actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+				actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new,
+				null);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -163,12 +206,30 @@ public class FluxBufferTimeoutTest {
 	}
 
 	@Test
+	public void downstreamDemandShouldBeAbleToDecreaseOnPredicate() {
+		Subscription[] subscriptionsHolder = new Subscription[1];
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> subscriptionsHolder[0] = s);
+
+		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
+				actual, 5, 1000, Schedulers.elastic().createWorker(), ArrayList::new,
+				v -> true);
+
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+		subscriptionsHolder[0].request(1);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+		test.onNext("0");
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+	}
+
+	@Test
 	public void downstreamDemandShouldBeAbleToDecreaseOnFullBuffer() {
 		Subscription[] subscriptionsHolder = new Subscription[1];
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> subscriptionsHolder[0] = s);
 
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-				actual, 5, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+				actual, 5, 1000, Schedulers.elastic().createWorker(), ArrayList::new,
+				null);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -189,7 +250,7 @@ public class FluxBufferTimeoutTest {
 
 		VirtualTimeScheduler timeScheduler = VirtualTimeScheduler.getOrSet();
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-				actual, 5, 100, timeScheduler.createWorker(), ArrayList::new);
+				actual, 5, 100, timeScheduler.createWorker(), ArrayList::new, null);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -208,7 +269,8 @@ public class FluxBufferTimeoutTest {
 				actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+						actual, 123, 1000, Schedulers.elastic().createWorker(),
+				ArrayList::new, null);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -231,7 +293,8 @@ public class FluxBufferTimeoutTest {
 		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(consumer, null, null, null);
 
 		FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<Integer, List<Integer>>(
-				actual, 3, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+				actual, 3, 1000, Schedulers.elastic().createWorker(), ArrayList::new,
+				null);
 		test.onSubscribe(Operators.emptySubscription());
 
 		AtomicInteger counter = new AtomicInteger();
@@ -290,6 +353,17 @@ public class FluxBufferTimeoutTest {
 		                        .doOnNext(n -> scheduler.dispose())
 		                        .bufferTimeout(10, Duration.ofMillis(100), scheduler))
 		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(RejectedExecutionException.class))
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardOnPredicateThrows() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .bufferTimeout(10, Duration.ofMillis(100), v -> {
+			                        throw new RuntimeException("boom");
+		                        }))
+		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1);
 	}
