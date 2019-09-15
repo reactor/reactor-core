@@ -2780,6 +2780,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return bufferTimeout(maxSize, maxTime, listSupplier());
 	}
 
+	//TODO documentation
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime,
+			Predicate<T> predicate) {
+		return bufferTimeout(maxSize, maxTime, listSupplier(), predicate);
+	}
+
 	/**
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
@@ -2798,6 +2804,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime, Supplier<C> bufferSupplier) {
 		return bufferTimeout(maxSize, maxTime, Schedulers.parallel(),
 				bufferSupplier);
+	}
+
+	//TODO documentation
+	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize,
+			Duration maxTime, Supplier<C> bufferSupplier, Predicate<T> predicate) {
+		return bufferTimeout(maxSize, maxTime, Schedulers.parallel(),
+				bufferSupplier, predicate);
 	}
 
 	/**
@@ -2819,6 +2832,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return bufferTimeout(maxSize, maxTime, timer, listSupplier());
 	}
 
+	//TODO documentation
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime,
+			Scheduler timer, Predicate<T> predicate) {
+		return bufferTimeout(maxSize, maxTime, timer, listSupplier(), predicate);
+	}
+
 	/**
 	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
 	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
@@ -2838,6 +2857,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
 			Scheduler timer, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toMillis(), timer, bufferSupplier));
+	}
+
+	//TODO documentation
+	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
+			Scheduler timer, Supplier<C> bufferSupplier, Predicate<? super T> predicate) {
+		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toMillis(),
+				timer, bufferSupplier, predicate));
 	}
 
 	/**

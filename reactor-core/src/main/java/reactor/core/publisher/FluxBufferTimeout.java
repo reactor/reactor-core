@@ -22,6 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
@@ -42,12 +43,22 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	final Supplier<C>    bufferSupplier;
 	final Scheduler      timer;
 	final long           timespan;
+	final Predicate<? super T> predicate;
 
 	FluxBufferTimeout(Flux<T> source,
 			int maxSize,
 			long timespan,
 			Scheduler timer,
 			Supplier<C> bufferSupplier) {
+		this(source, maxSize, timespan, timer, bufferSupplier, null);
+	}
+
+	FluxBufferTimeout(Flux<T> source,
+			int maxSize,
+			long timespan,
+			Scheduler timer,
+			Supplier<C> bufferSupplier,
+			@Nullable Predicate<? super T> predicate) {
 		super(source);
 		if (timespan <= 0) {
 			throw new IllegalArgumentException("Timeout period must be strictly positive");
@@ -59,6 +70,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		this.timespan = timespan;
 		this.batchSize = maxSize;
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
+		this.predicate = predicate;
 	}
 
 	@Override
@@ -68,7 +80,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				batchSize,
 				timespan,
 				timer.createWorker(),
-				bufferSupplier
+				bufferSupplier,
+				predicate
 		);
 	}
 
@@ -95,6 +108,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		final Runnable                   flushTask;
 
 		protected Subscription subscription;
+		final Predicate<? super T> predicate;
 
 		volatile     int                                                  terminated =
 				NOT_TERMINATED;
@@ -125,7 +139,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				int maxSize,
 				long timespan,
 				Scheduler.Worker timer,
-				Supplier<C> bufferSupplier) {
+				Supplier<C> bufferSupplier,
+				@Nullable Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.timespan = timespan;
 			this.timer = timer;
@@ -147,6 +162,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 			this.batchSize = maxSize;
 			this.bufferSupplier = bufferSupplier;
+			this.predicate = predicate;
 		}
 
 		protected void doOnSubscribe() {
@@ -245,7 +261,18 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 			nextCallback(value);
 
-			if (this.index % batchSize == 0) {
+			boolean match = false;
+			if(predicate != null) {
+				try {
+					match = predicate.test(value);
+				} catch (Throwable th) {
+					Context ctx = actual.currentContext();
+					onError(Operators.onOperatorError(subscription, th, value, ctx));
+					return;
+				}
+			}
+
+			if (this.index % batchSize == 0 || match) {
 				this.index = 0;
 				if (timespanRegistration != null) {
 					timespanRegistration.dispose();
