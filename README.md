@@ -44,6 +44,21 @@ However it should work fine with Android SDK 26 (Android O) and above. See the
 [complete note](https://projectreactor.io/docs/core/release/reference/docs/index.html#prerequisites)
 in the reference guide.
 
+## Trouble importing the project in IDE?
+Since the introduction of Java 9 stubs in order to optimize the performance of debug backtraces, one can sometimes
+encounter cryptic messages from the build system when importing or re-importing the project in their IDE.
+
+For example: 
+
+ - `package StackWalker does not exist`: probably building under JDK8 but `java9stubs` was not added to sources
+ - `cannot find symbol @CallerSensitive`: probably building with JDK11+ and importing using JDK8
+
+When encountering these issues, one need to ensure that:
+
+ - Gradle JVM matches the JDK used by the IDE for the modules (in IntelliJ, `Modules Settings` JDK). Preferably, 1.8.
+ - The IDE is configured to delegate build to Gradle (in IntelliJ: `Build Tools > Gradle > Runner` and project setting uses that default)
+ 
+Then rebuild the project and the errors should disappear.
 
 ## Getting Started
 
