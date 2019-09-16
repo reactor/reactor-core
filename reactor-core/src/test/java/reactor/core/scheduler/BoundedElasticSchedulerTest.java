@@ -16,7 +16,6 @@
 
 package reactor.core.scheduler;
 
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +33,6 @@ import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.AfterClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -47,9 +45,9 @@ import static org.assertj.core.api.Assertions.*;
 /**
  * @author Simon Baslé
  */
-public class CappedSchedulerTest extends AbstractSchedulerTest {
+public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
-	private static final Logger LOGGER = Loggers.getLogger(CappedSchedulerTest.class);
+	private static final Logger LOGGER = Loggers.getLogger(BoundedElasticSchedulerTest.class);
 
 	static Stream<String> dumpThreadNames() {
 		Thread[] tarray;
@@ -77,9 +75,9 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected Scheduler scheduler() {
 		return autoCleanup(
-				Schedulers.newCapped(
-						4,
-						new ReactorThreadFactory("cappedSchedulerTest", CappedScheduler.COUNTER,
+				Schedulers.newBoundedElastic(
+						4, Integer.MAX_VALUE,
+						new ReactorThreadFactory("boundedElasticSchedulerTest", BoundedElasticScheduler.COUNTER,
 								false, false, Schedulers::defaultUncaughtException),
 						10
 				));
@@ -96,11 +94,11 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 		Scheduler.Worker worker4 = autoCleanup(s.createWorker());
 		Scheduler.Worker worker5 = autoCleanup(s.createWorker());
 
-		assertThat(worker1).isExactlyInstanceOf(CappedScheduler.ActiveWorker.class);
-		assertThat(worker2).isExactlyInstanceOf(CappedScheduler.ActiveWorker.class);
-		assertThat(worker3).isExactlyInstanceOf(CappedScheduler.ActiveWorker.class);
-		assertThat(worker4).isExactlyInstanceOf(CappedScheduler.ActiveWorker.class);
-		assertThat(worker5).isExactlyInstanceOf(CappedScheduler.DeferredWorker.class);
+		assertThat(worker1).isExactlyInstanceOf(BoundedElasticScheduler.ActiveWorker.class);
+		assertThat(worker2).isExactlyInstanceOf(BoundedElasticScheduler.ActiveWorker.class);
+		assertThat(worker3).isExactlyInstanceOf(BoundedElasticScheduler.ActiveWorker.class);
+		assertThat(worker4).isExactlyInstanceOf(BoundedElasticScheduler.ActiveWorker.class);
+		assertThat(worker5).isExactlyInstanceOf(BoundedElasticScheduler.DeferredWorker.class);
 
 		worker1.schedule(() -> {});
 		worker2.schedule(() -> {});
@@ -141,17 +139,17 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 				.as("extraDirect1")
 				.isNotSameAs(extraDirect2)
 				.isNotSameAs(extraDirect3)
-				.isInstanceOf(CappedScheduler.DeferredDirect.class);
+				.isInstanceOf(BoundedElasticScheduler.DeferredDirect.class);
 
 		assertThat(extraDirect2)
 				.as("extraDirect2")
 				.isNotSameAs(extraDirect1)
 				.isNotSameAs(extraDirect3)
-				.isInstanceOf(CappedScheduler.DeferredDirect.class);
+				.isInstanceOf(BoundedElasticScheduler.DeferredDirect.class);
 
 		assertThat(extraDirect3)
 				.as("extraDirect3")
-				.isInstanceOf(CappedScheduler.DeferredDirect.class);
+				.isInstanceOf(BoundedElasticScheduler.DeferredDirect.class);
 	}
 
 	// below tests similar to ElasticScheduler
@@ -164,36 +162,37 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void negativeTtl() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new CappedScheduler(1, Integer.MAX_VALUE,null, -1));
+				.isThrownBy(() -> new BoundedElasticScheduler(1, Integer.MAX_VALUE,null, -1));
 	}
 
 	@Test
 	public void negativeThreadCap() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new CappedScheduler(-1, Integer.MAX_VALUE, null, 1));
+				.isThrownBy(() -> new BoundedElasticScheduler(-1, Integer.MAX_VALUE, null, 1));
 	}
 
 	@Test
 	public void zeroThreadCap() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new CappedScheduler(0, Integer.MAX_VALUE, null, 1));
+				.isThrownBy(() -> new BoundedElasticScheduler(0, Integer.MAX_VALUE, null, 1));
 	}
 
 	@Test
 	public void negativeTaskCap() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new CappedScheduler(1, -1, null, 1));
+				.isThrownBy(() -> new BoundedElasticScheduler(1, -1, null, 1));
 	}
 
 	@Test
 	public void zeroTaskCap() {
 		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new CappedScheduler(1, 0, null, 1));
+				.isThrownBy(() -> new BoundedElasticScheduler(1, 0, null, 1));
 	}
 
 	@Test
 	public void evictionForWorkerScheduling() {
-		CappedScheduler s = autoCleanup(new CappedScheduler(2, Integer.MAX_VALUE, r -> new Thread(r, "eviction"), 1));
+		BoundedElasticScheduler
+				s = autoCleanup(new BoundedElasticScheduler(2, Integer.MAX_VALUE, r -> new Thread(r, "eviction"), 1));
 
 		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
 		Scheduler.Worker worker2 = autoCleanup(s.createWorker());
@@ -223,7 +222,8 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void evictionForDirectScheduling() {
-		CappedScheduler s = autoCleanup(new CappedScheduler(2, Integer.MAX_VALUE, r -> new Thread(r, "eviction"), 1));
+		BoundedElasticScheduler
+				s = autoCleanup(new BoundedElasticScheduler(2, Integer.MAX_VALUE, r -> new Thread(r, "eviction"), 1));
 
 		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
 		Scheduler.Worker worker2 = autoCleanup(s.createWorker());
@@ -255,7 +255,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void lifoEviction() throws InterruptedException {
-		Scheduler scheduler = autoCleanup(new CappedScheduler(200, Integer.MAX_VALUE, r -> new Thread(r, "dequeueEviction"), 1));
+		Scheduler scheduler = autoCleanup(new BoundedElasticScheduler(200, Integer.MAX_VALUE, r -> new Thread(r, "dequeueEviction"), 1));
 		int otherThreads = Thread.activeCount();
 		try {
 
@@ -312,7 +312,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void userWorkerShutdownBySchedulerDisposal() throws InterruptedException {
-		Scheduler s = autoCleanup(Schedulers.newCapped(4, "cappedUserThread", 10, false));
+		Scheduler s = autoCleanup(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "boundedElasticUserThread", 10, false));
 		Scheduler.Worker w = autoCleanup(s.createWorker());
 
 		CountDownLatch latch = new CountDownLatch(1);
@@ -334,7 +334,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void deferredWorkerDisposedEarly() {
-		CappedScheduler s = autoCleanup(new reactor.core.scheduler.CappedScheduler(1, Integer.MAX_VALUE, Thread::new,10));
+		BoundedElasticScheduler s = autoCleanup(new BoundedElasticScheduler(1, Integer.MAX_VALUE, Thread::new,10));
 		Scheduler.Worker firstWorker = autoCleanup(s.createWorker());
 		Scheduler.Worker worker = s.createWorker();
 
@@ -350,11 +350,12 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void regrowFromEviction() throws InterruptedException {
-		CappedScheduler scheduler = autoCleanup((CappedScheduler) Schedulers.newCapped(1, "regrowFromEviction", 1));
+		BoundedElasticScheduler
+				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "regrowFromEviction", 1));
 		Scheduler.Worker worker = scheduler.createWorker();
 		worker.schedule(() -> {});
 
-		List<CappedScheduler.CachedService> beforeEviction = new ArrayList<>(scheduler.allServices);
+		List<BoundedElasticScheduler.CachedService> beforeEviction = new ArrayList<>(scheduler.allServices);
 		assertThat(beforeEviction)
 				.as("before eviction")
 				.hasSize(1);
@@ -369,7 +370,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 				.isEmpty();
 
 		Scheduler.Worker regrowWorker = autoCleanup(scheduler.createWorker());
-		assertThat(regrowWorker).isInstanceOf(CappedScheduler.ActiveWorker.class);
+		assertThat(regrowWorker).isInstanceOf(BoundedElasticScheduler.ActiveWorker.class);
 		regrowWorker.schedule(() -> {});
 
 		assertThat(scheduler.allServices)
@@ -381,10 +382,11 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void taskCapIsSharedBetweenDirectAndIndirectDeferredScheduling() {
-		CappedScheduler cappedScheduler = autoCleanup(new CappedScheduler(1, 9, Thread::new, 10));
-		Scheduler.Worker activeWorker = autoCleanup(cappedScheduler.createWorker());
-		Scheduler.Worker deferredWorker1 = cappedScheduler.createWorker();
-		Scheduler.Worker deferredWorker2 = cappedScheduler.createWorker();
+		BoundedElasticScheduler
+				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 9, Thread::new, 10));
+		Scheduler.Worker activeWorker = autoCleanup(boundedElasticScheduler.createWorker());
+		Scheduler.Worker deferredWorker1 = boundedElasticScheduler.createWorker();
+		Scheduler.Worker deferredWorker2 = boundedElasticScheduler.createWorker();
 
 		//enqueue tasks in first deferred worker
 		deferredWorker1.schedule(() -> {});
@@ -397,79 +399,84 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 		deferredWorker2.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS);
 
 		//enqueue tasks directly on scheduler
-		cappedScheduler.schedule(() -> {});
-		cappedScheduler.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
-		cappedScheduler.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS);
+		boundedElasticScheduler.schedule(() -> {});
+		boundedElasticScheduler.schedule(() -> {}, 100, TimeUnit.MILLISECONDS);
+		boundedElasticScheduler.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS);
 
 		//any attempt at scheduling more task should result in rejection
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(0);
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(0);
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker1 immediate").isThrownBy(() -> deferredWorker1.schedule(() -> {}));
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker1 delayed").isThrownBy(() -> deferredWorker1.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker1 periodic").isThrownBy(() -> deferredWorker1.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS));
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker2 immediate").isThrownBy(() -> deferredWorker2.schedule(() -> {}));
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker2 delayed").isThrownBy(() -> deferredWorker2.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
 		assertThatExceptionOfType(RejectedExecutionException.class).as("worker2 periodic").isThrownBy(() -> deferredWorker2.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS));
-		assertThatExceptionOfType(RejectedExecutionException.class).as("scheduler immediate").isThrownBy(() -> cappedScheduler.schedule(() -> {}));
-		assertThatExceptionOfType(RejectedExecutionException.class).as("scheduler delayed").isThrownBy(() -> cappedScheduler.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
-		assertThatExceptionOfType(RejectedExecutionException.class).as("scheduler periodic").isThrownBy(() -> cappedScheduler.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS));
+		assertThatExceptionOfType(RejectedExecutionException.class).as("scheduler immediate").isThrownBy(() -> boundedElasticScheduler.schedule(() -> {}));
+		assertThatExceptionOfType(RejectedExecutionException.class).as("scheduler delayed").isThrownBy(() -> boundedElasticScheduler.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
+		assertThatExceptionOfType(RejectedExecutionException.class).as("scheduler periodic").isThrownBy(() -> boundedElasticScheduler.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS));
 	}
 
 	@Test
 	public void taskCapResetWhenDirectDeferredTaskIsExecuted() {
-		CappedScheduler cappedScheduler = autoCleanup(new CappedScheduler(1, 1, Thread::new, 10));
-		Scheduler.Worker activeWorker = cappedScheduler.createWorker();
+		BoundedElasticScheduler
+				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 1, Thread::new, 10));
+		Scheduler.Worker activeWorker = boundedElasticScheduler.createWorker();
 
 		//enqueue tasks directly on scheduler
-		cappedScheduler.schedule(() -> {});
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(0);
+		boundedElasticScheduler.schedule(() -> {});
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(0);
 
 		activeWorker.dispose();
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(1);
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(1);
 	}
 
 	@Test
 	public void taskCapResetWhenWorkerDeferredTaskIsExecuted() {
-		CappedScheduler cappedScheduler = autoCleanup(new CappedScheduler(1, 1, Thread::new, 10));
-		Scheduler.Worker activeWorker = cappedScheduler.createWorker();
-		Scheduler.Worker deferredWorker = cappedScheduler.createWorker();
+		BoundedElasticScheduler
+				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 1, Thread::new, 10));
+		Scheduler.Worker activeWorker = boundedElasticScheduler.createWorker();
+		Scheduler.Worker deferredWorker = boundedElasticScheduler.createWorker();
 
 		//enqueue tasks on deferred worker
 		deferredWorker.schedule(() -> {});
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(0);
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(0);
 
 		activeWorker.dispose();
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(1);
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(1);
 	}
 
 	@Test
 	public void taskCapResetWhenDirectDeferredTaskIsDisposed() {
-		CappedScheduler cappedScheduler = autoCleanup(new CappedScheduler(1, 1, Thread::new, 10));
-		Scheduler.Worker activeWorker = cappedScheduler.createWorker();
+		BoundedElasticScheduler
+				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 1, Thread::new, 10));
+		Scheduler.Worker activeWorker = boundedElasticScheduler.createWorker();
 
-		Disposable d = cappedScheduler.schedule(() -> {});
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(0);
+		Disposable d = boundedElasticScheduler.schedule(() -> {});
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(0);
 
 		d.dispose();
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(1);
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(1);
 	}
 
 	@Test
 	public void taskCapResetWhenWorkerDeferredTaskIsDisposed() {
-		CappedScheduler cappedScheduler = autoCleanup(new CappedScheduler(1, 1, Thread::new, 10));
-		Scheduler.Worker activeWorker = cappedScheduler.createWorker();
-		Scheduler.Worker deferredWorker = cappedScheduler.createWorker();
+		BoundedElasticScheduler
+				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 1, Thread::new, 10));
+		Scheduler.Worker activeWorker = boundedElasticScheduler.createWorker();
+		Scheduler.Worker deferredWorker = boundedElasticScheduler.createWorker();
 
 		//enqueue tasks on deferred worker
 		Disposable d = deferredWorker.schedule(() -> {});
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(0);
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(0);
 
 		d.dispose();
-		assertThat(cappedScheduler.remainingDeferredTasks).isEqualTo(1);
+		assertThat(boundedElasticScheduler.remainingDeferredTasks).isEqualTo(1);
 	}
 
 	@Test
 	public void deferredWorkerTasksEventuallyExecuted() {
-		CappedScheduler scheduler = autoCleanup((CappedScheduler) Schedulers.newCapped(1, "test"));
+		BoundedElasticScheduler
+				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
 		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
 		Scheduler.Worker deferredWorker = autoCleanup(scheduler.createWorker());
 
@@ -488,7 +495,8 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void deferredDirectTasksEventuallyExecuted() {
-		CappedScheduler scheduler = autoCleanup((CappedScheduler) Schedulers.newCapped(1, "test"));
+		BoundedElasticScheduler
+				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
 		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
 
 		AtomicInteger runCount = new AtomicInteger();
@@ -506,13 +514,14 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void deferredWorkerDisposalRemovesFromFacadeQueue() {
-		CappedScheduler scheduler = autoCleanup((CappedScheduler) Schedulers.newCapped(1, "test"));
+		BoundedElasticScheduler
+				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
 		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
 		Scheduler.Worker deferredWorker = autoCleanup(scheduler.createWorker());
 
 		assertThat(scheduler.deferredFacades).as("before dispose")
 		                                     .hasSize(1)
-		                                     .containsExactly((CappedScheduler.DeferredFacade) deferredWorker);
+		                                     .containsExactly((BoundedElasticScheduler.DeferredFacade) deferredWorker);
 
 		deferredWorker.dispose();
 		assertThat(scheduler.deferredFacades).as("after dispose").isEmpty();
@@ -520,13 +529,14 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void deferredDirectDisposalRemovesFromFacadeQueue() {
-		CappedScheduler scheduler = autoCleanup((CappedScheduler) Schedulers.newCapped(1, "test"));
+		BoundedElasticScheduler
+				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
 		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
 		Disposable deferredDirect = scheduler.schedule(() -> {});
 
 		assertThat(scheduler.deferredFacades).as("before dispose")
 		                                     .hasSize(1)
-		                                     .containsExactly((CappedScheduler.DeferredFacade) deferredDirect);
+		                                     .containsExactly((BoundedElasticScheduler.DeferredFacade) deferredDirect);
 
 		deferredDirect.dispose();
 		assertThat(scheduler.deferredFacades).as("after dispose").isEmpty();
@@ -534,36 +544,39 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void deferredWorkerSetServiceIgnoredIfDisposed() {
-		CappedScheduler scheduler = autoCleanup((CappedScheduler) Schedulers.newCapped(1, "test"));
-		CappedScheduler.ActiveWorker activeWorker = (CappedScheduler.ActiveWorker) autoCleanup(scheduler.createWorker());
-		CappedScheduler.DeferredWorker deferredWorker = (CappedScheduler.DeferredWorker) autoCleanup(scheduler.createWorker());
+		BoundedElasticScheduler
+				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		BoundedElasticScheduler.ActiveWorker activeWorker = (BoundedElasticScheduler.ActiveWorker) autoCleanup(scheduler.createWorker());
+		BoundedElasticScheduler.DeferredWorker deferredWorker = (BoundedElasticScheduler.DeferredWorker) autoCleanup(scheduler.createWorker());
 
 		deferredWorker.dispose();
 
 		assertThat(scheduler.idleServicesWithExpiry).isEmpty();
-		deferredWorker.setService(autoCleanup(new CappedScheduler.CachedService(scheduler)));
+		deferredWorker.setService(autoCleanup(new BoundedElasticScheduler.CachedService(scheduler)));
 
 		assertThat(scheduler.idleServicesWithExpiry).hasSize(1);
 	}
 
 	@Test
 	public void deferredDirectSetServiceIgnoredIfDisposed() {
-		CappedScheduler scheduler = autoCleanup((CappedScheduler) Schedulers.newCapped(1, "test"));
-		CappedScheduler.ActiveWorker activeWorker = (CappedScheduler.ActiveWorker) autoCleanup(scheduler.createWorker());
-		CappedScheduler.DeferredDirect deferredDirect = (CappedScheduler.DeferredDirect) autoCleanup(scheduler.schedule(() -> {}));
+		BoundedElasticScheduler
+				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		BoundedElasticScheduler.ActiveWorker activeWorker = (BoundedElasticScheduler.ActiveWorker) autoCleanup(scheduler.createWorker());
+		BoundedElasticScheduler.DeferredDirect deferredDirect = (BoundedElasticScheduler.DeferredDirect) autoCleanup(scheduler.schedule(() -> {}));
 
 		deferredDirect.dispose();
 
 		assertThat(scheduler.idleServicesWithExpiry).isEmpty();
-		deferredDirect.setService(autoCleanup(new CappedScheduler.CachedService(scheduler)));
+		deferredDirect.setService(autoCleanup(new BoundedElasticScheduler.CachedService(scheduler)));
 
 		assertThat(scheduler.idleServicesWithExpiry).hasSize(1);
 	}
 
 	@Test
 	public void deferredWorkerRejectsTasksAfterBeingDisposed() {
-		CappedScheduler scheduler = autoCleanup((CappedScheduler) Schedulers.newCapped(1, "test"));
-		CappedScheduler.DeferredWorker deferredWorker = new CappedScheduler.DeferredWorker(scheduler);
+		BoundedElasticScheduler
+				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		BoundedElasticScheduler.DeferredWorker deferredWorker = new BoundedElasticScheduler.DeferredWorker(scheduler);
 		deferredWorker.dispose();
 
 		assertThatExceptionOfType(RejectedExecutionException.class)
@@ -583,34 +596,35 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void defaultCappedConfigurationIsConsistentWithJavadoc() {
-		Schedulers.CachedScheduler cachedCapped = (Schedulers.CachedScheduler) Schedulers.capped();
-		CappedScheduler capped = (CappedScheduler) cachedCapped.cached;
+	public void defaultBoundedElasticConfigurationIsConsistentWithJavadoc() {
+		Schedulers.CachedScheduler cachedBoundedElastic = (Schedulers.CachedScheduler) Schedulers.boundedElastic();
+		BoundedElasticScheduler boundedElastic = (BoundedElasticScheduler) cachedBoundedElastic.cached;
 
 		//10 x number of CPUs
-		assertThat(capped.threadCap)
-				.as("default capped size")
-				.isEqualTo(Schedulers.DEFAULT_CAPPED_SIZE)
+		assertThat(boundedElastic.threadCap)
+				.as("default boundedElastic size")
+				.isEqualTo(Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE)
 				.isEqualTo(Runtime.getRuntime().availableProcessors() * 10);
 
 		//60s TTL
-		assertThat(capped.ttlSeconds)
+		assertThat(boundedElastic.ttlSeconds)
 				.as("default TTL")
-				.isEqualTo(CappedScheduler.DEFAULT_TTL_SECONDS)
+				.isEqualTo(BoundedElasticScheduler.DEFAULT_TTL_SECONDS)
 				.isEqualTo(60);
 
 		//unbounded task queueing
-		assertThat(capped.deferredTaskCap)
+		assertThat(boundedElastic.deferredTaskCap)
 				.as("default unbounded task queueing")
-				.isEqualTo(Integer.MAX_VALUE);
+				.isEqualTo(Integer.MAX_VALUE)
+				.isEqualTo(Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE);
 	}
 
 	@Test
 	public void scanName() {
-		Scheduler withNamedFactory = autoCleanup(Schedulers.newCapped(1, "scanName", 3));
-		Scheduler withBasicFactory = autoCleanup(Schedulers.newCapped(1, Thread::new, 3));
-		Scheduler withTaskCap = autoCleanup(Schedulers.newHardCapped(1, 123, Thread::new, 3));
-		Scheduler cached = Schedulers.capped();
+		Scheduler withNamedFactory = autoCleanup(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "scanName", 3));
+		Scheduler withBasicFactory = autoCleanup(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, Thread::new, 3));
+		Scheduler withTaskCap = autoCleanup(Schedulers.newBoundedElastic(1, 123, Thread::new, 3));
+		Scheduler cached = Schedulers.boundedElastic();
 
 		Scheduler.Worker workerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
 		Scheduler.Worker deferredWorkerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
@@ -619,60 +633,61 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
 				.as("withNamedFactory")
-				.isEqualTo("capped(\"scanName\",maxThreads=1,maxTaskQueued=unbounded,ttl=3s)");
+				.isEqualTo("boundedElastic(\"scanName\",maxThreads=1,maxTaskQueued=unbounded,ttl=3s)");
 
 		assertThat(Scannable.from(withBasicFactory).scan(Scannable.Attr.NAME))
 				.as("withBasicFactory")
-				.isEqualTo("capped(maxThreads=1,maxTaskQueued=unbounded,ttl=3s)");
+				.isEqualTo("boundedElastic(maxThreads=1,maxTaskQueued=unbounded,ttl=3s)");
 
 		assertThat(Scannable.from(withTaskCap).scan(Scannable.Attr.NAME))
 				.as("withTaskCap")
-				.isEqualTo("capped(maxThreads=1,maxTaskQueued=123,ttl=3s)");
+				.isEqualTo("boundedElastic(maxThreads=1,maxTaskQueued=123,ttl=3s)");
 
 		assertThat(cached)
-				.as("capped() is cached")
+				.as("boundedElastic() is cached")
 				.is(SchedulersTest.CACHED_SCHEDULER);
 		assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
-				.as("default capped()")
-				.isEqualTo("Schedulers.capped()");
+				.as("default boundedElastic()")
+				.isEqualTo("Schedulers.boundedElastic()");
 
 		assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
 				.as("workerWithNamedFactory")
-				.isEqualTo("capped(\"scanName\",maxThreads=1,maxTaskQueued=unbounded,ttl=3s).worker");
+				.isEqualTo("boundedElastic(\"scanName\",maxThreads=1,maxTaskQueued=unbounded,ttl=3s).worker");
 
 		assertThat(Scannable.from(workerWithBasicFactory).scan(Scannable.Attr.NAME))
 				.as("workerWithBasicFactory")
-				.isEqualTo("capped(maxThreads=1,maxTaskQueued=unbounded,ttl=3s).worker");
+				.isEqualTo("boundedElastic(maxThreads=1,maxTaskQueued=unbounded,ttl=3s).worker");
 
 		assertThat(Scannable.from(deferredWorkerWithNamedFactory).scan(Scannable.Attr.NAME))
 				.as("deferredWorkerWithNamedFactory")
-				.isEqualTo("capped(\"scanName\",maxThreads=1,maxTaskQueued=unbounded,ttl=3s).deferredWorker");
+				.isEqualTo("boundedElastic(\"scanName\",maxThreads=1,maxTaskQueued=unbounded,ttl=3s).deferredWorker");
 
 		assertThat(Scannable.from(deferredWorkerWithBasicFactory).scan(Scannable.Attr.NAME))
 				.as("deferredWorkerWithBasicFactory")
-				.isEqualTo("capped(maxThreads=1,maxTaskQueued=unbounded,ttl=3s).deferredWorker");
+				.isEqualTo("boundedElastic(maxThreads=1,maxTaskQueued=unbounded,ttl=3s).deferredWorker");
 	}
 
 	@Test
 	public void scanCapacity() {
-		Scheduler scheduler = autoCleanup(Schedulers.newCapped(1, Thread::new, 2));
+		Scheduler scheduler = autoCleanup(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, Thread::new, 2));
 		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
 		Scheduler.Worker deferredWorker = autoCleanup(scheduler.createWorker());
 
 		//smoke test that second worker is a DeferredWorker
-		assertThat(deferredWorker).as("check second worker is deferred").isExactlyInstanceOf(CappedScheduler.DeferredWorker.class);
+		assertThat(deferredWorker).as("check second worker is deferred").isExactlyInstanceOf(
+				BoundedElasticScheduler.DeferredWorker.class);
 
-		assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler capped").isEqualTo(1);
-		assertThat(Scannable.from(activeWorker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(1);
-		assertThat(Scannable.from(deferredWorker).scan(Scannable.Attr.CAPACITY)).as("worker capacity").isEqualTo(Integer.MAX_VALUE);
+		assertThat(Scannable.from(scheduler).scan(Scannable.Attr.CAPACITY)).as("scheduler capacity").isEqualTo(1);
+		assertThat(Scannable.from(activeWorker).scan(Scannable.Attr.CAPACITY)).as("active worker capacity").isEqualTo(1);
+		assertThat(Scannable.from(deferredWorker).scan(Scannable.Attr.CAPACITY)).as("deferred worker capacity").isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test
 	public void scanDeferredDirect() {
-		CappedScheduler parent = autoCleanup(new CappedScheduler(3, 10, Thread::new, 60));
-		CappedScheduler.REMAINING_DEFERRED_TASKS.decrementAndGet(parent);
+		BoundedElasticScheduler parent = autoCleanup(new BoundedElasticScheduler(3, 10, Thread::new, 60));
+		BoundedElasticScheduler.REMAINING_DEFERRED_TASKS.decrementAndGet(parent);
 
-		CappedScheduler.DeferredDirect deferredDirect = new CappedScheduler.DeferredDirect(() -> {}, 10, 10, TimeUnit.MILLISECONDS, parent);
+		BoundedElasticScheduler.DeferredDirect deferredDirect = new BoundedElasticScheduler.DeferredDirect(() -> {}, 10, 10, TimeUnit.MILLISECONDS, parent);
 
 		assertThat(deferredDirect.scan(Scannable.Attr.TERMINATED)).as("TERMINATED").isFalse();
 		assertThat(deferredDirect.scan(Scannable.Attr.CANCELLED)).as("CANCELLED").isFalse();
@@ -684,7 +699,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 		//BUFFERED 1 as long as not realized
 		assertThat(deferredDirect.scan(Scannable.Attr.BUFFERED)).as("BUFFERED").isOne();
-		CappedScheduler.CachedService cachedService = autoCleanup(new CappedScheduler.CachedService(parent));
+		BoundedElasticScheduler.CachedService cachedService = autoCleanup(new BoundedElasticScheduler.CachedService(parent));
 		deferredDirect.set(cachedService);
 		assertThat(deferredDirect.scan(Scannable.Attr.BUFFERED)).as("BUFFERED with CachedService").isZero();
 
@@ -695,10 +710,10 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void scanDeferredWorker() {
-		CappedScheduler parent = autoCleanup(new CappedScheduler(3, 10, Thread::new, 60));
-		CappedScheduler.REMAINING_DEFERRED_TASKS.decrementAndGet(parent);
+		BoundedElasticScheduler parent = autoCleanup(new BoundedElasticScheduler(3, 10, Thread::new, 60));
+		BoundedElasticScheduler.REMAINING_DEFERRED_TASKS.decrementAndGet(parent);
 
-		CappedScheduler.DeferredWorker deferredWorker = new CappedScheduler.DeferredWorker(parent);
+		BoundedElasticScheduler.DeferredWorker deferredWorker = new BoundedElasticScheduler.DeferredWorker(parent);
 
 		assertThat(deferredWorker.scan(Scannable.Attr.TERMINATED)).as("TERMINATED").isFalse();
 		assertThat(deferredWorker.scan(Scannable.Attr.CANCELLED)).as("CANCELLED").isFalse();
@@ -707,7 +722,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 
 		//capacity depends on parent's remaining tasks
 		assertThat(deferredWorker.scan(Scannable.Attr.CAPACITY)).as("CAPACITY").isEqualTo(9);
-		CappedScheduler.REMAINING_DEFERRED_TASKS.decrementAndGet(parent);
+		BoundedElasticScheduler.REMAINING_DEFERRED_TASKS.decrementAndGet(parent);
 		assertThat(deferredWorker.scan(Scannable.Attr.CAPACITY)).as("CAPACITY after remaingTask decrement").isEqualTo(8);
 
 

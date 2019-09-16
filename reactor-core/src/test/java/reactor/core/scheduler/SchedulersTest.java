@@ -35,11 +35,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
-import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,15 +59,15 @@ public class SchedulersTest {
 
 	final static class TestSchedulers implements Schedulers.Factory {
 
-		final Scheduler      elastic  = Schedulers.Factory.super.newElastic(60, Thread::new);
-		final Scheduler      capped   = Schedulers.Factory.super.newCapped(2, Integer.MAX_VALUE, Thread::new, 60);
-		final Scheduler      single   = Schedulers.Factory.super.newSingle(Thread::new);
-		final Scheduler      parallel =	Schedulers.Factory.super.newParallel(1, Thread::new);
+		final Scheduler elastic        = Schedulers.Factory.super.newElastic(60, Thread::new);
+		final Scheduler boundedElastic = Schedulers.Factory.super.newBoundedElastic(2, Integer.MAX_VALUE, Thread::new, 60);
+		final Scheduler single         = Schedulers.Factory.super.newSingle(Thread::new);
+		final Scheduler parallel       = Schedulers.Factory.super.newParallel(1, Thread::new);
 
 		TestSchedulers(boolean disposeOnInit) {
 			if (disposeOnInit) {
 				elastic.dispose();
-				capped.dispose();
+				boundedElastic.dispose();
 				single.dispose();
 				parallel.dispose();
 			}
@@ -82,9 +80,9 @@ public class SchedulersTest {
 		}
 
 		@Override
-		public final Scheduler newCapped(int threadCap, int taskCap, ThreadFactory threadFactory, int ttlSeconds) {
+		public final Scheduler newBoundedElastic(int threadCap, int taskCap, ThreadFactory threadFactory, int ttlSeconds) {
 			assertThat(((ReactorThreadFactory) threadFactory).get()).isEqualTo("unused");
-			return capped;
+			return boundedElastic;
 		}
 
 		@Override
@@ -357,8 +355,8 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void cappedSchedulerDefaultBlockingOk() throws InterruptedException {
-		Scheduler scheduler = Schedulers.newCapped(4, "cappedSchedulerDefaultNonBlocking");
+	public void boundedElasticSchedulerDefaultBlockingOk() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "boundedElasticSchedulerDefaultNonBlocking");
 		CountDownLatch latch = new CountDownLatch(1);
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
 		try {
@@ -538,7 +536,7 @@ public class SchedulersTest {
 
 		Assert.assertEquals(ts.single, Schedulers.newSingle("unused"));
 		Assert.assertEquals(ts.elastic, Schedulers.newElastic("unused"));
-		Assert.assertEquals(ts.capped, Schedulers.newCapped(4, "unused"));
+		Assert.assertEquals(ts.boundedElastic, Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "unused"));
 		Assert.assertEquals(ts.parallel, Schedulers.newParallel("unused"));
 
 		Schedulers.resetFactory();
@@ -921,8 +919,8 @@ public class SchedulersTest {
 	}
 
 	@Test(timeout = 5000)
-	public void cappedSchedulerThreadCheck() throws Exception {
-		Scheduler s = Schedulers.newCapped(4,"cappedSchedulerThreadCheck");
+	public void boundedElasticSchedulerThreadCheck() throws Exception {
+		Scheduler s = Schedulers.newBoundedElastic(4, Integer.MAX_VALUE,"boundedElasticSchedulerThreadCheck");
 		try {
 			Scheduler.Worker w = s.createWorker();
 

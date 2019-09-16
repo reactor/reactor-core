@@ -47,7 +47,8 @@ import reactor.util.annotation.Nullable;
  * them once the Workers have been shut down. This scheduler is time-capable (can schedule
  * with delay / periodically).
  * <p>
- * The maximum number of created thread pools is capped.
+ * The maximum number of created thread pools is capped. Tasks submitted after the cap has been
+ * reached can be enqueued up to a second limit, possibly lifted by using {@link Integer#MAX_VALUE}.
  * <p>
  * The default time-to-live for unused thread pools is 60 seconds, use the
  * appropriate constructor to set a different value.
@@ -56,12 +57,13 @@ import reactor.util.annotation.Nullable;
  *
  * @author Simon Baslé
  */
-final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorService>, Scannable {
+final class BoundedElasticScheduler
+		implements Scheduler, Supplier<ScheduledExecutorService>, Scannable {
 
 	static final AtomicLong COUNTER = new AtomicLong();
 
 	static final ThreadFactory EVICTOR_FACTORY = r -> {
-		Thread t = new Thread(r, "capped-evictor-" + COUNTER.incrementAndGet());
+		Thread t = new Thread(r, "elasticBounded-evictor-" + COUNTER.incrementAndGet());
 		t.setDaemon(true);
 		return t;
 	};
@@ -80,16 +82,16 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	volatile boolean shutdown;
 
-	volatile int                                            remainingThreads;
-	static final AtomicIntegerFieldUpdater<CappedScheduler> REMAINING_THREADS =
-			AtomicIntegerFieldUpdater.newUpdater(CappedScheduler.class, "remainingThreads");
+	volatile int                                                    remainingThreads;
+	static final AtomicIntegerFieldUpdater<BoundedElasticScheduler> REMAINING_THREADS =
+			AtomicIntegerFieldUpdater.newUpdater(BoundedElasticScheduler.class, "remainingThreads");
 
-	volatile int                                            remainingDeferredTasks;
-	static final AtomicIntegerFieldUpdater<CappedScheduler> REMAINING_DEFERRED_TASKS =
-			AtomicIntegerFieldUpdater.newUpdater(CappedScheduler.class, "remainingDeferredTasks");
+	volatile int                                                   remainingDeferredTasks;
+	static final AtomicIntegerFieldUpdater<BoundedElasticScheduler>REMAINING_DEFERRED_TASKS =
+			AtomicIntegerFieldUpdater.newUpdater(BoundedElasticScheduler.class, "remainingDeferredTasks");
 
 
-	CappedScheduler(int threadCap, int deferredTaskCap, ThreadFactory factory, int ttlSeconds) {
+	BoundedElasticScheduler(int threadCap, int deferredTaskCap, ThreadFactory factory, int ttlSeconds) {
 		if (ttlSeconds < 0) {
 			throw new IllegalArgumentException("ttlSeconds must be positive, was: " + ttlSeconds);
 		}
@@ -116,7 +118,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	/**
-	 * Instantiates the default {@link ScheduledExecutorService} for the CappedScheduler
+	 * Instantiates the default {@link ScheduledExecutorService} for the BoundedElasticScheduler
 	 * ({@code Executors.newScheduledThreadPoolExecutor} with core and max pool size of 1).
 	 */
 	@Override
@@ -312,7 +314,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public String toString() {
-		StringBuilder ts = new StringBuilder(Schedulers.CAPPED)
+		StringBuilder ts = new StringBuilder(Schedulers.BOUNDED_ELASTIC)
 				.append('(');
 		if (factory instanceof ReactorThreadFactory) {
 			ts.append('\"').append(((ReactorThreadFactory) factory).get()).append("\",");
@@ -357,10 +359,10 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	static final class CachedService implements Disposable, Scannable {
 
-		final CappedScheduler          parent;
+		final BoundedElasticScheduler  parent;
 		final ScheduledExecutorService exec;
 
-		CachedService(@Nullable CappedScheduler parent) {
+		CachedService(@Nullable BoundedElasticScheduler parent) {
 			this.parent = parent;
 			if (parent != null) {
 				this.exec = Schedulers.decorateExecutorService(parent, parent.get());
@@ -555,7 +557,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	static final class DeferredWorker extends ConcurrentLinkedQueue<DeferredWorkerTask> implements Worker, Scannable,
 	                                                                                               DeferredFacade {
 
-		final CappedScheduler parent;
+		final BoundedElasticScheduler parent;
 
 		volatile ActiveWorker delegate;
 		static final AtomicReferenceFieldUpdater<DeferredWorker, ActiveWorker> DELEGATE =
@@ -567,7 +569,7 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 		final String workerName;
 
-		DeferredWorker(CappedScheduler parent) {
+		DeferredWorker(BoundedElasticScheduler parent) {
 			this.parent = parent;
 			this.workerName = parent.toString() + ".deferredWorker";
 		}
@@ -730,13 +732,13 @@ final class CappedScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		static final AtomicIntegerFieldUpdater<DeferredDirect> DISPOSED =
 				AtomicIntegerFieldUpdater.newUpdater(DeferredDirect.class, "disposed");
 
-		final Runnable task;
-		final long     delay;
-		final long     period;
-		final TimeUnit timeUnit;
-		final CappedScheduler parent;
+		final Runnable                task;
+		final long                    delay;
+		final long                    period;
+		final TimeUnit                timeUnit;
+		final BoundedElasticScheduler parent;
 
-		DeferredDirect(Runnable task, long delay, long period, TimeUnit unit, CappedScheduler parent) {
+		DeferredDirect(Runnable task, long delay, long period, TimeUnit unit, BoundedElasticScheduler parent) {
 			this.task = task;
 			this.delay = delay;
 			this.period = period;

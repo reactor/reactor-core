@@ -54,12 +54,12 @@ import static reactor.core.Exceptions.unwrap;
  *     <li>{@link #parallel()}: Optimized for fast {@link Runnable} non-blocking executions </li>
  *     <li>{@link #single}: Optimized for low-latency {@link Runnable} one-off executions </li>
  *     <li>{@link #elastic()}: Optimized for longer executions, an alternative for blocking tasks where the number of active tasks (and threads) can grow indefinitely</li>
- *     <li>{@link #capped()}: Optimized for longer executions, an alternative for blocking tasks where the number of active tasks (and threads) is capped</li>
+ *     <li>{@link #boundedElastic()}: Optimized for longer executions, an alternative for blocking tasks where the number of active tasks (and threads) is capped</li>
  *     <li>{@link #immediate}: to run a task on the caller {@link Thread}</li>
  *     <li>{@link #fromExecutorService(ExecutorService)} to create new instances around {@link java.util.concurrent.Executors} </li>
  * </ul>
  * <p>
- * Factories prefixed with {@code new} (eg. {@link #newCapped(int, String)}) return a new instance of their flavor of {@link Scheduler},
+ * Factories prefixed with {@code new} (eg. {@link #newBoundedElastic(int, int, String)} return a new instance of their flavor of {@link Scheduler},
  * while other factories like {@link #elastic()} return a shared instance - which is the one used by operators requiring that flavor as their default Scheduler.
  *
  * @author Stephane Maldini
@@ -78,17 +78,29 @@ public abstract class Schedulers {
 					.orElseGet(() -> Runtime.getRuntime().availableProcessors());
 
 	/**
-	 * Default maximum size for the global {@link #capped()} {@link Scheduler}, initialized
-	 * by system property {@code reactor.schedulers.defaultCappedSize} and falls back to 10 x number
+	 * Default maximum size for the global {@link #boundedElastic()} {@link Scheduler}, initialized
+	 * by system property {@code reactor.schedulers.defaultBoundedElasticSize} and falls back to 10 x number
 	 * of processors available to the runtime on init.
 	 *
 	 * @see Runtime#availableProcessors()
-	 * @see #capped()
+	 * @see #boundedElastic()
 	 */
-	public static final int DEFAULT_CAPPED_SIZE =
-			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultCappedSize"))
+	public static final int DEFAULT_BOUNDED_ELASTIC_SIZE =
+			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultBoundedElasticSize"))
 					.map(Integer::parseInt)
 					.orElseGet(() -> 10 * Runtime.getRuntime().availableProcessors());
+
+	/**
+	 * Default maximum number of enqueued tasks for the global {@link #boundedElastic()} {@link Scheduler}, initialized
+	 * by system property {@code reactor.schedulers.defaultBoundedElasticQueueSize} and falls back to
+	 * unbounded by default ({@link Integer#MAX_VALUE}).
+	 *
+	 * @see #boundedElastic()
+	 */
+	public static final int DEFAULT_BOUNDED_ELASTIC_QUEUESIZE =
+			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultBoundedElasticQueueSize"))
+			        .map(Integer::parseInt)
+			        .orElseGet(() -> Integer.MAX_VALUE);
 
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
@@ -179,21 +191,22 @@ public abstract class Schedulers {
 	/**
 	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
 	 * Workers, reusing them once the Workers have been shut down. The underlying daemon
-	 * threads can be evicted if idle for more than {@link CappedScheduler#DEFAULT_TTL_SECONDS 60} seconds.
+	 * threads can be evicted if idle for more than {@link BoundedElasticScheduler#DEFAULT_TTL_SECONDS 60} seconds.
 	 * <p>
 	 * The maximum number of created thread pools is bounded by a {@code cap} (by default,
-	 * ten times the number of available CPU cores, see {@link #DEFAULT_CAPPED_SIZE}).
+	 * ten times the number of available CPU cores, see {@link #DEFAULT_BOUNDED_ELASTIC_SIZE}).
 	 * If a worker is requested while the cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
 	 * is provided which will enqueue the tasks submitted to it, deferring the actual submission
 	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
 	 * If a task is directly submitted to the {@link Scheduler} while the cap has been reached,
-	 * it will be similarly enqueue and deferred.
+	 * it will be similarly enqueue and deferred (unless property {@link #DEFAULT_BOUNDED_ELASTIC_QUEUESIZE} is
+	 * tuned on startup).
 	 *
 	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
 	 * the number of backing threads, reuses threads and evict idle ones
 	 */
-	public static Scheduler capped() {
-		return cache(CACHED_CAPPED, CAPPED, CAPPED_SUPPLIER);
+	public static Scheduler boundedElastic() {
+		return cache(CACHED_BOUNDED_ELASTIC, BOUNDED_ELASTIC, BOUNDED_ELASTIC_SUPPLIER);
 	}
 
 	/**
@@ -298,127 +311,11 @@ public abstract class Schedulers {
 		return factory.newElastic(ttlSeconds, threadFactory);
 	}
 
-	/**
-	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
-	 * Workers, reusing them once the Workers have been shut down. The underlying (user) threads
-	 * can be evicted if idle for more than {@link CappedScheduler#DEFAULT_TTL_SECONDS 60} seconds.
-	 * <p>
-	 * The maximum number of created thread pools is bounded by the provided {@code cap}.
-	 * If a worker is requested while the cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
-	 * is provided which will enqueue the tasks submitted to it, deferring the actual submission
-	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
-	 * Tasks directly submitted to the scheduler are similarly enqueued and deferred.
-	 * <p>
-	 * This scheduler is not restartable. Backing threads are user threads. so they will prevent the JVM
-	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
-	 * scheduler has been {@link Scheduler#dispose() disposed}.
-	 *
-	 * @param cap maximum number of underlying threads to create
-	 * @param name Thread prefix
-	 *
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
-	 * the number of backing threads, reuses threads and evict idle ones
-	 *
-	 * @see #newHardCapped(int,int,String)
-	 */
-	public static Scheduler newCapped(int cap, String name) {
-		return newCapped(cap, name, CappedScheduler.DEFAULT_TTL_SECONDS, false);
-	}
 
 	/**
 	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
 	 * Workers, reusing them once the Workers have been shut down. The underlying (user) threads
-	 * can be evicted if idle for more than {@code ttlSeconds}.
-	 * <p>
-	 * The maximum number of created thread pools is bounded by the provided {@code cap}.
-	 * If a worker is requested while the cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
-	 * is provided which will enqueue the tasks submitted to it, deferring the actual submission
-	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
-	 * Tasks directly submitted to the scheduler are similarly enqueued and deferred.
-	 * <p>
-	 * This scheduler is not restartable. Backing threads are user threads. so they will prevent the JVM
-	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
-	 * scheduler has been {@link Scheduler#dispose() disposed}.
-	 *
-	 * @param cap maximum number of underlying threads to create
-	 * @param name Thread prefix
-	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 *
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
-	 * the number of backing threads, reuses threads and evict idle ones
-	 *
-	 * @see #newHardCapped(int, int, String, int)
-	 */
-	public static Scheduler newCapped(int cap, String name, int ttlSeconds) {
-		return newCapped(cap, name, ttlSeconds, false);
-	}
-
-	/**
-	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
-	 * Workers, reusing them once the Workers have been shut down. The underlying (user or daemon)
-	 * threads can be evicted if idle for more than {@code ttlSeconds}.
-	 * <p>
-	 * The maximum number of created thread pools is bounded by the provided {@code cap}.
-	 * If a worker is requested while the cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
-	 * is provided which will enqueue the tasks submitted to it, deferring the actual submission
-	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
-	 * Tasks directly submitted to the scheduler are similarly enqueued and deferred.
-	 * <p>
-	 * This scheduler is not restartable. Depending on the {@code daemon} parameter, backing threads can be
-	 * user threads or daemon threads. Note that user threads will prevent the JVM from exiting until their
-	 * worker has been disposed AND they've been evicted by TTL, or the whole scheduler has been
-	 * {@link Scheduler#dispose() disposed}.
-	 *
-	 * @param cap maximum number of underlying threads to create
-	 * @param name Thread prefix
-	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 * @param daemon are backing threads {@link Thread#setDaemon(boolean) daemon threads}?
-	 *
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
-	 * the number of backing threads, reuses threads and evict idle ones
-	 *
-	 * @see #newHardCapped(int, int, String, int, boolean)
-	 */
-	public static Scheduler newCapped(int cap, String name, int ttlSeconds, boolean daemon) {
-		return newCapped(cap,
-				new ReactorThreadFactory(name, ElasticScheduler.COUNTER, daemon, false,
-						Schedulers::defaultUncaughtException),
-				ttlSeconds);
-	}
-
-	/**
-	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
-	 * Workers, reusing them once the Workers have been shut down. The underlying (user or daemon)
-	 * threads can be evicted if idle for more than {@code ttlSeconds}.
-	 * <p>
-	 * The maximum number of created thread pools is bounded by the provided {@code cap}.
-	 * If a worker is requested while the cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
-	 * is provided which will enqueue the tasks submitted to it, deferring the actual submission
-	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
-	 * Tasks directly submitted to the scheduler are similarly enqueued and deferred.
-	 * <p>
-	 * This scheduler is not restartable. Backing threads are created by the provided {@link ThreadFactory},
-	 * which can decide whether to create user threads or daemon threads. Note that user threads
-	 * will prevent the JVM from exiting until their worker has been disposed AND they've been evicted by TTL,
-	 * or the whole scheduler has been {@link Scheduler#dispose() disposed}.
-	 *
-	 * @param cap maximum number of underlying threads to create
-	 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
-	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 *
-	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
-	 * the number of backing threads, reuses threads and evict idle ones
-	 *
-	 * @see #newHardCapped(int, int, ThreadFactory, int)
-	 */
-	public static Scheduler newCapped(int cap, ThreadFactory threadFactory, int ttlSeconds) {
-		return factory.newCapped(cap, Integer.MAX_VALUE, threadFactory, ttlSeconds);
-	}
-
-	/**
-	 * {@link Scheduler} that dynamically creates a bounded number of ExecutorService-based
-	 * Workers, reusing them once the Workers have been shut down. The underlying (user) threads
-	 * can be evicted if idle for more than {@link CappedScheduler#DEFAULT_TTL_SECONDS 60} seconds.
+	 * can be evicted if idle for more than {@link BoundedElasticScheduler#DEFAULT_TTL_SECONDS 60} seconds.
 	 * <p>
 	 * The maximum number of created thread pools is bounded by the provided {@code cap}.
 	 * If a worker is requested while the cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
@@ -426,7 +323,7 @@ public abstract class Schedulers {
 	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
 	 * Tasks directly submitted to the scheduler are similarly enqueued and deferred.
 	 * However, if the total number of deferred tasks reaches {@code queuedTaskCap}, a {@link RejectedExecutionException}
-	 * is thrown instead in both cases.
+	 * is thrown instead in both cases (use {@link Integer#MAX_VALUE} to enqueue without bounds instead).
 	 * <p>
 	 * This scheduler is not restartable. Backing threads are user threads. so they will prevent the JVM
 	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
@@ -439,8 +336,8 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
 	 * the number of backing threads, reuses threads and evict idle ones
 	 */
-	public static Scheduler newHardCapped(int threadCap, int queuedTaskCap, String name) {
-		return newHardCapped(threadCap, queuedTaskCap, name, CappedScheduler.DEFAULT_TTL_SECONDS, false);
+	public static Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, String name) {
+		return newBoundedElastic(threadCap, queuedTaskCap, name, BoundedElasticScheduler.DEFAULT_TTL_SECONDS, false);
 	}
 
 	/**
@@ -454,7 +351,7 @@ public abstract class Schedulers {
 	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
 	 * Tasks directly submitted to the scheduler are similarly enqueued and deferred.
 	 * However, if the total number of deferred tasks reaches {@code queuedTaskCap}, a {@link RejectedExecutionException}
-	 * is thrown instead in both cases.
+	 * is thrown instead in both cases (use {@link Integer#MAX_VALUE} to enqueue without bounds instead).
 	 * <p>
 	 * This scheduler is not restartable. Backing threads are user threads. so they will prevent the JVM
 	 * from exiting until their worker has been disposed AND they've been evicted by TTL, or the whole
@@ -468,8 +365,8 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
 	 * the number of backing threads, reuses threads and evict idle ones
 	 */
-	public static Scheduler newHardCapped(int threadCap, int queuedTaskCap, String name, int ttlSeconds) {
-		return newHardCapped(threadCap, queuedTaskCap, name, ttlSeconds, false);
+	public static Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, String name, int ttlSeconds) {
+		return newBoundedElastic(threadCap, queuedTaskCap, name, ttlSeconds, false);
 	}
 
 	/**
@@ -483,7 +380,7 @@ public abstract class Schedulers {
 	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
 	 * Tasks directly submitted to the scheduler are similarly enqueued and deferred.
 	 * However, if the total number of deferred tasks reaches {@code queuedTaskCap}, a {@link RejectedExecutionException}
-	 * is thrown instead in both cases.
+	 * is thrown instead in both cases (use {@link Integer#MAX_VALUE} to enqueue without bounds instead).
 	 * <p>
 	 * This scheduler is not restartable. Depending on the {@code daemon} parameter, backing threads can be
 	 * user threads or daemon threads. Note that user threads will prevent the JVM from exiting until their
@@ -499,8 +396,8 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
 	 * the number of backing threads, reuses threads and evict idle ones
 	 */
-	public static Scheduler newHardCapped(int threadCap, int queuedTaskCap, String name, int ttlSeconds, boolean daemon) {
-		return newHardCapped(threadCap, queuedTaskCap,
+	public static Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, String name, int ttlSeconds, boolean daemon) {
+		return newBoundedElastic(threadCap, queuedTaskCap,
 				new ReactorThreadFactory(name, ElasticScheduler.COUNTER, daemon, false,
 						Schedulers::defaultUncaughtException),
 				ttlSeconds);
@@ -517,7 +414,7 @@ public abstract class Schedulers {
 	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
 	 * Tasks directly submitted to the scheduler are similarly enqueued and deferred.
 	 * However, if the total number of deferred tasks reaches {@code queuedTaskCap}, a {@link RejectedExecutionException}
-	 * is thrown instead in both cases.
+	 * is thrown instead in both cases (use {@link Integer#MAX_VALUE} to enqueue without bounds instead).
 	 * <p>
 	 * This scheduler is not restartable. Backing threads are created by the provided {@link ThreadFactory},
 	 * which can decide whether to create user threads or daemon threads. Note that user threads
@@ -532,8 +429,8 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
 	 * the number of backing threads, reuses threads and evict idle ones
 	 */
-	public static Scheduler newHardCapped(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
-		return factory.newCapped(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
+	public static Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
+		return factory.newBoundedElastic(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
 	}
 
 	/**
@@ -994,8 +891,8 @@ public abstract class Schedulers {
 		 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
 		 * the number of backing threads, reuses threads and evict idle ones
 		 */
-		default Scheduler newCapped(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
-			return new CappedScheduler(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
+		default Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
+			return new BoundedElasticScheduler(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
 		}
 
 		/**
@@ -1029,7 +926,7 @@ public abstract class Schedulers {
 
 	// Internals
 	static final String ELASTIC               = "elastic"; // IO stuff
-	static final String CAPPED                = "capped"; // Blocking stuff with scale to zero
+	static final String BOUNDED_ELASTIC       = "boundedElastic"; // Blocking stuff with scale to zero
 	static final String PARALLEL              = "parallel"; //scale up common tasks
 	static final String SINGLE                = "single"; //non blocking tasks
 	static final String IMMEDIATE             = "immediate";
@@ -1038,16 +935,17 @@ public abstract class Schedulers {
 
 
 	// Cached schedulers in atomic references:
-	static AtomicReference<CachedScheduler> CACHED_ELASTIC  = new AtomicReference<>();
-	static AtomicReference<CachedScheduler> CACHED_CAPPED   = new AtomicReference<>();
-	static AtomicReference<CachedScheduler> CACHED_PARALLEL = new AtomicReference<>();
-	static AtomicReference<CachedScheduler> CACHED_SINGLE   = new AtomicReference<>();
+	static AtomicReference<CachedScheduler> CACHED_ELASTIC         = new AtomicReference<>();
+	static AtomicReference<CachedScheduler> CACHED_BOUNDED_ELASTIC = new AtomicReference<>();
+	static AtomicReference<CachedScheduler> CACHED_PARALLEL        = new AtomicReference<>();
+	static AtomicReference<CachedScheduler> CACHED_SINGLE          = new AtomicReference<>();
 
 	static final Supplier<Scheduler> ELASTIC_SUPPLIER =
 			() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true);
 
-	static final Supplier<Scheduler> CAPPED_SUPPLIER =
-			() -> newCapped(DEFAULT_CAPPED_SIZE, CAPPED, CappedScheduler.DEFAULT_TTL_SECONDS, true);
+	static final Supplier<Scheduler> BOUNDED_ELASTIC_SUPPLIER =
+			() -> newBoundedElastic(DEFAULT_BOUNDED_ELASTIC_SIZE, DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
+					BOUNDED_ELASTIC, BoundedElasticScheduler.DEFAULT_TTL_SECONDS, true);
 
 	static final Supplier<Scheduler> PARALLEL_SUPPLIER =
 			() -> newParallel(PARALLEL, DEFAULT_POOL_SIZE, true);

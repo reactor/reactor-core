@@ -187,8 +187,8 @@ public class SchedulersMetricsTest {
 						"ELASTIC"
 				},
 				new Object[] {
-						(Supplier<Scheduler>) () -> Schedulers.newCapped(4, "A"),
-						"CAPPED"
+						(Supplier<Scheduler>) () -> Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "A"),
+						"BOUNDED_ELASTIC"
 				}
 		};
 	}
