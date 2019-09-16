@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -32,16 +32,17 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFromPublisher<T> extends Mono<T> implements Scannable, CoreOperator<T, T> {
+final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
+                                                            OptimizableOperator<T, T> {
 
 	final Publisher<? extends T> source;
 
 	@Nullable
-	final CoreOperator<?, T> coreOperator;
+	final OptimizableOperator<?, T> optimizableOperator;
 
 	MonoFromPublisher(Publisher<? extends T> source) {
 		this.source = Objects.requireNonNull(source, "publisher");
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	@Override
@@ -65,8 +66,8 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable, CoreOpera
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends T> nextOperator() {
-		return coreOperator;
+	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 	@Override

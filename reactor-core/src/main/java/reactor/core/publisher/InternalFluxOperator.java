@@ -22,10 +22,11 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
-abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements Scannable, CoreOperator<O, I> {
+abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements Scannable,
+                                                                                OptimizableOperator<O, I> {
 
 	@Nullable
-	final CoreOperator<?, I> coreOperator;
+	final OptimizableOperator<?, I> optimizableOperator;
 
 	/**
 	 * Build a {@link InternalFluxOperator} wrapper around the passed parent {@link Publisher}
@@ -34,20 +35,20 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	 */
 	protected InternalFluxOperator(Flux<? extends I> source) {
 		super(source);
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
-		CoreOperator operator = this;
+		OptimizableOperator operator = this;
 		while (true) {
 			subscriber = operator.subscribeOrReturn(subscriber);
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			CoreOperator newSource = operator.nextOperator();
+			OptimizableOperator newSource = operator.nextOptimizableSource();
 			if (newSource == null) {
 				operator.source().subscribe(subscriber);
 				return;
@@ -65,8 +66,8 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends I> nextOperator() {
-		return coreOperator;
+	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 	@Override

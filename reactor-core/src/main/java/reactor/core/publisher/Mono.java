@@ -4066,8 +4066,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		CorePublisher publisher = Operators.onLastAssembly(this);
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
-		if (publisher instanceof CoreOperator) {
-			CoreOperator operator = (CoreOperator) publisher;
+		if (publisher instanceof OptimizableOperator) {
+			OptimizableOperator operator = (OptimizableOperator) publisher;
 			while (true) {
 				subscriber = operator.subscribeOrReturn(subscriber);
 				if (subscriber == null) {
@@ -4075,7 +4075,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 					return;
 				}
 
-				CoreOperator newSource = operator.nextOperator();
+				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
 					publisher = operator.source();
 					break;

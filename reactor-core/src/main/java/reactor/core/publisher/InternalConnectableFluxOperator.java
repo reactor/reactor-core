@@ -21,12 +21,13 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
-abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> implements Scannable, CoreOperator<O, I> {
+abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> implements Scannable,
+                                                                                           OptimizableOperator<O, I> {
 
 	final ConnectableFlux<I> source;
 
 	@Nullable
-	final CoreOperator<?, I> coreOperator;
+	final OptimizableOperator<?, I> optimizableOperator;
 
 	/**
 	 * Build an {@link InternalConnectableFluxOperator} wrapper around the passed parent {@link ConnectableFlux}
@@ -35,20 +36,20 @@ abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> 
 	 */
 	public InternalConnectableFluxOperator(ConnectableFlux<I> source) {
 		this.source = source;
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
-		CoreOperator operator = this;
+		OptimizableOperator operator = this;
 		while (true) {
 			subscriber = operator.subscribeOrReturn(subscriber);
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			CoreOperator newSource = operator.nextOperator();
+			OptimizableOperator newSource = operator.nextOptimizableSource();
 			if (newSource == null) {
 				operator.source().subscribe(subscriber);
 				return;
@@ -67,8 +68,8 @@ abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> 
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends I> nextOperator() {
-		return coreOperator;
+	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 	@Override

@@ -41,28 +41,29 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
-final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator<T, T> {
+final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
+                                                         OptimizableOperator<T, T> {
 
 	final Mono<T> source;
 
 	Function<? super T, ? extends Publisher<?>>[] otherGenerators;
 
 	@Nullable
-	final CoreOperator<?, T> coreOperator;
+	final OptimizableOperator<?, T> optimizableOperator;
 
 	@SuppressWarnings("unchecked")
 	MonoDelayUntil(Mono<T> monoSource,
 			Function<? super T, ? extends Publisher<?>> triggerGenerator) {
 		this.source = Objects.requireNonNull(monoSource, "monoSource");
 		this.otherGenerators = new Function[] { Objects.requireNonNull(triggerGenerator, "triggerGenerator")};
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	MonoDelayUntil(Mono<T> monoSource,
 			Function<? super T, ? extends Publisher<?>>[] triggerGenerators) {
 		this.source = Objects.requireNonNull(monoSource, "monoSource");
 		this.otherGenerators = triggerGenerators;
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	/**
@@ -101,8 +102,8 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable, CoreOperator
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends T> nextOperator() {
-		return coreOperator;
+	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 	@Override

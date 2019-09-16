@@ -42,7 +42,8 @@ import reactor.util.context.Context;
  * @param <T>
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fuseable, CoreOperator<T, T> {
+final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fuseable,
+                                                                OptimizableOperator<T, T> {
 
 	final CorePublisher<T>   source;
 	final int            history;
@@ -993,14 +994,14 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 					"connection");
 
 	@Nullable
-	final CoreOperator<?, T> coreOperator;
+	final OptimizableOperator<?, T> optimizableOperator;
 
 	FluxReplay(CorePublisher<T> source,
 			int history,
 			long ttl,
 			@Nullable Scheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 		this.history = history;
 		if(history < 0){
 			throw new IllegalArgumentException("History cannot be negative : " + history);
@@ -1109,8 +1110,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends T> nextOperator() {
-		return coreOperator;
+	public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 	@Override

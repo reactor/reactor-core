@@ -31,12 +31,13 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, CoreOperator<O, I> {
+abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
+                                                                     OptimizableOperator<O, I> {
 
 	protected final Mono<? extends I> source;
 
 	@Nullable
-	final CoreOperator<?, I> coreOperator;
+	final OptimizableOperator<?, I> optimizableOperator;
 
 	/**
 	 * Build a {@link FluxFromMonoOperator} wrapper around the passed parent {@link Publisher}
@@ -45,7 +46,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, 
 	 */
 	protected FluxFromMonoOperator(Mono<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	@Override
@@ -60,14 +61,14 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
-		CoreOperator operator = this;
+		OptimizableOperator operator = this;
 		while (true) {
 			subscriber = operator.subscribeOrReturn(subscriber);
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			CoreOperator newSource = operator.nextOperator();
+			OptimizableOperator newSource = operator.nextOptimizableSource();
 			if (newSource == null) {
 				operator.source().subscribe(subscriber);
 				return;
@@ -86,8 +87,8 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, 
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends I> nextOperator() {
-		return coreOperator;
+	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 }

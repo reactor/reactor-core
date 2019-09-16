@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -28,16 +28,17 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
-final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable, CoreOperator<I, I> {
+final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable,
+                                                             OptimizableOperator<I, I> {
 
 	final Publisher<? extends I> source;
 
 	@Nullable
-	final CoreOperator<?, I> coreOperator;
+	final OptimizableOperator<?, I> optimizableOperator;
 
 	MonoSourceFuseable(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	/**
@@ -62,8 +63,8 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends I> nextOperator() {
-		return coreOperator;
+	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 	@Override

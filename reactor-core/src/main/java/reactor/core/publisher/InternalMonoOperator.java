@@ -29,27 +29,28 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements Scannable, CoreOperator<O, I> {
+abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements Scannable,
+                                                                                OptimizableOperator<O, I> {
 
 	@Nullable
-	final CoreOperator<?, I> coreOperator;
+	final OptimizableOperator<?, I> optimizableOperator;
 
 	protected InternalMonoOperator(Mono<? extends I> source) {
 		super(source);
-		this.coreOperator = source instanceof CoreOperator ? (CoreOperator) source : null;
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
-		CoreOperator operator = this;
+		OptimizableOperator operator = this;
 		while (true) {
 			subscriber = operator.subscribeOrReturn(subscriber);
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			CoreOperator newSource = operator.nextOperator();
+			OptimizableOperator newSource = operator.nextOptimizableSource();
 			if (newSource == null) {
 				operator.source().subscribe(subscriber);
 				return;
@@ -67,7 +68,7 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 	}
 
 	@Override
-	public final CoreOperator<?, ? extends I> nextOperator() {
-		return coreOperator;
+	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 }
