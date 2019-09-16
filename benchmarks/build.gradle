@@ -3,7 +3,9 @@ apply plugin: 'idea'
 
 configurations {
   current
-  baseline
+  baseline {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+  }
 }
 
 dependencies {
@@ -17,7 +19,9 @@ dependencies {
   annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:1.21"
 
   current project(':reactor-core')
-  baseline "io.projectreactor:reactor-core:${perfBaselineVersion}"
+  baseline "io.projectreactor:reactor-core:${perfBaselineVersion}", {
+    changing = true
+  }
 }
 
 task jmhProfilers(type: JavaExec, description:'Lists the available profilers for the jmh task', group: 'Development') {

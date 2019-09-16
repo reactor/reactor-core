@@ -18,6 +18,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
+
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -32,12 +34,17 @@ import reactor.util.annotation.Nullable;
  * }
  * @param <I> delegate {@link Publisher} type
  */
-final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I>, CoreOperator<I, I>  {
+final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I>,
+                                                     OptimizableOperator<I, I> {
 
 	final Publisher<? extends I> source;
 
+	@Nullable
+	final OptimizableOperator<?, I> optimizableOperator;
+
 	MonoSource(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	/**
@@ -57,8 +64,13 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	}
 
 	@Override
-	public Publisher<? extends I> source() {
-		return source;
+	public final CorePublisher<? extends I> source() {
+		return this;
+	}
+
+	@Override
+	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 	@Override

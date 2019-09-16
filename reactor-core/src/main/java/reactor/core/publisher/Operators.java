@@ -1267,12 +1267,17 @@ public abstract class Operators {
 	Operators() {
 	}
 
-	static final class CorePublisherAdapter<T> implements CorePublisher<T>, CoreOperator<T, T> {
+	static final class CorePublisherAdapter<T> implements CorePublisher<T>,
+	                                                      OptimizableOperator<T, T> {
 
 		final Publisher<T> publisher;
 
+		@Nullable
+		final OptimizableOperator<?, T> optimizableOperator;
+
 		CorePublisherAdapter(Publisher<T> publisher) {
 			this.publisher = publisher;
+			this.optimizableOperator = publisher instanceof OptimizableOperator ? (OptimizableOperator) publisher : null;
 		}
 
 		@Override
@@ -1291,8 +1296,13 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Publisher<? extends T> source() {
-			return publisher;
+		public final CorePublisher<? extends T> source() {
+			return this;
+		}
+
+		@Override
+		public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+			return optimizableOperator;
 		}
 	}
 
