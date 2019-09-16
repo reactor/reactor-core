@@ -634,7 +634,7 @@ public class CappedSchedulerTest extends AbstractSchedulerTest {
 				.is(SchedulersTest.CACHED_SCHEDULER);
 		assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
 				.as("default capped()")
-				.isEqualTo("capped(\"capped\",maxThreads=" + 10 * Runtime.getRuntime().availableProcessors() + ",maxTaskQueued=unbounded,ttl=60s)");
+				.isEqualTo("Schedulers.capped()");
 
 		assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
 				.as("workerWithNamedFactory")
