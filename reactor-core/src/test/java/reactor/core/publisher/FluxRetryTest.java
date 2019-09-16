@@ -142,7 +142,7 @@ public class FluxRetryTest {
 	}
 
 	@Test
-	public void onAssemblyOnce() {
+	public void onLastAssemblyOnce() {
 		AtomicInteger onAssemblyCounter = new AtomicInteger();
 		String hookKey = UUID.randomUUID().toString();
 		try {
