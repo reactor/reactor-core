@@ -8924,6 +8924,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * </pre></blockquote>
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/transformForFlux.svg" alt="">
+	 * <p>
+	 * Note that when composing {@link Publisher} that are NOT from Reactor, it is preferable to
+	 * A) use {@link #transformDeferred(Function)} and B) isolate the part of the subchain that switches
+	 * to the non-Reactor library. If you do so, {@link Context} propagation will be possible
+	 * (see {@link #transformDeferred(Function)} for details).
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
 	 * instance.
@@ -8945,6 +8950,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * </pre></blockquote>
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/transformDeferredForFlux.svg" alt="">
+	 * <p>
+	 * Note that when composing {@link Publisher} that are NOT from Reactor, it is preferable to
+	 * isolate the part of the subchain that switches to the non-Reactor library in a dedicated {@link #transformDeferred(Function)}.
+	 * Doing so will allow this operator to detect the "alien" {@link Subscriber} and short-circuit it when propagating the {@link Context}.
 	 *
 	 * @param transformer the {@link Function} to lazily map this {@link Flux} into a target {@link Publisher}
 	 * instance for each new subscriber
@@ -8961,6 +8970,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			if (!ctx.isEmpty()) {
 				BiFunction<Publisher, CoreSubscriber<? super T>, CoreSubscriber<? super T>> lifter = (pub, actual) -> {
 					if (actual instanceof StrictSubscriber) {
+						//this is ok with Fuseable too, it is a QueueSubscription
 						return new FluxContextStart.ContextStartSubscriber<>(actual, ctx);
 					}
 					else {
