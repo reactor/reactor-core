@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 
 /**
@@ -56,7 +56,7 @@ final class FluxRetry<T> extends InternalFluxOperator<T, T> {
 	static final class RetrySubscriber<T>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
-		final Publisher<? extends T> source;
+		final CorePublisher<? extends T> source;
 
 		long remaining;
 
@@ -67,7 +67,7 @@ final class FluxRetry<T> extends InternalFluxOperator<T, T> {
 
 		long produced;
 
-		RetrySubscriber(Publisher<? extends T> source, CoreSubscriber<? super T> actual, long remaining) {
+		RetrySubscriber(CorePublisher<? extends T> source, CoreSubscriber<? super T> actual, long remaining) {
 			super(actual);
 			this.source = source;
 			this.remaining = remaining;

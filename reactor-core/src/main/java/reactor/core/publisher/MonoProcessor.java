@@ -26,6 +26,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -80,7 +81,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	@SuppressWarnings("rawtypes")
 	static final NextInner[] EMPTY_WITH_SOURCE = new NextInner[0];
 
-	Publisher<? extends O> source;
+	CorePublisher<? extends O> source;
 
 	Throwable    error;
 	O            value;
@@ -91,7 +92,7 @@ public final class MonoProcessor<O> extends Mono<O>
 			AtomicReferenceFieldUpdater.newUpdater(MonoProcessor.class, Subscription
 					.class, "subscription");
 
-	MonoProcessor(@Nullable Publisher<? extends O> source) {
+	MonoProcessor(@Nullable CorePublisher<? extends O> source) {
 		this.source = source;
 		SUBSCRIBERS.lazySet(this, source != null ? EMPTY_WITH_SOURCE : EMPTY);
 	}

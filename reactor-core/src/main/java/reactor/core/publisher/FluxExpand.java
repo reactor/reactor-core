@@ -28,6 +28,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
@@ -216,8 +217,8 @@ final class FluxExpand<T> extends InternalFluxOperator<T, T> {
 
 		volatile boolean cancelled;
 
-		Publisher<? extends T> source;
-		long                   consumed;
+		CorePublisher<? extends T> source;
+		long                       consumed;
 
 		ExpandDepthSubscription(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<? extends T>> expander,
