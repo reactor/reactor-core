@@ -329,8 +329,7 @@ final class BoundedElasticScheduler
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.CAPACITY) return threadCap;
-		//TODO re-evaluate BUFFERED: should this include deferredWorkers?
-		if (key == Attr.BUFFERED) return idleServicesWithExpiry.size(); //BUFFERED: number of workers alive
+		if (key == Attr.BUFFERED) return idleServicesWithExpiry.size(); //BUFFERED: number of workers alive and backed by thread
 		if (key == Attr.NAME) return this.toString();
 
 		return null;
