@@ -819,10 +819,12 @@ public abstract class Schedulers {
 	 */
 	public static void shutdownNow() {
 		CachedScheduler oldElastic = CACHED_ELASTIC.getAndSet(null);
+		CachedScheduler oldBoundedElastic = CACHED_BOUNDED_ELASTIC.getAndSet(null);
 		CachedScheduler oldParallel = CACHED_PARALLEL.getAndSet(null);
 		CachedScheduler oldSingle = CACHED_SINGLE.getAndSet(null);
 
 		if (oldElastic != null) oldElastic._dispose();
+		if (oldBoundedElastic != null) oldBoundedElastic._dispose();
 		if (oldParallel != null) oldParallel._dispose();
 		if (oldSingle != null) oldSingle._dispose();
 	}

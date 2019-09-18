@@ -575,6 +575,21 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void shutdownNowClosesAllCachedSchedulers() {
+		Scheduler oldSingle = Schedulers.single();
+		Scheduler oldElastic = Schedulers.elastic();
+		Scheduler oldBoundedElastic = Schedulers.boundedElastic();
+		Scheduler oldParallel = Schedulers.parallel();
+
+		Schedulers.shutdownNow();
+
+		assertThat(oldSingle.isDisposed()).as("single() disposed").isTrue();
+		assertThat(oldElastic.isDisposed()).as("elastic() disposed").isTrue();
+		assertThat(oldBoundedElastic.isDisposed()).as("boundedElastic() disposed").isTrue();
+		assertThat(oldParallel.isDisposed()).as("parallel() disposed").isTrue();
+	}
+
+	@Test
 	public void testUncaughtHookCalledWhenOnErrorNotImplemented() {
 		AtomicBoolean handled = new AtomicBoolean(false);
 		Schedulers.onHandleError((t, e) -> handled.set(true));
