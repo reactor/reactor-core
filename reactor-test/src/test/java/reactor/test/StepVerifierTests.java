@@ -33,6 +33,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
@@ -56,6 +57,9 @@ import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
  * @author Simon Basle
  */
 public class StepVerifierTests {
+
+	@Rule
+	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
 	@Test
 	public void expectationErrorWithGenericValueFormatterBypassesExtractor() {
@@ -2014,7 +2018,7 @@ public class StepVerifierTests {
 	//see https://github.com/reactor/reactor-core/issues/959
 	@Test
 	public void assertNextWithSubscribeOnDirectProcessor() {
-		Scheduler scheduler = Schedulers.newElastic("test");
+		Scheduler scheduler = afterTest.autoDispose(Schedulers.newBoundedElastic(1, 100, "test"));
 		DirectProcessor<Integer> processor = DirectProcessor.create();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
 		                             .doOnNext(processor::onNext)

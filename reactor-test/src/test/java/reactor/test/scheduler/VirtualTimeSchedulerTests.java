@@ -25,10 +25,12 @@ import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.AutoDisposingRule;
 import reactor.test.StepVerifier;
 import reactor.test.util.RaceTestUtils;
 
@@ -38,6 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Stephane Maldini
  */
 public class VirtualTimeSchedulerTests {
+
+	@Rule
+	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
 	@Test
 	public void cancelledAndEmptyConstantsAreNotSame() {
@@ -49,17 +54,17 @@ public class VirtualTimeSchedulerTests {
 
 	@Test
 	public void allEnabled() {
-		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
+		assertThat(afterTest.autoDispose(Schedulers.newParallel(""))).isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(afterTest.autoDispose(Schedulers.newElastic(""))).isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(afterTest.autoDispose(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, ""))).isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(afterTest.autoDispose(Schedulers.newSingle(""))).isNotInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler.getOrSet();
 
-		Assert.assertTrue(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
-		Assert.assertTrue(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
-		Assert.assertTrue(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "") instanceof VirtualTimeScheduler);
-		Assert.assertTrue(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
+		assertThat(afterTest.autoDispose(Schedulers.newParallel(""))).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(afterTest.autoDispose(Schedulers.newElastic(""))).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(afterTest.autoDispose(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, ""))).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(afterTest.autoDispose(Schedulers.newSingle(""))).isInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 

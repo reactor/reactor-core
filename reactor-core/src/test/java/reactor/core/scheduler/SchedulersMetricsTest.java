@@ -72,7 +72,7 @@ public class SchedulersMetricsTest {
 		afterTest.autoDispose(Schedulers.newParallel("A", 4));
 		afterTest.autoDispose(Schedulers.newParallel("A", 3));
 		afterTest.autoDispose(Schedulers.newSingle("B"));
-		afterTest.autoDispose(Schedulers.newElastic("C").createWorker());
+		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "C").createWorker());
 
 		assertThat(simpleMeterRegistry.getMeters()
 		                              .stream()
@@ -141,7 +141,7 @@ public class SchedulersMetricsTest {
 
 	@Test
 	public void decorateTwiceWithSameSchedulerInstance() {
-		Scheduler instance = afterTest.autoDispose(Schedulers.newElastic("TWICE", 1));
+		Scheduler instance = afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "TWICE", 1));
 
 		ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
 		afterTest.autoDispose(service::shutdown);

@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -46,6 +47,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.AutoDisposingRule;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -56,6 +58,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ParallelFluxTest {
+
+	@Rule
+	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
 	@Test
 	public void sequentialMode() {
@@ -932,7 +937,7 @@ public class ParallelFluxTest {
 				// Uncomment line below for failure
 				.cache(1)
 				.parallel(3)
-				.runOn(Schedulers.newElastic("TEST"))
+				.runOn(afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "TEST")))
 				.subscribe(i ->
 				{
 					threadNames.add(Thread.currentThread()

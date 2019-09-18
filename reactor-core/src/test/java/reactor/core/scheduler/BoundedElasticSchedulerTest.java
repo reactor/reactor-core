@@ -74,7 +74,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
-		return autoCleanup(
+		return afterTest.autoDispose(
 				Schedulers.newBoundedElastic(
 						4, Integer.MAX_VALUE,
 						new ReactorThreadFactory("boundedElasticSchedulerTest", BoundedElasticScheduler.COUNTER,
@@ -88,11 +88,11 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		AtomicInteger taskRun = new AtomicInteger();
 		Scheduler s = schedulerNotCached();
 
-		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker2 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker3 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker4 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker5 = autoCleanup(s.createWorker());
+		Scheduler.Worker worker1 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker2 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker3 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker4 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker5 = afterTest.autoDispose(s.createWorker());
 
 		assertThat(worker1).isExactlyInstanceOf(BoundedElasticScheduler.ActiveWorker.class);
 		assertThat(worker2).isExactlyInstanceOf(BoundedElasticScheduler.ActiveWorker.class);
@@ -126,14 +126,14 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	public void whenCapReachedDirectTasksAreTurnedIntoDeferredFacades() throws InterruptedException {
 		Scheduler s = schedulerNotCached();
 		//reach the cap of workers
-		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker2 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker3 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker4 = autoCleanup(s.createWorker());
+		Scheduler.Worker worker1 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker2 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker3 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker4 = afterTest.autoDispose(s.createWorker());
 
-		Disposable extraDirect1 = autoCleanup(s.schedule(() -> { }));
-		Disposable extraDirect2 = autoCleanup(s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
-		Disposable extraDirect3 = autoCleanup(s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS));
+		Disposable extraDirect1 = afterTest.autoDispose(s.schedule(() -> { }));
+		Disposable extraDirect2 = afterTest.autoDispose(s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS));
+		Disposable extraDirect3 = afterTest.autoDispose(s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS));
 
 		assertThat(extraDirect1)
 				.as("extraDirect1")
@@ -192,11 +192,11 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void evictionForWorkerScheduling() {
 		BoundedElasticScheduler
-				s = autoCleanup(new BoundedElasticScheduler(2, Integer.MAX_VALUE, r -> new Thread(r, "eviction"), 1));
+				s = afterTest.autoDispose(new BoundedElasticScheduler(2, Integer.MAX_VALUE, r -> new Thread(r, "eviction"), 1));
 
-		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker2 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker3 = autoCleanup(s.createWorker());
+		Scheduler.Worker worker1 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker2 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker3 = afterTest.autoDispose(s.createWorker());
 
 		assertThat(s.allServices).as("3 workers equals 2 executors").hasSize(2);
 		assertThat(s.deferredFacades).as("3 workers equals 1 deferred").hasSize(1);
@@ -223,13 +223,13 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void evictionForDirectScheduling() {
 		BoundedElasticScheduler
-				s = autoCleanup(new BoundedElasticScheduler(2, Integer.MAX_VALUE, r -> new Thread(r, "eviction"), 1));
+				s = afterTest.autoDispose(new BoundedElasticScheduler(2, Integer.MAX_VALUE, r -> new Thread(r, "eviction"), 1));
 
-		Scheduler.Worker worker1 = autoCleanup(s.createWorker());
-		Scheduler.Worker worker2 = autoCleanup(s.createWorker());
+		Scheduler.Worker worker1 = afterTest.autoDispose(s.createWorker());
+		Scheduler.Worker worker2 = afterTest.autoDispose(s.createWorker());
 
 		AtomicReference<String> taskRanIn = new AtomicReference<>();
-		autoCleanup(s.schedule(() -> taskRanIn.set(Thread.currentThread().getName())));
+		afterTest.autoDispose(s.schedule(() -> taskRanIn.set(Thread.currentThread().getName())));
 
 		assertThat(taskRanIn).as("before thread freed")
 		                     .hasValue(null);
@@ -255,7 +255,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void lifoEviction() throws InterruptedException {
-		Scheduler scheduler = autoCleanup(new BoundedElasticScheduler(200, Integer.MAX_VALUE, r -> new Thread(r, "dequeueEviction"), 1));
+		Scheduler scheduler = afterTest.autoDispose(new BoundedElasticScheduler(200, Integer.MAX_VALUE, r -> new Thread(r, "dequeueEviction"), 1));
 		int otherThreads = Thread.activeCount();
 		try {
 
@@ -312,8 +312,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void userWorkerShutdownBySchedulerDisposal() throws InterruptedException {
-		Scheduler s = autoCleanup(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "boundedElasticUserThread", 10, false));
-		Scheduler.Worker w = autoCleanup(s.createWorker());
+		Scheduler s = afterTest.autoDispose(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "boundedElasticUserThread", 10, false));
+		Scheduler.Worker w = afterTest.autoDispose(s.createWorker());
 
 		CountDownLatch latch = new CountDownLatch(1);
 		AtomicReference<String> threadName = new AtomicReference<>();
@@ -334,8 +334,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void deferredWorkerDisposedEarly() {
-		BoundedElasticScheduler s = autoCleanup(new BoundedElasticScheduler(1, Integer.MAX_VALUE, Thread::new,10));
-		Scheduler.Worker firstWorker = autoCleanup(s.createWorker());
+		BoundedElasticScheduler s = afterTest.autoDispose(new BoundedElasticScheduler(1, Integer.MAX_VALUE, Thread::new,10));
+		Scheduler.Worker firstWorker = afterTest.autoDispose(s.createWorker());
 		Scheduler.Worker worker = s.createWorker();
 
 		assertThat(s.deferredFacades).as("deferred workers before inverted dispose").hasSize(1);
@@ -351,7 +351,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void regrowFromEviction() throws InterruptedException {
 		BoundedElasticScheduler
-				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "regrowFromEviction", 1));
+				scheduler = afterTest.autoDispose((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "regrowFromEviction", 1));
 		Scheduler.Worker worker = scheduler.createWorker();
 		worker.schedule(() -> {});
 
@@ -369,7 +369,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				.as("after eviction")
 				.isEmpty();
 
-		Scheduler.Worker regrowWorker = autoCleanup(scheduler.createWorker());
+		Scheduler.Worker regrowWorker = afterTest.autoDispose(scheduler.createWorker());
 		assertThat(regrowWorker).isInstanceOf(BoundedElasticScheduler.ActiveWorker.class);
 		regrowWorker.schedule(() -> {});
 
@@ -383,8 +383,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void taskCapIsSharedBetweenDirectAndIndirectDeferredScheduling() {
 		BoundedElasticScheduler
-				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 9, Thread::new, 10));
-		Scheduler.Worker activeWorker = autoCleanup(boundedElasticScheduler.createWorker());
+				boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 9, Thread::new, 10));
+		Scheduler.Worker activeWorker = afterTest.autoDispose(boundedElasticScheduler.createWorker());
 		Scheduler.Worker deferredWorker1 = boundedElasticScheduler.createWorker();
 		Scheduler.Worker deferredWorker2 = boundedElasticScheduler.createWorker();
 
@@ -419,7 +419,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void taskCapResetWhenDirectDeferredTaskIsExecuted() {
 		BoundedElasticScheduler
-				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 1, Thread::new, 10));
+				boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		Scheduler.Worker activeWorker = boundedElasticScheduler.createWorker();
 
 		//enqueue tasks directly on scheduler
@@ -433,7 +433,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void taskCapResetWhenWorkerDeferredTaskIsExecuted() {
 		BoundedElasticScheduler
-				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 1, Thread::new, 10));
+				boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		Scheduler.Worker activeWorker = boundedElasticScheduler.createWorker();
 		Scheduler.Worker deferredWorker = boundedElasticScheduler.createWorker();
 
@@ -448,7 +448,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void taskCapResetWhenDirectDeferredTaskIsDisposed() {
 		BoundedElasticScheduler
-				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 1, Thread::new, 10));
+				boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		Scheduler.Worker activeWorker = boundedElasticScheduler.createWorker();
 
 		Disposable d = boundedElasticScheduler.schedule(() -> {});
@@ -461,7 +461,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void taskCapResetWhenWorkerDeferredTaskIsDisposed() {
 		BoundedElasticScheduler
-				boundedElasticScheduler = autoCleanup(new BoundedElasticScheduler(1, 1, Thread::new, 10));
+				boundedElasticScheduler = afterTest.autoDispose(new BoundedElasticScheduler(1, 1, Thread::new, 10));
 		Scheduler.Worker activeWorker = boundedElasticScheduler.createWorker();
 		Scheduler.Worker deferredWorker = boundedElasticScheduler.createWorker();
 
@@ -476,9 +476,9 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void deferredWorkerTasksEventuallyExecuted() {
 		BoundedElasticScheduler
-				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
-		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
-		Scheduler.Worker deferredWorker = autoCleanup(scheduler.createWorker());
+				scheduler = afterTest.autoDispose((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		Scheduler.Worker activeWorker = afterTest.autoDispose(scheduler.createWorker());
+		Scheduler.Worker deferredWorker = afterTest.autoDispose(scheduler.createWorker());
 
 		AtomicInteger runCount = new AtomicInteger();
 		deferredWorker.schedule(runCount::incrementAndGet);
@@ -496,8 +496,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void deferredDirectTasksEventuallyExecuted() {
 		BoundedElasticScheduler
-				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
-		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
+				scheduler = afterTest.autoDispose((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		Scheduler.Worker activeWorker = afterTest.autoDispose(scheduler.createWorker());
 
 		AtomicInteger runCount = new AtomicInteger();
 		scheduler.schedule(runCount::incrementAndGet);
@@ -515,9 +515,9 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void deferredWorkerDisposalRemovesFromFacadeQueue() {
 		BoundedElasticScheduler
-				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
-		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
-		Scheduler.Worker deferredWorker = autoCleanup(scheduler.createWorker());
+				scheduler = afterTest.autoDispose((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		Scheduler.Worker activeWorker = afterTest.autoDispose(scheduler.createWorker());
+		Scheduler.Worker deferredWorker = afterTest.autoDispose(scheduler.createWorker());
 
 		assertThat(scheduler.deferredFacades).as("before dispose")
 		                                     .hasSize(1)
@@ -530,8 +530,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void deferredDirectDisposalRemovesFromFacadeQueue() {
 		BoundedElasticScheduler
-				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
-		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
+				scheduler = afterTest.autoDispose((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		Scheduler.Worker activeWorker = afterTest.autoDispose(scheduler.createWorker());
 		Disposable deferredDirect = scheduler.schedule(() -> {});
 
 		assertThat(scheduler.deferredFacades).as("before dispose")
@@ -545,14 +545,14 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void deferredWorkerSetServiceIgnoredIfDisposed() {
 		BoundedElasticScheduler
-				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
-		BoundedElasticScheduler.ActiveWorker activeWorker = (BoundedElasticScheduler.ActiveWorker) autoCleanup(scheduler.createWorker());
-		BoundedElasticScheduler.DeferredWorker deferredWorker = (BoundedElasticScheduler.DeferredWorker) autoCleanup(scheduler.createWorker());
+				scheduler = afterTest.autoDispose((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		BoundedElasticScheduler.ActiveWorker activeWorker = (BoundedElasticScheduler.ActiveWorker) afterTest.autoDispose(scheduler.createWorker());
+		BoundedElasticScheduler.DeferredWorker deferredWorker = (BoundedElasticScheduler.DeferredWorker) afterTest.autoDispose(scheduler.createWorker());
 
 		deferredWorker.dispose();
 
 		assertThat(scheduler.idleServicesWithExpiry).isEmpty();
-		deferredWorker.setService(autoCleanup(new BoundedElasticScheduler.CachedService(scheduler)));
+		deferredWorker.setService(afterTest.autoDispose(new BoundedElasticScheduler.CachedService(scheduler)));
 
 		assertThat(scheduler.idleServicesWithExpiry).hasSize(1);
 	}
@@ -560,14 +560,14 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void deferredDirectSetServiceIgnoredIfDisposed() {
 		BoundedElasticScheduler
-				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
-		BoundedElasticScheduler.ActiveWorker activeWorker = (BoundedElasticScheduler.ActiveWorker) autoCleanup(scheduler.createWorker());
-		BoundedElasticScheduler.DeferredDirect deferredDirect = (BoundedElasticScheduler.DeferredDirect) autoCleanup(scheduler.schedule(() -> {}));
+				scheduler = afterTest.autoDispose((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+		BoundedElasticScheduler.ActiveWorker activeWorker = (BoundedElasticScheduler.ActiveWorker) afterTest.autoDispose(scheduler.createWorker());
+		BoundedElasticScheduler.DeferredDirect deferredDirect = (BoundedElasticScheduler.DeferredDirect) afterTest.autoDispose(scheduler.schedule(() -> {}));
 
 		deferredDirect.dispose();
 
 		assertThat(scheduler.idleServicesWithExpiry).isEmpty();
-		deferredDirect.setService(autoCleanup(new BoundedElasticScheduler.CachedService(scheduler)));
+		deferredDirect.setService(afterTest.autoDispose(new BoundedElasticScheduler.CachedService(scheduler)));
 
 		assertThat(scheduler.idleServicesWithExpiry).hasSize(1);
 	}
@@ -575,7 +575,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void deferredWorkerRejectsTasksAfterBeingDisposed() {
 		BoundedElasticScheduler
-				scheduler = autoCleanup((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
+				scheduler = afterTest.autoDispose((BoundedElasticScheduler) Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "test"));
 		BoundedElasticScheduler.DeferredWorker deferredWorker = new BoundedElasticScheduler.DeferredWorker(scheduler);
 		deferredWorker.dispose();
 
@@ -621,15 +621,15 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void scanName() {
-		Scheduler withNamedFactory = autoCleanup(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "scanName", 3));
-		Scheduler withBasicFactory = autoCleanup(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, Thread::new, 3));
-		Scheduler withTaskCap = autoCleanup(Schedulers.newBoundedElastic(1, 123, Thread::new, 3));
+		Scheduler withNamedFactory = afterTest.autoDispose(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "scanName", 3));
+		Scheduler withBasicFactory = afterTest.autoDispose(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, Thread::new, 3));
+		Scheduler withTaskCap = afterTest.autoDispose(Schedulers.newBoundedElastic(1, 123, Thread::new, 3));
 		Scheduler cached = Schedulers.boundedElastic();
 
-		Scheduler.Worker workerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
-		Scheduler.Worker deferredWorkerWithNamedFactory = autoCleanup(withNamedFactory.createWorker());
-		Scheduler.Worker workerWithBasicFactory = autoCleanup(withBasicFactory.createWorker());
-		Scheduler.Worker deferredWorkerWithBasicFactory = autoCleanup(withBasicFactory.createWorker());
+		Scheduler.Worker workerWithNamedFactory = afterTest.autoDispose(withNamedFactory.createWorker());
+		Scheduler.Worker deferredWorkerWithNamedFactory = afterTest.autoDispose(withNamedFactory.createWorker());
+		Scheduler.Worker workerWithBasicFactory = afterTest.autoDispose(withBasicFactory.createWorker());
+		Scheduler.Worker deferredWorkerWithBasicFactory = afterTest.autoDispose(withBasicFactory.createWorker());
 
 		assertThat(Scannable.from(withNamedFactory).scan(Scannable.Attr.NAME))
 				.as("withNamedFactory")
@@ -669,9 +669,9 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void scanCapacity() {
-		Scheduler scheduler = autoCleanup(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, Thread::new, 2));
-		Scheduler.Worker activeWorker = autoCleanup(scheduler.createWorker());
-		Scheduler.Worker deferredWorker = autoCleanup(scheduler.createWorker());
+		Scheduler scheduler = afterTest.autoDispose(Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, Thread::new, 2));
+		Scheduler.Worker activeWorker = afterTest.autoDispose(scheduler.createWorker());
+		Scheduler.Worker deferredWorker = afterTest.autoDispose(scheduler.createWorker());
 
 		//smoke test that second worker is a DeferredWorker
 		assertThat(deferredWorker).as("check second worker is deferred").isExactlyInstanceOf(
@@ -684,7 +684,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void scanDeferredDirect() {
-		BoundedElasticScheduler parent = autoCleanup(new BoundedElasticScheduler(3, 10, Thread::new, 60));
+		BoundedElasticScheduler parent = afterTest.autoDispose(new BoundedElasticScheduler(3, 10, Thread::new, 60));
 		BoundedElasticScheduler.REMAINING_DEFERRED_TASKS.decrementAndGet(parent);
 
 		BoundedElasticScheduler.DeferredDirect deferredDirect = new BoundedElasticScheduler.DeferredDirect(() -> {}, 10, 10, TimeUnit.MILLISECONDS, parent);
@@ -699,7 +699,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		//BUFFERED 1 as long as not realized
 		assertThat(deferredDirect.scan(Scannable.Attr.BUFFERED)).as("BUFFERED").isOne();
-		BoundedElasticScheduler.CachedService cachedService = autoCleanup(new BoundedElasticScheduler.CachedService(parent));
+		BoundedElasticScheduler.CachedService cachedService = afterTest.autoDispose(new BoundedElasticScheduler.CachedService(parent));
 		deferredDirect.set(cachedService);
 		assertThat(deferredDirect.scan(Scannable.Attr.BUFFERED)).as("BUFFERED with CachedService").isZero();
 
@@ -710,7 +710,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void scanDeferredWorker() {
-		BoundedElasticScheduler parent = autoCleanup(new BoundedElasticScheduler(3, 10, Thread::new, 60));
+		BoundedElasticScheduler parent = afterTest.autoDispose(new BoundedElasticScheduler(3, 10, Thread::new, 60));
 		BoundedElasticScheduler.REMAINING_DEFERRED_TASKS.decrementAndGet(parent);
 
 		BoundedElasticScheduler.DeferredWorker deferredWorker = new BoundedElasticScheduler.DeferredWorker(parent);
