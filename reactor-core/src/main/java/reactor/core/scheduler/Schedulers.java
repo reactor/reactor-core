@@ -60,7 +60,7 @@ import static reactor.core.Exceptions.unwrap;
  * </ul>
  * <p>
  * Factories prefixed with {@code new} (eg. {@link #newBoundedElastic(int, int, String)} return a new instance of their flavor of {@link Scheduler},
- * while other factories like {@link #elastic()} return a shared instance - which is the one used by operators requiring that flavor as their default Scheduler.
+ * while other factories like {@link #boundedElastic()} return a shared instance - which is the one used by operators requiring that flavor as their default Scheduler.
  *
  * @author Stephane Maldini
  */
