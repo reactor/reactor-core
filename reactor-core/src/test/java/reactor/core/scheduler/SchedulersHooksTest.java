@@ -24,12 +24,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+
+import reactor.test.AutoDisposingRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class SchedulersHooksTest {
+
+	@Rule
+	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
 	@After
 	public void resetAllHooks() {
@@ -44,7 +50,8 @@ public class SchedulersHooksTest {
 		Schedulers.onScheduleHook("k3", new TrackingDecorator(tracker, 100));
 
 		CountDownLatch latch = new CountDownLatch(3);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
+		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
+		         .schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).as("3 decorators invoked").hasValue(111);
@@ -58,7 +65,8 @@ public class SchedulersHooksTest {
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 100));
 
 		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
+		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
+		         .schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(100);
@@ -71,7 +79,8 @@ public class SchedulersHooksTest {
 		Schedulers.resetOnScheduleHook("k1");
 
 		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
+		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
+		         .schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(0);
@@ -92,7 +101,8 @@ public class SchedulersHooksTest {
 		Schedulers.resetOnScheduleHook("k2");
 
 		CountDownLatch latch = new CountDownLatch(3);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
+		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
+		         .schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(101);
@@ -107,7 +117,8 @@ public class SchedulersHooksTest {
 		Schedulers.resetOnScheduleHooks();
 
 		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
+		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
+		         .schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(tracker).hasValue(0);
@@ -121,7 +132,8 @@ public class SchedulersHooksTest {
 		Schedulers.onScheduleHook("k3", new ApplicationOrderRecordingDecorator(items, "k3"));
 
 		CountDownLatch latch = new CountDownLatch(1);
-		Schedulers.newElastic("foo").schedule(latch::countDown);
+		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "foo"))
+		         .schedule(latch::countDown);
 		latch.await(5, TimeUnit.SECONDS);
 
 		assertThat(items).containsExactly(

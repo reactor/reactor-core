@@ -57,14 +57,16 @@ public abstract class AbstractSchedulerTest {
 
 	protected boolean shouldCheckWorkerTimeScheduling() { return true; }
 
-	@Before
-	public void checkNotCached() {
-		assertThat(scheduler()).isNotInstanceOf(Schedulers.CachedScheduler.class);
+	protected Scheduler schedulerNotCached() {
+		Scheduler s = scheduler();
+		assertThat(s).as("common scheduler tests should not use a CachedScheduler")
+		             .isNotInstanceOf(Schedulers.CachedScheduler.class);
+		return s;
 	}
 
 	@Test(timeout = 10000)
 	final public void directScheduleAndDispose() throws Exception {
-		Scheduler s = scheduler();
+		Scheduler s = schedulerNotCached();
 
 		try {
 			assertThat(s.isDisposed()).isFalse();
@@ -138,7 +140,7 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void workerScheduleAndDispose() throws Exception {
-		Scheduler s = scheduler();
+		Scheduler s = schedulerNotCached();
 		try {
 			Scheduler.Worker w = s.createWorker();
 
@@ -229,7 +231,7 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void directScheduleAndDisposeDelay() throws Exception {
-		Scheduler s = scheduler();
+		Scheduler s = schedulerNotCached();
 
 		try {
 			assertThat(s.isDisposed()).isFalse();
@@ -275,7 +277,7 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void workerScheduleAndDisposeDelay() throws Exception {
-		Scheduler s = scheduler();
+		Scheduler s = schedulerNotCached();
 		Scheduler.Worker w = s.createWorker();
 
 		try {
@@ -324,7 +326,7 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void directScheduleAndDisposePeriod() throws Exception {
-		Scheduler s = scheduler();
+		Scheduler s = schedulerNotCached();
 
 		try {
 			assertThat(s.isDisposed()).isFalse();
@@ -373,7 +375,7 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void workerScheduleAndDisposePeriod() throws Exception {
-		Scheduler s = scheduler();
+		Scheduler s = schedulerNotCached();
 		Scheduler.Worker w = s.createWorker();
 
 		try {

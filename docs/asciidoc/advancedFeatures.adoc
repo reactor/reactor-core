@@ -581,8 +581,8 @@ method.
 As we described in the <<schedulers>> section, Reactor Core comes with several
 `Scheduler` implementations. While you can always create new instances through the `new*`
 factory methods, each `Scheduler` flavor also has a default singleton instance that is
-accessible through the direct factory method (such as `Schedulers.elastic()` versus
-`Schedulers.newElastic()`).
+accessible through the direct factory method (such as `Schedulers.boundedElastic()` versus
+`Schedulers.newBoundedElastic(...)`).
 
 These default instances are the ones used by operators that need a `Scheduler` to work
 when you do not explicitly specify one. For example, `Flux#delayElements(Duration)` uses

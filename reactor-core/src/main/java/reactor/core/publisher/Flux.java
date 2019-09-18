@@ -6161,7 +6161,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Request an unbounded demand and push to the returned {@link Flux}, or park the observed
 	 * elements if not enough demand is requested downstream, within a {@code maxSize}
 	 * limit and for a maximum {@link Duration} of {@code ttl} (as measured on the
-	 * {@link Schedulers#elastic() elastic Scheduler}). Over that limit, oldest
+	 * {@link Schedulers#parallel() parallel Scheduler}). Over that limit, oldest
 	 * elements from the source are dropped.
 	 * <p>
 	 * Elements evicted based on the TTL are passed to a cleanup {@link Consumer}, which
@@ -8920,10 +8920,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #compose(Function)}, the
+	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #transformDeferred(Function)}, the
 	 * provided function is executed as part of assembly.
 	 * <blockquote><pre>
-	 * Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.elastic())
+	 * Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.boundedElastic())
 	 *                                                    .publishOn(Schedulers.parallel());
 	 * flux.transform(applySchedulers).map(v -> v * v).subscribe();
 	 * </pre></blockquote>
