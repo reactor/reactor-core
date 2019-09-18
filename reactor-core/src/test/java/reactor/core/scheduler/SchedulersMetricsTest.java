@@ -86,7 +86,7 @@ public class SchedulersMetricsTest {
 
 						"single(\"B\")",
 
-						"elastic(\"C\")"
+						"boundedElastic(\"C\",maxThreads=4,maxTaskQueued=100,ttl=60s)"
 				);
 	}
 
@@ -154,8 +154,8 @@ public class SchedulersMetricsTest {
 		                              .map(m -> m.getId().getTag("name"))
 		                              .distinct())
 				.containsOnly(
-						"elastic(\"TWICE\")-0",
-						"elastic(\"TWICE\")-1"
+						"boundedElastic(\"TWICE\",maxThreads=4,maxTaskQueued=100,ttl=1s)-0",
+						"boundedElastic(\"TWICE\",maxThreads=4,maxTaskQueued=100,ttl=1s)-1"
 				);
 	}
 
