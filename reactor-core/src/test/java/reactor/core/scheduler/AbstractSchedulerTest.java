@@ -22,11 +22,12 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import reactor.core.Disposable;
-import reactor.core.Disposables;
 import reactor.core.Exceptions;
+import reactor.test.AutoDisposingRule;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -35,26 +36,8 @@ import static org.assertj.core.api.Assertions.*;
  */
 public abstract class AbstractSchedulerTest {
 
-	/**
-	 * Add {@link Disposable} resources to this composite to automatically clean them
-	 * up at the end of each test.
-	 */
-	protected final Disposable.Composite toCleanUp = Disposables.composite();
-
-	/**
-	 * Register a {@link Disposable} for automatic cleanup and return it for chaining.
-	 * @param resource the resource to clean up at end of test
-	 * @param <D> the type of the resource
-	 * @return the resource
-	 */
-	protected <D extends Disposable> D autoCleanup(D resource) {
-		toCleanUp.add(resource);
-		return resource;
-	}
-	@After
-	public void cleanupCompositeDisposable() {
-		toCleanUp.dispose();
-	}
+	@Rule
+	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
 	protected abstract Scheduler scheduler();
 
