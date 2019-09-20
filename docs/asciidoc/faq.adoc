@@ -35,7 +35,8 @@ from `Schedulers.boundedElastic()`.
 You should use a `Mono`, because the source returns one value. You should use
 `Schedulers.boundedElastic`, because it creates a dedicated thread to wait for the
 blocking resource without impacting other non-blocking processing, while also ensuring
-that there is a limit to the amount of threads that can be created.
+that there is a limit to the amount of threads that can be created, and blocking tasks
+that can be enqueued and deferred during a spike.
 
 Note that `subscribeOn` does not subscribe to the `Mono`. It specifies what
 kind of `Scheduler` to use when a subscribe call happens.
