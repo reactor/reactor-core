@@ -300,7 +300,7 @@ public class FluxWindowPredicateTest extends
 				Flux.range(1, 100)
 				    .map(AtomicInteger::new) // wrap integer with object to test gc
 				    .map(retainedDetector::tracked)
-				    .concatWith(Mono.error(new Throwable("expected")))
+				    .concatWith(Mono.error(new Throwable("unexpected")))
 				    .windowUntilChanged()
 				    .take(50);
 
