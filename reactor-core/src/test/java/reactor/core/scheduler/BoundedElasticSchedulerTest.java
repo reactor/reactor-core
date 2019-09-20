@@ -595,6 +595,67 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				.withMessage("Worker has been disposed");
 	}
 
+
+	@Test
+	public void mixOfDirectAndWorkerTasksWithRejectionAfter100kLimit() {
+		AtomicInteger taskDone = new AtomicInteger();
+		AtomicInteger taskRejected = new AtomicInteger();
+
+		int limit = 100_000;
+		int workerCount = 70_000;
+
+		Scheduler scheduler = afterTest.autoDispose(Schedulers.newBoundedElastic(
+				1, limit,
+				"tasksRejectionAfter100kLimit"
+		));
+		Scheduler.Worker activeWorker = afterTest.autoDispose(scheduler.createWorker());
+		Scheduler.Worker fakeWorker = afterTest.autoDispose(scheduler.createWorker());
+
+		for (int i = 0; i < limit + 10; i++) {
+			try {
+				if (i < workerCount) {
+					//larger subset of tasks are submitted to the worker
+					fakeWorker.schedule(taskDone::incrementAndGet);
+				}
+				else if (i < limit) {
+					//smaller subset of tasks are submitted directly to the scheduler
+					scheduler.schedule(taskDone::incrementAndGet);
+				}
+				else if (i % 2 == 0) {
+					//half of over-limit tasks are submitted directly to the scheduler, half to worker
+					scheduler.schedule(taskDone::incrementAndGet);
+				}
+				else {
+					//half of over-limit tasks are submitted directly to the scheduler, half to worker
+					fakeWorker.schedule(taskDone::incrementAndGet);
+				}
+			}
+			catch (RejectedExecutionException ree) {
+				taskRejected.incrementAndGet();
+			}
+		}
+
+		assertThat(taskDone).as("taskDone before releasing activeWorker").hasValue(0);
+		assertThat(taskRejected).as("task rejected").hasValue(10);
+
+		activeWorker.dispose();
+
+		Awaitility.await().atMost(500, TimeUnit.MILLISECONDS)
+		          .untilAsserted(() ->
+				          assertThat(taskDone).as("all fakeWorker tasks done")
+				                              .hasValue(workerCount)
+		          );
+
+		fakeWorker.dispose();
+
+		//TODO maybe investigate: large amount of direct deferred tasks takes more time to be executed
+		Awaitility.await().atMost(10, TimeUnit.SECONDS)
+		          .untilAsserted(() ->
+				          assertThat(taskDone).as("all deferred tasks done")
+				                              .hasValue(limit)
+		          );
+	}
+
 	@Test
 	public void defaultBoundedElasticConfigurationIsConsistentWithJavadoc() {
 		Schedulers.CachedScheduler cachedBoundedElastic = (Schedulers.CachedScheduler) Schedulers.boundedElastic();
@@ -612,7 +673,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				.isEqualTo(BoundedElasticScheduler.DEFAULT_TTL_SECONDS)
 				.isEqualTo(60);
 
-		//unbounded task queueing
+		//100K bounded task queueing
 		assertThat(boundedElastic.deferredTaskCap)
 				.as("default unbounded task queueing")
 				.isEqualTo(100_000)
