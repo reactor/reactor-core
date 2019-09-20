@@ -93,14 +93,14 @@ public abstract class Schedulers {
 	/**
 	 * Default maximum number of enqueued tasks for the global {@link #boundedElastic()} {@link Scheduler}, initialized
 	 * by system property {@code reactor.schedulers.defaultBoundedElasticQueueSize} and falls back to
-	 * unbounded by default ({@link Integer#MAX_VALUE}).
+	 * a bound of 100 000 tasks.
 	 *
 	 * @see #boundedElastic()
 	 */
 	public static final int DEFAULT_BOUNDED_ELASTIC_QUEUESIZE =
 			Optional.ofNullable(System.getProperty("reactor.schedulers.defaultBoundedElasticQueueSize"))
 			        .map(Integer::parseInt)
-			        .orElseGet(() -> Integer.MAX_VALUE);
+			        .orElse(100000);
 
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
@@ -193,17 +193,22 @@ public abstract class Schedulers {
 	 * Workers, reusing them once the Workers have been shut down. The underlying daemon
 	 * threads can be evicted if idle for more than {@link BoundedElasticScheduler#DEFAULT_TTL_SECONDS 60} seconds.
 	 * <p>
-	 * The maximum number of created thread pools is bounded by a {@code cap} (by default,
+	 * The maximum number of created thread pools is bounded by a {@code cap} (by default
 	 * ten times the number of available CPU cores, see {@link #DEFAULT_BOUNDED_ELASTIC_SIZE}).
-	 * If a worker is requested while the cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
+	 * The maximum number of task submissions that can be enqueued and deferred after this thread cap
+	 * has been reached is bounded (by default 100K additional tasks, see {@link #DEFAULT_BOUNDED_ELASTIC_QUEUESIZE}).
+	 * <p>
+	 * If a worker is requested while the thread cap is reached, a facade {@link reactor.core.scheduler.Scheduler.Worker}
 	 * is provided which will enqueue the tasks submitted to it, deferring the actual submission
 	 * of tasks until a thread-backed worker becomes available. This can thus affect initial delays of tasks.
-	 * If a task is directly submitted to the {@link Scheduler} while the cap has been reached,
-	 * it will be similarly enqueue and deferred (unless property {@link #DEFAULT_BOUNDED_ELASTIC_QUEUESIZE} is
-	 * tuned on startup).
+	 * If a task is directly submitted to the {@link Scheduler} while the thread cap has been reached,
+	 * it will be similarly enqueue and deferred.
+	 * In both cases, once the task cap has also been reached, further submissions are rejected with a
+	 * {@link RejectedExecutionException}.
 	 *
 	 * @return a new {@link Scheduler} that dynamically create workers with an upper bound to
-	 * the number of backing threads, reuses threads and evict idle ones
+	 * the number of backing threads and after that on the number of enqueued tasks,
+	 * that reuses threads and evict idle ones
 	 */
 	public static Scheduler boundedElastic() {
 		return cache(CACHED_BOUNDED_ELASTIC, BOUNDED_ELASTIC, BOUNDED_ELASTIC_SUPPLIER);

@@ -615,7 +615,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		//unbounded task queueing
 		assertThat(boundedElastic.deferredTaskCap)
 				.as("default unbounded task queueing")
-				.isEqualTo(Integer.MAX_VALUE)
+				.isEqualTo(100_000)
 				.isEqualTo(Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE);
 	}
 
