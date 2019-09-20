@@ -312,8 +312,7 @@ public class FluxBufferPredicateTest {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount(),
-						is(100L)));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -335,8 +334,7 @@ public class FluxBufferPredicateTest {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount(),
-						is(100L)));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -359,10 +357,7 @@ public class FluxBufferPredicateTest {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount(),
-						// 50 + 1 (taking 50 buffers requires having 51st element as a
-						// key in the predicate)
-						is(51L)));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test

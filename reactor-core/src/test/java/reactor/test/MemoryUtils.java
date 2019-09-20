@@ -20,6 +20,9 @@ import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.assertj.core.api.Assertions;
 
 /**
  * Test utility around memory, references, leaks and retained object detection.
@@ -37,6 +40,7 @@ public class MemoryUtils {
 		private final ReferenceQueue<Object>         referenceQueue    = new ReferenceQueue<>();
 		private final List<PhantomReference<Object>> phantomReferences = new LinkedList<>();
 		private long finalizedSoFar = 0L;
+		private AtomicInteger trackedTotal = new AtomicInteger(0);
 
 		/**
 		 * Track the object in this {@link RetainedDetector}'s {@link ReferenceQueue}
@@ -47,6 +51,7 @@ public class MemoryUtils {
 		 */
 		public final <T> T tracked(T object) {
 			phantomReferences.add(new PhantomReference<>(object, referenceQueue));
+			trackedTotal.incrementAndGet();
 			return object;
 		}
 
@@ -63,8 +68,19 @@ public class MemoryUtils {
 			return finalizedSoFar;
 		}
 
+		/**
+		 * @return the total number of objects that have been added to this {@link RetainedDetector}
+		 */
 		public final long trackedTotal() {
-			return phantomReferences.size();
+			return trackedTotal.get();
+		}
+
+		/**
+		 * Assert that all tracked elements have been finalized.
+		 * @throws AssertionError if some tracked elements have not been finalized
+		 */
+		public final void assertAllFinalized() {
+			Assertions.assertThat(this.finalizedCount()).as("all tracked finalized").isEqualTo(trackedTotal.get());
 		}
 	}
 

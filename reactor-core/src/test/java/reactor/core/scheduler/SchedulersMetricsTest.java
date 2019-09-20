@@ -227,7 +227,7 @@ public class SchedulersMetricsTest {
 		Phaser phaser = new Phaser(1);
 		for (int i = 1; i <= taskCount; i++) {
 			phaser.register();
-			int delay = i * 20;
+			int delay = i * 200; //bumped delay from 20ms to make actual scheduling times more precise
 			scheduler.schedule(() -> {
 				try {
 					Thread.sleep(delay);
@@ -250,7 +250,7 @@ public class SchedulersMetricsTest {
 			assertThat(timers.stream()
 			                 .reduce(0d, (time, timer) -> time + timer.totalTime(TimeUnit.MILLISECONDS), Double::sum))
 					.as("total durations")
-					.isEqualTo(60 + 40 + 20, offset(10.0d));
+					.isEqualTo(600 + 400 + 200, offset(20.0d));
 			assertThat(timers.stream().mapToLong(Timer::count).sum())
 					.as("count")
 					.isEqualTo(taskCount);
