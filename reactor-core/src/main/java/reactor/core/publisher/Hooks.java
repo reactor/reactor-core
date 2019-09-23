@@ -41,8 +41,6 @@ import reactor.util.context.Context;
  */
 public abstract class Hooks {
 
-
-
 	/**
 	 * Add a {@link Publisher} operator interceptor for each operator created
 	 * ({@link Flux} or {@link Mono}). The passed function is applied to the original
@@ -466,6 +464,14 @@ public abstract class Hooks {
 		}
 	}
 
+	public static void enableContextLossTracking() {
+		DETECT_CONTEXT_LOSS = true;
+	}
+
+	public static void disableContextLossTracking() {
+		DETECT_CONTEXT_LOSS = false;
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -561,6 +567,8 @@ public abstract class Hooks {
 	static boolean GLOBAL_TRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
 					"false"));
+
+	static boolean DETECT_CONTEXT_LOSS = false;
 
 	static {
 		onEachOperatorHooks = new LinkedHashMap<>(1);

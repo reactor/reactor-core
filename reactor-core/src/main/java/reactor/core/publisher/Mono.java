@@ -21,6 +21,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -102,7 +103,7 @@ import reactor.util.function.Tuples;
  */
 public abstract class Mono<T> implements CorePublisher<T> {
 
-//	 ==============================================================================================================
+	//	 ==============================================================================================================
 //	 Static Generators
 //	 ==============================================================================================================
 
@@ -4564,6 +4565,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
+		if (Hooks.DETECT_CONTEXT_LOSS) {
+			String key = Flux.CONTEXT_MARKER_PREFIX + UUID.randomUUID().toString();
+			Mono<T> source = this.subscriberContext(ctx -> {
+				if (!ctx.hasKey(key)) {
+					throw new IllegalStateException("Context loss after applying " + transformer);
+				}
+				return ctx.delete(key);
+			});
+			return onAssembly(from(transformer.apply(source)))
+					.subscriberContext(Context.of(key, true));
+		}
 		return onAssembly(from(transformer.apply(this)));
 	}
 
@@ -4587,6 +4599,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #transform(Function)
 	 */
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
+		if (Hooks.DETECT_CONTEXT_LOSS) {
+			String key = Flux.CONTEXT_MARKER_PREFIX + UUID.randomUUID().toString();
+			Mono<T> source = this.subscriberContext(ctx -> {
+				if (!ctx.hasKey(key)) {
+					throw new IllegalStateException("Context loss after applying " + transformer);
+				}
+				return ctx.delete(key);
+			});
+			return defer(() -> from(transformer.apply(source)))
+					.subscriberContext(Context.of(key, true));
+		}
 		return defer(() -> from(transformer.apply(this)));
 	}
 
