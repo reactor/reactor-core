@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -311,8 +311,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					requestMore(Long.MAX_VALUE);
 				}
 				else {
-					long requestCap = Operators.multiplyCap(requested, batchSize);
-					requestMore(requestCap - outstanding);
+					long requestLimit = Operators.multiplyCap(requested, batchSize);
+					requestMore(requestLimit - outstanding);
 				}
 			}
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -233,6 +233,7 @@ public class FluxBufferTimeoutTest {
 
 		timeScheduler.advanceTimeBy(Duration.ofMillis(100));
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+		assertThat(test.outstanding).isEqualTo(5L);
 		assertThat(requestedOutstanding.get()).isEqualTo(5L);
 
 		test.onNext(String.valueOf("0"));
@@ -240,10 +241,12 @@ public class FluxBufferTimeoutTest {
 
 		timeScheduler.advanceTimeBy(Duration.ofMillis(100));
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.outstanding).isEqualTo(4L);
 		assertThat(requestedOutstanding.get()).isEqualTo(4L);
 
 		subscriptionsHolder[0].request(1);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+		assertThat(test.outstanding).isEqualTo(5L);
 		assertThat(requestedOutstanding.get()).isEqualTo(5L);
 	}
 
