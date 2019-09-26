@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,6 +109,12 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		static final AtomicLongFieldUpdater<BufferTimeoutSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "requested");
 
+		volatile long outstanding;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<BufferTimeoutSubscriber> OUTSTANDING =
+				AtomicLongFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "outstanding");
+
 		volatile int index = 0;
 
 		static final AtomicIntegerFieldUpdater<BufferTimeoutSubscriber> INDEX =
@@ -162,6 +168,22 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					values = v;
 				}
 				v.add(value);
+
+				long next;
+				long o = outstanding;
+				if (o != 0) {
+					for (; ; ) {
+						next = o - 1;
+						if (OUTSTANDING.compareAndSet(this, o, next)) {
+							break;
+						}
+						o = outstanding;
+						if (o <= 0L)
+						{
+							break;
+						}
+					}
+				}
 			}
 		}
 
@@ -289,7 +311,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					requestMore(Long.MAX_VALUE);
 				}
 				else {
-					requestMore(Operators.multiplyCap(n, batchSize));
+					long requestLimit = Operators.multiplyCap(requested, batchSize);
+					requestMore(requestLimit - outstanding);
 				}
 			}
 		}
@@ -298,6 +321,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			Subscription s = this.subscription;
 			if (s != null) {
 				s.request(n);
+				Operators.addCap(OUTSTANDING, this, n);
 			}
 		}
 
