@@ -178,8 +178,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 							break;
 						}
 						o = outstanding;
-						if (o <= 0L)
-						{
+						if (o <= 0L) {
 							break;
 						}
 					}

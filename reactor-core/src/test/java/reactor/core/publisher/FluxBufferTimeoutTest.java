@@ -205,49 +205,31 @@ public class FluxBufferTimeoutTest {
 
 	@Test
 	public void requestedFromUpstreamShouldNotExceedDownstreamDemand() {
-		Subscription[] subscriptionsHolder = new Subscription[1];
-		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> subscriptionsHolder[0] = s);
-
-		VirtualTimeScheduler timeScheduler = VirtualTimeScheduler.getOrSet();
-		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
-				actual, 5, 100, timeScheduler.createWorker(), ArrayList::new);
+		EmitterProcessor<String> emitter = EmitterProcessor.create(1);
+		FluxSink<String> sink = emitter.sink();
 
 		AtomicLong requestedOutstanding = new AtomicLong(0);
 
-		Subscription subscription = new Subscription() {
-			@Override
-			public void request(long n) {
-				requestedOutstanding.addAndGet(n);
-			}
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
 
-			@Override
-			public void cancel() {
-				// No-op
-			}
-		};
+		Flux<List<String>> flux = emitter.doOnRequest(requestedOutstanding::addAndGet)
+		                                 .bufferTimeout(5, Duration.ofMillis(100), scheduler)
+		                                 .doOnNext(list -> requestedOutstanding.addAndGet(0 - list.size()));
 
-		test.onSubscribe(subscription);
-		subscriptionsHolder[0].request(1);
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
-		assertThat(requestedOutstanding.get()).isEqualTo(5L);
-
-		timeScheduler.advanceTimeBy(Duration.ofMillis(100));
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
-		assertThat(test.outstanding).isEqualTo(5L);
-		assertThat(requestedOutstanding.get()).isEqualTo(5L);
-
-		test.onNext(String.valueOf("0"));
-		requestedOutstanding.addAndGet(-1L);
-
-		timeScheduler.advanceTimeBy(Duration.ofMillis(100));
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
-		assertThat(test.outstanding).isEqualTo(4L);
-		assertThat(requestedOutstanding.get()).isEqualTo(4L);
-
-		subscriptionsHolder[0].request(1);
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
-		assertThat(test.outstanding).isEqualTo(5L);
-		assertThat(requestedOutstanding.get()).isEqualTo(5L);
+		StepVerifier.withVirtualTime(() -> flux, () -> scheduler, 0)
+		            .expectSubscription()
+		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(0))
+		            .thenRequest(2)
+		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
+		            .then(() -> sink.next("a"))
+		            .thenAwait(Duration.ofMillis(100))
+		            .assertNext(s -> assertThat(s).containsExactly("a"))
+		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(9))
+		            .thenRequest(1)
+		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
+		            .thenCancel()
+		            .verify()
+		;
 	}
 
 	@Test
