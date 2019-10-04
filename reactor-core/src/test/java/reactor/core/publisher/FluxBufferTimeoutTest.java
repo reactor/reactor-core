@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.junit.After;
@@ -228,8 +229,35 @@ public class FluxBufferTimeoutTest {
 		            .thenRequest(1)
 		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
 		            .thenCancel()
-		            .verify()
-		;
+		            .verify();
+	}
+
+	@Test
+	public void exceedingUpstreamDemandResultsInError() {
+		Subscription[] subscriptionsHolder = new Subscription[1];
+
+		AtomicReference<Throwable> capturedException = new AtomicReference<>();
+
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, capturedException::set, null, s -> subscriptionsHolder[0] = s);
+
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
+				actual, 5, 1000, scheduler.createWorker(), ArrayList::new);
+
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+		subscriptionsHolder[0].request(1);
+
+		for (int i = 0; i < 5; i++) {
+			test.onNext(String.valueOf(i));
+		}
+
+		assertThat(capturedException.get()).isNull();
+
+		test.onNext(String.valueOf(123));
+
+		assertThat(capturedException.get()).isInstanceOf(IllegalStateException.class)
+		                                   .hasMessage("Unrequested element received");
 	}
 
 	@Test

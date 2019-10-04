@@ -161,6 +161,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 		void nextCallback(T value) {
 			synchronized (this) {
+				if (OUTSTANDING.decrementAndGet(this) < 0)
+				{
+					actual.onError(Exceptions.failWithOverflow("Unrequested element received"));
+				}
+
 				C v = values;
 				if(v == null) {
 					v = Objects.requireNonNull(bufferSupplier.get(),
@@ -168,21 +173,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					values = v;
 				}
 				v.add(value);
-
-				long next;
-				long o = outstanding;
-				if (o != 0) {
-					for (; ; ) {
-						next = o - 1;
-						if (OUTSTANDING.compareAndSet(this, o, next)) {
-							break;
-						}
-						o = outstanding;
-						if (o <= 0L) {
-							break;
-						}
-					}
-				}
 			}
 		}
 
@@ -319,8 +309,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		final void requestMore(long n) {
 			Subscription s = this.subscription;
 			if (s != null) {
-				s.request(n);
 				Operators.addCap(OUTSTANDING, this, n);
+				s.request(n);
 			}
 		}
 
