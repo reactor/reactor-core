@@ -164,6 +164,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				if (OUTSTANDING.decrementAndGet(this) < 0)
 				{
 					actual.onError(Exceptions.failWithOverflow("Unrequested element received"));
+					return;
 				}
 
 				C v = values;
