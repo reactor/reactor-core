@@ -1693,7 +1693,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * the Subscriber cancels.
 	 * <p>
 	 * Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup Consumer
-	 * may override the terminal even.
+	 * may override the terminal event.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/usingForFlux.svg" alt="">
 	 * <p>
@@ -1721,7 +1721,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * the Subscriber cancels.
 	 * <p>
 	 * <ul> <li>Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup
-	 * Consumer may override the terminal even.</li> <li>Non-eager cleanup will drop any exception.</li> </ul>
+	 * Consumer may override the terminal event.</li> <li>Non-eager cleanup will drop any exception.</li> </ul>
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/usingForFlux.svg" alt="">
 	 * <p>
