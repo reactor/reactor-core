@@ -5523,7 +5523,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Combine values from two Publishers in case their windows overlap. Each incoming
-	 * value triggers a creation of a new Publisher {@link Function}. If the
+	 * value triggers a creation of a new Publisher via the given {@link Function}. If the
 	 * Publisher signals its first value or completes, the time windows for the original
 	 * element is immediately closed. The emitted elements are obtained by passing the
 	 * values from this {@link Flux} and the other {@link Publisher} to a {@link BiFunction}.
