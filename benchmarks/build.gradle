@@ -1,3 +1,5 @@
+import io.reactor.gradle.JmhExecTask
+
 apply plugin: 'java'
 apply plugin: 'idea'
 
@@ -30,65 +32,10 @@ task jmhProfilers(type: JavaExec, description:'Lists the available profilers for
   args '-lprof'
 }
 
-class JmhExec extends JavaExec {
-
-  @TaskAction
-  void exec() {
-    main = 'org.openjdk.jmh.Main'
-
-    def include = ''
-    if (project.hasProperty('include')) {
-      include = [".*" + project.properties.get('include') + ".*"]
-    }
-    if (project.hasProperty('fullInclude')) {
-      include = project.properties.get('fullInclude')
-    }
-
-    def exclude = project.properties.get('exclude')
-    def format = project.properties.getOrDefault('format', 'json')
-    def profilers = project.properties.get('profilers')
-    def jvmArgs = project.properties.get('jvmArgs')
-    def verify =  project.properties.get('verify')
-
-    def resultFile = project.file("build/reports/${this.name}/result.${format}")
-
-    args include
-    if(exclude) {
-      args '-e', exclude
-    }
-    if(verify != null) { // execute benchmarks with the minimum amount of execution (only to check if they are working)
-      println "≥≥ Running in verify mode"
-      args '-f' , 1
-      args '-wi' , 1
-      args '-i' , 1
-    }
-    args '-foe', 'true'   //fail-on-error
-    args '-v', 'NORMAL'   //verbosity [SILENT, NORMAL, EXTRA]
-    if(profilers) {
-      profilers.split(',').each {
-        args '-prof', it
-      }
-    }
-    args '-jvmArgsPrepend', '-Xmx3072m'
-    args '-jvmArgsPrepend', '-Xms3072m'
-    if(jvmArgs) {
-      for(jvmArg in jvmArgs.split(' ')) {
-        args '-jvmArgsPrepend', jvmArg
-      }
-    }
-    args '-rf', format
-    args '-rff', resultFile
-
-    println "\nExecuting JMH with: $args \n"
-    resultFile.parentFile.mkdirs()
-    super.exec()
-  }
-}
-
-task jmh(type: JmhExec, description: 'Executing JMH benchmarks') {
+task jmh(type: JmhExecTask, description: 'Executing JMH benchmarks') {
   classpath = sourceSets.main.runtimeClasspath + configurations.current
 }
 
-task jmhBaseline(type: JmhExec, description: 'Executing JMH baseline benchmarks') {
+task jmhBaseline(type: JmhExecTask, description: 'Executing JMH baseline benchmarks') {
   classpath = sourceSets.main.runtimeClasspath + configurations.baseline
 }

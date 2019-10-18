@@ -67,7 +67,7 @@ test {
 }
 
 jar {
-    archiveClassifier = 'original'
+    archiveClassifier.set('original')
 }
 
 shadowJar {
