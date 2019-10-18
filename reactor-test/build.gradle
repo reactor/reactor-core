@@ -16,6 +16,7 @@
 import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'osgi'
+apply plugin: 'kotlin'
 
 description = 'Reactor Test support'
 
@@ -67,31 +68,7 @@ task japicmp(type: JapicmpTask) {
   //TODO after a release, remove the reactor-test exclusions below if any
 }
 
-javadoc {
-  dependsOn jar
-  group = "documentation"
-  description = "Generates aggregated Javadoc API documentation."
-  title = "Reactor Test $version"
-
-  options.addStringOption('charSet', 'UTF-8')
-
-  options.memberLevel = JavadocMemberLevel.PROTECTED
-  options.author = true
-  options.header = "$project.name"
-  options.stylesheetFile = file("$rootDir/docs/api/stylesheet.css")
-  options.links(rootProject.ext.javadocLinks
-		  .plus("https://projectreactor.io/docs/core/release/api/") as String[])
-  options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-				   "implNote:a:Implementation Note:" ]
-
-  // In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
-  // And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
-  classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
-  classpath += sourceSets.main.compileClasspath
-
-  maxMemory = "1024m"
-  destinationDir = new File(project.buildDir, "docs/javadoc")
-}
+//javadoc is configured in gradle/javadoc.gradle
 
 jar {
   manifest {

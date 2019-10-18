@@ -1,0 +1,55 @@
+/*
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+javadoc {
+	dependsOn jar
+	group = "documentation"
+	description = "Generates aggregated Javadoc API documentation."
+
+	title = "${project.name} $version"
+	options.addStringOption('charSet', 'UTF-8')
+	options.author = true
+	options.header = "$project.name"
+	options.stylesheetFile = file("$rootDir/docs/api/stylesheet.css")
+
+	options.memberLevel = JavadocMemberLevel.PROTECTED
+
+	if (project.name.contains("core")) {
+	  options.links([rootProject.jdkJavadoc, "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/"] as String[])
+	  options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
+					   "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
+					   "reactor.discard:m:onDiscard Support"]
+	}
+	else {
+	  options.links([rootProject.jdkJavadoc,
+					 "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
+					 "https://projectreactor.io/docs/core/release/api/"] as String[]);
+	  options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
+					   "implNote:a:Implementation Note:" ]
+	}
+
+	// In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
+	// And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
+	classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
+	classpath += sourceSets.main.compileClasspath
+
+	maxMemory = "1024m"
+	destinationDir = new File(project.buildDir, "docs/javadoc")
+
+	if (JavaVersion.current().isJava8Compatible()) {
+	  options.addStringOption("Xdoclint:none", "-quiet")
+	}
+  }
