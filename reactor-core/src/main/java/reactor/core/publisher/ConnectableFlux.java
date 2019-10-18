@@ -66,7 +66,8 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 
 	/**
 	 * Connects this {@link ConnectableFlux} to the upstream source when the specified amount of
-	 * {@link org.reactivestreams.Subscriber} subscribes and calls the supplied consumer with a runnable that allows disconnecting.
+	 * {@link org.reactivestreams.Subscriber} subscribes and calls the supplied consumer with a {@link Disposable}
+	 * that allows disconnecting.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/autoConnectWithMinSubscribers.svg" alt="">
 	 *
@@ -89,7 +90,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	}
 
 	/**
-	 * Connect this {@link ConnectableFlux} to its source and return a {@link Runnable} that
+	 * Connect this {@link ConnectableFlux} to its source and return a {@link Disposable} that
 	 * can be used for disconnecting.
 	 * @return the {@link Disposable} that allows disconnecting the connection after.
 	 */
