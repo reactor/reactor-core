@@ -57,7 +57,7 @@ ext {
   }
 
   // Metrics
-  micrometerVersion = 'latest.release' //TODO specify a version of micrometer?
+  micrometerVersion = '1.3.0' //optional, should be compatible with any 1.3.x, but 1.3.0 is now a baseline
 
   // Logging
   slf4jVersion = '1.7.12'
