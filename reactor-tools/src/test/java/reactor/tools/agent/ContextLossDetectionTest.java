@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core;
+package reactor.tools.agent;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,8 +32,9 @@ import org.junit.runner.RunWith;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
+import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
@@ -74,12 +75,12 @@ public class ContextLossDetectionTest {
 
 	@BeforeClass
 	public static void beforeClass() {
-		Hooks.enableContextLossTracking();
+		ReactorTools.enableContextLossTracking();
 	}
 
 	@AfterClass
 	public static void afterClass() {
-		Hooks.disableContextLossTracking();
+		ReactorTools.disableContextLossTracking();
 	}
 
 	@Test
@@ -102,7 +103,7 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.core.ContextLossDetectionTest$$Lambda$");
+				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
 	}
 
 	@Test
@@ -125,7 +126,7 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.core.ContextLossDetectionTest$$Lambda$");
+				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
 	}
 
 	@Test
@@ -143,7 +144,7 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.core.ContextLossDetectionTest$$Lambda$");
+				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
 	}
 
 	@Test
@@ -174,7 +175,7 @@ public class ContextLossDetectionTest {
 						throw e.getCause();
 					}
 				})
-				.withMessageStartingWith("Context loss after applying reactor.core.ContextLossDetectionTest$$Lambda$");
+				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
 	}
 
 	static abstract class SourceFactory implements Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> {

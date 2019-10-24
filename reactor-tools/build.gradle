@@ -41,12 +41,16 @@ dependencies {
 
     testCompile 'junit:junit:4.12'
     testCompile "org.assertj:assertj-core:$assertJVersion"
+    testCompile "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
 
     jarFileTestCompile 'org.assertj:assertj-core:3.12.2'
     jarFileTestCompile 'junit:junit:4.12'
 }
 
 test {
+    // Disable Jacoco. The coverage is not tracked by this module, but Jacoco's instrumentation makes it hard to debug the bytecode
+    jacoco.enabled = false
+
     // Creates a JVM per test because the agent can be installed only once
     forkEvery = 1
     maxParallelForks = 1

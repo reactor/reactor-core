@@ -30,7 +30,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -113,8 +112,6 @@ import reactor.util.function.Tuples;
  * @see Mono
  */
 public abstract class Flux<T> implements CorePublisher<T> {
-
-	static final String CONTEXT_MARKER_PREFIX = "reactor.core.context.marker.";
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -8937,17 +8934,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
-		if (Hooks.DETECT_CONTEXT_LOSS) {
-			String key = CONTEXT_MARKER_PREFIX + UUID.randomUUID().toString();
-			Flux<T> source = this.subscriberContext(ctx -> {
-				if (!ctx.hasKey(key)) {
-					throw new IllegalStateException("Context loss after applying " + transformer);
-				}
-				return ctx.delete(key);
-			});
-			return onAssembly(from(transformer.apply(source)))
-					.subscriberContext(Context.of(key, true));
-		}
 		return onAssembly(from(transformer.apply(this)));
 	}
 
@@ -8969,17 +8955,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
-		if (Hooks.DETECT_CONTEXT_LOSS) {
-			String key = CONTEXT_MARKER_PREFIX + UUID.randomUUID().toString();
-			Flux<T> source = this.subscriberContext(ctx -> {
-				if (!ctx.hasKey(key)) {
-					throw new IllegalStateException("Context loss after applying " + transformer);
-				}
-				return ctx.delete(key);
-			});
-			return defer(() -> transformer.apply(source))
-					.subscriberContext(Context.of(key, true));
-		}
 		return defer(() -> transformer.apply(this));
 	}
 
