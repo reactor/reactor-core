@@ -82,11 +82,13 @@ class ContextLossDetectionTransformer implements ClassFileTransformer {
 							super.visitTypeInsn(Opcodes.NEW, "reactor/core/publisher/ContextTrackingFunctionWrapper");
 							super.visitInsn(Opcodes.DUP);
 							super.visitVarInsn(Opcodes.ALOAD, 1);
-							super.visitMethodInsn(Opcodes.INVOKESPECIAL,
+							super.visitMethodInsn(
+									Opcodes.INVOKESPECIAL,
 									"reactor/core/publisher/ContextTrackingFunctionWrapper",
 									"<init>",
 									"(Ljava/util/function/Function;)V",
-									false);
+									false
+							);
 							super.visitVarInsn(Opcodes.ASTORE, 1);
 						}
 					};
