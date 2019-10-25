@@ -39,15 +39,34 @@ dependencies {
         compileOnly(dependency)
     }
 
-    testCompile 'junit:junit:4.12'
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.5.2'
+    testCompile 'org.junit.jupiter:junit-jupiter-params:5.5.2'
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.5.2'
     testCompile "org.assertj:assertj-core:$assertJVersion"
-    testCompile "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
 
-    jarFileTestCompile 'org.assertj:assertj-core:3.12.2'
+    jarFileTestCompile "org.assertj:assertj-core:$assertJVersion"
     jarFileTestCompile 'junit:junit:4.12'
 }
 
-test {
+task shadedJarTest(type: Test) {
+  testClassesDirs = test.testClassesDirs
+
+  Set<? super File> mainOutputs = [
+		  project.sourceSets.main.output.resourcesDir,
+		  project.sourceSets.main.java.outputDir,
+  ]
+
+  classpath = shadowJar.outputs.files
+  // Exclude main outputs since we have the shaded JAR on the classpath already
+  classpath += sourceSets.test.runtimeClasspath.filter { !(it in mainOutputs) }
+
+  dependsOn(shadowJar)
+}
+project.tasks.check.dependsOn(shadedJarTest)
+
+[test, shadedJarTest]*.configure {
+    useJUnitPlatform()
+
     // Disable Jacoco. The coverage is not tracked by this module, but Jacoco's instrumentation makes it hard to debug the bytecode
     jacoco.enabled = false
 
@@ -125,19 +144,3 @@ project.tasks.jarFileTest.configure {
     dependsOn(shadowJar)
 }
 project.tasks.check.dependsOn(jarFileTest)
-
-task shadedJarTest(type: Test) {
-    testClassesDirs = sourceSets.test.output.classesDirs
-
-    Set<? super File> mainOutputs = [
-            project.sourceSets.main.output.resourcesDir,
-            project.sourceSets.main.java.outputDir,
-    ]
-
-    classpath = shadowJar.outputs.files
-    // Exclude main outputs since we have the shaded JAR on the classpath already
-    classpath += sourceSets.test.runtimeClasspath.filter { !(it in mainOutputs) }
-
-    dependsOn(shadowJar)
-}
-project.tasks.check.dependsOn(shadedJarTest)

@@ -23,12 +23,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -40,7 +38,6 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.*;
 
-@RunWith(JUnitParamsRunner.class)
 public class ContextLossDetectionTest {
 
 	public static List<SourceFactory> sources() {
@@ -73,18 +70,18 @@ public class ContextLossDetectionTest {
 		);
 	}
 
-	@BeforeClass
+	@BeforeAll
 	public static void beforeClass() {
 		ReactorTools.enableContextLossTracking();
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void afterClass() {
 		ReactorTools.disableContextLossTracking();
 	}
 
-	@Test
-	@Parameters(method = "sources")
+	@ParameterizedTest
+	@MethodSource("sources")
 	public void transformDeferredDetectsContextLoss(
 			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
 	) {
@@ -106,8 +103,8 @@ public class ContextLossDetectionTest {
 				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
 	}
 
-	@Test
-	@Parameters(method = "sources")
+	@ParameterizedTest
+	@MethodSource("sources")
 	public void transformDeferredDetectsContextLossWithEmptyContext(
 			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
 	) {
@@ -129,8 +126,8 @@ public class ContextLossDetectionTest {
 				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
 	}
 
-	@Test
-	@Parameters(method = "sources")
+	@ParameterizedTest
+	@MethodSource("sources")
 	public void transformDeferredDetectsContextLossWithDefaultContext(
 			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
 	) {
@@ -147,8 +144,8 @@ public class ContextLossDetectionTest {
 				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
 	}
 
-	@Test
-	@Parameters(method = "sources")
+	@ParameterizedTest
+	@MethodSource("sources")
 	public void transformDeferredDetectsContextLossWithRSSubscriber(
 			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
 	) {
