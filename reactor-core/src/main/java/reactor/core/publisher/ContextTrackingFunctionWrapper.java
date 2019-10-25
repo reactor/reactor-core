@@ -55,6 +55,7 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<CorePublisher<T>,
 			return new ContextStartSubscriber<>(actual, newContext);
 		}).andThen(transformer).apply(self);
 
+		// It is okay to return `CorePublisher` here since `transform` will use `from()` anyways
 		return new CorePublisher<V>() {
 			@Override
 			public void subscribe(CoreSubscriber<? super V> actual) {
