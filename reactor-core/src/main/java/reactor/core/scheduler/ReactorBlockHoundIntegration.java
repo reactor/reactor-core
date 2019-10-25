@@ -22,8 +22,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * {@link BlockHoundIntegration} with Reactor's scheduling mechanism.
- * Wraps every scheduled {@link Runnable} with a noop {@link Wrapper}, so that it can be
- * detected as an entry point of the non-blocking call stack.
  *
  * WARNING: this class is not intended to be public, but {@link java.util.ServiceLoader}
  * requires it to be so. Public visibility DOES NOT make it part of the public API.
@@ -38,22 +36,5 @@ public final class ReactorBlockHoundIntegration implements BlockHoundIntegration
 
         builder.allowBlockingCallsInside("java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue", "offer");
         builder.allowBlockingCallsInside(ScheduledThreadPoolExecutor.class.getName() + "$DelayedWorkQueue", "take");
-
-        Schedulers.onScheduleHook("BlockHound", Wrapper::new);
-        builder.disallowBlockingCallsInside(Wrapper.class.getName(), "run");
-    }
-
-    static final class Wrapper implements Runnable {
-
-        final Runnable delegate;
-
-        Wrapper(Runnable delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void run() {
-            delegate.run();
-        }
     }
 }

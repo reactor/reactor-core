@@ -35,11 +35,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
-import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,28 +59,39 @@ public class SchedulersTest {
 
 	final static class TestSchedulers implements Schedulers.Factory {
 
-		final Scheduler      elastic  = Schedulers.Factory.super.newElastic(60, Thread::new);
-		final Scheduler      single   = Schedulers.Factory.super.newSingle(Thread::new);
-		final Scheduler      parallel =	Schedulers.Factory.super.newParallel(1, Thread::new);
+		final Scheduler elastic        = Schedulers.Factory.super.newElastic(60, Thread::new);
+		final Scheduler boundedElastic = Schedulers.Factory.super.newBoundedElastic(2, Integer.MAX_VALUE, Thread::new, 60);
+		final Scheduler single         = Schedulers.Factory.super.newSingle(Thread::new);
+		final Scheduler parallel       = Schedulers.Factory.super.newParallel(1, Thread::new);
 
 		TestSchedulers(boolean disposeOnInit) {
 			if (disposeOnInit) {
 				elastic.dispose();
+				boundedElastic.dispose();
 				single.dispose();
 				parallel.dispose();
 			}
 		}
 
+		@Override
 		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return elastic;
 		}
 
+		@Override
+		public final Scheduler newBoundedElastic(int threadCap, int taskCap, ThreadFactory threadFactory, int ttlSeconds) {
+			assertThat(((ReactorThreadFactory) threadFactory).get()).isEqualTo("unused");
+			return boundedElastic;
+		}
+
+		@Override
 		public final Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
 			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return parallel;
 		}
 
+		@Override
 		public final Scheduler newSingle(ThreadFactory threadFactory) {
 			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return single;
@@ -346,6 +355,34 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void boundedElasticSchedulerDefaultBlockingOk() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "boundedElasticSchedulerDefaultNonBlocking");
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Throwable> errorRef = new AtomicReference<>();
+		try {
+			scheduler.schedule(() -> {
+				try {
+					Mono.just("foo")
+					    .hide()
+					    .block();
+				}
+				catch (Throwable t) {
+					errorRef.set(t);
+				}
+				finally {
+					latch.countDown();
+				}
+			});
+			latch.await();
+		}
+		finally {
+			scheduler.dispose();
+		}
+
+		assertThat(errorRef.get()).isNull();
+	}
+
+	@Test
 	public void isInNonBlockingThreadFalse() {
 		assertThat(Thread.currentThread()).isNotInstanceOf(NonBlocking.class);
 
@@ -492,13 +529,14 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void testOverride() throws InterruptedException {
+	public void testOverride() {
 
 		TestSchedulers ts = new TestSchedulers(true);
 		Schedulers.setFactory(ts);
 
 		Assert.assertEquals(ts.single, Schedulers.newSingle("unused"));
 		Assert.assertEquals(ts.elastic, Schedulers.newElastic("unused"));
+		Assert.assertEquals(ts.boundedElastic, Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "unused"));
 		Assert.assertEquals(ts.parallel, Schedulers.newParallel("unused"));
 
 		Schedulers.resetFactory();
@@ -534,6 +572,21 @@ public class SchedulersTest {
 		Assert.assertNotNull(standaloneTimer.schedule(() -> {}));
 		//new factory = new alive cached scheduler
 		Assert.assertNotNull(cachedTimerNew.schedule(() -> {}));
+	}
+
+	@Test
+	public void shutdownNowClosesAllCachedSchedulers() {
+		Scheduler oldSingle = Schedulers.single();
+		Scheduler oldElastic = Schedulers.elastic();
+		Scheduler oldBoundedElastic = Schedulers.boundedElastic();
+		Scheduler oldParallel = Schedulers.parallel();
+
+		Schedulers.shutdownNow();
+
+		assertThat(oldSingle.isDisposed()).as("single() disposed").isTrue();
+		assertThat(oldElastic.isDisposed()).as("elastic() disposed").isTrue();
+		assertThat(oldBoundedElastic.isDisposed()).as("boundedElastic() disposed").isTrue();
+		assertThat(oldParallel.isDisposed()).as("parallel() disposed").isTrue();
 	}
 
 	@Test
@@ -881,6 +934,30 @@ public class SchedulersTest {
 	}
 
 	@Test(timeout = 5000)
+	public void boundedElasticSchedulerThreadCheck() throws Exception {
+		Scheduler s = Schedulers.newBoundedElastic(4, Integer.MAX_VALUE,"boundedElasticSchedulerThreadCheck");
+		try {
+			Scheduler.Worker w = s.createWorker();
+
+			Thread currentThread = Thread.currentThread();
+			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
+			CountDownLatch latch = new CountDownLatch(1);
+
+			w.schedule(() -> {
+				taskThread.set(Thread.currentThread());
+				latch.countDown();
+			});
+
+			latch.await();
+
+			assertThat(taskThread.get()).isNotEqualTo(currentThread);
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	@Test(timeout = 5000)
 	public void executorThreadCheck() throws Exception{
 		ExecutorService es = Executors.newSingleThreadExecutor();
 		Scheduler s = Schedulers.fromExecutor(es::execute);
@@ -1032,16 +1109,6 @@ public class SchedulersTest {
 	public void restartParallel() {
 		restart(Schedulers.newParallel("test"));
 	}
-
-//	@Test
-//	public void restartTimer() {
-//		restart(Schedulers.newTimer("test"));
-//	}
-//
-//	@Test
-//	public void restartElastic() {
-//		restart(Schedulers.newElastic("test"));
-//	}
 
 	@Test
 	public void restartSingle(){

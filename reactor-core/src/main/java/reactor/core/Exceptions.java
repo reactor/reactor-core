@@ -44,7 +44,7 @@ public abstract class Exceptions {
 	 * don't leak this!
 	 */
 	@SuppressWarnings("ThrowableInstanceNeverThrown")
-	public static final Throwable TERMINATED = new Throwable("Operator has been terminated");
+	public static final Throwable TERMINATED = new StaticThrowable("Operator has been terminated");
 
 	/**
 	 * Update an empty atomic reference with the given exception, or combine further added
@@ -247,6 +247,16 @@ public abstract class Exceptions {
 			return (RejectedExecutionException) cause;
 		}
 		return new ReactorRejectedExecutionException("Scheduler unavailable", cause);
+	}
+
+	/**
+	 * Return a new {@link RejectedExecutionException} with given message.
+	 *
+	 * @param message the rejection message
+	 * @return a new {@link RejectedExecutionException} with custom message
+	 */
+	public static RejectedExecutionException failWithRejected(String message) {
+		return new ReactorRejectedExecutionException(message);
 	}
 
 	/**
@@ -499,11 +509,10 @@ public abstract class Exceptions {
 	Exceptions() {
 	}
 
-	static final RejectedExecutionException REJECTED_EXECUTION = new RejectedExecutionException("Scheduler unavailable");
+	static final RejectedExecutionException REJECTED_EXECUTION = new StaticRejectedExecutionException("Scheduler unavailable");
 
 	static final RejectedExecutionException NOT_TIME_CAPABLE_REJECTED_EXECUTION =
-			new RejectedExecutionException(
-					"Scheduler is not capable of time-based scheduling");
+			new StaticRejectedExecutionException("Scheduler is not capable of time-based scheduling");
 
 	static class CompositeException extends ReactiveException {
 
@@ -586,10 +595,55 @@ public abstract class Exceptions {
 		}
 	}
 
-	static final class ReactorRejectedExecutionException extends RejectedExecutionException {
+	static class ReactorRejectedExecutionException extends RejectedExecutionException {
 
 		ReactorRejectedExecutionException(String message, Throwable cause) {
 			super(message, cause);
+		}
+
+		ReactorRejectedExecutionException(String message) {
+			super(message);
+		}
+	}
+
+	/**
+	 * A {@link RejectedExecutionException} that is tailored for usage as a static final
+	 * field. It avoids {@link ClassLoader}-related leaks by bypassing stacktrace filling.
+	 */
+	static final class StaticRejectedExecutionException extends RejectedExecutionException {
+
+		StaticRejectedExecutionException(String message, Throwable cause) {
+			super(message, cause);
+		}
+
+		StaticRejectedExecutionException(String message) {
+			super(message);
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return this;
+		}
+	}
+
+	/**
+	 * A general-purpose {@link Throwable} that is suitable for usage as a static final
+	 * field. It avoids {@link ClassLoader}-related leaks by bypassing stacktrace filling.
+	 * Exception {{@link Exception#addSuppressed(Throwable)} suppression} is also disabled.
+	 */
+	//see https://github.com/reactor/reactor-core/pull/1872
+	static final class StaticThrowable extends Error {
+
+		StaticThrowable(String message) {
+			super(message, null, false, false);
+		}
+
+		StaticThrowable(String message, Throwable cause) {
+			super(message, cause, false, false);
+		}
+
+		StaticThrowable(Throwable cause) {
+			super(cause.toString(), cause, false, false);
 		}
 	}
 

@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -55,7 +56,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 	static <T> void subscribe(CoreSubscriber<? super T> s, Function<? super
 			Flux<Throwable>, ?
-			extends Publisher<?>> whenSourceFactory, Publisher<? extends T> source) {
+			extends Publisher<?>> whenSourceFactory, CorePublisher<? extends T> source) {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
 		Subscriber<Throwable> signaller = Operators.serialize(other.completionSignal);
 
@@ -100,7 +101,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		final Subscriber<Throwable> signaller;
 
-		final Publisher<? extends T> source;
+		final CorePublisher<? extends T> source;
 
 		Context context;
 
@@ -111,7 +112,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		long produced;
 		
 		RetryWhenMainSubscriber(CoreSubscriber<? super T> actual, Subscriber<Throwable> signaller,
-												Publisher<? extends T> source) {
+				CorePublisher<? extends T> source) {
 			super(actual);
 			this.signaller = signaller;
 			this.source = source;
@@ -202,7 +203,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 	}
 
 	static final class RetryWhenOtherSubscriber extends Flux<Throwable>
-	implements InnerConsumer<Object>, CoreOperator<Throwable, Throwable> {
+	implements InnerConsumer<Object>, OptimizableOperator<Throwable, Throwable> {
 		RetryWhenMainSubscriber<?> main;
 
 		final DirectProcessor<Throwable> completionSignal = new DirectProcessor<>();
@@ -254,6 +255,11 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public DirectProcessor<Throwable> source() {
 			return completionSignal;
+		}
+
+		@Override
+		public OptimizableOperator<?, ? extends Throwable> nextOptimizableSource() {
+			return null;
 		}
 	}
 

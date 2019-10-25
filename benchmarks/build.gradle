@@ -3,7 +3,9 @@ apply plugin: 'idea'
 
 configurations {
   current
-  baseline
+  baseline {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+  }
 }
 
 dependencies {
@@ -11,13 +13,15 @@ dependencies {
   compileOnly "io.projectreactor:reactor-core:${perfBaselineVersion}"
 
   implementation "org.openjdk.jmh:jmh-core:1.21"
-  implementation "io.projectreactor.addons:reactor-extra:3.3.0.BUILD-SNAPSHOT", {
+  implementation "io.projectreactor.addons:reactor-extra:3.3.0.M1", {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
   annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:1.21"
 
   current project(':reactor-core')
-  baseline "io.projectreactor:reactor-core:${perfBaselineVersion}"
+  baseline "io.projectreactor:reactor-core:${perfBaselineVersion}", {
+    changing = true
+  }
 }
 
 task jmhProfilers(type: JavaExec, description:'Lists the available profilers for the jmh task', group: 'Development') {
@@ -37,14 +41,14 @@ class JmhExec extends JavaExec {
       include = [".*" + project.properties.get('include') + ".*"]
     }
     if (project.hasProperty('fullInclude')) {
-      include = project.properties.get('fullInclude');
+      include = project.properties.get('fullInclude')
     }
 
-    def exclude = project.properties.get('exclude');
-    def format = project.properties.getOrDefault('format', 'json');
-    def profilers = project.properties.get('profilers');
+    def exclude = project.properties.get('exclude')
+    def format = project.properties.getOrDefault('format', 'json')
+    def profilers = project.properties.get('profilers')
     def jvmArgs = project.properties.get('jvmArgs')
-    def verify =  project.properties.get('verify');
+    def verify =  project.properties.get('verify')
 
     def resultFile = project.file("build/reports/${this.name}/result.${format}")
 

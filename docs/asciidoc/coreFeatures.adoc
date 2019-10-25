@@ -198,11 +198,16 @@ class has static methods that give access to the following execution contexts:
 * A single, reusable thread (`Schedulers.single()`). Note that this method reuses the
 same thread for all callers, until the Scheduler is disposed. If you want a per-call
 dedicated thread, use `Schedulers.newSingle()` for each call.
-* An elastic thread pool (`Schedulers.elastic()`). It creates new worker pools as needed
-and reuses idle ones. Worker pools that stay idle for too long (the default is 60s) are
-disposed. This is a good choice for I/O blocking work, for instance.
-`Schedulers.elastic()` is a handy way to give a blocking process its own thread so that
-it does not tie up other resources. See <<faq.wrap-blocking>>.
+* An unbounded elastic thread pool (`Schedulers.elastic()`). This one is no longer preferred
+with the introduction of `Schedulers.boundedElastic()`, as it has a tendency to hide backpressure
+problems and lead to too many threads (see below).
+* A bounded elastic thread pool (`Schedulers.boundedElastic()`). Like its predecessor `elastic()`, it
+creates new worker pools as needed and reuses idle ones. Worker pools that stay idle for too long (the default is 60s) are
+also disposed. Unlike its `elastic()` predecessor, it has a cap on the number of backing threads it can create (default is number of CPU cores x 10).
+Up to 100 000 tasks submitted after the cap has been reached are enqueued and will be re-scheduled when a thread becomes available
+(when scheduling with a delay, the delay starts when the thread becomes available). This is a better choice for I/O blocking work.
+`Schedulers.boundedElastic()` is a handy way to give a blocking process its own thread so that
+it does not tie up other resources. See <<faq.wrap-blocking>>, but doesn't pressure the system too much with new threads.
 * A fixed pool of workers that is tuned for parallel work (`Schedulers.parallel()`). It
 creates as many workers as you have CPU cores.
 
@@ -211,12 +216,12 @@ using `Schedulers.fromExecutorService(ExecutorService)`. (You can also create on
 `Executor`, although doing so is discouraged.)
 
 You can also create new instances of the various scheduler types by using the `newXXX`
-methods. For example, `Schedulers.newElastic(yourScheduleName)` creates a new elastic
+methods. For example, `Schedulers.newParallel(yourScheduleName)` creates a new parallel
 scheduler named `yourScheduleName`.
 
 [WARNING]
 ====
-While `elastic` is made to help with legacy blocking code if it cannot be avoided,
+While `boundedElastic` is made to help with legacy blocking code if it cannot be avoided,
 `single` and `parallel` are not. As a consequence, the use of Reactor blocking APIs
 (`block()`, `blockFirst()`, `blockLast()` (as well as iterating over `toIterable()`
 or `toStream()`) inside the default single and parallel schedulers) results in

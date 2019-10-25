@@ -41,8 +41,8 @@ configurations {
 
 dependencies {
   // Reactive Streams
-  compile "org.reactivestreams:reactive-streams:1.0.2"
-  testCompile "org.reactivestreams:reactive-streams-tck:1.0.2"
+  compile "org.reactivestreams:reactive-streams:1.0.3"
+  testCompile "org.reactivestreams:reactive-streams-tck:1.0.3"
 
   // JSR-305 annotations
   optional "com.google.code.findbugs:jsr305:3.0.2"
@@ -56,7 +56,7 @@ dependencies {
   optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
 
   //Optional BlockHound support
-  optional 'io.projectreactor.tools:blockhound:1.0.0.M4'
+  optional 'io.projectreactor.tools:blockhound:1.0.0.RELEASE'
 
   //Optional JDK 9 Converter
   jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
@@ -119,11 +119,6 @@ task japicmp(type: JapicmpTask) {
 
   //TODO after a release, bump the gradle.properties baseline
   //TODO after a release, remove the reactor-core exclusions below if any
-  classExcludes = [
-		  'reactor.core.scheduler.Schedulers',
-		  'reactor.util.concurrent.WaitStrategy',
-		  'reactor.core.publisher.MonoProcessor'
-  ]
 //	classExcludes = []
 //	methodExcludes = ["reactor.core.Scannable#operatorName()"]
 }

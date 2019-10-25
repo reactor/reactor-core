@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.pivovarit.function.ThrowingRunnable;
@@ -193,7 +194,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 					.is(SchedulersTest.CACHED_SCHEDULER);
 			assertThat(Scannable.from(cached).scan(Scannable.Attr.NAME))
 					.as("default elastic()")
-					.isEqualTo("elastic(\"elastic\")");
+					.isEqualTo("Schedulers.elastic()");
 
 			assertThat(Scannable.from(workerWithNamedFactory).scan(Scannable.Attr.NAME))
 					.as("workerWithNamedFactory")

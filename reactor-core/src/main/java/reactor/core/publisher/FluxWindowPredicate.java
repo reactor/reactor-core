@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -267,6 +268,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
+				cleanup();
 				drain();
 			}
 			else {
@@ -279,6 +281,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			if(done) {
 				return;
 			}
+			cleanup();
 
 			WindowFlux<T> g = window;
 			if (g != null) {
@@ -288,6 +291,13 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			done = true;
 			WINDOW_COUNT.decrementAndGet(this);
 			drain();
+		}
+
+		void cleanup() {
+			// necessary cleanup if predicate contains a state
+			if (predicate instanceof Disposable) {
+				((Disposable) predicate).dispose();
+			}
 		}
 
 		@Override
@@ -338,6 +348,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
 				if (WINDOW_COUNT.decrementAndGet(this) == 0) {
 					s.cancel();
+					cleanup();
 				}
 				else if (!outputFused) {
 					if (WIP.getAndIncrement(this) == 0) {
@@ -354,6 +365,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 						if (WIP.decrementAndGet(this) == 0) {
 							if (!done && WINDOW_COUNT.get(this) == 0) {
 								s.cancel();
+								cleanup();
 							}
 							else {
 								CANCELLED.set(this, 2);
@@ -371,6 +383,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 				//no new window should have been created
 				if (WINDOW_COUNT.get(this) == 0) {
 					s.cancel();
+					cleanup();
 				}
 				//next one to call cancel in state 2 that decrements to 0 will cancel outer
 			}
@@ -383,6 +396,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			window = null;
 			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
 				s.cancel();
+				cleanup();
 			}
 		}
 

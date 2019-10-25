@@ -19,7 +19,9 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,6 +39,7 @@ import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
+import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.FluxOperatorTest;
@@ -45,6 +48,8 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
 
 public class FluxWindowPredicateTest extends
                                      FluxOperatorTest<String, Flux<String>> {
@@ -217,6 +222,98 @@ public class FluxWindowPredicateTest extends
 		    .assertNext(w -> assertThat(w).containsExactly("#"))
 		    .assertNext(w -> assertThat(w).containsExactly("#"))
 		    .verifyComplete();
+	}
+
+	@Test
+	public void untilChangedNoRepetition() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 1)
+		.windowUntilChanged()
+		.flatMap(Flux::collectList))
+		            .expectSubscription()
+		            .expectNext(Collections.singletonList(1))
+		            .expectNext(Collections.singletonList(2))
+		            .expectNext(Collections.singletonList(3))
+		            .expectNext(Collections.singletonList(4))
+		            .expectNext(Collections.singletonList(1));
+	}
+
+	@Test
+	public void untilChangedSomeRepetition() {
+		StepVerifier.create(Flux.just(1, 1, 2, 2, 3, 3, 1)
+		                        .windowUntilChanged()
+								.flatMap(Flux::collectList))
+		            .expectSubscription()
+		            .expectNext(Arrays.asList(1, 1))
+		            .expectNext(Arrays.asList(2, 2))
+		            .expectNext(Arrays.asList(3, 3))
+		            .expectNext(Collections.singletonList(1))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void untilChangedDisposesStateOnComplete() {
+		MemoryUtils.RetainedDetector retainedDetector = new MemoryUtils.RetainedDetector();
+		Flux<Flux<AtomicInteger>> test =
+				Flux.range(1, 100)
+				    .map(AtomicInteger::new) // wrap integer with object to test gc
+				    .map(retainedDetector::tracked)
+				    .windowUntilChanged();
+
+		StepVerifier.create(test)
+		            .expectNextCount(100)
+		            .verifyComplete();
+
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(retainedDetector::assertAllFinalized);
+	}
+
+	@Test
+	public void untilChangedDisposesStateOnError() {
+		MemoryUtils.RetainedDetector retainedDetector = new MemoryUtils.RetainedDetector();
+		Flux<Flux<AtomicInteger>> test =
+				Flux.range(1, 100)
+				    .map(AtomicInteger::new) // wrap integer with object to test gc
+				    .map(retainedDetector::tracked)
+				    .concatWith(Mono.error(new Throwable("expected")))
+				    .windowUntilChanged();
+
+		StepVerifier.create(test)
+		            .expectSubscription()
+		            .expectNextCount(100)
+		            .verifyErrorMessage("expected");
+
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(retainedDetector::assertAllFinalized);
+	}
+
+	@Test
+	public void untilChangedDisposesStateOnCancel() {
+		MemoryUtils.RetainedDetector retainedDetector = new MemoryUtils.RetainedDetector();
+		Flux<Flux<AtomicInteger>> test =
+				Flux.range(1, 100)
+				    .map(AtomicInteger::new) // wrap integer with object to test gc
+				    .map(retainedDetector::tracked)
+				    .concatWith(Mono.error(new Throwable("unexpected")))
+				    .windowUntilChanged()
+				    .take(50);
+
+
+		StepVerifier.create(test)
+		            .expectNextCount(50)
+		            .verifyComplete();
+
+		System.gc();
+
+		await()
+				.atMost(2, TimeUnit.SECONDS)
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Override

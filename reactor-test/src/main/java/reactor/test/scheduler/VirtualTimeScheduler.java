@@ -389,6 +389,11 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 
 		@Override
+		public Scheduler newBoundedElastic(int threadCap, int taskCap, ThreadFactory threadFactory, int ttlSeconds) {
+			return s;
+		}
+
+		@Override
 		public Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
 			return s;
 		}

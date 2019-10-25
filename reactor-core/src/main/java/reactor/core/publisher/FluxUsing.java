@@ -37,7 +37,7 @@ import reactor.util.annotation.Nullable;
  * <p>
  * <p>
  * Eager resource cleanup happens just before the source termination and exceptions
- * raised by the cleanup Consumer may override the terminal even. Non-eager
+ * raised by the cleanup Consumer may override the terminal event. Non-eager
  * cleanup will drop any exception.
  *
  * @param <T> the value type streamed

@@ -31,9 +31,13 @@ import reactor.util.annotation.Nullable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, CoreOperator<O, I> {
+abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
+                                                                     OptimizableOperator<O, I> {
 
 	protected final Mono<? extends I> source;
+
+	@Nullable
+	final OptimizableOperator<?, I> optimizableOperator;
 
 	/**
 	 * Build a {@link FluxFromMonoOperator} wrapper around the passed parent {@link Publisher}
@@ -42,6 +46,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, 
 	 */
 	protected FluxFromMonoOperator(Mono<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
+		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
 	}
 
 	@Override
@@ -56,35 +61,34 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable, 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
-		Publisher publisher = this;
-
-		// do-while since `this` already implements `CoreOperator`
-		do {
-			CoreOperator operator = (CoreOperator) publisher;
-
+		OptimizableOperator operator = this;
+		while (true) {
 			subscriber = operator.subscribeOrReturn(subscriber);
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
 			}
-			publisher = operator.source();
-		}
-		while (publisher instanceof CoreOperator);
-
-		if (publisher instanceof CorePublisher) {
-			((CorePublisher) publisher).subscribe(subscriber);
-		}
-		else {
-			publisher.subscribe(subscriber);
+			OptimizableOperator newSource = operator.nextOptimizableSource();
+			if (newSource == null) {
+				operator.source().subscribe(subscriber);
+				return;
+			}
+			operator = newSource;
 		}
 	}
 
 	@Override
+	@Nullable
 	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
 
 	@Override
 	public final CorePublisher<? extends I> source() {
 		return source;
+	}
+
+	@Override
+	public final OptimizableOperator<?, ? extends I> nextOptimizableSource() {
+		return optimizableOperator;
 	}
 
 }

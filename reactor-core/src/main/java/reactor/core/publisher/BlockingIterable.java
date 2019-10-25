@@ -30,8 +30,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -47,13 +47,13 @@ import reactor.util.annotation.Nullable;
  */
 final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
-	final Publisher<? extends T> source;
+	final CorePublisher<? extends T> source;
 
 	final int batchSize;
 
 	final Supplier<Queue<T>> queueSupplier;
 
-	BlockingIterable(Publisher<? extends T> source,
+	BlockingIterable(CorePublisher<? extends T> source,
 			int batchSize,
 			Supplier<Queue<T>> queueSupplier) {
 		if (batchSize <= 0) {
