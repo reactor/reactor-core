@@ -50,12 +50,25 @@ public class MonoJustTest {
 	                .verifyComplete();
     }
 
+	@Test
+	public void normalWithOptional() {
+		StepVerifier.create(Mono.just(Optional.ofNullable(null)))
+				.expectNext(Optional.empty())
+				.verifyComplete();
+	}
+
     @Test
     public void normalOptional() {
 	    StepVerifier.create(Mono.justOrEmpty(Optional.of(1)))
 	                .expectNext(1)
 	                .verifyComplete();
     }
+
+	@Test
+	public void normalOptionalOfNullable() {
+		StepVerifier.create(Mono.justOrEmpty(Optional.ofNullable(null)))
+				.verifyComplete();
+	}
 
 	@Test
 	public void normalScalarOptionalEmpty() {
