@@ -23,13 +23,12 @@ description = 'Reactor Test support'
 dependencies {
   compile project(":reactor-core")
 
-  testCompile 'junit:junit:4.12'
+  testCompile "junit:junit:$jUnitVersion"
 
   testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
 
-  testCompile "org.hamcrest:hamcrest-library:1.3",
-		  "org.assertj:assertj-core:$assertJVersion",
-		  "org.mockito:mockito-core:$mockitoVersion"
+  testCompile "org.assertj:assertj-core:$assertJVersion",
+          "org.mockito:mockito-core:$mockitoVersion"
 }
 
 task downloadBaseline {

@@ -46,26 +46,40 @@ ext {
 	}
 	println "JDK Javadoc link for this build is ${rootProject.jdkJavadoc}"
 
-  // Metrics
-  micrometerVersion = '1.3.0' //optional, should be compatible with any 1.3.x, but 1.3.0 is now a baseline
-
-  // Logging
-  slf4jVersion = '1.7.12'
-  logbackVersion = '1.1.2'
-
-  // Testing
-  assertJVersion = '3.11.1'
-  mockitoVersion = '2.23.0'
-  jUnitParamsVersion = '1.1.1'
-  awaitilityVersion = '3.1.2'
-  throwingFunctionVersion = '1.5.0'
-
   bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
 						  'kotlin.*;resolution:=optional',
 						  'io.micrometer.*;resolution:=optional',
 						  '!javax.annotation',
 						  '!javax.annotation.meta',
 						  '*']
+
+  /*
+   * Note that some versions can be bumped by a script.
+   * These are found in `gradle.properties`...
+   *
+   * Versions not necessarily bumped by a script (testing, etc...) below:
+   */
+  // Misc not often upgraded
+  jsr305Version = '3.0.2'
+  jsr166BackportVersion = '1.0.0.RELEASE'
+
+  // Blockhound
+  blockhoundVersion = '1.0.0.RELEASE'
+
+  // Logging
+  slf4jVersion = '1.7.12'
+  logbackVersion = '1.1.2'
+
+  // Testing
+  jUnitVersion = '4.12'
+  jUnitJupiterVersion = '5.5.2' //for newer modules without legacy tests
+  assertJVersion = '3.11.1'
+  mockitoVersion = '2.23.0'
+  jUnitParamsVersion = '1.1.1'
+  awaitilityVersion = '3.1.2'
+  throwingFunctionVersion = '1.5.0'
+  javaObjectLayoutVersion = '0.9'
+  testNgVersion = '6.8.5'
 }
 
 //only publish scan if a specific gradle entreprise server is passed
