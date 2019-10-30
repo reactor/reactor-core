@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.junit.After;
@@ -200,6 +202,62 @@ public class FluxBufferTimeoutTest {
 		test.onNext(String.valueOf("0"));
 		timeScheduler.advanceTimeBy(Duration.ofMillis(100));
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+	}
+
+	@Test
+	public void requestedFromUpstreamShouldNotExceedDownstreamDemand() {
+		EmitterProcessor<String> emitter = EmitterProcessor.create(1);
+		FluxSink<String> sink = emitter.sink();
+
+		AtomicLong requestedOutstanding = new AtomicLong(0);
+
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+
+		Flux<List<String>> flux = emitter.doOnRequest(requestedOutstanding::addAndGet)
+		                                 .bufferTimeout(5, Duration.ofMillis(100), scheduler)
+		                                 .doOnNext(list -> requestedOutstanding.addAndGet(0 - list.size()));
+
+		StepVerifier.withVirtualTime(() -> flux, () -> scheduler, 0)
+		            .expectSubscription()
+		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(0))
+		            .thenRequest(2)
+		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
+		            .then(() -> sink.next("a"))
+		            .thenAwait(Duration.ofMillis(100))
+		            .assertNext(s -> assertThat(s).containsExactly("a"))
+		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(9))
+		            .thenRequest(1)
+		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void exceedingUpstreamDemandResultsInError() {
+		Subscription[] subscriptionsHolder = new Subscription[1];
+
+		AtomicReference<Throwable> capturedException = new AtomicReference<>();
+
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, capturedException::set, null, s -> subscriptionsHolder[0] = s);
+
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
+				actual, 5, 1000, scheduler.createWorker(), ArrayList::new);
+
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+		subscriptionsHolder[0].request(1);
+
+		for (int i = 0; i < 5; i++) {
+			test.onNext(String.valueOf(i));
+		}
+
+		assertThat(capturedException.get()).isNull();
+
+		test.onNext(String.valueOf(123));
+
+		assertThat(capturedException.get()).isInstanceOf(IllegalStateException.class)
+		                                   .hasMessage("Unrequested element received");
 	}
 
 	@Test
