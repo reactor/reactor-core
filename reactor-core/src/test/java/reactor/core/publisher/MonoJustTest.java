@@ -58,6 +58,12 @@ public class MonoJustTest {
     }
 
 	@Test
+	public void normalOptionalOfNullable() {
+		StepVerifier.create(Mono.justOrEmpty(Optional.ofNullable(null)))
+				.verifyComplete();
+	}
+
+	@Test
 	public void normalScalarOptionalEmpty() {
 		StepVerifier.create(Mono.justOrEmpty(null))
 		            .verifyComplete();
