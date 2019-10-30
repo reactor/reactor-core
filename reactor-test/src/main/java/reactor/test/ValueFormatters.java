@@ -16,6 +16,7 @@
 
 package reactor.test;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Spliterator;
 import java.util.function.BiFunction;
@@ -47,6 +48,13 @@ import reactor.util.annotation.Nullable;
 public final class ValueFormatters {
 
 	private ValueFormatters() {}
+
+	/**
+	 * Default {@link Duration#toString() Duration} {@link ToStringConverter} that removes the PT prefix and
+	 * switches {@link String#toLowerCase() to lower case}.
+	 */
+	public static final ToStringConverter DURATION_CONVERTER = new ClassBasedToStringConverter<Duration>(
+			Duration.class, d -> true, d -> d.toString().replaceFirst("PT", "").toLowerCase());
 
 	/**
 	 * A generic {@link Object} to {@link String} conversion {@link Function} which is

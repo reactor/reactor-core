@@ -451,6 +451,21 @@ public interface StepVerifier {
 		StepVerifier expectErrorSatisfies(Consumer<Throwable> assertionConsumer);
 
 		/**
+		 * Verify that the {@link Publisher} under test doesn't terminate but
+		 * rather times out after the provided {@link Duration} (a timeout implying
+		 * a cancellation of the source).
+		 * <p>
+		 * This is equivalent to appending the {@link reactor.core.publisher.Flux#timeout(Duration) timeout}
+		 * operator to the publisher and expecting a {@link java.util.concurrent.TimeoutException}
+		 * {@link #expectError(Class) onError signal}, while also triggering a {@link Step#thenAwait(Duration) wait}
+		 * to ensure unexpected signals are detected.
+		 *
+		 * @param duration the {@link Duration} for which no new event is expected
+		 * @return the built verification scenario, ready to be verified
+		 */
+		StepVerifier expectTimeout(Duration duration);
+
+		/**
 		 * Expect the completion signal.
 		 *
 		 * @return the built verification scenario, ready to be verified
@@ -543,6 +558,27 @@ public interface StepVerifier {
 		 * @see Subscriber#onError(Throwable)
 		 */
 		Duration verifyErrorMatches(Predicate<Throwable> predicate);
+
+		/**
+		 * Trigger the {@link #verify() verification}, expecting that the {@link Publisher}
+		 * under test doesn't terminate but rather times out after the provided {@link Duration}.
+		 * A timeout implies a cancellation of the source.
+		 * <p>
+		 * This is a convenience method that calls {@link #verify()} in addition to {@link #expectTimeout(Duration)}.
+		 * The later is equivalent to appending the {@link reactor.core.publisher.Flux#timeout(Duration) timeout}
+		 * operator to the publisher and expecting a {@link java.util.concurrent.TimeoutException}
+		 * {@link #verifyError(Class) onError signal}, while also triggering a {@link Step#thenAwait(Duration) wait}
+		 * to ensure unexpected signals are detected.
+		 *
+		 * @param duration the {@link Duration} for which no new event is expected
+		 * @return the actual {@link Duration} the verification took.
+		 *
+		 * @see #expectTimeout(Duration)
+		 * @see #verify()
+		 */
+		default Duration verifyTimeout(Duration duration) {
+			return expectTimeout(duration).verify();
+		}
 
 		/**
 		 * Trigger the {@link #verify() verification}, expecting an error as terminal event
@@ -808,6 +844,14 @@ public interface StepVerifier {
 		 * Expect that no event has been observed by the verifier for the length of
 		 * the provided {@link Duration}. If virtual time is used, this duration is
 		 * verified using the virtual clock.
+		 * <p>
+		 * Note that you should only use this method as the first expectation if you
+		 * actually don't expect a subscription to happen. Use
+		 * {@link FirstStep#expectSubscription()} combined with {@link Step#expectNoEvent(Duration)}
+		 * to work around that.
+		 * <p>
+		 * Also avoid using this method at the end of the set of expectations:
+		 * prefer {@link #expectTimeout(Duration)} rather than {@code expectNoEvent(...).thenCancel()}.
 		 *
 		 * @param duration the duration for which to observe no event has been received
 		 *
@@ -986,12 +1030,17 @@ public interface StepVerifier {
 		 * actually don't expect a subscription to happen. Use
 		 * {@link FirstStep#expectSubscription()} combined with {@link Step#expectNoEvent(Duration)}
 		 * to work around that.
+		 * <p>
+		 * Also avoid using this method at the end of the set of expectations:
+		 * prefer {@link #expectTimeout(Duration)} rather than {@code expectNoEvent(...).thenCancel()}.
 		 *
 		 * @param duration the duration for which to observe no event has been received
 		 *
 		 * @return this builder
+		 * @deprecated should probably always first use {@link #expectSubscription()} or equivalent
 		 */
 		@Override
+		@Deprecated
 		FirstStep<T> expectNoEvent(Duration duration);
 
 		/**
