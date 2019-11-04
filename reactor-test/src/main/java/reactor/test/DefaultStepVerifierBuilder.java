@@ -635,20 +635,7 @@ final class DefaultStepVerifierBuilder<T>
 			throw new IllegalStateException("Attempting to call expectTimeout() without a Supplier<Publisher>");
 		}
 		Supplier<? extends Publisher<? extends T>> originalSupplier = sourceSupplier;
-		this.sourceSupplier = () -> {
-			Publisher<? extends T> p = originalSupplier.get();
-
-			if (p instanceof Flux) {
-				return ((Flux<T>) p).timeout(duration);
-			}
-			else if (p instanceof ParallelFlux) {
-				return ((ParallelFlux<T>) p).sequential().timeout(duration);
-			}
-			else if (p instanceof Mono) {
-				return ((Mono<T>) p).timeout(duration);
-			}
-			else return Flux.from(p).timeout(duration);
-		};
+		this.sourceSupplier = () -> Flux.from(originalSupplier.get()).timeout(duration);
 
 		WaitEvent<T> timeout = new WaitEvent<>(duration, "expectTimeout-wait");
 		SignalEvent<T> timeoutVerification = new SignalEvent<>((signal, se) -> {
