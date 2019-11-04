@@ -1258,14 +1258,28 @@ public class StepVerifierTests {
 	public void expectTimeoutSmokeTest() {
 		Mono<String> neverMono = Mono.never();
 		Mono<String> completingMono = Mono.empty();
-		Function<Mono<String>, Duration> f = m -> StepVerifier.create(m)
-		                                                      .expectTimeout(Duration.ofSeconds(1))
-		                                                      .verify();
 
-		f.apply(neverMono); //verification should pass
+		StepVerifier.create(neverMono, StepVerifierOptions.create().scenarioName("neverMono should pass"))
+				.expectTimeout(Duration.ofSeconds(1))
+				.verify();
+
+		StepVerifier shouldFail = StepVerifier.create(completingMono).expectTimeout(Duration.ofSeconds(1));
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> f.apply(completingMono))
+				.isThrownBy(shouldFail::verify)
+				.withMessage("expectation \"expectTimeout\" failed (expected: timeout(1s); actual: onComplete())");
+	}
+
+	@Test
+	public void verifyTimeoutSmokeTest() {
+		Mono<String> neverMono = Mono.never();
+		Mono<String> completingMono = Mono.empty();
+
+		StepVerifier.create(neverMono, StepVerifierOptions.create().scenarioName("neverMono should pass"))
+				.verifyTimeout(Duration.ofSeconds(1));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(completingMono).verifyTimeout(Duration.ofSeconds(1)))
 				.withMessage("expectation \"expectTimeout\" failed (expected: timeout(1s); actual: onComplete())");
 	}
 

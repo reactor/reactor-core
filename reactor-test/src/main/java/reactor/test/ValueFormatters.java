@@ -53,8 +53,10 @@ public final class ValueFormatters {
 	 * Default {@link Duration#toString() Duration} {@link ToStringConverter} that removes the PT prefix and
 	 * switches {@link String#toLowerCase() to lower case}.
 	 */
-	public static final ToStringConverter DURATION_CONVERTER = new ClassBasedToStringConverter<Duration>(
-			Duration.class, d -> true, d -> d.toString().replaceFirst("PT", "").toLowerCase());
+	public static final ToStringConverter DURATION_CONVERTER = new ClassBasedToStringConverter<>(
+			Duration.class,
+			d -> true,
+			d -> d.toString().replaceFirst("PT", "").toLowerCase());
 
 	/**
 	 * A generic {@link Object} to {@link String} conversion {@link Function} which is
