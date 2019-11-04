@@ -271,4 +271,20 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		assertThat(mode).as("ASYNC").isEqualTo(Fuseable.ASYNC);
 	}
 
+	@Test
+	public void doNotCallToString() {
+		Flux<ThrowsOnToString> source = Flux.just(new ThrowsOnToString());
+		Flux<Tuple2<Long, ThrowsOnToString>> test = new FluxIndexFuseable<>(source, Flux.tuple2Function());
+
+		StepVerifier.create(test)
+				.expectNextCount(1)
+				.verifyComplete();
+	}
+
+	static class ThrowsOnToString {
+		@Override
+		public String toString() {
+			throw new RuntimeException("should not be called");
+		}
+	}
 }

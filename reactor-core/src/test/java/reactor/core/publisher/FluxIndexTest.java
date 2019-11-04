@@ -235,4 +235,21 @@ public class FluxIndexTest extends FluxOperatorTest<Integer, Tuple2<Long, Intege
 				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessage("boom-1"));
 	}
+
+	@Test
+	public void doNotCallToString() {
+		Flux<ThrowsOnToString> source = Flux.just(new ThrowsOnToString());
+		Flux<Tuple2<Long, ThrowsOnToString>> test = new FluxIndex<>(source, Flux.tuple2Function());
+
+		StepVerifier.create(test)
+				.expectNextCount(1)
+				.verifyComplete();
+	}
+
+	static class ThrowsOnToString {
+		@Override
+		public String toString() {
+			throw new RuntimeException("should not be called");
+		}
+	}
 }
