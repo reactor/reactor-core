@@ -50,6 +50,10 @@ public class CustomVersionPlugin implements Plugin<Project> {
 		}
 
 		String versionBranch = versionBranchProperty.toString();
+		//consider an empty string as "no custom version"
+		if (versionBranch.isEmpty()) {
+			return;
+		}
 		if (!ONLY_ALPHANUMERIC_PATTERN.matcher(versionBranch).matches()) {
 			throw new InvalidUserDataException("Custom version for project passed through -PversionBranch must be alphanumeric chars only: " + versionBranch);
 		}

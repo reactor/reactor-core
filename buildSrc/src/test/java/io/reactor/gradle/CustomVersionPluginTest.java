@@ -38,8 +38,7 @@ import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Simon Baslé
@@ -54,6 +53,17 @@ public class CustomVersionPluginTest {
 
 		plugin.apply(project);
 
+		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT");
+	}
+
+	@Test
+	void acceptsEmptyStringAsNoCustomVersion() {
+		CustomVersionPlugin plugin = new CustomVersionPlugin();
+		Project project = ProjectBuilder.builder().withName("foo").build();
+		project.setVersion("1.2.3.BUILD-SNAPSHOT");
+		project.getExtensions().add("versionBranch", "");
+
+		assertThatCode(() -> plugin.apply(project)).doesNotThrowAnyException();
 		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT");
 	}
 
