@@ -50,10 +50,6 @@ configure(rootProject) {
 				'source-highlighter': 'highlightjs',
 				'highlightjsdir': "./highlight",
 				'highlightjs-theme': 'railscasts'
-
-		doLast {
-			file("$outputDir/pdf/index.pdf").renameTo ("$outputDir/pdf/reactor-core-reference-guide-${version}.pdf")
-		}
 	}
 
 	dependencies {
@@ -62,11 +58,17 @@ configure(rootProject) {
 	}
 
 	task docsZip(type: Zip, dependsOn: asciidoctor) {
-	  baseName = 'reactor-core-docs'
-	  from("$buildDir/docs/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
-	  from("$buildDir/docs/asciidoc/html5/index.html") { into("docs/") }
-	  from("$buildDir/docs/asciidoc/html5/images") { into("docs/images/") }
-	  from("$buildDir/docs/asciidoc/html5/highlight") { into("docs/highlight/") }
+		baseName = 'reactor-core-docs'
+		afterEvaluate() {
+			//we copy the pdf late, when a potential customVersion has been applied to rootProject
+			from("$buildDir/docs/asciidoc/pdf/index.pdf") {
+				into ("docs/")
+				rename("index.pdf", "reactor-core-reference-guide-${rootProject.version}.pdf")
+			}
+		}
+		from("$buildDir/docs/asciidoc/html5/index.html") { into("docs/") }
+		from("$buildDir/docs/asciidoc/html5/images") { into("docs/images/") }
+		from("$buildDir/docs/asciidoc/html5/highlight") { into("docs/highlight/") }
 	}
 }
 

@@ -210,12 +210,6 @@ jar {
   }
 }
 
-artifacts {
-  archives sourcesJar
-  archives javadocJar
-  archives rootProject.tasks.docsZip
-}
-
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
 jar.finalizedBy(downloadBaseline)
@@ -264,3 +258,6 @@ else {
 	compileOnly sourceSets.java9stubs.output
   }
 }
+
+//add docs.zip to the publication
+publishing.publications.mavenJava.artifact(rootProject.tasks.docsZip)

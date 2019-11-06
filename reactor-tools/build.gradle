@@ -114,8 +114,6 @@ task relocateShadowJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.Co
 
 tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
-artifacts.archives shadowJar
-
 project.tasks.jarFileTest.configure {
     systemProperty("jarFile", shadowJar.outputs.files.singleFile)
     dependsOn(shadowJar)
@@ -137,3 +135,6 @@ task shadedJarTest(type: Test) {
     dependsOn(shadowJar)
 }
 project.tasks.check.dependsOn(shadedJarTest)
+
+//add jar and original jar to the publication
+publishing.publications.mavenJava.artifact(shadowJar)
