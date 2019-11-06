@@ -4567,6 +4567,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
+		if (Hooks.DETECT_CONTEXT_LOSS) {
+			//noinspection unchecked,rawtypes
+			transformer = new ContextTrackingFunctionWrapper(transformer);
+		}
 		return onAssembly(from(transformer.apply(this)));
 	}
 
@@ -4590,7 +4594,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #transform(Function)
 	 */
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
-		return defer(() -> from(transformer.apply(this)));
+		return defer(() -> {
+			if (Hooks.DETECT_CONTEXT_LOSS) {
+				//noinspection unchecked,rawtypes
+				return from(new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this));
+			}
+			return from(transformer.apply(this));
+		});
 	}
 
 	/**

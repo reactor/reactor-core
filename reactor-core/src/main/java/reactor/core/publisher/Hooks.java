@@ -41,6 +41,8 @@ import reactor.util.context.Context;
  */
 public abstract class Hooks {
 
+
+
 	/**
 	 * Add a {@link Publisher} operator interceptor for each operator created
 	 * ({@link Flux} or {@link Mono}). The passed function is applied to the original
@@ -464,6 +466,27 @@ public abstract class Hooks {
 		}
 	}
 
+	/**
+	 * Globally enables the {@link reactor.util.context.Context} loss detection that may happen
+	 * when you use operators like {@link reactor.core.publisher.Mono#transform(Function)}
+	 * or {@link reactor.core.publisher.Flux#transformDeferred(Function)} with non-Reactor types.
+	 *
+	 * An exception will be thrown if after applying the transformations a new {@link reactor.util.context.Context}
+	 * was returned (or no context at all) instead of changing the current one.
+	 */
+	public static void enableContextLossTracking() {
+		DETECT_CONTEXT_LOSS = true;
+	}
+
+	/**
+	 * Globally disables the {@link reactor.util.context.Context} loss detection that was previously
+	 * enabled by {@link #enableContextLossTracking()}.
+	 *
+	 */
+	public static void disableContextLossTracking() {
+		DETECT_CONTEXT_LOSS = false;
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -559,6 +582,8 @@ public abstract class Hooks {
 	static boolean GLOBAL_TRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
 					"false"));
+
+	static boolean DETECT_CONTEXT_LOSS = false;
 
 	static {
 		onEachOperatorHooks = new LinkedHashMap<>(1);

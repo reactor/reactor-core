@@ -16,7 +16,7 @@
 
 package reactor.tools.agent;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

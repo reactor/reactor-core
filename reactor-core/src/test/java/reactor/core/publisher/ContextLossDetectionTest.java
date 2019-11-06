@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.tools.agent;
+package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,21 +23,22 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.*;
 
+@RunWith(JUnitParamsRunner.class)
 public class ContextLossDetectionTest {
 
 	public static List<SourceFactory> sources() {
@@ -70,18 +71,18 @@ public class ContextLossDetectionTest {
 		);
 	}
 
-	@BeforeAll
+	@BeforeClass
 	public static void beforeClass() {
-		ReactorTools.enableContextLossTracking();
+		Hooks.enableContextLossTracking();
 	}
 
-	@AfterAll
+	@AfterClass
 	public static void afterClass() {
-		ReactorTools.disableContextLossTracking();
+		Hooks.disableContextLossTracking();
 	}
 
-	@ParameterizedTest
-	@MethodSource("sources")
+	@Test
+	@Parameters(method = "sources")
 	public void transformDeferredDetectsContextLoss(
 			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
 	) {
@@ -100,11 +101,11 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
+				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
 	}
 
-	@ParameterizedTest
-	@MethodSource("sources")
+	@Test
+	@Parameters(method = "sources")
 	public void transformDeferredDetectsContextLossWithEmptyContext(
 			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
 	) {
@@ -123,11 +124,11 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
+				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
 	}
 
-	@ParameterizedTest
-	@MethodSource("sources")
+	@Test
+	@Parameters(method = "sources")
 	public void transformDeferredDetectsContextLossWithDefaultContext(
 			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
 	) {
@@ -141,11 +142,11 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
+				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
 	}
 
-	@ParameterizedTest
-	@MethodSource("sources")
+	@Test
+	@Parameters(method = "sources")
 	public void transformDeferredDetectsContextLossWithRSSubscriber(
 			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
 	) {
@@ -172,7 +173,7 @@ public class ContextLossDetectionTest {
 						throw e.getCause();
 					}
 				})
-				.withMessageStartingWith("Context loss after applying reactor.tools.agent.ContextLossDetectionTest$$Lambda$");
+				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
 	}
 
 	static abstract class SourceFactory implements Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> {
