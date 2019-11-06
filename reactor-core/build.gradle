@@ -190,7 +190,7 @@ dokka {
 
 task kdocZip(type: Zip, dependsOn: dokka) {
   //ends up similar to javadoc jar: reactor-core-xxxx.RELEASE-kdoc.zip
-  classifier = 'kdoc'
+  archiveClassifier.set('kdoc')
   from("${project.buildDir}/docs/kdoc")
 }
 
@@ -262,13 +262,6 @@ jar {
   }
 }
 
-artifacts {
-  archives sourcesJar
-  archives javadocJar
-  archives rootProject.tasks.docsZip
-  archives kdocZip
-}
-
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
 jar.finalizedBy(downloadBaseline)
@@ -317,3 +310,7 @@ else {
 	compileOnly sourceSets.java9stubs.output
   }
 }
+
+//add kdoc and docs.zip to the publication
+publishing.publications.mavenJava.artifact(kdocZip)
+publishing.publications.mavenJava.artifact(rootProject.tasks.docsZip)

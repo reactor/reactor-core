@@ -130,12 +130,11 @@ dokka {
 
 task kdocZip(type: Zip, dependsOn: dokka) {
   //ends up similar to javadoc jar: reactor-test-xxx.RELEASE-kdoc.zip
-  classifier = 'kdoc'
+  archiveClassifier.set('kdoc')
   from("${project.buildDir}/docs/kdoc")
 }
 
-artifacts {
-  archives kdocZip
-}
-
 jar.finalizedBy(downloadBaseline)
+
+//add kdoc to the publication
+publishing.publications.mavenJava.artifact(kdocZip)
