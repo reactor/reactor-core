@@ -124,10 +124,6 @@ publishing {
 	}
 }
 
-artifactory {
-	publish {
-		defaults {
-			publications(publishing.publications.mavenJava)
-		}
-	}
+artifactoryPublish {
+	publications(publishing.publications.mavenJava)
 }
