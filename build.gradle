@@ -29,16 +29,15 @@ buildscript {
 }
 
 plugins {
-  id 'org.asciidoctor.convert' version '1.5.9.2'
-  id "me.champeau.gradle.jmh" version "0.4.7" apply false
-  id "org.jetbrains.dokka" version "0.9.18" apply false
-  id "me.champeau.gradle.japicmp" version "0.2.6"
-  id "de.undercouch.download" version "3.4.3"
+	id 'org.asciidoctor.convert' version '1.5.9.2'
+	id "me.champeau.gradle.jmh" version "0.4.7" apply false
+	id "org.jetbrains.dokka" version "0.9.18" apply false
+	id "me.champeau.gradle.japicmp" version "0.2.6"
+	id "de.undercouch.download" version "3.4.3"
+	id "com.jfrog.artifactory" version "4.9.8" apply false
 }
 
 apply from: "gradle/doc.gradle"
-apply from: "gradle/setup.gradle"
-
 
 ext {
   //also set up the special version at root, for refguide
@@ -81,28 +80,28 @@ ext {
 }
 
 configure(subprojects) { p ->
-  apply plugin: 'java'
-  apply plugin: 'kotlin'
-  apply plugin: 'jacoco'
-  apply plugin: 'propdeps'
-  apply plugin: 'osgi'
+	apply plugin: 'java'
+	apply plugin: 'kotlin'
+	apply plugin: 'jacoco'
+	apply plugin: 'osgi'
+	apply from: "${rootDir}/gradle/setup.gradle"
 
-  description = 'Non-Blocking Reactive Foundation for the JVM'
-  group = 'io.projectreactor'
+	description = 'Non-Blocking Reactive Foundation for the JVM'
+	group = 'io.projectreactor'
 
-  ext {
-	//set up special version per sub-project
-	//(the root level configuration doesn't seem to propagate)
-	if (project.hasProperty('versionBranch') && version.toString().endsWith(".BUILD-SNAPSHOT")) {
-	  versionBranch = versionBranch.replaceAll("\"", "").trim()
-	  if (!versionBranch.isEmpty()) {
-		realVersion = p.version.toString().replace("BUILD-SNAPSHOT", versionBranch + ".BUILD-SNAPSHOT")
-		p.version = realVersion
-		println "Building special ${project} snapshot ${p.version}"
-		println "OSGI version would be: ${new OsgiHelper().getVersion(p.version.toString())}"
-	  }
+	ext {
+		//set up special version per sub-project
+		//(the root level configuration doesn't seem to propagate)
+		if (project.hasProperty('versionBranch') && version.toString().endsWith(".BUILD-SNAPSHOT")) {
+			versionBranch = versionBranch.replaceAll("\"", "").trim()
+			if (!versionBranch.isEmpty()) {
+				realVersion = p.version.toString().replace("BUILD-SNAPSHOT", versionBranch + ".BUILD-SNAPSHOT")
+				p.version = realVersion
+				println "Building special ${project} snapshot ${p.version}"
+				println "OSGI version would be: ${new OsgiHelper().getVersion(p.version.toString())}"
+			}
+		}
 	}
-  }
 
   repositories {
 	mavenLocal()
