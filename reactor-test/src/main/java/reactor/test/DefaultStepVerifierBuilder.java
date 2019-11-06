@@ -31,6 +31,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,6 +59,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
+import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.Logger;
@@ -182,15 +184,15 @@ final class DefaultStepVerifierBuilder<T>
 		return new DefaultStepVerifierBuilder<>(options, scenarioSupplier);
 	}
 
-	final         SignalEvent<T>                             defaultFirstStep;
-	final         List<Event<T>>                             script;
-	final         MessageFormatter                           messageFormatter;
-	final         long                                       initialRequest;
-	final         Supplier<? extends VirtualTimeScheduler>   vtsLookup;
-	@Nullable
-	final         Supplier<? extends Publisher<? extends T>> sourceSupplier;
-	private final StepVerifierOptions                        options;
+	final SignalEvent<T>                           defaultFirstStep;
+	final List<Event<T>>                           script;
+	final MessageFormatter                         messageFormatter;
+	final long                                     initialRequest;
+	final Supplier<? extends VirtualTimeScheduler> vtsLookup;
+	final StepVerifierOptions                      options;
 
+	@Nullable
+	Supplier<? extends Publisher<? extends T>> sourceSupplier;
 	long hangCheckRequested;
 	int  requestedFusionMode = -1;
 	int  expectedFusionMode  = -1;
@@ -624,6 +626,29 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public DefaultStepVerifier<T> thenCancel() {
 		this.script.add(new SubscriptionEvent<>("thenCancel"));
+		return build();
+	}
+
+	@Override
+	public DefaultStepVerifier<T> expectTimeout(Duration duration) {
+		if (sourceSupplier == null) {
+			throw new IllegalStateException("Attempting to call expectTimeout() without a Supplier<Publisher>");
+		}
+		Supplier<? extends Publisher<? extends T>> originalSupplier = sourceSupplier;
+		this.sourceSupplier = () -> Flux.from(originalSupplier.get()).timeout(duration);
+
+		WaitEvent<T> timeout = new WaitEvent<>(duration, "expectTimeout-wait");
+		SignalEvent<T> timeoutVerification = new SignalEvent<>((signal, se) -> {
+			if (signal.isOnError() && signal.getThrowable() instanceof TimeoutException) {
+				return Optional.empty();
+			}
+			else {
+				return messageFormatter.failOptional(se, "expected: timeout(%s); actual: %s",
+						ValueFormatters.DURATION_CONVERTER.apply(duration), signal);
+			}
+		}, "expectTimeout");
+		this.script.add(timeout);
+		this.script.add(timeoutVerification);
 		return build();
 	}
 
