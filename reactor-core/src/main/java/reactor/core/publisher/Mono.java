@@ -670,7 +670,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono} emitting current context
 	 * @see #subscribe(CoreSubscriber)
 	 */
-	public static  Mono<Context> subscriberContext() {
+	public static Mono<Context> subscriberContext() {
 		return onAssembly(MonoCurrentContext.INSTANCE);
 	}
 
@@ -1033,7 +1033,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static  Mono<Void> whenDelayError(Publisher<?>... sources) {
+	public static Mono<Void> whenDelayError(Publisher<?>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -1585,7 +1585,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a combined {@link Mono}.
 	 */
-	public static <R>  Mono<R> zipDelayError(Function<? super Object[], ? extends R>
+	public static <R> Mono<R> zipDelayError(Function<? super Object[], ? extends R>
 			combinator, Mono<?>... monos) {
 		if (monos.length == 0) {
 			return empty();
