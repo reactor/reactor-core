@@ -761,17 +761,17 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 								}
 								catch (Throwable e) {
 									//does the strategy apply? if so, short-circuit the delayError. In any case, don't cancel
-									Throwable e_ = Operators.onNextPollError(v, e,
+									Throwable e_ = Operators.onNextError(v, e,
 											this.ctx);
 									if (e_ == null) {
 										continue;
 									}
 									//now if error mode strategy doesn't apply, let delayError play
-									if (veryEnd && Exceptions.addThrowable(ERROR, this, e)) {
+									if (veryEnd && Exceptions.addThrowable(ERROR, this, e_)) {
 										continue;
 									}
 									else {
-										actual.onError(Operators.onOperatorError(s, e, v,
+										actual.onError(Operators.onOperatorError(s, e_, v,
 												this.ctx));
 										return;
 									}
