@@ -20,12 +20,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -257,8 +261,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(2, Duration.ofMillis(2000))
 		                                         .autoConnect()
-		                                         .elapsed()
-				.log();
+		                                         .elapsed();
 
 		StepVerifier.create(source)
 		            .expectFusion(Fuseable.ANY)
@@ -303,7 +306,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		replay.subscribe(threeThenEightSubscriber);
 		replay.connect();
 
-		assertThat(requests).containsExactly(5L);
+		assertThat(requests).containsExactly(5L, 8L);
 	}
 
 	@Test
@@ -333,7 +336,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		replay.subscribe(fiveThenEightSubscriber);
 		replay.connect();
 
-		assertThat(requests).containsExactly(5L);
+		assertThat(requests).containsExactly(5L, 8L);
 	}
 
 	@Test
@@ -428,7 +431,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		replay.subscribe(ts); //unbounded
 
-		assertThat(requests).containsExactly(5L);
+		assertThat(requests).containsExactly(5L, 8L);
 		ts.assertValueCount(3); //despite unbounded, as it was late it only sees the replay capacity
 	}
 
@@ -465,10 +468,9 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
     public void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxReplay<Integer> main = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
-        FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual);
         FluxReplay.ReplaySubscriber<Integer> parent = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), main);
+        FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual, parent);
         parent.add(test);
-        test.parent = parent;
         parent.buffer.replay(test);
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
@@ -512,4 +514,32 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
         test.cancelled = true;
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	public void cacheSingleSubscriberWithMultipleRequestsDoesntHang() {
+		Awaitility.await()
+		          .atMost(5, TimeUnit.SECONDS)
+		          .untilAsserted(() -> assertThat(Flux.range(0, 1000)
+		                                              .cache(5)
+		                                              .toStream(10)
+		                                              .collect(Collectors.toList()))
+				          .hasSize(1000));
+	}
+
+	@Test
+	public void cacheNotOverrunByMaxPrefetch() {
+		Flux<Integer> s = Flux.range(1, 30)
+		                      .cache(5);
+
+		StepVerifier.create(s, 10)
+		    .expectNextCount(10)
+		    .thenRequest(20)
+		    .expectNextCount(20)
+		    .verifyComplete();
+
+		StepVerifier.create(s)
+		            .expectNextCount(5)
+		            .verifyComplete();
+	}
+
 }
