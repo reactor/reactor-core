@@ -264,9 +264,9 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 							handler.accept(v, this);
 						}
 						catch (Throwable error){
-							Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+							RuntimeException e_ = Operators.onNextPollError(v, error, actual.currentContext());
 							if (e_ != null) {
-								throw Exceptions.propagate(e_);
+								throw e_;
 							}
 							else {
 								reset();
@@ -277,10 +277,10 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 						data = null;
 						if (stop) {
 							if (error != null) {
-								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+								RuntimeException e_ = Operators.onNextPollError(v, error, actual.currentContext());
 								if (e_ != null) {
 									done = true; //set done because we throw or go through `actual` directly
-									throw Exceptions.propagate(e_);
+									throw e_;
 								}
 								//else continue
 							}
@@ -313,9 +313,9 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 							handler.accept(v, this);
 						}
 						catch (Throwable error){
-							Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+							RuntimeException e_ = Operators.onNextPollError(v, error, actual.currentContext());
 							if (e_ != null) {
-								throw Exceptions.propagate(e_);
+								throw e_;
 							}
 							else {
 								reset();
@@ -326,10 +326,10 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 						data = null;
 						if (stop) {
 							if (error != null) {
-								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+								RuntimeException e_ = Operators.onNextPollError(v, error, actual.currentContext());
 								if (e_ != null) {
 									done = true; //set done because we throw or go through `actual` directly
-									throw Exceptions.propagate(e_);
+									throw e_;
 								}
 								else {
 									reset();
@@ -651,9 +651,9 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 							handler.accept(v, this);
 						}
 						catch (Throwable error){
-							Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+							RuntimeException e_ = Operators.onNextPollError(v, error, actual.currentContext());
 							if (e_ != null) {
-								throw Exceptions.propagate(e_);
+								throw e_;
 							}
 							else {
 								reset();
@@ -703,9 +703,9 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 							handler.accept(v, this);
 						}
 						catch (Throwable error){
-							Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+							RuntimeException e_ = Operators.onNextPollError(v, error, actual.currentContext());
 							if (e_ != null) {
-								throw Exceptions.propagate(e_);
+								throw e_;
 							}
 							else {
 								reset();
@@ -717,9 +717,9 @@ final class FluxHandleFuseable<T, R> extends InternalFluxOperator<T, R> implemen
 						if (stop) {
 							done = true; //set done because we throw or go through `actual` directly
 							if (error != null) {
-								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+								RuntimeException e_ = Operators.onNextPollError(v, error, actual.currentContext());
 								if (e_ != null) {
-									throw Exceptions.propagate(e_);
+									throw e_;
 								}
 								else{
 									reset();

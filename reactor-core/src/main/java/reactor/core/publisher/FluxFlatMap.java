@@ -128,7 +128,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			catch (Throwable e) {
 				Context ctx = s.currentContext();
 				Throwable e_ = errorContinueExpected ?
-					Operators.onNextPollError(null, e, ctx) :
+					Operators.onNextError(null, e, ctx) :
 					Operators.onOperatorError(e, ctx);
 				if (e_ != null) {
 					Operators.error(s, e_);
@@ -154,7 +154,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			catch (Throwable e) {
 				Context ctx = s.currentContext();
 				Throwable e_ = errorContinueExpected ?
-						Operators.onNextPollError(t, e, ctx) :
+						Operators.onNextError(t, e, ctx) :
 						Operators.onOperatorError(null, e, t, ctx);
 				if (e_ != null) {
 					Operators.error(s, e_);
@@ -175,7 +175,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				catch (Throwable e) {
 					Context ctx = s.currentContext();
 					Throwable e_ = errorContinueExpected ?
-							Operators.onNextPollError(t, e, ctx) :
+							Operators.onNextError(t, e, ctx) :
 							Operators.onOperatorError(null, e, t, ctx);
 					if (e_ != null) {
 						Operators.error(s, e_);
@@ -399,13 +399,13 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				catch (Throwable e) {
 					Context ctx = actual.currentContext();
 					//does the strategy apply? if so, short-circuit the delayError. In any case, don't cancel
-					Throwable e_ = Operators.onNextPollError(t, e, ctx);
+					Throwable e_ = Operators.onNextError(t, e, ctx);
 					if (e_ == null) {
 						return;
 					}
 					//now if error mode strategy doesn't apply, let delayError play
-					if (!delayError || !Exceptions.addThrowable(ERROR, this, e)) {
-						onError(Operators.onOperatorError(s, e, t, ctx));
+					if (!delayError || !Exceptions.addThrowable(ERROR, this, e_)) {
+						onError(Operators.onOperatorError(s, e_, t, ctx));
 					}
 					Operators.onDiscard(t, ctx);
 					return;

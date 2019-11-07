@@ -765,16 +765,16 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 									if (ctx == null) {
 										ctx = actual.currentContext();
 									}
-									Throwable e_ = Operators.onNextPollError(v, e, ctx);
+									Throwable e_ = Operators.onNextError(v, e, ctx);
 									if (e_ == null) {
 										continue;
 									}
 									//now if error mode strategy doesn't apply, let delayError play
-									if (veryEnd && Exceptions.addThrowable(ERROR, this, e)) {
+									if (veryEnd && Exceptions.addThrowable(ERROR, this, e_)) {
 										continue;
 									}
 									else {
-										actual.onError(Operators.onOperatorError(s, e, v, ctx));
+										actual.onError(Operators.onOperatorError(s, e_, v, ctx));
 										return;
 									}
 								}
