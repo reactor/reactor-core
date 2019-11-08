@@ -217,6 +217,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * available strategies
 	 * @return a serializing {@link FluxSink}
 	 */
+	// TODO return `SerializedFluxSink`?
 	public final FluxSink<IN> sink(FluxSink.OverflowStrategy strategy) {
 		Objects.requireNonNull(strategy, "strategy");
 		if (getBufferSize() == Integer.MAX_VALUE){

@@ -643,7 +643,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux}
 	 * @see #push(Consumer)
 	 */
-    public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter) {
+    public static <T> Flux<T> create(Consumer<? super SerializedFluxSink<T>> emitter) {
 	    return create(emitter, OverflowStrategy.BUFFER);
     }
 
@@ -691,8 +691,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux}
 	 * @see #push(Consumer, reactor.core.publisher.FluxSink.OverflowStrategy)
 	 */
-	public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
-		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_PULL));
+	public static <T> Flux<T> create(Consumer<? super SerializedFluxSink<T>> emitter, OverflowStrategy backpressure) {
+		return onAssembly(new FluxCreate<>(emitter, backpressure));
 	}
 
 	/**
@@ -736,7 +736,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #create(Consumer)
 	 */
 	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter) {
-		return onAssembly(new FluxCreate<>(emitter, OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY));
+		return onAssembly(new FluxCreatePush<>(emitter, OverflowStrategy.BUFFER));
 	}
 
 	/**
@@ -784,7 +784,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #create(Consumer, reactor.core.publisher.FluxSink.OverflowStrategy)
 	 */
 	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
-		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_ONLY));
+		return onAssembly(new FluxCreatePush<>(emitter, backpressure));
 	}
 
 	/**

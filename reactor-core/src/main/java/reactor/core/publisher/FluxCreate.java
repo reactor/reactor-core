@@ -40,28 +40,21 @@ import reactor.util.context.Context;
 
 /**
  * Provides a multi-valued sink API for a callback that is called for each individual
- * Subscriber.
+ * Subscriber. Serializes calls to the sink as a {@link SerializedFluxSink} suitable
+ * for multi-threaded producers.
  *
  * @param <T> the value type
  */
 final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
-	enum CreateMode {
-		PUSH_ONLY, PUSH_PULL
-	}
-
-	final Consumer<? super FluxSink<T>> source;
+	final Consumer<? super SerializedFluxSink<T>> source;
 
 	final OverflowStrategy backpressure;
 
-	final CreateMode createMode;
-
-	FluxCreate(Consumer<? super FluxSink<T>> source,
-			FluxSink.OverflowStrategy backpressure,
-			CreateMode createMode) {
+	FluxCreate(Consumer<? super SerializedFluxSink<T>> source,
+			FluxSink.OverflowStrategy backpressure) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.backpressure = Objects.requireNonNull(backpressure, "backpressure");
-		this.createMode = createMode;
 	}
 
 	static <T> BaseSink<T> createSink(CoreSubscriber<? super T> t,
@@ -91,9 +84,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		actual.onSubscribe(sink);
 		try {
-			source.accept(
-					createMode == CreateMode.PUSH_PULL ? new SerializedSink<>(sink) :
-							sink);
+			source.accept(new SerializedSink<>(sink));
 		}
 		catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
@@ -111,7 +102,13 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	 *
 	 * @param <T> the value type
 	 */
-	static final class SerializedSink<T> implements FluxSink<T>, Scannable {
+	static final class SerializedSink<T> implements SerializedFluxSink<T>, Scannable {
+
+		enum State {
+			READY_TO_EMIT,
+			IN_TRY_NEXT,
+			IN_NEXT
+		}
 
 		final BaseSink<T> sink;
 
@@ -126,6 +123,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<SerializedSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(SerializedSink.class, "wip");
+
+		volatile State emittingState = State.READY_TO_EMIT;
+		static final AtomicReferenceFieldUpdater<SerializedSink, State> EMITTING_STATE =
+				AtomicReferenceFieldUpdater.newUpdater(SerializedSink.class, State.class, "emittingState");
 
 		final Queue<T> mpscQueue;
 
@@ -148,25 +149,73 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				Operators.onNextDropped(t, sink.currentContext());
 				return this;
 			}
-			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+
+			for (;;) {
+				if (EMITTING_STATE.compareAndSet(this, State.READY_TO_EMIT, State.IN_NEXT)) {
+					break;
+				}
+
+				//allow for reentrancy by checking if the guard is already at 2, in which
+				//case the WIP guard will go into effect
+				if (emittingState == State.IN_NEXT) {
+					break;
+				}
+			}
+
+			try {
+				if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+					try {
+						sink.next(t);
+					}
+					catch (Throwable ex) {
+						Operators.onOperatorError(sink, ex, t, sink.currentContext());
+					}
+					if (WIP.decrementAndGet(this) == 0) {
+						return this;
+					}
+				}
+				else {
+					this.mpscQueue.offer(t);
+					if (WIP.getAndIncrement(this) != 0) {
+						return this;
+					}
+				}
+				drainLoop();
+				return this;
+			}
+			finally {
+				EMITTING_STATE.set(this, State.READY_TO_EMIT);
+			}
+		}
+
+		@Override
+		public final boolean tryNext(T t) {
+			Objects.requireNonNull(t, "t is null in sink.tryNext(t)");
+			if (sink.isCancelled() || done) {
+				return false;
+			}
+
+			if (!EMITTING_STATE.compareAndSet(this, State.READY_TO_EMIT, State.IN_TRY_NEXT)) {
+				return false;
+			}
+
+			try {
+				if (requestedFromDownstream() <= 0) {
+					return false;
+				}
+
 				try {
 					sink.next(t);
+					return true;
 				}
 				catch (Throwable ex) {
 					Operators.onOperatorError(sink, ex, t, sink.currentContext());
-				}
-				if (WIP.decrementAndGet(this) == 0) {
-					return this;
+					return false;
 				}
 			}
-			else {
-				this.mpscQueue.offer(t);
-				if (WIP.getAndIncrement(this) != 0) {
-					return this;
-				}
+			finally {
+				EMITTING_STATE.set(this, State.READY_TO_EMIT);
 			}
-			drainLoop();
-			return this;
 		}
 
 		@Override
