@@ -228,16 +228,23 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
+		doOnNext(t, true);
+	}
+
+	public boolean tryOnNext(T t) {
+		return doOnNext(t, false);
+	}
+
+	boolean doOnNext(T t, boolean shouldWait) {
 		if (done) {
 			Operators.onNextDropped(t, currentContext());
-			return;
+			return false;
 		}
 
 		if (sourceMode == Fuseable.ASYNC) {
 			drain();
-			return;
+			return false;
 		}
 
 		Objects.requireNonNull(t, "onNext");
@@ -250,22 +257,24 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 				queue = q;
 			}
 			else {
-				for (; ; ) {
+				do {
 					if (isDisposed()) {
-						return;
+						return false;
 					}
 					q = queue;
-					if (q != null) {
-						break;
-					}
 				}
+				while (q == null);
 			}
 		}
 
 		while (!q.offer(t)) {
+			if (!shouldWait) {
+				return false;
+			}
 			LockSupport.parkNanos(10);
 		}
 		drain();
+		return true;
 	}
 
 	@Override

@@ -923,4 +923,17 @@ public class EmitterProcessorTest {
 		processor.remove(inner);
 		assertThat(processor.subscribers).as("post remove inner").isEmpty();
 	}
+
+	@Test(timeout = 5_000)
+	public void tryNextShouldNotBlock() {
+		EmitterProcessor<String> processor = EmitterProcessor.create(1);
+
+		assertThat(processor.tryOnNext("foo")).as("tryNext()").isTrue();
+		assertThat(processor.tryOnNext("foo")).as("tryNext() on full").isFalse();
+
+		StepVerifier.create(processor, 1).expectNextCount(1).thenCancel().verify();
+
+		assertThat(processor.tryOnNext("foo")).as("tryNext()").isTrue();
+		assertThat(processor.tryOnNext("foo")).as("tryNext() on full").isFalse();
+	}
 }
