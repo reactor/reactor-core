@@ -223,7 +223,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 			strategy = FluxSink.OverflowStrategy.IGNORE;
 		}
 
-		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy);
+		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy, FluxCreate.CreateMode.PUSH_PULL);
 		onSubscribe(s);
 
 		if(s.isCancelled() ||

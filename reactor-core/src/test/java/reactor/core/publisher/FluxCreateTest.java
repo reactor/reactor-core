@@ -15,9 +15,14 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -47,8 +52,34 @@ import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class FluxCreateTest {
+
+	@Test
+	public void raceRequestAndHandler() throws ExecutionException, InterruptedException {
+		AtomicReference<Subscription> sub = new AtomicReference<>();
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int i = 0;
+		for (AtomicBoolean requested = new AtomicBoolean(true); requested.getAndSet(false); ++i) {
+			FutureTask<Void> task = new FutureTask<>(() -> sub.get().request(1), null);
+			Flux.create(sink -> sink.onRequest(__ -> requested.set(true))).subscribe(new BaseSubscriber<Object>() {
+				@Override
+				protected void hookOnSubscribe(Subscription subscription) {
+					sub.set(subscription);
+					executor.execute(task);
+				}
+			});
+			task.get();
+			if (i >= 500_000) {
+				executor.shutdownNow();
+				System.out.println(String.format("Succeeded %d attempts", i));
+				return;
+			}
+		}
+		executor.shutdown();
+		fail("Failed after %d attempts", i);
+	}
 
 	@Test
 	public void normalBuffered() {
@@ -968,7 +999,7 @@ public class FluxCreateTest {
 		            .thenRequest(2)
 		            .expectNext(4, 5)
 		            .expectComplete()
-		            .verify();
+		            .verify(Duration.ofSeconds(1));
 		assertThat(onRequest.get()).isEqualTo(1);
 	}
 
@@ -1108,16 +1139,21 @@ public class FluxCreateTest {
 		}
 
 		public void generateAsync(int requested, boolean slowProducer) {
-			if (slowProducer) {
-				for (int i = 0; i < 10; i++)
-					executor.schedule(() -> generate(requested / 10), i, TimeUnit.MILLISECONDS);
-				if (requested % 10 != 0)
-					executor.schedule(() -> generate(requested % 10), 11, TimeUnit.MILLISECONDS);
+			try {
+				if (slowProducer) {
+					for (int i = 0; i < 10; i++)
+						executor.schedule(() -> generate(requested / 10), i, TimeUnit.MILLISECONDS);
+					if (requested % 10 != 0)
+						executor.schedule(() -> generate(requested % 10), 11, TimeUnit.MILLISECONDS);
+				}
+				else {
+					executor.submit(() -> generate(requested * 2));
+				}
+				pushToSink();
 			}
-			else {
-				executor.submit(() -> generate(requested * 2));
+			catch (RejectedExecutionException ree) {
+				//ignore, TestQueue has probably been cancelled / disposed
 			}
-			pushToSink();
 		}
 
 		public void pushToSink() {
@@ -1162,7 +1198,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanBaseSink() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual) {
+		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual, FluxCreate.CreateMode.PUSH_PULL) {
 			@Override
 			public FluxSink<String> next(String s) {
 				return this;
@@ -1185,7 +1221,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanBaseSinkTerminated() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual) {
+		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual, FluxCreate.CreateMode.PUSH_PULL) {
 			@Override
 			public FluxSink<String> next(String s) {
 				return this;
@@ -1199,7 +1235,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanBufferAsyncSink() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		BufferAsyncSink<String> test = new BufferAsyncSink<>(actual, 123);
+		BufferAsyncSink<String> test = new BufferAsyncSink<>(actual, 123, FluxCreate.CreateMode.PUSH_PULL);
 		test.queue.offer("foo");
 
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
@@ -1215,7 +1251,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanLatestAsyncSink() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		LatestAsyncSink<String> test = new LatestAsyncSink<>(actual);
+		LatestAsyncSink<String> test = new LatestAsyncSink<>(actual, FluxCreate.CreateMode.PUSH_PULL);
 
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 		test.queue.set("foo");
@@ -1232,7 +1268,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanSerializedSink() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxCreate.BaseSink<String> decorated = new LatestAsyncSink<>(actual);
+		FluxCreate.BaseSink<String> decorated = new LatestAsyncSink<>(actual, FluxCreate.CreateMode.PUSH_PULL);
 		SerializedSink<String> test = new SerializedSink<>(decorated);
 
 		test.mpscQueue.offer("foo");
@@ -1379,7 +1415,7 @@ public class FluxCreateTest {
 			public Context currentContext() {
 				return context;
 			}
-		}, 10);
+		}, 10, FluxCreate.CreateMode.PUSH_PULL);
 
 		RaceTestUtils.race(sink::cancel,
 				() -> sink.next("foo"));
@@ -1417,7 +1453,7 @@ public class FluxCreateTest {
 			public Context currentContext() {
 				return context;
 			}
-		});
+		}, FluxCreate.CreateMode.PUSH_PULL);
 
 		RaceTestUtils.race(sink::cancel,
 				() -> sink.next("foo"));
@@ -1455,7 +1491,7 @@ public class FluxCreateTest {
 			public Context currentContext() {
 				return context;
 			}
-		}, 10);
+		}, 10, FluxCreate.CreateMode.PUSH_PULL);
 		SerializedSink<String> serializedSink = new SerializedSink<>(baseSink);
 
 		RaceTestUtils.race(baseSink::cancel,

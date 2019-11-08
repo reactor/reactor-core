@@ -65,29 +65,29 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	}
 
 	static <T> BaseSink<T> createSink(CoreSubscriber<? super T> t,
-			OverflowStrategy backpressure) {
+			OverflowStrategy backpressure, CreateMode mode) {
 		switch (backpressure) {
 			case IGNORE: {
-				return new IgnoreSink<>(t);
+				return new IgnoreSink<>(t, mode);
 			}
 			case ERROR: {
-				return new ErrorAsyncSink<>(t);
+				return new ErrorAsyncSink<>(t, mode);
 			}
 			case DROP: {
-				return new DropAsyncSink<>(t);
+				return new DropAsyncSink<>(t, mode);
 			}
 			case LATEST: {
-				return new LatestAsyncSink<>(t);
+				return new LatestAsyncSink<>(t, mode);
 			}
 			default: {
-				return new BufferAsyncSink<>(t, Queues.SMALL_BUFFER_SIZE);
+				return new BufferAsyncSink<>(t, Queues.SMALL_BUFFER_SIZE, mode);
 			}
 		}
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		BaseSink<T> sink = createSink(actual, backpressure);
+		BaseSink<T> sink = createSink(actual, backpressure, this.createMode);
 
 		actual.onSubscribe(sink);
 		try {
@@ -260,7 +260,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public FluxSink<T> onRequest(LongConsumer consumer) {
-			sink.onRequest(consumer, consumer, sink.requested);
+			sink.setupOnRequest(consumer);
 			return this;
 		}
 
@@ -392,11 +392,14 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	static abstract class BaseSink<T> extends AtomicBoolean
 			implements FluxSink<T>, InnerProducer<T> {
 
-		static final Disposable TERMINATED = OperatorDisposables.DISPOSED;
-		static final Disposable CANCELLED  = Disposables.disposed();
+		static final Disposable   TERMINATED      = OperatorDisposables.DISPOSED;
+		static final Disposable   CANCELLED       = Disposables.disposed();
+		static final LongConsumer IGNORE_CONSUMER = l -> { };
+
 
 		final CoreSubscriber<? super T> actual;
 		final Context                   ctx;
+		final CreateMode                mode;
 
 		volatile Disposable disposable;
 		@SuppressWarnings("rawtypes")
@@ -410,6 +413,11 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		static final AtomicLongFieldUpdater<BaseSink> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BaseSink.class, "requested");
 
+		volatile long missedInitialRequest;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<BaseSink> MISSED_INITIAL_REQUEST =
+				AtomicLongFieldUpdater.newUpdater(BaseSink.class, "missedInitialRequest");
+
 		volatile LongConsumer requestConsumer;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<BaseSink, LongConsumer>
@@ -417,9 +425,10 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				LongConsumer.class,
 				"requestConsumer");
 
-		BaseSink(CoreSubscriber<? super T> actual) {
+		BaseSink(CoreSubscriber<? super T> actual, CreateMode mode) {
 			this.actual = actual;
 			this.ctx = actual.currentContext();
+			this.mode = mode;
 		}
 
 		@Override
@@ -499,9 +508,27 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 			if (Operators.validate(n)) {
 				Operators.addCap(REQUESTED, this, n);
 
-				LongConsumer consumer = requestConsumer;
-				if (n > 0 && consumer != null && !isCancelled()) {
-					consumer.accept(n);
+				for (;;) {
+					long missed = MISSED_INITIAL_REQUEST.get(this);
+					if (missed == -1) {
+						//the consumer is being set up
+						LongConsumer consumer = requestConsumer;
+						for (;;) {
+							if (consumer != null) {
+								consumer.accept(n);
+								break;
+							}
+							consumer = requestConsumer;
+						}
+						break;
+					}
+					else {
+						//the consumer is not yet set up
+						long capped = Operators.addCap(missed, n);
+						if (MISSED_INITIAL_REQUEST.compareAndSet(this, missed, capped)) {
+							break;
+						}
+					}
 				}
 				onRequestedFromDownstream();
 			}
@@ -517,22 +544,36 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		@Override
-		public FluxSink<T> onRequest(LongConsumer consumer) {
+		public final FluxSink<T> onRequest(LongConsumer consumer) {
 			Objects.requireNonNull(consumer, "onRequest");
-			onRequest(consumer, n -> {
-			}, Long.MAX_VALUE);
+			if (mode == CreateMode.PUSH_ONLY) {
+				pushOnRequest(consumer);
+			}
+			else {
+				setupOnRequest(consumer);
+			}
 			return this;
 		}
 
-		protected void onRequest(LongConsumer initialRequestConsumer,
-				LongConsumer requestConsumer,
-				long value) {
-			if (!REQUEST_CONSUMER.compareAndSet(this, null, requestConsumer)) {
-				throw new IllegalStateException(
-						"A consumer has already been assigned to consume requests");
+		void pushOnRequest(LongConsumer initialRequestConsumer) {
+			if (MISSED_INITIAL_REQUEST.get(this) == -1 || !REQUEST_CONSUMER.compareAndSet(this, null, IGNORE_CONSUMER)) {
+				throw new IllegalStateException("A consumer has already been assigned to consume requests");
 			}
-			else if (value > 0) {
-				initialRequestConsumer.accept(value);
+			initialRequestConsumer.accept(Long.MAX_VALUE);
+		}
+
+		void setupOnRequest(LongConsumer requestConsumer) {
+			if (MISSED_INITIAL_REQUEST.get(this) == -1) {
+				throw new IllegalStateException("A consumer has already been assigned to consume requests");
+			}
+			else {
+				long missed = MISSED_INITIAL_REQUEST.getAndSet(this, -1);
+				if (missed > 0) {
+					requestConsumer.accept(missed);
+				}
+				if (!REQUEST_CONSUMER.compareAndSet(this, null, requestConsumer)) {
+					throw new IllegalStateException("A consumer has already been assigned to consume requests");
+				}
 			}
 		}
 
@@ -600,8 +641,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	static final class IgnoreSink<T> extends BaseSink<T> {
 
-		IgnoreSink(CoreSubscriber<? super T> actual) {
-			super(actual);
+		IgnoreSink(CoreSubscriber<? super T> actual, CreateMode mode) {
+			super(actual, mode);
 		}
 
 		@Override
@@ -633,8 +674,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	static abstract class NoOverflowBaseAsyncSink<T> extends BaseSink<T> {
 
-		NoOverflowBaseAsyncSink(CoreSubscriber<? super T> actual) {
-			super(actual);
+		NoOverflowBaseAsyncSink(CoreSubscriber<? super T> actual, CreateMode mode) {
+			super(actual, mode);
 		}
 
 		@Override
@@ -660,8 +701,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	static final class DropAsyncSink<T> extends NoOverflowBaseAsyncSink<T> {
 
-		DropAsyncSink(CoreSubscriber<? super T> actual) {
-			super(actual);
+		DropAsyncSink(CoreSubscriber<? super T> actual, CreateMode mode) {
+			super(actual, mode);
 		}
 
 		@Override
@@ -678,8 +719,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	static final class ErrorAsyncSink<T> extends NoOverflowBaseAsyncSink<T> {
 
-		ErrorAsyncSink(CoreSubscriber<? super T> actual) {
-			super(actual);
+		ErrorAsyncSink(CoreSubscriber<? super T> actual, CreateMode mode) {
+			super(actual, mode);
 		}
 
 		@Override
@@ -707,8 +748,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		static final AtomicIntegerFieldUpdater<BufferAsyncSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(BufferAsyncSink.class, "wip");
 
-		BufferAsyncSink(CoreSubscriber<? super T> actual, int capacityHint) {
-			super(actual);
+		BufferAsyncSink(CoreSubscriber<? super T> actual, int capacityHint, CreateMode mode) {
+			super(actual, mode);
 			this.queue = Queues.<T>unbounded(capacityHint).get();
 		}
 
@@ -866,8 +907,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		static final AtomicIntegerFieldUpdater<LatestAsyncSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(LatestAsyncSink.class, "wip");
 
-		LatestAsyncSink(CoreSubscriber<? super T> actual) {
-			super(actual);
+		LatestAsyncSink(CoreSubscriber<? super T> actual, CreateMode mode) {
+			super(actual, mode);
 			this.queue = new AtomicReference<>();
 		}
 
