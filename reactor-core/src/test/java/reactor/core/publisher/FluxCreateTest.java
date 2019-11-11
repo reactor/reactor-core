@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -50,6 +51,7 @@ import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 @RunWith(JUnitParamsRunner.class)
 public class FluxCreateTest {
@@ -1407,5 +1409,31 @@ public class FluxCreateTest {
 			}
 		}
 		assertThat(failed).as("failed").isZero();
+	}
+
+	@Test
+	public void tryNextInsideOnRequest() {
+		Flux<Object> flux = Flux
+			.create(sink -> {
+				AtomicInteger i = new AtomicInteger();
+				sink.onRequest(r -> {
+					while (r-- > 0) {
+						int value = i.getAndIncrement();
+
+						await().atMost(200, TimeUnit.MILLISECONDS)
+						       .pollInterval(20, TimeUnit.MILLISECONDS)
+						       .pollInSameThread()
+						       .until(() -> sink.tryNext(value));
+					}
+				});
+			})
+			.log()
+			.limitRate(1)
+			.subscribeOn(Schedulers.boundedElastic());
+
+		StepVerifier.create(flux, 5)
+			.expectNextCount(5)
+			.thenCancel()
+			.verify(Duration.ofSeconds(1));
 	}
 }
