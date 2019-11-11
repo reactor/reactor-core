@@ -1431,8 +1431,9 @@ public class FluxCreateTest {
 			.limitRate(1)
 			.subscribeOn(Schedulers.boundedElastic());
 
-		StepVerifier.create(flux, 5)
-			.expectNextCount(5)
+		StepVerifier
+			.create(flux, 5)
+            .expectNextCount(5)
 			.thenCancel()
 			.verify(Duration.ofSeconds(1));
 	}
