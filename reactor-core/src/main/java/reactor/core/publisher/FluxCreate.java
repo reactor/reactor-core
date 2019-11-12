@@ -222,7 +222,7 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				}
 			}
 			finally {
-				if (!transitioned) {
+				if (transitioned) {
 					EMITTING_STATE.set(this, State.READY_TO_EMIT);
 				}
 			}
