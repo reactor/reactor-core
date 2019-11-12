@@ -16,13 +16,17 @@
 package reactor.core;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Predicate;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import reactor.core.publisher.Mono;
 import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.*;
@@ -476,5 +480,28 @@ public class ExceptionsTest {
 		assertThat(Exceptions.failWithRejected(test))
 				.isSameAs(test)
 				.hasCause(REJECTED_EXECUTION);
+	}
+
+	@Test
+	public void unwrapMultipleExcludingTraceback() {
+		Mono<String> errorMono1 = Mono.error(new IllegalStateException("expected1"));
+		Mono<String> errorMono2 = Mono.error(new IllegalStateException("expected2"));
+		Mono<Throwable> mono = Mono.zipDelayError(errorMono1, errorMono2)
+		                           .checkpoint("checkpoint")
+		                           .<Throwable>map(tuple -> new IllegalStateException("should have failed: " + tuple))
+		                           .onErrorResume(Mono::just);
+		Throwable compositeException = mono.block();
+
+		List<Throwable> exceptions = Exceptions.unwrapMultiple(compositeException);
+		List<Throwable> filteredExceptions = Exceptions.unwrapMultipleExcludingTracebacks(compositeException);
+
+		assertThat(exceptions).as("unfiltered composite has traceback")
+		                      .hasSize(3);
+
+		assertThat(exceptions).filteredOn(e -> !Exceptions.isTraceback(e))
+		                      .as("filtered out tracebacks")
+		                      .containsExactlyElementsOf(filteredExceptions)
+		                      .hasSize(2)
+		                      .hasOnlyElementsOfType(IllegalStateException.class);
 	}
 }
