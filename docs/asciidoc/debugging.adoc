@@ -92,7 +92,7 @@ that is,  where the `Flux` was declared. We usually refer to that as the *assemb
 the `Flux`.
 
 [[debug-activate]]
-== Activating Debug Mode
+== Activating Debug Mode - aka tracebacks
 Even though the stacktrace was still able to convey some information for someone with a
 bit of experience, we can see that it is not ideal by itself in more advanced cases.
 
@@ -113,7 +113,7 @@ hook should be activated *before* that, so the safest way is to activate it righ
 start of your application.
 
 Later on, if an exception occurs, the failing operator is able to refer to that capture
-and append it to the stack trace.
+and append it to the stack trace. We call this captured assembly information a *traceback*.
 
 In the next section, we see how the stack trace differs and how to interpret
 that new information.
@@ -148,7 +148,7 @@ Error has been observed by the following operator(s): <5>
 <1> This is new: We see the wrapper operator that captures the stack.
 <2> Apart from that, the first section of the stack trace is still the same for the most
 part, showing a bit of the operator's internals (so we removed a bit of the snippet here).
-<3> This is where the new stuff from debugging mode starts to appear.
+<3> This is where the traceback starts to appear.
 <4> First, we get some details on where the operator was assembled.
 <5> We also get a traceback of the error as it propagated through the operator chain,
 from first to last (error site to subscribe site).
@@ -219,6 +219,16 @@ method).
 . Finally, it is seen by an `elapsed` and a `transform`. Once again, `elapsed` is applied
 by the transformation function of that second transform.
 
+TIP: As tracebacks are appended to original errors as suppressed exceptions, this can somewhat
+interfere with another type of exception that uses this mechanism: composite exceptions.
+Such exceptions can be created directly via `Exceptions.multiple(Throwable...)`, or by some
+operators that might join multiple erroring sources (like `Flux#flatMapDelayError`). They
+can be unwrapped into a `List` via `Exceptions.unwrapMultiple(Throwable)`, in which case the traceback
+would be considered a component of the composite and be part of the returned `List`.
+If that is somehow not desirable, tracebacks can be identified thanks to `Exceptions.isTraceback(Throwable)`
+check, and excluded from such an unwrap by using `Exceptions.unwrapMultipleExcludingTracebacks(Throwable)`
+instead.
+
 We deal with a form of instrumentation here, and creating a stack trace is costly. That
 is why this debugging feature should only be activated in a controlled manner, as a last
 resort.
@@ -282,6 +292,8 @@ The description could be a static identifier or user-readable description or a w
 NOTE: When both global debugging and local `checkpoint()` are enabled, checkpointed
 snapshot stacks are appended as suppressed error output after the observing operator
 graph and following the same declarative order.
+
+==
 
 == Logging a sequence
 In addition to stack trace debugging and analysis, another powerful tool to have in your

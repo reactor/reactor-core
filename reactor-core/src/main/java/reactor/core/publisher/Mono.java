@@ -43,6 +43,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshot;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
@@ -1675,12 +1676,17 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracing for this particular {@link Mono}, in case of an error
+	 * Activate traceback (full assembly tracing) for this particular {@link Mono}, in case of an error
 	 * upstream of the checkpoint. Tracing incurs the cost of an exception stack trace
 	 * creation.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @return the assembly tracing {@link Mono}
 	 */
@@ -1689,7 +1695,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Activate assembly marker for this particular {@link Mono} by giving it a description that
+	 * Activate traceback (assembly marker) for this particular {@link Mono} by giving it a description that
 	 * will be reflected in the assembly traceback in case of an error upstream of the
 	 * checkpoint. Note that unlike {@link #checkpoint()}, this doesn't create a
 	 * filled stack trace, avoiding the main cost of the operator.
@@ -1700,6 +1706,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @param description a unique enough description to include in the light assembly traceback.
 	 * @return the assembly marked {@link Mono}
@@ -1709,8 +1720,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracing or the lighter assembly marking depending on the
-	 * {@code forceStackTrace} option.
+	 * Activate traceback (full assembly tracing or the lighter assembly marking depending on the
+	 * {@code forceStackTrace} option).
 	 * <p>
 	 * By setting the {@code forceStackTrace} parameter to {@literal true}, activate assembly
 	 * tracing for this particular {@link Mono} and give it a description that
@@ -1727,6 +1738,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @param description a description (must be unique enough if forceStackTrace is set
 	 * to false).
