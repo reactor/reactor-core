@@ -150,14 +150,17 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				return this;
 			}
 
+			final boolean transitioned;
 			for (;;) {
 				if (EMITTING_STATE.compareAndSet(this, State.READY_TO_EMIT, State.IN_NEXT)) {
+					transitioned = true;
 					break;
 				}
 
 				//allow for reentrancy by checking if the guard is already at 2, in which
 				//case the WIP guard will go into effect
 				if (emittingState == State.IN_NEXT) {
+					transitioned = false;
 					break;
 				}
 			}
@@ -184,7 +187,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				return this;
 			}
 			finally {
-				EMITTING_STATE.set(this, State.READY_TO_EMIT);
+				if (transitioned) {
+					EMITTING_STATE.set(this, State.READY_TO_EMIT);
+				}
 			}
 		}
 
@@ -195,8 +200,11 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				return false;
 			}
 
-			if (!EMITTING_STATE.compareAndSet(this, State.READY_TO_EMIT, State.IN_TRY_NEXT)) {
-				return false;
+			boolean transitioned = EMITTING_STATE.compareAndSet(this, State.READY_TO_EMIT, State.IN_TRY_NEXT);
+			if (!transitioned) {
+				if (emittingState != State.IN_TRY_NEXT) {
+					return false;
+				}
 			}
 
 			try {
@@ -214,7 +222,9 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 				}
 			}
 			finally {
-				EMITTING_STATE.set(this, State.READY_TO_EMIT);
+				if (!transitioned) {
+					EMITTING_STATE.set(this, State.READY_TO_EMIT);
+				}
 			}
 		}
 
