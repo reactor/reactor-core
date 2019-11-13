@@ -129,7 +129,7 @@ public abstract class Exceptions {
 	 * @see #addThrowable(AtomicReferenceFieldUpdater, Object, Throwable)
 	 */
 	public static RuntimeException multiple(Iterable<Throwable> throwables) {
-		RuntimeException multiple = new RuntimeException("Multiple exceptions");
+		CompositeException multiple = new CompositeException();
 		//noinspection ConstantConditions
 		if (throwables != null) {
 			for (Throwable t : throwables) {
@@ -285,7 +285,7 @@ public abstract class Exceptions {
 	 * @return true if given {@link Throwable} is a callback not implemented exception.
 	 */
 	public static boolean isErrorCallbackNotImplemented(@Nullable Throwable t) {
-		return t != null && t.getClass().equals(ErrorCallbackNotImplemented.class);
+		return t instanceof ErrorCallbackNotImplemented;
 	}
 
 	/**
