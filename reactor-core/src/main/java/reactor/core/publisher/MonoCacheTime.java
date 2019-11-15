@@ -287,12 +287,15 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 					}
 				}
 
-				if (ttl != null && ttl.isZero()) {
-					//immediate cache clear
-					main.run();
-				}
-				else if (ttl != null) {
-					main.clock.schedule(main, ttl.toMillis(), TimeUnit.MILLISECONDS);
+				if (ttl != null) {
+					if (ttl.isZero()) {
+						//immediate cache clear
+						main.run();
+					}
+					else if (ttl.toMillis() < Long.MAX_VALUE) {
+						main.clock.schedule(main, ttl.toMillis(), TimeUnit.MILLISECONDS);
+					}
+					//else TTL is Long.MAX_VALUE, schedule nothing but still cache
 				}
 				else {
 					//error during TTL generation, signal != updatedSignal, aka dropped

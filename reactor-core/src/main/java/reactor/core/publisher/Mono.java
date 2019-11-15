@@ -1797,6 +1797,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Turn this {@link Mono} into a hot source and cache last emitted signal for further
 	 * {@link Subscriber}, with an expiry timeout (TTL) that depends on said signal.
+	 * An TTL of {@link Long#MAX_VALUE} milliseconds is interpreted as indefinite caching of
+	 * the signal (no cache cleanup is scheduled, so the signal is retained as long as this
+	 * {@link Mono} is not garbage collected).
 	 * <p>
 	 * Empty completion and Error will also be replayed according to their respective TTL,
 	 * so transient errors can be "retried" by letting the {@link Function} return
