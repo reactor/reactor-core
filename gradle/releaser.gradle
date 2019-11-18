@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+
+if (rootProject.hasProperty("releaserDryRun") && rootProject.findProperty("releaserDryRun") != "false") {
+	println "Adding MavenLocal() for benefit of releaser dry run"
+	rootProject.repositories {
+		mavenLocal()
+	}
+}
+
 /**
  * return a specific property value, assuming all the provided projects have it with the
  * same value, or throw if multiple values are found
