@@ -29,6 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -882,4 +883,26 @@ public class FluxGroupByTest extends
 		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
 	}
 
+	@Test(timeout = 10000)
+	public void fusedGroupByParallel() {
+		int parallelism = 2;
+		Scheduler process = Schedulers.newParallel("process", parallelism, true);
+
+		final long start = System.nanoTime();
+
+		Flux.range(0, 500_000)
+				.subscribeOn(Schedulers.newSingle("range", true))
+				.groupBy(i -> i % 2)
+				.flatMap(g ->
+						g.key() == 0
+								? g //.hide()  /* adding hide here fixes the hang issue */
+								.parallel(parallelism)
+								.runOn(process)
+								.map(i -> i)
+								.sequential()
+								: g.map(i -> i) // no need to use hide
+				)
+				.then()
+				.block();
+	}
 }
