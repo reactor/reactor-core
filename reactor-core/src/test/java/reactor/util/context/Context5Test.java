@@ -229,6 +229,15 @@ public class Context5Test {
 	}
 
 	@Test
+	public void putAllReplaces() {
+		Context m = Context.of(c.key1, "replaced", "A", 1);
+		Context put = c.putAll(m);
+
+		assertThat(put).isInstanceOf(ContextN.class)
+		               .hasToString("ContextN{1=replaced, 2=B, 3=C, 4=D, 5=E, A=1}");
+	}
+
+	@Test
 	public void putAllOfEmpty() {
 		Context m = Context.empty();
 		Context put = c.putAll(m);
