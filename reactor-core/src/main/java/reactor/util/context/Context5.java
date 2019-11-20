@@ -21,7 +21,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class Context5 implements Context {
+final class Context5 extends AbstractContext {
 
 	final Object key1;
 	final Object value1;
@@ -54,7 +54,7 @@ final class Context5 implements Context {
 	}
 
 	@Override
-	public Context put(Object key, Object value) {
+	public AbstractContext put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(value, "value");
 
@@ -148,6 +148,15 @@ final class Context5 implements Context {
 				new AbstractMap.SimpleImmutableEntry<>(key3, value3),
 				new AbstractMap.SimpleImmutableEntry<>(key4, value4),
 				new AbstractMap.SimpleImmutableEntry<>(key5, value5));
+	}
+
+	@Override
+	protected AbstractContext putAllSelfInto(AbstractContext initial) {
+		initial = initial.put(this.key1, this.value1);
+		initial = initial.put(this.key2, this.value2);
+		initial = initial.put(this.key3, this.value3);
+		initial = initial.put(this.key4, this.value4);
+		return initial.put(this.key5, this.value5);
 	}
 
 	@Override

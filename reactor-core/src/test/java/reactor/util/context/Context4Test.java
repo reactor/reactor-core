@@ -16,6 +16,8 @@
 
 package reactor.util.context;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -363,4 +365,17 @@ public class Context4Test {
 				.isThrownBy(() -> Context4.checkKeys("one", "two", "three", "four", null))
 				.withMessage("key5");
 	}
+
+	@Test
+	public void putAllSelfInto() {
+		AbstractContext initial = new Context0();
+
+		AbstractContext result = ((AbstractContext) c).putAllSelfInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream()).containsExactlyElementsOf(c.stream().collect(Collectors.toList()));
+	}
+
 }

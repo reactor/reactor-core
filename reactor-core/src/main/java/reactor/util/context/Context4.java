@@ -21,7 +21,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class Context4 implements Context {
+final class Context4 extends AbstractContext {
 
 	/**
 	 * Checks for duplicate keys and null keys. This method is intended for a short space of keys in the
@@ -76,7 +76,7 @@ final class Context4 implements Context {
 	}
 
 	@Override
-	public Context put(Object key, Object value) {
+	public AbstractContext put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(value, "value");
 
@@ -158,6 +158,14 @@ final class Context4 implements Context {
 				new AbstractMap.SimpleImmutableEntry<>(key2, value2),
 				new AbstractMap.SimpleImmutableEntry<>(key3, value3),
 				new AbstractMap.SimpleImmutableEntry<>(key4, value4));
+	}
+
+	@Override
+	protected AbstractContext putAllSelfInto(AbstractContext initial) {
+		initial = initial.put(this.key1, this.value1);
+		initial = initial.put(this.key2, this.value2);
+		initial = initial.put(this.key3, this.value3);
+		return initial.put(this.key4, this.value4);
 	}
 
 	@Override

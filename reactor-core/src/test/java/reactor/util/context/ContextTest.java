@@ -16,8 +16,13 @@
 
 package reactor.util.context;
 
+import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -331,6 +336,156 @@ public class ContextTest {
 		assertThat(context.getOrDefault("k4", 0)).isEqualTo(4);
 		assertThat(context.getOrDefault("k5", 0)).isEqualTo(5);
 		assertThat(context.getOrDefault("k6", 0)).isEqualTo(6);
+	}
+
+	// == tests for default methods ==
+
+	@Test
+	public void getWithClass() {
+		Context context = Context.of(String.class, "someString");
+
+		assertThat(context.get(String.class)).isEqualTo("someString");
+	}
+
+	@Test
+	public void getWithClassKeyButNonMatchingInstance() {
+		Context context = Context.of(String.class, 4);
+
+		assertThatExceptionOfType(NoSuchElementException.class)
+				.isThrownBy(() -> context.get(String.class))
+				.withMessage("Context does not contain a value of type java.lang.String");
+	}
+
+	@Test
+	public void getOrEmptyWhenMatch() {
+		Context context = Context.of(1, "A");
+
+		assertThat(context.getOrEmpty(1)).hasValue("A");
+	}
+
+	@Test
+	public void getOrEmptyWhenNoMatch() {
+		Context context = Context.of(1, "A");
+
+		assertThat(context.getOrEmpty(2)).isEmpty();
+	}
+
+	@Test
+	public void defaultPutAll() {
+		Map<Object, Object> leftMap = new HashMap<>();
+		leftMap.put(1, "A");
+		leftMap.put(10, "A10");
+		leftMap.put(11, "A11");
+		leftMap.put(12, "A12");
+		leftMap.put(13, "A13");
+		Map<Object, Object> rightMap = new HashMap<>();
+		rightMap.put(2, "B");
+		rightMap.put(3, "C");
+		rightMap.put(4, "D");
+		rightMap.put(5, "E");
+		ForeignContext left = new ForeignContext(leftMap);
+		ForeignContext right = new ForeignContext(rightMap);
+
+		Context combined = left.putAll(right);
+		assertThat(combined).isInstanceOf(ContextN.class);
+		ContextN combinedN = (ContextN) combined;
+
+		assertThat(combinedN.delegate)
+				.containsKeys(1, 2, 3, 4, 5, 10, 11, 12, 13)
+				.containsValues("A", "B", "C", "D", "E", "A10", "A11", "A12", "A13");
+	}
+
+	@Test
+	public void defaultPutAllWorksWithParallelStream() {
+		Map<Object, Object> leftMap = new HashMap<>();
+		leftMap.put(1, "A");
+		leftMap.put(10, "A10");
+		leftMap.put(11, "A11");
+		leftMap.put(12, "A12");
+		leftMap.put(13, "A13");
+		Map<Object, Object> rightMap = new HashMap<>();
+		rightMap.put(2, "B");
+		rightMap.put(3, "C");
+		rightMap.put(4, "D");
+		rightMap.put(5, "E");
+		ForeignContext left = new ForeignContext(leftMap) {
+			@Override
+			public Stream<Map.Entry<Object, Object>> stream() {
+				return super.stream().parallel();
+			}
+		};
+		ForeignContext right = new ForeignContext(rightMap) {
+			@Override
+			public Stream<Map.Entry<Object, Object>> stream() {
+				return super.stream().parallel();
+			}
+		};
+
+		Context combined = left.putAll(right);
+		assertThat(combined).isInstanceOf(ContextN.class);
+		ContextN combinedN = (ContextN) combined;
+
+		assertThat(combinedN.delegate)
+				.containsKeys(1, 2, 3, 4, 5, 10, 11, 12, 13)
+				.containsValues("A", "B", "C", "D", "E", "A10", "A11", "A12", "A13");
+	}
+
+
+	static class ForeignContext implements Context {
+
+		final Map<Object, Object> delegate = new LinkedHashMap<>();
+
+		ForeignContext(Object key, Object value) {
+			this.delegate.put(key, value);
+		}
+
+		ForeignContext(Map<Object, Object> data) {
+			this.delegate.putAll(data);
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public <T> T get(Object key) {
+			if (hasKey(key)) return (T) this.delegate.get(key);
+			throw new NoSuchElementException();
+		}
+
+		@Override
+		public boolean hasKey(Object key) {
+			return this.delegate.containsKey(key);
+		}
+
+		@Override
+		public Context put(Object key, Object value) {
+			ForeignContext newContext = new ForeignContext(this.delegate);
+			newContext.delegate.put(key, value);
+			return newContext;
+		}
+
+		@Override
+		public Context delete(Object key) {
+			if (hasKey(key)) {
+				ForeignContext newContext = new ForeignContext(this.delegate);
+				newContext.delegate.remove(key);
+				return newContext;
+			}
+			return this;
+		}
+
+		@Override
+		public int size() {
+			return delegate.size();
+		}
+
+		@Override
+		public Stream<Map.Entry<Object, Object>> stream() {
+			return delegate.entrySet().stream();
+		}
+
+		@Override
+		public String toString() {
+			return "ForeignContext" + delegate.toString();
+		}
 	}
 
 }

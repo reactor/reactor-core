@@ -16,12 +16,16 @@
 
 package reactor.util.context;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +35,7 @@ import static reactor.util.context.ContextTest.*;
 
 public class ContextNTest {
 
-	Context c;
+	ContextN c;
 
 	@Before
 	public void initContext() {
@@ -41,18 +45,27 @@ public class ContextNTest {
 
 	@Test
 	public void constructFromPairsRejectsNulls() {
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(null, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, null, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, null, 2, 3, 3, 4, 4, 5, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, null, 3, 3, 4, 4, 5, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, null, 3, 4, 4, 5, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, null, 4, 4, 5, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, null, 4, 5, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, null, 5, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, 4, null, 5, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, null, 6, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, null, 6));
-		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, null));
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(null, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6)).withMessage("key1");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, null, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6)).withMessage("value1");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, null, 2, 3, 3, 4, 4, 5, 5, 6, 6)).withMessage("key2");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, null, 3, 3, 4, 4, 5, 5, 6, 6)).withMessage("value2");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, null, 3, 4, 4, 5, 5, 6, 6)).withMessage("key3");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, null, 4, 4, 5, 5, 6, 6)).withMessage("value3");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, null, 4, 5, 5, 6, 6)).withMessage("key4");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, null, 5, 5, 6, 6)).withMessage("value4");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, 4, null, 5, 6, 6)).withMessage("key5");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, null, 6, 6)).withMessage("value5");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, null, 6)).withMessage("key6");
+		assertThatNullPointerException().isThrownBy(() -> new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, null)).withMessage("value6");
+	}
+
+	@Test
+	public void constructFromPairsConsistent() {
+		ContextN contextN = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+
+		assertThat(contextN.delegate)
+				.containsKeys(1, 2, 3, 4, 5, 6)
+				.containsValues(1, 2, 3, 4 ,5 ,6);
 	}
 
 	@Test
@@ -66,7 +79,7 @@ public class ContextNTest {
 		Map<Object, Object> map = new HashMap<>(1);
 		map.put(null, 0);
 		assertThatNullPointerException().isThrownBy(() -> new ContextN(map, "foo", 1))
-		                                .withMessage("key");
+		                                .withMessage("map contains null key");
 	}
 
 	@Test
@@ -74,7 +87,7 @@ public class ContextNTest {
 		Map<Object, Object> map = new HashMap<>(1);
 		map.put("key", null);
 		assertThatNullPointerException().isThrownBy(() -> new ContextN(map, "foo", 1))
-		                                .withMessage("value");
+		                                .withMessage("map contains null value");
 	}
 
 	@Test
@@ -106,7 +119,7 @@ public class ContextNTest {
 		Map<Object, Object> leftMap = new HashMap<>(1);
 		leftMap.put(null, "foo");
 		assertThatNullPointerException().isThrownBy(() -> new ContextN(leftMap, Collections.emptyMap()))
-		                                .withMessage("key");
+		                                .withMessage("sourceMap contains null key");
 	}
 
 	@Test
@@ -114,7 +127,7 @@ public class ContextNTest {
 		Map<Object, Object> leftMap = new HashMap<>(1);
 		leftMap.put("key", null);
 		assertThatNullPointerException().isThrownBy(() -> new ContextN(leftMap, Collections.emptyMap()))
-		                                .withMessage("value");
+		                                .withMessage("sourceMap contains null value");
 	}
 
 	@Test
@@ -122,7 +135,7 @@ public class ContextNTest {
 		Map<Object, Object> rightMap = new HashMap<>(1);
 		rightMap.put(null, "foo");
 		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), rightMap))
-		                                .withMessage("key");
+		                                .withMessage("other map contains null key");
 	}
 
 	@Test
@@ -130,7 +143,7 @@ public class ContextNTest {
 		Map<Object, Object> rightMap = new HashMap<>(1);
 		rightMap.put("key", null);
 		assertThatNullPointerException().isThrownBy(() -> new ContextN(Collections.emptyMap(), rightMap))
-		                                .withMessage("value");
+		                                .withMessage("other map contains null value");
 	}
 
 	@Test
@@ -402,6 +415,21 @@ public class ContextNTest {
 	}
 
 	@Test
+	public void putAllForeign() {
+		ForeignContext other = new ForeignContext("someKey", "someValue");
+		Context result = c.putAll(other);
+
+		assertThat(result).isInstanceOf(ContextN.class);
+
+		ContextN resultN = (ContextN) result;
+
+		assertThat(resultN.delegate)
+				.isNotSameAs(c)
+				.containsKeys(1, 2, 3, 4, 5, 6, "someKey")
+				.containsValues("A", "B", "C", "D", "E", "F", "someValue");
+	}
+
+	@Test
 	public void putNonNullWithNull() {
 		int expectedSize = c.size();
 		Context put = c.putNonNull("putNonNull", null);
@@ -427,6 +455,12 @@ public class ContextNTest {
 		assertThat(c.put("sizeGrows", "yes").size()).isEqualTo(7);
 	}
 
+	@Test
+	public void streamIsNotMutable() {
+		c.stream().forEach(e -> { try { e.setValue("REPLACED"); } catch (UnsupportedOperationException ignored) { } });
+
+		assertThat(c.delegate).doesNotContainValue("REPLACED");
+	}
 
 	@Test
 	public void streamHasCleanToString() {
@@ -437,4 +471,15 @@ public class ContextNTest {
 				.isEqualTo("1=A, 2=B, 3=C, 4=D, 5=E, 6=F");
 	}
 
+	@Test
+	public void putAllSelfInto() {
+		AbstractContext initial = new Context0();
+
+		AbstractContext result = ((AbstractContext) c).putAllSelfInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream()).containsExactlyElementsOf(c.stream().collect(Collectors.toList()));
+	}
 }

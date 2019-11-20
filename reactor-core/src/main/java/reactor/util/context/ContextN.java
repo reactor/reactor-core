@@ -22,56 +22,65 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
 
-@SuppressWarnings("unchecked")
-final class ContextN extends LinkedHashMap<Object, Object>
-		implements Context, BiConsumer<Object, Object> {
+final class ContextN extends AbstractContext {
+
+	final LinkedHashMap<Object, Object> delegate;
 
 	ContextN(Object key1, Object value1, Object key2, Object value2,
 			Object key3, Object value3, Object key4, Object value4,
 			Object key5, Object value5, Object key6, Object value6) {
-		super(6, 1f);
-		//accept below stands in for "inner put"
-		accept(key1, value1);
-		accept(key2, value2);
-		accept(key3, value3);
-		accept(key4, value4);
-		accept(key5, value5);
-		accept(key6, value6);
+		delegate = new LinkedHashMap<>(6, 1f);
+		delegate.put(Objects.requireNonNull(key1, "key1"),
+				Objects.requireNonNull(value1, "value1"));
+		delegate.put(Objects.requireNonNull(key2, "key2"),
+				Objects.requireNonNull(value2, "value2"));
+		delegate.put(Objects.requireNonNull(key3, "key3"),
+				Objects.requireNonNull(value3, "value3"));
+		delegate.put(Objects.requireNonNull(key4, "key4"),
+				Objects.requireNonNull(value4, "value4"));
+		delegate.put(Objects.requireNonNull(key5, "key5"),
+				Objects.requireNonNull(value5, "value5"));
+		delegate.put(Objects.requireNonNull(key6, "key6"),
+				Objects.requireNonNull(value6, "value6"));
 	}
 
 	ContextN(Map<Object, Object> map, Object key, Object value) {
-		super(Objects.requireNonNull(map, "map").size() + 1, 1f);
-		map.forEach(this);
-		accept(key, value); //innerPut
-	}
+		delegate = new LinkedHashMap<>(Objects.requireNonNull(map, "map").size() + 1, 1f);
 
-	ContextN(Map<Object, Object> sourceMap, Map<?, ?> other) {
-		super(Objects.requireNonNull(sourceMap, "sourceMap").size()
-						+ Objects.requireNonNull(other, "other").size(),
-				1f);
-		sourceMap.forEach(this);
-		other.forEach(this);
-	}
+		map.forEach((k, v) -> delegate.put(Objects.requireNonNull(k, "map contains null key"),
+				Objects.requireNonNull(v, "map contains null value")));
 
-	//this performs an inner put to the actual hashmap, and also allows passing `this` directly to
-	//Map#forEach
-	@Override
-	public void accept(Object key, Object value) {
-		super.put(Objects.requireNonNull(key, "key"),
+		delegate.put(Objects.requireNonNull(key, "key"),
 				Objects.requireNonNull(value, "value"));
 	}
 
+	ContextN(Map<Object, Object> sourceMap, Map<?, ?> other) {
+		delegate = new LinkedHashMap<>(Objects.requireNonNull(sourceMap, "sourceMap").size()
+						+ Objects.requireNonNull(other, "other").size(),
+				1f);
+
+		sourceMap.forEach((k, v) -> delegate.put(Objects.requireNonNull(k, "sourceMap contains null key"),
+				Objects.requireNonNull(v, "sourceMap contains null value")));
+
+		other.forEach((k, v) -> delegate.put(Objects.requireNonNull(k, "other map contains null key"),
+				Objects.requireNonNull(v, "other map contains null value")));
+	}
+
 	@Override
-	public Context put(Object key, Object value) {
+	public boolean hasKey(Object key) {
+		return delegate.containsKey(key);
+	}
+
+	@Override
+	public AbstractContext put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(key, "value");
-		return new ContextN(this, key, value);
+		return new ContextN(this.delegate, key, value);
 	}
 
 	@Override
@@ -83,9 +92,10 @@ final class ContextN extends LinkedHashMap<Object, Object>
 
 		int s = size() - 1;
 		if (s == 5) {
+			@SuppressWarnings("unchecked")
 			Entry<Object, Object>[] arr = new Entry[s];
 			int idx = 0;
-			for (Entry<Object, Object> entry : entrySet()) {
+			for (Entry<Object, Object> entry : delegate.entrySet()) {
 				if (!entry.getKey().equals(key)) {
 					arr[idx] = entry;
 					idx++;
@@ -99,29 +109,31 @@ final class ContextN extends LinkedHashMap<Object, Object>
 					arr[4].getKey(), arr[4].getValue());
 		}
 
-		ContextN newInstance = new ContextN(this, Collections.emptyMap());
-		newInstance.remove(key);
+		ContextN newInstance = new ContextN(this.delegate, Collections.emptyMap());
+		newInstance.delegate.remove(key);
 		return newInstance;
 	}
 
 	@Override
-	public boolean hasKey(Object key) {
-		return super.containsKey(key);
+	public int size() {
+		return delegate.size();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Object get(Object key) {
-		Object o = super.get(key);
+		Object o = delegate.get(key);
 		if (o != null) {
 			return o;
 		}
 		throw new NoSuchElementException("Context does not contain key: "+key);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	@Nullable
 	public Object getOrDefault(Object key, @Nullable Object defaultValue) {
-		Object o = super.get(key);
+		Object o = delegate.get(key);
 		if (o != null) {
 			return o;
 		}
@@ -130,21 +142,40 @@ final class ContextN extends LinkedHashMap<Object, Object>
 
 	@Override
 	public Stream<Entry<Object, Object>> stream() {
-		return entrySet().stream().map(AbstractMap.SimpleImmutableEntry::new);
+		return delegate.entrySet().stream().map(AbstractMap.SimpleImmutableEntry::new);
 	}
+
+@Override
+protected AbstractContext putAllSelfInto(AbstractContext initial) {
+	if (initial instanceof ContextN) return new ContextN(((ContextN) initial).delegate, this.delegate);
+
+	AbstractContext[] holder = new AbstractContext[]{ initial };
+	delegate.forEach((k, v) -> holder[0] = holder[0].put(k, v));
+	return holder[0];
+}
 
 	@Override
 	public Context putAll(Context other) {
 		if (other.isEmpty()) return this;
-		if (other instanceof ContextN) return new ContextN(this, ((ContextN) other));
+		if (other instanceof ContextN) return new ContextN(this.delegate, ((ContextN) other).delegate);
 
-		Map<?, ?> mapOther = other.stream()
-		                          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-		return new ContextN(this, mapOther);
+		if (other instanceof AbstractContext) {
+			AbstractContext abstractContext = (AbstractContext) other;
+			return abstractContext.putAllSelfInto(this);
+		}
+
+		//slightly less wasteful implementation for non-core context: only collect the other since we already have a map for this
+		return new ContextN(this.delegate,
+				other.stream()
+				     .collect(Collectors.toMap(
+						     Map.Entry::getKey,
+						     Map.Entry::getValue,
+						     (value1, value2) -> value2, //key collisions shouldn't occur
+						     LinkedHashMap::new)));
 	}
 
 	@Override
 	public String toString() {
-		return "ContextN"+super.toString();
+		return "ContextN"+delegate.toString();
 	}
 }

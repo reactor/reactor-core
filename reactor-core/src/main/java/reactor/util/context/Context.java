@@ -17,10 +17,12 @@
 package reactor.util.context;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
@@ -334,10 +336,10 @@ public interface Context {
 	default Context putAll(Context other) {
 		if (other.isEmpty()) return this;
 
-		return other.stream()
-		            .reduce(this,
-				            (c, e) -> c.put(e.getKey(), e.getValue()),
-				            (c1, c2) -> { throw new UnsupportedOperationException("Context.putAll should not use a parallelized stream");}
-		            );
+
+		final Map<Object, Object> collect = Stream.concat(this.stream(), other.stream())
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (o1, o2) -> o2, LinkedHashMap::new));
+
+		return Context.of(collect);
 	}
 }

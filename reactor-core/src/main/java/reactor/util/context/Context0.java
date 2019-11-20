@@ -20,12 +20,12 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class Context0 implements Context {
+final class Context0 extends AbstractContext {
 
 	static final Context0 INSTANCE = new Context0();
 
 	@Override
-	public Context put(Object key, Object value) {
+	public AbstractContext put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(value, "value");
 		return new Context1(key, value);
@@ -59,5 +59,10 @@ final class Context0 implements Context {
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
 		return Stream.empty();
+	}
+
+	@Override
+	protected AbstractContext putAllSelfInto(AbstractContext initial) {
+		return initial;
 	}
 }

@@ -16,6 +16,8 @@
 
 package reactor.util.context;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -124,5 +126,14 @@ public class Context0Test {
 	@Test
 	public void size() {
 		assertThat(c.size()).isZero();
+	}
+
+	@Test
+	public void putAllSeflIntoReturnsSame() {
+		AbstractContext initial = new Context0();
+
+		AbstractContext result = ((AbstractContext) c).putAllSelfInto(initial);
+
+		assertThat(result).isSameAs(initial);
 	}
 }
