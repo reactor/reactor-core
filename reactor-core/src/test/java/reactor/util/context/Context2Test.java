@@ -146,6 +146,15 @@ public class Context2Test {
 	}
 
 	@Test
+	public void putAllReplaces() {
+		Context m = Context.of(c.key1, "replaced", "A", 1);
+		Context put = c.putAll(m);
+
+		assertThat(put).isInstanceOf(Context3.class)
+		               .hasToString("Context3{1=replaced, 2=B, A=1}");
+	}
+
+	@Test
 	public void putAllOfEmpty() {
 		Context m = Context.empty();
 		Context put = c.putAll(m);

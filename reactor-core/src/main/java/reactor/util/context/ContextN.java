@@ -15,6 +15,7 @@
  */
 package reactor.util.context;
 
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +31,7 @@ import reactor.util.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends HashMap<Object, Object>
-		implements Context, Function<Entry<Object, Object>, Entry<Object, Object>>,
-		           BiConsumer<Object, Object> {
+		implements Context, BiConsumer<Object, Object> {
 
 	ContextN(Object key1, Object value1, Object key2, Object value2,
 			Object key3, Object value3, Object key4, Object value4,
@@ -131,12 +131,7 @@ final class ContextN extends HashMap<Object, Object>
 
 	@Override
 	public Stream<Entry<Object, Object>> stream() {
-		return entrySet().stream().map(this);
-	}
-
-	@Override
-	public Entry<Object, Object> apply(Entry<Object, Object> o) {
-		return new Context1(o.getKey(), o.getValue());
+		return entrySet().stream().map(AbstractMap.SimpleImmutableEntry::new);
 	}
 
 	@Override
