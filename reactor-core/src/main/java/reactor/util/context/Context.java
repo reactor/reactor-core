@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
@@ -324,6 +326,21 @@ public interface Context {
 	Stream<Map.Entry<Object,Object>> stream();
 
 	/**
+	 * Reduce the values in this {@link Context} into an arbitrary {@code HOLDER}, using the provided
+	 * {@link ReductionFunction}.
+	 *
+	 * @param initial the initial container, ie. the HOLDER value passed to the reduction function during first pass
+	 * @param reductionFunction a {@link ReductionFunction}
+	 * @param <HOLDER> the type into which key-value pairs are aggregated/reduced
+	 * @return the result of the reduction
+	 */
+	default <HOLDER> HOLDER reduce(HOLDER initial, ReductionFunction<HOLDER> reductionFunction) {
+		return stream()
+				.reduce(initial, (c,e) -> reductionFunction.apply(c, e.getKey(), e.getValue()),
+				(c1, c2) -> { throw new UnsupportedOperationException("Context#reduce incompatible with parallelized streams"); });
+	}
+
+	/**
 	 * Create a new {@link Context} by merging the content of this context and a given
 	 * {@link Context}. If the other context is empty, the same {@link Context} instance
 	 * is returned.
@@ -333,11 +350,28 @@ public interface Context {
 	 */
 	default Context putAll(Context other) {
 		if (other.isEmpty()) return this;
+		return other.reduce(this, Context::put);
+	}
 
-		return other.stream()
-		            .reduce(this,
-				            (c, e) -> c.put(e.getKey(), e.getValue()),
-				            (c1, c2) -> { throw new UnsupportedOperationException("Context.putAll should not use a parallelized stream");}
-		            );
+	/**
+	 * A functional interface for reducing key-value pairs in a {@link Context} into an arbitrary holder type {@code T}.
+	 * Each subsequent call to {@link #apply(Object, Object, Object)} is made with the result of the previous
+	 * invocation.
+	 *
+	 * @param <T> the type into which key-value pairs are aggregated/reduced
+	 */
+	@FunctionalInterface
+	interface ReductionFunction<T> {
+
+		/**
+		 * Reduce {@code key} and {@code value} into {@code current} and return the result of the reduction.
+		 *
+		 * @param current the current intermediate result of the reduction
+		 * @param key the next key to participate in the reduction
+		 * @param value the next value to participate in the reduction
+		 * @return the next intermediate result of the reduction
+		 */
+		T apply(T current, Object key, Object value);
+
 	}
 }

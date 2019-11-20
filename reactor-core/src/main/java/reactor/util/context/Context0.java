@@ -18,6 +18,7 @@ package reactor.util.context;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 final class Context0 implements Context {
@@ -59,5 +60,10 @@ final class Context0 implements Context {
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
 		return Stream.empty();
+	}
+
+	@Override
+	public <HOLDER> HOLDER reduce(HOLDER initial, ReductionFunction<HOLDER> reductionFunction) {
+		return initial;
 	}
 }

@@ -19,6 +19,7 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 final class Context4 implements Context {
@@ -158,6 +159,14 @@ final class Context4 implements Context {
 				new AbstractMap.SimpleImmutableEntry<>(key2, value2),
 				new AbstractMap.SimpleImmutableEntry<>(key3, value3),
 				new AbstractMap.SimpleImmutableEntry<>(key4, value4));
+	}
+
+	@Override
+	public <HOLDER> HOLDER reduce(HOLDER initial, ReductionFunction<HOLDER> reductionFunction) {
+		initial = reductionFunction.apply(initial, this.key1, this.value1);
+		initial = reductionFunction.apply(initial, this.key2, this.value2);
+		initial = reductionFunction.apply(initial, this.key3, this.value3);
+		return reductionFunction.apply(initial, this.key4, this.value4);
 	}
 
 	@Override

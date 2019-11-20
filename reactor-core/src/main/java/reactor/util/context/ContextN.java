@@ -138,8 +138,11 @@ final class ContextN extends LinkedHashMap<Object, Object>
 		if (other.isEmpty()) return this;
 		if (other instanceof ContextN) return new ContextN(this, ((ContextN) other));
 
-		Map<?, ?> mapOther = other.stream()
-		                          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		Map<Object, Object> mapOther = new LinkedHashMap<>(other.size());
+		other.reduce(mapOther, (m, k, v) -> {
+			m.put(k, v);
+			return m;
+		});
 		return new ContextN(this, mapOther);
 	}
 
