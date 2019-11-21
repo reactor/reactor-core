@@ -467,19 +467,18 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Globally enables the {@link reactor.util.context.Context} loss detection that may happen
-	 * when you use operators like {@link reactor.core.publisher.Mono#transform(Function)}
-	 * or {@link reactor.core.publisher.Flux#transformDeferred(Function)} with non-Reactor types.
+	 * Globally enables the {@link Context} loss detection in operators like
+	 * {@link Flux#transform} or {@link Mono#transformDeferred} when non-Reactor types are used.
 	 *
-	 * An exception will be thrown if after applying the transformations a new {@link reactor.util.context.Context}
-	 * was returned (or no context at all) instead of changing the current one.
+	 * An exception will be thrown upon applying the transformation if the original {@link Context} isn't reachable
+	 * (ie. it has been replaced by a totally different {@link Context}, or no {@link Context} at all)
 	 */
 	public static void enableContextLossTracking() {
 		DETECT_CONTEXT_LOSS = true;
 	}
 
 	/**
-	 * Globally disables the {@link reactor.util.context.Context} loss detection that was previously
+	 * Globally disables the {@link Context} loss detection that was previously
 	 * enabled by {@link #enableContextLossTracking()}.
 	 *
 	 */

@@ -29,7 +29,6 @@ import reactor.util.context.Context;
  * This {@link Function} wrapper is used by reactor-tools to implement the context loss detection.
  *
  */
-@SuppressWarnings("unused")
 class ContextTrackingFunctionWrapper<T, V> implements Function<CorePublisher<T>, CorePublisher<V>> {
 
 	static final String CONTEXT_MARKER_PREFIX = "reactor.core.context.marker.";
