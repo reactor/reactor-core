@@ -784,4 +784,55 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		vts.dispose();
 	}
 
+	@Test
+	public void longMaxDurationSchedulesNothing() {
+		AtomicInteger source = new AtomicInteger();
+		Mono<Integer> sourceMono = Mono.fromCallable(source::incrementAndGet);
+
+		VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
+		Mono<Integer> cachedMono = new MonoCacheTime<>(sourceMono, Duration.ofMillis(Long.MAX_VALUE), virtualTimeScheduler);
+
+		cachedMono.block();
+		assertThat(virtualTimeScheduler.getScheduledTaskCount()).isZero().as("initial scheduled count");
+
+		cachedMono.repeat(5)
+		          .as(StepVerifier::create)
+		          .expectNext(1, 1, 1, 1, 1, 1)
+		          .verifyComplete();
+
+		assertThat(virtualTimeScheduler.getScheduledTaskCount()).isZero().as("post repeat scheduled count");
+	}
+
+	@Test
+	public void nonZeroDurationSchedulesSomething() {
+		AtomicInteger source = new AtomicInteger();
+		Mono<Integer> sourceMono = Mono.fromCallable(source::incrementAndGet);
+
+		VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
+		Mono<Integer> cachedMono = new MonoCacheTime<>(sourceMono, Duration.ofMillis(50), virtualTimeScheduler);
+
+		assertThat(virtualTimeScheduler.getScheduledTaskCount()).isZero().as("initial scheduled count");
+		cachedMono.repeat(5)
+		          .as(StepVerifier::create)
+		          .expectNext(1, 1, 1, 1, 1, 1)
+		          .verifyComplete();
+		assertThat(virtualTimeScheduler.getScheduledTaskCount()).isOne().as("once cached scheduled count");
+	}
+
+	@Test
+	public void zeroDurationSchedulesNothing() {
+		AtomicInteger source = new AtomicInteger();
+		Mono<Integer> sourceMono = Mono.fromCallable(source::incrementAndGet);
+
+		VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.create();
+		Mono<Integer> cachedMono = new MonoCacheTime<>(sourceMono, Duration.ZERO, virtualTimeScheduler);
+
+		assertThat(virtualTimeScheduler.getScheduledTaskCount()).isZero().as("initial scheduled count");
+		cachedMono.repeat(5)
+		          .as(StepVerifier::create)
+		          .expectNext(1, 2, 3, 4, 5, 6)
+		          .verifyComplete();
+		assertThat(virtualTimeScheduler.getScheduledTaskCount()).isZero().as("once cache skipped scheduled count");
+	}
+
 }

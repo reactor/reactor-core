@@ -287,12 +287,15 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 					}
 				}
 
-				if (ttl != null && ttl.isZero()) {
-					//immediate cache clear
-					main.run();
-				}
-				else if (ttl != null) {
-					main.clock.schedule(main, ttl.toMillis(), TimeUnit.MILLISECONDS);
+				if (ttl != null) {
+					if (ttl.isZero()) {
+						//immediate cache clear
+						main.run();
+					}
+					else if (!ttl.equals(DURATION_INFINITE)) {
+						main.clock.schedule(main, ttl.toMillis(), TimeUnit.MILLISECONDS);
+					}
+					//else TTL is Long.MAX_VALUE, schedule nothing but still cache
 				}
 				else {
 					//error during TTL generation, signal != updatedSignal, aka dropped
@@ -352,8 +355,9 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 			return null;
 		}
 
-		private static final Operators.MonoSubscriber[] TERMINATED = new Operators.MonoSubscriber[0];
-		private static final Operators.MonoSubscriber[] EMPTY = new Operators.MonoSubscriber[0];
+		private static final Operators.MonoSubscriber[] TERMINATED        = new Operators.MonoSubscriber[0];
+		private static final Operators.MonoSubscriber[] EMPTY             = new Operators.MonoSubscriber[0];
+		private static final Duration                   DURATION_INFINITE = Duration.ofMillis(Long.MAX_VALUE);
 	}
 
 	static final class CacheMonoSubscriber<T> extends Operators.MonoSubscriber<T, T> {
