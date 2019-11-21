@@ -466,6 +466,26 @@ public abstract class Hooks {
 		}
 	}
 
+	/**
+	 * Globally enables the {@link Context} loss detection in operators like
+	 * {@link Flux#transform} or {@link Mono#transformDeferred} when non-Reactor types are used.
+	 *
+	 * An exception will be thrown upon applying the transformation if the original {@link Context} isn't reachable
+	 * (ie. it has been replaced by a totally different {@link Context}, or no {@link Context} at all)
+	 */
+	public static void enableContextLossTracking() {
+		DETECT_CONTEXT_LOSS = true;
+	}
+
+	/**
+	 * Globally disables the {@link Context} loss detection that was previously
+	 * enabled by {@link #enableContextLossTracking()}.
+	 *
+	 */
+	public static void disableContextLossTracking() {
+		DETECT_CONTEXT_LOSS = false;
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -561,6 +581,8 @@ public abstract class Hooks {
 	static boolean GLOBAL_TRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
 					"false"));
+
+	static boolean DETECT_CONTEXT_LOSS = false;
 
 	static {
 		onEachOperatorHooks = new LinkedHashMap<>(1);
