@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -3522,16 +3521,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Mono<List<T>> collectSortedList(@Nullable Comparator<? super T> comparator) {
-		return collectList().map(list -> {
+		return collectList().doOnNext(list -> {
 			// Note: this assumes the list emitted by buffer() is mutable
-			if (comparator != null) {
-				list.sort(comparator);
-			} else {
-
-				List<Comparable> l = (List<Comparable>)list;
-				Collections.sort(l);
-			}
-			return list;
+			list.sort(comparator);
 		});
 	}
 
