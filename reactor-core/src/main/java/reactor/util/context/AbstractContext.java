@@ -17,22 +17,23 @@
 package reactor.util.context;
 
 /**
+ * Abstract base to optimize interactions between reactor core {@link Context} implementations.
+ *
  * @author Simon Baslé
  */
 abstract class AbstractContext implements Context {
 
-	@Override
-	public Context putAll(Context other) {
-		if (other.isEmpty()) return this;
-		if (other instanceof AbstractContext) {
-			return ((AbstractContext) other).putAllSelfInto(this);
-		}
-		return Context.super.putAll(other);
-	}
-
+	//redefined to return AbstractContext so that put can be directly used in putAllSelfInto
 	@Override
 	public abstract AbstractContext put(Object key, Object value);
 
+	/**
+	 * Let this Context add its internal values to the given initial Context, avoiding creating
+	 * intermediate holders for key-value pairs as much as possible.
+	 *
+	 * @param initial the {@link Context} in which we're putting all our values
+	 * @return a new context containing all the initial values merged with all our values
+	 */
 	protected abstract AbstractContext putAllSelfInto(AbstractContext initial);
 
 }

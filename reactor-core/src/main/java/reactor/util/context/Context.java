@@ -336,6 +336,9 @@ public interface Context {
 	default Context putAll(Context other) {
 		if (other.isEmpty()) return this;
 
+		if (other instanceof AbstractContext && this instanceof AbstractContext) {
+			return ((AbstractContext) other).putAllSelfInto((AbstractContext) this);
+		}
 
 		final Map<Object, Object> collect = Stream.concat(this.stream(), other.stream())
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (o1, o2) -> o2, LinkedHashMap::new));
