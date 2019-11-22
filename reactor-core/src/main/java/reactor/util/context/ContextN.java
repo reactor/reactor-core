@@ -17,20 +17,19 @@ package reactor.util.context;
 
 import java.util.AbstractMap;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
-final class ContextN extends HashMap<Object, Object>
+final class ContextN extends LinkedHashMap<Object, Object>
 		implements Context, BiConsumer<Object, Object> {
 
 	ContextN(Object key1, Object value1, Object key2, Object value2,
