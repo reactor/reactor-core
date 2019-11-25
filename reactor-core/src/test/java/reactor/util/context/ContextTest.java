@@ -396,6 +396,31 @@ public class ContextTest {
 	}
 
 	@Test
+	public void defaultPutAllOtherIsAbstractContext() {
+		Map<Object, Object> leftMap = new HashMap<>();
+		leftMap.put(1, "A");
+		leftMap.put(10, "A10");
+		leftMap.put(11, "A11");
+		leftMap.put(12, "A12");
+		leftMap.put(13, "A13");
+		Map<Object, Object> rightMap = new HashMap<>();
+		rightMap.put(2, "B");
+		rightMap.put(3, "C");
+		rightMap.put(4, "D");
+		rightMap.put(5, "E");
+		ForeignContext left = new ForeignContext(leftMap);
+		AbstractContext right = new ContextN(rightMap, 6, "F");
+
+		Context combined = left.putAll(right);
+		assertThat(combined).isInstanceOf(ForeignContext.class);
+		ForeignContext combinedN = (ForeignContext) combined;
+
+		assertThat(combinedN.delegate)
+				.containsKeys(1, 2, 3, 4, 5, 6, 10, 11, 12, 13)
+				.containsValues("A", "B", "C", "D", "E", "F", "A10", "A11", "A12", "A13");
+	}
+
+	@Test
 	public void defaultPutAllWorksWithParallelStream() {
 		Map<Object, Object> leftMap = new HashMap<>();
 		leftMap.put(1, "A");

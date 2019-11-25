@@ -145,14 +145,14 @@ final class ContextN extends AbstractContext {
 		return delegate.entrySet().stream().map(AbstractMap.SimpleImmutableEntry::new);
 	}
 
-@Override
-protected AbstractContext putAllSelfInto(AbstractContext initial) {
-	if (initial instanceof ContextN) return new ContextN(((ContextN) initial).delegate, this.delegate);
+	@Override
+	protected Context putAllInto(Context base) {
+		if (base instanceof ContextN) return new ContextN(((ContextN) base).delegate, this.delegate);
 
-	AbstractContext[] holder = new AbstractContext[]{ initial };
-	delegate.forEach((k, v) -> holder[0] = holder[0].put(k, v));
-	return holder[0];
-}
+		Context[] holder = new Context[]{base};
+		delegate.forEach((k, v) -> holder[0] = holder[0].put(k, v));
+		return holder[0];
+	}
 
 	@Override
 	public Context putAll(Context other) {
@@ -161,7 +161,7 @@ protected AbstractContext putAllSelfInto(AbstractContext initial) {
 
 		if (other instanceof AbstractContext) {
 			AbstractContext abstractContext = (AbstractContext) other;
-			return abstractContext.putAllSelfInto(this);
+			return abstractContext.putAllInto(this);
 		}
 
 		//slightly less wasteful implementation for non-core context: only collect the other since we already have a map for this

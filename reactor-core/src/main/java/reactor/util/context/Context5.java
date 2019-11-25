@@ -54,7 +54,7 @@ final class Context5 extends AbstractContext {
 	}
 
 	@Override
-	public AbstractContext put(Object key, Object value) {
+	public Context put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(value, "value");
 
@@ -151,12 +151,23 @@ final class Context5 extends AbstractContext {
 	}
 
 	@Override
-	protected AbstractContext putAllSelfInto(AbstractContext initial) {
-		initial = initial.put(this.key1, this.value1);
-		initial = initial.put(this.key2, this.value2);
-		initial = initial.put(this.key3, this.value3);
-		initial = initial.put(this.key4, this.value4);
-		return initial.put(this.key5, this.value5);
+	protected Context putAllInto(Context base) {
+		Context merged = base.put(this.key1, this.value1);
+
+		if (merged instanceof ContextN) {
+			ContextN cn = (ContextN) merged;
+			cn.delegate.put(this.key2, this.value2);
+			cn.delegate.put(this.key3, this.value3);
+			cn.delegate.put(this.key4, this.value4);
+			cn.delegate.put(this.key5, this.value5);
+		}
+		else {
+			merged = merged.put(this.key2, this.value2);
+			merged = merged.put(this.key3, this.value3);
+			merged = merged.put(this.key4, this.value4);
+			merged = merged.put(this.key5, this.value5);
+		}
+		return merged;
 	}
 
 	@Override

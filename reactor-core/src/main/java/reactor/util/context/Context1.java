@@ -32,7 +32,7 @@ final class Context1 extends AbstractContext {
 	}
 
 	@Override
-	public AbstractContext put(Object key, Object value) {
+	public Context put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(value, "value");
 
@@ -72,8 +72,11 @@ final class Context1 extends AbstractContext {
 	}
 
 	@Override
-	protected AbstractContext putAllSelfInto(AbstractContext initial) {
-		return initial.put(key, value);
+	protected Context putAllInto(Context base) {
+		if (base instanceof ContextN) {
+			return new ContextN(((ContextN) base).delegate, key, value);
+		}
+		return base.put(key, value);
 	}
 
 	@Override

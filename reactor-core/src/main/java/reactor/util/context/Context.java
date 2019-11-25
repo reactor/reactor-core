@@ -336,8 +336,8 @@ public interface Context {
 	default Context putAll(Context other) {
 		if (other.isEmpty()) return this;
 
-		if (other instanceof AbstractContext && this instanceof AbstractContext) {
-			return ((AbstractContext) other).putAllSelfInto((AbstractContext) this);
+		if (other instanceof AbstractContext) {
+			return ((AbstractContext) other).putAllInto(this);
 		}
 
 		final Map<Object, Object> collect = Stream.concat(this.stream(), other.stream())

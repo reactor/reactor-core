@@ -16,16 +16,12 @@
 
 package reactor.util.context;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -475,11 +471,24 @@ public class ContextNTest {
 	public void putAllSelfInto() {
 		AbstractContext initial = new Context0();
 
-		AbstractContext result = ((AbstractContext) c).putAllSelfInto(initial);
+		Context result = ((AbstractContext) c).putAllInto(initial);
 
 		assertThat(result).isNotSameAs(initial)
 		                  .isNotSameAs(c);
 
 		assertThat(result.stream()).containsExactlyElementsOf(c.stream().collect(Collectors.toList()));
+	}
+
+	@Test
+	public void putAllSelfIntoContextN() {
+		AbstractContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		ContextN self = new ContextN("A", 1, "B", 2, "C", 3, "D", 4, "E", 5, "F", 6);
+		Context result = self.putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream().map(String::valueOf))
+				.containsExactly("1=1", "2=2", "3=3", "4=4", "5=5", "6=6", "A=1", "B=2", "C=3", "D=4", "E=5", "F=6");
 	}
 }

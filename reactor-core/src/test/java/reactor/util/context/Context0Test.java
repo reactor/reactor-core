@@ -16,8 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -129,10 +127,19 @@ public class Context0Test {
 	}
 
 	@Test
-	public void putAllSeflIntoReturnsSame() {
+	public void putAllSelfIntoReturnsSame() {
 		AbstractContext initial = new Context0();
 
-		AbstractContext result = ((AbstractContext) c).putAllSelfInto(initial);
+		Context result = ((AbstractContext) c).putAllInto(initial);
+
+		assertThat(result).isSameAs(initial);
+	}
+
+	@Test
+	public void putAllSelfIntoContextNReturnsSame() {
+		AbstractContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		Context0 self = new Context0();
+		Context result = self.putAllInto(initial);
 
 		assertThat(result).isSameAs(initial);
 	}
