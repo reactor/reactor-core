@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.junit.Assert;
@@ -34,6 +35,7 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -719,5 +721,31 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 		subscriber.remove(inner);
 		assertThat(subscriber.subscribers).as("post remove inner").isEmpty();
+	}
+
+	@Test
+	public void subscriberContextPropagation() {
+		String key = "key";
+		int expectedValue = 1;
+
+		AtomicReference<Context> reference = new AtomicReference<>();
+
+		Flux<Integer> integerFlux =
+				Flux.just(1, 2, 3)
+				    .flatMap(value ->
+						    Mono.subscriberContext()
+						        .doOnNext(reference::set)
+						        .thenReturn(value)
+				    )
+				    .publish()
+				    .autoConnect(2);
+
+		integerFlux.subscriberContext(Context.of(key, expectedValue))
+		           .subscribe();
+
+		integerFlux.subscriberContext(Context.of(key, 2))
+		           .subscribe();
+
+		assertThat((int) reference.get().get(key)).isEqualTo(expectedValue);
 	}
 }

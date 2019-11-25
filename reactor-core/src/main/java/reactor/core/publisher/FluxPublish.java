@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A connectable publisher which shares an underlying source and dispatches source values
@@ -535,6 +536,11 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(subscribers);
+		}
+
+		@Override
+		public Context currentContext() {
+			return Operators.multiSubscribersContext(subscribers);
 		}
 
 		@Override
