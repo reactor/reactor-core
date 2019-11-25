@@ -16,6 +16,7 @@
 
 package reactor.core;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -51,6 +52,11 @@ public abstract class Exceptions {
 	 * exceptions together as suppressed exceptions under a root Throwable with
 	 * the {@code "Multiple exceptions"} message, if the atomic reference already holds
 	 * one. This is short-circuited if the reference contains {@link #TERMINATED}.
+	 * <p>
+	 * Since composite exceptions and traceback exceptions share the same underlying mechanism
+	 * of suppressed exceptions, a traceback could be made part of a composite exception.
+	 * Use {@link #unwrapMultipleExcludingTracebacks(Throwable)} to filter out such elements in
+	 * a composite if needed.
 	 *
 	 * @param <T> the parent instance type
 	 * @param field the target field updater
@@ -97,6 +103,11 @@ public abstract class Exceptions {
 	 * will correctly unwrap these to a {@link List} of the suppressed exceptions. Note
 	 * that is will also be consistent in producing a List for other types of exceptions
 	 * by putting the input inside a single-element List.
+	 * <p>
+	 * Since composite exceptions and traceback exceptions share the same underlying mechanism
+	 * of suppressed exceptions, a traceback could be made part of a composite exception.
+	 * Use {@link #unwrapMultipleExcludingTracebacks(Throwable)} to filter out such elements in
+	 * a composite if needed.
 	 *
 	 * @param throwables the exceptions to wrap into a composite
 	 * @return a composite exception with a standard message, and the given throwables as
@@ -117,11 +128,16 @@ public abstract class Exceptions {
 
 	/**
 	 * Create a composite exception that wraps the given {@link Throwable Throwable(s)},
-	 * as suppressed exceptions. Instances create by this method can be detected using the
+	 * as suppressed exceptions. Instances created by this method can be detected using the
 	 * {@link #isMultiple(Throwable)} check. The {@link #unwrapMultiple(Throwable)} method
 	 * will correctly unwrap these to a {@link List} of the suppressed exceptions. Note
 	 * that is will also be consistent in producing a List for other types of exceptions
 	 * by putting the input inside a single-element List.
+	 * <p>
+	 * Since composite exceptions and traceback exceptions share the same underlying mechanism
+	 * of suppressed exceptions, a traceback could be made part of a composite exception.
+	 * Use {@link #unwrapMultipleExcludingTracebacks(Throwable)} to filter out such elements in
+	 * a composite if needed.
 	 *
 	 * @param throwables the exceptions to wrap into a composite
 	 * @return a composite exception with a standard message, and the given throwables as
@@ -129,7 +145,7 @@ public abstract class Exceptions {
 	 * @see #addThrowable(AtomicReferenceFieldUpdater, Object, Throwable)
 	 */
 	public static RuntimeException multiple(Iterable<Throwable> throwables) {
-		RuntimeException multiple = new RuntimeException("Multiple exceptions");
+		CompositeException multiple = new CompositeException();
 		//noinspection ConstantConditions
 		if (throwables != null) {
 			for (Throwable t : throwables) {
@@ -295,7 +311,7 @@ public abstract class Exceptions {
 	 * @return true if given {@link Throwable} is a callback not implemented exception.
 	 */
 	public static boolean isErrorCallbackNotImplemented(@Nullable Throwable t) {
-		return t != null && t.getClass().equals(ErrorCallbackNotImplemented.class);
+		return t instanceof ErrorCallbackNotImplemented;
 	}
 
 	/**
@@ -306,6 +322,20 @@ public abstract class Exceptions {
 	 */
 	public static boolean isMultiple(@Nullable Throwable t) {
 		return t instanceof CompositeException;
+	}
+
+	/**
+	 * Check a {@link Throwable} to see if it is a traceback, as created by the checkpoint operator or debug utilities.
+	 *
+	 * @param t the {@link Throwable} to check, {@literal null} always yields {@literal false}
+	 * @return true if the Throwable is a traceback, false otherwise
+	 */
+	public static boolean isTraceback(@Nullable Throwable t) {
+		if (t == null) {
+			return false;
+		}
+		//FIXME maybe add an interface here for detection purposes
+		return "reactor.core.publisher.FluxOnAssembly.OnAssemblyException".equals(t.getClass().getCanonicalName());
 	}
 
 	/**
@@ -417,11 +447,17 @@ public abstract class Exceptions {
 	 * {@link #multiple(Throwable...)}, in which case the list contains the exceptions
 	 * wrapped as suppressed exceptions in the composite. In any other case, the list
 	 * only contains the input Throwable (or is empty in case of null input).
+	 * <p>
+	 * Since composite exceptions and traceback exceptions share the same underlying mechanism
+	 * of suppressed exceptions, a traceback could be made part of a composite exception.
+	 * Use {@link #unwrapMultipleExcludingTracebacks(Throwable)} to filter out such elements in
+	 * a composite if needed.
 	 *
 	 * @param potentialMultiple the {@link Throwable} to unwrap if multiple
 	 * @return a {@link List} of the exceptions suppressed by the {@link Throwable} if
 	 * multiple, or a List containing the Throwable otherwise. Null input results in an
 	 * empty List.
+	 * @see #unwrapMultipleExcludingTracebacks(Throwable)
 	 */
 	public static List<Throwable> unwrapMultiple(@Nullable Throwable potentialMultiple) {
 		if (potentialMultiple == null) {
@@ -430,6 +466,42 @@ public abstract class Exceptions {
 
 		if (isMultiple(potentialMultiple)) {
 			return Arrays.asList(potentialMultiple.getSuppressed());
+		}
+
+		return Collections.singletonList(potentialMultiple);
+	}
+
+	/**
+	 * Attempt to unwrap a {@link Throwable} into a {@link List} of Throwables, excluding instances that
+	 * are {@link #isTraceback(Throwable) tracebacks}.
+	 * This is only done on the condition that said Throwable is a composite exception built by
+	 * {@link #multiple(Throwable...)}, in which case the returned list contains its suppressed exceptions
+	 * minus the tracebacks. In any other case, the list only contains the input Throwable (or is empty in
+	 * case of null input).
+	 * <p>
+	 * This is useful because tracebacks are added as suppressed exceptions and thus can appear as components
+	 * of a composite.
+	 *
+	 * @param potentialMultiple the {@link Throwable} to unwrap if multiple
+	 * @return a {@link List} of the exceptions suppressed by the {@link Throwable} minus the
+	 * tracebacks if multiple, or a List containing the Throwable otherwise. Null input results in an
+	 * empty List.
+	 */
+	public static List<Throwable> unwrapMultipleExcludingTracebacks(@Nullable Throwable potentialMultiple) {
+		if (potentialMultiple == null) {
+			return Collections.emptyList();
+		}
+
+		if (isMultiple(potentialMultiple)) {
+			final Throwable[] suppressed = potentialMultiple.getSuppressed();
+			List<Throwable> filtered = new ArrayList<>(suppressed.length);
+			for (Throwable t : suppressed) {
+				if (isTraceback(t)) {
+					continue;
+				}
+				filtered.add(t);
+			}
+			return filtered;
 		}
 
 		return Collections.singletonList(potentialMultiple);
