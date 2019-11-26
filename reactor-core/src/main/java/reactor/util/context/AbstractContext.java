@@ -16,6 +16,8 @@
 
 package reactor.util.context;
 
+import java.util.Map;
+
 /**
  * Abstract base to optimize interactions between reactor core {@link Context} implementations.
  *
@@ -24,11 +26,9 @@ package reactor.util.context;
 abstract class AbstractContext implements Context {
 
 	@Override
-	public Context putAll(Context other) {
-		if (other instanceof AbstractContext) {
-			return ((AbstractContext) other).putAllInto(this);
-		}
-		return Context.super.putAll(other);
+	public boolean isEmpty() {
+		// Overridden in Context0#isEmpty
+		return false;
 	}
 
 	/**
@@ -39,5 +39,13 @@ abstract class AbstractContext implements Context {
 	 * @return a new context containing all the base values merged with all our values
 	 */
 	protected abstract Context putAllInto(Context base);
+
+	/**
+	 * Let this Context add its internal values to the given Map, avoiding creating
+	 * intermediate holders for key-value pairs as much as possible.
+	 *
+	 * @param map the {@link Map} in which we're putting all our values
+	 */
+	protected abstract void putAllInto(Map<Object, Object> map);
 
 }

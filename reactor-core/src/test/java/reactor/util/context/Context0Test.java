@@ -42,7 +42,7 @@ public class Context0Test {
 	@Test
 	public void isEmpty() {
 		assertThat(Context.empty().isEmpty()).as("empty().isEmpty()").isTrue();
-		assertThat(new Context0().isEmpty()).as("new Context0().isEmpty()").isTrue();
+		assertThat(Context0.INSTANCE.isEmpty()).as("Context0.INSTANCE.isEmpty()").isTrue();
 	}
 
 	@Test
@@ -128,7 +128,7 @@ public class Context0Test {
 
 	@Test
 	public void putAllSelfIntoReturnsSame() {
-		AbstractContext initial = new Context0();
+		AbstractContext initial = Context0.INSTANCE;
 
 		Context result = ((AbstractContext) c).putAllInto(initial);
 
@@ -138,7 +138,7 @@ public class Context0Test {
 	@Test
 	public void putAllSelfIntoContextNReturnsSame() {
 		AbstractContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
-		Context0 self = new Context0();
+		Context0 self = Context0.INSTANCE;
 		Context result = self.putAllInto(initial);
 
 		assertThat(result).isSameAs(initial);

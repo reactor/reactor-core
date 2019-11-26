@@ -121,18 +121,17 @@ final class Context3 extends AbstractContext {
 
 	@Override
 	protected Context putAllInto(Context base) {
-		Context merged = base.put(this.key1, this.value1);
+		return base
+				.put(this.key1, this.value1)
+				.put(this.key2, this.value2)
+				.put(this.key3, this.value3);
+	}
 
-		if (merged instanceof ContextN) {
-			ContextN cn = (ContextN) merged;
-			cn.delegate.put(this.key2, this.value2);
-			cn.delegate.put(this.key3, this.value3);
-		}
-		else {
-			merged = merged.put(this.key2, this.value2);
-			merged = merged.put(this.key3, this.value3);
-		}
-		return merged;
+	@Override
+	protected void putAllInto(Map<Object, Object> map) {
+		map.put(key1, value1);
+		map.put(key2, value2);
+		map.put(key3, value3);
 	}
 
 	@Override

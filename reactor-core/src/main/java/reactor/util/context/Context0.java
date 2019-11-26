@@ -24,6 +24,9 @@ final class Context0 extends AbstractContext {
 
 	static final Context0 INSTANCE = new Context0();
 
+	private Context0() {
+	}
+
 	@Override
 	public Context put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
@@ -52,6 +55,11 @@ final class Context0 extends AbstractContext {
 	}
 
 	@Override
+	public boolean isEmpty() {
+		return true;
+	}
+
+	@Override
 	public String toString() {
 		return "Context0{}";
 	}
@@ -64,5 +72,9 @@ final class Context0 extends AbstractContext {
 	@Override
 	protected Context putAllInto(Context base) {
 		return base;
+	}
+
+	@Override
+	protected void putAllInto(Map<Object, Object> map) {
 	}
 }

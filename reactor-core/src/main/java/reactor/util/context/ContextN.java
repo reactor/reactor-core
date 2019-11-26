@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
@@ -69,6 +68,10 @@ final class ContextN extends AbstractContext {
 
 		other.forEach((k, v) -> delegate.put(Objects.requireNonNull(k, "other map contains null key"),
 				Objects.requireNonNull(v, "other map contains null value")));
+	}
+
+	ContextN(LinkedHashMap<Object, Object> delegate) {
+		this.delegate = Objects.requireNonNull(delegate, "delegate");
 	}
 
 	@Override
@@ -147,7 +150,9 @@ final class ContextN extends AbstractContext {
 
 	@Override
 	protected Context putAllInto(Context base) {
-		if (base instanceof ContextN) return new ContextN(((ContextN) base).delegate, this.delegate);
+		if (base instanceof ContextN) {
+			return new ContextN(((ContextN) base).delegate, this.delegate);
+		}
 
 		Context[] holder = new Context[]{base};
 		delegate.forEach((k, v) -> holder[0] = holder[0].put(k, v));
@@ -155,23 +160,27 @@ final class ContextN extends AbstractContext {
 	}
 
 	@Override
+	protected void putAllInto(Map<Object, Object> map) {
+		map.putAll(this.delegate);
+	}
+
+	@Override
 	public Context putAll(Context other) {
 		if (other.isEmpty()) return this;
-		if (other instanceof ContextN) return new ContextN(this.delegate, ((ContextN) other).delegate);
 
+		// slightly less wasteful implementation for non-core context:
+		// only collect the other since we already have a map for this.
+		LinkedHashMap<Object, Object> map = new LinkedHashMap<>(this.delegate);
 		if (other instanceof AbstractContext) {
 			AbstractContext abstractContext = (AbstractContext) other;
-			return abstractContext.putAllInto(this);
+			abstractContext.putAllInto(map);
+		}
+		else {
+			// avoid Collector to reduce the allocations
+			other.stream().forEach(entry -> map.put(entry.getKey(), entry.getValue()));
 		}
 
-		//slightly less wasteful implementation for non-core context: only collect the other since we already have a map for this
-		return new ContextN(this.delegate,
-				other.stream()
-				     .collect(Collectors.toMap(
-						     Map.Entry::getKey,
-						     Map.Entry::getValue,
-						     (value1, value2) -> value2, //key collisions shouldn't occur
-						     LinkedHashMap::new)));
+		return new ContextN(map);
 	}
 
 	@Override

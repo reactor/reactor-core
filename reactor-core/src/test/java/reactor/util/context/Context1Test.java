@@ -173,7 +173,7 @@ public class Context1Test {
 
 	@Test
 	public void putAllSelfInto() {
-		AbstractContext initial = new Context0();
+		AbstractContext initial = Context0.INSTANCE;
 
 		Context result = ((AbstractContext) c).putAllInto(initial);
 

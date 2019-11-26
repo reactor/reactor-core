@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
@@ -265,7 +265,7 @@ public interface Context {
 	 * @return true if the {@link Context} is empty.
 	 */
 	default boolean isEmpty() {
-		return this == Context0.INSTANCE || this instanceof Context0;
+		return size() == 0;
 	}
 
 	/**
@@ -337,12 +337,24 @@ public interface Context {
 		if (other.isEmpty()) return this;
 
 		if (other instanceof AbstractContext) {
-			return ((AbstractContext) other).putAllInto(this);
+			AbstractContext abstractContext = (AbstractContext) other;
+			return abstractContext.putAllInto(this);
 		}
 
-		final Map<Object, Object> collect = Stream.concat(this.stream(), other.stream())
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (o1, o2) -> o2, LinkedHashMap::new));
+		LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
+		Consumer<Map.Entry<Object, Object>> entryConsumer = entry -> map.put(entry.getKey(), entry.getValue());
+		if (this instanceof AbstractContext) {
+			((AbstractContext) this).putAllInto(map);
+		}
+		else {
+			this.stream().forEach(entryConsumer);
+		}
+		other.stream().forEach(entryConsumer);
+		if (map.size() > 5) {
+			// Shortcut to ContextN to avoid the overhead of Context#of
+			return new ContextN(map);
+		}
 
-		return Context.of(collect);
+		return Context.of(map);
 	}
 }

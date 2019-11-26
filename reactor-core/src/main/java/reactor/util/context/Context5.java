@@ -152,22 +152,21 @@ final class Context5 extends AbstractContext {
 
 	@Override
 	protected Context putAllInto(Context base) {
-		Context merged = base.put(this.key1, this.value1);
+		return base
+				.put(this.key1, this.value1)
+		        .put(this.key2, this.value2)
+				.put(this.key3, this.value3)
+				.put(this.key4, this.value4)
+				.put(this.key5, this.value5);
+	}
 
-		if (merged instanceof ContextN) {
-			ContextN cn = (ContextN) merged;
-			cn.delegate.put(this.key2, this.value2);
-			cn.delegate.put(this.key3, this.value3);
-			cn.delegate.put(this.key4, this.value4);
-			cn.delegate.put(this.key5, this.value5);
-		}
-		else {
-			merged = merged.put(this.key2, this.value2);
-			merged = merged.put(this.key3, this.value3);
-			merged = merged.put(this.key4, this.value4);
-			merged = merged.put(this.key5, this.value5);
-		}
-		return merged;
+	@Override
+	protected void putAllInto(Map<Object, Object> map) {
+		map.put(key1, value1);
+		map.put(key2, value2);
+		map.put(key3, value3);
+		map.put(key4, value4);
+		map.put(key5, value5);
 	}
 
 	@Override

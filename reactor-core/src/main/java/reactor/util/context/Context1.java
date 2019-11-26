@@ -73,10 +73,12 @@ final class Context1 extends AbstractContext {
 
 	@Override
 	protected Context putAllInto(Context base) {
-		if (base instanceof ContextN) {
-			return new ContextN(((ContextN) base).delegate, key, value);
-		}
 		return base.put(key, value);
+	}
+
+	@Override
+	protected void putAllInto(Map<Object, Object> map) {
+		map.put(key, value);
 	}
 
 	@Override
