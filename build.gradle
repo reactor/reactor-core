@@ -84,6 +84,7 @@ configure(subprojects) { p ->
 	apply plugin: 'kotlin'
 	apply plugin: 'jacoco'
 	apply plugin: 'osgi'
+	apply plugin: 'propdeps'
 	apply from: "${rootDir}/gradle/setup.gradle"
 
 	description = 'Non-Blocking Reactive Foundation for the JVM'
