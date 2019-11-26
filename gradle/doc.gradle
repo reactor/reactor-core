@@ -57,7 +57,8 @@ configure(rootProject) {
 	}
 
 	task docsZip(type: Zip, dependsOn: asciidoctor) {
-	  baseName = 'reactor-core-docs'
+		archiveBaseName.set("reactor-core")
+		archiveClassifier.set('docs')
 		afterEvaluate() {
 			//we copy the pdf late, when a potential customVersion has been applied to rootProject
 			from("$buildDir/reactor-code/build/asciidoc/pdf/index.pdf") {
