@@ -164,7 +164,7 @@ final class Context4 extends AbstractContext {
 	protected Context putAllInto(Context base) {
 		return base
 				.put(this.key1, this.value1)
-                .put(this.key2, this.value2)
+				.put(this.key2, this.value2)
 				.put(this.key3, this.value3)
 				.put(this.key4, this.value4);
 	}
