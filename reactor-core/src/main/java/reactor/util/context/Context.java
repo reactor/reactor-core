@@ -347,10 +347,11 @@ public interface Context {
 			return coreContext.putAllInto(this);
 		}
 
-		ContextN newContext = new ContextN(this.size() + other.size(), 1.0f);
+		ContextN newContext = new ContextN(this.size() + other.size());
 		if (this instanceof CoreContext) {
+			//we're not a ContextN since this one overrides putAll
 			CoreContext coreContext = (CoreContext) this;
-			coreContext.fill(newContext);
+			coreContext.unsafePutAllInto(newContext);
 		}
 		else {
 			this.stream().forEach(newContext);

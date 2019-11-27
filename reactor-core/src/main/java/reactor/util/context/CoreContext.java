@@ -39,11 +39,11 @@ interface CoreContext extends Context {
 	Context putAllInto(Context base);
 
 	/**
-	 * Let this Context add its internal values to the given ContextN, avoiding creating
-	 * intermediate holders for key-value pairs as much as possible.
+	 * Let this Context add its internal values to the given ContextN, <strong>mutating it</strong>,
+	 * but avoiding creating intermediate holders for key-value pairs as much as possible.
 	 *
-	 * @param other the {@link ContextN} in which we're putting all our values
+	 * @param other the {@link ContextN} we're mutating by putting all our values into
 	 */
-	void fill(ContextN other);
+	void unsafePutAllInto(ContextN other);
 
 }

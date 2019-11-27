@@ -198,14 +198,14 @@ public class Context1Test {
 	}
 
 	@Test
-	public void fillShouldReplace() {
+	public void unsafePutAllIntoShouldReplace() {
 		ContextN ctx = new ContextN(Collections.emptyMap());
 		ctx.accept(1, "VALUE1");
 		ctx.accept("extra", "value");
 
 		Context1 self = new Context1(1, "REPLACED");
 
-		self.fill(ctx);
+		self.unsafePutAllInto(ctx);
 
 		assertThat(ctx)
 				.containsEntry(1, "REPLACED")

@@ -291,7 +291,7 @@ public class Context5Test {
 	}
 
 	@Test
-	public void fillShouldReplace() {
+	public void unsafePutAllIntoShouldReplace() {
 		ContextN ctx = new ContextN(Collections.emptyMap());
 		ctx.accept(1, "VALUE1");
 		ctx.accept(2, "VALUE2");
@@ -303,7 +303,7 @@ public class Context5Test {
 		Context5 self = new Context5(1, "REPLACED1", 2, "REPLACED2",
 				3, "REPLACED3", 4, "REPLACED4", 5, "REPLACED5");
 
-		self.fill(ctx);
+		self.unsafePutAllInto(ctx);
 
 		assertThat(ctx)
 				.containsEntry(1, "REPLACED1")

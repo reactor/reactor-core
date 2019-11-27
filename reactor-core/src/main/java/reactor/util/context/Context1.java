@@ -77,7 +77,7 @@ final class Context1 implements CoreContext {
 	}
 
 	@Override
-	public void fill(ContextN other) {
+	public void unsafePutAllInto(ContextN other) {
 		other.accept(key, value);
 	}
 

@@ -47,27 +47,28 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	/**
 	 * Creates a new {@link ContextN} with values from the provided {@link Map}
 	 *
-	 * @param delegate a {@link Map} to populate entries from. MUST NOT contain null keys/values
+	 * @param originalToCopy a {@link Map} to populate entries from. MUST NOT contain null keys/values
 	 */
-	ContextN(Map<Object, Object> delegate) {
-		super(Objects.requireNonNull(delegate, "delegate"));
+	ContextN(Map<Object, Object> originalToCopy) {
+		super(Objects.requireNonNull(originalToCopy, "originalToCopy"));
 	}
 
-	ContextN(int initialCapacity, float loadFactor) {
-		super(initialCapacity, loadFactor);
+	ContextN(int initialCapacity) {
+		super(initialCapacity, 1.0f);
 	}
 
-	@Override
-	public void accept(Entry<Object, Object> entry) {
-		accept(entry.getKey(), entry.getValue());
-	}
-
-	//this performs an inner put to the actual hashmap, and also allows passing `this` directly to
+	//this performs an inner put to the actual map, and also allows passing `this` directly to
 	//Map#forEach
 	@Override
 	public void accept(Object key, Object value) {
 		super.put(Objects.requireNonNull(key, "key"),
 				Objects.requireNonNull(value, "value"));
+	}
+
+	//this performs an inner put of the entry to the actual map
+	@Override
+	public void accept(Entry<Object, Object> entry) {
+		accept(entry.getKey(), entry.getValue());
 	}
 
 	/**
@@ -147,7 +148,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	@Override
 	public Context putAllInto(Context base) {
 		if (base instanceof ContextN) {
-			ContextN newContext = new ContextN(base.size() + this.size(), 1.0f);
+			ContextN newContext = new ContextN(base.size() + this.size());
 			newContext.putAll((Map<Object, Object>) base);
 			newContext.putAll((Map<Object, Object>) this);
 			return newContext;
@@ -159,7 +160,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	}
 
 	@Override
-	public void fill(ContextN other) {
+	public void unsafePutAllInto(ContextN other) {
 		other.putAll((Map<Object, Object>) this);
 	}
 
@@ -172,7 +173,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 		ContextN newContext = new ContextN(this);
 		if (other instanceof CoreContext) {
 			CoreContext coreContext = (CoreContext) other;
-			coreContext.fill(newContext);
+			coreContext.unsafePutAllInto(newContext);
 		}
 		else {
 			// avoid Collector to reduce the allocations

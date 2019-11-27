@@ -146,13 +146,13 @@ public class Context0Test {
 	}
 
 	@Test
-	public void fillIsNoOp() {
+	public void unsafePutAllIntoIsNoOp() {
 		ContextN ctx = new ContextN(Collections.emptyMap());
 		ctx.accept(1, "SHOULD NOT BE REPLACED");
 
 		Context0 self = new Context0();
 
-		self.fill(ctx);
+		self.unsafePutAllInto(ctx);
 
 		assertThat(ctx)
 				.containsEntry(1, "SHOULD NOT BE REPLACED")

@@ -72,6 +72,6 @@ final class Context0 implements CoreContext {
 	}
 
 	@Override
-	public void fill(ContextN other) {
+	public void unsafePutAllInto(ContextN other) {
 	}
 }
