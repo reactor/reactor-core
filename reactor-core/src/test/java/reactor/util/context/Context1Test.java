@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -169,6 +170,47 @@ public class Context1Test {
 		assertThat(context1.stream().map(Objects::toString).collect(Collectors.joining(", ")))
 				.as("stream elements representation")
 				.isEqualTo("key=value");
+	}
+
+	@Test
+	public void putAllSelfIntoEmpty() {
+		CoreContext initial = new Context0();
+
+		Context result = ((CoreContext) c).putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream()).containsExactlyElementsOf(c.stream().collect(Collectors.toList()));
+	}
+
+	@Test
+	public void putAllSelfIntoContextN() {
+		CoreContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		Context1 self = new Context1("A", 1);
+		Context result = self.putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream().map(String::valueOf))
+				.containsExactly("1=1", "2=2", "3=3", "4=4", "5=5", "6=6", "A=1");
+	}
+
+	@Test
+	public void unsafePutAllIntoShouldReplace() {
+		ContextN ctx = new ContextN(Collections.emptyMap());
+		ctx.accept(1, "VALUE1");
+		ctx.accept("extra", "value");
+
+		Context1 self = new Context1(1, "REPLACED");
+
+		self.unsafePutAllInto(ctx);
+
+		assertThat(ctx)
+				.containsEntry(1, "REPLACED")
+				.containsEntry("extra", "value")
+				.hasSize(2);
 	}
 
 }

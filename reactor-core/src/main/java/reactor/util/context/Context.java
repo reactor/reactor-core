@@ -16,7 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -178,7 +177,16 @@ public interface Context {
 					entries[4].getKey(), entries[4].getValue());
 			}
 		}
-		return new ContextN(Collections.emptyMap(), map);
+		// Since ContextN(Map) is a low level API that DOES NOT perform null checks,
+		// we need to check every key/value before passing it to ContextN(Map)
+		map.forEach((key, value) -> {
+			Objects.requireNonNull(key, "null key found");
+			if (value == null) {
+				throw new NullPointerException("null value for key " + key);
+			}
+		});
+		//noinspection unchecked
+		return new ContextN((Map) map);
 	}
 
 	/**
@@ -263,7 +271,7 @@ public interface Context {
 	 * @return true if the {@link Context} is empty.
 	 */
 	default boolean isEmpty() {
-		return this == Context0.INSTANCE || this instanceof Context0;
+		return size() == 0;
 	}
 
 	/**
@@ -334,10 +342,18 @@ public interface Context {
 	default Context putAll(Context other) {
 		if (other.isEmpty()) return this;
 
-		return other.stream()
-		            .reduce(this,
-				            (c, e) -> c.put(e.getKey(), e.getValue()),
-				            (c1, c2) -> { throw new UnsupportedOperationException("Context.putAll should not use a parallelized stream");}
-		            );
+		if (other instanceof CoreContext) {
+			CoreContext coreContext = (CoreContext) other;
+			return coreContext.putAllInto(this);
+		}
+
+		ContextN newContext = new ContextN(this.size() + other.size());
+		this.stream().forEach(newContext);
+		other.stream().forEach(newContext);
+		if (newContext.size() <= 5) {
+			// make it return Context{1-5}
+			return Context.of(newContext);
+		}
+		return newContext;
 	}
 }

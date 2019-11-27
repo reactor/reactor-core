@@ -16,21 +16,20 @@
 package reactor.util.context;
 
 import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends LinkedHashMap<Object, Object>
-		implements Context, BiConsumer<Object, Object> {
+		implements CoreContext, BiConsumer<Object, Object>, Consumer<Entry<Object, Object>> {
 
 	ContextN(Object key1, Object value1, Object key2, Object value2,
 			Object key3, Object value3, Object key4, Object value4,
@@ -45,21 +44,20 @@ final class ContextN extends LinkedHashMap<Object, Object>
 		accept(key6, value6);
 	}
 
-	ContextN(Map<Object, Object> map, Object key, Object value) {
-		super(Objects.requireNonNull(map, "map").size() + 1, 1f);
-		map.forEach(this);
-		accept(key, value); //innerPut
+	/**
+	 * Creates a new {@link ContextN} with values from the provided {@link Map}
+	 *
+	 * @param originalToCopy a {@link Map} to populate entries from. MUST NOT contain null keys/values
+	 */
+	ContextN(Map<Object, Object> originalToCopy) {
+		super(Objects.requireNonNull(originalToCopy, "originalToCopy"));
 	}
 
-	ContextN(Map<Object, Object> sourceMap, Map<?, ?> other) {
-		super(Objects.requireNonNull(sourceMap, "sourceMap").size()
-						+ Objects.requireNonNull(other, "other").size(),
-				1f);
-		sourceMap.forEach(this);
-		other.forEach(this);
+	ContextN(int initialCapacity) {
+		super(initialCapacity, 1.0f);
 	}
 
-	//this performs an inner put to the actual hashmap, and also allows passing `this` directly to
+	//this performs an inner put to the actual map, and also allows passing `this` directly to
 	//Map#forEach
 	@Override
 	public void accept(Object key, Object value) {
@@ -67,11 +65,24 @@ final class ContextN extends LinkedHashMap<Object, Object>
 				Objects.requireNonNull(value, "value"));
 	}
 
+	//this performs an inner put of the entry to the actual map
+	@Override
+	public void accept(Entry<Object, Object> entry) {
+		accept(entry.getKey(), entry.getValue());
+	}
+
+	/**
+	 * Note that this method overrides {@link LinkedHashMap#put(Object, Object)}.
+	 * Consider using {@link #accept(Object, Object)} instead for putting items into the map.
+	 *
+	 * @param key the key to add/update in the new {@link Context}
+	 * @param value the value to associate to the key in the new {@link Context}
+	 */
 	@Override
 	public Context put(Object key, Object value) {
-		Objects.requireNonNull(key, "key");
-		Objects.requireNonNull(key, "value");
-		return new ContextN(this, key, value);
+		ContextN newContext = new ContextN(this);
+		newContext.accept(key, value);
+		return newContext;
 	}
 
 	@Override
@@ -83,6 +94,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 
 		int s = size() - 1;
 		if (s == 5) {
+			@SuppressWarnings("unchecked")
 			Entry<Object, Object>[] arr = new Entry[s];
 			int idx = 0;
 			for (Entry<Object, Object> entry : entrySet()) {
@@ -99,7 +111,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 					arr[4].getKey(), arr[4].getValue());
 		}
 
-		ContextN newInstance = new ContextN(this, Collections.emptyMap());
+		ContextN newInstance = new ContextN(this);
 		newInstance.remove(key);
 		return newInstance;
 	}
@@ -134,17 +146,45 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	}
 
 	@Override
+	public Context putAllInto(Context base) {
+		if (base instanceof ContextN) {
+			ContextN newContext = new ContextN(base.size() + this.size());
+			newContext.putAll((Map<Object, Object>) base);
+			newContext.putAll((Map<Object, Object>) this);
+			return newContext;
+		}
+
+		Context[] holder = new Context[]{base};
+		forEach((k, v) -> holder[0] = holder[0].put(k, v));
+		return holder[0];
+	}
+
+	@Override
+	public void unsafePutAllInto(ContextN other) {
+		other.putAll((Map<Object, Object>) this);
+	}
+
+	@Override
 	public Context putAll(Context other) {
 		if (other.isEmpty()) return this;
-		if (other instanceof ContextN) return new ContextN(this, ((ContextN) other));
 
-		Map<?, ?> mapOther = other.stream()
-		                          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-		return new ContextN(this, mapOther);
+		// slightly less wasteful implementation for non-core context:
+		// only collect the other since we already have a map for this.
+		ContextN newContext = new ContextN(this);
+		if (other instanceof CoreContext) {
+			CoreContext coreContext = (CoreContext) other;
+			coreContext.unsafePutAllInto(newContext);
+		}
+		else {
+			// avoid Collector to reduce the allocations
+			other.stream().forEach(newContext);
+		}
+
+		return newContext;
 	}
 
 	@Override
 	public String toString() {
-		return "ContextN"+super.toString();
+		return "ContextN" + super.toString();
 	}
 }

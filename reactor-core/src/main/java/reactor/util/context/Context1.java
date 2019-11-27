@@ -21,7 +21,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class Context1 implements Context {
+final class Context1 implements CoreContext {
 
 	final Object key;
 	final Object value;
@@ -69,6 +69,16 @@ final class Context1 implements Context {
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
 		return Stream.of(new AbstractMap.SimpleImmutableEntry<>(key, value));
+	}
+
+	@Override
+	public Context putAllInto(Context base) {
+		return base.put(key, value);
+	}
+
+	@Override
+	public void unsafePutAllInto(ContextN other) {
+		other.accept(key, value);
 	}
 
 	@Override

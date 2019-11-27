@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -124,5 +125,37 @@ public class Context0Test {
 	@Test
 	public void size() {
 		assertThat(c.size()).isZero();
+	}
+
+	@Test
+	public void putAllSelfIntoEmptyReturnsSame() {
+		CoreContext initial = new Context0();
+
+		Context result = ((CoreContext) c).putAllInto(initial);
+
+		assertThat(result).isSameAs(initial);
+	}
+
+	@Test
+	public void putAllSelfIntoContextNReturnsSame() {
+		CoreContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		Context0 self = new Context0();
+		Context result = self.putAllInto(initial);
+
+		assertThat(result).isSameAs(initial);
+	}
+
+	@Test
+	public void unsafePutAllIntoIsNoOp() {
+		ContextN ctx = new ContextN(Collections.emptyMap());
+		ctx.accept(1, "SHOULD NOT BE REPLACED");
+
+		Context0 self = new Context0();
+
+		self.unsafePutAllInto(ctx);
+
+		assertThat(ctx)
+				.containsEntry(1, "SHOULD NOT BE REPLACED")
+				.hasSize(1);
 	}
 }
