@@ -24,9 +24,6 @@ final class Context0 extends AbstractContext {
 
 	static final Context0 INSTANCE = new Context0();
 
-	private Context0() {
-	}
-
 	@Override
 	public Context put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");

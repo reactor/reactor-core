@@ -468,8 +468,8 @@ public class ContextNTest {
 	}
 
 	@Test
-	public void putAllSelfInto() {
-		AbstractContext initial = Context0.INSTANCE;
+	public void putAllSelfIntoEmpty() {
+		AbstractContext initial = new Context0();
 
 		Context result = ((AbstractContext) c).putAllInto(initial);
 

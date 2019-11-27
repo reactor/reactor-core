@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -42,7 +43,7 @@ public class Context0Test {
 	@Test
 	public void isEmpty() {
 		assertThat(Context.empty().isEmpty()).as("empty().isEmpty()").isTrue();
-		assertThat(Context0.INSTANCE.isEmpty()).as("Context0.INSTANCE.isEmpty()").isTrue();
+		assertThat(new Context0().isEmpty()).as("new Context0().isEmpty()").isTrue();
 	}
 
 	@Test
@@ -127,8 +128,8 @@ public class Context0Test {
 	}
 
 	@Test
-	public void putAllSelfIntoReturnsSame() {
-		AbstractContext initial = Context0.INSTANCE;
+	public void putAllSelfIntoEmptyReturnsSame() {
+		AbstractContext initial = new Context0();
 
 		Context result = ((AbstractContext) c).putAllInto(initial);
 
@@ -138,9 +139,23 @@ public class Context0Test {
 	@Test
 	public void putAllSelfIntoContextNReturnsSame() {
 		AbstractContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
-		Context0 self = Context0.INSTANCE;
+		Context0 self = new Context0();
 		Context result = self.putAllInto(initial);
 
 		assertThat(result).isSameAs(initial);
+	}
+
+	@Test
+	public void putAllSelfIntoMapIsNoOp() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put(1, "SHOULD NOT BE REPLACED");
+
+		Context0 self = new Context0();
+
+		self.putAllInto(map);
+
+		assertThat(map)
+				.containsEntry(1, "SHOULD NOT BE REPLACED")
+				.hasSize(1);
 	}
 }

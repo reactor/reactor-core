@@ -16,7 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -180,7 +179,10 @@ public interface Context {
 					entries[4].getKey(), entries[4].getValue());
 			}
 		}
-		return new ContextN(Collections.emptyMap(), map);
+		//Context.of(map) should always avoid being backed directly by the given map since we don't know
+		//how said map is externally used (ie it could be mutated). Use the ContextN(LinkedHashMap) constructor
+		//if you've prepared a Map specifically for that new instance.
+		return new ContextN(new LinkedHashMap<>(map));
 	}
 
 	/**

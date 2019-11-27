@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -172,8 +173,8 @@ public class Context1Test {
 	}
 
 	@Test
-	public void putAllSelfInto() {
-		AbstractContext initial = Context0.INSTANCE;
+	public void putAllSelfIntoEmpty() {
+		AbstractContext initial = new Context0();
 
 		Context result = ((AbstractContext) c).putAllInto(initial);
 
@@ -194,6 +195,22 @@ public class Context1Test {
 
 		assertThat(result.stream().map(String::valueOf))
 				.containsExactly("1=1", "2=2", "3=3", "4=4", "5=5", "6=6", "A=1");
+	}
+
+	@Test
+	public void putAllSelfIntoMap() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put(1, "VALUE1");
+		map.put("extra", "value");
+
+		Context1 self = new Context1(1, "REPLACED");
+
+		self.putAllInto(map);
+
+		assertThat(map)
+				.containsEntry(1, "REPLACED")
+				.containsEntry("extra", "value")
+				.hasSize(2);
 	}
 
 }

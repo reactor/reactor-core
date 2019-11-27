@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -182,8 +183,8 @@ public class Context2Test {
 	}
 
 	@Test
-	public void putAllSelfInto() {
-		AbstractContext initial = Context0.INSTANCE;
+	public void putAllSelfIntoEmpty() {
+		AbstractContext initial = new Context0();
 
 		Context result = ((AbstractContext) c).putAllInto(initial);
 
@@ -205,4 +206,23 @@ public class Context2Test {
 		assertThat(result.stream().map(String::valueOf))
 				.containsExactly("1=1", "2=2", "3=3", "4=4", "5=5", "6=6", "A=1", "B=2");
 	}
+
+	@Test
+	public void putAllSelfIntoMap() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put(1, "VALUE1");
+		map.put(2, "VALUE2");
+		map.put("extra", "value");
+
+		Context2 self = new Context2(1, "REPLACED1", 2, "REPLACED2");
+
+		self.putAllInto(map);
+
+		assertThat(map)
+				.containsEntry(1, "REPLACED1")
+				.containsEntry(2, "REPLACED2")
+				.containsEntry("extra", "value")
+				.hasSize(3);
+	}
+
 }

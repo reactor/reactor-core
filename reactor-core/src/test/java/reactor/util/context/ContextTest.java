@@ -329,6 +329,7 @@ public class ContextTest {
 		Context context = Context.of(map);
 
 		assertThat(context).isInstanceOf(ContextN.class);
+		assertThat(((ContextN) context).delegate).as("instantiated new LinkedHashMap").isNotSameAs(map);
 		assertThat(context.size()).as("size").isEqualTo(6);
 		assertThat(context.getOrDefault("k1", 0)).isEqualTo(1);
 		assertThat(context.getOrDefault("k2", 0)).isEqualTo(2);
@@ -336,6 +337,23 @@ public class ContextTest {
 		assertThat(context.getOrDefault("k4", 0)).isEqualTo(4);
 		assertThat(context.getOrDefault("k5", 0)).isEqualTo(5);
 		assertThat(context.getOrDefault("k6", 0)).isEqualTo(6);
+	}
+
+	@Test
+	public void ofLinkedHashMap6() {
+		//Context.of(map) should always avoid being backed directly by the given map since we don't know
+		Map<String, Integer> map = new LinkedHashMap<>(6);
+		map.put("k1", 1);
+		map.put("k2", 2);
+		map.put("k3", 3);
+		map.put("k4", 4);
+		map.put("k5", 5);
+		map.put("k6", 6);
+		Context context = Context.of(map);
+
+		assertThat(context).isInstanceOf(ContextN.class);
+		assertThat(context.size()).as("size").isEqualTo(6);
+		assertThat(((ContextN) context).delegate).as("instantiated new LinkedHashMap").isNotSameAs(map);
 	}
 
 	// == tests for default methods ==

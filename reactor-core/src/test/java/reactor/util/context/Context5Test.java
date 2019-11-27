@@ -17,6 +17,7 @@
 package reactor.util.context;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -265,8 +266,8 @@ public class Context5Test {
 	}
 
 	@Test
-	public void putAllSelfInto() {
-		AbstractContext initial = Context0.INSTANCE;
+	public void putAllSelfIntoEmpty() {
+		AbstractContext initial = new Context0();
 
 		Context result = ((AbstractContext) c).putAllInto(initial);
 
@@ -287,5 +288,30 @@ public class Context5Test {
 
 		assertThat(result.stream().map(String::valueOf))
 				.containsExactly("1=1", "2=2", "3=3", "4=4", "5=5", "6=6", "A=1", "B=2", "C=3", "D=4", "E=5");
+	}
+
+	@Test
+	public void putAllSelfIntoMap() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put(1, "VALUE1");
+		map.put(2, "VALUE2");
+		map.put(3, "VALUE3");
+		map.put(4, "VALUE4");
+		map.put(5, "VALUE5");
+		map.put("extra", "value");
+
+		Context5 self = new Context5(1, "REPLACED1", 2, "REPLACED2",
+				3, "REPLACED3", 4, "REPLACED4", 5, "REPLACED5");
+
+		self.putAllInto(map);
+
+		assertThat(map)
+				.containsEntry(1, "REPLACED1")
+				.containsEntry(2, "REPLACED2")
+				.containsEntry(3, "REPLACED3")
+				.containsEntry(4, "REPLACED4")
+				.containsEntry(5, "REPLACED5")
+				.containsEntry("extra", "value")
+				.hasSize(6);
 	}
 }
