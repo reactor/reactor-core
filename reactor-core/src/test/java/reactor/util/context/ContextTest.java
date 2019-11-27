@@ -498,6 +498,41 @@ public class ContextTest {
 				.containsValues("A", "B", "C", "D", "E", "A10", "A11", "A12", "A13");
 	}
 
+	@Test
+	public void defaultPutAllForeignSmallSize() {
+		Context initial = new ForeignContext(1, "A");
+		Context other = new ForeignContext(2, "B");
+
+		Context result = initial.putAll(other);
+
+		assertThat(result).isInstanceOf(Context2.class);
+		Context2 context2 = (Context2) result;
+
+		assertThat(context2.key1).as("key1").isEqualTo(1);
+		assertThat(context2.value1).as("value1").isEqualTo("A");
+		assertThat(context2.key2).as("key2").isEqualTo(2);
+		assertThat(context2.value2).as("value2").isEqualTo("B");
+	}
+
+	@Test
+	public void putAllForeignMiddleSize() {
+		ForeignContext initial = new ForeignContext(1, "value1")
+				.directPut(2, "value2")
+				.directPut(3, "value3")
+				.directPut(4, "value4");
+		ForeignContext other = new ForeignContext(1, "replaced")
+				.directPut(5, "value5")
+				.directPut(6, "value6");
+
+		Context result = initial.putAll(other);
+
+		assertThat(result).isInstanceOf(ContextN.class);
+		ContextN resultN = (ContextN) result;
+		assertThat(resultN)
+				.containsKeys(1, 2, 3, 4, 5)
+				.containsValues("replaced", "value2", "value3", "value4", "value5");
+	}
+
 
 	static class ForeignContext implements Context {
 
@@ -521,6 +556,11 @@ public class ContextTest {
 		@Override
 		public boolean hasKey(Object key) {
 			return this.delegate.containsKey(key);
+		}
+
+		ForeignContext directPut(Object key, Object value) {
+			this.delegate.put(key, value);
+			return this;
 		}
 
 		@Override

@@ -28,6 +28,25 @@ interface CoreContext extends Context {
 		// Overridden in Context0#isEmpty
 		return false;
 	}
+	
+	@Override
+	default Context putAll(Context other) {
+		if (other.isEmpty()) return this;
+
+		if (other instanceof CoreContext) {
+			CoreContext coreContext = (CoreContext) other;
+			return coreContext.putAllInto(this);
+		}
+
+		ContextN newContext = new ContextN(this.size() + other.size());
+		this.unsafePutAllInto(newContext);
+		other.stream().forEach(newContext);
+		if (newContext.size() <= 5) {
+			// make it return Context{1-5}
+			return Context.of(newContext);
+		}
+		return newContext;
+	}
 
 	/**
 	 * Let this Context add its internal values to the given base Context, avoiding creating

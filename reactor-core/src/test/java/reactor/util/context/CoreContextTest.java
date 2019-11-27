@@ -26,9 +26,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CoreContextTest {
 
 	@Test
-	public void putAllOtherNonAbstract() {
-		Context other = new ContextTest.ForeignContext("staticKey", "staticValue");
+	public void putAllForeignSmallSize() {
 		Context initial = Context.of(1, "A", 2, "B", 3, "C");
+		Context other = new ContextTest.ForeignContext("staticKey", "staticValue");
+
 		Context result = initial.putAll(other);
 
 		assertThat(result).isInstanceOf(CoreContext.class)
@@ -43,6 +44,41 @@ public class CoreContextTest {
 		assertThat(context4.value3).as("value3").isEqualTo("C");
 		assertThat(context4.key4).as("key4").isEqualTo("staticKey");
 		assertThat(context4.value4).as("value4").isEqualTo("staticValue");
+	}
+
+	@Test
+	public void putAllForeignMiddleSize() {
+		Context initial = Context.of(1, "value1", 2, "value2", 3, "value3", 4, "value4");
+		ContextTest.ForeignContext other = new ContextTest.ForeignContext(1, "replaced")
+				.directPut(5, "value5")
+				.directPut(6, "value6");
+
+		Context result = initial.putAll(other);
+
+		assertThat(result).isInstanceOf(ContextN.class);
+		ContextN resultN = (ContextN) result;
+		assertThat(resultN)
+				.containsKeys(1, 2, 3, 4, 5)
+				.containsValues("replaced", "value2", "value3", "value4", "value5");
+	}
+
+	@Test
+	public void mergeTwoSmallContextResultInContext4() {
+		Context a = Context.of(1, "value1", 2, "value2");
+		CoreContext b = (CoreContext) Context.of(1, "replaced", 3, "value3", 4, "value4");
+
+		Context result = a.putAll(b);
+
+		assertThat(result).isInstanceOf(Context4.class);
+		Context4 context4 = (Context4) result;
+		assertThat(context4.key1).as("key1").isEqualTo(1);
+		assertThat(context4.value1).as("value1").isEqualTo("replaced");
+		assertThat(context4.key2).as("key2").isEqualTo(2);
+		assertThat(context4.value2).as("value2").isEqualTo("value2");
+		assertThat(context4.key3).as("key3").isEqualTo(3);
+		assertThat(context4.value3).as("value3").isEqualTo("value3");
+		assertThat(context4.key4).as("key4").isEqualTo(4);
+		assertThat(context4.value4).as("value4").isEqualTo("value4");
 	}
 
 }
