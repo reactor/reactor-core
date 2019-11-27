@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -146,7 +147,7 @@ public class Context0Test {
 
 	@Test
 	public void fillIsNoOp() {
-		ContextN ctx = new ContextN();
+		ContextN ctx = new ContextN(Collections.emptyMap());
 		ctx.accept(1, "SHOULD NOT BE REPLACED");
 
 		Context0 self = new Context0();

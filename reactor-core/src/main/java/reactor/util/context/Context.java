@@ -345,7 +345,7 @@ public interface Context {
 			return coreContext.putAllInto(this);
 		}
 
-		ContextN newContext = new ContextN();
+		ContextN newContext = new ContextN(this.size() + other.size(), 1.0f);
 		if (this instanceof CoreContext) {
 			CoreContext coreContext = (CoreContext) this;
 			coreContext.fill(newContext);

@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -198,7 +199,7 @@ public class Context1Test {
 
 	@Test
 	public void fillShouldReplace() {
-		ContextN ctx = new ContextN();
+		ContextN ctx = new ContextN(Collections.emptyMap());
 		ctx.accept(1, "VALUE1");
 		ctx.accept("extra", "value");
 

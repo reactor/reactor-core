@@ -57,9 +57,6 @@ final class ContextN extends LinkedHashMap<Object, Object>
 		super(initialCapacity, loadFactor);
 	}
 
-	ContextN() {
-	}
-
 	@Override
 	public void accept(Entry<Object, Object> entry) {
 		accept(entry.getKey(), entry.getValue());
