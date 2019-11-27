@@ -16,8 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -329,7 +327,6 @@ public class ContextTest {
 		Context context = Context.of(map);
 
 		assertThat(context).isInstanceOf(ContextN.class);
-		assertThat(((ContextN) context).delegate).as("instantiated new LinkedHashMap").isNotSameAs(map);
 		assertThat(context.size()).as("size").isEqualTo(6);
 		assertThat(context.getOrDefault("k1", 0)).isEqualTo(1);
 		assertThat(context.getOrDefault("k2", 0)).isEqualTo(2);
@@ -353,7 +350,34 @@ public class ContextTest {
 
 		assertThat(context).isInstanceOf(ContextN.class);
 		assertThat(context.size()).as("size").isEqualTo(6);
-		assertThat(((ContextN) context).delegate).as("instantiated new LinkedHashMap").isNotSameAs(map);
+	}
+
+	@Test
+	public void ofMapWithNullKey() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put("k1", 1);
+		map.put("k2", 2);
+		map.put("k3", 3);
+		map.put("k4", 4);
+		map.put("k5", 5);
+		map.put(null, "foo");
+
+		assertThatNullPointerException().isThrownBy(() -> Context.of(map))
+		                                .withMessage("key");
+	}
+
+	@Test
+	public void ofMapWithNullValue() {
+		Map<Object, Object> map = new HashMap<>();
+		map.put("k1", 1);
+		map.put("k2", 2);
+		map.put("k3", 3);
+		map.put("k4", 4);
+		map.put("k5", 5);
+		map.put("k6", null);
+
+		assertThatNullPointerException().isThrownBy(() -> Context.of(map))
+		                                .withMessage("value");
 	}
 
 	// == tests for default methods ==
@@ -408,7 +432,7 @@ public class ContextTest {
 		assertThat(combined).isInstanceOf(ContextN.class);
 		ContextN combinedN = (ContextN) combined;
 
-		assertThat(combinedN.delegate)
+		assertThat(combinedN)
 				.containsKeys(1, 2, 3, 4, 5, 10, 11, 12, 13)
 				.containsValues("A", "B", "C", "D", "E", "A10", "A11", "A12", "A13");
 	}
@@ -427,7 +451,8 @@ public class ContextTest {
 		rightMap.put(4, "D");
 		rightMap.put(5, "E");
 		ForeignContext left = new ForeignContext(leftMap);
-		AbstractContext right = new ContextN(rightMap, 6, "F");
+		ContextN right = new ContextN(rightMap);
+		right.accept(6, "F");
 
 		Context combined = left.putAll(right);
 		assertThat(combined).isInstanceOf(ForeignContext.class);
@@ -468,7 +493,7 @@ public class ContextTest {
 		assertThat(combined).isInstanceOf(ContextN.class);
 		ContextN combinedN = (ContextN) combined;
 
-		assertThat(combinedN.delegate)
+		assertThat(combinedN)
 				.containsKeys(1, 2, 3, 4, 5, 10, 11, 12, 13)
 				.containsValues("A", "B", "C", "D", "E", "A10", "A11", "A12", "A13");
 	}

@@ -16,7 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -367,9 +366,9 @@ public class Context4Test {
 
 	@Test
 	public void putAllSelfIntoEmpty() {
-		AbstractContext initial = new Context0();
+		CoreContext initial = new Context0();
 
-		Context result = ((AbstractContext) c).putAllInto(initial);
+		Context result = ((CoreContext) c).putAllInto(initial);
 
 		assertThat(result).isNotSameAs(initial)
 		                  .isNotSameAs(c);
@@ -379,7 +378,7 @@ public class Context4Test {
 
 	@Test
 	public void putAllSelfIntoContextN() {
-		AbstractContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		CoreContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
 		Context4 self = new Context4("A", 1, "B", 2, "C", 3, "D", 4);
 		Context result = self.putAllInto(initial);
 
@@ -391,20 +390,20 @@ public class Context4Test {
 	}
 
 	@Test
-	public void putAllSelfIntoMap() {
-		Map<Object, Object> map = new HashMap<>();
-		map.put(1, "VALUE1");
-		map.put(2, "VALUE2");
-		map.put(3, "VALUE3");
-		map.put(4, "VALUE4");
-		map.put("extra", "value");
+	public void fillShouldReplace() {
+		ContextN ctx = new ContextN();
+		ctx.accept(1, "VALUE1");
+		ctx.accept(2, "VALUE2");
+		ctx.accept(3, "VALUE3");
+		ctx.accept(4, "VALUE4");
+		ctx.accept("extra", "value");
 
 		Context4 self = new Context4(1, "REPLACED1", 2, "REPLACED2",
 				3, "REPLACED3", 4, "REPLACED4");
 
-		self.putAllInto(map);
+		self.fill(ctx);
 
-		assertThat(map)
+		assertThat(ctx)
 				.containsEntry(1, "REPLACED1")
 				.containsEntry(2, "REPLACED2")
 				.containsEntry(3, "REPLACED3")

@@ -16,17 +16,15 @@
 
 package reactor.util.context;
 
-import java.util.Map;
-
 /**
  * Abstract base to optimize interactions between reactor core {@link Context} implementations.
  *
  * @author Simon Baslé
  */
-abstract class AbstractContext implements Context {
+interface CoreContext extends Context {
 
 	@Override
-	public boolean isEmpty() {
+	default boolean isEmpty() {
 		// Overridden in Context0#isEmpty
 		return false;
 	}
@@ -38,14 +36,14 @@ abstract class AbstractContext implements Context {
 	 * @param base the {@link Context} in which we're putting all our values
 	 * @return a new context containing all the base values merged with all our values
 	 */
-	protected abstract Context putAllInto(Context base);
+	Context putAllInto(Context base);
 
 	/**
-	 * Let this Context add its internal values to the given Map, avoiding creating
+	 * Let this Context add its internal values to the given ContextN, avoiding creating
 	 * intermediate holders for key-value pairs as much as possible.
 	 *
-	 * @param map the {@link Map} in which we're putting all our values
+	 * @param other the {@link ContextN} in which we're putting all our values
 	 */
-	protected abstract void putAllInto(Map<Object, Object> map);
+	void fill(ContextN other);
 
 }

@@ -16,12 +16,10 @@
 
 package reactor.util.context;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
@@ -179,10 +177,14 @@ public interface Context {
 					entries[4].getKey(), entries[4].getValue());
 			}
 		}
-		//Context.of(map) should always avoid being backed directly by the given map since we don't know
-		//how said map is externally used (ie it could be mutated). Use the ContextN(LinkedHashMap) constructor
-		//if you've prepared a Map specifically for that new instance.
-		return new ContextN(new LinkedHashMap<>(map));
+		// Since ContextN(Map) is a low level API that DOES NOT perform null checks,
+		// we need to check every key/value before passing it to ContextN(Map)
+		map.forEach((key, value) -> {
+			Objects.requireNonNull(key, "key");
+			Objects.requireNonNull(value, "value");
+		});
+		//noinspection unchecked
+		return new ContextN((Map) map);
 	}
 
 	/**
@@ -338,25 +340,25 @@ public interface Context {
 	default Context putAll(Context other) {
 		if (other.isEmpty()) return this;
 
-		if (other instanceof AbstractContext) {
-			AbstractContext abstractContext = (AbstractContext) other;
-			return abstractContext.putAllInto(this);
+		if (other instanceof CoreContext) {
+			CoreContext coreContext = (CoreContext) other;
+			return coreContext.putAllInto(this);
 		}
 
-		LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
-		Consumer<Map.Entry<Object, Object>> entryConsumer = entry -> map.put(entry.getKey(), entry.getValue());
-		if (this instanceof AbstractContext) {
-			((AbstractContext) this).putAllInto(map);
+		ContextN newContext = new ContextN();
+		if (this instanceof CoreContext) {
+			CoreContext coreContext = (CoreContext) this;
+			coreContext.fill(newContext);
 		}
 		else {
-			this.stream().forEach(entryConsumer);
+			this.stream().forEach(newContext);
 		}
-		other.stream().forEach(entryConsumer);
-		if (map.size() > 5) {
-			// Shortcut to ContextN to avoid the overhead of Context#of
-			return new ContextN(map);
+		other.stream().forEach(newContext);
+		if (newContext.size() <= 5) {
+			// make it return Context{1-5}
+			return Context.of(newContext);
 		}
+		return newContext;
 
-		return Context.of(map);
 	}
 }

@@ -16,7 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -129,16 +128,16 @@ public class Context0Test {
 
 	@Test
 	public void putAllSelfIntoEmptyReturnsSame() {
-		AbstractContext initial = new Context0();
+		CoreContext initial = new Context0();
 
-		Context result = ((AbstractContext) c).putAllInto(initial);
+		Context result = ((CoreContext) c).putAllInto(initial);
 
 		assertThat(result).isSameAs(initial);
 	}
 
 	@Test
 	public void putAllSelfIntoContextNReturnsSame() {
-		AbstractContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		CoreContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
 		Context0 self = new Context0();
 		Context result = self.putAllInto(initial);
 
@@ -146,15 +145,15 @@ public class Context0Test {
 	}
 
 	@Test
-	public void putAllSelfIntoMapIsNoOp() {
-		Map<Object, Object> map = new HashMap<>();
-		map.put(1, "SHOULD NOT BE REPLACED");
+	public void fillIsNoOp() {
+		ContextN ctx = new ContextN();
+		ctx.accept(1, "SHOULD NOT BE REPLACED");
 
 		Context0 self = new Context0();
 
-		self.putAllInto(map);
+		self.fill(ctx);
 
-		assertThat(map)
+		assertThat(ctx)
 				.containsEntry(1, "SHOULD NOT BE REPLACED")
 				.hasSize(1);
 	}

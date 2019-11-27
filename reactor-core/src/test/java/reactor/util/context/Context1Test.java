@@ -16,7 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -174,9 +173,9 @@ public class Context1Test {
 
 	@Test
 	public void putAllSelfIntoEmpty() {
-		AbstractContext initial = new Context0();
+		CoreContext initial = new Context0();
 
-		Context result = ((AbstractContext) c).putAllInto(initial);
+		Context result = ((CoreContext) c).putAllInto(initial);
 
 		assertThat(result).isNotSameAs(initial)
 		                  .isNotSameAs(c);
@@ -186,7 +185,7 @@ public class Context1Test {
 
 	@Test
 	public void putAllSelfIntoContextN() {
-		AbstractContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		CoreContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
 		Context1 self = new Context1("A", 1);
 		Context result = self.putAllInto(initial);
 
@@ -198,16 +197,16 @@ public class Context1Test {
 	}
 
 	@Test
-	public void putAllSelfIntoMap() {
-		Map<Object, Object> map = new HashMap<>();
-		map.put(1, "VALUE1");
-		map.put("extra", "value");
+	public void fillShouldReplace() {
+		ContextN ctx = new ContextN();
+		ctx.accept(1, "VALUE1");
+		ctx.accept("extra", "value");
 
 		Context1 self = new Context1(1, "REPLACED");
 
-		self.putAllInto(map);
+		self.fill(ctx);
 
-		assertThat(map)
+		assertThat(ctx)
 				.containsEntry(1, "REPLACED")
 				.containsEntry("extra", "value")
 				.hasSize(2);

@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Simon Baslé
  */
-public class AbstractContextTest {
+public class CoreContextTest {
 
 	@Test
 	public void putAllOtherNonAbstract() {
@@ -31,7 +31,7 @@ public class AbstractContextTest {
 		Context initial = Context.of(1, "A", 2, "B", 3, "C");
 		Context result = initial.putAll(other);
 
-		assertThat(result).isInstanceOf(AbstractContext.class)
+		assertThat(result).isInstanceOf(CoreContext.class)
 		                  .isInstanceOf(Context4.class);
 		Context4 context4 = (Context4) result;
 

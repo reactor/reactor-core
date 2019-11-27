@@ -21,7 +21,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class Context2 extends AbstractContext {
+final class Context2 implements CoreContext {
 
 	final Object key1;
 	final Object value1;
@@ -99,16 +99,16 @@ final class Context2 extends AbstractContext {
 	}
 
 	@Override
-	protected Context putAllInto(Context base) {
+	public Context putAllInto(Context base) {
 		return base
 				.put(this.key1, this.value1)
 				.put(this.key2, this.value2);
 	}
 
 	@Override
-	protected void putAllInto(Map<Object, Object> map) {
-		map.put(key1, value1);
-		map.put(key2, value2);
+	public void fill(ContextN other) {
+		other.accept(key1, value1);
+		other.accept(key2, value2);
 	}
 
 	@Override
