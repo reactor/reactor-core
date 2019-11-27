@@ -363,7 +363,7 @@ public class ContextTest {
 		map.put(null, "foo");
 
 		assertThatNullPointerException().isThrownBy(() -> Context.of(map))
-		                                .withMessage("key");
+		                                .withMessage("null key found");
 	}
 
 	@Test
@@ -377,7 +377,7 @@ public class ContextTest {
 		map.put("k6", null);
 
 		assertThatNullPointerException().isThrownBy(() -> Context.of(map))
-		                                .withMessage("value");
+		                                .withMessage("null value for key k6");
 	}
 
 	// == tests for default methods ==

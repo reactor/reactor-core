@@ -180,8 +180,10 @@ public interface Context {
 		// Since ContextN(Map) is a low level API that DOES NOT perform null checks,
 		// we need to check every key/value before passing it to ContextN(Map)
 		map.forEach((key, value) -> {
-			Objects.requireNonNull(key, "key");
-			Objects.requireNonNull(value, "value");
+			Objects.requireNonNull(key, "null key found");
+			if (value == null) {
+				throw new NullPointerException("null value for key " + key);
+			}
 		});
 		//noinspection unchecked
 		return new ContextN((Map) map);
