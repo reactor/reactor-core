@@ -227,9 +227,10 @@ I want to deal with:
 ** by falling back:
 *** to a value: `onErrorReturn`
 *** to a `Publisher` or `Mono`, possibly different ones depending on the error: `Flux#onErrorResume` and `Mono#onErrorResume`
-** by retrying: `retry`
+** by retrying...
+*** ...with a simple policy (max number of attempts): `retry()`, `retry(long)`
 *** ...triggered by a companion control Flux: `retryWhen`
-*** ... using a standard backoff strategy (exponential backoff with jitter): `retryBackoff`
+*** ...using a standard backoff strategy (exponential backoff with jitter): `retryWhen(Retry.backoff(...))`
 
 * I want to deal with backpressure "errors" (request max from upstream and apply the strategy when downstream does not produce enough request)...
 ** by throwing a special `IllegalStateException`: `Flux#onBackpressureError`

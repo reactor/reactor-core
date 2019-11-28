@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import org.junit.Test;
 import reactor.test.StepVerifier;
@@ -36,7 +37,7 @@ public class FluxRetryPredicateTest {
 	@Test(expected = NullPointerException.class)
 	public void predicateNull() {
 		Flux.never()
-		    .retry(null);
+		    .retry((Predicate<? super Throwable>) null);
 	}
 
 	@Test

@@ -16,6 +16,7 @@
 
 package reactor.core;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,8 +24,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Supplier;
 
+import reactor.core.publisher.Flux;
 import reactor.util.annotation.Nullable;
+import reactor.util.retry.Retry;
 
 /**
  * Global Reactor Core Exception handling and utils to operate on.
@@ -276,6 +280,19 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return a new {@link RuntimeException} that represents too many failures on retry.
+	 * This nature can be detected via {@link #isRetryExhausted(Throwable)}.
+	 * The cause of the last retry attempt is passed and stored as this exception's {@link Throwable#getCause() cause}.
+	 *
+	 * @param message the message
+	 * @param cause the cause of the last retry attempt that failed (or null if irrelevant)
+	 * @return a new {@link RuntimeException} representing retry exhaustion due to too many attempts
+	 */
+	public static RuntimeException retryExhausted(String message, @Nullable Throwable cause) {
+		return cause == null ? new RetryExhaustedException(message) : new RetryExhaustedException(message, cause);
+	}
+
+	/**
 	 * Check if the given exception represents an {@link #failWithOverflow() overflow}.
 	 * @param t the {@link Throwable} error to check
 	 * @return true if the given {@link Throwable} represents an overflow.
@@ -322,6 +339,18 @@ public abstract class Exceptions {
 	 */
 	public static boolean isMultiple(@Nullable Throwable t) {
 		return t instanceof CompositeException;
+	}
+
+	/**
+	 * Check a {@link Throwable} to see if it indicates too many retry attempts have failed.
+	 * Such an exception can be created via {@link #retryExhausted(long, Throwable)} or
+	 * {@link #retryExhausted(Duration)}.
+	 *
+	 * @param t the {@link Throwable} to check, {@literal null} always yields {@literal false}
+	 * @return true if the Throwable is an instance representing retry exhaustion, false otherwise
+	 */
+	public static boolean isRetryExhausted(@Nullable Throwable t) {
+		return t instanceof RetryExhaustedException;
 	}
 
 	/**
@@ -664,6 +693,25 @@ public abstract class Exceptions {
 
 		OverflowException(String s) {
 			super(s);
+		}
+	}
+
+	/**
+	 * A specialized {@link IllegalStateException} to signify a {@link Flux#retryWhen(Retry) retry}
+	 * has failed (eg. after N attempts, or a timeout).
+	 *
+	 * @see #retryExhausted(long, Throwable)
+	 * @see #retryExhausted(Duration)
+	 * @see #isRetryExhausted(Throwable)
+	 */
+	static final class RetryExhaustedException extends IllegalStateException {
+
+		RetryExhaustedException(String message) {
+			super(message);
+		}
+
+		RetryExhaustedException(String message, Throwable cause) {
+			super(message, cause);
 		}
 	}
 

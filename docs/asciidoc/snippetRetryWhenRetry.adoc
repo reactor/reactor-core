@@ -1,20 +1,20 @@
 ====
 [source,java]
 ----
+AtomicInteger errorCount = new AtomicInteger();
 Flux<String> flux =
-Flux.<String>error(new IllegalArgumentException())
-    .retryWhen(companion -> companion
-    .zipWith(Flux.range(1, 4), // <1>
-          (error, index) -> { // <2>
-            if (index < 4) return index; // <3>
-            else throw Exceptions.propagate(error); // <4>
-          })
-    );
+		Flux.<String>error(new IllegalArgumentException())
+				.doOnError(e -> errorCount.incrementAndGet())
+				.retryWhen(() -> companion -> // <1>
+						companion.map(rs -> { // <2>
+							if (rs.totalRetries() < 3) return rs.totalRetries(); // <3>
+							else throw Exceptions.propagate(rs.failure()); // <4>
+						})
+				);
 ----
-<1> Trick one: use `zip` and a `range` of "number of acceptable retries + 1".
-<2> The `zip` function lets you count the retries while keeping track of the original
-error.
-<3> To allow for three retries, indexes before 4 return a value to emit.
+<1> `retryWhen` expects a `Supplier<Retry>`
+<2> The companion emits `RetrySignal` objects, which bear number of retries so far and last failure
+<3> To allow for three retries, we consider indexes < 3 and return a value to emit (here we simply return the index).
 <4> In order to terminate the sequence in error, we throw the original exception after
 these three retries.
 ====

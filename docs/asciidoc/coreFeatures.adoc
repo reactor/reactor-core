@@ -879,8 +879,8 @@ There is a more advanced version of `retry` (called `retryWhen`) that uses a "`c
 created by the operator but decorated by the user, in order to customize the retry
 condition.
 
-The companion `Flux` is a `Flux<Throwable>` that gets passed to a `Function`, the sole
-parameter of `retryWhen`. As the user, you define that function and make it return a new
+The companion `Flux` is a `Flux<RetrySignal>` that gets passed to a `Retry` strategy/function,
+supplied as the sole parameter of `retryWhen`. As the user, you define that function and make it return a new
 `Publisher<?>`. Retry cycles go as follows:
 
 . Each time an error happens (giving potential for a retry), the error is emitted into the
@@ -902,11 +902,13 @@ companion would effectively swallow an error. Consider the following way of emul
 Flux<String> flux = Flux
     .<String>error(new IllegalArgumentException()) // <1>
     .doOnError(System.out::println) // <2>
-    .retryWhen(companion -> companion.take(3)); // <3>
+    .retryWhen(() -> // <3>
+        companion -> companion.take(3)); // <4>
 ----
 <1> This continuously produces errors, calling for retry attempts.
 <2> `doOnError` before the retry lets us log and see all failures.
-<3> Here, we consider the first three errors as retry-able (`take(3)`) and then give up.
+<3> The `Retry` function is passed as a `Supplier`
+<4> Here, we consider the first three errors as retry-able (`take(3)`) and then give up.
 ====
 
 In effect, the preceding example results in an empty `Flux`, but it completes successfully. Since
@@ -916,8 +918,60 @@ In effect, the preceding example results in an empty `Flux`, but it completes su
 Getting to the same behavior involves a few additional tricks:
 include::snippetRetryWhenRetry.adoc[]
 
+TIP: One can use the builders exposed in `Retry` to achieve the same in a more fluent manner, as
+well as more finely tuned retry strategies: `errorFlux.retryWhen(Retry.max(3));`.
+
 TIP: You can use similar code to implement an "`exponential backoff and retry`" pattern,
 as shown in the <<faq.exponentialBackoff,FAQ>>.
+
+The core-provided `Retry` builders, `RetrySpec` and `RetryBackoffSpec`, both allow advanced customizations like:
+
+- setting the `filter(Predicate)` for the exceptions that can trigger a retry
+- modifying such a previously set filter through `modifyErrorFilter(Function)`
+- triggering a side effect like logging around the retry trigger (ie for backoff before and after the delay), provided the retry is validated (`doBeforeRetry()` and `doAfterRetry()` are additive)
+- triggering an asynchronous `Mono<Void>` around the retry trigger, which allows to add asynchronous behavior on top of the base delay but thus further delay the trigger (`doBeforeRetryAsync` and `doAfterRetryAsync` are additive)
+- customizing the exception in case the maximum number of attempts has been reached, through `onRetryExhaustedThrow(BiFunction)`.
+By default, `Exceptions.retryExhausted(...)` is used, which can be distinguished with `Exceptions.isRetryExhausted(Throwable)`
+- activating the handling of _transient errors_ (see below)
+
+Transient error handling in the `Retry` specs makes use of `RetrySignal#totalRetriesInARow()`: to check whether to retry or not and to compute the retry delays, the index used is an alternative one that is reset to 0 each time an `onNext` is emitted.
+This has the consequence that if a re-subscribed source generates some data before failing again, previous failures don't count toward the maximum number of retry attempts.
+In the case of exponential backoff strategy, this also means that the next attempt will be back to using the minimum `Duration` backoff instead of a longer one.
+This can be especially useful for long-lived sources that see sporadic bursts of errors (or _transient_ errors), where each burst should be retried with its own backoff.
+
+====
+[source,java]
+----
+AtomicInteger errorCount = new AtomicInteger(); // <1>
+AtomicInteger transientHelper = new AtomicInteger();
+Flux<Integer> transientFlux = Flux.<Integer>generate(sink -> {
+	int i = transientHelper.getAndIncrement();
+	if (i == 10) { // <2>
+		sink.next(i);
+		sink.complete();
+	}
+	else if (i % 3 == 0) { // <3>
+		sink.next(i);
+	}
+	else {
+		sink.error(new IllegalStateException("Transient error at " + i)); // <4>
+	}
+})
+		.doOnError(e -> errorCount.incrementAndGet());
+
+transientFlux.retryWhen(Retry.max(2).transientErrors(true))  // <5>
+             .blockLast();
+assertThat(errorCount).hasValue(6); // <6>
+----
+<1> We will count the number of errors in the retried sequence.
+<2> We `generate` a source that has bursts of errors. It will successfully complete when the counter reaches 10.
+<3> If the `transientHelper` atomic is at a multiple of `3`, we emit `onNext` and thus end the current burst.
+<4> In other cases we emit an `onError`. That's 2 out of 3 times, so bursts of 2 `onError` interrupted by 1 `onNext`.
+<5> We use `retryWhen` on that source, configured for at most 2 retry attempts, but in `transientErrors` mode.
+<6> At the end, the sequence reaches `onNext(10)` and completes, after `6` errors have been registered in `errorCount`.
+====
+
+Without the `transientErrors(true)`, the configured maximum attempt of `2` would be reached by the second burst and the sequence would fail after having emitted `onNext(3)`.
 
 === Handling Exceptions in Operators or Functions
 
