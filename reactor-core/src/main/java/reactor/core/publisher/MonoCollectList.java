@@ -144,7 +144,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 			}
 			if (l != null) {
 				s.cancel();
-				Operators.onDiscardMultiple(l, actual.currentContext());
+				discard(l);
 			}
 		}
 	}

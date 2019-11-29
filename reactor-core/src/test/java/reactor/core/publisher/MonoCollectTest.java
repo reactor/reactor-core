@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -144,59 +145,94 @@ public class MonoCollectTest {
 	}
 
 	@Test
-	public void discardOnError() {
-		List<Integer> list = new ArrayList<>();
-		list.add(1);
-		list.add(2);
-		list.add(3);
-		list.add(4);
+	public void discardElementOnAccumulatorFailure() {
+		Flux.range(1, 4)
+		    .collect(ArrayList::new, (l, t) -> { throw new IllegalStateException("accumulator: boom"); })
+		    .as(StepVerifier::create)
+		    .expectErrorMessage("accumulator: boom")
+		    .verifyThenAssertThat()
+		    .hasDiscardedExactly(1);
+	}
 
-		AtomicBoolean res = new AtomicBoolean();
+	@Test
+	public void discardListElementsOnError() {
+		Mono<List<Integer>> test =
+				Flux.range(1, 10)
+				    .hide()
+				    .map(i -> {
+					    if (i == 5) {
+						    throw new IllegalStateException("boom");
+					    }
+					    return i;
+				    })
+				    .collect(ArrayList::new, List::add);
 
-		Mono<List<Integer>> test = Flux.range(1, 10)
-		                               .hide()
-		                               .map(i -> {
-			                               if (i == 5) {
-				                               throw new IllegalStateException("boom");
-			                               }
-			                               return i;
-		                               })
-										.<List<Integer>>collect(ArrayList::new, List::add)
-										.doOnDiscard(List.class,
-						l -> {
-							l.removeAll(list);
-							res.set(l.isEmpty());
-						});
+		StepVerifier.create(test)
+		            .expectErrorMessage("boom")
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(1, 2, 3, 4);
+	}
+
+	@Test
+	public void discardListElementsOnCancel() {
+		StepVerifier.withVirtualTime(() ->
+				Flux.interval(Duration.ofMillis(100))
+				    .take(10)
+				    .collect(ArrayList::new, List::add)
+		)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(210))
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasDiscardedExactly(0L, 1L);
+	}
+
+	@Test
+	public void discardWholeArrayOnError() {
+		List<Object> discarded = new ArrayList<>();
+		AtomicInteger index = new AtomicInteger();
+
+		Mono<Object[]> test =
+				Flux.range(1, 10)
+				    .hide()
+				    .map(i -> {
+					    if (i == 5) {
+						    throw new IllegalStateException("boom");
+					    }
+					    return i;
+				    })
+				    .collect(() -> new Object[4], (container, element) -> container[index.getAndIncrement()] = element)
+				    .doOnDiscard(Object.class, discarded::add);
 
 		StepVerifier.create(test)
 		            .expectErrorMessage("boom")
 		            .verify();
 
-		Assert.assertTrue("all discarded", res.get());
+		assertThat(discarded).doesNotHaveAnyElementsOfTypes(Integer.class)
+		                     .hasOnlyElementsOfType(Object[].class)
+		                     .hasSize(1);
+		assertThat((Object[]) discarded.get(0)).containsExactly(1, 2, 3, 4);
 	}
 
 	@Test
-	public void discardOnCancel() {
-		List<Long> list = new ArrayList<>();
-		list.add(0L);
-		list.add(1L);
-
-		AtomicBoolean res = new AtomicBoolean();
+	public void discardWholeArrayOnCancel() {
+		List<Object> discarded = new ArrayList<>();
+		AtomicInteger index = new AtomicInteger();
 
 		StepVerifier.withVirtualTime(() ->
 				Flux.interval(Duration.ofMillis(100))
-				    .take(10).<List<Long>>collect(ArrayList::new,
-						List::add).doOnDiscard(List.class,
-						l -> {
-							l.removeAll(list);
-							res.set(l.isEmpty());
-						}))
+				    .take(10)
+				    .collect(() -> new Object[4], (container, element) -> container[index.getAndIncrement()] = element)
+				    .doOnDiscard(Object.class, discarded::add))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(210))
 		            .thenCancel()
 		            .verify();
 
-		Assert.assertTrue("all discarded", res.get());
+		assertThat(discarded).doesNotHaveAnyElementsOfTypes(Long.class)
+		                     .hasOnlyElementsOfType(Object[].class)
+		                     .hasSize(1);
+		assertThat((Object[]) discarded.get(0)).containsExactly(0L, 1L, null, null);
 	}
 
 }
