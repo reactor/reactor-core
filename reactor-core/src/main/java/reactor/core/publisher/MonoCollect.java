@@ -71,7 +71,6 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 	static final class CollectSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {
 
 		final BiConsumer<? super R, ? super T> action;
-		final boolean canDiscard;
 
 		Subscription s;
 
@@ -83,7 +82,6 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 			super(actual);
 			this.action = action;
 			this.value = container;
-			this.canDiscard = container instanceof Collection;
 		}
 
 		@Override
@@ -103,7 +101,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 
 		@Override
 		protected void discard(R v) {
-			if (canDiscard && v instanceof Collection) {
+			if (v instanceof Collection) {
 				Collection<?> c = (Collection<?>) v;
 				Operators.onDiscardMultiple(c, actual.currentContext());
 			}
