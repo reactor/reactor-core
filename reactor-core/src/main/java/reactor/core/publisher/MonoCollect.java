@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -24,6 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Collects the values of the source sequence into a container returned by
@@ -98,6 +100,17 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		}
 
 		@Override
+		protected void discard(R v) {
+			if (v instanceof Collection) {
+				Collection<?> c = (Collection<?>) v;
+				Operators.onDiscardMultiple(c, actual.currentContext());
+			}
+			else {
+				super.discard(v);
+			}
+		}
+
+		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
@@ -119,7 +132,9 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				action.accept(value, t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(this, e, t, actual.currentContext()));
+				Context ctx = actual.currentContext();
+				Operators.onDiscard(t, ctx);
+				onError(Operators.onOperatorError(this, e, t, ctx));
 			}
 		}
 
@@ -131,7 +146,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 			}
 			done = true;
 			R v = value;
-			Operators.onDiscard(v, currentContext());
+			discard(v);
 			value = null;
 			actual.onError(t);
 		}

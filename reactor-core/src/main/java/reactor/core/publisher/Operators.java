@@ -1496,8 +1496,9 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
+			O v = value;
 			if (STATE.getAndSet(this, CANCELLED) <= HAS_REQUEST_NO_VALUE) {
-				Operators.onDiscard(value, currentContext());
+				discard(v);
 			}
 			value = null;
 		}
@@ -1543,6 +1544,7 @@ public abstract class Operators {
 
 				// if state is >= HAS_CANCELLED or bit zero is set (*_HAS_VALUE) case, return
 				if ((state & ~HAS_REQUEST_NO_VALUE) != 0) {
+					this.value = null;
 					discard(v);
 					return;
 				}
@@ -1561,8 +1563,14 @@ public abstract class Operators {
 			}
 		}
 
+		/**
+		 * Discard the given value, generally this.value field. Lets derived subscriber with further knowledge about
+		 * the possible types of the value discard such values in a specific way. Note that fields should generally be
+		 * nulled out along the discard call.
+		 *
+		 * @param v the value to discard
+		 */
 		protected void discard(O v) {
-			this.value = null;
 			Operators.onDiscard(v, actual.currentContext());
 		}
 
