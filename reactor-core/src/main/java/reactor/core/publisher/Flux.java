@@ -3264,7 +3264,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param containerSupplier the supplier of the container instance for each Subscriber
 	 * @param collector a consumer of both the container instance and the value being currently collected
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the container upon cancellation or error triggered by a data signal.
+	 * Either the container type is a {@link Collection} (in which case individual elements are discarded)
+	 * or not (in which case the entire container is discarded). In case the collector {@link BiConsumer} fails
+	 * to accumulate an element, the container is discarded as above and the triggering element is also discarded.
 	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
@@ -3285,6 +3288,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <A> The mutable accumulation type
 	 * @param <R> the container type
 	 *
+	 * @reactor.discard This operator discards the intermediate container (see {@link Collector#supplier()} upon
+	 * cancellation, error or exception while applying the {@link Collector#finisher()}. Either the container type
+	 * is a {@link Collection} (in which case individual elements are discarded) or not (in which case the entire
+	 * container is discarded). In case the accumulator {@link BiConsumer} of the collector fails to accumulate
+	 * an element into the intermediate container, the container is discarded as above and the triggering element
+	 * is also discarded.
+	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */
@@ -3299,7 +3309,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectList.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the elements in the {@link List} upon
+	 * cancellation or error triggered by a data signal.
 	 *
 	 * @return a {@link Mono} of a {@link List} of all values from this {@link Flux}
 	 */
@@ -3347,7 +3358,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyExtractor.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param <K> the type of the key extracted from each source element
@@ -3370,7 +3382,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyAndValueExtractors.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3397,7 +3410,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyAndValueExtractors.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3429,7 +3443,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyExtractor.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the list values in the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 *
@@ -3451,7 +3466,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyAndValueExtractors.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the list values in the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3477,7 +3493,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyAndValueExtractors.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the list values in the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3512,7 +3529,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedList.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator is based on {@link #collectList()}, and as such discards the
+	 * elements in the {@link List} individually upon cancellation or error triggered by a data signal.
 	 *
 	 * @return a {@link Mono} of a sorted {@link List} of all values from this {@link Flux}, in natural order
 	 */
@@ -3528,7 +3546,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedListWithComparator.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator is based on {@link #collectList()}, and as such discards the
+	 * elements in the {@link List} individually upon cancellation or error triggered by a data signal.
 	 *
 	 * @param comparator a {@link Comparator} to sort the items of this sequences
 	 *
