@@ -16,7 +16,10 @@
 
 package reactor.tools.agent;
 
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.NoOp;
 import org.junit.Test;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -124,6 +127,13 @@ public class ReactorDebugAgentTest {
 				.endsWith("|_          ⇢ at reactor.tools.agent.ReactorDebugAgentTest.methodReturningMono(ReactorDebugAgentTest.java:" + (methodReturningMonoBaseline + 2) + ")");
 	}
 
+	@Test
+	public void cglibProxies() {
+		ProxyMe proxy = (ProxyMe) Enhancer.create(ProxyMe.class, NoOp.INSTANCE);
+
+		assertThat(proxy.doSomething()).isInstanceOf(ProxyMe.MyMono.class);
+	}
+
 	static final int methodReturningMonoBaseline = getBaseline();
 	private Mono<Integer> methodReturningMono(Mono<Integer> mono) {
 		return mono;
@@ -135,5 +145,23 @@ public class ReactorDebugAgentTest {
 
 	private static int getBaseline() {
 		return new Exception().getStackTrace()[1].getLineNumber();
+	}
+
+	static class ProxyMe {
+		static class MyMono extends Mono<Void> {
+			@Override
+			public void subscribe(CoreSubscriber<? super Void> actual) {
+				Mono.<Void>empty().subscribe(actual);
+			}
+		}
+
+		Mono<Void> doSomething() {
+			Mono<Void> myMono = new MyMono();
+			if (myMono == null) {
+				// Make it think that there were operator calls inside
+				myMono.then();
+			}
+			return myMono;
+		}
 	}
 }
