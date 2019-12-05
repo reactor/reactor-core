@@ -1570,8 +1570,12 @@ final class DefaultStepVerifierBuilder<T>
 				try {
 					if (event instanceof SubscriptionTaskEvent) {
 						updateRequested(event);
+						((TaskEvent<T>) event).run(this);
+						serializeDrainAndSubscriptionEvent();
 					}
-					((TaskEvent<T>) event).run(this);
+					else {
+						((TaskEvent<T>) event).run(this);
+					}
 				}
 				catch (Throwable t) {
 					Exceptions.throwIfFatal(t);
