@@ -36,6 +36,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
@@ -2100,5 +2101,35 @@ public class StepVerifierTests {
 						::verify)
 				.withMessage("Unexpected error during a no-event expectation: java.lang.IllegalStateException: boom")
 				.withCause(new IllegalStateException("boom"));
+	}
+
+	@Test
+	public void verifyDrainOnRequestInCaseOfFusion() {
+		MonoProcessor<Integer> processor = MonoProcessor.create();
+		StepVerifier.create(processor, 0)
+				.expectFusion(Fuseable.ANY)
+				.then(() -> processor.onNext(1))
+				.thenRequest(1)
+				.expectNext(1)
+				.verifyComplete();
+	}
+
+	@Test
+	public void verifyDrainOnRequestInCaseOfFusion2() {
+		ArrayList<Long> requests = new ArrayList<>();
+		UnicastProcessor<Integer> processor = UnicastProcessor.create();
+		StepVerifier.create(processor.doOnRequest(requests::add), 0)
+				.expectFusion(Fuseable.ANY)
+				.then(() -> {
+					processor.onNext(1);
+					processor.onComplete();
+				})
+				.thenRequest(1)
+				.thenRequest(1)
+				.thenRequest(1)
+				.expectNext(1)
+				.verifyComplete();
+
+		assertThat(requests).containsExactly(1L, 1L, 1L);
 	}
 }
