@@ -206,4 +206,102 @@ processor.publishOn(scheduler1)
          .subscribe();
 ----
 
+== What is a good pattern for contextual logging? (MDC)
+As we saw in section <<context>>, `ThreadLocal` doesn't make much sense in Reactive Streams, where several streams could execute steps on a common thread.
+Instead of using `ThreadLocal`, Reactor offers the `Context`, a map-like object that is tied to a `Subscription` and not a `Thread`.
+
+One recurring use of `ThreadLocal` in java is for logging frameworks to store variables that will be used in their logging pattern, generally by way of a `Map` called the MDC ("Mapped Diagnostic Context").
+
+Unfortunately, this pattern is hard to opt out of and hard to apply transparently from a reactive library perspective.
+This entry of the FAQ offers a possible intermediate solution when one wants to perform log statements in relation to events in the stream (`onNext`, `onError`, `onComplete`).
+
+The most straightforward way to perform such logging and get contextual information from the `Context` to the MDC is to wrap logging statements in a `doOnEach` operator with a little bit of boilerplate code.
+This boilerplate depends on both the logging framework/abstraction of your choice and the information you want to put in the MDC, so it has to be in your codebase.
+
+The following is an example of such a helper function around a single MDC variable and focused on logging `onNext` events, using Java 9 enhanced `Optional` API:
+[source,java]
+----
+public static <T> Consumer<Signal<T>> logOnNext(Consumer<T> logStatement) {
+	return signal -> {
+		if (!signal.isOnNext()) return; <1>
+		Optional<String> toPutInMdc = signal.getContext().getOrEmpty("CONTEXT_KEY"); <2>
+
+		toPutInMdc.ifPresentOrElse(tpim -> {
+			try (MDC.MDCCloseable cMdc = MDC.putCloseable("MDC_KEY", tpim)) { <3>
+				logStatement.accept(signal.get()); <4>
+			}
+		},
+		() -> logStatement.accept(signal.get())); <5>
+	};
+}
+----
+<1> `doOnEach` signals include onComplete and onError. In this example we're only interested in logging `onNext`
+<2> We will extract one interesting value from the Reactor `Context` (see the <<context.api>> section)
+<3> We use the `MDCCloseable` from SLF4J 2 in this example, allowing try-with-resource syntax for automatic cleanup of the MDC after the log statement is executed
+<4> Proper log statement is provided by the caller as a `Consumer<T>` (consumer of the onNext value)
+<5> In case the expected key wasn't set in the `Context` we use the alternative path where nothing is put in the MDC
+
+Using this boilerplate code ensures that we are good citizen with the MDC: we set a key right before we execute a logging statement and remove it immediately after.
+There is no risk of polluting the MDC for subsequent logging statements.
+
+Of course, this is a suggestion. You might be interested in extracting multiple values from the `Context`, or in also logging things in case of `onError`.
+You might want to create additional helper methods for these cases, or craft a single method that makes use of additional lambdas to cover more ground.
+
+In any case, the usage of the above helper method could look like the following reactive web controller:
+
+[source,java]
+----
+@GetMapping("/byPrice")
+public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(required = false, name = "X-UserId") String userId) {
+	String apiId = userId == null ? "" : userId; <1>
+
+	return restaurantService.byPrice(maxPrice))
+			   .doOnEach(logOnNext(r -> LOG.debug("found restaurant {} for ${}", <2>
+					r.getName(), r.getPricePerPerson())))
+			   .subscriberContext(Context.of("CONTEXT_KEY", apiId)); <3>
+}
+----
+<1> We will need to get the contextual information from the request header to put it in the `Context`
+<2> Here we apply our helper method to the `Flux` using `doOnEach`. Remember operators see `Context` values defined below them.
+<3> We write the value from the header to the `Context` using the chosen key `CONTEXT_KEY`.
+
+In this configuration, the `restaurantService` can emit its data on a shared thread yet the logs will still reference the correct `X-UserId` for each request.
+
+For completeness, let's also see what an error-logging helper could look like:
+
+[source,java]
+----
+public static Consumer<Signal<?>> logOnError(Consumer<Throwable> errorLogStatement) {
+	return signal -> {
+		if (!signal.isOnError()) return;
+		Optional<String> toPutInMdc = signal.getContext().getOrEmpty("CONTEXT_KEY");
+
+		toPutInMdc.ifPresentOrElse(tpim -> {
+			try (MDC.MDCCloseable cMdc = MDC.putCloseable("MDC_KEY", tpim)) {
+				errorLogStatement.accept(signal.getThrowable());
+			}
+		},
+		() -> errorLogStatement.accept(signal.getThrowable()));
+	};
+}
+----
+
+Nothing much has changed except for the fact that we check the `Signal` is effectively an `onError`, and we provide said error (a `Throwable`) to the log statement lambda.
+
+Applying this helper in the controller is very similar to what we've done before:
+
+[source,java]
+----
+@GetMapping("/byPrice")
+public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(required = false, name = "X-UserId") String userId) {
+	String apiId = userId == null ? "" : userId;
+
+	return restaurantService.byPrice(maxPrice))
+			   .doOnEach(logOnNext(v -> LOG.info("found restaurant {}", v))
+			   .doOnEach(logOnError(e -> LOG.error("error when searching restaurants", e)) <1>
+			   .subscriberContext(Context.of("CONTEXT_KEY", apiId));
+}
+----
+<1> In case the `restaurantService` emits an error, it will be logged with MDC context here
+
 //TODO reactive gems
