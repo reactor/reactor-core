@@ -160,10 +160,8 @@ public class ReactorDebugAgentTest {
 
 		Mono<Void> doSomething() {
 			Mono<Void> myMono = new MyMono();
-			if (myMono == null) {
-				// Make it think that there were operator calls inside
-				myMono.then();
-			}
+			// Make it think that there were operator calls inside
+			myMono.then();
 			return myMono;
 		}
 	}
