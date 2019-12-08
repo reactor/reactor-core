@@ -2780,10 +2780,25 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return bufferTimeout(maxSize, maxTime, listSupplier());
 	}
 
-	//TODO documentation
+	/**
+	 * Collect incoming values into multiple {@link List} buffers that will be emitted
+	 * by the returned {@link Flux} each time the buffer reaches a maximum size OR the
+	 * maxTime {@link Duration} elapses OR the predicate {@link Predicate} becomes true.
+	 * Note that the element that triggers the predicate to return true (and thus
+	 * closes a buffer) is included as last element in the emitted buffer.
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the max collected size
+	 * @param maxTime the timeout enforcing the release of a partial buffer
+	 * @param predicate the predicate that triggers the next buffer when it becomes true
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a
+	 * given period timeout or a given predicate
+	 */
 	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime,
 			Predicate<T> predicate) {
-		return bufferTimeout(maxSize, maxTime, listSupplier(), predicate);
+		return bufferTimeout(maxSize, maxTime, predicate, listSupplier());
 	}
 
 	/**
@@ -2806,11 +2821,28 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				bufferSupplier);
 	}
 
-	//TODO documentation
+	/**
+	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
+	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
+	 * size OR the maxTime {@link Duration} elapses OR the predicate {@link Predicate}
+	 * becomes true. Note that the element that triggers the predicate to return true
+	 * (and thus closes a buffer) is included as last element in the emitted buffer.
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the max collected size
+	 * @param maxTime the timeout enforcing the release of a partial buffer
+	 * @param predicate the predicate that triggers the next buffer when it becomes true
+	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
+	 * @param <C> the {@link Collection} buffer type
+	 *
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given
+	 * size, a given period timeout or a given predicate
+	 */
 	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize,
-			Duration maxTime, Supplier<C> bufferSupplier, Predicate<T> predicate) {
+			Duration maxTime, Predicate<T> predicate, Supplier<C> bufferSupplier) {
 		return bufferTimeout(maxSize, maxTime, Schedulers.parallel(),
-				bufferSupplier, predicate);
+				predicate, bufferSupplier);
 	}
 
 	/**
@@ -2832,10 +2864,27 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return bufferTimeout(maxSize, maxTime, timer, listSupplier());
 	}
 
-	//TODO documentation
+	/**
+	 * Collect incoming values into multiple {@link List} buffers that will be emitted
+	 * by the returned {@link Flux} each time the buffer reaches a maximum size OR the
+	 * predicate {@link Predicate} becomes true OR the maxTime {@link Duration}
+	 * elapses, as measured on the provided {@link Scheduler}. Note that the element
+	 * that triggers the predicate to return true (and thus closes a buffer) is
+	 * included as last element in the emitted buffer.
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the max collected size
+	 * @param maxTime the timeout enforcing the release of a partial buffer
+	 * @param timer a time-capable {@link Scheduler} instance to run on
+	 * @param predicate the predicate that triggers the next buffer when it becomes true
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by given size, a
+	 * given period timeout or a given predicate
+	 */
 	public final Flux<List<T>> bufferTimeout(int maxSize, Duration maxTime,
 			Scheduler timer, Predicate<T> predicate) {
-		return bufferTimeout(maxSize, maxTime, timer, listSupplier(), predicate);
+		return bufferTimeout(maxSize, maxTime, timer, predicate, listSupplier());
 	}
 
 	/**
@@ -2859,9 +2908,28 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toMillis(), timer, bufferSupplier));
 	}
 
-	//TODO documentation
+	/**
+	 * Collect incoming values into multiple user-defined {@link Collection} buffers that
+	 * will be emitted by the returned {@link Flux} each time the buffer reaches a maximum
+	 * size OR the predicate {@link Predicate} becomes true OR the maxTime
+	 * {@link Duration} elapses, as measured on the provided {@link Scheduler}. Note that
+	 * the element that triggers the predicate to return true (and thus closes a
+	 * buffer) is included as last element in the emitted buffer.
+	 *
+	 * @reactor.discard This operator discards the currently open buffer upon cancellation or error triggered by a data signal.
+	 *
+	 * @param maxSize the max collected size
+	 * @param maxTime the timeout enforcing the release of a partial buffer
+	 * @param timer a time-capable {@link Scheduler} instance to run on
+	 * @param predicate the predicate that triggers the next buffer when it becomes true
+	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
+	 * @param <C> the {@link Collection} buffer type
+	 *
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given
+	 * size, a given period timeout or a given predicate
+	 */
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration maxTime,
-			Scheduler timer, Supplier<C> bufferSupplier, Predicate<? super T> predicate) {
+			Scheduler timer, Predicate<? super T> predicate, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferTimeout<>(this, maxSize, maxTime.toMillis(),
 				timer, bufferSupplier, predicate));
 	}

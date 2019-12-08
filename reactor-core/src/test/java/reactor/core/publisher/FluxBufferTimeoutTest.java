@@ -52,8 +52,8 @@ public class FluxBufferTimeoutTest {
 
 		return Flux.range(1, 6)
 		           .delayElements(Duration.ofMillis(300))
-		           .bufferTimeout(4, Duration.ofMillis(2000), worker, ArrayList::new,
-				           v -> v == 1);
+		           .bufferTimeout(4, Duration.ofMillis(2000), worker, v -> v == 1,
+				           ArrayList::new);
 	}
 
 	@Test
