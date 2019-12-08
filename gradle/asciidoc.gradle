@@ -16,18 +16,18 @@
 configure(rootProject) {
 	apply plugin: 'org.asciidoctor.convert'
 
-  configure(subprojects) { p ->
-	if (p.name == 'benchmarks')
-	  return
-	
-	p.tasks.withType(Javadoc).all {
-	  afterEvaluate {
-		println "JDK Javadoc link for ${p.name} is ${rootProject.jdkJavadoc}"
-	  }
-	}
-  }
-
 	asciidoctor {
+	  inputs.dir("docs/asciidoc/")
+			.withPropertyName("asciidocFiles")
+			.withPathSensitivity(PathSensitivity.RELATIVE)
+
+	  if (isCiServer || !rootProject.version.toString().endsWith(".BUILD-SNAPSHOT")) {
+		backends = ["html5", "pdf"]
+	  }
+	  else {
+		backends = ["html5"]
+	  }
+
 	  sourceDir "$rootDir/docs/asciidoc/"
 	  sources {
 		include "index.asciidoc"
@@ -38,8 +38,7 @@ configure(rootProject) {
 		  include 'highlight/**/*'
 		}
 	  }
-	  outputDir file("$buildDir/reactor-code/build/asciidoc")
-	  backends = ['html5', 'pdf']
+	  outputDir file("$buildDir/docs/asciidoc")
 		logDocuments = true
 		options = [
 				doctype: 'book'
@@ -51,10 +50,6 @@ configure(rootProject) {
 				'source-highlighter': 'highlightjs',
 				'highlightjsdir': "./highlight",
 				'highlightjs-theme': 'railscasts'
-
-		doLast {
-			file("$outputDir/pdf/index.pdf").renameTo ("$outputDir/pdf/reactor-core-reference-guide-${version}.pdf")
-		}
 	}
 
 	dependencies {
@@ -63,11 +58,18 @@ configure(rootProject) {
 	}
 
 	task docsZip(type: Zip, dependsOn: asciidoctor) {
-	  baseName = 'reactor-core-docs'
-	  from("$buildDir/reactor-code/build/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
-	  from("$buildDir/reactor-code/build/asciidoc/html5/index.html") { into("docs/") }
-	  from("$buildDir/reactor-code/build/asciidoc/html5/images") { into("docs/images/") }
-	  from("$buildDir/reactor-code/build/asciidoc/html5/highlight") { into("docs/highlight/") }
+		archiveBaseName.set("reactor-core")
+		archiveClassifier.set('docs')
+		afterEvaluate() {
+			//we copy the pdf late, when a potential customVersion has been applied to rootProject
+			from("$buildDir/docs/asciidoc/pdf/index.pdf") {
+				into ("docs/")
+				rename("index.pdf", "reactor-core-reference-guide-${rootProject.version}.pdf")
+			}
+		}
+		from("$buildDir/docs/asciidoc/html5/index.html") { into("docs/") }
+		from("$buildDir/docs/asciidoc/html5/images") { into("docs/images/") }
+		from("$buildDir/docs/asciidoc/html5/highlight") { into("docs/highlight/") }
 	}
 }
 

@@ -102,7 +102,12 @@ that is,  where the `Flux` was declared. We usually refer to that as the "`assem
 the `Flux`.
 
 [[debug-activate]]
-== Activating Debug Mode
+== Activating Debug Mode - aka tracebacks
+
+WARNING: this section describes the easiest but also the slowest way to enable
+the debugging capabitilies due to the fact that it captures the stacktrace on every operator.
+See <<checkpoint-alternative>> for a more fine grained way of debugging,
+and <<reactor-tools-debug>> for a more advanced and performant global option.
 
 Even though the stacktrace was still able to convey some information for someone with a
 bit of experience, we can see that it is not ideal by itself in more advanced cases.
@@ -126,7 +131,7 @@ hook should be activated before that, so the safest way is to activate it right 
 start of your application.
 
 Later on, if an exception occurs, the failing operator is able to refer to that capture
-and append it to the stack trace.
+and append it to the stack trace. We call this captured assembly information a *traceback*.
 
 In the next section, we see how the stack trace differs and how to interpret
 that new information.
@@ -163,7 +168,7 @@ Error has been observed by the following operator(s): <5>
 <1> This is new: We see the wrapper operator that captures the stack.
 <2> Apart from that, the first section of the stack trace is still the same for the most
 part, showing a bit of the operator's internals (so we removed a bit of the snippet here).
-<3> This is where the new stuff from debugging mode starts to appear.
+<3> This is where the traceback starts to appear.
 <4> First, we get some details about where the operator was assembled.
 <5> We also get a traceback of the error as it propagated through the operator chain,
 from first to last (error site to subscribe site).
@@ -250,10 +255,21 @@ method).
 . Finally, it is seen by an `elapsed` and a `transform`. Once again, `elapsed` is applied
 by the transformation function of that second transform.
 
+TIP: As tracebacks are appended to original errors as suppressed exceptions, this can somewhat
+interfere with another type of exception that uses this mechanism: composite exceptions.
+Such exceptions can be created directly via `Exceptions.multiple(Throwable...)`, or by some
+operators that might join multiple erroring sources (like `Flux#flatMapDelayError`). They
+can be unwrapped into a `List` via `Exceptions.unwrapMultiple(Throwable)`, in which case the traceback
+would be considered a component of the composite and be part of the returned `List`.
+If that is somehow not desirable, tracebacks can be identified thanks to `Exceptions.isTraceback(Throwable)`
+check, and excluded from such an unwrap by using `Exceptions.unwrapMultipleExcludingTracebacks(Throwable)`
+instead.
+
 We deal with a form of instrumentation here, and creating a stack trace is costly. That
 is why this debugging feature should only be activated in a controlled manner, as a last
 resort.
 
+[[checkpoint-alternative]]
 === The `checkpoint()` Alternative
 
 The debug mode is global and affects every single operator assembled into a `Flux` or a
@@ -318,6 +334,79 @@ correlation ID (for instance, coming from a header in the case of an HTTP reques
 NOTE: When both global debugging and local `checkpoint()` are enabled, checkpointed
 snapshot stacks are appended as suppressed error output after the observing operator
 graph and following the same declarative order.
+
+[[reactor-tools-debug]]
+== Production-ready Global Debugging
+Project Reactor comes with a separate Java Agent that instruments your code and adds
+debugging info without paying the cost of capturing the stacktrace on every operator call.
+The behaviour is very similar to <<debug-activate>>, but without the runtime performance overhead.
+
+To use it in your app, you must add it as a dependency.
+
+The following example shows how to add `reactor-tools` as a dependency in Maven:
+
+.reactor-tools in Maven, in `<dependencies>`
+====
+[source,xml]
+----
+<dependency>
+    <groupId>io.projectreactor</groupId>
+    <artifactId>reactor-tools</artifactId>
+    <1>
+</dependency>
+----
+<1> If you use the <<getting,BOM>>, you do not need to specify a `<version>`.
+====
+
+The following example shows how to add `reactor-tools` as a dependency in Gradle:
+
+.reactor-tools in Gradle, amend the `dependencies` block
+====
+[source,groovy]
+----
+dependencies {
+   compile 'io.projectreactor:reactor-tools'
+}
+----
+====
+
+It also needs to be explicitly initialized with:
+====
+[source,java]
+----
+ReactorDebugAgent.init();
+----
+====
+
+TIP: Since the implementation will instrument your classes when they are loaded,
+the best place to put it is before everything else in your main(String[]) methood:
+====
+[source,java]
+----
+public static void main(String[] args) {
+    ReactorDebugAgent.init();
+    SpringApplication.run(Application.class, args);
+}
+----
+====
+
+You may also re-process existing classes if you cannot run the init eagerly (e.g. in the tests):
+====
+[source,java]
+----
+ReactorDebugAgent.init();
+ReactorDebugAgent.processExistingClasses();
+----
+====
+
+WARNING: Be aware that the re-processing takes a couple of seconds due to the need to iterate over
+all loaded classes and apply the transformation.
+Use it only if you see that some call-sites are not instrumented.
+
+=== Limitations
+`ReactorDebugAgent` is implemented as a Java Agent and uses https://bytebuddy.net/#/[ByteBuddy]
+to perform the self-attach.
+Self-attach may not work on some JVMs, please refer to ByteBuddy's documentation for more details.
 
 == Logging a Sequence
 

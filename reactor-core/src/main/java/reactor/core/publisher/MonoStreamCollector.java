@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -25,6 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Collects the values from the source sequence into a {@link java.util.stream.Collector}
@@ -76,7 +78,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 
 		final Function<? super A, ? extends R> finisher;
 
-		A container;
+		A container; //not final to be able to null it out on termination
 
 		Subscription s;
 
@@ -101,6 +103,17 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			return super.scanUnsafe(key);
 		}
 
+		protected void discardIntermediateContainer(A a) {
+			Context ctx = actual.currentContext();
+			if (a instanceof Collection) {
+				Operators.onDiscardMultiple((Collection<?>) a, ctx);
+			}
+			else {
+				Operators.onDiscard(a, ctx);
+			}
+		}
+		//NB: value and thus discard are not used
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
@@ -122,7 +135,9 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				accumulator.accept(container, t);
 			}
 			catch (Throwable ex) {
-				onError(Operators.onOperatorError(s, ex, t, actual.currentContext()));
+				Context ctx = actual.currentContext();
+				Operators.onDiscard(t, ctx);
+				onError(Operators.onOperatorError(s, ex, t, ctx)); //discards intermediate container
 			}
 		}
 
@@ -133,6 +148,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 			done = true;
+			discardIntermediateContainer(container);
 			container = null;
 			actual.onError(t);
 		}
@@ -153,6 +169,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				r = finisher.apply(a);
 			}
 			catch (Throwable ex) {
+				discardIntermediateContainer(a);
 				actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
 				return;
 			}
@@ -164,6 +181,8 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 		public void cancel() {
 			super.cancel();
 			s.cancel();
+			discardIntermediateContainer(container);
+			container = null;
 		}
 	}
 }

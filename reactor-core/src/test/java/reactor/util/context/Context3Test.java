@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -171,6 +172,15 @@ public class Context3Test {
 	}
 
 	@Test
+	public void putAllReplaces() {
+		Context m = Context.of(c.key1, "replaced", "A", 1);
+		Context put = c.putAll(m);
+
+		assertThat(put).isInstanceOf(Context4.class)
+		               .hasToString("Context4{1=replaced, 2=B, 3=C, A=1}");
+	}
+
+	@Test
 	public void putAllOfEmpty() {
 		Context m = Context.empty();
 		Context put = c.putAll(m);
@@ -195,5 +205,51 @@ public class Context3Test {
 	@Test
 	public void size() {
 		assertThat(c.size()).isEqualTo(3);
+	}
+
+	@Test
+	public void putAllSelfIntoEmpty() {
+		CoreContext initial = new Context0();
+
+		Context result = ((CoreContext) c).putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream()).containsExactlyElementsOf(c.stream().collect(Collectors.toList()));
+	}
+
+	@Test
+	public void putAllSelfIntoContextN() {
+		CoreContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		Context3 self = new Context3("A", 1, "B", 2, "C", 3);
+		Context result = self.putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream().map(String::valueOf))
+				.containsExactly("1=1", "2=2", "3=3", "4=4", "5=5", "6=6", "A=1", "B=2", "C=3");
+	}
+
+	@Test
+	public void unsafePutAllIntoShouldReplace() {
+		ContextN ctx = new ContextN(Collections.emptyMap());
+		ctx.accept(1, "VALUE1");
+		ctx.accept(2, "VALUE2");
+		ctx.accept(3, "VALUE3");
+		ctx.accept("extra", "value");
+
+		Context3 self = new Context3(1, "REPLACED1", 2, "REPLACED2",
+				3, "REPLACED3");
+
+		self.unsafePutAllInto(ctx);
+
+		assertThat(ctx)
+				.containsEntry(1, "REPLACED1")
+				.containsEntry(2, "REPLACED2")
+				.containsEntry(3, "REPLACED3")
+				.containsEntry("extra", "value")
+				.hasSize(4);
 	}
 }

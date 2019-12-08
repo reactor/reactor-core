@@ -2,16 +2,16 @@
 
 Only execute specific benchmark(s) (wildcards are added before and after):
 ```
-../gradlew jmh -Pinclude="(BenchmarkPrimary|OtherBench)"
+../gradlew jmh --include="(BenchmarkPrimary|OtherBench)"
 ```
 If you want to specify the wildcards yourself, you can pass the full regexp:
 ```
-../gradlew jmh -PfullInclude=.*MyBenchmark.*
+../gradlew jmh --fullInclude=.*MyBenchmark.*
 ```
 
 Specify extra profilers:
 ```
-../gradlew jmh -Pprofilers="gc,stack"
+../gradlew jmh --profilers="gc,stack"
 ```
 
 Prominent profilers (for full list call `jmhProfilers` task):
@@ -22,24 +22,24 @@ Prominent profilers (for full list call `jmhProfilers` task):
 
 Change report format from JSON to one of [CSV, JSON, NONE, SCSV, TEXT]:
 ```
-./gradlew jmh -Pformat=csv
+./gradlew jmh --format=csv
 ```
 
 Specify JVM arguments:
 ```
-../gradlew jmh -PjvmArgs="-Dtest.cluster=local"
+../gradlew jmh --jvmArgs="-Dtest.cluster=local"
 ```
 
 Run in verification mode (execute benchmarks with minimum of fork/warmup-/benchmark-iterations):
 ```
-../gradlew jmh -Pverify
+../gradlew jmh --verify=true
 ```
 
 ## Comparing with the baseline
 If you wish you run two sets of benchmarks, one for the current change and another one for the "baseline",
 there is an additional task `jmhBaseline` that will use the latest release:
 ```
-../gradlew jmh jmhBaseline -Pinclude=MyBenchmark
+../gradlew jmh jmhBaseline --include=MyBenchmark
 ```
 
 ## Resources

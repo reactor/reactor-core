@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+if (rootProject.hasProperty("releaserDryRun") && rootProject.findProperty("releaserDryRun") != "false") {
+	println "Adding MavenLocal() for benefit of releaser dry run"
+	rootProject.repositories {
+		mavenLocal()
+	}
+}
+
+/**
+ * return a specific property value, assuming all the provided projects have it with the
+ * same value, or throw if multiple values are found
+ */
+private static def getUniquePropertyPerProject(Set<Project> projects, String property) {
+	//"multimap": dictionary of lists
+	def props = [:].withDefault {[]}
+	projects.each { props.get(it.findProperty(property)).add(it.name) }
+
+	if (props.size() != 1) {
+		throw new InvalidUserDataException("build defines multiple values for property `${property}`: ${props}")
+	}
+	return props.keySet().find()
+}
+
+//NOTE: this task is intended for rootProject with submodules
+task groupId(group: "releaser helpers", description: "output the group id of submodules, checking there is only one") {
+	doLast {
+		println getUniquePropertyPerProject(rootProject.subprojects, "group")
+	}
+}

@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -92,5 +93,24 @@ public class MonoFlatMapTest {
 
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void noWrappingOfCheckedExceptions() {
+		Mono.just("single")
+		    .flatMap(x -> Mono.error(new NoSuchMethodException()))
+		    .as(StepVerifier::create)
+		    .expectError(NoSuchMethodException.class)
+		    .verify();
+	}
+
+	@Test
+	public void noWrappingOfCheckedExceptions_hide() {
+		Mono.just("single")
+		    .hide()
+		    .flatMap(x -> Mono.error(new NoSuchMethodException()))
+		    .as(StepVerifier::create)
+		    .expectError(NoSuchMethodException.class)
+		    .verify();
 	}
 }

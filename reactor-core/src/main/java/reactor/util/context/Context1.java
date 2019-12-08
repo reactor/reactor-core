@@ -15,12 +15,13 @@
  */
 package reactor.util.context;
 
+import java.util.AbstractMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class Context1 implements Context, Map.Entry<Object, Object> {
+final class Context1 implements CoreContext {
 
 	final Object key;
 	final Object value;
@@ -67,22 +68,17 @@ final class Context1 implements Context, Map.Entry<Object, Object> {
 
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
-		return Stream.of(this);
+		return Stream.of(new AbstractMap.SimpleImmutableEntry<>(key, value));
 	}
 
 	@Override
-	public Object getKey() {
-		return key;
+	public Context putAllInto(Context base) {
+		return base.put(key, value);
 	}
 
 	@Override
-	public Object getValue() {
-		return value;
-	}
-
-	@Override
-	public Object setValue(Object value) {
-		throw new UnsupportedOperationException("Does not support in-place update");
+	public void unsafePutAllInto(ContextN other) {
+		other.accept(key, value);
 	}
 
 	@Override

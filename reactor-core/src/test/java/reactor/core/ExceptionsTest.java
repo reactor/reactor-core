@@ -16,19 +16,23 @@
 package reactor.core;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Predicate;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import reactor.core.publisher.Mono;
 import reactor.test.util.RaceTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static reactor.core.Exceptions.NOT_TIME_CAPABLE_REJECTED_EXECUTION;
-import static reactor.core.Exceptions.REJECTED_EXECUTION;
-import static reactor.core.Exceptions.TERMINATED;
+import static reactor.core.Exceptions.*;
 
 /**
  * @author Stephane Maldini
@@ -36,7 +40,7 @@ import static reactor.core.Exceptions.TERMINATED;
 public class ExceptionsTest {
 
 	@Test
-	public void testWrapping() throws Exception {
+	public void bubble() throws Exception {
 
 		Throwable t = new Exception("test");
 
@@ -46,11 +50,44 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	public void testNullWrapping() throws Exception {
+	public void nullBubble() throws Exception {
 
 		Throwable w = Exceptions.bubble(null);
 
 		assertTrue(Exceptions.unwrap(w) == w);
+	}
+
+	@Test
+	public void duplicateOnSubscribeReferencesSpec() {
+		IllegalStateException error = duplicateOnSubscribeException();
+		assertThat(error).hasMessageContaining("Rule 2.12");
+	}
+
+	@Test
+	public void duplicateOnSubscribeCreatesNewInstances() {
+		IllegalStateException error1 = duplicateOnSubscribeException();
+		IllegalStateException error2 = duplicateOnSubscribeException();
+
+		assertThat(error1).isNotSameAs(error2);
+	}
+
+	@Test
+	public void errorCallbackNotImplementedRejectsNull() {
+		//noinspection ThrowableNotThrown,ConstantConditions
+		assertThatNullPointerException().isThrownBy(() -> Exceptions.errorCallbackNotImplemented(null));
+	}
+
+	@Test
+	public void isErrorCallbackNotImplemented() {
+		UnsupportedOperationException vanillaUnsupported = new UnsupportedOperationException("not error callback");
+		UnsupportedOperationException t = errorCallbackNotImplemented(new IllegalStateException("in error callback"));
+
+		assertThat(Exceptions.isErrorCallbackNotImplemented(vanillaUnsupported))
+				.as("not error callback")
+				.isFalse();
+		assertThat(Exceptions.isErrorCallbackNotImplemented(t))
+				.as("error callback")
+				.isTrue();
 	}
 
 	@Test
@@ -70,10 +107,100 @@ public class ExceptionsTest {
 	}
 
 	@Test
+	public void failWithRejectedIsSingleton() {
+		assertThat(Exceptions.failWithRejected())
+				.isSameAs(Exceptions.failWithRejected())
+				.isNotSameAs(Exceptions.failWithRejectedNotTimeCapable());
+	}
+
+	@Test
+	public void failWithRejectedNotTimeCapableIsSingleton() {
+		assertThat(Exceptions.failWithRejectedNotTimeCapable())
+				.isSameAs(Exceptions.failWithRejectedNotTimeCapable())
+				.isNotSameAs(Exceptions.failWithRejected());
+	}
+
+	@Test
+	public void isBubbling() {
+		Throwable notBubbling = new ReactiveException("foo");
+		Throwable bubbling = new BubblingException("foo");
+
+		assertThat(Exceptions.isBubbling(notBubbling)).as("not bubbling").isFalse();
+		assertThat(Exceptions.isBubbling(bubbling)).as("bubbling").isTrue();
+	}
+
+	@Test
+	public void isCancelAndCancelIsBubbling() {
+		Throwable notCancel = new BubblingException("foo");
+		Throwable cancel = new CancelException();
+
+		assertThat(Exceptions.isCancel(notCancel)).as("not cancel").isFalse();
+		assertThat(Exceptions.isCancel(cancel)).as("cancel").isTrue();
+
+		assertThat(Exceptions.isBubbling(cancel)).as("cancel are bubbling").isTrue();
+	}
+
+	@Test
+	public void nullOrNegativeRequestReferencesSpec() {
+		assertThat(Exceptions.nullOrNegativeRequestException(-3))
+				.hasMessage("Spec. Rule 3.9 - Cannot request a non strictly positive number: -3");
+	}
+
+	@Test
+	public void propagateDoesntWrapRuntimeException() {
+		Throwable t = new RuntimeException("expected");
+		assertThat(Exceptions.propagate(t)).isSameAs(t);
+	}
+
+	//TODO test terminate
+
+	@Test
+	public void throwIfFatalThrowsBubbling() {
+		BubblingException expected = new BubblingException("expected");
+
+		assertThatExceptionOfType(BubblingException.class)
+				.isThrownBy(() -> Exceptions.throwIfFatal(expected))
+				.isSameAs(expected);
+	}
+
+	@Test
+	public void throwIfFatalThrowsErrorCallbackNotImplemented() {
+		ErrorCallbackNotImplemented expected = new ErrorCallbackNotImplemented(new IllegalStateException("expected cause"));
+
+		assertThatExceptionOfType(ErrorCallbackNotImplemented.class)
+				.isThrownBy(() -> Exceptions.throwIfFatal(expected))
+				.isSameAs(expected)
+				.withCause(expected.getCause());
+	}
+
+	@Test
+	public void throwIfJvmFatal() {
+		VirtualMachineError fatal1 = new VirtualMachineError() {};
+		ThreadDeath fatal2 = new ThreadDeath();
+		LinkageError fatal3 = new LinkageError();
+
+		assertThatExceptionOfType(VirtualMachineError.class)
+				.as("VirtualMachineError")
+				.isThrownBy(() -> Exceptions.throwIfJvmFatal(fatal1))
+				.isSameAs(fatal1);
+
+		assertThatExceptionOfType(ThreadDeath.class)
+				.as("ThreadDeath")
+				.isThrownBy(() -> Exceptions.throwIfJvmFatal(fatal2))
+				.isSameAs(fatal2);
+
+		assertThatExceptionOfType(LinkageError.class)
+				.as("LinkageError")
+				.isThrownBy(() -> Exceptions.throwIfJvmFatal(fatal3))
+				.isSameAs(fatal3);
+	}
+
+	@Test
 	public void multipleWithNullVararg() {
 		//noinspection ConstantConditions
 		assertThat(Exceptions.multiple((Throwable[]) null))
 				.isInstanceOf(RuntimeException.class)
+				.isExactlyInstanceOf(CompositeException.class)
 				.hasMessage("Multiple exceptions")
 	            .hasNoSuppressedExceptions();
 	}
@@ -84,6 +211,7 @@ public class ExceptionsTest {
 
 		assertThat(Exceptions.multiple(e1))
 				.isInstanceOf(RuntimeException.class)
+				.isExactlyInstanceOf(CompositeException.class)
 				.hasMessage("Multiple exceptions")
 	            .hasSuppressedException(e1);
 	}
@@ -95,6 +223,39 @@ public class ExceptionsTest {
 
 		assertThat(Exceptions.multiple(e1, e2))
 				.isInstanceOf(RuntimeException.class)
+				.isExactlyInstanceOf(CompositeException.class)
+				.hasMessage("Multiple exceptions")
+	            .hasSuppressedException(e1)
+	            .hasSuppressedException(e2);
+	}
+
+	@Test
+	public void multipleWithNullIterable() {
+		//noinspection ConstantConditions
+		assertThat(Exceptions.multiple((Iterable<Throwable>) null))
+				.isInstanceOf(RuntimeException.class)
+				.isExactlyInstanceOf(CompositeException.class)
+				.hasMessage("Multiple exceptions")
+	            .hasNoSuppressedExceptions();
+	}
+
+	@Test
+	public void multipleWithEmptyIterable() {
+		assertThat(Exceptions.multiple(Collections.emptyList()))
+				.isInstanceOf(RuntimeException.class)
+				.isExactlyInstanceOf(CompositeException.class)
+				.hasMessage("Multiple exceptions")
+	            .hasNoSuppressedExceptions();
+	}
+
+	@Test
+	public void multipleWithIterable() {
+		IOException e1 = new IOException("boom");
+		IllegalArgumentException  e2 = new IllegalArgumentException("boom");
+
+		assertThat(Exceptions.multiple(Arrays.asList(e1, e2)))
+				.isInstanceOf(RuntimeException.class)
+				.isExactlyInstanceOf(CompositeException.class)
 				.hasMessage("Multiple exceptions")
 	            .hasSuppressedException(e1)
 	            .hasSuppressedException(e2);
@@ -319,5 +480,28 @@ public class ExceptionsTest {
 		assertThat(Exceptions.failWithRejected(test))
 				.isSameAs(test)
 				.hasCause(REJECTED_EXECUTION);
+	}
+
+	@Test
+	public void unwrapMultipleExcludingTraceback() {
+		Mono<String> errorMono1 = Mono.error(new IllegalStateException("expected1"));
+		Mono<String> errorMono2 = Mono.error(new IllegalStateException("expected2"));
+		Mono<Throwable> mono = Mono.zipDelayError(errorMono1, errorMono2)
+		                           .checkpoint("checkpoint")
+		                           .<Throwable>map(tuple -> new IllegalStateException("should have failed: " + tuple))
+		                           .onErrorResume(Mono::just);
+		Throwable compositeException = mono.block();
+
+		List<Throwable> exceptions = Exceptions.unwrapMultiple(compositeException);
+		List<Throwable> filteredExceptions = Exceptions.unwrapMultipleExcludingTracebacks(compositeException);
+
+		assertThat(exceptions).as("unfiltered composite has traceback")
+		                      .hasSize(3);
+
+		assertThat(exceptions).filteredOn(e -> !Exceptions.isTraceback(e))
+		                      .as("filtered out tracebacks")
+		                      .containsExactlyElementsOf(filteredExceptions)
+		                      .hasSize(2)
+		                      .hasOnlyElementsOfType(IllegalStateException.class);
 	}
 }

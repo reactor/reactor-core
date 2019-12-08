@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -49,20 +50,23 @@ public class VirtualTimeSchedulerTests {
 
 	@Test
 	public void allEnabled() {
-		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
+		assertThat(Schedulers.newParallel("")).isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newElastic("")).isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newSingle("")).isNotInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler.getOrSet();
 
-		Assert.assertTrue(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
-		Assert.assertTrue(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
-		Assert.assertTrue(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
+		assertThat(Schedulers.newParallel("")).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newElastic("")).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newSingle("")).isInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 
 		Assert.assertSame(Schedulers.newParallel(""), t);
 		Assert.assertSame(Schedulers.newElastic(""), t);
+		Assert.assertSame(Schedulers.newBoundedElastic(5, Integer.MAX_VALUE, ""), t); //same even though different parameter
 		Assert.assertSame(Schedulers.newSingle(""), t);
 	}
 

@@ -16,6 +16,7 @@
 
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -146,6 +147,15 @@ public class Context2Test {
 	}
 
 	@Test
+	public void putAllReplaces() {
+		Context m = Context.of(c.key1, "replaced", "A", 1);
+		Context put = c.putAll(m);
+
+		assertThat(put).isInstanceOf(Context3.class)
+		               .hasToString("Context3{1=replaced, 2=B, A=1}");
+	}
+
+	@Test
 	public void putAllOfEmpty() {
 		Context m = Context.empty();
 		Context put = c.putAll(m);
@@ -171,4 +181,48 @@ public class Context2Test {
 	public void size() {
 		assertThat(c.size()).isEqualTo(2);
 	}
+
+	@Test
+	public void putAllSelfIntoEmpty() {
+		CoreContext initial = new Context0();
+
+		Context result = ((CoreContext) c).putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream()).containsExactlyElementsOf(c.stream().collect(Collectors.toList()));
+	}
+
+	@Test
+	public void putAllSelfIntoContextN() {
+		CoreContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		Context2 self = new Context2("A", 1, "B", 2);
+		Context result = self.putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream().map(String::valueOf))
+				.containsExactly("1=1", "2=2", "3=3", "4=4", "5=5", "6=6", "A=1", "B=2");
+	}
+
+	@Test
+	public void unsafePutAllIntoShouldReplace() {
+		ContextN ctx = new ContextN(Collections.emptyMap());
+		ctx.accept(1, "VALUE1");
+		ctx.accept(2, "VALUE2");
+		ctx.accept("extra", "value");
+
+		Context2 self = new Context2(1, "REPLACED1", 2, "REPLACED2");
+
+		self.unsafePutAllInto(ctx);
+
+		assertThat(ctx)
+				.containsEntry(1, "REPLACED1")
+				.containsEntry(2, "REPLACED2")
+				.containsEntry("extra", "value")
+				.hasSize(3);
+	}
+
 }

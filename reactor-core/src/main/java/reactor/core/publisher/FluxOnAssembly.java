@@ -217,6 +217,12 @@ final class FluxOnAssembly<T> extends InternalFluxOperator<T, T> implements Fuse
 
 	/**
 	 * The holder for the assembly stacktrace (as its message).
+	 *
+	 * @implNote this package-private exception needs access to package-private enclosing class and methods,
+	 * but it is also detected by {@link Exceptions#isTraceback(Throwable)} via {@link Class#getCanonicalName() reflection}.
+	 * Be sure to update said method in case of a refactoring.
+	 *
+	 * @see Exceptions#isTraceback(Throwable)
 	 */
 	static final class OnAssemblyException extends RuntimeException {
 

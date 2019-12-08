@@ -14,106 +14,115 @@
  * limitations under the License.
  */
 
-configure(subprojects) { p ->
-  
-  	if (p.name == 'benchmarks')
-		return
-  
-	apply plugin: 'propdeps-maven'
-	apply plugin: 'maven'
+if (project.name == 'benchmarks')
+	return
 
-	install {
-		repositories.mavenInstaller {
-			customizePom(pom, project)
+apply plugin: 'maven-publish'
+apply plugin: "com.jfrog.artifactory"
+
+jar {
+	manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
+	manifest.attributes["Implementation-Title"] = project.name
+	manifest.attributes["Implementation-Version"] = project.version
+}
+
+task sourcesJar(type: Jar) {
+	archiveClassifier.set('sources')
+	from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar) {
+	archiveClassifier.set('javadoc')
+	from javadoc
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
+			artifact sourcesJar
+			artifact javadocJar
+			//other project-specific artifacts are added in each project's builds
+
+			pom {
+				afterEvaluate {
+					name = project.description
+					description = project.description
+				}
+				packaging = 'jar' //if not explicitly set, end up as `pom` in output. omitted in output if set as `jar`...
+				url = 'https://github.com/reactor/reactor-core'
+				organization {
+					name = 'reactor'
+					url = 'https://github.com/reactor'
+				}
+				licenses {
+					license {
+						name = 'Apache License, Version 2.0'
+						url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+						distribution = 'repo'
+					}
+				}
+				scm {
+					url = 'https://github.com/reactor/reactor-core'
+					connection = 'scm:git:git://github.com/reactor/reactor-core'
+					developerConnection = 'scm:git:git://github.com/reactor/reactor-core'
+				}
+				developers {
+					developer {
+						id = 'smaldini'
+						name = 'Stephane Maldini'
+						email = 'smaldini@pivotal.io'
+					}
+					developer {
+						id = 'akarnokd'
+						name = 'David Karnok'
+						email = 'akarnokd@gmail.com'
+					}
+					developer {
+						id = 'simonbasle'
+						name = 'Simon Baslé'
+						email = 'sbasle@pivotal.io'
+					}
+					developer {
+						id = 'bsideup'
+						name = 'Sergei Egorov'
+						email = 'segorov@pivotal.io'
+					}
+					developer {
+						id = 'sdeleuze'
+						name = 'Sébastien Deleuze'
+						email = 'sdeleuze@pivotal.io'
+					}
+				}
+				issueManagement {
+					system = "GitHub Issues"
+					url = "https://github.com/reactor/reactor-core/issues"
+				}
+
+				withXml {
+					//set optional true for compileOnly dependencies, which are not in there by default
+					asNode().dependencies[0].each { node ->
+						def group = node.groupId.text()
+						def artifact = node.artifactId.text()
+						def version = node.version.text()
+						def isOptional = project.configurations.optional.allDependencies.any { dep -> dep.group == group && dep.name == artifact }
+						if (isOptional) {
+							node.appendNode('optional', true)
+							println "$group:$artifact:$version has been marked as optional in generated pom"
+						}
+					}
+					//groovy magic incantation to sort dependencies alphabetically (scope/group/name..)
+					def sorted = asNode().dependencies[0].children().collect().sort { it.scope.text() + it.groupId.text() + it.artifactId.text() }
+					asNode().dependencies[0].children().with { deps ->
+						deps.clear()
+						sorted.each { deps.add(it) }
+					}
+				}
+			}
 		}
-	}
-
-	jar {
-		manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
-		manifest.attributes["Implementation-Title"] = project.name
-		manifest.attributes["Implementation-Version"] = project.version
-	}
-
-	task sourcesJar(type: Jar) {
-		classifier = 'sources'
-		from sourceSets.main.allSource
-	}
-
-	task javadocJar(type: Jar) {
-		classifier = 'javadoc'
-		from javadoc
-	}
-
-	artifacts {
-		archives sourcesJar
-		archives javadocJar
 	}
 }
 
-def customizePom(pom, gradleProject) {
-	pom.whenConfigured { generatedPom ->
-		// eliminate test-scoped dependencies (no need in maven central poms)
-		generatedPom.dependencies.removeAll { dep ->
-			dep.scope == "test"
-		}
-
-		// sort to make pom dependencies order consistent to ease comparison of older poms
-		generatedPom.dependencies = generatedPom.dependencies.sort { dep ->
-			"$dep.scope:$dep.groupId:$dep.artifactId"
-		}
-
-		// add all items necessary for maven central publication
-		generatedPom.project {
-			name = gradleProject.description
-			description = gradleProject.description
-			url = 'https://github.com/reactor/reactor-core'
-			organization {
-				name = 'reactor'
-				url = 'https://github.com/reactor'
-			}
-			licenses {
-				license {
-					name 'Apache License, Version 2.0'
-					url 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-					distribution 'repo'
-				}
-			}
-			scm {
-				url = 'https://github.com/reactor/reactor-core'
-				connection = 'scm:git:git://github.com/reactor/reactor-core'
-				developerConnection = 'scm:git:git://github.com/reactor/reactor-core'
-			}
-			developers {
-				developer {
-					id = 'smaldini'
-					name = 'Stephane Maldini'
-					email = 'smaldini@pivotal.io'
-				}
-				developer {
-					id = 'akarnokd'
-					name = 'David Karnok'
-					email = 'akarnokd@gmail.com'
-				}
-				developer {
-					id = 'simonbasle'
-					name = 'Simon Baslé'
-					email = 'sbasle@pivotal.io'
-				}
-				developer {
-					id = 'bsideup'
-					name = 'Sergei Egorov'
-					email = 'segorov@pivotal.io'
-				}
-				developer {
-					id = 'sdeleuze'
-					name = 'Sébastien Deleuze'
-					email = 'sdeleuze@pivotal.io'
-				}
-			}
-			issueManagement {
-				system = "GitHub Issues"
-				url = "https://github.com/reactor/reactor-core/issues"
-			}
-		}
-	}
+artifactoryPublish {
+	publications(publishing.publications.mavenJava)
 }

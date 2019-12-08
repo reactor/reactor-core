@@ -670,7 +670,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono} emitting current context
 	 * @see #subscribe(CoreSubscriber)
 	 */
-	public static  Mono<Context> subscriberContext() {
+	public static Mono<Context> subscriberContext() {
 		return onAssembly(MonoCurrentContext.INSTANCE);
 	}
 
@@ -1033,7 +1033,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static  Mono<Void> whenDelayError(Publisher<?>... sources) {
+	public static Mono<Void> whenDelayError(Publisher<?>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -1585,7 +1585,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a combined {@link Mono}.
 	 */
-	public static <R>  Mono<R> zipDelayError(Function<? super Object[], ? extends R>
+	public static <R> Mono<R> zipDelayError(Function<? super Object[], ? extends R>
 			combinator, Mono<?>... monos) {
 		if (monos.length == 0) {
 			return empty();
@@ -1797,6 +1797,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Turn this {@link Mono} into a hot source and cache last emitted signal for further
 	 * {@link Subscriber}, with an expiry timeout (TTL) that depends on said signal.
+	 * An TTL of {@link Long#MAX_VALUE} milliseconds is interpreted as indefinite caching of
+	 * the signal (no cache cleanup is scheduled, so the signal is retained as long as this
+	 * {@link Mono} is not garbage collected).
 	 * <p>
 	 * Empty completion and Error will also be replayed according to their respective TTL,
 	 * so transient errors can be "retried" by letting the {@link Function} return
@@ -1841,12 +1844,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracing for this particular {@link Mono}, in case of an error
+	 * Activate traceback (full assembly tracing) for this particular {@link Mono}, in case of an error
 	 * upstream of the checkpoint. Tracing incurs the cost of an exception stack trace
 	 * creation.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @return the assembly tracing {@link Mono}
 	 */
@@ -1855,7 +1863,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Activate assembly marker for this particular {@link Mono} by giving it a description that
+	 * Activate traceback (assembly marker) for this particular {@link Mono} by giving it a description that
 	 * will be reflected in the assembly traceback in case of an error upstream of the
 	 * checkpoint. Note that unlike {@link #checkpoint()}, this doesn't create a
 	 * filled stack trace, avoiding the main cost of the operator.
@@ -1866,6 +1874,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @param description a unique enough description to include in the light assembly traceback.
 	 * @return the assembly marked {@link Mono}
@@ -1875,8 +1888,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracing or the lighter assembly marking depending on the
-	 * {@code forceStackTrace} option.
+	 * Activate traceback (full assembly tracing or the lighter assembly marking depending on the
+	 * {@code forceStackTrace} option).
 	 * <p>
 	 * By setting the {@code forceStackTrace} parameter to {@literal true}, activate assembly
 	 * tracing for this particular {@link Mono} and give it a description that
@@ -1893,6 +1906,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @param description a description (must be unique enough if forceStackTrace is set
 	 * to false).
@@ -4063,25 +4081,28 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> actual) {
-		Publisher publisher = Operators.onLastAssembly(this);
+		CorePublisher publisher = Operators.onLastAssembly(this);
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
-		while (publisher instanceof CoreOperator) {
-			CoreOperator operator = (CoreOperator) publisher;
+		if (publisher instanceof OptimizableOperator) {
+			OptimizableOperator operator = (OptimizableOperator) publisher;
+			while (true) {
+				subscriber = operator.subscribeOrReturn(subscriber);
+				if (subscriber == null) {
+					// null means "I will subscribe myself", returning...
+					return;
+				}
 
-			subscriber = operator.subscribeOrReturn(subscriber);
-			if (subscriber == null) {
-				// null means "I will subscribe myself", returning...
-				return;
+				OptimizableOperator newSource = operator.nextOptimizableSource();
+				if (newSource == null) {
+					publisher = operator.source();
+					break;
+				}
+				operator = newSource;
 			}
-			publisher = operator.source();
 		}
-		if (publisher instanceof CorePublisher) {
-			((CorePublisher) publisher).subscribe(subscriber);
-		}
-		else {
-			publisher.subscribe(subscriber);
-		}
+
+		publisher.subscribe(subscriber);
 	}
 
 	/**
@@ -4564,6 +4585,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
+		if (Hooks.DETECT_CONTEXT_LOSS) {
+			//noinspection unchecked,rawtypes
+			transformer = new ContextTrackingFunctionWrapper(transformer);
+		}
 		return onAssembly(from(transformer.apply(this)));
 	}
 
@@ -4587,7 +4612,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #transform(Function)
 	 */
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
-		return defer(() -> from(transformer.apply(this)));
+		return defer(() -> {
+			if (Hooks.DETECT_CONTEXT_LOSS) {
+				//noinspection unchecked,rawtypes
+				return from(new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this));
+			}
+			return from(transformer.apply(this));
+		});
 	}
 
 	/**

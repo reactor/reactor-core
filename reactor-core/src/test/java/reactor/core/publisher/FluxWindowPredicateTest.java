@@ -268,8 +268,7 @@ public class FluxWindowPredicateTest extends
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> Assert.assertThat(retainedDetector.finalizedCount(),
-						is(100L)));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -291,8 +290,7 @@ public class FluxWindowPredicateTest extends
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> Assert.assertThat(retainedDetector.finalizedCount(),
-						is(100L)));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -302,7 +300,7 @@ public class FluxWindowPredicateTest extends
 				Flux.range(1, 100)
 				    .map(AtomicInteger::new) // wrap integer with object to test gc
 				    .map(retainedDetector::tracked)
-				    .concatWith(Mono.error(new Throwable("expected")))
+				    .concatWith(Mono.error(new Throwable("unexpected")))
 				    .windowUntilChanged()
 				    .take(50);
 
@@ -315,10 +313,7 @@ public class FluxWindowPredicateTest extends
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> Assert.assertThat(retainedDetector.finalizedCount(),
-						// 50 + 1 (taking 50 windows requires having 51st element as a
-						// key in the predicate)
-						is(51L)));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Override

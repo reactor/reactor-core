@@ -733,16 +733,20 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 				produced++;
 			}
 			else {
-				int p = produced;
-				if (p != 0) {
-					produced = 0;
-					GroupByMain<?, K, V> main = parent;
-					if (main != null) {
-						main.s.request(p);
-					}
-				}
+				tryReplenish();
 			}
 			return v;
+		}
+
+		void tryReplenish() {
+			int p = produced;
+			if (p != 0) {
+				produced = 0;
+				GroupByMain<?, K, V> main = parent;
+				if (main != null) {
+					main.s.request(p);
+				}
+			}
 		}
 
 		@Override
@@ -752,7 +756,11 @@ final class FluxGroupBy<T, K, V> extends InternalFluxOperator<T, GroupedFlux<K, 
 
 		@Override
 		public boolean isEmpty() {
-			return queue.isEmpty();
+			if (queue.isEmpty()) {
+				tryReplenish();
+				return true;
+			}
+			return false;
 		}
 
 		@Override

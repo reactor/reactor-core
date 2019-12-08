@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BooleanSupplier;
 
-import org.reactivestreams.Publisher;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 
 /**
@@ -54,7 +54,7 @@ final class FluxRepeatPredicate<T> extends InternalFluxOperator<T, T> {
 	static final class RepeatPredicateSubscriber<T>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
-		final Publisher<? extends T> source;
+		final CorePublisher<? extends T> source;
 
 		final BooleanSupplier predicate;
 
@@ -65,7 +65,7 @@ final class FluxRepeatPredicate<T> extends InternalFluxOperator<T, T> {
 
 		long produced;
 
-		RepeatPredicateSubscriber(Publisher<? extends T> source,
+		RepeatPredicateSubscriber(CorePublisher<? extends T> source,
 				CoreSubscriber<? super T> actual, BooleanSupplier predicate) {
 			super(actual);
 			this.source = source;

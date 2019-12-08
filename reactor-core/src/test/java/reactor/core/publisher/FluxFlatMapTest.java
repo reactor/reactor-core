@@ -1688,4 +1688,36 @@ public class FluxFlatMapTest {
 
 		assertThat(msg).contains("42 skipped, reason: boom");
 	}
+
+	@Test
+	public void noWrappingOfCheckedExceptions() {
+		Flux.just("single")
+		    .flatMap(x -> Mono.error(new NoSuchMethodException()))
+		    .as(StepVerifier::create)
+		    .expectError(NoSuchMethodException.class)
+		    .verify();
+
+		Flux.just("a", "b")
+		    .flatMap(x -> Mono.error(new NoSuchMethodException()))
+		    .as(StepVerifier::create)
+		    .expectError(NoSuchMethodException.class)
+		    .verify();
+	}
+
+	@Test
+	public void noWrappingOfCheckedExceptions_hide() {
+		Flux.just("single")
+		    .hide()
+		    .flatMap(x -> Mono.error(new NoSuchMethodException()))
+		    .as(StepVerifier::create)
+		    .expectError(NoSuchMethodException.class)
+		    .verify();
+
+		Flux.just("a", "b")
+		    .hide()
+		    .flatMap(x -> Mono.error(new NoSuchMethodException()))
+		    .as(StepVerifier::create)
+		    .expectError(NoSuchMethodException.class)
+		    .verify();
+	}
 }

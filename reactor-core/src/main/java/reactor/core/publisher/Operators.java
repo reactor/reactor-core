@@ -682,15 +682,18 @@ public abstract class Operators {
 	 *     return {@code false} to indicate value was not consumed and more must be
 	 *     tried.</li>
 	 *
-	 *     <li>{@code poll}: use {@link #onNextPollError(Object, Throwable, Context)} instead.</li>
+	 *     <li>any of the above where the error is going to be propagated through onError but the
+	 *     subscription shouldn't be cancelled: use {@link #onNextError(Object, Throwable, Context)} instead.</li>
+	 *
+	 *     <li>{@code poll} (where the error will be thrown): use {@link #onNextPollError(Object, Throwable, Context)} instead.</li>
 	 * </ul>
 	 *
-	 * @param value The onNext value that caused an error.
+	 * @param value The onNext value that caused an error. Can be null.
 	 * @param error The error.
 	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
-	 * @param subscriptionForCancel The {@link Subscription} that should be cancelled if the
-	 * strategy is terminal. Not null, use {@link #onNextPollError(Object, Throwable, Context)}
-	 * when unsubscribing is undesirable (eg. for poll()).
+	 * @param subscriptionForCancel The mandatory {@link Subscription} that should be cancelled if the
+	 * strategy is terminal. See also {@link #onNextError(Object, Throwable, Context)} and
+	 * {@link #onNextPollError(Object, Throwable, Context)} for alternatives that don't cancel a subscription
 	 * @param <T> The type of the value causing the error.
 	 * @return a {@link Throwable} to propagate through onError if the strategy is
 	 * terminal and cancelled the subscription, null if not.
@@ -711,6 +714,35 @@ public abstract class Operators {
 		else {
 			//falls back to operator errors
 			return onOperatorError(subscriptionForCancel, error, value, context);
+		}
+	}
+
+	/**
+	 * Find the {@link OnNextFailureStrategy} to apply to the calling async operator (which could be
+	 * a local error mode defined in the {@link Context}) and apply it.
+	 * <p>
+	 * This variant never cancels a {@link Subscription}. It returns a {@link Throwable} if the error is
+	 * fatal for the error mode, in which case the operator should call onError with the
+	 * returned error. On the contrary, if the error mode allows the sequence to
+	 * continue, this method returns {@code null}.
+	 *
+	 * @param value The onNext value that caused an error.
+	 * @param error The error.
+	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
+	 * @param <T> The type of the value causing the error.
+	 * @return a {@link Throwable} to propagate through onError if the strategy is terminal, null if not.
+	 * @see #onNextError(Object, Throwable, Context, Subscription)
+	 */
+	@Nullable
+	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context) {
+		error = unwrapOnNextError(error);
+		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
+		if (strategy.test(error, value)) {
+			//some strategies could still return an exception, eg. if the consumer throws
+			return strategy.process(error, value, context);
+		}
+		else {
+			return onOperatorError(null, error, value, context);
 		}
 	}
 
@@ -747,17 +779,23 @@ public abstract class Operators {
 	 * Find the {@link OnNextFailureStrategy} to apply to the calling async operator (which could be
 	 * a local error mode defined in the {@link Context}) and apply it.
 	 * <p>
-	 * Returns a {@link RuntimeException} if errors are fatal for the error mode, in which
+	 * Returns a {@link RuntimeException} if the error is fatal for the error mode, in which
 	 * case the operator poll should throw the returned error. On the contrary if the
 	 * error mode allows the sequence to continue, returns {@code null} in which case
 	 * the operator should retry the {@link Queue#poll() poll()}.
+	 * <p>
+	 * Note that this method {@link Exceptions#propagate(Throwable) wraps} checked exceptions in order to
+	 * return a {@link RuntimeException} that can be thrown from an arbitrary method. If you don't want to
+	 * throw the returned exception and this wrapping behavior is undesirable, but you still don't want to
+	 * cancel a subscription, you can use {@link #onNextError(Object, Throwable, Context)} instead.
 	 *
 	 * @param value The onNext value that caused an error.
 	 * @param error The error.
 	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
 	 * @param <T> The type of the value causing the error.
-	 * @return a {@link Throwable} to propagate through onError if the strategy is
-	 * terminal and cancelled the subscription, null if not.
+	 * @return a {@link RuntimeException} to be thrown (eg. within {@link Queue#poll()} if the error is terminal in
+	 * the strategy, null if not.
+	 * @see #onNextError(Object, Throwable, Context)
 	 */
 	@Nullable
 	public static <T> RuntimeException onNextPollError(@Nullable T value, Throwable error, Context context) {
@@ -1267,12 +1305,17 @@ public abstract class Operators {
 	Operators() {
 	}
 
-	static final class CorePublisherAdapter<T> implements CorePublisher<T>, CoreOperator<T, T> {
+	static final class CorePublisherAdapter<T> implements CorePublisher<T>,
+	                                                      OptimizableOperator<T, T> {
 
 		final Publisher<T> publisher;
 
+		@Nullable
+		final OptimizableOperator<?, T> optimizableOperator;
+
 		CorePublisherAdapter(Publisher<T> publisher) {
 			this.publisher = publisher;
+			this.optimizableOperator = publisher instanceof OptimizableOperator ? (OptimizableOperator) publisher : null;
 		}
 
 		@Override
@@ -1291,8 +1334,13 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Publisher<? extends T> source() {
-			return publisher;
+		public final CorePublisher<? extends T> source() {
+			return this;
+		}
+
+		@Override
+		public final OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+			return optimizableOperator;
 		}
 	}
 
@@ -1525,8 +1573,9 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
+			O v = value;
 			if (STATE.getAndSet(this, CANCELLED) <= HAS_REQUEST_NO_VALUE) {
-				Operators.onDiscard(value, currentContext());
+				discard(v);
 			}
 			value = null;
 		}
@@ -1572,6 +1621,7 @@ public abstract class Operators {
 
 				// if state is >= HAS_CANCELLED or bit zero is set (*_HAS_VALUE) case, return
 				if ((state & ~HAS_REQUEST_NO_VALUE) != 0) {
+					this.value = null;
 					discard(v);
 					return;
 				}
@@ -1590,8 +1640,14 @@ public abstract class Operators {
 			}
 		}
 
+		/**
+		 * Discard the given value, generally this.value field. Lets derived subscriber with further knowledge about
+		 * the possible types of the value discard such values in a specific way. Note that fields should generally be
+		 * nulled out along the discard call.
+		 *
+		 * @param v the value to discard
+		 */
 		protected void discard(O v) {
-			this.value = null;
 			Operators.onDiscard(v, actual.currentContext());
 		}
 

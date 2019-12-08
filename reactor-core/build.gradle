@@ -18,6 +18,7 @@ import me.champeau.gradle.japicmp.JapicmpTask
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'osgi'
 apply plugin: 'org.unbroken-dome.test-sets'
+apply plugin: 'kotlin'
 
 sourceSets {
   noMicrometerTest {
@@ -41,11 +42,11 @@ configurations {
 
 dependencies {
   // Reactive Streams
-  compile "org.reactivestreams:reactive-streams:1.0.3"
-  testCompile "org.reactivestreams:reactive-streams-tck:1.0.3"
+  compile "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
+  testCompile "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
 
   // JSR-305 annotations
-  optional "com.google.code.findbugs:jsr305:3.0.2"
+  optional "com.google.code.findbugs:jsr305:$jsr305Version"
 
   //Optional Logging Operator
   optional "org.slf4j:slf4j-api:$slf4jVersion"
@@ -56,13 +57,12 @@ dependencies {
   optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
 
   //Optional BlockHound support
-  optional 'io.projectreactor.tools:blockhound:1.0.0.RC1'
+  optional "io.projectreactor.tools:blockhound:$blockhoundVersion"
 
   //Optional JDK 9 Converter
-  jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
+  jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
-  testCompile 'junit:junit:4.12'
-
+  testCompile "junit:junit:$jUnitVersion"
   testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
   testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
   // Testing
@@ -70,11 +70,10 @@ dependencies {
 	exclude module: 'reactor-core'
   }
 
-  testCompile "org.hamcrest:hamcrest-library:1.3",
-		  "org.testng:testng:6.8.5",
-		  "org.assertj:assertj-core:$assertJVersion",
+  testCompile "org.assertj:assertj-core:$assertJVersion",
+		  "org.testng:testng:$testNgVersion",
 		  "org.mockito:mockito-core:$mockitoVersion",
-		  "org.openjdk.jol:jol-core:0.9",
+		  "org.openjdk.jol:jol-core:$javaObjectLayoutVersion",
 		  "pl.pragmatists:JUnitParams:$jUnitParamsVersion",
 		  "org.awaitility:awaitility:$awaitilityVersion",
 		  "com.pivovarit:throwing-function:$throwingFunctionVersion"
@@ -119,47 +118,18 @@ task japicmp(type: JapicmpTask) {
 
   //TODO after a release, bump the gradle.properties baseline
   //TODO after a release, remove the reactor-core exclusions below if any
-  classExcludes = [
-		  'reactor.core.scheduler.Schedulers',
-		  'reactor.util.concurrent.WaitStrategy',
-		  'reactor.core.publisher.MonoProcessor'
-  ]
 //	classExcludes = []
 //	methodExcludes = ["reactor.core.Scannable#operatorName()"]
 }
 
+//complements the javadoc.gradle common configuration
 javadoc {
-  dependsOn jar
-  group = "documentation"
-  description = "Generates aggregated Javadoc API documentation."
-  title = "Reactor Core $version"
-
-  options.addStringOption('charSet', 'UTF-8')
-
   options.addBooleanOption('nodeprecated', true)
-  options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-  options.author = true
-  options.header = "$project.name"
   options.overview = "$rootDir/docs/api/overview.html"
-  options.stylesheetFile = file("$rootDir/docs/api/stylesheet.css")
-  options.links(rootProject.ext.javadocLinks )
-  options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-				   "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
-				   "reactor.discard:m:onDiscard Support"]
-
-  // In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
-  // And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
-  classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
-  classpath += sourceSets.main.compileClasspath
-
-  maxMemory = "1024m"
-  destinationDir = new File(project.buildDir, "docs/javadoc")
-
   excludes = [
 		  // Must be public due to the ServiceLoader's requirements
 		  "reactor/core/scheduler/ReactorBlockHoundIntegration.java",
   ]
-
   doLast {
 	// work around https://github.com/gradle/gradle/issues/4046
 	copy {
@@ -216,7 +186,7 @@ task testNoMicrometer(type: Test, group: 'verification') {
 check {
   dependsOn testStaticInit
   dependsOn testNoMicrometer
-  if (System.env.TRAVIS != "true") {
+  if (!detectedCiServers.contains("TRAVIS")) {
 	dependsOn testNG
   }
   if (!version.endsWith('BUILD-SNAPSHOT')) {
@@ -224,6 +194,7 @@ check {
   }
 }
 
+//TODO all java9 / stubs / java-specific stuff should go in a convention plugin ?
 if (!JavaVersion.current().isJava9Compatible()) {
   test {
 	jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
@@ -237,12 +208,6 @@ jar {
 			'Automatic-Module-Name': 'reactor.core'
 	instruction 'Import-Package', bundleImportPackages.join(',')
   }
-}
-
-artifacts {
-  archives sourcesJar
-  archives javadocJar
-  archives rootProject.tasks.docsZip
 }
 
 jacocoTestReport.dependsOn test
@@ -293,3 +258,6 @@ else {
 	compileOnly sourceSets.java9stubs.output
   }
 }
+
+//add docs.zip to the publication
+publishing.publications.mavenJava.artifact(rootProject.tasks.docsZip)

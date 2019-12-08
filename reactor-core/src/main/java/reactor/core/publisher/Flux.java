@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1693,7 +1692,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * the Subscriber cancels.
 	 * <p>
 	 * Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup Consumer
-	 * may override the terminal even.
+	 * may override the terminal event.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/usingForFlux.svg" alt="">
 	 * <p>
@@ -1721,7 +1720,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * the Subscriber cancels.
 	 * <p>
 	 * <ul> <li>Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup
-	 * Consumer may override the terminal even.</li> <li>Non-eager cleanup will drop any exception.</li> </ul>
+	 * Consumer may override the terminal event.</li> <li>Non-eager cleanup will drop any exception.</li> </ul>
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/usingForFlux.svg" alt="">
 	 * <p>
@@ -3261,12 +3260,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracing for this particular {@link Flux}, in case of an error
+	 * Activate traceback (full assembly tracing) for this particular {@link Flux}, in case of an error
 	 * upstream of the checkpoint. Tracing incurs the cost of an exception stack trace
 	 * creation.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
-	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 * triggered downstream of it cannot be observed and augmented with the backtrace.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @return the assembly tracing {@link Flux}.
 	 */
@@ -3275,7 +3279,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Activate assembly marker for this particular {@link Flux} by giving it a description that
+	 * Activate traceback (assembly marker) for this particular {@link Flux} by giving it a description that
 	 * will be reflected in the assembly traceback in case of an error upstream of the
 	 * checkpoint. Note that unlike {@link #checkpoint()}, this doesn't create a
 	 * filled stack trace, avoiding the main cost of the operator.
@@ -3286,6 +3290,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @param description a unique enough description to include in the light assembly traceback.
 	 * @return the assembly marked {@link Flux}
@@ -3295,8 +3304,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracing or the lighter assembly marking depending on the
-	 * {@code forceStackTrace} option.
+	 * Activate traceback (full assembly tracing or the lighter assembly marking depending on the
+	 * {@code forceStackTrace} option).
 	 * <p>
 	 * By setting the {@code forceStackTrace} parameter to {@literal true}, activate assembly
 	 * tracing for this particular {@link Flux} and give it a description that
@@ -3313,6 +3322,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
+	 * <p>
+	 * The traceback is attached to the error as a {@link Throwable#getSuppressed() suppressed exception}.
+	 * As such, if the error is a {@link Exceptions#isMultiple(Throwable) composite one}, the traceback
+	 * would appear as a component of the composite. In any case, the traceback nature can be detected via
+	 * {@link Exceptions#isTraceback(Throwable)}.
 	 *
 	 * @param description a description (must be unique enough if forceStackTrace is set
 	 * to false).
@@ -3344,7 +3358,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param containerSupplier the supplier of the container instance for each Subscriber
 	 * @param collector a consumer of both the container instance and the value being currently collected
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the container upon cancellation or error triggered by a data signal.
+	 * Either the container type is a {@link Collection} (in which case individual elements are discarded)
+	 * or not (in which case the entire container is discarded). In case the collector {@link BiConsumer} fails
+	 * to accumulate an element, the container is discarded as above and the triggering element is also discarded.
 	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
@@ -3365,6 +3382,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <A> The mutable accumulation type
 	 * @param <R> the container type
 	 *
+	 * @reactor.discard This operator discards the intermediate container (see {@link Collector#supplier()} upon
+	 * cancellation, error or exception while applying the {@link Collector#finisher()}. Either the container type
+	 * is a {@link Collection} (in which case individual elements are discarded) or not (in which case the entire
+	 * container is discarded). In case the accumulator {@link BiConsumer} of the collector fails to accumulate
+	 * an element into the intermediate container, the container is discarded as above and the triggering element
+	 * is also discarded.
+	 *
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */
@@ -3379,7 +3403,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectList.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the elements in the {@link List} upon
+	 * cancellation or error triggered by a data signal.
 	 *
 	 * @return a {@link Mono} of a {@link List} of all values from this {@link Flux}
 	 */
@@ -3427,7 +3452,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyExtractor.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param <K> the type of the key extracted from each source element
@@ -3450,7 +3476,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyAndValueExtractors.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3477,7 +3504,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMapWithKeyAndValueExtractors.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3509,7 +3537,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyExtractor.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the list values in the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 *
@@ -3531,7 +3560,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyAndValueExtractors.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the list values in the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3557,7 +3587,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectMultiMapWithKeyAndValueExtractors.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator discards the whole {@link Map} upon cancellation or error
+	 * triggered by a data signal, so discard handlers will have to unpack the list values in the map.
 	 *
 	 * @param keyExtractor a {@link Function} to map elements to a key for the {@link Map}
 	 * @param valueExtractor a {@link Function} to map elements to a value for the {@link Map}
@@ -3592,7 +3623,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedList.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator is based on {@link #collectList()}, and as such discards the
+	 * elements in the {@link List} individually upon cancellation or error triggered by a data signal.
 	 *
 	 * @return a {@link Mono} of a sorted {@link List} of all values from this {@link Flux}, in natural order
 	 */
@@ -3608,7 +3640,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/collectSortedListWithComparator.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the buffer upon cancellation or error triggered by a data signal.
+	 * @reactor.discard This operator is based on {@link #collectList()}, and as such discards the
+	 * elements in the {@link List} individually upon cancellation or error triggered by a data signal.
 	 *
 	 * @param comparator a {@link Comparator} to sort the items of this sequences
 	 *
@@ -3616,16 +3649,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Mono<List<T>> collectSortedList(@Nullable Comparator<? super T> comparator) {
-		return collectList().map(list -> {
+		return collectList().doOnNext(list -> {
 			// Note: this assumes the list emitted by buffer() is mutable
-			if (comparator != null) {
-				list.sort(comparator);
-			} else {
-
-				List<Comparable> l = (List<Comparable>)list;
-				Collections.sort(l);
-			}
-			return list;
+			list.sort(comparator);
 		});
 	}
 
@@ -5616,8 +5642,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Map values from two Publishers into time windows and emit combination of values
-	 * in case their windows overlap. The emitted elements are obtained by passing the
+	 * Combine values from two Publishers in case their windows overlap. Each incoming
+	 * value triggers a creation of a new Publisher via the given {@link Function}. If the
+	 * Publisher signals its first value or completes, the time windows for the original
+	 * element is immediately closed. The emitted elements are obtained by passing the
 	 * values from this {@link Flux} and the other {@link Publisher} to a {@link BiFunction}.
 	 * <p>
 	 * There are no guarantees in what order the items get combined when multiple items from
@@ -5767,7 +5795,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * between request and data production. And thus the more extraneous replenishment
 	 * requests this operator could make. For example, for a global downstream
 	 * request of 14, with a highTide of 10 and a lowTide of 2, the operator would perform
-	 * 7 low tide requests, whereas with the default lowTide of 8 it would only perform one.
+	 * low tide requests ({@code request(2)}) seven times in a row, whereas with the default
+	 * lowTide of 8 it would only perform one low tide request ({@code request(8)}).
 	 * Using a {@code lowTide} equal to {@code highTide} reverts to the default 75% strategy,
 	 * while using a {@code lowTide} of {@literal 0} disables the lowTide, resulting in
 	 * all requests strictly adhering to the highTide.
@@ -6254,7 +6283,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Request an unbounded demand and push to the returned {@link Flux}, or park the observed
 	 * elements if not enough demand is requested downstream, within a {@code maxSize}
 	 * limit and for a maximum {@link Duration} of {@code ttl} (as measured on the
-	 * {@link Schedulers#elastic() elastic Scheduler}). Over that limit, oldest
+	 * {@link Schedulers#parallel() parallel Scheduler}). Over that limit, oldest
 	 * elements from the source are dropped.
 	 * <p>
 	 * Elements evicted based on the TTL are passed to a cleanup {@link Consumer}, which
@@ -8204,25 +8233,27 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> actual) {
-		Publisher publisher = Operators.onLastAssembly(this);
+		CorePublisher publisher = Operators.onLastAssembly(this);
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
-		while (publisher instanceof CoreOperator) {
-			CoreOperator operator = (CoreOperator) publisher;
-
-			subscriber = operator.subscribeOrReturn(subscriber);
-			if (subscriber == null) {
-				// null means "I will subscribe myself", returning...
-				return;
+		if (publisher instanceof OptimizableOperator) {
+			OptimizableOperator operator = (OptimizableOperator) publisher;
+			while (true) {
+				subscriber = operator.subscribeOrReturn(subscriber);
+				if (subscriber == null) {
+					// null means "I will subscribe myself", returning...
+					return;
+				}
+				OptimizableOperator newSource = operator.nextOptimizableSource();
+				if (newSource == null) {
+					publisher = operator.source();
+					break;
+				}
+				operator = newSource;
 			}
-			publisher = operator.source();
 		}
-		if (publisher instanceof CorePublisher) {
-			((CorePublisher) publisher).subscribe(subscriber);
-		}
-		else {
-			publisher.subscribe(subscriber);
-		}
+
+		publisher.subscribe(subscriber);
 	}
 
 	/**
@@ -9011,10 +9042,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #compose(Function)}, the
+	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #transformDeferred(Function)}, the
 	 * provided function is executed as part of assembly.
 	 * <blockquote><pre>
-	 * Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.elastic())
+	 * Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.boundedElastic())
 	 *                                                    .publishOn(Schedulers.parallel());
 	 * flux.transform(applySchedulers).map(v -> v * v).subscribe();
 	 * </pre></blockquote>
@@ -9030,6 +9061,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
+		if (Hooks.DETECT_CONTEXT_LOSS) {
+			//noinspection unchecked,rawtypes
+			transformer = new ContextTrackingFunctionWrapper(transformer);
+		}
 		return onAssembly(from(transformer.apply(this)));
 	}
 
@@ -9051,7 +9086,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
-		return defer(() -> transformer.apply(this));
+		return defer(() -> {
+			if (Hooks.DETECT_CONTEXT_LOSS) {
+				//noinspection unchecked,rawtypes
+				return new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this);
+			}
+			return transformer.apply(this);
+		});
 	}
 
 	/**

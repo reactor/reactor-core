@@ -693,7 +693,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -719,7 +719,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -748,7 +748,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -777,7 +777,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -803,7 +803,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	@Test
@@ -829,7 +829,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 		await()
 				.atMost(2, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(retainedDetector.finalizedCount()).isEqualTo(3));
+				.untilAsserted(retainedDetector::assertAllFinalized);
 	}
 
 	static class DistinctDefault {

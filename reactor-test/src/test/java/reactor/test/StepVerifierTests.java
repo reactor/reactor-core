@@ -29,13 +29,16 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
@@ -665,12 +668,11 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void verifyNever() {
+	public void verifyNeverWithExpectTimeout() {
 		Flux<String> flux = Flux.never();
 
 		StepVerifier.create(flux)
-		            .expectSubscription()
-		            .thenCancel()
+		            .expectTimeout(Duration.ofMillis(500))
 		            .verify();
 	}
 
@@ -1058,25 +1060,51 @@ public class StepVerifierTests {
 		                  .hasMessageContaining("expectation failed (expected no event: onComplete()");
 	}
 
+	//see https://github.com/reactor/reactor-core/issues/1913
 	@Test
-	public void verifyVirtualTimeNoEventNever() {
-		StepVerifier.withVirtualTime(() -> Mono.never()
-		                                       .log())
+	public void verifyExpectTimeoutFailsWhenSomeEvent() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Mono.just("foo"))
+				                              .expectTimeout(Duration.ofMillis(1300))
+				                              .verify())
+				.withMessage("expectation \"expectTimeout\" failed (expected: timeout(1.3s); actual: onNext(foo))");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1913
+	@Test
+	public void verifyVirtualTimeExpectTimeoutFailsWhenSomeEvent() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.withVirtualTime(() -> Mono.just("foo"))
+				                              .expectTimeout(Duration.ofDays(3))
+				                              .verify())
+				.withMessage("expectation \"expectTimeout\" failed (expected: timeout(72h); actual: onNext(foo))");
+	}
+
+	@Test
+	public void verifyExpectTimeoutNever() {
+		StepVerifier.create(Mono.never())
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofDays(10000))
-		            .thenCancel()
+		            .expectTimeout(Duration.ofSeconds(1))
 		            .verify();
 	}
 
 	@Test
-	public void verifyVirtualTimeNoEventNeverError() {
-		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> StepVerifier.withVirtualTime(() -> Mono.never()
-				                                                         .log())
-				                              .expectNoEvent(Duration.ofDays(10000))
-				                              .thenCancel()
-				                              .verify())
-				.withMessageStartingWith("expectation failed (expected no event: onSubscribe(");
+	public void verifyVirtualTimeExpectTimeoutNever() {
+		StepVerifier.withVirtualTime(Mono::never)
+		            .expectSubscription()
+		            .expectTimeout(Duration.ofDays(10000))
+		            .verify();
+	}
+
+	@Test
+	public void verifyExpectTimeoutDoesntCareAboutSubscription() {
+		StepVerifier.withVirtualTime(Mono::never)
+		            .expectTimeout(Duration.ofDays(10000))
+		            .verify();
+
+		StepVerifier.create(Mono.never())
+		            .expectTimeout(Duration.ofSeconds(1))
+		            .verify();
 	}
 
 	@Test
@@ -1197,8 +1225,7 @@ public class StepVerifierTests {
 	public void noSignalRealTime() {
 		Duration verifyDuration = StepVerifier.create(Mono.never())
 		                                      .expectSubscription()
-		                                      .expectNoEvent(Duration.ofSeconds(1))
-		                                      .thenCancel()
+		                                      .expectTimeout(Duration.ofSeconds(1))
 		                                      .verify(Duration.ofMillis(1100));
 
 		assertThat(verifyDuration.toMillis()).isGreaterThanOrEqualTo(1000L);
@@ -1208,8 +1235,7 @@ public class StepVerifierTests {
 	public void noSignalVirtualTime() {
 		StepVerifier.withVirtualTime(Mono::never, 1)
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofSeconds(100))
-		            .thenCancel()
+		            .expectTimeout(Duration.ofSeconds(100))
 		            .verify();
 	}
 
@@ -1224,9 +1250,38 @@ public class StepVerifierTests {
 		            .expectNext("foo")
 		            .expectNoEvent(Duration.ofSeconds(5))
 		            .expectNextCount(1)
-		            .expectNoEvent(Duration.ofMillis(10))
-		            .thenCancel()
+		            .expectTimeout(Duration.ofHours(10))
 		            .verify();
+	}
+
+	//source: https://stackoverflow.com/questions/58486417/how-to-verify-with-stepverifier-that-provided-mono-did-not-completed
+	@Test
+	public void expectTimeoutSmokeTest() {
+		Mono<String> neverMono = Mono.never();
+		Mono<String> completingMono = Mono.empty();
+
+		StepVerifier.create(neverMono, StepVerifierOptions.create().scenarioName("neverMono should pass"))
+				.expectTimeout(Duration.ofSeconds(1))
+				.verify();
+
+		StepVerifier shouldFail = StepVerifier.create(completingMono).expectTimeout(Duration.ofSeconds(1));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(shouldFail::verify)
+				.withMessage("expectation \"expectTimeout\" failed (expected: timeout(1s); actual: onComplete())");
+	}
+
+	@Test
+	public void verifyTimeoutSmokeTest() {
+		Mono<String> neverMono = Mono.never();
+		Mono<String> completingMono = Mono.empty();
+
+		StepVerifier.create(neverMono, StepVerifierOptions.create().scenarioName("neverMono should pass"))
+				.verifyTimeout(Duration.ofSeconds(1));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(completingMono).verifyTimeout(Duration.ofSeconds(1)))
+				.withMessage("expectation \"expectTimeout\" failed (expected: timeout(1s); actual: onComplete())");
 	}
 
 	@Test
@@ -2014,7 +2069,7 @@ public class StepVerifierTests {
 	//see https://github.com/reactor/reactor-core/issues/959
 	@Test
 	public void assertNextWithSubscribeOnDirectProcessor() {
-		Scheduler scheduler = Schedulers.newElastic("test");
+		Scheduler scheduler = Schedulers.newBoundedElastic(1, 100, "test");
 		DirectProcessor<Integer> processor = DirectProcessor.create();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
 		                             .doOnNext(processor::onNext)
@@ -2257,5 +2312,35 @@ public class StepVerifierTests {
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> deferred2.verify(Duration.ofSeconds(10)))
 				.withMessage("expectation \"expectNext(5)\" failed (expected value: 5; actual value: 3)");
+	}
+
+	@Test
+	public void verifyDrainOnRequestInCaseOfFusion() {
+		MonoProcessor<Integer> processor = MonoProcessor.create();
+		StepVerifier.create(processor, 0)
+				.expectFusion(Fuseable.ANY)
+				.then(() -> processor.onNext(1))
+				.thenRequest(1)
+				.expectNext(1)
+				.verifyComplete();
+	}
+
+	@Test
+	public void verifyDrainOnRequestInCaseOfFusion2() {
+		ArrayList<Long> requests = new ArrayList<>();
+		UnicastProcessor<Integer> processor = UnicastProcessor.create();
+		StepVerifier.create(processor.doOnRequest(requests::add), 0)
+				.expectFusion(Fuseable.ANY)
+				.then(() -> {
+					processor.onNext(1);
+					processor.onComplete();
+				})
+				.thenRequest(1)
+				.thenRequest(1)
+				.thenRequest(1)
+				.expectNext(1)
+				.verifyComplete();
+
+		assertThat(requests).containsExactly(1L, 1L, 1L);
 	}
 }

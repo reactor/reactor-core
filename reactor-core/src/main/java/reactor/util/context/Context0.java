@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class Context0 implements Context {
+final class Context0 implements CoreContext {
 
 	static final Context0 INSTANCE = new Context0();
 
@@ -52,6 +52,11 @@ final class Context0 implements Context {
 	}
 
 	@Override
+	public boolean isEmpty() {
+		return true;
+	}
+
+	@Override
 	public String toString() {
 		return "Context0{}";
 	}
@@ -59,5 +64,14 @@ final class Context0 implements Context {
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
 		return Stream.empty();
+	}
+
+	@Override
+	public Context putAllInto(Context base) {
+		return base;
+	}
+
+	@Override
+	public void unsafePutAllInto(ContextN other) {
 	}
 }

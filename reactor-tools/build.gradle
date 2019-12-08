@@ -42,7 +42,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile "org.assertj:assertj-core:$assertJVersion"
 
-    jarFileTestCompile 'org.assertj:assertj-core:3.12.2'
+    jarFileTestCompile 'org.assertj:assertj-core:3.12.2' //FIXME bump in root and use property
     jarFileTestCompile 'junit:junit:4.12'
 }
 
@@ -67,7 +67,7 @@ test {
 }
 
 jar {
-    archiveClassifier = 'original'
+    archiveClassifier.set('original')
 }
 
 shadowJar {
@@ -114,8 +114,6 @@ task relocateShadowJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.Co
 
 tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
-artifacts.archives shadowJar
-
 project.tasks.jarFileTest.configure {
     systemProperty("jarFile", shadowJar.outputs.files.singleFile)
     dependsOn(shadowJar)
@@ -137,3 +135,6 @@ task shadedJarTest(type: Test) {
     dependsOn(shadowJar)
 }
 project.tasks.check.dependsOn(shadedJarTest)
+
+//add jar and original jar to the publication
+publishing.publications.mavenJava.artifact(shadowJar)

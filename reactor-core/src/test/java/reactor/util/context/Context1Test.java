@@ -16,8 +16,10 @@
 
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
@@ -103,23 +105,6 @@ public class Context1Test {
 	}
 
 	@Test
-	public void getKey() throws Exception {
-		assertThat(c.getKey()).isEqualTo(1);
-	}
-
-	@Test
-	public void getValue() throws Exception {
-		assertThat(c.getValue()).isEqualTo("A");
-	}
-
-	@Test
-	public void setValue() throws Exception {
-		assertThatExceptionOfType(UnsupportedOperationException.class)
-				.isThrownBy(() -> c.setValue("BOOM"))
-				.withMessage("Does not support in-place update");
-	}
-
-	@Test
 	public void string() throws Exception {
 		assertThat(c.toString()).isEqualTo("Context1{1=A}");
 	}
@@ -138,6 +123,15 @@ public class Context1Test {
 
 		assertThat(put).isInstanceOf(Context4.class)
 		               .hasToString("Context4{1=A, A=1, B=2, C=3}");
+	}
+
+	@Test
+	public void putAllReplaces() {
+		Context m = Context.of(c.key, "replaced", "A", 1);
+		Context put = c.putAll(m);
+
+		assertThat(put).isInstanceOf(Context2.class)
+		               .hasToString("Context2{1=replaced, A=1}");
 	}
 
 	@Test
@@ -165,6 +159,58 @@ public class Context1Test {
 	@Test
 	public void size() {
 		assertThat(c.size()).isOne();
+	}
+
+	@Test
+	public void streamHasCleanToString() {
+		Context1 context1 = new Context1("key", "value");
+
+		assertThat(context1.toString()).as("toString").isEqualTo("Context1{key=value}");
+
+		assertThat(context1.stream().map(Objects::toString).collect(Collectors.joining(", ")))
+				.as("stream elements representation")
+				.isEqualTo("key=value");
+	}
+
+	@Test
+	public void putAllSelfIntoEmpty() {
+		CoreContext initial = new Context0();
+
+		Context result = ((CoreContext) c).putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream()).containsExactlyElementsOf(c.stream().collect(Collectors.toList()));
+	}
+
+	@Test
+	public void putAllSelfIntoContextN() {
+		CoreContext initial = new ContextN(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6);
+		Context1 self = new Context1("A", 1);
+		Context result = self.putAllInto(initial);
+
+		assertThat(result).isNotSameAs(initial)
+		                  .isNotSameAs(c);
+
+		assertThat(result.stream().map(String::valueOf))
+				.containsExactly("1=1", "2=2", "3=3", "4=4", "5=5", "6=6", "A=1");
+	}
+
+	@Test
+	public void unsafePutAllIntoShouldReplace() {
+		ContextN ctx = new ContextN(Collections.emptyMap());
+		ctx.accept(1, "VALUE1");
+		ctx.accept("extra", "value");
+
+		Context1 self = new Context1(1, "REPLACED");
+
+		self.unsafePutAllInto(ctx);
+
+		assertThat(ctx)
+				.containsEntry(1, "REPLACED")
+				.containsEntry("extra", "value")
+				.hasSize(2);
 	}
 
 }

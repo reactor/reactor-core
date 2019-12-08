@@ -20,8 +20,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
@@ -81,7 +81,7 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
-		final Publisher<? extends T> source;
+		final CorePublisher<? extends T> source;
 
 		final Worker  worker;
 		final boolean requestOnSeparateThread;
@@ -108,7 +108,7 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 						Thread.class,
 						"thread");
 
-		SubscribeOnSubscriber(Publisher<? extends T> source, CoreSubscriber<? super T> actual,
+		SubscribeOnSubscriber(CorePublisher<? extends T> source, CoreSubscriber<? super T> actual,
 				Worker worker, boolean requestOnSeparateThread) {
 			this.actual = actual;
 			this.worker = worker;

@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
@@ -95,7 +96,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 		final Subscriber<Long> signaller;
 
-		final Publisher<? extends T> source;
+		final CorePublisher<? extends T> source;
 
 		volatile int wip;
 		static final AtomicIntegerFieldUpdater<RepeatWhenMainSubscriber> WIP =
@@ -107,7 +108,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 		RepeatWhenMainSubscriber(CoreSubscriber<? super T> actual,
 				Subscriber<Long> signaller,
-				Publisher<? extends T> source) {
+				CorePublisher<? extends T> source) {
 			super(actual);
 			this.signaller = signaller;
 			this.source = source;
@@ -198,7 +199,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 	}
 
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
-			implements InnerConsumer<Object>, CoreOperator<Long, Long> {
+			implements InnerConsumer<Object>, OptimizableOperator<Long, Long> {
 
 		RepeatWhenMainSubscriber<?> main;
 
@@ -251,6 +252,11 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public DirectProcessor<Long> source() {
 			return completionSignal;
+		}
+
+		@Override
+		public OptimizableOperator<?, ? extends Long> nextOptimizableSource() {
+			return null;
 		}
 	}
 }
