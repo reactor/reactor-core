@@ -259,20 +259,20 @@ public static <T> Consumer<Signal<T>> logOnNext(Consumer<T> logStatement) {
 	};
 }
 ----
-<1> `doOnEach` signals include onComplete and onError. In this example we're only interested in logging `onNext`
+<1> `doOnEach` signals include `onComplete` and `onError`. In this example we're only interested in logging `onNext`
 <2> We will extract one interesting value from the Reactor `Context` (see the <<context.api>> section)
 <3> We use the `MDCCloseable` from SLF4J 2 in this example, allowing try-with-resource syntax for automatic cleanup of the MDC after the log statement is executed
 <4> Proper log statement is provided by the caller as a `Consumer<T>` (consumer of the onNext value)
 <5> In case the expected key wasn't set in the `Context` we use the alternative path where nothing is put in the MDC
 ====
 
-Using this boilerplate code ensures that we are good citizen with the MDC: we set a key right before we execute a logging statement and remove it immediately after.
+Using this boilerplate code ensures that we are good citizens with the MDC: we set a key right before we execute a logging statement and remove it immediately after.
 There is no risk of polluting the MDC for subsequent logging statements.
 
-Of course, this is a suggestion. You might be interested in extracting multiple values from the `Context`, or in also logging things in case of `onError`.
-You might want to create additional helper methods for these cases, or craft a single method that makes use of additional lambdas to cover more ground.
+Of course, this is a suggestion. You might be interested in extracting multiple values from the `Context` or in logging things in case of `onError`.
+You might want to create additional helper methods for these cases or craft a single method that makes use of additional lambdas to cover more ground.
 
-In any case, the usage of the above helper method could look like the following reactive web controller:
+In any case, the usage of the preceding helper method could look like the following reactive web controller:
 
 ====
 [source,java]
@@ -287,14 +287,14 @@ public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(re
 			   .subscriberContext(Context.of("CONTEXT_KEY", apiId)); <3>
 }
 ----
-<1> We will need to get the contextual information from the request header to put it in the `Context`
-<2> Here we apply our helper method to the `Flux` using `doOnEach`. Remember operators see `Context` values defined below them.
+<1> We need to get the contextual information from the request header to put it in the `Context`
+<2> Here we apply our helper method to the `Flux`, using `doOnEach`. Remember: operators see `Context` values defined below them.
 <3> We write the value from the header to the `Context` using the chosen key `CONTEXT_KEY`.
 ====
 
-In this configuration, the `restaurantService` can emit its data on a shared thread yet the logs will still reference the correct `X-UserId` for each request.
+In this configuration, the `restaurantService` can emit its data on a shared thread, yet the logs will still reference the correct `X-UserId` for each request.
 
-For completeness, let's also see what an error-logging helper could look like:
+For completeness, we can also see what an error-logging helper could look like:
 
 ====
 [source,java]
