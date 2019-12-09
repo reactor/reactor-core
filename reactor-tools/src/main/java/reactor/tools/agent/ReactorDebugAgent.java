@@ -101,6 +101,10 @@ public class ReactorDebugAgent {
 					public MethodVisitor visitMethod(int access, String currentMethod, String descriptor, String signature, String[] exceptions) {
 						MethodVisitor visitor = super.visitMethod(access, currentMethod, descriptor, signature, exceptions);
 
+						if (currentClassName.contains("CGLIB$$")) {
+							return visitor;
+						}
+
 						String returnType = Type.getReturnType(descriptor).getInternalName();
 						switch (returnType) {
 							// Handle every core publisher type.
