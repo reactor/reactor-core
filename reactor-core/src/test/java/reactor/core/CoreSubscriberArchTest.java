@@ -74,14 +74,14 @@ public class CoreSubscriberArchTest {
 					@Override
 					public void check(JavaClass item, ConditionEvents events) {
 						checked.set(true);
-						boolean overriddenMethod = item
+						boolean overridesMethod = item
 								.getAllMethods()
 								.stream()
 								.filter(it -> "currentContext".equals(it.getName()))
 								.filter(it -> it.getRawParameterTypes().isEmpty())
 								.anyMatch(it -> !it.getOwner().isEquivalentTo(CoreSubscriber.class));
 
-						if (!overriddenMethod) {
+						if (!overridesMethod) {
 							events.add(SimpleConditionEvent.violated(item, "currentContext() is not overridden"));
 						}
 					}
