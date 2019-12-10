@@ -42,7 +42,7 @@ public class CoreSubscriberArchTest {
 	public static Object[][] scanClasses() {
 		JavaClasses classes = new ClassFileImporter()
 				.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_ARCHIVES)
+				.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_ARCHIVES)
 				.importPackagesOf(CoreSubscriber.class);
 
 		return classes.stream()
