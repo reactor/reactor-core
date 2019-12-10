@@ -76,7 +76,8 @@ dependencies {
 		  "org.openjdk.jol:jol-core:$javaObjectLayoutVersion",
 		  "pl.pragmatists:JUnitParams:$jUnitParamsVersion",
 		  "org.awaitility:awaitility:$awaitilityVersion",
-		  "com.pivovarit:throwing-function:$throwingFunctionVersion"
+		  "com.pivovarit:throwing-function:$throwingFunctionVersion",
+		  'com.tngtech.archunit:archunit:0.12.0'
 
   noMicrometerTestCompile sourceSets.main.output
   noMicrometerTestCompile sourceSets.test.output

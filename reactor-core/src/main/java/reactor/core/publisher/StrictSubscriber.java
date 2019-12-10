@@ -174,4 +174,9 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 
 		return null;
 	}
+
+	@Override
+	public Context currentContext() {
+		return Context.empty();
+	}
 }

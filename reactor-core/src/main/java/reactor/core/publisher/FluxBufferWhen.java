@@ -442,6 +442,11 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		}
 
 		@Override
+		public Context currentContext() {
+			return parent.currentContext();
+		}
+
+		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(SUBSCRIPTION, this, s)) {
 				subscription.request(Long.MAX_VALUE);
@@ -501,6 +506,11 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		BufferWhenCloseSubscriber(BufferWhenMainSubscriber<T, ?, ?, BUFFER> parent, long index) {
 			this.parent = parent;
 			this.index = index;
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.currentContext();
 		}
 
 		@Override
