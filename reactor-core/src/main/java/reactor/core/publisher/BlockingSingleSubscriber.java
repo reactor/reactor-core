@@ -24,6 +24,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
@@ -53,6 +54,11 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	@Override
 	public final void onComplete() {
 		countDown();
+	}
+
+	@Override
+	public Context currentContext() {
+		return Context.empty();
 	}
 
 	@Override

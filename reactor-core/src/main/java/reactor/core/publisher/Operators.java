@@ -1368,6 +1368,11 @@ public abstract class Operators {
 			Throwable e = new IllegalStateException("onComplete should not be used");
 			log.error("Unexpected call to Operators.emptySubscriber()", e);
 		}
+
+		@Override
+		public Context currentContext() {
+			return Context.empty();
+		}
 	};
 	//
 
@@ -2231,6 +2236,11 @@ public abstract class Operators {
 		@Override
 		public void onComplete() {
 
+		}
+
+		@Override
+		public Context currentContext() {
+			return Context.empty();
 		}
 	}
 

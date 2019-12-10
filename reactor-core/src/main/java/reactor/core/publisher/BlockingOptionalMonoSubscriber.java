@@ -41,6 +41,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Blocks assuming the upstream is a Mono, until it signals its value or completes.
@@ -91,6 +92,11 @@ final class BlockingOptionalMonoSubscriber<T> extends CountDownLatch
 	@Override
 	public final void onComplete() {
 		countDown();
+	}
+
+	@Override
+	public Context currentContext() {
+		return Context.empty();
 	}
 
 	@Override

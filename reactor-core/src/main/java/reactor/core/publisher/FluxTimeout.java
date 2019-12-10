@@ -27,6 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item
@@ -306,6 +307,11 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 				Operators.MultiSubscriptionSubscriber<T, T> arbiter) {
 			this.actual = actual;
 			this.arbiter = arbiter;
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
 		}
 
 		@Override
