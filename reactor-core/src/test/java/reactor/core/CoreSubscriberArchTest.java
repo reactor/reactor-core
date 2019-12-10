@@ -16,10 +16,6 @@
 
 package reactor.core;
 
-import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -28,52 +24,25 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
-@RunWith(Parameterized.class)
 public class CoreSubscriberArchTest {
 
-	@Parameterized.Parameters(name = "{index}: {1}")
-	public static Object[][] scanClasses() {
-		JavaClasses classes = new ClassFileImporter()
-				.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-				.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_ARCHIVES)
-				.importPackagesOf(CoreSubscriber.class);
-
-		return classes.stream()
-		              .sorted(Comparator.comparing(JavaClass::getName))
-		              .map(it -> new Object[] {
-		              		classes.that(DescribedPredicate.equalTo(it)),
-				            it.getName()
-				                .replace("reactor.", "r.")
-				                .replace("r.core.", "r.c.")
-				                .replace("r.c.publisher.", "r.c.p.")
-				                .replace("r.c.scheduler.", "r.c.s.")
-		              })
-		              .toArray(Object[][]::new);
-	}
-
-	final JavaClasses clazz;
-
-	public CoreSubscriberArchTest(JavaClasses clazz, String className) {
-		this.clazz = clazz;
-	}
+	static JavaClasses classes = new ClassFileImporter()
+			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
+			.importPackagesOf(CoreSubscriber.class);
 
 	@Test
 	public void shouldNotUseDefaultCurrentContext() {
-		AtomicBoolean checked = new AtomicBoolean(false);
 		classes()
 				.that().implement(CoreSubscriber.class)
 				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
 				.should(new ArchCondition<JavaClass>("not use the default currentContext()") {
 					@Override
 					public void check(JavaClass item, ConditionEvents events) {
-						checked.set(true);
 						boolean overridesMethod = item
 								.getAllMethods()
 								.stream()
@@ -82,12 +51,13 @@ public class CoreSubscriberArchTest {
 								.anyMatch(it -> !it.getOwner().isEquivalentTo(CoreSubscriber.class));
 
 						if (!overridesMethod) {
-							events.add(SimpleConditionEvent.violated(item, "currentContext() is not overridden"));
+							events.add(SimpleConditionEvent.violated(
+									item,
+									item.getFullName() + item.getSourceCodeLocation() + ": currentContext() is not overridden"
+							));
 						}
 					}
 				})
-				.check(clazz);
-
-		Assume.assumeTrue(checked.get());
+				.check(classes);
 	}
 }
