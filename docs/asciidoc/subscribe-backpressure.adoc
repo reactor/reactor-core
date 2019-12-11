@@ -61,7 +61,7 @@ These are usually operators that deal with inner sequences, deriving a `Publishe
 *Prefetch* is a way to tune the initial request made on these inner sequences.
 If unspecified, most of these operators start with a demand of `32`.
 
-These operators usually also implement a *replenishing optimization*: Once the operator has seen 25% of the prefetch request fulfilled, it re-requests 25% from upstream.
+These operators usually also implement a *replenishing optimization*: Once the operator has seen 75% of the prefetch request fulfilled, it re-requests 75% from upstream.
 This is a heuristic optimization made so that these operators proactively anticipate the upcoming requests.
 
 Finally, a couple of operators let you directly tune the request: `limitRate` and `limitRequest`.
