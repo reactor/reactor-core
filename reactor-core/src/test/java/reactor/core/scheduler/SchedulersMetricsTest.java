@@ -5,9 +5,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.FunctionCounter;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -255,5 +257,28 @@ public class SchedulersMetricsTest {
 					.as("count")
 					.isEqualTo(taskCount);
 		});
+	}
+
+	@Test
+	public void shouldRemoveOnShutdown() {
+		Scheduler scheduler = afterTest.autoDispose(Schedulers.newParallel("A", 1));
+
+		scheduler.schedule(() -> {});
+
+		Predicate<Meter.Id> meterPredicate = it -> {
+			return it.getTag(TAG_SCHEDULER_ID).equals(scheduler.toString());
+		};
+
+		assertThat(simpleMeterRegistry.getMeters())
+				.extracting(Meter::getId)
+				.filteredOn(meterPredicate)
+				.isNotEmpty();
+
+		scheduler.dispose();
+
+		assertThat(simpleMeterRegistry.getMeters())
+				.extracting(Meter::getId)
+				.filteredOn(meterPredicate)
+				.isEmpty();
 	}
 }
