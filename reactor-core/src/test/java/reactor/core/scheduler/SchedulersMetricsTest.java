@@ -1,6 +1,7 @@
 package reactor.core.scheduler;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ScheduledExecutorService;
@@ -260,25 +261,55 @@ public class SchedulersMetricsTest {
 	}
 
 	@Test
-	public void shouldRemoveOnShutdown() {
-		Scheduler scheduler = afterTest.autoDispose(Schedulers.newParallel("A", 1));
+	public void shouldRemoveOnShutdown() throws Exception {
+		int ttl = 1;
+		Scheduler scheduler = afterTest.autoDispose(Schedulers.newElastic("A", ttl));
+		String schedulerName = scheduler.toString();
 
-		scheduler.schedule(() -> {});
+		Scheduler.Worker worker0 = scheduler.createWorker();
+		Scheduler.Worker worker1 = scheduler.createWorker();
 
-		Predicate<Meter.Id> meterPredicate = it -> {
-			return it.getTag(TAG_SCHEDULER_ID).equals(scheduler.toString());
+		Predicate<Meter.Id> schedulerPredicate = it -> {
+			return schedulerName.equals(it.getTag(TAG_SCHEDULER_ID));
 		};
 
 		assertThat(simpleMeterRegistry.getMeters())
 				.extracting(Meter::getId)
-				.filteredOn(meterPredicate)
-				.isNotEmpty();
+				.anyMatch(schedulerPredicate);
+
+		worker1.dispose();
+		TimeUnit.SECONDS.sleep(ttl);
+		((ElasticScheduler) scheduler).eviction();
+
+		List<Meter> meters = simpleMeterRegistry.getMeters();
+		assertThat(meters)
+				.extracting(Meter::getId)
+				.anyMatch(it -> (schedulerName + "-0").equals(it.getTag("name")))
+				.noneMatch(it -> (schedulerName + "-1").equals(it.getTag("name")));
 
 		scheduler.dispose();
 
 		assertThat(simpleMeterRegistry.getMeters())
 				.extracting(Meter::getId)
-				.filteredOn(meterPredicate)
-				.isEmpty();
+				.noneMatch(schedulerPredicate);
+	}
+
+	@Test
+	public void shouldRemoveAllOnDispose() {
+		Scheduler scheduler = afterTest.autoDispose(Schedulers.newParallel("A", 2));
+
+		Predicate<Meter.Id> meterPredicate = it -> {
+			return scheduler.toString().equals(it.getTag(TAG_SCHEDULER_ID));
+		};
+
+		assertThat(simpleMeterRegistry.getMeters())
+				.extracting(Meter::getId)
+				.anyMatch(meterPredicate);
+
+		scheduler.dispose();
+
+		assertThat(simpleMeterRegistry.getMeters())
+				.extracting(Meter::getId)
+				.noneMatch(meterPredicate);
 	}
 }

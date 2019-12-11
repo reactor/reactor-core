@@ -99,7 +99,7 @@ final class SchedulerMetricDecorator
 
 			void removeMetrics() {
 				Search.in(globalRegistry)
-				      .tags(tags)
+				      .tag("name", executorId)
 				      .meters()
 				      .forEach(globalRegistry::remove);
 			}
