@@ -278,14 +278,16 @@ public class SchedulersMetricsTest {
 				.anyMatch(schedulerPredicate);
 
 		worker1.dispose();
-		TimeUnit.SECONDS.sleep(ttl);
-		((ElasticScheduler) scheduler).eviction();
 
-		List<Meter> meters = simpleMeterRegistry.getMeters();
-		assertThat(meters)
-				.extracting(Meter::getId)
-				.anyMatch(it -> (schedulerName + "-0").equals(it.getTag("name")))
-				.noneMatch(it -> (schedulerName + "-1").equals(it.getTag("name")));
+		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+			((ElasticScheduler) scheduler).eviction();
+
+			List<Meter> meters = simpleMeterRegistry.getMeters();
+			assertThat(meters)
+					.extracting(Meter::getId)
+					.anyMatch(it -> (schedulerName + "-0").equals(it.getTag("name")))
+					.noneMatch(it -> (schedulerName + "-1").equals(it.getTag("name")));
+		});
 
 		scheduler.dispose();
 
