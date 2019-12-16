@@ -173,7 +173,8 @@ immediate scheduling, etc...).
 The https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html[`Schedulers`]
 class has static methods that give access to the following execution contexts:
 
- * The current thread (`Schedulers.immediate()`).
+ * No execution context (`Schedulers.immediate()`): at processing time, the submitted `Runnable`
+will be directly executed, effectively running them on the current `Thread` (can be seen as a "null object" or no-op `Scheduler`).
  * A single, reusable thread (`Schedulers.single()`). Note that this method reuses the
 same thread for all callers, until the Scheduler is disposed. If you want a per-call
 dedicated thread, use `Schedulers.newSingle()` for each call.

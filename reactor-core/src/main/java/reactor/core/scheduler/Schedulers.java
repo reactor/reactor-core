@@ -49,9 +49,13 @@ import static reactor.core.Exceptions.unwrap;
  * reactor.core.publisher.Flux#publishOn(Scheduler) publishOn} or {@link reactor.core.publisher.Mono#subscribeOn
  * subscribeOn} :
  * <p>
- * <ul> <li>{@link #fromExecutorService(ExecutorService)}}. </li> <li>{@link #newParallel}
- * : Optimized for fast {@link Runnable} executions </li> <li>{@link #single} : Optimized
- * for low-latency {@link Runnable} executions </li> <li>{@link #immediate}. </li> </ul>
+ * <ul>
+ *     <li>{@link #parallel()}: Optimized for fast {@link Runnable} non-blocking executions </li>
+ *     <li>{@link #single}: Optimized for low-latency {@link Runnable} one-off executions </li>
+ *     <li>{@link #elastic()}: Optimized for longer executions, an alternative for blocking tasks where the number of active tasks (and threads) can grow indefinitely</li>
+ *     <li>{@link #immediate}: to immediately run submitted {@link Runnable} instead of scheduling them (somewhat of a no-op or "null object" {@link Scheduler})</li>
+ *     <li>{@link #fromExecutorService(ExecutorService)} to create new instances around {@link java.util.concurrent.Executors} </li>
+ * </ul>
  * <p>
  * Factories prefixed with {@code new} return a new instance of their flavor of {@link Scheduler},
  * while other factories like {@link #elastic()} return a shared instance, that is the one
@@ -169,9 +173,14 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Executes tasks on the caller's thread immediately.
+	 * Executes tasks immediately instead of scheduling them.
+	 * <p>
+	 * As a consequence tasks run on the thread that submitted them (eg. the
+	 * thread on which an operator is currently processing its onNext/onComplete/onError signals).
+	 * This {@link Scheduler} is typically used as a "null object" for APIs that require a
+	 * Scheduler but one doesn't want to change threads.
 	 *
-	 * @return a reusable {@link Scheduler}
+	 * @return a reusable {@link Scheduler} that executes tasks immediately instead of scheduling them
 	 */
 	public static Scheduler immediate() {
 		return ImmediateScheduler.instance();
