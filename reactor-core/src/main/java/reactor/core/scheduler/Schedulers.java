@@ -53,7 +53,7 @@ import static reactor.core.Exceptions.unwrap;
  *     <li>{@link #parallel()}: Optimized for fast {@link Runnable} non-blocking executions </li>
  *     <li>{@link #single}: Optimized for low-latency {@link Runnable} one-off executions </li>
  *     <li>{@link #elastic()}: Optimized for longer executions, an alternative for blocking tasks where the number of active tasks (and threads) can grow indefinitely</li>
- *     <li>{@link #immediate}: to run a task on the {@link Thread} that submitted it (somewhat of a no-op or "null object" {@link Scheduler})</li>
+ *     <li>{@link #immediate}: to immediately run submitted {@link Runnable} instead of scheduling them (somewhat of a no-op or "null object" {@link Scheduler})</li>
  *     <li>{@link #fromExecutorService(ExecutorService)} to create new instances around {@link java.util.concurrent.Executors} </li>
  * </ul>
  * <p>
@@ -173,12 +173,14 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Executes tasks immediately, on the thread that submitted it (eg. the
+	 * Executes tasks immediately instead of scheduling them.
+	 * <p>
+	 * As a consequence tasks run on the thread that submitted them (eg. the
 	 * thread on which an operator is currently processing its onNext/onComplete/onError signals).
 	 * This {@link Scheduler} is typically used as a "null object" for APIs that require a
 	 * Scheduler but one doesn't want to change threads.
 	 *
-	 * @return a reusable {@link Scheduler} that schedules on the current thread
+	 * @return a reusable {@link Scheduler} that executes tasks immediately instead of scheduling them
 	 */
 	public static Scheduler immediate() {
 		return ImmediateScheduler.instance();
