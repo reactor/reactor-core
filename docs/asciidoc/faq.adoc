@@ -229,15 +229,31 @@ processor.publishOn(scheduler1)
 ====
 
 == What Is a Good Pattern for Contextual Logging? (MDC)
-As described in section <<context>>, `ThreadLocal` does not make much sense in Reactive Streams, where several streams could run steps on a common thread.
-Instead of using `ThreadLocal`, Reactor offers the `Context`, a map-like object that is tied to a `Subscription` and not a `Thread`.
+Most logging frameworks allow contextual logging, letting users store variables that are reflected in the logging pattern, generally by way of a `Map` called the MDC ("Mapped Diagnostic Context").
+This is one of the most recurring use of `ThreadLocal` in Java, and as a consequence this pattern assumes that the code being logged is tied in a one-to-one relationship with a `Thread`.
 
-One recurring use of `ThreadLocal` in Java is for logging frameworks to store variables that are used in their logging pattern, generally by way of a `Map` called the MDC ("Mapped Diagnostic Context").
+That might have been a safe assumption to make before Java 8, but with the advent of functional programming elements in the Java language things have changed a bit...
 
-Unfortunately, this pattern is hard to opt out of and hard to apply transparently from a reactive library perspective.
-This entry of the FAQ offers a possible intermediate solution when one wants to perform log statements in relation to events in the stream (`onNext`, `onError`, and `onComplete`).
+Let's take the example of a API that was imperative and used the template method pattern, then switches to a more functional style.
+With the template method pattern, inheritance was at play. Now in its more functional approach, higher order functions are passed to define the "steps" of the algorithm.
+Things are now more declarative than imperative, and that frees the library to make decisions about where each step should run.
+For instance, knowing which steps of the underlying algorithm can be parallelized, the library can use an `ExecutorService` to execute some of the steps in parallel.
 
-The most straightforward way to perform such logging and get contextual information from the `Context` to the MDC is to wrap logging statements in a `doOnEach` operator with a little bit of boilerplate code.
+One concrete example of such a functional API is the `Stream` API introduced in Java 8 and its `parallel()` flavor.
+Logging with a MDC in a parallel `Stream` is not a free lunch: one need to ensure the MDC is captured and reapplied in each step.
+
+The functional style enables such optimizations, because each step is thread-agnostic and referentially transparent, but it can break the MDC assumption of a single `Thread`.
+The most idiomatic way of ensuring any kind of contextual information is accessible to all stages would be to pass that context around through the composition chain.
+During the development of Reactor we encountered the same general class of problem, and we wanted to avoid this very hands-down and explicit approach.
+This is why the `Context` was introduced: it propagates through the execution chain as long as `Flux` and `Mono` are used as the return value, by letting stages (operators) peek at the `Context` of their downstream stage.
+So instead of using `ThreadLocal`, Reactor offers this map-like object that is tied to a `Subscription` and not a `Thread`.
+
+Now that we've established that MDC "just working" is not the best assumption to make in a declarative API, how can we perform contextualized log statements in relation to events in a Reactive Stream (`onNext`, `onError`, and `onComplete`)?
+
+This entry of the FAQ offers a possible intermediate solution when one wants to log in relation to these signals in a straightforward and explicit manner.
+Make sure to read the <<context>> section beforehand, and especially how a write must happen towards the bottom of the operator chain for operators above it to see it.
+
+To get contextual information from the `Context` to the MDC, the simplest way is to wrap logging statements in a `doOnEach` operator with a little bit of boilerplate code.
 This boilerplate depends on both the logging framework/abstraction of your choice and the information you want to put in the MDC, so it has to be in your codebase.
 
 The following is an example of such a helper function around a single MDC variable and focused on logging `onNext` events, using Java 9 enhanced `Optional` API:
