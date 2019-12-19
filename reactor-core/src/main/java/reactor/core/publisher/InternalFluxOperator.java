@@ -49,6 +49,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
+		Operators.Stacksafe stacksafe = new Operators.Stacksafe();
 		OptimizableOperator operator = this;
 		try {
 			while (true) {
@@ -57,6 +58,9 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 					// null means "I will subscribe myself", returning...
 					return;
 				}
+
+				subscriber = stacksafe.protect(subscriber);
+
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
 					operator.source().subscribe(subscriber);

@@ -23,7 +23,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,8 +56,7 @@ import reactor.core.publisher.Operators.ScalarSubscription;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.*;
 
 public class OperatorsTest {
 
@@ -720,6 +721,166 @@ public class OperatorsTest {
 		Assertions.assertThat(Operators.toConditionalSubscriber(original))
 		          .isSameAs(original);
 	}
+
+	@Test
+	public void defaultTrampoliningMaxOperatorDepth() {
+		int depth = Operators.setStacksafeMaxOperatorDepth(1);
+		try {
+			assertThat(depth).isEqualTo(10_000);
+		}
+		finally {
+			Operators.setStacksafeMaxOperatorDepth(depth);
+		}
+	}
+
+	//TODO revert which test sets the threshold and which uses the default once the threshold is decided. for now, we only want to apply optimization in specific tests
+	@Test
+	public void largeOperatorChainDefaultNoTrampoliningBlowsUp() {
+		Flux<Integer> tooDeep = Flux.just(0).hide();
+
+		for (int i = 0; i <= 5000; i++) {
+			int currentI = i;
+			tooDeep = tooDeep.map(previous -> currentI);
+		}
+
+		assertThatExceptionOfType(StackOverflowError.class)
+				.isThrownBy(tooDeep::blockLast);
+	}
+
+	@Test
+	public void largeOperatorChainSmallerTrampoliningThresholdTrampolines() {
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+		int old = Operators.setStacksafeMaxOperatorDepth(1000);
+		try {
+			Flux<Integer> tooDeep = Flux.just(0).hide();
+
+			for (int i = 0; i <= 5000; i++) {
+				int currentI = i;
+				tooDeep = tooDeep
+						.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()))
+						.map(previous -> currentI);
+			}
+
+			assertThat(tooDeep.blockLast()).isEqualTo(5000);
+			assertThat(threadNames).startsWith(Thread.currentThread().getName());
+			assertThat(threadNames.size()).as("number of threads").isGreaterThan(1);
+		}
+		finally {
+			Operators.setStacksafeMaxOperatorDepth(old);
+		}
+	}
+
+	@Test
+	public void trampolineVanillaSubscriber() {
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+		int old = Operators.setStacksafeMaxOperatorDepth(1000);
+		try {
+			Flux<Integer> tooDeepNormal = Flux.just(0).hide();
+			for (int i = 0; i <= 5000; i++) {
+				int currentI = i;
+				tooDeepNormal = tooDeepNormal
+						.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()))
+						.map(previous -> currentI);
+			}
+
+			assertThat(tooDeepNormal.blockLast()).as("flux normal").isEqualTo(5000);
+			assertThat(threadNames).as("flux normal").startsWith(Thread.currentThread().getName());
+			assertThat(threadNames.size()).as("flux normal, number of threads")
+			                              .isStrictlyBetween(1, 15);
+		}
+		finally {
+			Operators.setStacksafeMaxOperatorDepth(old);
+		}
+	}
+
+	@Test
+	public void trampolineFuseableSubscriber() {
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+		int old = Operators.setStacksafeMaxOperatorDepth(1000);
+		try {
+			Mono<Integer> tooDeepFuseable = Mono.just(1);
+			for (int i = 0; i <= 5000; i++) {
+				int currentI = i;
+				tooDeepFuseable = tooDeepFuseable
+						.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()))
+						.map(previous -> currentI);
+			}
+
+			assertThat(tooDeepFuseable.block()).as("Mono Fuseable").isEqualTo(5000);
+			assertThat(threadNames).as("Mono Fuseable").startsWith(Thread.currentThread().getName());
+			assertThat(threadNames.size()).as("Mono Fuseable, number of threads")
+			                              .isStrictlyBetween(1, 15);
+		}
+		finally {
+			Operators.setStacksafeMaxOperatorDepth(old);
+		}
+	}
+
+	@Test
+	public void trampolineConditionalSubscriber() {
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+		int old = Operators.setStacksafeMaxOperatorDepth(1000);
+		try {
+			Flux<Integer> tooDeep = Flux.just(0).hide();
+
+			for (int i = 0; i <= 2500; i++) { //2500: conditional doubles the number of operators
+				tooDeep = tooDeep
+						.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()))
+						.filter(v -> true);
+			}
+
+			assertThat(tooDeep.blockLast()).isEqualTo(0);
+			assertThat(threadNames).startsWith(Thread.currentThread().getName());
+			assertThat(threadNames.size()).as("number of threads")
+			                              .isStrictlyBetween(1, 15);
+		}
+		finally {
+			Operators.setStacksafeMaxOperatorDepth(old);
+		}
+	}
+
+	@Test
+	public void trampolineConditionalFuseableSubscriber() {
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+		int old = Operators.setStacksafeMaxOperatorDepth(1000);
+		try {
+			Flux<Integer> tooDeep = Flux.just(0);
+
+			for (int i = 0; i <= 2500; i++) { //2500: conditional doubles the number of operators
+				tooDeep = tooDeep
+						.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()))
+						.filter(v -> true);
+			}
+
+			assertThat(tooDeep.blockLast()).isEqualTo(0);
+			assertThat(threadNames).startsWith(Thread.currentThread().getName());
+			assertThat(threadNames.size()).as("number of threads")
+			                              .isStrictlyBetween(1, 15);
+		}
+		finally {
+			Operators.setStacksafeMaxOperatorDepth(old);
+		}
+	}
+
+	@Test
+	public void smallEnoughOperatorChainNoTrampolining() {
+		assertThat(Operators.stacksafeMaxOperatorDepth).isGreaterThan(1000);
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+		Flux<Integer> shallowEnough = Flux.just(0).hide();
+
+		for (int i = 0; i < 500; i++) {
+			int currentI = i;
+			shallowEnough = shallowEnough
+					.map(previous -> currentI)
+					.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()));
+		}
+
+		assertThat(shallowEnough.blockLast()).isEqualTo(499);
+		assertThat(threadNames).containsOnly(Thread.currentThread().getName());
+	}
+
+	//TODO test with errors, debug mode, etc...
+
 
 	@Test
 	public void discardQueueWithClearContinuesOnExtractionError() {

@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Spliterator;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -40,6 +41,8 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -56,6 +59,188 @@ import static reactor.core.Fuseable.NONE;
  *
  */
 public abstract class Operators {
+
+	//TODO put default to an actually useful value (to be determined empirically?)
+	/**
+	 * The maximum number of subsequent Reactor core operators (operator depth) that should be chained before an artificial
+	 * async boundary is introduced.
+	 * <p>
+	 * Stack safety is done in a best effort fashion and only guaranteed for vanilla core operators that are subject to the tail-call subscribe
+	 * optimization.
+	 */
+	static volatile int stacksafeMaxOperatorDepth = Integer.parseInt(System.getProperty("reactor.max.operator.depth", "10000"));
+
+	/**
+	 * Replace the {@link #stacksafeMaxOperatorDepth} and return the old value. Primarily intended for testing purposes.
+	 * @param newMaxDepth the new max operator depth before an async boundary  should be introduced to reset stacktraces
+	 * @return the old {@link #stacksafeMaxOperatorDepth}
+	 */
+	static int setStacksafeMaxOperatorDepth(int newMaxDepth) {
+		int old = stacksafeMaxOperatorDepth;
+		stacksafeMaxOperatorDepth = newMaxDepth;
+		return old;
+	}
+
+	/**
+	 * A utility class to break stacks that are too deep and likely to cause {@link StackOverflowError}
+	 * either at subscription time or runtime, by injecting an async boundary {@link Subscriber} which
+	 * will submit onSubscribe/request/cancel/onNext/onComplete/onError signals on a dedicated
+	 * {@link Schedulers#newElastic(String) elastic Scheduler}.
+	 * <p>
+	 * The desired maximum stack depth (or rather the maximum desired operator chain depth) is
+	 * defined via the {@code reactor.max.operator.depth} system property.
+	 */
+	static class Stacksafe extends AtomicInteger {
+
+		static final AtomicInteger COUNTER = new AtomicInteger();
+
+		Scheduler stacksafeScheduler;
+		long      depth;
+
+		Stacksafe() {
+			this.stacksafeScheduler = Schedulers.immediate(); //temporary, avoid creating anything until 1st trampolining
+			this.depth = 0L;
+		}
+
+		<U> CoreSubscriber<U> protect(CoreSubscriber<U> actual) {
+			CoreSubscriber<U> result = actual;
+			//TODO test the behavior with thread-hopping and blocking flatmaps
+			//TODO check that this is actually useful. if so, consider introducing marker interface instead
+			if (actual instanceof FluxPublishOn.PublishOnSubscriber
+					|| actual instanceof MonoPublishOn.PublishOnSubscriber
+					|| actual instanceof FluxSubscribeOn.SubscribeOnSubscriber
+					|| actual instanceof MonoSubscribeOn.SubscribeOnSubscriber) {
+				return actual; //don't trampoline right before an explicit thread-hopping
+			}
+			if (depth % stacksafeMaxOperatorDepth == 0 && depth != 0) {
+				int protectedCount = incrementAndGet();
+				if (protectedCount == 1) {
+					//TODO should we try to capture an assembly backtrace here and reattach in case of errors?
+					//lazy creation of the actual scheduler
+					this.stacksafeScheduler = Schedulers.newElastic(
+							"operatorStacksafe-" + COUNTER.incrementAndGet(),
+							1, true);
+				}
+
+				if (actual instanceof QueueSubscription) {
+					//original was a QueueSubscription, emulate one (that always negotiate NONE)
+					result = new FluxHide.SuppressFuseableSubscriber<>(actual);
+					result = new StacksafeSubscriber<>(result, protectedCount, this);
+				}
+				else {
+					result = new StacksafeSubscriber<>(actual, protectedCount, this);
+				}
+			}
+			depth++;
+			return result;
+		}
+
+		void markDone(int stacksafeIndex) {
+			if (this.decrementAndGet() == 0) {
+				stacksafeScheduler.dispose();
+			}
+		}
+
+		static class StacksafeSubscriber<T> implements InnerOperator<T, T> {
+
+			final Stacksafe                 parent;
+			final int                       index;
+			final Scheduler.Worker          worker;
+			final CoreSubscriber<? super T> downstream;
+
+			Subscription subscription;
+
+			StacksafeSubscriber(CoreSubscriber<? super T> downstream, int thisStacksafeIndex, Stacksafe stacksafe) {
+				this.parent = stacksafe;
+				this.worker = stacksafe.stacksafeScheduler.createWorker();
+				this.index = thisStacksafeIndex;
+				this.downstream = downstream;
+			}
+
+			@Override
+			public CoreSubscriber<? super T> actual() {
+				return downstream;
+			}
+
+			private void done() {
+				worker.dispose();
+				parent.markDone(index);
+			}
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				this.subscription = s;
+				worker.schedule(() -> {
+					try {
+						downstream.onSubscribe(this);
+					}
+					catch (Throwable t) {
+						done();
+					}
+				});
+			}
+
+			@Override
+			public void onNext(T t) {
+				worker.schedule(() -> {
+					try {
+						downstream.onNext(t);
+					}
+					catch (Throwable e) {
+						done();
+					}
+				});
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				worker.schedule(() -> {
+					try {
+						downstream.onError(t);
+					}
+					finally {
+						done();
+					}
+				});
+			}
+
+			@Override
+			public void onComplete() {
+				worker.schedule(() -> {
+					try {
+						downstream.onComplete();
+					}
+					finally {
+						done();
+					}
+				});
+			}
+
+			@Override
+			public void request(long n) {
+				worker.schedule(() -> {
+					try {
+						subscription.request(n);
+					}
+					catch (Throwable t) {
+						done();
+					}
+				});
+			}
+
+			@Override
+			public void cancel() {
+				worker.schedule(() -> {
+					try {
+						subscription.cancel();
+					}
+					finally {
+						done();
+					}
+				});
+			}
+		}
+	}
 
 	/**
 	 * Cap an addition to Long.MAX_VALUE

@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Stephane Maldini
  */
-public class ExecutorSchedulerTrampolineTest extends AbstractSchedulerTest {
+public class ExecutorSchedulerStacksafeTest extends AbstractSchedulerTest {
 
 	@Override
 	protected boolean shouldCheckDisposeTask() {

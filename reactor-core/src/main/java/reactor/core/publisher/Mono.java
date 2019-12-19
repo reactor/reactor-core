@@ -4193,6 +4193,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> actual) {
+		Operators.Stacksafe stacksafe = new Operators.Stacksafe();
 		CorePublisher publisher = Operators.onLastAssembly(this);
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
@@ -4205,6 +4206,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 						// null means "I will subscribe myself", returning...
 						return;
 					}
+
+					subscriber = stacksafe.protect(subscriber);
 
 					OptimizableOperator newSource = operator.nextOptimizableSource();
 					if (newSource == null) {
