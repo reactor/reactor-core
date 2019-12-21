@@ -2597,7 +2597,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Recursively expand elements into a graph and emit all the resulting element using
 	 * a breadth-first traversal strategy.
 	 * <p>
-	 * That is: emit the value from this {@link Mono} first, then it each at a first level of
+	 * That is: emit the value from this {@link Mono} first, then expand it at a first level of
 	 * recursion and emit all of the resulting values, then expand all of these at a
 	 * second level and so on...
 	 * <p>
@@ -2637,7 +2637,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Recursively expand elements into a graph and emit all the resulting element using
 	 * a breadth-first traversal strategy.
 	 * <p>
-	 * That is: emit the value from this {@link Mono} first, then it each at a first level of
+	 * That is: emit the value from this {@link Mono} first, then expand it at a first level of
 	 * recursion and emit all of the resulting values, then expand all of these at a
 	 * second level and so on...
 	 * <p>
