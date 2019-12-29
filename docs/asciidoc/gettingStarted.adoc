@@ -178,7 +178,7 @@ dependencies {
 the BOM.
 ====
 
-Since Gadle 5.0, you can use the native Gradle support for BOMs:
+Since Gradle 5.0, you can use the native Gradle support for BOMs:
 
 ====
 [source,groovy]
