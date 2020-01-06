@@ -676,6 +676,7 @@ IMPORTANT: This is an advanced feature that is more targeted at library develope
 requires good understanding of the lifecycle of a `Subscription` and is intended for
 libraries that are responsible for the subscriptions.
 
+[[context.api]]
 === The `Context` API
 A `Context` is an interface reminiscent of `Map`: it stores key-value pairs and lets you
 fetch a value you stored by its key. More specifically:
@@ -701,6 +702,7 @@ the `Context`. +
  +
 Alternatively you can also create an empty `Context` by using `Context.empty()`.
 
+[[context.write]]
 === Tying the `Context` to a `Flux` and Writing
 To make the context useful, it must be tied to a specific sequence and be accessible by
 each operator in a chain. Note that the operator must be  a Reactor native operator, as
@@ -724,11 +726,12 @@ as you see fit, returning the new `Context` to use. You can even decide to retur
 completely different instance, although it is really not recommended (doing so might
 impact 3rd-party libraries that depend on the `Context`).
 
+[[context.read]]
 === Reading the Context
 Populating the `Context` is one aspect, but retrieving that data from it is equally
 important. Most of the time, the responsibility of putting information into the `Context`
 is on the end user's side, while exploiting that information is on the 3rd-party library's side,
-as the such libraries are usually upstream of the client code.
+as such libraries are usually upstream of the client code.
 
 The tool for reading data from the context is the static `Mono.subscriberContext()`
 method.
