@@ -755,6 +755,7 @@ IMPORTANT: This is an advanced feature that is more targeted at library develope
 requires good understanding of the lifecycle of a `Subscription` and is intended for
 libraries that are responsible for the subscriptions.
 
+[[context.api]]
 === The `Context` API
 
 `Context` is an interface reminiscent of `Map`.It stores key-value pairs and lets you
@@ -784,6 +785,7 @@ the `Context`.
 Alternatively you can also create an empty `Context` by using `Context.empty()`.
 ====
 
+[[context.write]]
 === Tying a `Context` to a `Flux` and Writing
 
 To make a `Context` be useful, it must be tied to a specific sequence and be accessible by
@@ -808,6 +810,7 @@ as you see fit, and returns the new `Context` to use. You can even decide to ret
 completely different instance, although it is really not recommended (doing so might
 impact third-party libraries that depend on the `Context`).
 
+[[context.read]]
 === Reading a `Context`
 
 Once you haved populated a `Context`, you can retrieve that data.

@@ -9,9 +9,10 @@ This section covers the following content:
 * <<faq.retryWhen>>
 * <<faq.exponentialBackoff>>
 * <<faq.thread-affinity-publishon>>
+* <<faq.mdc>>
 
 [[faq.wrap-blocking]]
-== How do I wrap a synchronous, blocking call?
+== How Do I Wrap a Synchronous, Blocking Call?
 
 It is often the case that a source of information is synchronous and blocking.
 To deal with such sources in your Reactor applications, apply the following
@@ -25,7 +26,6 @@ Mono blockingWrapper = Mono.fromCallable(() -> { <1>
 });
 blockingWrapper = blockingWrapper.subscribeOn(Schedulers.boundedElastic()); <3>
 ----
-
 <1> Create a new `Mono` by using `fromCallable`.
 <2> Return the asynchronous, blocking resource.
 <3> Ensure each subscription happens on a dedicated single-threaded worker
@@ -42,7 +42,7 @@ Note that `subscribeOn` does not subscribe to the `Mono`. It specifies what
 kind of `Scheduler` to use when a subscribe call happens.
 
 [[faq.chain]]
-== I used an operator on my `Flux` but it does not seem to apply. What gives?
+== I Used an Operator on my `Flux` but it Doesn't Seem to Apply. What Gives?
 
 Make sure that the variable you `.subscribe()` to has been affected by the
 operators you think should have been applied to it.
@@ -53,6 +53,7 @@ operators is to _chain_ the calls.
 
 Compare the following two examples:
 
+====
 .without chaining (incorrect)
 ====
 [source,java]
@@ -64,6 +65,7 @@ flux.subscribe(next -> System.out.println("Received: " + next));
 <1> The mistake is here. The result is not attached to the `flux` variable.
 ====
 
+====
 .without chaining (correct)
 ====
 [source,java]
@@ -76,6 +78,7 @@ flux.subscribe(next -> System.out.println("Received: " + next));
 
 The following sample is even better (because it is simpler):
 
+====
 .with chaining (best)
 ====
 [source,java]
@@ -142,6 +145,7 @@ which could help avoid some of these situations. Note that this does not apply t
 `Flux<Void>`/`Mono<Void>` sources, as you can only switch to another `Publisher<Void>`,
 which is still guaranteed to be empty. The following example uses `defaultIfEmpty`:
 
+====
 .use `defaultIfEmpty` before `zipWhen`
 ====
 [source,java]
@@ -247,5 +251,130 @@ on the same `Thread`.
 
 You can use single-threaded schedulers to ensure thread affinity for different stages in the
 chain or for different subscribers.
+
+
+[[faq.mdc]]
+== What Is a Good Pattern for Contextual Logging? (MDC)
+Most logging frameworks allow contextual logging, letting users store variables that are reflected in the logging pattern, generally by way of a `Map` called the MDC ("Mapped Diagnostic Context").
+This is one of the most recurring use of `ThreadLocal` in Java, and as a consequence this pattern assumes that the code being logged is tied in a one-to-one relationship with a `Thread`.
+
+That might have been a safe assumption to make before Java 8, but with the advent of functional programming elements in the Java language things have changed a bit...
+
+Let's take the example of a API that was imperative and used the template method pattern, then switches to a more functional style.
+With the template method pattern, inheritance was at play. Now in its more functional approach, higher order functions are passed to define the "steps" of the algorithm.
+Things are now more declarative than imperative, and that frees the library to make decisions about where each step should run.
+For instance, knowing which steps of the underlying algorithm can be parallelized, the library can use an `ExecutorService` to execute some of the steps in parallel.
+
+One concrete example of such a functional API is the `Stream` API introduced in Java 8 and its `parallel()` flavor.
+Logging with a MDC in a parallel `Stream` is not a free lunch: one need to ensure the MDC is captured and reapplied in each step.
+
+The functional style enables such optimizations, because each step is thread-agnostic and referentially transparent, but it can break the MDC assumption of a single `Thread`.
+The most idiomatic way of ensuring any kind of contextual information is accessible to all stages would be to pass that context around through the composition chain.
+During the development of Reactor we encountered the same general class of problem, and we wanted to avoid this very hands-down and explicit approach.
+This is why the `Context` was introduced: it propagates through the execution chain as long as `Flux` and `Mono` are used as the return value, by letting stages (operators) peek at the `Context` of their downstream stage.
+So instead of using `ThreadLocal`, Reactor offers this map-like object that is tied to a `Subscription` and not a `Thread`.
+
+Now that we've established that MDC "just working" is not the best assumption to make in a declarative API, how can we perform contextualized log statements in relation to events in a Reactive Stream (`onNext`, `onError`, and `onComplete`)?
+
+This entry of the FAQ offers a possible intermediate solution when one wants to log in relation to these signals in a straightforward and explicit manner.
+Make sure to read the <<context>> section beforehand, and especially how a write must happen towards the bottom of the operator chain for operators above it to see it.
+
+To get contextual information from the `Context` to the MDC, the simplest way is to wrap logging statements in a `doOnEach` operator with a little bit of boilerplate code.
+This boilerplate depends on both the logging framework/abstraction of your choice and the information you want to put in the MDC, so it has to be in your codebase.
+
+The following is an example of such a helper function around a single MDC variable and focused on logging `onNext` events, using Java 9 enhanced `Optional` API:
+
+====
+[source,java]
+----
+public static <T> Consumer<Signal<T>> logOnNext(Consumer<T> logStatement) {
+	return signal -> {
+		if (!signal.isOnNext()) return; <1>
+		Optional<String> toPutInMdc = signal.getContext().getOrEmpty("CONTEXT_KEY"); <2>
+
+		toPutInMdc.ifPresentOrElse(tpim -> {
+			try (MDC.MDCCloseable cMdc = MDC.putCloseable("MDC_KEY", tpim)) { <3>
+				logStatement.accept(signal.get()); <4>
+			}
+		},
+		() -> logStatement.accept(signal.get())); <5>
+	};
+}
+----
+<1> `doOnEach` signals include `onComplete` and `onError`. In this example we're only interested in logging `onNext`
+<2> We will extract one interesting value from the Reactor `Context` (see the <<context.api>> section)
+<3> We use the `MDCCloseable` from SLF4J 2 in this example, allowing try-with-resource syntax for automatic cleanup of the MDC after the log statement is executed
+<4> Proper log statement is provided by the caller as a `Consumer<T>` (consumer of the onNext value)
+<5> In case the expected key wasn't set in the `Context` we use the alternative path where nothing is put in the MDC
+====
+
+Using this boilerplate code ensures that we are good citizens with the MDC: we set a key right before we execute a logging statement and remove it immediately after.
+There is no risk of polluting the MDC for subsequent logging statements.
+
+Of course, this is a suggestion. You might be interested in extracting multiple values from the `Context` or in logging things in case of `onError`.
+You might want to create additional helper methods for these cases or craft a single method that makes use of additional lambdas to cover more ground.
+
+In any case, the usage of the preceding helper method could look like the following reactive web controller:
+
+====
+[source,java]
+----
+@GetMapping("/byPrice")
+public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(required = false, name = "X-UserId") String userId) {
+	String apiId = userId == null ? "" : userId; <1>
+
+	return restaurantService.byPrice(maxPrice))
+			   .doOnEach(logOnNext(r -> LOG.debug("found restaurant {} for ${}", <2>
+					r.getName(), r.getPricePerPerson())))
+			   .subscriberContext(Context.of("CONTEXT_KEY", apiId)); <3>
+}
+----
+<1> We need to get the contextual information from the request header to put it in the `Context`
+<2> Here we apply our helper method to the `Flux`, using `doOnEach`. Remember: operators see `Context` values defined below them.
+<3> We write the value from the header to the `Context` using the chosen key `CONTEXT_KEY`.
+====
+
+In this configuration, the `restaurantService` can emit its data on a shared thread, yet the logs will still reference the correct `X-UserId` for each request.
+
+For completeness, we can also see what an error-logging helper could look like:
+
+====
+[source,java]
+----
+public static Consumer<Signal<?>> logOnError(Consumer<Throwable> errorLogStatement) {
+	return signal -> {
+		if (!signal.isOnError()) return;
+		Optional<String> toPutInMdc = signal.getContext().getOrEmpty("CONTEXT_KEY");
+
+		toPutInMdc.ifPresentOrElse(tpim -> {
+			try (MDC.MDCCloseable cMdc = MDC.putCloseable("MDC_KEY", tpim)) {
+				errorLogStatement.accept(signal.getThrowable());
+			}
+		},
+		() -> errorLogStatement.accept(signal.getThrowable()));
+	};
+}
+----
+====
+
+Nothing much has changed, except for the fact that we check that the `Signal` is effectively an `onError`, and that we provide said error (a `Throwable`) to the log statement lambda.
+
+Applying this helper in the controller is very similar to what we've done before:
+
+====
+[source,java]
+----
+@GetMapping("/byPrice")
+public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(required = false, name = "X-UserId") String userId) {
+	String apiId = userId == null ? "" : userId;
+
+	return restaurantService.byPrice(maxPrice))
+			   .doOnEach(logOnNext(v -> LOG.info("found restaurant {}", v))
+			   .doOnEach(logOnError(e -> LOG.error("error when searching restaurants", e)) <1>
+			   .subscriberContext(Context.of("CONTEXT_KEY", apiId));
+}
+----
+<1> In case the `restaurantService` emits an error, it will be logged with MDC context here
+====
 
 //TODO reactive gems
