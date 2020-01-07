@@ -835,4 +835,20 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		assertThat(virtualTimeScheduler.getScheduledTaskCount()).isZero().as("once cache skipped scheduled count");
 	}
 
+	@Test
+	public void noTtlCancelDoesntCancelSource() {
+		AtomicInteger cancelled = new AtomicInteger();
+		Mono<Object> cached = new MonoCacheTime<>(Mono.never()
+		                          .doOnCancel(cancelled::incrementAndGet));
+
+		Disposable d1 = cached.subscribe();
+		Disposable d2 = cached.subscribe();
+
+		d1.dispose();
+		assertThat(cancelled.get()).as("when cancelling d1").isEqualTo(0);
+
+		d2.dispose();
+		assertThat(cancelled.get()).as("when both cancelled").isEqualTo(0);
+	}
+
 }
