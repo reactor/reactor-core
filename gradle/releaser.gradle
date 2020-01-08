@@ -72,3 +72,5 @@ task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "r
 		  .replace(oldSnapshot, nextVersion)
   }
 }
+
+build.dependsOn bumpVersionsInReadme
