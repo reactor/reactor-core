@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
@@ -38,6 +39,8 @@ import reactor.util.context.Context;
  * @author Simon Baslé
  */
 class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
+
+	private static final Duration DURATION_INFINITE = Duration.ofMillis(Long.MAX_VALUE);
 
 	private static final Logger LOGGER = Loggers.getLogger(MonoCacheTime.class);
 
@@ -57,6 +60,10 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		@SuppressWarnings("unchecked")
 		Signal<T> state = (Signal<T>) EMPTY;
 		this.state = state;
+	}
+
+	MonoCacheTime(Mono<? extends T> source) {
+		this(source, sig -> DURATION_INFINITE, Schedulers.immediate());
 	}
 
 	MonoCacheTime(Mono<? extends T> source, Function<? super Signal<T>, Duration> ttlGenerator,
@@ -357,7 +364,6 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 
 		private static final Operators.MonoSubscriber[] TERMINATED        = new Operators.MonoSubscriber[0];
 		private static final Operators.MonoSubscriber[] EMPTY             = new Operators.MonoSubscriber[0];
-		private static final Duration                   DURATION_INFINITE = Duration.ofMillis(Long.MAX_VALUE);
 	}
 
 	static final class CacheMonoSubscriber<T> extends Operators.MonoSubscriber<T, T> {

@@ -1758,7 +1758,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a replaying {@link Mono}
 	 */
 	public final Mono<T> cache() {
-		return onAssembly(new MonoProcessor<>(this));
+		return onAssembly(new MonoCacheTime<>(this));
 	}
 
 	/**
