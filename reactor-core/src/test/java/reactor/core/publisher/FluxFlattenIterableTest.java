@@ -396,4 +396,48 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 	                .expectErrorMessage("boom")
 	                .verify(Duration.ofSeconds(1));
     }
+
+	@Test
+	public void errorModeContinueNullPublisher() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.flatMapIterable(f -> {
+					if (f == 1) {
+						return null;
+					}
+					return Arrays.asList(f);
+				})
+				.onErrorContinue(OnNextFailureStrategyTest::drop);
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
+    @Test
+	public void errorModeContinueInternalError() {
+	    Flux<Integer> test = Flux
+			    .just(1, 2)
+			    .hide()
+			    .flatMapIterable(f -> {
+            if (f == 1) {
+              throw new IllegalStateException("boom");
+            }
+            return Arrays.asList(f);
+			    })
+			    .onErrorContinue(OnNextFailureStrategyTest::drop);
+
+	    StepVerifier.create(test)
+			    .expectNoFusionSupport()
+			    .expectNext(2)
+			    .expectComplete()
+			    .verifyThenAssertThat()
+			    .hasDropped(1)
+			    .hasDroppedErrors(1);
+    }
 }

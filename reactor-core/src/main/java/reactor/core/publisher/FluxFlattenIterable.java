@@ -341,8 +341,11 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						catch (Throwable exc) {
 							it = null;
 							Context ctx = actual.currentContext();
-							onError(Operators.onOperatorError(s, exc, t, ctx));
+							Throwable e_ = Operators.onNextError(t, exc, ctx, s);
 							Operators.onDiscard(t, ctx);
+							if (e_ != null) {
+								onError(e_);
+							}
 							continue;
 						}
 
@@ -525,8 +528,11 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 						catch (Throwable exc) {
 							current = null;
 							Context ctx = actual.currentContext();
-							a.onError(Operators.onOperatorError(s, exc, t, ctx));
+							Throwable e_ = Operators.onNextError(t, exc, ctx, s);
 							Operators.onDiscard(t, ctx);
+							if (e_ != null) {
+								a.onError(e_);
+							}
 							return;
 						}
 
