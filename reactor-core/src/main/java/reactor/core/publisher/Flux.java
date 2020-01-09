@@ -5066,6 +5066,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param <R> the merged output sequence type
 	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
+	 * the {@link #onErrorContinue(BiConsumer)} error consumer (the value consumer
+	 * is not invoked, as the source element will be part of the sequence). The onNext
+	 * signal is then propagated as normal.
+	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
@@ -5090,6 +5096,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
 	 * @param <R> the merged output sequence type
+	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
+	 * the {@link #onErrorContinue(BiConsumer)} error consumer (the value consumer
+	 * is not invoked, as the source element will be part of the sequence). The onNext
+	 * signal is then propagated as normal.
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
