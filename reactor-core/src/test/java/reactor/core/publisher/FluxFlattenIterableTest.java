@@ -397,7 +397,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
     }
 
 	@Test
-	public void errorModeContinueNullPublisherAsync() {
+	public void errorModeContinueNullPublisherNotFused() {
 		Flux<Integer> test = Flux
 				.just(1, 2)
 				.hide()
@@ -419,7 +419,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 	}
 
     @Test
-	public void errorModeContinueInternalErrorAsync() {
+	public void errorModeContinueInternalErrorNotFused() {
 	    Flux<Integer> test = Flux
 			    .just(1, 2)
 			    .hide()
@@ -441,7 +441,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
     }
 
 	@Test
-	public void errorModeContinueSingleElementAsync() {
+	public void errorModeContinueSingleElementNotFused() {
 		Flux<Integer> test = Flux
 				.just(1)
 				.hide()
@@ -462,7 +462,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 	}
 	
     @Test
-	public void errorModeContinueNullPublisherSync() {
+	public void errorModeContinueNullPublisherFused() {
 		Flux<Integer> test = Flux
 				.just(1, 2)
 				.flatMapIterable(f -> {
@@ -482,7 +482,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 	}
 
     @Test
-	public void errorModeContinueInternalErrorSync() {
+	public void errorModeContinueInternalErrorFused() {
 	    Flux<Integer> test = Flux
 			    .just(1, 2)
 			    .flatMapIterable(f -> {
@@ -502,7 +502,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
     }
 
     @Test
-	public void errorModeContinueSingleElementSync() {
+	public void errorModeContinueSingleElementFused() {
 	    Flux<Integer> test = Flux
 			    .just(1)
 			    .flatMapIterable(f -> {
