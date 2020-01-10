@@ -1,3 +1,7 @@
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoField
+
 /*
  * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
  *
@@ -74,3 +78,25 @@ task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "r
 }
 
 build.dependsOn bumpVersionsInReadme
+
+if (project.hasProperty("artifactory_publish_password")) {
+	ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC)
+	String buildNumber = '' + now.get(ChronoField.YEAR) + '-' + now.get(ChronoField.MONTH_OF_YEAR) + '-' + now.get(ChronoField.DAY_OF_MONTH) + '@' + now.toEpochSecond()
+
+	configure(rootProject) { p ->
+		apply plugin: "com.jfrog.artifactory"
+		artifactory {
+			contextUrl = "${artifactory_publish_contextUrl}"
+			publish {
+				repository {
+					repoKey = "${artifactory_publish_repoKey}"
+					username = "${artifactory_publish_username}"
+					password = "${artifactory_publish_password}"
+				}
+			}
+			clientConfig.setIncludeEnvVars(false)
+			clientConfig.info.setBuildName('Reactor - Releaser - Core')
+			clientConfig.info.setBuildNumber(buildNumber)
+		}
+	}
+}
