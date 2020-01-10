@@ -16,6 +16,7 @@
 package reactor.core.scheduler;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -78,7 +79,32 @@ final class SchedulerMetricDecorator
 		to distinguish between two instances with the same name and configuration).
 		 */
 
-		return ExecutorServiceMetrics.monitor(globalRegistry, service, executorId, tags);
+		class MetricsRemovingScheduledExecutorService extends DelegatingScheduledExecutorService {
+
+			MetricsRemovingScheduledExecutorService() {
+				super(ExecutorServiceMetrics.monitor(globalRegistry, service, executorId, tags));
+			}
+
+			@Override
+			public List<Runnable> shutdownNow() {
+				removeMetrics();
+				return super.shutdownNow();
+			}
+
+			@Override
+			public void shutdown() {
+				removeMetrics();
+				super.shutdown();
+			}
+
+			void removeMetrics() {
+				Search.in(globalRegistry)
+				      .tag("name", executorId)
+				      .meters()
+				      .forEach(globalRegistry::remove);
+			}
+		}
+		return new MetricsRemovingScheduledExecutorService();
 	}
 
 	@Override
