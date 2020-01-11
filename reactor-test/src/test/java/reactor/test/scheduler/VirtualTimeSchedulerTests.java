@@ -132,7 +132,7 @@ public class VirtualTimeSchedulerTests {
 		List<Long> periodicExecutionTimestamps = new ArrayList<>();
 
 		try {
-			vts.advanceTimeBy(Duration.ofMillis(100));
+			vts.advanceTimeBy(Duration.ofMillis(100), true);
 
 			vts.schedule(() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
 					100, TimeUnit.MILLISECONDS);
@@ -192,6 +192,10 @@ public class VirtualTimeSchedulerTests {
 				assertThat(vts.now(TimeUnit.MILLISECONDS))
 						.as("iteration " + i)
 						.isEqualTo(13_000 * i);
+
+				assertThat(vts.nanoTime)
+						.as("now() == nanoTime in iteration " + i)
+						.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
 			}
 		}
 		finally {
@@ -230,8 +234,8 @@ public class VirtualTimeSchedulerTests {
 		try {
 			for (int i = 1; i <= 100; i++) {
 				RaceTestUtils.race(
-						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
-						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+						() -> vts.advanceTimeBy(Duration.ofSeconds(10), true),
+						() -> vts.advanceTimeBy(Duration.ofSeconds(3), true));
 
 				if (i % 10 == 0) {
 					vts.schedule(count::incrementAndGet, 14, TimeUnit.SECONDS);

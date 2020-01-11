@@ -38,7 +38,7 @@ import reactor.util.concurrent.Queues;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
- * (eg. in tests). Can replace the default reactor schedulers by using 
+ * (eg. in tests). Can replace the default reactor schedulers by using
  * the {@link #getOrSet} / {@link #set(VirtualTimeScheduler)} methods.
  *
  * @author Stephane Maldini
@@ -215,19 +215,38 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * @param delayTime the amount of time to move the {@link VirtualTimeScheduler}'s clock forward
 	 */
 	public void advanceTimeBy(Duration delayTime) {
-		advanceTime(delayTime.toNanos());
+		advanceTimeBy(delayTime, false);
+	}
+
+	/**
+	 * Moves the {@link VirtualTimeScheduler}'s clock forward by a specified amount of time.
+	 *
+	 * @param delayTime the amount of time to move the {@link VirtualTimeScheduler}'s clock forward
+	 * @param defer true to defer the clock move until there are tasks in queue
+	 */
+	public void advanceTimeBy(Duration delayTime, boolean defer) {
+		advanceTime(delayTime.toNanos(), defer);
 	}
 
 	/**
 	 * Moves the {@link VirtualTimeScheduler}'s clock to a particular moment in time.
 	 *
-	 * @param instant the point in time to move the {@link VirtualTimeScheduler}'s
-	 * clock to
+	 * @param instant the point in time to move the {@link VirtualTimeScheduler}'s clock to
 	 */
 	public void advanceTimeTo(Instant instant) {
+		advanceTimeTo(instant, false);
+	}
+
+	/**
+	 * Moves the {@link VirtualTimeScheduler}'s clock to a particular moment in time.
+	 *
+	 * @param instant the point in time to move the {@link VirtualTimeScheduler}'s clock to
+	 * @param defer true to defer the clock move until there are tasks in queue
+	 */
+	public void advanceTimeTo(Instant instant, boolean defer) {
 		long targetTime = TimeUnit.NANOSECONDS.convert(instant.toEpochMilli(),
 				TimeUnit.MILLISECONDS);
-		advanceTime(targetTime - nanoTime);
+		advanceTime(targetTime - nanoTime, defer);
 	}
 
 	/**
@@ -308,9 +327,11 @@ public class VirtualTimeScheduler implements Scheduler {
 		return periodicTask;
 	}
 
-	final void advanceTime(long timeShiftInNanoseconds) {
+	final void advanceTime(long timeShiftInNanoseconds, boolean defer) {
 		Operators.addCap(DEFERRED_NANO_TIME, this, timeShiftInNanoseconds);
-		drain();
+		if (!defer || !queue.isEmpty()) {
+			drain();
+		}
 	}
 
 	final void drain() {
@@ -319,27 +340,25 @@ public class VirtualTimeScheduler implements Scheduler {
 			return;
 		}
 		for(;;) {
-			if (!queue.isEmpty()) {
-				//resetting for the first time a delayed schedule is called after a deferredNanoTime is set
-				long targetNanoTime = nanoTime + DEFERRED_NANO_TIME.getAndSet(this, 0);
+			//resetting for the first time a delayed schedule is called after a deferredNanoTime is set
+			long targetNanoTime = nanoTime + DEFERRED_NANO_TIME.getAndSet(this, 0);
 
-				while (!queue.isEmpty()) {
-					TimedRunnable current = queue.peek();
-					if (current == null || current.time > targetNanoTime) {
-						break;
-					}
-					//for the benefit of tasks that call `now()`
-					// if scheduled time is 0 (immediate) use current virtual time
-					nanoTime = current.time == 0 ? nanoTime : current.time;
-					queue.remove();
-
-					// Only execute if not unsubscribed
-					if (!current.scheduler.shutdown) {
-						current.run.run();
-					}
+			while (!queue.isEmpty()) {
+				TimedRunnable current = queue.peek();
+				if (current == null || current.time > targetNanoTime) {
+					break;
 				}
-				nanoTime = targetNanoTime;
+				//for the benefit of tasks that call `now()`
+				// if scheduled time is 0 (immediate) use current virtual time
+				nanoTime = current.time == 0 ? nanoTime : current.time;
+				queue.remove();
+
+				// Only execute if not unsubscribed
+				if (!current.scheduler.shutdown) {
+					current.run.run();
+				}
 			}
+			nanoTime = targetNanoTime;
 
 			remainingWork = ADVANCE_TIME_WIP.addAndGet(this, -remainingWork);
 			if (remainingWork == 0) {

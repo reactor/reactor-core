@@ -59,7 +59,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
-import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.Logger;
@@ -2318,7 +2317,7 @@ final class DefaultStepVerifierBuilder<T>
 			s.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS);
 		}
 		else {
-			s.virtualTimeScheduler.advanceTimeBy(duration);
+			s.virtualTimeScheduler.advanceTimeBy(duration, true);
 		}
 	}
 
