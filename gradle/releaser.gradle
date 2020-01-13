@@ -77,8 +77,6 @@ task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "r
   }
 }
 
-build.dependsOn bumpVersionsInReadme
-
 String getOrGenerateBuildNumber() {
 	if (project.hasProperty("buildNumber")) {
 		return project.findProperty("buildNumber")
