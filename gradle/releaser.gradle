@@ -79,12 +79,31 @@ task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "r
 
 build.dependsOn bumpVersionsInReadme
 
-if (project.hasProperty("artifactory_publish_password")) {
+String getOrGenerateBuildNumber() {
+	if (project.hasProperty("buildNumber")) {
+		return project.findProperty("buildNumber")
+	}
+	def jenkinsNumber = System.getenv("BUILD_NUMBER")
+	if (jenkinsNumber != null) {
+		return jenkinsNumber
+	}
 	ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC)
-	String buildNumber = '' + now.get(ChronoField.YEAR) + '-' + now.get(ChronoField.MONTH_OF_YEAR) + '-' + now.get(ChronoField.DAY_OF_MONTH) + '@' + now.toEpochSecond()
+	long secondsInDay = now.toEpochSecond() - ZonedDateTime.now(ZoneOffset.UTC).withSecond(0).withHour(0).withMinute(0).toEpochSecond()
+	String buildNumber = "$version-${now.get(ChronoField.YEAR)}${now.get(ChronoField.MONTH_OF_YEAR).toString().padLeft(2,'0')}${now.get(ChronoField.DAY_OF_MONTH).toString().padLeft(2,'0')}@${secondsInDay}"
+	println "No buildNumber set, generated: $buildNumber"
+	return buildNumber
+}
 
+task printBuildNumber() {
+	doLast {
+		println getOrGenerateBuildNumber()
+	}
+}
+
+if (project.hasProperty("artifactory_publish_password")) {
 	configure(rootProject) { p ->
 		apply plugin: "com.jfrog.artifactory"
+		def buildNumber = getOrGenerateBuildNumber()
 		artifactory {
 			contextUrl = "${artifactory_publish_contextUrl}"
 			publish {
