@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
@@ -28,15 +27,17 @@ import java.util.stream.IntStream;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
-import reactor.core.Scannable.Attr;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Java6Assertions.assertThat;
 
@@ -201,7 +202,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
 		Flux.range(1, 5)
 		    .hide()
-		    .concatMapIterable(v -> Arrays.asList(v, v + 1))
+		    .concatMapIterable(v -> Arrays.asList(v, v + 10))
 		    .subscribe(ts);
 
 		ts.assertNoEvents();
@@ -212,11 +213,11 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
 		ts.request(2);
 
-		ts.assertIncomplete(1, 2, 2);
+		ts.assertIncomplete(1, 11, 2);
 
 		ts.request(7);
 
-		ts.assertValues(1, 2, 2, 3, 3, 4, 4, 5, 5, 6)
+		ts.assertValues(1, 11, 2, 12, 3, 13, 4, 14, 5, 15)
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -392,8 +393,158 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 			    .filter(l -> { throw new IllegalStateException("boom"); })
 			    .flatMapIterable(Function.identity());
 
-	    StepVerifier.create(p)
-	                .expectErrorMessage("boom")
-	                .verify(Duration.ofSeconds(1));
-    }
+		StepVerifier.create(p)
+		            .expectErrorMessage("boom")
+		            .verify(Duration.ofSeconds(1));
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1925
+	@Test
+	public void concatMapIterableDoOnDiscardTestDrainSync() {
+		ReferenceCounted referenceCounted1 = new ReferenceCounted(1);
+		ReferenceCounted referenceCounted2 = new ReferenceCounted(2);
+		ReferenceCounted referenceCounted3 = new ReferenceCounted(3);
+
+		Flux<ReferenceCounted> source = Flux.just(1, 2) //drain sync
+		                                    .concatMapIterable(i -> Arrays.asList(
+				                                    referenceCounted1,
+				                                    referenceCounted2,
+				                                    referenceCounted3))
+		                                    .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
+
+		StepVerifier.create(source)
+		            .consumeNextWith(ReferenceCounted::release)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(referenceCounted1.getRefCount()).as("ref1").isEqualTo(0);
+		assertThat(referenceCounted2.getRefCount()).as("ref2").isEqualTo(0);
+		assertThat(referenceCounted3.getRefCount()).as("ref3").isEqualTo(0);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1925
+	@Test
+	public void concatMapIterableDoOnDiscardTestDrainAsync() {
+		ReferenceCounted referenceCounted1 = new ReferenceCounted(1);
+		ReferenceCounted referenceCounted2 = new ReferenceCounted(2);
+		ReferenceCounted referenceCounted3 = new ReferenceCounted(3);
+
+		Flux<ReferenceCounted> source = Flux.just(1, 2)
+		                                    .publishOn(Schedulers.immediate()) //drain async
+		                                    .concatMapIterable(i -> Arrays.asList(
+				                                    referenceCounted1,
+				                                    referenceCounted2,
+				                                    referenceCounted3))
+		                                    .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
+
+		StepVerifier.create(source)
+		            .consumeNextWith(ReferenceCounted::release)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(referenceCounted1.getRefCount()).as("ref1").isEqualTo(0);
+		assertThat(referenceCounted2.getRefCount()).as("ref2").isEqualTo(0);
+		assertThat(referenceCounted3.getRefCount()).as("ref3").isEqualTo(0);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1925
+	@Test
+	public void concatMapIterableDoOnDiscardScalarSource() {
+		ReferenceCounted referenceCounted1 = new ReferenceCounted(1);
+		ReferenceCounted referenceCounted2 = new ReferenceCounted(2);
+		ReferenceCounted referenceCounted3 = new ReferenceCounted(3);
+
+		Flux<ReferenceCounted> source = Flux.just(1) //callable
+		                                    .concatMapIterable(i -> Arrays.asList(
+				                                    referenceCounted1,
+				                                    referenceCounted2,
+				                                    referenceCounted3))
+		                                    .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
+
+		StepVerifier.create(source)
+		            .consumeNextWith(ReferenceCounted::release)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(referenceCounted1.getRefCount()).as("ref1").isEqualTo(0);
+		assertThat(referenceCounted2.getRefCount()).as("ref2").isEqualTo(0);
+		assertThat(referenceCounted3.getRefCount()).as("ref3").isEqualTo(0);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1925
+	@Test
+	public void concatMapIterableDoOnDiscardMonoSource() {
+		ReferenceCounted referenceCounted1 = new ReferenceCounted(1);
+		ReferenceCounted referenceCounted2 = new ReferenceCounted(2);
+		ReferenceCounted referenceCounted3 = new ReferenceCounted(3);
+
+		Flux<ReferenceCounted> source = Mono.just(1) //callable
+		                                    .flatMapIterable(i -> Arrays.asList(
+				                                    referenceCounted1,
+				                                    referenceCounted2,
+				                                    referenceCounted3))
+		                                    .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
+
+		StepVerifier.create(source)
+		            .consumeNextWith(ReferenceCounted::release)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(referenceCounted1.getRefCount()).as("ref1").isEqualTo(0);
+		assertThat(referenceCounted2.getRefCount()).as("ref2").isEqualTo(0);
+		assertThat(referenceCounted3.getRefCount()).as("ref3").isEqualTo(0);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1925
+	@Test
+	public void concatMapIterableDoOnDiscardOnClear() {
+		ReferenceCounted referenceCounted1 = new ReferenceCounted(1);
+		ReferenceCounted referenceCounted2 = new ReferenceCounted(2);
+		Context context = Operators.discardLocalAdapter(ReferenceCounted.class, ReferenceCounted::release).apply(Context.empty());
+
+		FluxFlattenIterable.FlattenIterableSubscriber<Integer, ReferenceCounted> test = new FluxFlattenIterable.FlattenIterableSubscriber<>(
+				new BaseSubscriber<ReferenceCounted>() {
+					@Override
+					protected void hookOnSubscribe(Subscription subscription) {
+						request(1);
+					}
+
+					@Override
+					public Context currentContext() {
+						return context;
+					}
+				},
+				i -> Arrays.asList(referenceCounted1, referenceCounted2),
+				1, Queues.one());
+
+		test.onSubscribe(Operators.scalarSubscription(test, 1));
+
+		assertThat(test.current).as("current iterator").isNotNull();
+		assertThat(test.currentKnownToBeFinite).as("iterator know to be finite").isTrue();
+
+		test.clear();
+
+		assertThat(referenceCounted2.refCount).as("ref2 is released by the clear").isZero();
+		assertThat(test.current).as("current nulled out")
+		                        .isNull();
+		assertThat(test.currentKnownToBeFinite).as("knownFinite reset").isFalse();
+	}
+
+	static class ReferenceCounted {
+
+		int refCount = 1;
+		final int index;
+
+		ReferenceCounted(int index) {
+			this.index = index;
+		}
+
+		public int getRefCount() {
+			return this.refCount;
+		}
+
+		public void release() {
+			this.refCount = 0;
+		}
+	}
 }
