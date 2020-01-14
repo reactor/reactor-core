@@ -16,8 +16,10 @@
 package reactor.core.publisher;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Spliterator;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -40,6 +42,7 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.function.Tuple2;
 
 import static reactor.core.Fuseable.NONE;
 
@@ -497,6 +500,38 @@ public abstract class Operators {
 			}
 			catch (Throwable t) {
 				log.warn("Error in discard hook while discarding multiple values", t);
+			}
+		}
+	}
+
+  /**
+   * Invoke a (local or global) hook that processes elements that remains in an {@link java.util.Iterator}.
+   * Since iterators can be infinite, this method requires that you explicitly ensure the iterator is
+   * {@code knownToBeFinite}. Typically, operating on an {@link Iterable} one can get such a
+   * guarantee by looking at the {@link Iterable#spliterator() Spliterator's} {@link Spliterator#getExactSizeIfKnown()}.
+   *
+   * @param multiple the {@link Iterator} whose remainder to discard
+   * @param knownToBeFinite is the caller guaranteeing that the iterator is finite and can be iterated over
+   * @param context the {@link Context} in which to look for local hook
+   * @see #onDiscard(Object, Context)
+   * @see #onDiscardMultiple(Collection, Context)
+   * @see #onDiscardQueueWithClear(Queue, Context, Function)
+   */
+	public static void onDiscardMultiple(@Nullable Iterator<?> multiple, boolean knownToBeFinite, Context context) {
+		if (multiple == null) return;
+		if (!knownToBeFinite) return;
+
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		if (hook != null) {
+			try {
+				multiple.forEachRemaining(o -> {
+					if (o != null) {
+						hook.accept(o);
+					}
+				});
+			}
+			catch (Throwable t) {
+				log.warn("Error in discard hook while discarding iterator remainder", t);
 			}
 		}
 	}

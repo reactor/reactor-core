@@ -30,6 +30,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -3654,7 +3655,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
 	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
-	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
+	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
+	 * safely assume the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param <R> the merged output sequence type
@@ -3677,7 +3680,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
 	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
-	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
+	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
+	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
+	 * safely assume the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
@@ -4925,7 +4930,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
 	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
-	 * @reactor.discard This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
+	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
+	 * safely assume iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param <R> the merged output sequence type
@@ -4949,7 +4956,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
 	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
-	 * @reactor.discard This operator discards elements internally queued for backpressure upon cancellation or error triggered by a data signal.
+	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
+	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
+	 * safely assume the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence

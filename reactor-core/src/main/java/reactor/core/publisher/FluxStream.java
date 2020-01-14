@@ -18,6 +18,8 @@ package reactor.core.publisher;
 
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -52,10 +54,12 @@ final class FluxStream<T> extends Flux<T> implements Fuseable, SourceProducer<T>
 		}
 
 		Iterator<? extends T> it;
-
+		boolean knownToBeFinite;
 		try {
-			it = Objects.requireNonNull(stream.iterator(),
-			"The stream returned a null Iterator");
+			Spliterator<? extends T> spliterator = Objects.requireNonNull(stream.spliterator(),
+					"The stream returned a null Spliterator");
+			knownToBeFinite = spliterator.hasCharacteristics(Spliterator.SIZED);
+			it = Spliterators.iterator(spliterator); //this is the default for BaseStream#iterator() anyway
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
@@ -64,7 +68,7 @@ final class FluxStream<T> extends Flux<T> implements Fuseable, SourceProducer<T>
 
 		//although not required by AutoCloseable, Stream::close SHOULD be idempotent
 		//(at least the default AbstractPipeline implementation is)
-		FluxIterable.subscribe(actual, it, stream::close);
+		FluxIterable.subscribe(actual, it, knownToBeFinite, stream::close);
 	}
 
 	@Override
