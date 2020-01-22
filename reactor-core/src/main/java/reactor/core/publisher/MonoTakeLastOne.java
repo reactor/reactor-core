@@ -120,7 +120,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 
 		@Override
 		public void setValue(T value) {
-			// value is always in a field
+			this.value = value;
 		}
 	}
 }
