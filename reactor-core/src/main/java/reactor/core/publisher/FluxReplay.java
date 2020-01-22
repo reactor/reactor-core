@@ -69,6 +69,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		@Nullable
 		Object node();
 
+		long signalConnectAndGetRequested();
+
 		int tailIndex();
 
 		void tailIndex(int tailIndex);
@@ -1089,7 +1091,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				c = u;
 			}
 
-			ReplayInner<T> inner = new ReplayInner<>(actual, c);
+			ReplayInner<T> inner = new ReplayInner<>(actual, c, ReplaySubscriber.CONNECTED.get(c) == 0);
 			actual.onSubscribe(inner);
 			c.add(inner);
 
@@ -1178,7 +1180,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			else if (Operators.setOnce(S, this, s)) {
 				long max = parent.history;
 				for (ReplaySubscription<T> subscriber : subscribers) {
-					max = Math.max(subscriber.fusionMode() != Fuseable.NONE ? Long.MAX_VALUE : subscriber.requested(), max);
+					max = Math.max(subscriber.fusionMode() != Fuseable.NONE ? Long.MAX_VALUE : subscriber.signalConnectAndGetRequested(), max);
 					if (max == Long.MAX_VALUE) {
 						unbounded = true;
 						break;
@@ -1381,7 +1383,6 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		final CoreSubscriber<? super T> actual;
 		final ReplaySubscriber<T>       parent;
-		final boolean                   registeredBeforeConnection;
 
 		int index;
 
@@ -1402,25 +1403,35 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		static final AtomicLongFieldUpdater<ReplayInner> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ReplayInner.class, "requested");
 
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ReplayInner> STATE = AtomicIntegerFieldUpdater.newUpdater(ReplayInner.class, "state");
 
-		ReplayInner(CoreSubscriber<? super T> actual, ReplaySubscriber<T> parent) {
+
+		ReplayInner(CoreSubscriber<? super T> actual, ReplaySubscriber<T> parent, boolean registeredBeforeConnection) {
 			this.actual = actual;
 			this.parent = parent;
-			this.registeredBeforeConnection = ReplaySubscriber.CONNECTED.get(parent) == 0;
+			this.state = registeredBeforeConnection ? STATE_EARLY_ACCUMULATE : STATE_LATE;
 		}
+
+		static final int STATE_LATE = 0;
+		static final int STATE_EARLY_ACCUMULATE = 1;
+		static final int STATE_EARLY_PROPAGATE = 2;
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
+				if (STATE.get(this) == STATE_EARLY_ACCUMULATE) {
+					Operators.addCapCancellable(REQUESTED, this, n);
+					return;
+				}
+				if (STATE.get(this) == STATE_EARLY_PROPAGATE) {
+					parent.propagateRequest(n);
+				}
 				if (fusionMode() == NONE) {
 					Operators.addCapCancellable(REQUESTED, this, n);
 				}
-				if (registeredBeforeConnection) {
-					parent.propagateRequest(n);
-				}
-				else {
-					parent.buffer.replay(this);
-				}
+				parent.buffer.replay(this);
 			}
 		}
 
@@ -1449,6 +1460,12 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public long requested() {
+			return REQUESTED.get(this);
+		}
+
+		@Override
+		public long signalConnectAndGetRequested() {
+			STATE.set(this, STATE_EARLY_PROPAGATE);
 			return REQUESTED.get(this);
 		}
 

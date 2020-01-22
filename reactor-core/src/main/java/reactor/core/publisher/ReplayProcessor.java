@@ -519,6 +519,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
+		public long signalConnectAndGetRequested() {
+			return requested;
+		}
+
+		@Override
 		public boolean isCancelled() {
 			return requested == Long.MIN_VALUE;
 		}

@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,6 +43,7 @@ import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.awaitility.Awaitility.await;
 
 public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
@@ -282,19 +282,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void minimalInitialRequestIsHistory() {
 		List<Long> requests = new ArrayList<>();
-		BaseSubscriber<Integer> threeThenEightSubscriber = new BaseSubscriber<Integer>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				subscription.request(3);
-			}
-
-			@Override
-			protected void hookOnNext(Integer value) {
-				if (value == 3) {
-					request(8);
-				}
-			}
-		};
+		TwoRequestsSubscriber threeThenEightSubscriber = new TwoRequestsSubscriber(3, 8);
 
 		ConnectableFlux<Integer> replay =
 				Flux.range(1, 5)
@@ -306,25 +294,14 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		replay.subscribe(threeThenEightSubscriber);
 		replay.connect();
 
-		assertThat(requests).containsExactly(5L, 8L);
+		assertThat(requests).startsWith(5L);
 	}
 
 	@Test
 	public void minimalInitialRequestIsMaxOfSubscribersInitialRequests() {
 		List<Long> requests = new ArrayList<>();
-		BaseSubscriber<Integer> fiveThenEightSubscriber = new BaseSubscriber<Integer>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				subscription.request(5);
-			}
-
-			@Override
-			protected void hookOnNext(Integer value) {
-				if (value == 5) {
-					request(8);
-				}
-			}
-		};
+		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
+		TwoRequestsSubscriber sevenThenEightSubscriber = new TwoRequestsSubscriber(7, 8);
 
 		ConnectableFlux<Integer> replay =
 				Flux.range(1, 5)
@@ -334,27 +311,36 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		assertThat(requests).isEmpty();
 
 		replay.subscribe(fiveThenEightSubscriber);
+		replay.subscribe(sevenThenEightSubscriber);
 		replay.connect();
 
-		assertThat(requests).containsExactly(5L, 8L);
+		assertThat(requests).startsWith(7L).doesNotContain(5L);
+	}
+
+	@Test
+	public void multipleEarlySubscribersPropagateTheirLateRequests() {
+		List<Long> requests = new ArrayList<>();
+		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
+		TwoRequestsSubscriber sevenThenEightSubscriber = new TwoRequestsSubscriber(7, 8);
+
+		ConnectableFlux<Integer> replay =
+				Flux.range(1, 100)
+				    .doOnRequest(requests::add)
+				    .replay(3);
+
+		replay.take(13).subscribe(fiveThenEightSubscriber);
+		replay.subscribe(sevenThenEightSubscriber);
+		replay.connect();
+
+
+
+		assertThat(requests).startsWith(7L).doesNotContain(5L);
 	}
 
 	@Test
 	public void minimalInitialRequestWithUnboundedSubscriber() {
 		List<Long> requests = new ArrayList<>();
-		BaseSubscriber<Integer> fiveThenEightSubscriber = new BaseSubscriber<Integer>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				subscription.request(5);
-			}
-
-			@Override
-			protected void hookOnNext(Integer value) {
-				if (value == 5) {
-					request(8);
-				}
-			}
-		};
+		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
 
 		ConnectableFlux<Integer> replay =
 				Flux.range(1, 5)
@@ -373,19 +359,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void minimalInitialRequestUnboundedWithFused() {
 		List<Long> requests = new ArrayList<>();
-		BaseSubscriber<Integer> fiveThenEightSubscriber = new BaseSubscriber<Integer>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				subscription.request(5);
-			}
-
-			@Override
-			protected void hookOnNext(Integer value) {
-				if (value == 5) {
-					request(8);
-				}
-			}
-		};
+		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
 
 		ConnectableFlux<Integer> replay =
 				Flux.range(1, 5)
@@ -404,19 +378,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void onlyInitialRequestWithLateUnboundedSubscriber() {
 		List<Long> requests = new ArrayList<>();
-		BaseSubscriber<Integer> fiveThenEightSubscriber = new BaseSubscriber<Integer>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				subscription.request(5);
-			}
-
-			@Override
-			protected void hookOnNext(Integer value) {
-				if (value == 5) {
-					request(8);
-				}
-			}
-		};
+		TwoRequestsSubscriber fiveThenEightSubscriber = new TwoRequestsSubscriber(5, 8);
 
 		ConnectableFlux<Integer> replay =
 				Flux.range(1, 5)
@@ -469,7 +431,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxReplay<Integer> main = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
         FluxReplay.ReplaySubscriber<Integer> parent = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), main);
-        FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual, parent);
+        FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual, parent, false);
         parent.add(test);
         parent.buffer.replay(test);
 
@@ -517,13 +479,14 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void cacheSingleSubscriberWithMultipleRequestsDoesntHang() {
-		Awaitility.await()
-		          .atMost(5, TimeUnit.SECONDS)
-		          .untilAsserted(() -> assertThat(Flux.range(0, 1000)
-		                                              .cache(5)
-		                                              .toStream(10)
-		                                              .collect(Collectors.toList()))
-				          .hasSize(1000));
+		await().atMost(5, TimeUnit.SECONDS)
+		       .untilAsserted(() -> assertThat(
+				       Flux.range(0, 1000)
+				           .cache(5)
+				           .toStream(10)
+				           .collect(Collectors.toList()))
+				       .hasSize(1000)
+		       );
 	}
 
 	@Test
@@ -540,6 +503,29 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		StepVerifier.create(s)
 		            .expectNextCount(5)
 		            .verifyComplete();
+	}
+
+	private static final class TwoRequestsSubscriber extends BaseSubscriber<Integer> {
+
+		final long firstRequest;
+		final long secondRequest;
+
+		private TwoRequestsSubscriber(long firstRequest, long secondRequest) {
+			this.firstRequest = firstRequest;
+			this.secondRequest = secondRequest;
+		}
+
+		@Override
+		protected void hookOnSubscribe(Subscription subscription) {
+			request(firstRequest);
+		}
+
+		@Override
+		protected void hookOnNext(Integer value) {
+			if (value.longValue() == firstRequest) {
+				request(secondRequest);
+			}
+		}
 	}
 
 }
