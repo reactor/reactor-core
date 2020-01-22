@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -38,7 +38,6 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
-import reactor.util.function.Tuple2;
 
 public class FluxSwitchOnFirstTest {
 
@@ -47,20 +46,20 @@ public class FluxSwitchOnFirstTest {
         Throwable[] throwables = new Throwable[1];
         CountDownLatch latch = new CountDownLatch(1);
         StepVerifier.create(Flux.just(1L)
-                .switchOnFirst((s, f) -> {
-                    RaceTestUtils.race(
-                        () -> f.subscribe(__ -> {}, t -> {
-                            throwables[0] = t;
-                            latch.countDown();
-                        },  latch::countDown),
-                        () -> f.subscribe(__ -> {}, t -> {
-                            throwables[0] = t;
-                            latch.countDown();
-                        },  latch::countDown)
-                    );
+                    .switchOnFirst((s, f) -> {
+                        RaceTestUtils.race(
+                            () -> f.subscribe(__ -> {}, t -> {
+                                throwables[0] = t;
+                                latch.countDown();
+                            },  latch::countDown),
+                            () -> f.subscribe(__ -> {}, t -> {
+                                throwables[0] = t;
+                                latch.countDown();
+                            },  latch::countDown)
+                        );
 
-                    return Flux.empty();
-                }))
+                        return Flux.empty();
+                    }))
                     .expectSubscription()
                     .expectComplete()
                     .verify();
@@ -686,7 +685,7 @@ public class FluxSwitchOnFirstTest {
                                              .transform(flux -> new FluxSwitchOnFirst<>(
                                                      flux,
                                                      (first, innerFlux) -> innerFlux.map(
-                                                             String::valueOf)));
+                                                             String::valueOf), true));
 
         StepVerifier.create(switchTransformed)
                     .expectErrorMessage("hello")
@@ -759,15 +758,15 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldBeAbleToCatchDiscardedElement() {
-        TestPublisher<Integer> publisher = TestPublisher.createCold();
+        TestPublisher<Integer> publisher = TestPublisher.create();
         Integer[] discarded = new Integer[1];
         Flux<String> switchTransformed = publisher.flux()
                                                   .switchOnFirst((first, innerFlux) -> innerFlux.map(String::valueOf))
                                                   .doOnDiscard(Integer.class, e -> discarded[0] = e);
 
-        publisher.next(1);
-
         StepVerifier.create(switchTransformed, 0)
+                    .expectSubscription()
+                    .then(() -> publisher.next(1))
                     .thenCancel()
                     .verify(Duration.ofSeconds(10));
 
@@ -779,16 +778,16 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldBeAbleToCatchDiscardedElementInCaseOfConditional() {
-        TestPublisher<Integer> publisher = TestPublisher.createCold();
+        TestPublisher<Integer> publisher = TestPublisher.create();
         Integer[] discarded = new Integer[1];
         Flux<String> switchTransformed = publisher.flux()
                                                   .switchOnFirst((first, innerFlux) -> innerFlux.map(String::valueOf))
                                                   .filter(t -> true)
                                                   .doOnDiscard(Integer.class, e -> discarded[0] = e);
 
-        publisher.next(1);
-
         StepVerifier.create(switchTransformed, 0)
+                    .expectSubscription()
+                    .then(() -> publisher.next(1))
                     .thenCancel()
                     .verify(Duration.ofSeconds(10));
 
@@ -972,16 +971,14 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherCancel() {
-        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+        TestPublisher<Long> testPublisher = TestPublisher.create();
 
-        testPublisher.onNext(1L);
-
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
+        StepVerifier.create(testPublisher.flux().switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
                     .expectSubscription()
                     .thenCancel()
                     .verify();
 
-        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+        Assertions.assertThat(testPublisher.wasCancelled()).isTrue();
     }
 
     @Test
@@ -1045,6 +1042,153 @@ public class FluxSwitchOnFirstTest {
                     .verify();
 
         Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldCancelUpstreamBeforeFirst() {
+        EmitterProcessor<Long> testPublisher = EmitterProcessor.create();
+
+        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
+                .thenAwait(Duration.ofMillis(50))
+                .thenCancel()
+                .verify(Duration.ofSeconds(2));
+
+        Assertions.assertThat(testPublisher.isCancelled()).isTrue();
+    }
+
+    @Test
+    public void shouldContinueWorkingRegardlessTerminalOnDownstream() {
+        TestPublisher<Long> testPublisher = TestPublisher.create();
+
+        Flux<Long>[] intercepted = new Flux[1];
+
+        StepVerifier.create(testPublisher.flux().switchOnFirst((s, f) -> {
+            intercepted[0] = f;
+            return Flux.just(2L);
+        }, false))
+                .expectSubscription()
+                .then(() -> testPublisher.next(1L))
+                .expectNext(2L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(2));
+
+        Assertions.assertThat(testPublisher.wasCancelled()).isFalse();
+
+        StepVerifier.create(intercepted[0])
+                .expectSubscription()
+                .expectNext(1L)
+                .then(testPublisher::complete)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+     public void shouldCancelSourceOnOnDownstreamTerminal() {
+        TestPublisher<Long> testPublisher = TestPublisher.create();
+
+        StepVerifier.create(testPublisher.flux().switchOnFirst((s, f) -> Flux.just(1L), true))
+                .expectSubscription()
+                .then(() -> testPublisher.next(1L))
+                .expectNext(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(2));
+
+        Assertions.assertThat(testPublisher.wasCancelled()).isTrue();
+    }
+
+    @Test
+    public void racingTest() {
+        for (int i = 0; i < 1000; i++) {
+            CoreSubscriber[] subscribers = new CoreSubscriber[1];
+            Subscription[] downstreamSubscriptions = new Subscription[1];
+            Subscription[] innerSubscriptions = new Subscription[1];
+
+
+            AtomicLong requested = new AtomicLong();
+
+            Flux.just(2)
+                    .doOnRequest(requested::addAndGet)
+                    .switchOnFirst((s, f) -> new Flux<Integer>() {
+
+                        @Override
+                        public void subscribe(CoreSubscriber actual) {
+                            subscribers[0] = actual;
+                            f.subscribe(actual::onNext, actual::onError, actual::onComplete, (s) -> innerSubscriptions[0] = s);
+                        }
+                    })
+                    .subscribe(__ -> {
+                    }, __ -> {
+                    }, () -> {
+                    }, s -> downstreamSubscriptions[0] = s);
+
+            CoreSubscriber subscriber = subscribers[0];
+            Subscription downstreamSubscription = downstreamSubscriptions[0];
+            Subscription innerSubscription = innerSubscriptions[0];
+            innerSubscription.request(1);
+
+            RaceTestUtils.race(() -> subscriber.onSubscribe(innerSubscription), () -> downstreamSubscription.request(1));
+
+            Assertions.assertThat(requested.get()).isEqualTo(2);
+        }
+    }
+
+    @Test
+    public void racingConditionalTest() {
+        for (int i = 0; i < 1000; i++) {
+            CoreSubscriber[] subscribers = new CoreSubscriber[1];
+            Subscription[] downstreamSubscriptions = new Subscription[1];
+            Subscription[] innerSubscriptions = new Subscription[1];
+
+
+            AtomicLong requested = new AtomicLong();
+
+            Flux.just(2)
+                .doOnRequest(requested::addAndGet)
+                .switchOnFirst((s, f) -> new Flux<Integer>() {
+
+                    @Override
+                    public void subscribe(CoreSubscriber actual) {
+                        subscribers[0] = actual;
+                        f.subscribe(new Fuseable.ConditionalSubscriber<Integer>() {
+                            @Override
+                            public boolean tryOnNext(Integer integer) {
+                                return ((Fuseable.ConditionalSubscriber)actual).tryOnNext(integer);
+                            }
+
+                            @Override
+                            public void onSubscribe(Subscription s) {
+                                innerSubscriptions[0] = s;
+                            }
+
+                            @Override
+                            public void onNext(Integer integer) {
+                                actual.onNext(integer);
+                            }
+
+                            @Override
+                            public void onError(Throwable throwable) {
+                                actual.onError(throwable);
+                            }
+
+                            @Override
+                            public void onComplete() {
+                                actual.onComplete();
+                            }
+                        });
+                    }
+                })
+                .filter(__ -> true)
+                .subscribe(__ -> { }, __ -> { }, () -> { }, s -> downstreamSubscriptions[0] = s);
+
+            CoreSubscriber subscriber = subscribers[0];
+            Subscription downstreamSubscription = downstreamSubscriptions[0];
+            Subscription innerSubscription = innerSubscriptions[0];
+            innerSubscription.request(1);
+
+            RaceTestUtils.race(() -> subscriber.onSubscribe(innerSubscription), () -> downstreamSubscription.request(1));
+
+            Assertions.assertThat(requested.get()).isEqualTo(2);
+        }
     }
 
     private static final class NoOpsScheduler implements Scheduler {

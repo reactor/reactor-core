@@ -8380,7 +8380,56 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} that transform the upstream once a signal is available
 	 */
 	public final <V> Flux<V> switchOnFirst(BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends V>> transformer) {
-		return onAssembly(new FluxSwitchOnFirst<>(this, transformer));
+		return switchOnFirst(transformer, true);
+	}
+
+	/**
+	 * Transform the current {@link Flux<T>} once it emits its first element, making a
+	 * conditional transformation possible. This operator first requests one element
+	 * from the source then applies a transformation derived from the first {@link Signal}
+	 * and the source. The whole source (including the first signal) is passed as second
+	 * argument to the {@link BiFunction} and it is very strongly advised to always build
+	 * upon with operators (see below).
+	 * <p>
+	 * Note that the source might complete or error immediately instead of emitting,
+	 * in which case the {@link Signal} would be onComplete or onError. It is NOT
+	 * necessarily an onNext Signal, and must be checked accordingly.
+	 * <p>
+	 * For example, this operator could be used to define a dynamic transformation that depends
+	 * on the first element (which could contain routing metadata for instance):
+	 *
+	 * <blockquote><pre>
+	 * {@code
+	 *  fluxOfIntegers.switchOnFirst((signal, flux) -> {
+	 *      if (signal.hasValue()) {
+	 *          ColoredShape firstColor = signal.get();
+	 *          return flux.filter(v -> !v.hasSameColorAs(firstColor))
+	 *      }
+	 *      return flux; //either early complete or error, this forwards the termination in any case
+	 *      //`return flux.onErrorResume(t -> Mono.empty());` instead would suppress an early error
+	 *      //`return Flux.just(1,2,3);` instead would suppress an early error and return 1, 2, 3.
+	 *      //It would also only cancel the original `flux` at the completion of `just`.
+	 *  })
+	 * }
+	 * </pre></blockquote>
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/switchOnFirst.svg" alt="">
+	 * <p>
+	 * It is advised to return a {@link Publisher} derived from the original {@link Flux}
+	 * in all cases, as not doing so would keep the original {@link Publisher} open and
+	 * hanging with a single request. In case the value of the {@code cancelSourceOnComplete} parameter is {@code true} the original publisher until the inner {@link Publisher} terminates or
+	 * the whole {@link Flux} is cancelled. Otherwise the original publisher will hang forever.
+	 *
+	 * @param transformer A {@link BiFunction} executed once the first signal is
+	 * available and used to transform the source conditionally. The whole source (including
+	 * first signal) is passed as second argument to the BiFunction.
+	 * @param <V> the item type in the returned {@link Flux}
+	 * @param cancelSourceOnComplete specify whether original publisher should be cancelled on {@code onComplete} from the derived one
+	 *
+	 * @return a new {@link Flux} that transform the upstream once a signal is available
+	 */
+	public final <V> Flux<V> switchOnFirst(BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends V>> transformer, boolean cancelSourceOnComplete) {
+		return onAssembly(new FluxSwitchOnFirst<>(this, transformer, cancelSourceOnComplete));
 	}
 
 	/**
