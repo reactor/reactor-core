@@ -38,7 +38,7 @@ import reactor.util.concurrent.Queues;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
- * (eg. in tests). Can replace the default reactor schedulers by using 
+ * (eg. in tests). Can replace the default reactor schedulers by using
  * the {@link #getOrSet} / {@link #set(VirtualTimeScheduler)} methods.
  *
  * @author Stephane Maldini
@@ -54,7 +54,21 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * {@link Schedulers} factories.
 	 */
 	public static VirtualTimeScheduler create() {
-		return new VirtualTimeScheduler();
+		return create(false);
+	}
+
+	/**
+	 * Create a new {@link VirtualTimeScheduler} without enabling it. Call
+	 * {@link #getOrSet(VirtualTimeScheduler)} to enable it on
+	 * {@link reactor.core.scheduler.Schedulers.Factory} factories.
+	 *
+	 * @param defer true to defer all clock move operations until there are tasks in queue
+	 *
+	 * @return a new {@link VirtualTimeScheduler} intended for timed-only
+	 * {@link Schedulers} factories.
+	 */
+	public static VirtualTimeScheduler create(boolean defer) {
+		return new VirtualTimeScheduler(defer);
 	}
 
 	/**
@@ -65,7 +79,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * @return the VirtualTimeScheduler that was created and set through the factory
 	 */
 	public static VirtualTimeScheduler getOrSet() {
-		return enable(VirtualTimeScheduler::new, false);
+		return enable(VirtualTimeScheduler::create, false);
 	}
 
 	/**
@@ -195,9 +209,12 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	volatile boolean shutdown;
 
+	final boolean defer;
+
 	final VirtualTimeWorker directWorker;
 
-	protected VirtualTimeScheduler() {
+	protected VirtualTimeScheduler(boolean defer) {
+		this.defer = defer;
 		directWorker = createWorker();
 	}
 
@@ -319,7 +336,7 @@ public class VirtualTimeScheduler implements Scheduler {
 			return;
 		}
 		for(;;) {
-			if (!queue.isEmpty()) {
+			if (!defer || !queue.isEmpty()) {
 				//resetting for the first time a delayed schedule is called after a deferredNanoTime is set
 				long targetNanoTime = nanoTime + DEFERRED_NANO_TIME.getAndSet(this, 0);
 

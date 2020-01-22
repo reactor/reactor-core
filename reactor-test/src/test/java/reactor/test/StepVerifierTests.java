@@ -2131,7 +2131,7 @@ public class StepVerifierTests {
 		}
 	}
 
-	@Test
+	@Test(timeout = 5000)
 	public void gh783() {
 		int size = 1;
 		Scheduler parallel = Schedulers.newParallel("gh-783");
@@ -2150,7 +2150,7 @@ public class StepVerifierTests {
 		            .verifyComplete();
 	}
 
-	@Test
+	@Test(timeout = 5000)
 	public void gh783_deferredAdvanceTime() {
 		int size = 61;
 		Scheduler parallel = Schedulers.newParallel("gh-783");

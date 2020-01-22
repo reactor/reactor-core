@@ -127,7 +127,7 @@ public class VirtualTimeSchedulerTests {
 
 	@Test
 	public void captureNowInScheduledTask() {
-		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create(true);
 		List<Long> singleExecutionsTimestamps = new ArrayList<>();
 		List<Long> periodicExecutionTimestamps = new ArrayList<>();
 
@@ -192,6 +192,10 @@ public class VirtualTimeSchedulerTests {
 				assertThat(vts.now(TimeUnit.MILLISECONDS))
 						.as("iteration " + i)
 						.isEqualTo(13_000 * i);
+
+				assertThat(vts.nanoTime)
+						.as("now() == nanoTime in iteration " + i)
+						.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
 			}
 		}
 		finally {
@@ -225,7 +229,7 @@ public class VirtualTimeSchedulerTests {
 
 	@Test
 	public void racingAdvanceTimeOnVaryingQueue() {
-		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create(true);
 		AtomicInteger count = new AtomicInteger();
 		try {
 			for (int i = 1; i <= 100; i++) {
