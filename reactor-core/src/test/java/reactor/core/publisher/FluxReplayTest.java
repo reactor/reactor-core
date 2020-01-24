@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
@@ -43,7 +42,6 @@ import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.awaitility.Awaitility.await;
 
 public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
@@ -477,16 +475,15 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
-	@Test
+	@Test(timeout = 5000)
 	public void cacheSingleSubscriberWithMultipleRequestsDoesntHang() {
-		await().atMost(5, TimeUnit.SECONDS)
-		       .untilAsserted(() -> assertThat(
-				       Flux.range(0, 1000)
-				           .cache(5)
-				           .toStream(10)
-				           .collect(Collectors.toList()))
-				       .hasSize(1000)
-		       );
+		List<Integer> listFromStream = Flux
+				.range(0, 1000)
+				.cache(5)
+				.toStream(10)
+				.collect(Collectors.toList());
+
+		assertThat(listFromStream).hasSize(1000);
 	}
 
 	@Test
