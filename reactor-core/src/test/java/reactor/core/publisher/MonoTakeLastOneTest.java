@@ -16,12 +16,14 @@
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
+import java.util.function.Predicate;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple3;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -123,6 +125,34 @@ public class MonoTakeLastOneTest {
 		                        .last(-1))
 		            .expectNext(100)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void defaultUsingZip() {
+
+		UnicastProcessor<String> processor1 = UnicastProcessor.create();
+		FluxSink<String> sink1 = processor1.sink();
+		UnicastProcessor<String> processor2 = UnicastProcessor.create();
+		FluxSink<String> sink2 = processor2.sink();
+		UnicastProcessor<String> processor3 = UnicastProcessor.create();
+		FluxSink<String> sink3 = processor3.sink();
+
+		StepVerifier.create(
+						Flux.zip(
+								processor1.last("Missing Value1"),
+								processor2.last("Missing Value2"),
+								processor3.last("Missing Value3")
+						)
+				)
+				.then(() -> {
+					sink2.next("3");
+					sink3.next("1");
+					sink1.complete();
+					sink2.complete();
+					sink3.complete();
+				})
+				.expectNextMatches(objects -> objects.getT1().equals("Missing Value1") && objects.getT2().equals("3") && objects.getT3().equals("1"))
+				.verifyComplete();
 	}
 
 	@Test
