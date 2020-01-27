@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -255,6 +256,24 @@ public class MonoCollectListTest {
 			}
 		}
 		LOGGER.info("discarded twice or more: {}", doubleDiscardCounter.get());
+	}
+
+	@Test
+	public void emptyCallable() {
+		class EmptyFluxCallable extends Flux<Object> implements Callable<Object> {
+			@Override
+			public Object call() {
+				return null;
+			}
+
+			@Override
+			public void subscribe(CoreSubscriber<? super Object> actual) {
+				Flux.empty().subscribe(actual);
+			}
+		}
+		List<Object> result = new EmptyFluxCallable().collectList().block();
+
+		assertThat(result).isEmpty();
 	}
 
 }
