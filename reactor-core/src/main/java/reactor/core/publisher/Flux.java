@@ -3184,25 +3184,25 @@ public abstract class Flux<T> implements Publisher<T> {
 				catch (Exception e) {
 					return Mono.error(e);
 				}
-				return Mono.fromCallable(() -> {
+				return Mono.onAssembly(new MonoCallable<>(() -> {
 					List<T> list = Flux.<T>listSupplier().get();
 					if (v != null) {
 						list.add(v);
 					}
 					return list;
-				});
+				}));
 
 			}
 			@SuppressWarnings("unchecked")
 			Callable<T> thiz = (Callable<T>)this;
-			return Mono.fromCallable(() -> {
+			return Mono.onAssembly(new MonoCallable<>(() -> {
 				List<T> list = Flux.<T>listSupplier().get();
 				T u = thiz.call();
 				if (u != null) {
 					list.add(u);
 				}
 				return list;
-			});
+			}));
 		}
 		return Mono.onAssembly(new MonoCollectList<>(this));
 	}
