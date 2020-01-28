@@ -401,10 +401,10 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 					//does the strategy apply? if so, short-circuit the delayError. In any case, don't cancel
 					Throwable e_ = Operators.onNextError(t, e, ctx);
 					if (e_ == null) {
-						return;
+						tryEmitScalar(null);
 					}
+					else if (!delayError || !Exceptions.addThrowable(ERROR, this, e_)) {
 					//now if error mode strategy doesn't apply, let delayError play
-					if (!delayError || !Exceptions.addThrowable(ERROR, this, e_)) {
 						onError(Operators.onOperatorError(s, e_, t, ctx));
 					}
 					Operators.onDiscard(t, ctx);
