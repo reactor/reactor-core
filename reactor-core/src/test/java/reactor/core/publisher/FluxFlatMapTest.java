@@ -30,6 +30,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -1687,6 +1688,19 @@ public class FluxFlatMapTest {
 		    .verifyComplete();
 
 		assertThat(msg).contains("42 skipped, reason: boom");
+	}
+
+	@Test
+	public void errorModeContinueLargerThanConcurrencySourceMappedCallableFails() {
+		AtomicInteger continued = new AtomicInteger();
+		Flux.range(1, 500)
+		    .flatMap(v -> Flux.error(new IllegalStateException("boom #" + v)), 203)
+		    .onErrorContinue(IllegalStateException.class, (ex, elem) -> continued.incrementAndGet())
+		    .as(StepVerifier::create)
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(1));
+
+		assertThat(continued).hasValue(500);
 	}
 
 	@Test
