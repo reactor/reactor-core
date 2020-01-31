@@ -89,7 +89,7 @@ public class SchedulersMetricsTest {
 
 						"single(\"B\")",
 
-						"boundedElastic(\"C\",maxThreads=4,maxTaskQueued=100,ttl=60s)"
+						"boundedElastic(\"C\",maxThreads=4,maxTaskQueuedPerThread=100,ttl=60s)"
 				);
 	}
 
@@ -157,8 +157,8 @@ public class SchedulersMetricsTest {
 		                              .map(m -> m.getId().getTag("name"))
 		                              .distinct())
 				.containsOnly(
-						"boundedElastic(\"TWICE\",maxThreads=4,maxTaskQueued=100,ttl=1s)-0",
-						"boundedElastic(\"TWICE\",maxThreads=4,maxTaskQueued=100,ttl=1s)-1"
+						"boundedElastic(\"TWICE\",maxThreads=4,maxTaskQueuedPerThread=100,ttl=1s)-0",
+						"boundedElastic(\"TWICE\",maxThreads=4,maxTaskQueuedPerThread=100,ttl=1s)-1"
 				);
 	}
 
@@ -253,7 +253,7 @@ public class SchedulersMetricsTest {
 			assertThat(timers.stream()
 			                 .reduce(0d, (time, timer) -> time + timer.totalTime(TimeUnit.MILLISECONDS), Double::sum))
 					.as("total durations")
-					.isEqualTo(600 + 400 + 200, offset(20.0d));
+					.isEqualTo(600 + 400 + 200, offset(30.0d));
 			assertThat(timers.stream().mapToLong(Timer::count).sum())
 					.as("count")
 					.isEqualTo(taskCount);

@@ -236,6 +236,11 @@ public final class Disposables {
 			return r == null ? 0 : r.size();
 		}
 
+		Stream<Disposable> asStream() {
+			List<Disposable> r = resources;
+			return r == null ? Stream.empty() : r.stream();
+		}
+
 		public void clear() {
 			if (disposed) {
 				return;
@@ -279,11 +284,9 @@ public final class Disposables {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			List<Disposable> r = resources;
-			if (r == null) return Stream.empty();
-			return r.stream()
-			        .filter(Objects::nonNull)
-			        .map(Scannable::from);
+			return this.asStream()
+			           .filter(Scannable.class::isInstance)
+			           .map(Scannable.class::cast);
 		}
 
 		@Nullable

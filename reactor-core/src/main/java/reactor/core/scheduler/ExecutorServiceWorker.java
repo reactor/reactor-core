@@ -28,24 +28,31 @@ import reactor.core.Scannable;
  */
 final class ExecutorServiceWorker implements Scheduler.Worker, Disposable, Scannable {
 
+	/**
+	 * The {@link ScheduledExecutorService} that backs this worker (can be shared)
+	 */
 	final ScheduledExecutorService exec;
 
-	final Composite tasks;
+	/**
+	 * Cleanup tasks to be performed when this worker is {@link Disposable#dispose() disposed},
+	 * including but not limited to tasks that have been scheduled on the worker.
+	 */
+	final Composite disposables;
 
 
 	ExecutorServiceWorker(ScheduledExecutorService exec) {
 		this.exec = exec;
-		this.tasks = Disposables.composite();
+		this.disposables = Disposables.composite();
 	}
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		return Schedulers.workerSchedule(exec, tasks, task, 0L, TimeUnit.MILLISECONDS);
+		return Schedulers.workerSchedule(exec, disposables, task, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return Schedulers.workerSchedule(exec, tasks, task, delay, unit);
+		return Schedulers.workerSchedule(exec, disposables, task, delay, unit);
 	}
 
 	@Override
@@ -53,8 +60,7 @@ final class ExecutorServiceWorker implements Scheduler.Worker, Disposable, Scann
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		return Schedulers.workerSchedulePeriodically(exec,
-				tasks,
+		return Schedulers.workerSchedulePeriodically(exec, disposables,
 				task,
 				initialDelay,
 				period,
@@ -63,17 +69,17 @@ final class ExecutorServiceWorker implements Scheduler.Worker, Disposable, Scann
 
 	@Override
 	public void dispose() {
-		tasks.dispose();
+		disposables.dispose();
 	}
 
 	@Override
 	public boolean isDisposed() {
-		return tasks.isDisposed();
+		return disposables.isDisposed();
 	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.BUFFERED) return tasks.size();
+		if (key == Attr.BUFFERED) return disposables.size();
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.NAME) return "ExecutorServiceWorker"; //could be parallel, single or fromExecutorService
 
