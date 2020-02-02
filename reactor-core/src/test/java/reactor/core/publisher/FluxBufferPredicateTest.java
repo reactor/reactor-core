@@ -741,4 +741,20 @@ public class FluxBufferPredicateTest {
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1, 2, 3);
 	}
+
+	@Test
+	public void testBufferUntilNoExtraRequestFromEmit() {
+		Flux<List<Integer>> numbers = Flux.just(1, 2, 3)
+				.bufferUntil(val -> true)
+				.log();
+
+		StepVerifier.create(numbers, 1)
+				.expectNext(Collections.singletonList(1))
+				.thenRequest(1)
+				.expectNext(Collections.singletonList(2))
+				.thenAwait()
+				.thenRequest(1)
+				.expectNext(Collections.singletonList(3))
+				.verifyComplete();
+	}
 }

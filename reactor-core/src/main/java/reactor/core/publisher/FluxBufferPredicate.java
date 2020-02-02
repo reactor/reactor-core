@@ -293,7 +293,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			long r = REQUESTED.getAndDecrement(this);
 			if(r > 0){
 				actual.onNext(b);
-				return requested > 0;
+				return r > 1;
 			}
 			cancel();
 			actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
