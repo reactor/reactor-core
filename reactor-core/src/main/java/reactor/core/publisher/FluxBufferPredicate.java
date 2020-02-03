@@ -148,6 +148,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 					s.request(Long.MAX_VALUE);
 				}
 				else {
+					long r = REQUESTED.get(this);
 					// Requesting from source may have been interrupted if downstream
 					// received enough buffer (requested == 0), so this new request for
 					// buffer should resume progressive filling from upstream. We can
@@ -160,7 +161,9 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 							REQUESTED,
 							this,
 							this)) {
-						s.request(1);
+						if (r == 0L) {
+							s.request(1L);
+						}
 					}
 				}
 			}

@@ -21,15 +21,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.hamcrest.Matchers.contains;
@@ -742,11 +750,12 @@ public class FluxBufferPredicateTest {
 		            .hasDiscardedExactly(1, 2, 3);
 	}
 
+	//see https://github.com/reactor/reactor-core/issues/1937
 	@Test
 	public void testBufferUntilNoExtraRequestFromEmit() {
 		Flux<List<Integer>> numbers = Flux.just(1, 2, 3)
-				.bufferUntil(val -> true)
-				.log();
+		                                  .hide()
+		                                  .bufferUntil(val -> true);
 
 		StepVerifier.create(numbers, 1)
 				.expectNext(Collections.singletonList(1))
@@ -756,5 +765,70 @@ public class FluxBufferPredicateTest {
 				.thenRequest(1)
 				.expectNext(Collections.singletonList(3))
 				.verifyComplete();
+	}
+
+	//see https://github.com/reactor/reactor-core/pull/2027
+	@Test
+	public void testBufferUntilNoExtraRequestFromConcurrentEmitAndRequest() {
+		AtomicReference<Throwable> errorOrComplete = new AtomicReference<>();
+		ConcurrentLinkedQueue<List<Integer>> buffers = new ConcurrentLinkedQueue<>();
+		final BaseSubscriber<List<Integer>> subscriber = new BaseSubscriber<List<Integer>>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+			@Override
+			protected void hookOnNext(List<Integer> value) {
+				buffers.add(value);
+				if (value.equals(Collections.singletonList(0))) {
+					request(1);
+				}
+			}
+
+			@Override
+			protected void hookOnError(Throwable throwable) {
+				errorOrComplete.set(throwable);
+			}
+
+			@Override
+			protected void hookFinally(SignalType type) {
+				if (type != SignalType.ON_ERROR) {
+					errorOrComplete.set(new IllegalArgumentException("Terminated with signal type " + type));
+				}
+			}
+		};
+		final CountDownLatch emitLatch = new CountDownLatch(1);
+		Flux.just(0, 1, 2, 3, 4)
+		    .bufferUntil(s -> {
+			    if (s == 1) {
+				    try {
+					    Mono.fromRunnable(() -> {
+						    subscriber.request(1);
+						    emitLatch.countDown();
+					    })
+					        .subscribeOn(Schedulers.single())
+					        .subscribe();
+					    emitLatch.await();
+				    } catch (InterruptedException e) {
+					    throw Exceptions.propagate(e);
+				    }
+			    }
+			    return true;
+		    })
+		    .subscribe((Subscriber<? super List<Integer>>) subscriber); //sync subscriber, no need to sleep/latch
+
+		Assertions.assertThat(buffers).hasSize(3)
+		          .allMatch(b -> b.size() == 1, "size one");
+		//total requests: 3
+		Assertions.assertThat(buffers.stream().flatMapToInt(l -> l.stream().mapToInt(Integer::intValue)))
+		          .containsExactly(0,1,2);
+
+		Assertions.assertThat(errorOrComplete.get()).isNull();
+
+		//request the rest
+		subscriber.requestUnbounded();
+
+		Assertions.assertThat(errorOrComplete.get()).isInstanceOf(IllegalArgumentException.class)
+		          .hasMessage("Terminated with signal type onComplete");
 	}
 }
