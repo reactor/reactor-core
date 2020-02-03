@@ -435,16 +435,33 @@ public abstract class Operators {
 				}
 
 				if (extract != null) {
-					extract.apply(toDiscard)
-					       .forEach(hook);
+					try {
+						extract.apply(toDiscard)
+						       .forEach(elementToDiscard -> {
+							       try {
+								       hook.accept(elementToDiscard);
+							       }
+							       catch (Throwable t) {
+								       log.warn("Error while discarding item extracted from a queue element, continuing with next item", t);
+							       }
+						       });
+					}
+					catch (Throwable t) {
+						log.warn("Error while extracting items to discard from queue element, continuing with next queue element", t);
+					}
 				}
 				else {
-					hook.accept(toDiscard);
+					try {
+						hook.accept(toDiscard);
+					}
+					catch (Throwable t) {
+						log.warn("Error while discarding a queue element, continuing with next queue element", t);
+					}
 				}
 			}
 		}
 		catch (Throwable t) {
-			log.warn("Error in discard hook while discarding and clearing a queue", t);
+			log.warn("Cannot further apply discard hook while discarding and clearing a queue", t);
 		}
 	}
 
@@ -465,10 +482,17 @@ public abstract class Operators {
 		if (hook != null) {
 			try {
 				multiple.filter(Objects::nonNull)
-				        .forEach(hook);
+				        .forEach(v -> {
+				        	try {
+				        		hook.accept(v);
+					        }
+				        	catch (Throwable t) {
+				        		log.warn("Error while discarding a stream element, continuing with next element", t);
+					        }
+				        });
 			}
 			catch (Throwable t) {
-				log.warn("Error in discard hook while discarding multiple values", t);
+				log.warn("Error while discarding stream, stopping", t);
 			}
 		}
 	}
@@ -494,12 +518,17 @@ public abstract class Operators {
 				}
 				for (Object o : multiple) {
 					if (o != null) {
-						hook.accept(o);
+						try {
+							hook.accept(o);
+						}
+						catch (Throwable t) {
+							log.warn("Error while discarding element from a Collection, continuing with next element", t);
+						}
 					}
 				}
 			}
 			catch (Throwable t) {
-				log.warn("Error in discard hook while discarding multiple values", t);
+				log.warn("Error while discarding collection, stopping", t);
 			}
 		}
 	}
@@ -526,12 +555,17 @@ public abstract class Operators {
 			try {
 				multiple.forEachRemaining(o -> {
 					if (o != null) {
-						hook.accept(o);
+						try {
+							hook.accept(o);
+						}
+						catch (Throwable t) {
+							log.warn("Error while discarding element from an Iterator, continuing with next element", t);
+						}
 					}
 				});
 			}
 			catch (Throwable t) {
-				log.warn("Error in discard hook while discarding iterator remainder", t);
+				log.warn("Error while discarding Iterator, stopping", t);
 			}
 		}
 	}
