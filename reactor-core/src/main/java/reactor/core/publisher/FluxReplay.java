@@ -1178,6 +1178,16 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				s.cancel();
 			}
 			else if (Operators.setOnce(S, this, s)) {
+				ReplaySubscription<T>[] subs = subscribers;
+				//first check if there are no early subscribers,
+				// in which case we fallback to old UNBOUNDED behavior
+				if (subs.length == 0) {
+					unbounded = true;
+					s.request(Long.MAX_VALUE);
+					return;
+				}
+				//otherwise check each early subscriber. if fused or unbounded request,
+				// also fallback to UNBOUNDED behavior. Apply a minimum of `parent.history`
 				long max = parent.history;
 				for (ReplaySubscription<T> subscriber : subscribers) {
 					max = Math.max(subscriber.fusionMode() != Fuseable.NONE ? Long.MAX_VALUE : subscriber.signalConnectAndGetRequested(), max);
