@@ -1702,7 +1702,6 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void requestBufferDoesntOverflow() {
 		LongAdder requestCallCount = new LongAdder();
 		LongAdder totalRequest = new LongAdder();
@@ -1723,8 +1722,9 @@ public class StepVerifierTests {
 		            .expectComplete()
 		            .verify();
 
-		assertThat(requestCallCount.intValue()).isEqualTo(11); //10 elements then the completion
-		assertThat(totalRequest.longValue()).isEqualTo(11L); //ignores the main requests
+		//see same pattern in reactor.core.publisher.FluxBufferPredicateTest.requestBounded
+		assertThat(requestCallCount.intValue()).isEqualTo(9L);
+		assertThat(totalRequest.longValue()).isEqualTo(12L);
 	}
 
 	@Test(timeout = 1000L)
