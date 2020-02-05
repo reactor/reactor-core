@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
@@ -500,6 +501,45 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		StepVerifier.create(s)
 		            .expectNextCount(5)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void ifSubscribeBeforeConnectThenTrackFurtherRequests() {
+		ConnectableFlux<Long> connectableFlux = Flux.just(1L, 2L, 3L, 4L).replay(2);
+
+		StepVerifier.create(connectableFlux, 1)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .then(connectableFlux::connect)
+		            .expectNext(1L)
+		            .thenRequest(10)
+		            .expectNext(2L, 3L, 4L)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(10));
+
+		StepVerifier.create(connectableFlux, 1)
+		            .expectNext(3L)
+		            .thenRequest(10)
+		            .expectNext(4L)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(10));
+	}
+
+	@Test
+	public void ifNoSubscriptionBeforeConnectThenUnbounded() {
+		AtomicLong totalRequested = new AtomicLong();
+		ConnectableFlux<Integer> connectable = Flux.range(1, 10)
+		                                           .doOnRequest(totalRequested::addAndGet)
+		                                           .replay(2);
+
+		connectable.connect();
+
+		StepVerifier.create(connectable)
+		            .expectNext(9, 10)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(10));
+
+		assertThat(totalRequested).hasValue(Long.MAX_VALUE);
 	}
 
 	private static final class TwoRequestsSubscriber extends BaseSubscriber<Integer> {
