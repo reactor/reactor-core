@@ -122,6 +122,30 @@ public class LiftFunctionTest {
 		          .untilAsserted(() -> assertThat(cancelSupportInvoked).isTrue());
 	}
 
+	//see https://github.com/reactor/reactor-core/issues/1860
+	@Test
+	public void liftConnectableLiftFuseableWithCancelSupport() {
+		AtomicBoolean cancelSupportInvoked = new AtomicBoolean();
+
+		ConnectableFlux<Integer> source = Flux.just(1)
+				.publish();
+
+		FluxOnAssembly.AssemblySnapshot stacktrace = new FluxOnAssembly.AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+		source = (ConnectableFlux<Integer>) Hooks.addAssemblyInfo(source, stacktrace);
+
+		Operators.LiftFunction<Integer, Integer> liftFunction =
+				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+		Publisher<Integer> liftOperator = liftFunction.apply(source);
+
+		assertThat(liftOperator)
+				.isExactlyInstanceOf(ConnectableLiftFuseable.class);
+
+		((ConnectableLiftFuseable) liftOperator).connect(d -> cancelSupportInvoked.set(true));
+
+		Awaitility.await().atMost(1, TimeUnit.SECONDS)
+				.untilAsserted(() -> assertThat(cancelSupportInvoked).isTrue());
+	}
+
 	@Ignore("GroupedFlux is always fuseable for now")
 	@Test
 	public void liftGroupedFlux() {
