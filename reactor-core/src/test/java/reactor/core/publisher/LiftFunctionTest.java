@@ -128,10 +128,7 @@ public class LiftFunctionTest {
 		AtomicBoolean cancelSupportInvoked = new AtomicBoolean();
 
 		ConnectableFlux<Integer> source = Flux.just(1)
-				.publish();
-
-		FluxOnAssembly.AssemblySnapshot stacktrace = new FluxOnAssembly.AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		source = (ConnectableFlux<Integer>) Hooks.addAssemblyInfo(source, stacktrace);
+				.replay();
 
 		Operators.LiftFunction<Integer, Integer> liftFunction =
 				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
