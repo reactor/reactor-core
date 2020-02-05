@@ -6033,6 +6033,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Emit only the first item emitted by this {@link Flux}, into a new {@link Mono}.
+	 * If called on an empty {@link Flux}, emits an empty {@link Mono}.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/next.svg" alt="">
 	 *
