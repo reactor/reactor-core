@@ -16,18 +16,22 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -65,6 +69,29 @@ public class FluxSubscribeOnTest {
 	}
 
 	@Test
+	public void classicConditional() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		ArrayList<Long> requestCollector = new ArrayList<>();
+
+		Flux.range(1, 10000)
+		    .doOnRequest(requestCollector::add)
+		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
+		    .filter(__ -> ThreadLocalRandom.current().nextBoolean())
+		    .take(1000)
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1000)
+		  .assertNoError()
+		  .assertComplete();
+
+		Assertions.assertThat(requestCollector)
+		          .hasSize(1)
+		          .containsExactly(Long.MAX_VALUE);
+	}
+
+	@Test
 	public void classicBackpressured() throws Exception {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
@@ -91,6 +118,55 @@ public class FluxSubscribeOnTest {
 		ts.assertValueCount(1000)
 		.assertNoError()
 		.assertComplete();
+	}
+
+	@Test
+	public void classicConditionalBackpressured() throws Exception {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+		ArrayList<Long> requestCollector = new ArrayList<>();
+
+
+		Flux.range(1, 10000)
+		    .doOnRequest(requestCollector::add)
+		    .log()
+		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
+		    .filter(__ -> ThreadLocalRandom.current().nextBoolean())
+		    .take(1000)
+		    .subscribe(ts);
+
+		Thread.sleep(100);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500);
+
+		Thread.sleep(1000);
+
+		ts.assertValueCount(500)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		Assertions.assertThat(requestCollector)
+		          .hasSize(1)
+		          .containsExactly(500L);
+
+		Assertions.assertThat(requestCollector)
+		          .hasSize(1)
+		          .containsExactly(500L);
+
+		ts.request(500);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1000)
+		  .assertNoError()
+		  .assertComplete();
+
+		Assertions.assertThat(requestCollector)
+		          .hasSize(2)
+		          .containsExactly(500L, 500L);
 	}
 
 	@Test
@@ -185,6 +261,27 @@ public class FluxSubscribeOnTest {
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	public void scanConditionalMainSubscriber() {
+		Fuseable.ConditionalSubscriber<Integer> actual = new FluxFilter.FilterSubscriber<>(
+			new LambdaSubscriber<>(null, e -> {},	null, null),
+			(__) -> true
+		);
+		FluxSubscribeOn.ConditionlSubscribeOnSubscriber<Integer> test =
+			new FluxSubscribeOn.ConditionlSubscribeOnSubscriber<>(Flux.just(1), actual, Schedulers.single().createWorker(), true);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		test.requested = 35;
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
 
 	@Test
 	public void scheduleRequestsByDefault() {
