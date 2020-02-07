@@ -205,9 +205,8 @@ final class MonoSubscribeOn<T> extends InternalMonoOperator<T, T> {
 
 		@Override
 		public void cancel() {
-			if (Operators.terminate(S, this)) {
-				worker.dispose();
-			}
+			Operators.terminate(S, this);
+			worker.dispose();
 		}
 	}
 }

@@ -25,13 +25,17 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.AutoDisposingRule;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -247,5 +251,30 @@ public class MonoSubscribeOnTest {
 		                        .hide()
 		                        .subscribeOn(Schedulers.single()))
 		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
+	public void disposeWorkerIfCancelledBeforeOnSubscribe() {
+		AtomicInteger disposeCount = new AtomicInteger();
+		Scheduler.Worker countingWorker = new Scheduler.Worker() {
+			@Override
+			public Disposable schedule(Runnable task) {
+				return Disposables.disposed();
+			}
+
+			@Override
+			public void dispose() {
+				disposeCount.incrementAndGet();
+			}
+		};
+		MonoSubscribeOn.SubscribeOnSubscriber<Integer> sosub =
+				new MonoSubscribeOn.SubscribeOnSubscriber<>(ignoredSubscribe -> {}, null, countingWorker);
+		for (int i = 1; i <= 10_000; i++) {
+			RaceTestUtils.race(sosub::cancel, () -> sosub.onSubscribe(Operators.emptySubscription()));
+			assertThat(disposeCount).as("idle/disposed in round " + i).hasValue(i);
+
+			//reset
+			sosub.s = null;
+		}
 	}
 }
