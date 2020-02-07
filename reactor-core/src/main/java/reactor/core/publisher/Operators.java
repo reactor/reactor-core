@@ -1523,7 +1523,7 @@ public abstract class Operators {
 	 * Base class for Subscribers that will receive their Subscriptions at any time, yet
 	 * they might also need to be cancelled or requested at any time.
 	 */
-	public static class DeferredSubscription
+	protected static abstract class AbstractArbiterSubscription
 			implements Subscription, Scannable {
 
 		volatile Subscription s;
@@ -1575,6 +1575,19 @@ public abstract class Operators {
 			}
 		}
 
+		static final AtomicReferenceFieldUpdater<AbstractArbiterSubscription, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(AbstractArbiterSubscription.class, Subscription.class, "s");
+		static final AtomicLongFieldUpdater<AbstractArbiterSubscription> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(AbstractArbiterSubscription.class, "requested");
+
+	}
+
+	/**
+	 * Base class for Subscribers that will accept AT MOST one Subscription at any time, yet
+	 * they might also need to be cancelled or requested at any time.
+	 */
+	public static class DeferredSubscription extends AbstractArbiterSubscription {
+
 		/**
 		 * Atomically sets the single subscription and requests the missed amount from it.
 		 *
@@ -1615,12 +1628,53 @@ public abstract class Operators {
 
 			return false;
 		}
+	}
 
-		static final AtomicReferenceFieldUpdater<DeferredSubscription, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(DeferredSubscription.class, Subscription.class, "s");
-		static final AtomicLongFieldUpdater<DeferredSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(DeferredSubscription.class, "requested");
+	/**
+	 * Base class for Subscribers that will swap their Subscriptions at any time, yet
+	 * they might also need to be cancelled or requested at any time.
+	 *
+	 * This {@link Subscription} maintains only one active wrapped subscription, but allows
+	 * replacement of said subscription, and the old one may be cancelled if
+	 * {@code cancelOnReplace} is set to true.
+	 */
+	public static class SwapSubscription extends AbstractArbiterSubscription {
 
+		final boolean cancelOnReplace;
+
+		SwapSubscription(boolean cancelOnReplace) {
+			this.cancelOnReplace = cancelOnReplace;
+		}
+
+		/**
+		 * Atomically replaces the single subscription and requests the missed amount from it.
+		 *
+		 * @param s the subscription to set
+		 * @return false if this arbiter is cancelled
+		 */
+		boolean swap(Subscription s) {
+			Objects.requireNonNull(s, "s");
+			Subscription a = this.s;
+			if (a == Operators.cancelledSubscription()) {
+				s.cancel();
+				return false;
+			}
+			if (a != null && cancelOnReplace) {
+				a.cancel();
+			}
+
+			if (S.compareAndSet(this, a, s)) {
+
+				long r = REQUESTED.getAndSet(this, 0L);
+
+				if (r != 0L) {
+					s.request(r);
+				}
+
+				return true;
+			}
+			return false;
+		}
 	}
 
 	/**
