@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.atomic.LongAdder;
@@ -39,6 +40,8 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
+import reactor.test.util.RaceTestUtils;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -586,6 +589,110 @@ public class FluxBufferPredicateTest {
 		 */
 		assertThat(requestCallCount.intValue(), is(9));
 		assertThat(totalRequest.longValue(), is(11L));
+	}
+
+	// the 3 race condition tests below essentially validate that racing request vs onNext
+	// don't lead to backpressure errors.
+	@Test
+	public void requestRaceWithOnNext() {
+		AtomicLong requested = new AtomicLong();
+		TestPublisher<Integer> testPublisher = TestPublisher.create();
+		FluxBufferPredicate<Integer, List<Integer>> bufferPredicate = new FluxBufferPredicate<>(
+				testPublisher.flux().doOnRequest(requested::addAndGet),
+				i -> true, ArrayList::new, FluxBufferPredicate.Mode.UNTIL);
+
+		BaseSubscriber<List<Integer>> subscriber = new BaseSubscriber<List<Integer>>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+		};
+		bufferPredicate.subscribe(subscriber);
+		@SuppressWarnings("unchecked")
+		final FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
+				(FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
+
+		for (int i = 0; i < 10; i++) {
+			final int value = i;
+			RaceTestUtils.race(() -> subscriber.request(1), () -> testPublisher.next(value));
+		}
+		for (int i = 0; i < bufferPredicateSubscriber.requestedFromSource; i++) {
+			testPublisher.next(100 + i);
+		}
+		testPublisher.complete();
+
+		Assertions.assertThat(requested).as("total upstream request").hasValue(10 + 1);
+	}
+
+	@Test
+	public void onNextRaceWithRequest() {
+		AtomicLong requested = new AtomicLong();
+		TestPublisher<Integer> testPublisher = TestPublisher.create();
+		FluxBufferPredicate<Integer, List<Integer>> bufferPredicate = new FluxBufferPredicate<>(
+				testPublisher.flux().doOnRequest(requested::addAndGet),
+				i -> true, ArrayList::new, FluxBufferPredicate.Mode.UNTIL);
+
+		BaseSubscriber<List<Integer>> subscriber = new BaseSubscriber<List<Integer>>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+		};
+		bufferPredicate.subscribe(subscriber);
+		@SuppressWarnings("unchecked")
+		final FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
+				(FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
+
+		for (int i = 0; i < 10; i++) {
+			final int value = i;
+			RaceTestUtils.race(() -> testPublisher.next(value), () -> subscriber.request(1));
+		}
+		for (int i = 0; i < bufferPredicateSubscriber.requestedFromSource; i++) {
+			testPublisher.next(100 + i);
+		}
+		testPublisher.complete();
+
+		Assertions.assertThat(requested).as("total upstream request").hasValue(10 + 1);
+	}
+
+	@Test
+	public void onNextRaceWithRequestOfTwo() {
+		AtomicLong requested = new AtomicLong();
+		TestPublisher<Integer> testPublisher = TestPublisher.create();
+		FluxBufferPredicate<Integer, List<Integer>> bufferPredicate = new FluxBufferPredicate<>(
+				testPublisher.flux().doOnRequest(requested::addAndGet),
+				i -> true, ArrayList::new, FluxBufferPredicate.Mode.UNTIL);
+
+		BaseSubscriber<List<Integer>> subscriber = new BaseSubscriber<List<Integer>>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+		};
+		bufferPredicate.subscribe(subscriber);
+		@SuppressWarnings("unchecked")
+		final FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
+				(FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
+
+		for (int i = 0; i < 10; i++) {
+			final int value = i;
+			RaceTestUtils.race(() -> testPublisher.next(value), () -> subscriber.request(2));
+		}
+		for (int i = 0; i < bufferPredicateSubscriber.requestedFromSource; i++) {
+			testPublisher.next(100 + i);
+		}
+		testPublisher.complete();
+
+		Assertions.assertThat(requested).as("total upstream request").hasValue(2 * 10 + 1);
+	}
+
+	@Test
+	public void requestRaceWithOnNextLoops() {
+		for (int i = 0; i < 100_000; i++) {
+			requestRaceWithOnNext();
+			onNextRaceWithRequest();
+			onNextRaceWithRequestOfTwo();
+		}
 	}
 
 	@Test
