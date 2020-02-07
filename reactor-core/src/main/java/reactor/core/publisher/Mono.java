@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -2777,6 +2778,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/flatMapIterableForMono.svg" alt="">
+	 *
+	 * @reactor.discard Upon cancellation in some cases, this operator attempts to discard remainder of
+	 * the currently processed {@link Iterable} (if it can safely assume the iterator is not infinite,
+	 * see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
 	 *
 	 * @param mapper the {@link Function} to transform input item into a sequence {@link Iterable}
 	 * @param <R> the merged output sequence type

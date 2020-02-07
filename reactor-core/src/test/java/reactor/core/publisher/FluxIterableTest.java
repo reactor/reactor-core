@@ -16,20 +16,22 @@
 
 package reactor.core.publisher;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Test;
 import org.mockito.Mockito;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,6 +123,57 @@ public class FluxIterableTest {
 	}
 
 	@Test
+	public void lambdaIterableWithIterator() {
+		final int max = 10;
+		Iterable<Integer> iterable = () -> new Iterator<Integer>() {
+			int i = 0;
+
+			@Override
+			public boolean hasNext() {
+				return i < max;
+			}
+
+			@Override
+			public Integer next() {
+				return i++;
+			}
+		};
+
+		StepVerifier.create(Flux.fromIterable(iterable), 0)
+		            .expectSubscription()
+		            .thenRequest(5)
+		            .expectNext(0, 1, 2, 3, 4)
+		            .thenRequest(5)
+		            .expectNext(5, 6, 7, 8, 9)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void lambdaIterableWithList() {
+		List<Integer> iterable = new ArrayList<>(10);
+		iterable.add(0);
+		iterable.add(1);
+		iterable.add(2);
+		iterable.add(3);
+		iterable.add(4);
+		iterable.add(5);
+		iterable.add(6);
+		iterable.add(7);
+		iterable.add(8);
+		iterable.add(9);
+
+		StepVerifier.create(Flux.fromIterable(iterable), 0)
+		            .expectSubscription()
+		            .thenRequest(5)
+		            .expectNext(0, 1, 2, 3, 4)
+		            .thenRequest(5)
+		            .expectNext(5, 6, 7, 8, 9)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
 	public void emptyMapped() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
@@ -152,7 +205,7 @@ public class FluxIterableTest {
 	public void scanSubscription() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxIterable.IterableSubscription<String> test =
-				new FluxIterable.IterableSubscription<>(actual, Collections.singleton("test").iterator());
+				new FluxIterable.IterableSubscription<>(actual, Collections.singleton("test").iterator(), true);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);
@@ -171,8 +224,9 @@ public class FluxIterableTest {
 	public void scanConditionalSubscription() {
 		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<? super String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
+		Mockito.when(actual.currentContext()).thenReturn(Context.empty());
         FluxIterable.IterableSubscriptionConditional<String> test =
-				new FluxIterable.IterableSubscriptionConditional<>(actual, Collections.singleton("test").iterator());
+				new FluxIterable.IterableSubscriptionConditional<>(actual, Collections.singleton("test").iterator(), true);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);

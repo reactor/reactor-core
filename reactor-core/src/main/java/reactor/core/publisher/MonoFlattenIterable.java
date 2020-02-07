@@ -82,11 +82,11 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 			}
 
 			Iterator<? extends R> it;
-
+			boolean itFinite;
 			try {
 				Iterable<? extends R> iter = mapper.apply(v);
-
 				it = iter.iterator();
+				itFinite = FluxIterable.checkFinite(iter);
 			}
 			catch (Throwable ex) {
 				Operators.error(actual, Operators.onOperatorError(ex,
@@ -94,7 +94,7 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 				return null;
 			}
 
-			FluxIterable.subscribe(actual, it);
+			FluxIterable.subscribe(actual, it, itFinite);
 
 			return null;
 		}
