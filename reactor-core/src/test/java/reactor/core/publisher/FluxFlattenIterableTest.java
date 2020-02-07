@@ -670,4 +670,5 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		public void release() {
 			this.refCount = 0;
 		}
+	}
 }
