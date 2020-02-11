@@ -27,6 +27,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -152,6 +153,39 @@ public class MonoCollectTest {
 		    .expectErrorMessage("accumulator: boom")
 		    .verifyThenAssertThat()
 		    .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void discardElementAndBufferOnAccumulatorLateFailure() {
+		Flux.just(1, 2, 3, 4)
+		    .hide()
+		    .collect(ArrayList::new, (l, t) -> {
+			    if (t == 3) {
+				    throw new IllegalStateException("accumulator: boom");
+			    }
+			    l.add(t);
+		    })
+		    .as(StepVerifier::create)
+		    .expectErrorMessage("accumulator: boom")
+		    .verifyThenAssertThat()
+		    .hasDiscardedExactly(1, 2, 3);
+	}
+
+	@Test
+	public void discardElementAndBufferOnAccumulatorLateFailure_fused() {
+		Flux.just(1, 2, 3, 4)
+		    .collect(ArrayList::new, (l, t) -> {
+			    if (t == 3) {
+				    throw new IllegalStateException("accumulator: boom");
+			    }
+			    l.add(t);
+		    })
+		    .as(StepVerifier::create)
+		    //WARNING: we need to request fusion so this expectFusion is important
+		    .expectFusion(Fuseable.ASYNC)
+		    .expectErrorMessage("accumulator: boom")
+		    .verifyThenAssertThat()
+		    .hasDiscardedExactly(1, 2, 3);
 	}
 
 	@Test

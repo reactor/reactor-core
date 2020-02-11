@@ -1566,10 +1566,9 @@ public abstract class Operators {
 		@Override
 		public void cancel() {
 			O v = value;
-			if (STATE.getAndSet(this, CANCELLED) <= HAS_REQUEST_NO_VALUE) {
-				discard(v);
-			}
 			value = null;
+			STATE.set(this, CANCELLED);
+			discard(v);
 		}
 
 		@Override
