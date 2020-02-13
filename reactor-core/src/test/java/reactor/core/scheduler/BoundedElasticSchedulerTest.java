@@ -703,7 +703,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				}
 				else {
 					RaceTestUtils.race(
-							boundedElasticScheduler.schedule(incrementWon::incrementAndGet)::dispose,
+							() -> boundedElasticScheduler.schedule(incrementWon::incrementAndGet).dispose(),
 							activeWorker::dispose
 					);
 				}
