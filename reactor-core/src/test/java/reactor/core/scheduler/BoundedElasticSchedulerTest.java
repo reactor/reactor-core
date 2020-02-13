@@ -684,7 +684,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void raceActiveWorkerDisposeAndDeferredDirectDispose() {
 		BoundedElasticScheduler boundedElasticScheduler = new BoundedElasticScheduler(
-				1, 2, r -> new Thread(r,"raceActiveDeferredDirectDispose"), 3);
+				1, 2, r -> new Thread(r, "raceActiveDeferredDirectDispose"), 3);
 
 		BoundedElasticScheduler.ActiveWorker activeWorker =
 				(BoundedElasticScheduler.ActiveWorker) boundedElasticScheduler.createWorker();
@@ -698,7 +698,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				if (rounds % 10 == 0) { //from time to time reverse the race
 					RaceTestUtils.race(
 							activeWorker::dispose,
-							boundedElasticScheduler.schedule(incrementWon::incrementAndGet)::dispose
+							() -> boundedElasticScheduler.schedule(incrementWon::incrementAndGet).dispose()
 					);
 				}
 				else {
