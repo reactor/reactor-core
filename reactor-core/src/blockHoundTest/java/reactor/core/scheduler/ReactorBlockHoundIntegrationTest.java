@@ -25,7 +25,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import reactor.blockhound.BlockHound;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
+import reactor.test.util.RaceTestUtils;
 
 public class ReactorBlockHoundIntegrationTest {
 
@@ -37,7 +39,7 @@ public class ReactorBlockHoundIntegrationTest {
 	}
 
 	@Rule
-	public Timeout timeout = new Timeout(1, TimeUnit.SECONDS);
+	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	@Test
 	public void shouldDetectBlockingCalls() {
@@ -71,6 +73,27 @@ public class ReactorBlockHoundIntegrationTest {
 			    .doOnNext(__ -> Thread.yield())
 			    .subscribe(future::complete, future::completeExceptionally);
 		});
+	}
+
+	@Test
+	public void shouldNotReportScheduledFutureTask() {
+		for (int i = 0; i < 1_000; i++) {
+			Scheduler taskScheduler = Schedulers.newSingle("foo");
+			try {
+				Runnable dummyRunnable = () -> {
+				};
+
+				for (int j = 0; j < 257; j++) {
+					taskScheduler.schedule(dummyRunnable, 200, TimeUnit.MILLISECONDS);
+				}
+				Disposable disposable = taskScheduler.schedule(dummyRunnable, 1, TimeUnit.SECONDS);
+
+				RaceTestUtils.race(disposable::dispose, disposable::dispose);
+			}
+			finally {
+				taskScheduler.dispose();
+			}
+		}
 	}
 
 	void expectBlockingCall(String desc, Consumer<CompletableFuture<Object>> callable) {
