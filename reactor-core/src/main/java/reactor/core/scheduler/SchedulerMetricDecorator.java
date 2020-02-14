@@ -37,7 +37,7 @@ final class SchedulerMetricDecorator
 			implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>,
 			           Disposable {
 
-	static final String TAG_SCHEDULER_ID = "reactor.scheduler.id";
+	static final String TAG_SCHEDULER_ID = "reactor_scheduler_id";
 	static final String METRICS_DECORATOR_KEY = "reactor.metrics.decorator";
 
 	final WeakHashMap<Scheduler, String>        seenSchedulers          = new WeakHashMap<>();
