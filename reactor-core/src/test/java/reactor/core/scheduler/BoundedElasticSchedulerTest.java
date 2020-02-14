@@ -37,6 +37,7 @@ import org.junit.Test;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Mono;
+import reactor.test.util.RaceTestUtils;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -678,6 +679,47 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				.as("default unbounded task queueing")
 				.isEqualTo(100_000)
 				.isEqualTo(Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE);
+	}
+
+	@Test
+	public void raceActiveWorkerDisposeAndDeferredDirectDispose() {
+		BoundedElasticScheduler boundedElasticScheduler = new BoundedElasticScheduler(
+				1, 2, r -> new Thread(r, "raceActiveDeferredDirectDispose"), 3);
+
+		BoundedElasticScheduler.ActiveWorker activeWorker =
+				(BoundedElasticScheduler.ActiveWorker) boundedElasticScheduler.createWorker();
+
+		int maxRounds = 1_000_000;
+		AtomicInteger incrementWon = new AtomicInteger();
+		AtomicInteger rejected = new AtomicInteger();
+		int rounds = 0;
+		while(rounds++ < maxRounds) {
+			try {
+				if (rounds % 10 == 0) { //from time to time reverse the race
+					RaceTestUtils.race(
+							activeWorker::dispose,
+							() -> boundedElasticScheduler.schedule(incrementWon::incrementAndGet).dispose()
+					);
+				}
+				else {
+					RaceTestUtils.race(
+							() -> boundedElasticScheduler.schedule(incrementWon::incrementAndGet).dispose(),
+							activeWorker::dispose
+					);
+				}
+			}
+			catch (RejectedExecutionException ree) {
+				rejected.incrementAndGet();
+			}
+		}
+
+		System.out.println("incremented=" + incrementWon.get() + "/" + maxRounds + ", rejected=" + rejected.get());
+
+		assertThatCode(() -> boundedElasticScheduler.schedule(() -> {})).doesNotThrowAnyException();
+		assertThat(incrementWon).as("some but not all increments win")
+		                        .hasPositiveValue()
+		                        .hasValueLessThan(maxRounds);
+		assertThat(rejected).as("rejected").hasValue(0);
 	}
 
 	@Test

@@ -773,7 +773,8 @@ final class BoundedElasticScheduler
 		@Override
 		public void dispose() {
 			if (DISPOSED.compareAndSet(this, 0, 1)) {
-				if (parent.deferredFacades.remove(this) && parent.deferredTaskCap != Integer.MAX_VALUE) {
+				parent.deferredFacades.remove(this);
+				if (parent.deferredTaskCap != Integer.MAX_VALUE) {
 					REMAINING_DEFERRED_TASKS.incrementAndGet(parent);
 				}
 
