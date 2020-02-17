@@ -116,12 +116,19 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		volatile boolean fastpath;
 
-		volatile long requested;
+		volatile long requestedBuffers;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<BufferPredicateSubscriber> REQUESTED =
+		static final AtomicLongFieldUpdater<BufferPredicateSubscriber> REQUESTED_BUFFERS =
 				AtomicLongFieldUpdater.newUpdater(BufferPredicateSubscriber.class,
-						"requested");
+						"requestedBuffers");
+
+		volatile long requestedFromSource;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<BufferPredicateSubscriber> REQUESTED_FROM_SOURCE =
+				AtomicLongFieldUpdater.newUpdater(BufferPredicateSubscriber.class,
+						"requestedFromSource");
 
 		volatile Subscription s;
 
@@ -145,7 +152,8 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 					// here we request everything from the source. switching to
 					// fastpath will avoid unnecessary request(1) during filling
 					fastpath = true;
-					requested = Long.MAX_VALUE;
+					requestedBuffers = Long.MAX_VALUE;
+					requestedFromSource = Long.MAX_VALUE;
 					s.request(Long.MAX_VALUE);
 				}
 				else {
@@ -157,11 +165,11 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 					// we'll continue requesting one by one)
 					if (!DrainUtils.postCompleteRequest(n,
 							actual,
-							this,
-							REQUESTED,
+							this, REQUESTED_BUFFERS,
 							this,
 							this)) {
-						s.request(1);
+						Operators.addCap(REQUESTED_FROM_SOURCE, this, n);
+						s.request(n);
 					}
 				}
 			}
@@ -208,25 +216,33 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return true;
 			}
 
-			boolean requestMore;
 			if (mode == Mode.UNTIL && match) {
 				b.add(t);
-				requestMore = onNextNewBuffer();
+				onNextNewBuffer();
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
-				requestMore = onNextNewBuffer();
+				onNextNewBuffer();
 				b = buffer;
 				b.add(t);
 			}
 			else if (mode == Mode.WHILE && !match) {
-				requestMore = onNextNewBuffer();
+				onNextNewBuffer();
 			}
 			else {
 				b.add(t);
-				return !(!fastpath && requested != 0);
 			}
 
-			return !requestMore;
+			if (fastpath) {
+				return true;
+			}
+
+			boolean isNotExpectingFromSource = REQUESTED_FROM_SOURCE.decrementAndGet(this) == 0;
+			boolean isStillExpectingBuffer = REQUESTED_BUFFERS.get(this) > 0;
+			if (isNotExpectingFromSource && isStillExpectingBuffer
+					&& REQUESTED_FROM_SOURCE.compareAndSet(this, 0, 1)) {
+				return false; //explicitly mark as "needing more", either in attached conditional or onNext()
+			}
+			return true;
 		}
 
 		@Nullable
@@ -254,12 +270,21 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			return b;
 		}
 
-		boolean onNextNewBuffer() {
+		private void onNextNewBuffer() {
 			C b = triggerNewBuffer();
 			if (b != null) {
-				return emit(b);
+				if (fastpath) {
+					actual.onNext(b);
+					return;
+				}
+				long r = REQUESTED_BUFFERS.getAndDecrement(this);
+				if (r > 0) {
+					actual.onNext(b);
+					return;
+				}
+				cancel();
+				actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
 			}
-			return true;
 		}
 
 		@Override
@@ -287,22 +312,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			}
 			done = true;
 			cleanup();
-			DrainUtils.postComplete(actual, this, REQUESTED, this, this);
-		}
-
-		boolean emit(C b) {
-			if (fastpath) {
-				actual.onNext(b);
-				return false;
-			}
-			long r = REQUESTED.getAndDecrement(this);
-			if(r > 0){
-				actual.onNext(b);
-				return requested > 0;
-			}
-			cancel();
-			actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
-			return false;
+			DrainUtils.postComplete(actual, this, REQUESTED_BUFFERS, this, this);
 		}
 
 		void cleanup() {
@@ -321,7 +331,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				C b = buffer;
 				return b != null ? b.size() : 0;
 			}
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requestedBuffers;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
