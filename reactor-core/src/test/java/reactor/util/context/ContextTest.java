@@ -489,13 +489,16 @@ public class ContextTest {
 			}
 		};
 
-		Context combined = left.putAll(right);
-		assertThat(combined).isInstanceOf(ContextN.class);
-		ContextN combinedN = (ContextN) combined;
+		//this test proved flaky in the past, due to the parallelization
+		for (int i = 0; i < 1000; i++) {
+			Context combined = left.putAll(right);
+			assertThat(combined).isInstanceOf(ContextN.class);
+			ContextN combinedN = (ContextN) combined;
 
-		assertThat(combinedN)
-				.containsKeys(1, 2, 3, 4, 5, 10, 11, 12, 13)
-				.containsValues("A", "B", "C", "D", "E", "A10", "A11", "A12", "A13");
+			assertThat(combinedN)
+					.containsKeys(1, 2, 3, 4, 5, 10, 11, 12, 13)
+					.containsValues("A", "B", "C", "D", "E", "A10", "A11", "A12", "A13");
+		}
 	}
 
 	@Test
