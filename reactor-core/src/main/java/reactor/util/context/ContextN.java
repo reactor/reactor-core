@@ -177,7 +177,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 		}
 		else {
 			// avoid Collector to reduce the allocations
-			other.stream().forEach(newContext);
+			other.stream().sequential().forEach(newContext);
 		}
 
 		return newContext;
