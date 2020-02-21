@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -1600,13 +1601,17 @@ public class FluxFlatMapTest {
 				.flatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1/i).onErrorStop())
 				.onErrorContinue(OnNextFailureStrategyTest::drop);
 
-		StepVerifier.create(test)
+		StepVerifier.Assertions assertions = StepVerifier
+				.create(test)
 				.expectNoFusionSupport()
 				.expectNext(1)
 				.expectComplete()
-				.verifyThenAssertThat()
-				.hasNotDroppedElements()
-				.hasDroppedErrors(1);
+				.verifyThenAssertThat();
+
+		Awaitility.with().pollDelay(org.awaitility.Duration.ZERO).pollInterval(org.awaitility.Duration.ONE_MILLISECOND)
+		          .await()
+		          .atMost(org.awaitility.Duration.ONE_SECOND)
+		          .untilAsserted(() -> assertions.hasNotDroppedElements().hasDroppedErrors(1));
 	}
 
 	@Test
