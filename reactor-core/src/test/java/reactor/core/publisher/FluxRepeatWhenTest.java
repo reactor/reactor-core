@@ -458,7 +458,5 @@ public class FluxRepeatWhenTest {
 				"emitted 2 elements this attempt, 0 repeats left");
 
 		assertThat(contexts).allMatch(ctx -> ctx.hasKey("thirdPartyContext"));
-
-		System.out.println(contexts);
 	}
 }
