@@ -180,7 +180,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 					//flow that emit a Context as a trigger for the re-subscription are
 					//used to REPLACE the currentContext()
 					if (trigger instanceof Context) {
-						this.context = (Context) trigger;
+						this.context = this.context.putAll((Context) trigger);
 					}
 
 					source.subscribe(this);
