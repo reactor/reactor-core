@@ -72,14 +72,31 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	/**
-	 * Assign a single newly created {@link VirtualTimeScheduler} to all {@link reactor.core.scheduler.Schedulers.Factory}
-	 * factories. While the method is thread safe, its usually advised to execute such
+	 * Assign a newly created {@link VirtualTimeScheduler} to all {@link reactor.core.scheduler.Schedulers.Factory}
+	 * factories ONLY if no {@link VirtualTimeScheduler} is currently set. In case of scheduler creation,
+	 * there is no deferring of time operations (see {@link #create(boolean)}.
+	 * While the method is thread safe, its usually advised to execute such
 	 * wide-impact BEFORE all tested code runs (setup etc). The created scheduler is returned.
 	 *
 	 * @return the VirtualTimeScheduler that was created and set through the factory
 	 */
 	public static VirtualTimeScheduler getOrSet() {
 		return enable(VirtualTimeScheduler::create, false);
+	}
+
+	/**
+	 * Assign a newly created {@link VirtualTimeScheduler} to all {@link reactor.core.scheduler.Schedulers.Factory}
+	 * factories ONLY if no {@link VirtualTimeScheduler} is currently set. In case of scheduler creation,
+	 * there is opt-in deferring of time related operations (see {@link #create(boolean)}.
+	 * While the method is thread safe, its usually advised to execute such
+	 * wide-impact BEFORE all tested code runs (setup etc). The created scheduler is returned.
+	 *
+	 * @param defer true to defer all clock move operations until there are tasks in queue, if a scheduler is created
+	 * @return the VirtualTimeScheduler that was created and set through the factory
+	 * @see #create(boolean)
+	 */
+	public static VirtualTimeScheduler getOrSet(final boolean defer) {
+		return enable(() -> VirtualTimeScheduler.create(defer), false);
 	}
 
 	/**

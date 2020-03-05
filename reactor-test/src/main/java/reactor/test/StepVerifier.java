@@ -219,7 +219,7 @@ public interface StepVerifier {
 	 */
 	static <T> FirstStep<T> withVirtualTime(Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			long n) {
-		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.create(true), n);
+		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.getOrSet(true), n);
 	}
 
 	/**

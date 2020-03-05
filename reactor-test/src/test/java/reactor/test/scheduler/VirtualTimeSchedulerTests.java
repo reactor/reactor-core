@@ -21,12 +21,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
+import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -321,6 +325,19 @@ public class VirtualTimeSchedulerTests {
 		assertThat(vts.getScheduledTaskCount())
 			.as("second periodical task scheduled")
 			.isEqualTo(3);
+	}
+
+	@Test
+	public void getOrSetWithDefer() {
+		AtomicReference<VirtualTimeScheduler> vts1 = new AtomicReference<>();
+		AtomicReference<VirtualTimeScheduler> vts2 = new AtomicReference<>();
+		RaceTestUtils.race(
+				() -> vts1.set(VirtualTimeScheduler.getOrSet(true)),
+				() -> vts2.set(VirtualTimeScheduler.getOrSet(true))
+		);
+
+		assertThat(vts1.get().defer).isTrue();
+		assertThat(vts2.get()).isSameAs(vts1.get());
 	}
 
 	@SuppressWarnings("unchecked")
