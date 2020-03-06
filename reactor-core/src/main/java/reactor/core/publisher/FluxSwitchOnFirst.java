@@ -109,7 +109,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         @Override
         @Nullable
         public Object scanUnsafe(Attr key) {
-            final boolean isCancelled = this.inner == Operators.emptySubscriber();
+            final boolean isCancelled = this.inner == Operators.EMPTY_SUBSCRIBER;
 
             if (key == Attr.CANCELLED) return isCancelled && !this.done;
             if (key == Attr.TERMINATED) return this.done || isCancelled;
@@ -124,7 +124,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
         @Override
         public void cancel() {
-            if (INNER.getAndSet(this, Operators.emptySubscriber()) != Operators.emptySubscriber()) {
+            if (INNER.getAndSet(this, Operators.EMPTY_SUBSCRIBER) != Operators.EMPTY_SUBSCRIBER) {
                 this.s.cancel();
 
                 if (WIP.getAndIncrement(this) == 0) {
@@ -142,7 +142,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
             if (Operators.validate(this.s, s)) {
                 this.s = s;
                 this.outer.sendSubscription();
-                if (this.inner != Operators.emptySubscriber()) {
+                if (this.inner != Operators.EMPTY_SUBSCRIBER) {
                     s.request(1);
                 }
             }
@@ -151,7 +151,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         @Override
         public void onNext(T t) {
             final CoreSubscriber<? super T> i = this.inner;
-            if (this.done || i == Operators.emptySubscriber()) {
+            if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
                 Operators.onNextDropped(t, currentContext());
                 return;
             }
@@ -183,7 +183,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         @Override
         public void onError(Throwable t) {
             final CoreSubscriber<? super T> i = this.inner;
-            if (this.done || i == Operators.emptySubscriber()) {
+            if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
                 Operators.onErrorDropped(t, currentContext());
                 return;
             }
@@ -220,7 +220,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         @Override
         public void onComplete() {
             final CoreSubscriber<? super T> i = this.inner;
-            if (this.done || i == Operators.emptySubscriber()) {
+            if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
                 return;
             }
 
@@ -318,7 +318,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
                 if (f != null) {
                     this.first = null;
 
-                    if (a == Operators.emptySubscriber()) {
+                    if (a == Operators.EMPTY_SUBSCRIBER) {
                         Operators.onDiscard(f, currentContext());
                         return false;
                     }
@@ -329,7 +329,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
                 a = this.inner;
 
-                if (a == Operators.emptySubscriber()) {
+                if (a == Operators.EMPTY_SUBSCRIBER) {
                     return false;
                 }
 
@@ -340,7 +340,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
                     } else {
                         a.onComplete();
                     }
-                    INNER.lazySet(this, Operators.emptySubscriber());
+                    INNER.lazySet(this, Operators.EMPTY_SUBSCRIBER);
                     return true;
                 }
 
@@ -389,7 +389,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
             @SuppressWarnings("unchecked")
             final Fuseable.ConditionalSubscriber<? super T> i =
                     (Fuseable.ConditionalSubscriber<? super T>) this.inner;
-            if (this.done || i == Operators.emptySubscriber()) {
+            if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
                 Operators.onNextDropped(t, currentContext());
                 return false;
             }
@@ -435,7 +435,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
                 if (f != null) {
                     this.first = null;
 
-                    if (a == Operators.emptySubscriber()) {
+                    if (a == Operators.EMPTY_SUBSCRIBER) {
                         Operators.onDiscard(f, currentContext());
                         return false;
                     }
@@ -446,7 +446,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
                 a = (Fuseable.ConditionalSubscriber<? super T>) this.inner;
 
-                if (a == Operators.emptySubscriber()) {
+                if (a == Operators.EMPTY_SUBSCRIBER) {
                     return false;
                 }
 
@@ -457,7 +457,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
                     } else {
                         a.onComplete();
                     }
-                    INNER.lazySet(this, Operators.emptySubscriber());
+                    INNER.lazySet(this, Operators.EMPTY_SUBSCRIBER);
                     return sent;
                 }
 
