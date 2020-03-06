@@ -757,6 +757,13 @@ public class FluxSwitchOnFirstTest {
         stepVerifier.verify(Duration.ofSeconds(10));
 
         Assertions.assertThat(latch2.await(1, TimeUnit.SECONDS)).isTrue();
+
+        Instant endTime = Instant.now().plusSeconds(5);
+        while (!publisher.wasCancelled()) {
+            if (endTime.isBefore(Instant.now())) {
+                break;
+            }
+        }
         publisher.assertCancelled();
         publisher.assertWasRequested();
     }
