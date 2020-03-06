@@ -1413,7 +1413,7 @@ public abstract class Operators {
 		}
 	}
 
-	static final CoreSubscriber<?> EMPTY_SUBSCRIBER = new CoreSubscriber<Object>() {
+	static final Fuseable.ConditionalSubscriber<?> EMPTY_SUBSCRIBER = new Fuseable.ConditionalSubscriber<Object>() {
 		@Override
 		public void onSubscribe(Subscription s) {
 			Throwable e = new IllegalStateException("onSubscribe should not be used");
@@ -1424,6 +1424,13 @@ public abstract class Operators {
 		public void onNext(Object o) {
 			Throwable e = new IllegalStateException("onNext should not be used, got " + o);
 			log.error("Unexpected call to Operators.emptySubscriber()", e);
+		}
+
+		@Override
+		public boolean tryOnNext(Object o) {
+			Throwable e = new IllegalStateException("tryOnNext should not be used, got " + o);
+			log.error("Unexpected call to Operators.emptySubscriber()", e);
+			return false;
 		}
 
 		@Override
