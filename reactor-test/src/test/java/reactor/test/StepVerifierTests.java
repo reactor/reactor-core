@@ -29,21 +29,20 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
+
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -2358,10 +2357,12 @@ public class StepVerifierTests {
 			EmitterProcessor<String> fluxEmitter = EmitterProcessor.create();
 
 			subscriptionWorker.schedulePeriodically(() -> {
-				if (source.size() > 0)
+				if (source.size() > 0) {
 					fluxEmitter.onNext(source.remove(0));
-				else
+				}
+				else {
 					fluxEmitter.onComplete();
+				}
 			}, 0, 10, TimeUnit.MILLISECONDS);
 			return fluxEmitter;
 		})
