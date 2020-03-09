@@ -317,12 +317,18 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromForMono.svg" alt="">
 	 * <p>
+	 * {@link Hooks#onEachOperator(String, Function)} and similar assembly hooks are applied
+	 * unless the source is already a {@link Mono} (including {@link Mono} that was decorated as a {@link Flux},
+	 * see {@link Flux#from(Publisher)}).
+	 *
 	 * @param source the {@link Publisher} source
 	 * @param <T> the source type
 	 *
 	 * @return the next item emitted as a {@link Mono}
 	 */
 	public static <T> Mono<T> from(Publisher<? extends T> source) {
+		//some sources can be considered already assembled monos
+		//all conversion methods (from, fromDirect, wrap) must accommodate for this
 		if (source instanceof Mono) {
 			@SuppressWarnings("unchecked")
 			Mono<T> casted = (Mono<T>) source;
@@ -336,12 +342,10 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<T> extracted = (Mono<T>) wrapper.source;
 			return extracted;
 		}
-		if (source instanceof Flux) {
-			@SuppressWarnings("unchecked")
-			Flux<T> casted = (Flux<T>) source;
-			return casted.next();
-		}
-		return onAssembly(new MonoFromPublisher<>(source));
+
+		//we delegate to `wrap` and apply assembly hooks
+		@SuppressWarnings("unchecked") Publisher<T> downcasted = (Publisher<T>) source;
+		return onAssembly(wrap(downcasted, true));
 	}
 
 	/**
@@ -403,34 +407,40 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Convert a {@link Publisher} to a {@link Mono} without any cardinality check
-	 * (ie this method doesn't check if the source is already a Mono, nor cancels the
-	 * source past the first element). Conversion supports {@link Fuseable} sources.
+	 * (ie this method doesn't cancel the source past the first element).
+	 * Conversion transparently returns {@link Mono} sources without wrapping and otherwise
+	 * supports {@link Fuseable} sources.
 	 * Note this is an advanced interoperability operator that implies you know the
 	 * {@link Publisher} you are converting follows the {@link Mono} semantics and only
 	 * ever emits one element.
+	 * <p>
+	 * {@link Hooks#onEachOperator(String, Function)} and similar assembly hooks are applied
+	 * unless the source is already a {@link Mono}.
 	 *
 	 * @param source the Mono-compatible {@link Publisher} to wrap
 	 * @param <I> type of the value emitted by the publisher
 	 * @return a wrapped {@link Mono}
 	 */
 	public static <I> Mono<I> fromDirect(Publisher<? extends I> source){
+		//some sources can be considered already assembled monos
+		//all conversion methods (from, fromDirect, wrap) must accommodate for this
 		if(source instanceof Mono){
 			@SuppressWarnings("unchecked")
 			Mono<I> m = (Mono<I>)source;
 			return m;
 		}
-		if(source instanceof Flux){
+		if (source instanceof FluxSourceMono
+				|| source instanceof FluxSourceMonoFuseable) {
 			@SuppressWarnings("unchecked")
-			Flux<I> f = (Flux<I>)source;
-			if(source instanceof Fuseable){
-				return onAssembly(new MonoSourceFluxFuseable<>(f));
-			}
-			return onAssembly(new MonoSourceFlux<>(f));
+			FluxFromMonoOperator<I, I> wrapper = (FluxFromMonoOperator<I,I>) source;
+			@SuppressWarnings("unchecked")
+			Mono<I> extracted = (Mono<I>) wrapper.source;
+			return extracted;
 		}
-		if(source instanceof Fuseable){
-			return onAssembly(new MonoSourceFuseable<>(source));
-		}
-		return onAssembly(new MonoSource<>(source));
+
+		//we delegate to `wrap` and apply assembly hooks
+		@SuppressWarnings("unchecked") Publisher<I> downcasted = (Publisher<I>) source;
+		return onAssembly(wrap(downcasted, false));
 	}
 
 	/**
@@ -2625,24 +2635,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Flux} variant of this {@link Mono}
 	 */
     public final Flux<T> flux() {
-	    if (this instanceof Callable) {
-	        if (this instanceof Fuseable.ScalarCallable) {
-		        T v;
-		        try {
-			        v = block();
-		        }
-		        catch (Throwable t) {
-			        return Flux.error(t);
-		        }
-	            if (v == null) {
-	                return Flux.empty();
-	            }
-	            return Flux.just(v);
-	        }
+	    if (this instanceof Callable && !(this instanceof Fuseable.ScalarCallable)) {
 		    @SuppressWarnings("unchecked") Callable<T> thiz = (Callable<T>) this;
 		    return Flux.onAssembly(new FluxCallable<>(thiz));
 	    }
-		return Flux.wrap(this);
+		return Flux.from(this);
 	}
 
 	/**
@@ -4530,6 +4527,57 @@ public abstract class Mono<T> implements Publisher<T> {
 				onError,
 				onComplete, onRequest,
 				onCancel));
+	}
+
+	/**
+	 * Unchecked wrap of {@link Publisher} as {@link Mono}, supporting {@link Fuseable} sources.
+	 * When converting a {@link Mono} or {@link Mono Monos} that have been converted to a {@link Flux} and back,
+	 * the original {@link Mono} is returned unwrapped.
+	 * Note that this bypasses {@link Hooks#onEachOperator(String, Function) assembly hooks}.
+	 *
+	 * @param source the {@link Publisher} to wrap
+	 * @param enforceMonoContract {@code} true to wrap publishers without assumption about their cardinality
+	 * (first {@link Subscriber#onNext(Object)} will cancel the source), {@code false} to behave like {@link #fromDirect(Publisher)}.
+	 * @param <T> input upstream type
+	 * @return a wrapped {@link Mono}
+	 */
+	static <T> Mono<T> wrap(Publisher<T> source, boolean enforceMonoContract) {
+		//some sources can be considered already assembled monos
+		//all conversion methods (from, fromDirect, wrap) must accommodate for this
+		if (source instanceof Mono) {
+			return (Mono<T>) source;
+		}
+		if (source instanceof FluxSourceMono
+				|| source instanceof FluxSourceMonoFuseable) {
+			FluxFromMonoOperator<T, T> wrapper = (FluxFromMonoOperator<T,T>) source;
+			@SuppressWarnings("unchecked")
+			Mono<T> extracted = (Mono<T>) wrapper.source;
+			return extracted;
+		}
+
+		//equivalent to what from used to be, without assembly hooks
+		if (enforceMonoContract) {
+			if (source instanceof Flux && source instanceof Callable) {
+					@SuppressWarnings("unchecked") Callable<T> m = (Callable<T>) source;
+					return Flux.wrapToMono(m);
+			}
+			if (source instanceof Flux) {
+				return new MonoNext<>((Flux<T>) source);
+			}
+			return new MonoFromPublisher<>(source);
+		}
+
+		//equivalent to what fromDirect used to be without onAssembly
+		if(source instanceof Flux && source instanceof Fuseable) {
+			return new MonoSourceFluxFuseable<>((Flux<T>) source);
+		}
+		if (source instanceof Flux) {
+			return new MonoSourceFlux<>((Flux<T>) source);
+		}
+		if(source instanceof Fuseable){
+			return new MonoSourceFuseable<>(source);
+		}
+		return new MonoSource<>(source);
 	}
 
 	@SuppressWarnings("unchecked")

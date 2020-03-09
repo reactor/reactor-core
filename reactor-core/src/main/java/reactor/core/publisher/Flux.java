@@ -911,6 +911,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Decorate the specified {@link Publisher} with the {@link Flux} API.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromForFlux.svg" alt="">
+	 * <p>
+	 * {@link Hooks#onEachOperator(String, Function)} and similar assembly hooks are applied
+	 * unless the source is already a {@link Flux}.
 	 *
 	 * @param source the source to decorate
 	 * @param <T> The type of values in both source and output sequences
@@ -918,26 +921,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
+		//duplicated in wrap, but necessary to detect early and thus avoid applying assembly
 		if (source instanceof Flux) {
 			@SuppressWarnings("unchecked")
 			Flux<T> casted = (Flux<T>) source;
 			return casted;
 		}
 
-		if (source instanceof Fuseable.ScalarCallable) {
-			try {
-				@SuppressWarnings("unchecked") T t =
-						((Fuseable.ScalarCallable<T>) source).call();
-				if (t != null) {
-					return just(t);
-				}
-				return empty();
-			}
-			catch (Exception e) {
-				return error(e);
-			}
-		}
-		return wrap(source);
+		//all other cases (including ScalarCallable) are managed without assembly in wrap
+		//let onAssembly point to Flux.from:
+		return onAssembly(wrap(source));
 	}
 
 	/**
@@ -5473,11 +5466,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	    if (this instanceof Callable) {
 		    @SuppressWarnings("unchecked")
 		    Callable<T> thiz = (Callable<T>) this;
-		    Mono<T> callableMono = convertToMono(thiz);
+		    Mono<T> callableMono = wrapToMono(thiz);
 		    if (callableMono == Mono.empty()) {
-			    return Mono.error(new NoSuchElementException("Flux#last() didn't observe any onNext signal from Callable flux"));
+			    return Mono.onAssembly(new MonoError<>(new NoSuchElementException("Flux#last() didn't observe any onNext signal from Callable flux")));
 		    }
-	        return callableMono;
+	        return Mono.onAssembly(callableMono);
 	    }
 		return Mono.onAssembly(new MonoTakeLastOne<>(this));
 	}
@@ -5894,7 +5887,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		if(this instanceof Callable){
 			@SuppressWarnings("unchecked")
 			Callable<T> m = (Callable<T>)this;
-			return convertToMono(m);
+			return Mono.onAssembly(wrapToMono(m));
 		}
 		return Mono.onAssembly(new MonoNext<>(this));
 	}
@@ -6707,7 +6700,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		if (this instanceof Callable){
 			@SuppressWarnings("unchecked")
 			Callable<T> thiz = (Callable<T>)this;
-		    return convertToMono(thiz);
+		    return Mono.onAssembly(wrapToMono(thiz));
 		}
 	    return Mono.onAssembly(new MonoReduce<>(this, aggregator));
 	}
@@ -7605,7 +7598,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	    if (this instanceof Callable) {
 		    @SuppressWarnings("unchecked")
 		    Callable<T> thiz = (Callable<T>)this;
-	        return convertToMono(thiz);
+	        return Mono.onAssembly(wrapToMono(thiz));
 	    }
 		return Mono.onAssembly(new MonoSingle<>(this, null, true));
 	}
@@ -9472,13 +9465,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Returns the appropriate Mono instance for a known Supplier Flux.
+	 * Returns the appropriate Mono instance for a known Supplier Flux, WITHOUT applying hooks
+	 * (see {@link #wrap(Publisher)}).
 	 *
 	 * @param supplier the supplier Flux
 	 *
 	 * @return the mono representing that Flux
 	 */
-	static <T> Mono<T> convertToMono(Callable<T> supplier) {
+	static <T> Mono<T> wrapToMono(Callable<T> supplier) {
 		if (supplier instanceof Fuseable.ScalarCallable) {
 			Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) supplier;
 
@@ -9487,14 +9481,14 @@ public abstract class Flux<T> implements Publisher<T> {
 				v = scalarCallable.call();
 			}
 			catch (Exception e) {
-				return Mono.error(e);
+				return new MonoError<>(e);
 			}
 			if (v == null) {
-				return Mono.empty();
+				return MonoEmpty.instance();
 			}
-			return Mono.just(v);
+			return new MonoJust<>(v);
 		}
-		return Mono.onAssembly(new MonoCallable<>(supplier));
+		return new MonoCallable<>(supplier);
 	}
 
 	@SafeVarargs
@@ -9597,14 +9591,34 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Unchecked wrap of {@link Publisher} as {@link Flux}, supporting {@link Fuseable} sources
+	 * Unchecked wrap of {@link Publisher} as {@link Flux}, supporting {@link Fuseable} sources.
+	 * Note that this bypasses {@link Hooks#onEachOperator(String, Function) assembly hooks}.
 	 *
 	 * @param source the {@link Publisher} to wrap
 	 * @param <I> input upstream type
 	 * @return a wrapped {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
-	static <I> Flux<I> wrap(Publisher<? extends I> source){
+	static <I> Flux<I> wrap(Publisher<? extends I> source) {
+		if (source instanceof  Flux) {
+			return (Flux<I>) source;
+		}
+
+		//for scalars we'll instantiate the operators directly to avoid onAssembly
+		if (source instanceof Fuseable.ScalarCallable) {
+			try {
+				@SuppressWarnings("unchecked") I t =
+						((Fuseable.ScalarCallable<I>) source).call();
+				if (t != null) {
+					return new FluxJust<>(t);
+				}
+				return FluxEmpty.instance();
+			}
+			catch (Exception e) {
+				return new FluxError<>(e);
+			}
+		}
+
 		if(source instanceof Mono){
 			if(source instanceof Fuseable){
 				return new FluxSourceMonoFuseable<>((Mono<I>)source);

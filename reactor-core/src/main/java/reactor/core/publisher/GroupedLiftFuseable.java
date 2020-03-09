@@ -66,6 +66,14 @@ final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 	}
 
 	@Override
+	public String stepName() {
+		if (source instanceof Scannable) {
+			return Scannable.from(source).stepName();
+		}
+		return Scannable.super.stepName();
+	}
+
+	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);
