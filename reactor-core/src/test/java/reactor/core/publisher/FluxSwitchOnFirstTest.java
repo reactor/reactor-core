@@ -1505,6 +1505,7 @@ public class FluxSwitchOnFirstTest {
                 Mockito.verify(mockSubscription).request(Mockito.longThat(argument -> argument.equals(54L)));
                 assertSubscriber.assertSubscribed()
                         .awaitAndAssertNextValues(signal)
+                        .await()
                         .assertComplete();
             }
         }
@@ -1535,6 +1536,7 @@ public class FluxSwitchOnFirstTest {
                 Mockito.verify(mockSubscription).request(Mockito.longThat(argument -> argument.equals(54L)));
                 assertSubscriber.assertSubscribed()
                         .awaitAndAssertNextValues(signal)
+                        .await()
                         .assertErrorWith(t -> Assertions.assertThat(t).isEqualTo(ex));
             }
         }
