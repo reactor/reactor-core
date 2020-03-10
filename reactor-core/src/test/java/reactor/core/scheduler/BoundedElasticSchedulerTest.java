@@ -872,7 +872,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		latch.countDown();
 
 		Awaitility.with().pollInterval(50, TimeUnit.MILLISECONDS).pollDelay(100, TimeUnit.MILLISECONDS)
-		          .await().atMost(150, TimeUnit.MILLISECONDS)
+		          .await().atMost(500, TimeUnit.MILLISECONDS)
 		          .untilAsserted(() -> assertThat(taskDone)
 				          .as("all tasks done after blocking")
 				          .hasValue(limit)
