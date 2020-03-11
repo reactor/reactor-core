@@ -27,6 +27,11 @@ import reactor.core.CoreSubscriber;
 final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements CoreSubscriber<T> {
 
 	final AtomicReference<Subscription> ref = new AtomicReference<>();
+	final boolean cancelSourceOnNext;
+
+	MonoToCompletableFuture(boolean sourceCanEmitMoreThanOnce) {
+		this.cancelSourceOnNext = sourceCanEmitMoreThanOnce;
+	}
 
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
@@ -55,7 +60,9 @@ final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements C
 		Subscription s = ref.getAndSet(null);
 		if (s != null) {
 			complete(t);
-			s.cancel();
+			if (cancelSourceOnNext) {
+				s.cancel();
+			}
 		}
 		else {
 			Operators.onNextDropped(t, currentContext());
