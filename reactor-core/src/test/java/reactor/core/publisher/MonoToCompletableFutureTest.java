@@ -16,10 +16,13 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoToCompletableFutureTest {
 
@@ -31,14 +34,18 @@ public class MonoToCompletableFutureTest {
 		assertThat(f.get()).isEqualTo(1);
 	}
 
-	@Test(expected = Exception.class)
-	public void error() throws Exception {
+	@Test
+	public void error() {
 		CompletableFuture<Integer> f =
-				Mono.<Integer>error(new Exception("test")).toFuture();
+				Mono.<Integer>error(new IllegalStateException("test")).toFuture();
 
 		assertThat(f.isDone()).isTrue();
 		assertThat(f.isCompletedExceptionally()).isTrue();
-		f.get();
+
+		assertThatExceptionOfType(ExecutionException.class)
+				.isThrownBy(f::get)
+				.withCauseExactlyInstanceOf(IllegalStateException.class)
+				.withMessage("java.lang.IllegalStateException: test");
 	}
 
 	@Test
@@ -46,5 +53,29 @@ public class MonoToCompletableFutureTest {
 		CompletableFuture<Integer> f = Mono.<Integer>empty().toFuture();
 
 		assertThat(f.get()).isNull();
+	}
+
+	@Test
+	public void monoSourceIsntCancelled() {
+		AtomicBoolean flag = new AtomicBoolean();
+
+		assertThat(Mono.just("value")
+		    .doOnCancel(() -> flag.set(true))
+		    .toFuture()
+		).isCompletedWithValue("value");
+		
+		assertThat(flag).as("cancelled").isFalse();
+	}
+
+	@Test
+	public void sourceCanBeCancelledExplicitlyByOnNext() {
+		AtomicBoolean flag = new AtomicBoolean();
+
+		assertThat(Flux.just("value")
+		               .doOnCancel(() -> flag.set(true))
+		               .subscribeWith(new MonoToCompletableFuture<>(true))
+		).isCompletedWithValue("value");
+
+		assertThat(flag).as("cancelled").isTrue();
 	}
 }
