@@ -4547,7 +4547,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a {@link CompletableFuture}
 	 */
 	public final CompletableFuture<T> toFuture() {
-		return subscribeWith(new MonoToCompletableFuture<>());
+		return subscribeWith(new MonoToCompletableFuture<>(false));
 	}
 
 	/**
