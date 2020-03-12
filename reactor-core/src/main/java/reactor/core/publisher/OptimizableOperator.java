@@ -41,7 +41,7 @@ interface OptimizableOperator<IN, OUT> extends CorePublisher<IN> {
 	 * @return next {@link CoreSubscriber} or "null" if the subscription was already done inside the method
 	 */
 	@Nullable
-	CoreSubscriber<? super OUT> subscribeOrReturn(CoreSubscriber<? super IN> actual);
+	CoreSubscriber<? super OUT> subscribeOrReturn(CoreSubscriber<? super IN> actual) throws Throwable;
 
 	/**
 	 * @return {@link CorePublisher} to call {@link CorePublisher#subscribe(CoreSubscriber)} on

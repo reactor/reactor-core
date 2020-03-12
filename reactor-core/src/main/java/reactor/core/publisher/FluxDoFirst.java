@@ -44,14 +44,7 @@ final class FluxDoFirst<T> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-
-		try {
-			onFirst.run();
-		}
-		catch (Throwable error) {
-			Operators.error(actual, error);
-			return null;
-		}
+		onFirst.run();
 		return actual;
 	}
 }

@@ -49,26 +49,10 @@ final class FluxZipIterable<T, U, R> extends InternalFluxOperator<T, R> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
-		Iterator<? extends U> it;
+		Iterator<? extends U> it = Objects.requireNonNull(other.iterator(),
+				"The other iterable produced a null iterator");
 
-		try {
-			it = Objects.requireNonNull(other.iterator(),
-					"The other iterable produced a null iterator");
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return null;
-		}
-
-		boolean b;
-
-		try {
-			b = it.hasNext();
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return null;
-		}
+		boolean b = it.hasNext();
 
 		if (!b) {
 			Operators.complete(actual);

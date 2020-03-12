@@ -72,7 +72,13 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
 		OptimizableOperator operator = this;
 		while (true) {
-			subscriber = operator.subscribeOrReturn(subscriber);
+			try {
+				subscriber = operator.subscribeOrReturn(subscriber);
+			}
+			catch (Throwable e) {
+				Operators.error(subscriber, Operators.onOperatorError(e,  subscriber.currentContext()));
+				return;
+			}
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;
@@ -88,7 +94,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 
 	@Override
 	@Nullable
-	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual);
+	public abstract CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) throws Throwable;
 
 	@Override
 	public final CorePublisher<? extends I> source() {

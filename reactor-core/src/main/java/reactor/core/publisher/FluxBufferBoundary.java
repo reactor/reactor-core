@@ -61,16 +61,8 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
-		C buffer;
-
-		try {
-			buffer = Objects.requireNonNull(bufferSupplier.get(),
-					"The bufferSupplier returned a null buffer");
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e,  actual.currentContext()));
-			return null;
-		}
+		C buffer = Objects.requireNonNull(bufferSupplier.get(),
+				"The bufferSupplier returned a null buffer");
 
 		BufferBoundaryMain<T, U, C> parent =
 				new BufferBoundaryMain<>(

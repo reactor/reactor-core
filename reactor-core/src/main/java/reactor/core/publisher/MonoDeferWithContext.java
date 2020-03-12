@@ -39,17 +39,9 @@ final class MonoDeferWithContext<T> extends Mono<T> implements SourceProducer<T>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Mono<? extends T> p;
-
 		Context ctx = actual.currentContext();
-		try {
-			p = Objects.requireNonNull(supplier.apply(ctx),
-					"The Mono returned by the supplier is null");
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, ctx));
-			return;
-		}
+		Mono<? extends T> p = Objects.requireNonNull(supplier.apply(ctx),
+				"The Mono returned by the supplier is null");
 
 		p.subscribe(actual);
 	}

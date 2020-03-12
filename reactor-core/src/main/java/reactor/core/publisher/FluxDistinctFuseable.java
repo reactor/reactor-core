@@ -56,16 +56,8 @@ final class FluxDistinctFuseable<T, K, C>
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		C collection;
-
-		try {
-			collection = Objects.requireNonNull(collectionSupplier.get(),
-					"The collectionSupplier returned a null collection");
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return null;
-		}
+		C collection = Objects.requireNonNull(collectionSupplier.get(),
+				"The collectionSupplier returned a null collection");
 
 		return new DistinctFuseableSubscriber<>(actual, collection, keyExtractor,
 				distinctPredicate, cleanupCallback);

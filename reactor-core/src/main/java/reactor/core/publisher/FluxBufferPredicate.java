@@ -81,16 +81,8 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super C> actual) {
-		C initialBuffer;
-
-		try {
-			initialBuffer = Objects.requireNonNull(bufferSupplier.get(),
-					"The bufferSupplier returned a null initial buffer");
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return null;
-		}
+		C initialBuffer = Objects.requireNonNull(bufferSupplier.get(),
+				"The bufferSupplier returned a null initial buffer");
 
 		BufferPredicateSubscriber<T, C> parent = new BufferPredicateSubscriber<>(actual,
 				initialBuffer, bufferSupplier, predicate, mode);

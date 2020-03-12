@@ -53,7 +53,13 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
 		OptimizableOperator operator = this;
 		while (true) {
-			subscriber = operator.subscribeOrReturn(subscriber);
+			try {
+				subscriber = operator.subscribeOrReturn(subscriber);
+			}
+			catch (Throwable e) {
+				Operators.error(subscriber, Operators.onOperatorError(e,  subscriber.currentContext()));
+				return;
+			}
 			if (subscriber == null) {
 				// null means "I will subscribe myself", returning...
 				return;

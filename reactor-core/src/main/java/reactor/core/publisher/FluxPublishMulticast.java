@@ -75,17 +75,8 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 				queueSupplier,
 				actual.currentContext());
 
-		Publisher<? extends R> out;
-
-		try {
-			out = Objects.requireNonNull(transform.apply(multicast),
-					"The transform returned a null Publisher");
-		}
-		catch (Throwable ex) {
-			Operators.error(actual,
-					Operators.onOperatorError(ex, actual.currentContext()));
-			return null;
-		}
+		Publisher<? extends R> out = Objects.requireNonNull(transform.apply(multicast),
+				"The transform returned a null Publisher");
 
 		if (out instanceof Fuseable) {
 			out.subscribe(new CancelFuseableMulticaster<>(actual, multicast));
