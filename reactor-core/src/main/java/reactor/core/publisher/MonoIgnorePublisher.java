@@ -52,11 +52,17 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable,
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(subscribeOrReturn(actual));
+		try {
+			source.subscribe(subscribeOrReturn(actual));
+		}
+		catch (Throwable e) {
+			Operators.error(actual, Operators.onOperatorError(e,  actual.currentContext()));
+			return;
+		}
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
 		return new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
 	}
 

@@ -55,15 +55,21 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<? super T> subscriber = subscribeOrReturn(actual);
-		if (subscriber == null) {
+		try {
+			CoreSubscriber<? super T> subscriber = subscribeOrReturn(actual);
+			if (subscriber == null) {
+				return;
+			}
+			source.subscribe(subscriber);
+		}
+		catch (Throwable e) {
+			Operators.error(actual, Operators.onOperatorError(e,  actual.currentContext()));
 			return;
 		}
-		source.subscribe(subscriber);
 	}
 
 	@Override
-	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
 		return new MonoNext.NextSubscriber<>(actual);
 	}
 
