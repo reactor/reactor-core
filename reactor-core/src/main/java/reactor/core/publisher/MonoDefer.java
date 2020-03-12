@@ -38,8 +38,16 @@ final class MonoDefer<T> extends Mono<T> implements SourceProducer<T> {
 
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Mono<? extends T> p = Objects.requireNonNull(supplier.get(),
-				"The Mono returned by the supplier is null");
+		Mono<? extends T> p;
+
+		try {
+			p = Objects.requireNonNull(supplier.get(),
+					"The Mono returned by the supplier is null");
+		}
+		catch (Throwable e) {
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
+			return;
+		}
 
 		p.subscribe(actual);
 	}
