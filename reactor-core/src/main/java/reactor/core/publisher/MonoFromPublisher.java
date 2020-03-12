@@ -63,7 +63,7 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 			source.subscribe(subscriber);
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e,  actual.currentContext()));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 	}

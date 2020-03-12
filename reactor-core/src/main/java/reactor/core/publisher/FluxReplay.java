@@ -1084,7 +1084,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			source.subscribe(nextSubscriber);
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e,  actual.currentContext()));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 	}

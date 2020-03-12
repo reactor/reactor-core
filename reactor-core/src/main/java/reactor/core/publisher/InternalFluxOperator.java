@@ -55,7 +55,7 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 				subscriber = operator.subscribeOrReturn(subscriber);
 			}
 			catch (Throwable e) {
-				Operators.error(subscriber, Operators.onOperatorError(e,  subscriber.currentContext()));
+				Operators.error(subscriber, Operators.onOperatorError(e, subscriber.currentContext()));
 				return;
 			}
 			if (subscriber == null) {

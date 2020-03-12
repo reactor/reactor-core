@@ -4196,7 +4196,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 					subscriber = operator.subscribeOrReturn(subscriber);
 				}
 				catch (Throwable e) {
-					Operators.error(subscriber, Operators.onOperatorError(e,  subscriber.currentContext()));
+					Operators.error(subscriber, Operators.onOperatorError(e, subscriber.currentContext()));
 					return;
 				}
 				if (subscriber == null) {
