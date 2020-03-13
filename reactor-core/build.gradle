@@ -63,6 +63,10 @@ dependencies {
   jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
   testCompile "junit:junit:$jUnitVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
+  testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
+  testRuntime "org.junit.vintage:junit-vintage-engine:${jUnitJupiterVersion}"
+
   testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
   testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
   // Testing
@@ -179,6 +183,10 @@ task testNoMicrometer(type: Test, group: 'verification') {
   doFirst {
 	println "Additional tests without Micrometer ($includes)"
   }
+}
+
+tasks.withType(Test).all {
+  useJUnitPlatform()
 }
 
 //inherit basic test task + common configuration in root

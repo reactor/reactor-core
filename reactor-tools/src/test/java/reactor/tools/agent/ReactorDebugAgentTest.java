@@ -18,8 +18,7 @@ package reactor.tools.agent;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.NoOp;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
@@ -148,9 +147,7 @@ public class ReactorDebugAgentTest {
 		return new Exception().getStackTrace()[1].getLineNumber();
 	}
 
-	@Ignore
 	static class ProxyMe {
-		@Ignore
 		static class MyMono extends Mono<Void> {
 			@Override
 			public void subscribe(CoreSubscriber<? super Void> actual) {

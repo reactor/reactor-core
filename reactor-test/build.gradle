@@ -24,6 +24,9 @@ dependencies {
   compile project(":reactor-core")
 
   testCompile "junit:junit:$jUnitVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
+  testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
+  testRuntime "org.junit.vintage:junit-vintage-engine:${jUnitJupiterVersion}"
 
   testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
 
@@ -65,6 +68,10 @@ task japicmp(type: JapicmpTask) {
   includeSynthetic = true
 
   //TODO after a release, remove the reactor-test exclusions below if any
+}
+
+tasks.withType(Test).all {
+  useJUnitPlatform()
 }
 
 //javadoc is configured in gradle/javadoc.gradle

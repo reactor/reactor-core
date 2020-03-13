@@ -39,7 +39,9 @@ dependencies {
         compileOnly(dependency)
     }
 
-    testCompile 'junit:junit:4.12'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
+
     testCompile "org.assertj:assertj-core:$assertJVersion"
     testCompile 'cglib:cglib:3.3.0'
 
@@ -136,6 +138,10 @@ task shadedJarTest(type: Test) {
     dependsOn(shadowJar)
 }
 project.tasks.check.dependsOn(shadedJarTest)
+
+tasks.withType(Test).all {
+    useJUnitPlatform()
+}
 
 //add jar and original jar to the publication
 publishing.publications.mavenJava.artifact(shadowJar)
