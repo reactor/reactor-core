@@ -402,7 +402,6 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test
 	public void lifoEvictionNoThreadRegrowth() throws InterruptedException {
-		int otherThreads = Thread.activeCount(); //don't count the evictor at shutdown
 		BoundedElasticScheduler scheduler = afterTest.autoDispose(new BoundedElasticScheduler(200, Integer.MAX_VALUE,
 				r -> new Thread(r, "dequeueEviction"), 1));
 		try {
@@ -424,8 +423,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 			int threadCountChange = 1;
 
 			int oldActive = 0;
-			int activeAtBeginning = 0;
-			int activeAtEnd = Integer.MAX_VALUE;
+			int activeAtBeginning;
 			for (int i = 0; i < fastCount; i++) {
 				Mono.just(i)
 				    .subscribeOn(scheduler)
@@ -433,18 +431,13 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				    .subscribe();
 
 				if (i == 0) {
-					activeAtBeginning = Thread.activeCount() - otherThreads;
+					activeAtBeginning = Thread.activeCount();
 					threadCountTrend[0] = activeAtBeginning;
 					oldActive = activeAtBeginning;
 					LOGGER.debug("{} threads active in round 1/{}", activeAtBeginning, fastCount);
 				}
-				else if (i == fastCount - 1) {
-					activeAtEnd = Thread.activeCount() - otherThreads;
-					threadCountTrend[threadCountChange] = activeAtEnd;
-					LOGGER.debug("{} threads active in round {}/{}", activeAtEnd, i + 1, fastCount);
-				}
 				else {
-					int newActive = Thread.activeCount() - otherThreads;
+					int newActive = Thread.activeCount();
 					if (oldActive != newActive) {
 						threadCountTrend[threadCountChange++] = newActive;
 						oldActive = newActive;
@@ -456,14 +449,15 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 			assertThat(scheduler.estimateBusy()).as("busy at end of loop").isZero();
 			assertThat(threadCountTrend).as("no thread regrowth").isSortedAccordingTo(Comparator.reverseOrder());
-			assertThat(activeAtEnd).as("at most one worker + evictor at end").isBetween(1, 2);
+			assertThat(dumpThreadNames().filter(name -> name.contains("dequeueEviction") || name.contains("boundedElastic-evictor")).count())
+					.as("at most 1 worker + 1 evictor at end").isLessThanOrEqualTo(2);
 
 			System.out.println(Arrays.toString(Arrays.copyOf(threadCountTrend, threadCountChange)));
 		}
 		finally {
 			scheduler.dispose();
 			Thread.sleep(100);
-			final int postShutdown = Thread.activeCount() - otherThreads;
+			final long postShutdown = dumpThreadNames().filter(name -> name.contains("dequeueEviction") || name.contains("boundedElastic-evictor")).count();
 			LOGGER.info("{} threads active post shutdown", postShutdown);
 			assertThat(postShutdown)
 					.as("post shutdown")
