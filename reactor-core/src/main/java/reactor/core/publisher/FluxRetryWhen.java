@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       https://www.apache.org/licenses/LICENSE-2.0
+ *        https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,22 +15,20 @@
  */
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.retry.Retry;
 
 /**
  * Retries a source when a companion sequence signals
@@ -44,21 +42,18 @@ import reactor.util.context.Context;
  */
 final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
-	static final Duration MAX_BACKOFF = Duration.ofMillis(Long.MAX_VALUE);
+	final Retry whenSourceFactory;
 
-	final Function<? super Flux<Throwable>, ? extends Publisher<?>> whenSourceFactory;
-
-	FluxRetryWhen(Flux<? extends T> source,
-							  Function<? super Flux<Throwable>, ? extends Publisher<?>> whenSourceFactory) {
+	FluxRetryWhen(Flux<? extends T> source, Retry whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory = Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}
 
-	static <T> void subscribe(CoreSubscriber<? super T> s, Function<? super
-			Flux<Throwable>, ?
-			extends Publisher<?>> whenSourceFactory, CorePublisher<? extends T> source) {
+	static <T> void subscribe(CoreSubscriber<? super T> s,
+			Retry whenSourceFactory,
+			CorePublisher<? extends T> source) {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
-		Subscriber<Throwable> signaller = Operators.serialize(other.completionSignal);
+		Subscriber<Retry.RetrySignal> signaller = Operators.serialize(other.completionSignal);
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
@@ -66,21 +61,18 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		RetryWhenMainSubscriber<T> main =
 				new RetryWhenMainSubscriber<>(serial, signaller, source);
-		other.main = main;
 
+		other.main = main;
 		serial.onSubscribe(main);
 
 		Publisher<?> p;
-
 		try {
-			p = Objects.requireNonNull(whenSourceFactory.apply(other),
-			"The whenSourceFactory returned a null Publisher");
+			p = Objects.requireNonNull(whenSourceFactory.generateCompanion(other), "The whenSourceFactory returned a null Publisher");
 		}
 		catch (Throwable e) {
 			s.onError(Operators.onOperatorError(e, s.currentContext()));
 			return;
 		}
-
 		p.subscribe(other);
 
 		if (!main.cancelled) {
@@ -94,14 +86,19 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		return null;
 	}
 
-	static final class RetryWhenMainSubscriber<T> extends
-	                                              Operators.MultiSubscriptionSubscriber<T, T> {
+	static final class RetryWhenMainSubscriber<T> extends Operators.MultiSubscriptionSubscriber<T, T>
+			implements Retry.RetrySignal {
 
 		final Operators.DeferredSubscription otherArbiter;
 
-		final Subscriber<Throwable> signaller;
+		final Subscriber<Retry.RetrySignal> signaller;
 
 		final CorePublisher<? extends T> source;
+
+		long totalFailureIndex = 0L;
+		long subsequentFailureIndex = 0L;
+		@Nullable
+		Throwable lastFailure = null;
 
 		Context context;
 
@@ -111,13 +108,30 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		long produced;
 		
-		RetryWhenMainSubscriber(CoreSubscriber<? super T> actual, Subscriber<Throwable> signaller,
+		RetryWhenMainSubscriber(CoreSubscriber<? super T> actual,
+				Subscriber<Retry.RetrySignal> signaller,
 				CorePublisher<? extends T> source) {
 			super(actual);
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
 			this.context = actual.currentContext();
+		}
+
+		@Override
+		public long totalRetries() {
+			return this.totalFailureIndex - 1;
+		}
+
+		@Override
+		public long totalRetriesInARow() {
+			return this.subsequentFailureIndex - 1;
+		}
+
+		@Override
+		public Throwable failure() {
+			assert this.lastFailure != null;
+			return this.lastFailure;
 		}
 
 		@Override
@@ -136,15 +150,15 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 				otherArbiter.cancel();
 				super.cancel();
 			}
-
 		}
 
-		public void setWhen(Subscription w) {
+		void swap(Subscription w) {
 			otherArbiter.set(w);
 		}
 
 		@Override
 		public void onNext(T t) {
+			subsequentFailureIndex = 0;
 			actual.onNext(t);
 
 			produced++;
@@ -152,6 +166,9 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
+			totalFailureIndex++;
+			subsequentFailureIndex++;
+			lastFailure = t;
 			long p = produced;
 			if (p != 0L) {
 				produced = 0;
@@ -160,11 +177,12 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 			otherArbiter.request(1);
 
-			signaller.onNext(t);
+			signaller.onNext(this);
 		}
 
 		@Override
 		public void onComplete() {
+			lastFailure = null;
 			otherArbiter.cancel();
 
 			actual.onComplete();
@@ -202,11 +220,11 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		}
 	}
 
-	static final class RetryWhenOtherSubscriber extends Flux<Throwable>
-	implements InnerConsumer<Object>, OptimizableOperator<Throwable, Throwable> {
+	static final class RetryWhenOtherSubscriber extends Flux<Retry.RetrySignal>
+	implements InnerConsumer<Object>, OptimizableOperator<Retry.RetrySignal, Retry.RetrySignal> {
 		RetryWhenMainSubscriber<?> main;
 
-		final DirectProcessor<Throwable> completionSignal = new DirectProcessor<>();
+		final DirectProcessor<Retry.RetrySignal> completionSignal = new DirectProcessor<>();
 
 		@Override
 		public Context currentContext() {
@@ -224,7 +242,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			main.setWhen(s);
+			main.swap(s);
 		}
 
 		@Override
@@ -243,84 +261,24 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber<? super Throwable> actual) {
+		public void subscribe(CoreSubscriber<? super Retry.RetrySignal> actual) {
 			completionSignal.subscribe(actual);
 		}
 
 		@Override
-		public CoreSubscriber<? super Throwable> subscribeOrReturn(CoreSubscriber<? super Throwable> actual) {
+		public CoreSubscriber<? super Retry.RetrySignal> subscribeOrReturn(CoreSubscriber<? super Retry.RetrySignal> actual) {
 			return actual;
 		}
 
 		@Override
-		public DirectProcessor<Throwable> source() {
+		public DirectProcessor<Retry.RetrySignal> source() {
 			return completionSignal;
 		}
 
 		@Override
-		public OptimizableOperator<?, ? extends Throwable> nextOptimizableSource() {
+		public OptimizableOperator<?, ? extends Retry.RetrySignal> nextOptimizableSource() {
 			return null;
 		}
 	}
 
-	static Function<Flux<Throwable>, Publisher<Long>> randomExponentialBackoffFunction(
-			long numRetries, Duration firstBackoff, Duration maxBackoff,
-			double jitterFactor, Scheduler backoffScheduler) {
-		if (jitterFactor < 0 || jitterFactor > 1) throw new IllegalArgumentException("jitterFactor must be between 0 and 1 (default 0.5)");
-		Objects.requireNonNull(firstBackoff, "firstBackoff is required");
-		Objects.requireNonNull(maxBackoff, "maxBackoff is required");
-		Objects.requireNonNull(backoffScheduler, "backoffScheduler is required");
-
-		return t -> t.index()
-		             .flatMap(t2 -> {
-			             long iteration = t2.getT1();
-
-			             if (iteration >= numRetries) {
-				             return Mono.<Long>error(new IllegalStateException("Retries exhausted: " + iteration + "/" + numRetries, t2.getT2()));
-			             }
-
-			             Duration nextBackoff;
-			             try {
-				             nextBackoff = firstBackoff.multipliedBy((long) Math.pow(2, iteration));
-				             if (nextBackoff.compareTo(maxBackoff) > 0) {
-					             nextBackoff = maxBackoff;
-				             }
-			             }
-			             catch (ArithmeticException overflow) {
-				             nextBackoff = maxBackoff;
-			             }
-
-			             //short-circuit delay == 0 case
-			             if (nextBackoff.isZero()) {
-				             return Mono.just(iteration);
-			             }
-
-			             ThreadLocalRandom random = ThreadLocalRandom.current();
-
-			             long jitterOffset;
-			             try {
-				             jitterOffset = nextBackoff.multipliedBy((long) (100 * jitterFactor))
-				                                       .dividedBy(100)
-				                                       .toMillis();
-			             }
-			             catch (ArithmeticException ae) {
-				             jitterOffset = Math.round(Long.MAX_VALUE * jitterFactor);
-			             }
-			             long lowBound = Math.max(firstBackoff.minus(nextBackoff)
-			                                                  .toMillis(), -jitterOffset);
-			             long highBound = Math.min(maxBackoff.minus(nextBackoff)
-			                                                 .toMillis(), jitterOffset);
-
-			             long jitter;
-			             if (highBound == lowBound) {
-				             if (highBound == 0) jitter = 0;
-				             else jitter = random.nextLong(highBound);
-			             }
-			             else {
-				             jitter = random.nextLong(lowBound, highBound);
-			             }
-			             Duration effectiveBackoff = nextBackoff.plusMillis(jitter);
-			             return Mono.delay(effectiveBackoff, backoffScheduler);
-		             });
-	}
 }

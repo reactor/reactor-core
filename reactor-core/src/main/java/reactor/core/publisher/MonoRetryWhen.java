@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       https://www.apache.org/licenses/LICENSE-2.0
+ *        https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,9 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.Function;
 
-import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
+import reactor.util.retry.Retry;
 
 /**
  * retries a source when a companion sequence signals an item in response to the main's
@@ -35,14 +34,11 @@ import reactor.core.CoreSubscriber;
  */
 final class MonoRetryWhen<T> extends InternalMonoOperator<T, T> {
 
-	final Function<? super Flux<Throwable>, ? extends Publisher<?>>
-			whenSourceFactory;
+	final Retry whenSourceFactory;
 
-	MonoRetryWhen(Mono<? extends T> source,
-			Function<? super Flux<Throwable>, ? extends Publisher<?>> whenSourceFactory) {
+	MonoRetryWhen(Mono<? extends T> source, Retry whenSourceFactory) {
 		super(source);
-		this.whenSourceFactory =
-				Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
+		this.whenSourceFactory = Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}
 
 	@Override

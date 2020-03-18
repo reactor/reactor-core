@@ -16,12 +16,11 @@
 package reactor.core;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Predicate;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -503,5 +502,33 @@ public class ExceptionsTest {
 		                      .containsExactlyElementsOf(filteredExceptions)
 		                      .hasSize(2)
 		                      .hasOnlyElementsOfType(IllegalStateException.class);
+	}
+
+	@Test
+	public void isRetryExhausted() {
+		Throwable match1 = Exceptions.retryExhausted("only a message", null);
+		Throwable match2 = Exceptions.retryExhausted("message and cause", new RuntimeException("cause: boom"));
+		Throwable noMatch = new IllegalStateException("Retry exhausted: 10/10");
+
+		assertThat(Exceptions.isRetryExhausted(null)).as("null").isFalse();
+		assertThat(Exceptions.isRetryExhausted(match1)).as("match1").isTrue();
+		assertThat(Exceptions.isRetryExhausted(match2)).as("match2").isTrue();
+		assertThat(Exceptions.isRetryExhausted(noMatch)).as("noMatch").isFalse();
+	}
+
+	@Test
+	public void retryExhaustedMessageWithNoCause() {
+		Throwable retryExhausted = Exceptions.retryExhausted("message with no cause", null);
+
+		assertThat(retryExhausted).hasMessage("message with no cause")
+		                          .hasNoCause();
+	}
+
+	@Test
+	public void retryExhaustedMessageWithCause() {
+		Throwable retryExhausted = Exceptions.retryExhausted("message with cause", new RuntimeException("boom"));
+
+		assertThat(retryExhausted).hasMessage("message with cause")
+		                          .hasCause(new RuntimeException("boom"));
 	}
 }

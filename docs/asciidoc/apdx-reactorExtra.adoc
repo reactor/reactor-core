@@ -73,6 +73,9 @@ Since 3.2.0, one of the most advanced retry strategies offered by these utilitie
 also part of the `reactor-core` main artifact directly. Exponential backoff is
 available as the `Flux#retryBackoff` operator.
 
+Since 3.3.4, the `Retry` builder is offered directly in core and has a few more possible
+customizations, being based on a `RetrySignal` that encapsulates additional state than the
+error.
 
 [[extra-schedulers]]
 == Schedulers

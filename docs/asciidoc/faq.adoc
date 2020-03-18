@@ -176,32 +176,34 @@ an unstable state and is not likely to immediately recover from it. So blindly
 retrying immediately is likely to produce yet another error and add to the
 instability.
 
-Since `3.2.0.RELEASE`, Reactor comes with such a retry baked in: `Flux.retryBackoff`.
+Since `3.3.4.RELEASE`, Reactor comes with a builder for such a retry baked in: `Retry.backoff`.
 
-The following example shows how to implement an exponential backoff with `retryWhen`.
+The following example showcases a simple use of the builder, with hooks logging message right before
+and after the retry attempt delays.
 It delays retries and increases the delay between each attempt (pseudocode:
 delay = attempt number * 100 milliseconds):
 
 ====
 [source,java]
 ----
+AtomicInteger errorCount = new AtomicInteger();
 Flux<String> flux =
-Flux.<String>error(new IllegalArgumentException())
-    .retryWhen(companion -> companion
-        .doOnNext(s -> System.out.println(s + " at " + LocalTime.now())) // <1>
-        .zipWith(Flux.range(1, 4), (error, index) -> { // <2>
-          if (index < 4) return index;
-          else throw Exceptions.propagate(error);
-        })
-        .flatMap(index -> Mono.delay(Duration.ofMillis(index * 100))) // <3>
-        .doOnNext(s -> System.out.println("retried at " + LocalTime.now())) // <4>
-    );
+Flux.<String>error(new IllegalStateException("boom"))
+		.doOnError(e -> { // <1>
+			errorCount.incrementAndGet();
+			System.out.println(e + " at " + LocalTime.now());
+		})
+		.retryWhen(Retry
+				.backoff(3, Duration.ofMillis(100)).jitter(0d) // <2>
+				.doAfterRetry(rs -> System.out.println("retried at " + LocalTime.now())) // <3>
+				.onRetryExhaustedThrow((spec, rs) -> rs.failure()) // <4>
+		);
 ----
-<1> We log the time of errors.
-<2> We use the `retryWhen` + `zipWith` trick to propagate the error after three
-retries.
-<3> Through `flatMap`, we cause a delay that depends on the attempt's index.
-<4> We also log the time at which the retry happens.
+<1> We will log the time of errors emitted by the source and count them.
+<2> We configure an exponential backoff retry with at most 3 attempts and no jitter.
+<3> We also log the time at which the retry happens.
+<4> By default an `Exceptions.retryExhausted` exception would be thrown, with the last `failure()` as a cause.
+Here we customize that to directly emit the cause as `onError`.
 ====
 
 When subscribed to, this fails and terminates after printing out the following:
