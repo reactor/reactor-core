@@ -16,13 +16,11 @@
 package reactor.core;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Predicate;
 
 import org.junit.Before;
 import org.junit.Test;

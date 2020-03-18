@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Supplier;
 
 import reactor.core.publisher.Flux;
 import reactor.util.annotation.Nullable;
@@ -343,8 +342,7 @@ public abstract class Exceptions {
 
 	/**
 	 * Check a {@link Throwable} to see if it indicates too many retry attempts have failed.
-	 * Such an exception can be created via {@link #retryExhausted(long, Throwable)} or
-	 * {@link #retryExhausted(Duration)}.
+	 * Such an exception can be created via {@link #retryExhausted(String, Throwable)}.
 	 *
 	 * @param t the {@link Throwable} to check, {@literal null} always yields {@literal false}
 	 * @return true if the Throwable is an instance representing retry exhaustion, false otherwise
