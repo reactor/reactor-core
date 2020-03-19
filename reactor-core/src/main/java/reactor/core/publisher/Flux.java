@@ -7241,14 +7241,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} that retries on onError when the companion {@link Publisher} produces an
 	 * onNext signal
 	 * @deprecated use {@link #retryWhen(Retry)} instead, to be removed in 3.4. Lambda Functions that don't make
-	 * use of the error can simply be converted by wrapping via {@link Retry#fromFunction(Function)}.
+	 * use of the error can simply be converted by wrapping via {@link Retry#from(Function)}.
 	 * Functions that do use the error will additionally need to map the {@link reactor.util.retry.Retry.RetrySignal}
 	 * emitted by the companion to its {@link Retry.RetrySignal#failure()}.
 	 */
 	@Deprecated
 	public final Flux<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
 		Objects.requireNonNull(whenFactory, "whenFactory");
-		return onAssembly(new FluxRetryWhen<>(this, Retry.fromFunction(fluxRetryWhenState -> fluxRetryWhenState
+		return onAssembly(new FluxRetryWhen<>(this, Retry.from(fluxRetryWhenState -> fluxRetryWhenState
 				.map(Retry.RetrySignal::failure)
 				.as(whenFactory)))
 		);

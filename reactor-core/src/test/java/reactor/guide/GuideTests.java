@@ -658,7 +658,7 @@ public class GuideTests {
 		Flux<String> flux =
 		Flux.<String>error(new IllegalArgumentException()) // <1>
 				.doOnError(System.out::println) // <2>
-				.retryWhen(Retry.fromFunction(companion -> // <3>
+				.retryWhen(Retry.from(companion -> // <3>
 						companion.take(3))); // <4>
 
 		StepVerifier.create(flux)
@@ -674,7 +674,7 @@ public class GuideTests {
 		Flux<String> flux =
 				Flux.<String>error(new IllegalArgumentException())
 						.doOnError(e -> errorCount.incrementAndGet())
-						.retryWhen(Retry.fromFunction(companion -> // <1>
+						.retryWhen(Retry.from(companion -> // <1>
 								companion.map(rs -> { // <2>
 									if (rs.totalRetries() < 3) return rs.totalRetries(); // <3>
 									else throw Exceptions.propagate(rs.failure()); // <4>

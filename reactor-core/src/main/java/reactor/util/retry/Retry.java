@@ -193,7 +193,7 @@ public abstract class Retry {
 	 * @param function the {@link Function} representing the desired {@link Retry} strategy as a lambda
 	 * @return the {@link Retry} strategy adapted from the {@link Function}
 	 */
-	public static final Retry fromFunction(Function<Flux<RetrySignal>, Publisher<?>> function) {
+	public static final Retry from(Function<Flux<RetrySignal>, Publisher<?>> function) {
 		return new Retry() {
 			@Override
 			public Publisher<?> generateCompanion(Flux<RetrySignal> retrySignalCompanion) {

@@ -882,7 +882,7 @@ condition.
 The companion `Flux` is a `Flux<RetrySignal>` that gets passed to a `Retry` strategy/function,
 supplied as the sole parameter of `retryWhen`. As the user, you define that function and make it return a new
 `Publisher<?>`. The `Retry` class is an abstract class, but it offers a factory method if you
-want to transform the companion with a simple lambda (`Retry.fromFunction(Function)`).
+want to transform the companion with a simple lambda (`Retry.from(Function)`).
 
 Retry cycles go as follows:
 
@@ -906,7 +906,7 @@ companion would effectively swallow an error. Consider the following way of emul
 Flux<String> flux = Flux
     .<String>error(new IllegalArgumentException()) // <1>
     .doOnError(System.out::println) // <2>
-    .retryWhen(Retry.fromFunction(companion -> // <3>
+    .retryWhen(Retry.from(companion -> // <3>
         companion.take(3))); // <4>
 ----
 <1> This continuously produces errors, calling for retry attempts.

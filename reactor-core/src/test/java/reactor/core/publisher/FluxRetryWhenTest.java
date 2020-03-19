@@ -58,7 +58,7 @@ public class FluxRetryWhenTest {
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
-		new FluxRetryWhen<>(null, Retry.fromFunction(v -> v));
+		new FluxRetryWhen<>(null, Retry.from(v -> v));
 	}
 
 	@SuppressWarnings("deprecation")
@@ -80,7 +80,7 @@ public class FluxRetryWhenTest {
 		Flux<Integer> when = Flux.range(1, 10)
 		                         .doOnCancel(() -> cancelled.set(true));
 
-		StepVerifier.create(justError.retryWhen(Retry.fromFunction(other -> when)))
+		StepVerifier.create(justError.retryWhen(Retry.from(other -> when)))
 		            .thenCancel()
 		            .verify();
 
@@ -93,7 +93,7 @@ public class FluxRetryWhenTest {
 		Flux<Integer> when = Flux.range(1, 10)
 		                         .doOnCancel(cancelled::incrementAndGet);
 
-		justError.retryWhen(Retry.fromFunction(other -> when))
+		justError.retryWhen(Retry.from(other -> when))
 		         .subscribe(new BaseSubscriber<Integer>() {
 			         @Override
 			         protected void hookOnSubscribe(Subscription subscription) {
@@ -114,7 +114,7 @@ public class FluxRetryWhenTest {
 		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
 		                           .doOnCancel(() -> sourceCancelled.set(true));
 
-		Flux<Integer> retry = source.retryWhen(Retry.fromFunction(other -> Mono.error(new IllegalStateException("boom"))));
+		Flux<Integer> retry = source.retryWhen(Retry.from(other -> Mono.error(new IllegalStateException("boom"))));
 
 		StepVerifier.create(retry)
 		            .expectSubscription()
@@ -134,7 +134,7 @@ public class FluxRetryWhenTest {
 		                           .doOnCancel(() -> sourceCancelled.set(true));
 
 
-		Flux<Integer> retry = source.retryWhen(Retry.fromFunction(other -> other.flatMap(l ->
+		Flux<Integer> retry = source.retryWhen(Retry.from(other -> other.flatMap(l ->
 				count.getAndIncrement() == 0 ? Mono.just(l) : Mono.<Long>error(new IllegalStateException("boom")))));
 
 		StepVerifier.create(retry)
@@ -155,7 +155,7 @@ public class FluxRetryWhenTest {
 		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
 		                           .doOnCancel(() -> sourceCancelled.set(true));
 
-		Flux<Integer> retry = source.retryWhen(Retry.fromFunction(other -> Flux.empty()));
+		Flux<Integer> retry = source.retryWhen(Retry.from(other -> Flux.empty()));
 
 		StepVerifier.create(retry)
 		            .expectSubscription()
@@ -173,7 +173,7 @@ public class FluxRetryWhenTest {
 		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
 		                           .doOnCancel(() -> sourceCancelled.set(true));
 
-		Flux<Integer> retry = source.retryWhen(Retry.fromFunction(other -> other.take(1)));
+		Flux<Integer> retry = source.retryWhen(Retry.from(other -> other.take(1)));
 
 		StepVerifier.create(retry)
 		            .expectSubscription()
@@ -189,7 +189,7 @@ public class FluxRetryWhenTest {
 	public void coldRepeater() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		justError.retryWhen(Retry.fromFunction(other -> Flux.range(1, 10)))
+		justError.retryWhen(Retry.from(other -> Flux.range(1, 10)))
 		         .subscribe(ts);
 
 		ts.assertValues(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
@@ -201,7 +201,7 @@ public class FluxRetryWhenTest {
 	public void coldRepeaterBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		rangeError.retryWhen(Retry.fromFunction(other -> Flux.range(1, 5)))
+		rangeError.retryWhen(Retry.from(other -> Flux.range(1, 5)))
 		          .subscribe(ts);
 
 		ts.assertNoValues()
@@ -237,7 +237,7 @@ public class FluxRetryWhenTest {
 	public void coldEmpty() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		rangeError.retryWhen(Retry.fromFunction(other -> Flux.empty()))
+		rangeError.retryWhen(Retry.from(other -> Flux.empty()))
 		          .subscribe(ts);
 
 		ts.assertNoValues()
@@ -249,7 +249,7 @@ public class FluxRetryWhenTest {
 	public void coldError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		rangeError.retryWhen(Retry.fromFunction(other -> Flux.error(new RuntimeException("forced failure"))))
+		rangeError.retryWhen(Retry.from(other -> Flux.error(new RuntimeException("forced failure"))))
 		          .subscribe(ts);
 
 		ts.assertNoValues()
@@ -262,7 +262,7 @@ public class FluxRetryWhenTest {
 	public void whenFactoryThrows() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		rangeError.retryWhen(Retry.fromFunction(other -> {
+		rangeError.retryWhen(Retry.from(other -> {
 			throw new RuntimeException("forced failure");
 		}))
 		          .subscribe(ts);
@@ -277,7 +277,7 @@ public class FluxRetryWhenTest {
 	public void whenFactoryReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		rangeError.retryWhen(Retry.fromFunction(other -> null))
+		rangeError.retryWhen(Retry.from(other -> null))
 		          .subscribe(ts);
 
 		ts.assertNoValues()
@@ -289,7 +289,7 @@ public class FluxRetryWhenTest {
 	public void retryErrorsInResponse() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		rangeError.retryWhen(Retry.fromFunction(v -> v.map(a -> {
+		rangeError.retryWhen(Retry.from(v -> v.map(a -> {
 			throw new RuntimeException("forced failure");
 		})))
 		          .subscribe(ts);
@@ -305,7 +305,7 @@ public class FluxRetryWhenTest {
 	public void retryAlways() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		rangeError.retryWhen(Retry.fromFunction(v -> v))
+		rangeError.retryWhen(Retry.from(v -> v))
 		          .subscribe(ts);
 
 		ts.request(8);
@@ -424,7 +424,7 @@ public class FluxRetryWhenTest {
 						    contextPerRetry.add(sig.getContext());
 					    }
 				    })
-				    .retryWhen(Retry.fromFunction(retrySignalFlux -> retrySignalFlux.handle((rs, sink) -> {
+				    .retryWhen(Retry.from(retrySignalFlux -> retrySignalFlux.handle((rs, sink) -> {
 	                    Context ctx = sink.currentContext();
 	                    int rl = ctx.getOrDefault("retriesLeft", 0);
 	                    if (rl > 0) {
@@ -884,7 +884,7 @@ public class FluxRetryWhenTest {
 
 		sourceHelper.set(0);
 		StepVerifier.withVirtualTime(() -> source.retryWhen(
-				Retry.fromFunction(companion -> companion.delayElements(Duration.ofSeconds(3))))
+				Retry.from(companion -> companion.delayElements(Duration.ofSeconds(3))))
 		)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(3 * 3))

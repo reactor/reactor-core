@@ -3717,14 +3717,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a {@link Mono} that retries on onError when the companion {@link Publisher} produces an
 	 * onNext signal
 	 * @deprecated use {@link #retryWhen(Retry)} instead, to be removed in 3.4. Lambda Functions that don't make
-	 * use of the error can simply be converted by wrapping via {@link Retry#fromFunction(Function)}.
+	 * use of the error can simply be converted by wrapping via {@link Retry#from(Function)}.
 	 * Functions that do use the error will additionally need to map the {@link reactor.util.retry.Retry.RetrySignal}
 	 * emitted by the companion to its {@link Retry.RetrySignal#failure()}.
 	 */
 	@Deprecated
 	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
 		Objects.requireNonNull(whenFactory, "whenFactory");
-		return onAssembly(new MonoRetryWhen<>(this, Retry.fromFunction(rws -> whenFactory.apply(rws.map(
+		return onAssembly(new MonoRetryWhen<>(this, Retry.from(rws -> whenFactory.apply(rws.map(
 				Retry.RetrySignal::failure)))));
 	}
 
