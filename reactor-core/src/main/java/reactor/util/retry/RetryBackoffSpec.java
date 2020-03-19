@@ -153,7 +153,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * no more.
 	 *
 	 * @param maxAttempts the new retry attempt limit
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec maxAttempts(long maxAttempts) {
 		return new RetryBackoffSpec(
@@ -177,7 +177,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * sequence. Defaults to allowing retries for all exceptions.
 	 *
 	 * @param errorFilter the predicate to filter which exceptions can be retried
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec filter(Predicate<? super Throwable> errorFilter) {
 		return new RetryBackoffSpec(
@@ -212,7 +212,7 @@ public final class RetryBackoffSpec extends Retry {
 	 *
 	 * @param predicateAdjuster a {@link Function} that returns a new {@link Predicate} given the
 	 * currently in place {@link Predicate} (usually deriving from the old predicate).
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec modifyErrorFilter(
 			Function<Predicate<Throwable>, Predicate<? super Throwable>> predicateAdjuster) {
@@ -240,7 +240,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * might be executing in a shared thread.
 	 *
 	 * @param doBeforeRetry the synchronous hook to execute before retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 * @see #doBeforeRetryAsync(Function) andDelayRetryWith for an asynchronous version
 	 */
 	public RetryBackoffSpec doBeforeRetry(
@@ -266,7 +266,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * might be publishing events in a shared thread.
 	 *
 	 * @param doAfterRetry the synchronous hook to execute after retry trigger is started
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 * @see #doAfterRetryAsync(Function) andRetryThen for an asynchronous version
 	 */
 	public RetryBackoffSpec doAfterRetry(Consumer<RetrySignal> doAfterRetry) {
@@ -290,7 +290,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * thus <strong>delaying</strong> the resulting retry trigger with the additional {@link Mono}.
 	 *
 	 * @param doAsyncBeforeRetry the asynchronous hook to execute before original retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec doBeforeRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncBeforeRetry) {
@@ -314,7 +314,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * thus <strong>delaying</strong> the resulting retry trigger with the additional {@link Mono}.
 	 *
 	 * @param doAsyncAfterRetry the asynchronous hook to execute after original retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec doAfterRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncAfterRetry) {
@@ -342,7 +342,7 @@ public final class RetryBackoffSpec extends Retry {
 	 *
 	 * @param retryExhaustedGenerator the {@link Function} that generates the {@link Throwable} for the last
 	 * {@link RetrySignal}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec onRetryExhaustedThrow(BiFunction<RetryBackoffSpec, RetrySignal, Throwable> retryExhaustedGenerator) {
 		return new RetryBackoffSpec(
@@ -370,7 +370,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * the burst, meaning the next error after a recovery will be retried with a {@link #minBackoff(Duration)} delay.
 	 *
 	 * @param isTransientErrors {@code true} to activate transient mode
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec transientErrors(boolean isTransientErrors) {
 		return new RetryBackoffSpec(
@@ -394,7 +394,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * when the strategy was initially not a backoff one.
 	 *
 	 * @param minBackoff the minimum backoff {@link Duration}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec minBackoff(Duration minBackoff) {
 		return new RetryBackoffSpec(
@@ -418,7 +418,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * strategy. Defaults to {@code Duration.ofMillis(Long.MAX_VALUE)}.
 	 *
 	 * @param maxBackoff the maximum backoff {@link Duration}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec maxBackoff(Duration maxBackoff) {
 		return new RetryBackoffSpec(
@@ -443,7 +443,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * Defaults to {@code 0.5} (a jitter of at most 50% of the computed delay).
 	 *
 	 * @param jitterFactor the new jitter factor as a {@code double} between {@code 0d} and {@code 1d}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec jitter(double jitterFactor) {
 		return new RetryBackoffSpec(
@@ -467,7 +467,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * {@code null} to reset to this default).
 	 *
 	 * @param backoffScheduler the {@link Scheduler} to use, or {@code null} to revert to the default
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec scheduler(@Nullable Scheduler backoffScheduler) {
 		return new RetryBackoffSpec(
