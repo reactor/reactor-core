@@ -22,15 +22,16 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * A builder for a simple count-based retry strategy with fine grained options: errors that match
- * the {@link #filter(Predicate)} are retried (by default all), up to {@link #maxAttempts(long)} times.
+ * A simple count-based {@link Retry} strategy with configurable features. Use {@link Retry#max(long)},
+ * {@link Retry#maxInARow(long)} or {@link Retry#indefinitely()} to obtain a preconfigured instance to start with.
+ * <p>
+ * Only errors that match the {@link #filter(Predicate)} are retried (by default all), up to {@link #maxAttempts(long)} times.
  * <p>
  * When the maximum attempt of retries is reached, a runtime exception is propagated downstream which
  * can be pinpointed with {@link reactor.core.Exceptions#isRetryExhausted(Throwable)}. The cause of
@@ -47,7 +48,7 @@ import reactor.core.publisher.Mono;
  *
  * @author Simon Baslé
  */
-public final class RetrySpec implements Retry, Supplier<Retry> {
+public final class RetrySpec extends Retry {
 
 	static final Duration                                        MAX_BACKOFF                 = Duration.ofMillis(Long.MAX_VALUE);
 	static final Consumer<RetrySignal>                           NO_OP_CONSUMER              = rs -> {};
@@ -116,7 +117,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 * no more.
 	 *
 	 * @param maxAttempts the new retry attempt limit
-	 * @return the builder for further configuration
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as a {@link Retry}
 	 */
 	public RetrySpec maxAttempts(long maxAttempts) {
 		return new RetrySpec(
@@ -136,7 +137,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 * sequence. Defaults to allowing retries for all exceptions.
 	 *
 	 * @param errorFilter the predicate to filter which exceptions can be retried
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetrySpec filter(Predicate<? super Throwable> errorFilter) {
 		return new RetrySpec(
@@ -167,7 +168,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 *
 	 * @param predicateAdjuster a {@link Function} that returns a new {@link Predicate} given the
 	 * currently in place {@link Predicate} (usually deriving from the old predicate).
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetrySpec modifyErrorFilter(
 			Function<Predicate<Throwable>, Predicate<? super Throwable>> predicateAdjuster) {
@@ -191,7 +192,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 * might be executing in a shared thread.
 	 *
 	 * @param doBeforeRetry the synchronous hook to execute before retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 * @see #doBeforeRetryAsync(Function) andDelayRetryWith for an asynchronous version
 	 */
 	public RetrySpec doBeforeRetry(
@@ -213,7 +214,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 * might be publishing events in a shared thread.
 	 *
 	 * @param doAfterRetry the synchronous hook to execute after retry trigger is started
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 * @see #doAfterRetryAsync(Function) andRetryThen for an asynchronous version
 	 */
 	public RetrySpec doAfterRetry(Consumer<RetrySignal> doAfterRetry) {
@@ -233,7 +234,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 * thus <strong>delaying</strong> the resulting retry trigger with the additional {@link Mono}.
 	 *
 	 * @param doAsyncBeforeRetry the asynchronous hook to execute before original retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetrySpec doBeforeRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncBeforeRetry) {
@@ -253,7 +254,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 * thus <strong>delaying</strong> the resulting retry trigger with the additional {@link Mono}.
 	 *
 	 * @param doAsyncAfterRetry the asynchronous hook to execute after original retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetrySpec doAfterRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncAfterRetry) {
@@ -276,7 +277,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 *
 	 * @param retryExhaustedGenerator the {@link Function} that generates the {@link Throwable} for the last
 	 * {@link RetrySignal}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetrySpec onRetryExhaustedThrow(BiFunction<RetrySpec, RetrySignal, Throwable> retryExhaustedGenerator) {
 		return new RetrySpec(
@@ -300,7 +301,7 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 	 * is applied to each burst individually.
 	 *
 	 * @param isTransientErrors {@code true} to activate transient mode
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetrySpec transientErrors(boolean isTransientErrors) {
 		return new RetrySpec(
@@ -372,10 +373,5 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 		Mono<Void> postRetryMono = asyncPostRetry != NO_OP_BIFUNCTION ? asyncPostRetry.apply(copyOfSignal, postRetrySyncMono) : postRetrySyncMono;
 
 		return preRetryMono.then(originalCompanion).flatMap(postRetryMono::thenReturn);
-	}
-
-	@Override
-	public Retry get() {
-		return this;
 	}
 }

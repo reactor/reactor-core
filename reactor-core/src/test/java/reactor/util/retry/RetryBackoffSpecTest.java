@@ -19,6 +19,7 @@ package reactor.util.retry;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -36,12 +37,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class RetryBackoffSpecTest {
-
-	@Test
-	public void suppressingSchedulerFails() {
-		assertThatNullPointerException().isThrownBy(() -> Retry.backoff(1, Duration.ZERO).scheduler(null))
-		                                .withMessage("backoffScheduler");
-	}
 
 	@Test
 	public void builderMethodsProduceNewInstances() {
@@ -385,6 +380,43 @@ public class RetryBackoffSpecTest {
 				"AsyncAfter C attempt #6 (2 in a row), last failure={java.lang.IllegalStateException: failing on step 10}",
 				"AsyncAfter D"
 		);
+	}
+
+	@Test
+	public void backoffSchedulerDefaultIsLazilyResolved() {
+		RetryBackoffSpec spec = Retry.backoff(3, Duration.ofMillis(10));
+
+		StepVerifier.withVirtualTime(() -> Flux.error(new IllegalStateException("boom"))
+		                                       .retryWhen(spec)
+		)
+		            .expectSubscription()
+		            .thenAwait(Duration.ofHours(1))
+		            .expectErrorMatches(Exceptions::isRetryExhausted)
+		            .verify(Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void backoffSchedulerIsEagerlyCaptured() {
+		RetryBackoffSpec spec = Retry.backoff(3, Duration.ofMillis(10))
+				.scheduler(Schedulers.parallel());
+
+		StepVerifier.withVirtualTime(() -> Flux.error(new IllegalStateException("boom"))
+		                                       .retryWhen(spec)
+		)
+		            .expectSubscription()
+		            .thenAwait(Duration.ofHours(1))
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(RejectedExecutionException.class))
+		            .verify(Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void backoffSchedulerNullResetToDefaultSupplier() {
+		RetryBackoffSpec specTemplate = Retry.backoff(3, Duration.ofMillis(10))
+				.scheduler(Schedulers.single());
+
+		RetryBackoffSpec spec = specTemplate.scheduler(null);
+
+		assertThat(spec.backoffSchedulerSupplier.get()).isSameAs(Schedulers.parallel());
 	}
 
 }

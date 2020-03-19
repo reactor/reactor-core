@@ -7240,14 +7240,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Flux} that retries on onError when the companion {@link Publisher} produces an
 	 * onNext signal
-	 * @deprecated use {@link #retryWhen(Retry)} instead, to be removed in 3.4
+	 * @deprecated use {@link #retryWhen(Retry)} instead, to be removed in 3.4. Lambda Functions that don't make
+	 * use of the error can simply be converted by wrapping via {@link Retry#from(Function)}.
+	 * Functions that do use the error will additionally need to map the {@link reactor.util.retry.Retry.RetrySignal}
+	 * emitted by the companion to its {@link Retry.RetrySignal#failure()}.
 	 */
 	@Deprecated
 	public final Flux<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
 		Objects.requireNonNull(whenFactory, "whenFactory");
-		return onAssembly(new FluxRetryWhen<>(this, fluxRetryWhenState -> fluxRetryWhenState
+		return onAssembly(new FluxRetryWhen<>(this, Retry.from(fluxRetryWhenState -> fluxRetryWhenState
 				.map(Retry.RetrySignal::failure)
-				.as(whenFactory)));
+				.as(whenFactory)))
+		);
 	}
 
 	/**
@@ -7276,7 +7280,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * the previous Context:
 	 * <blockquote><pre>
 	 * {@code
-	 * Retry customStrategy = companion -> companion.handle((retrySignal, sink) -> {
+	 * Retry customStrategy = Retry.fromFunction(companion -> companion.handle((retrySignal, sink) -> {
 	 * 	    Context ctx = sink.currentContext();
 	 * 	    int rl = ctx.getOrDefault("retriesLeft", 0);
 	 * 	    if (rl > 0) {
@@ -7287,7 +7291,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * 	    } else {
 	 * 	        sink.error(Exceptions.retryExhausted("retries exhausted", retrySignal.failure()));
 	 * 	    }
-	 * });
+	 * }));
 	 * Flux<T> retried = originalFlux.retryWhen(customStrategy);
 	 * }</pre>
 	 * </blockquote>

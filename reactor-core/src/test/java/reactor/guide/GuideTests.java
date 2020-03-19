@@ -658,7 +658,8 @@ public class GuideTests {
 		Flux<String> flux =
 		Flux.<String>error(new IllegalArgumentException()) // <1>
 				.doOnError(System.out::println) // <2>
-				.retryWhen((Function<Flux<Throwable>, Publisher<?>>) companion -> companion.take(3)); // <3>
+				.retryWhen(Retry.from(companion -> // <3>
+						companion.take(3))); // <4>
 
 		StepVerifier.create(flux)
 	                .verifyComplete();
@@ -673,12 +674,12 @@ public class GuideTests {
 		Flux<String> flux =
 				Flux.<String>error(new IllegalArgumentException())
 						.doOnError(e -> errorCount.incrementAndGet())
-						.retryWhen((Retry) companion -> // <1>
+						.retryWhen(Retry.from(companion -> // <1>
 								companion.map(rs -> { // <2>
 									if (rs.totalRetries() < 3) return rs.totalRetries(); // <3>
 									else throw Exceptions.propagate(rs.failure()); // <4>
 								})
-						);
+						));
 
 		StepVerifier.create(flux)
 	                .verifyError(IllegalArgumentException.class);
@@ -1047,7 +1048,7 @@ assertThat(errorCount).hasValue(6); // <6>
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageContaining("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1011)\n");
+						.hasMessageContaining("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1012)\n");
 			});
 		}
 	}

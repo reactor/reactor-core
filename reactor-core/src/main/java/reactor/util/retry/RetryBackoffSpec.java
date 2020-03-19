@@ -30,14 +30,18 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.annotation.Nullable;
 
 /**
- * A builder for a retry strategy based on exponential backoffs, with fine grained options.
+ * A {@link Retry} strategy based on exponential backoffs, with configurable features. Use {@link Retry#backoff(long, Duration)}
+ * to obtain a preconfigured instance to start with.
+ * <p>
  * Retry delays are randomized with a user-provided {@link #jitter(double)} factor between {@code 0.d} (no jitter)
  * and {@code 1.0} (default is {@code 0.5}).
  * Even with the jitter, the effective backoff delay cannot be less than {@link #minBackoff(Duration)}
  * nor more than {@link #maxBackoff(Duration)}. The delays and subsequent attempts are executed on the
- * provided backoff {@link #scheduler(Scheduler)}.
+ * provided backoff {@link #scheduler(Scheduler)}. Alternatively, {@link Retry#fixedDelay(long, Duration)} provides
+ * a strategy where the min and max backoffs are the same and jitters are deactivated.
  * <p>
  * Only errors that match the {@link #filter(Predicate)} are retried (by default all),
  * and the number of attempts can also limited with {@link #maxAttempts(long)}.
@@ -56,7 +60,7 @@ import reactor.core.scheduler.Schedulers;
  *
  * @author Simon Baslé
  */
-public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
+public final class RetryBackoffSpec extends Retry {
 
 	static final BiFunction<RetryBackoffSpec, RetrySignal, Throwable> BACKOFF_EXCEPTION_GENERATOR = (builder, rs) ->
 			Exceptions.retryExhausted("Retries exhausted: " + (
@@ -84,10 +88,10 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	public final double    jitterFactor;
 
 	/**
-	 * The configured {@link Scheduler} on which to execute backoffs.
+	 * The configured {@link Supplier} of {@link Scheduler} on which to execute backoffs.
 	 * @see #scheduler(Scheduler)
 	 */
-	public final Scheduler backoffScheduler;
+	public final Supplier<Scheduler> backoffSchedulerSupplier;
 
 	/**
 	 * The configured maximum for retry attempts.
@@ -123,7 +127,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 			Predicate<? super Throwable> aThrowablePredicate,
 			boolean isTransientErrors,
 			Duration minBackoff, Duration maxBackoff, double jitterFactor,
-			Scheduler backoffScheduler,
+			Supplier<Scheduler> backoffSchedulerSupplier,
 			Consumer<RetrySignal> doPreRetry,
 			Consumer<RetrySignal> doPostRetry,
 			BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPreRetry,
@@ -135,7 +139,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 		this.minBackoff = minBackoff;
 		this.maxBackoff = maxBackoff;
 		this.jitterFactor = jitterFactor;
-		this.backoffScheduler = backoffScheduler;
+		this.backoffSchedulerSupplier = backoffSchedulerSupplier;
 		this.syncPreRetry = doPreRetry;
 		this.syncPostRetry = doPostRetry;
 		this.asyncPreRetry = asyncPreRetry;
@@ -149,7 +153,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * no more.
 	 *
 	 * @param maxAttempts the new retry attempt limit
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec maxAttempts(long maxAttempts) {
 		return new RetryBackoffSpec(
@@ -159,7 +163,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -173,7 +177,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * sequence. Defaults to allowing retries for all exceptions.
 	 *
 	 * @param errorFilter the predicate to filter which exceptions can be retried
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec filter(Predicate<? super Throwable> errorFilter) {
 		return new RetryBackoffSpec(
@@ -183,7 +187,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -208,7 +212,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 *
 	 * @param predicateAdjuster a {@link Function} that returns a new {@link Predicate} given the
 	 * currently in place {@link Predicate} (usually deriving from the old predicate).
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec modifyErrorFilter(
 			Function<Predicate<Throwable>, Predicate<? super Throwable>> predicateAdjuster) {
@@ -222,7 +226,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -236,7 +240,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * might be executing in a shared thread.
 	 *
 	 * @param doBeforeRetry the synchronous hook to execute before retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 * @see #doBeforeRetryAsync(Function) andDelayRetryWith for an asynchronous version
 	 */
 	public RetryBackoffSpec doBeforeRetry(
@@ -248,7 +252,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry.andThen(doBeforeRetry),
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -262,7 +266,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * might be publishing events in a shared thread.
 	 *
 	 * @param doAfterRetry the synchronous hook to execute after retry trigger is started
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 * @see #doAfterRetryAsync(Function) andRetryThen for an asynchronous version
 	 */
 	public RetryBackoffSpec doAfterRetry(Consumer<RetrySignal> doAfterRetry) {
@@ -273,7 +277,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry.andThen(doAfterRetry),
 				this.asyncPreRetry,
@@ -286,7 +290,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * thus <strong>delaying</strong> the resulting retry trigger with the additional {@link Mono}.
 	 *
 	 * @param doAsyncBeforeRetry the asynchronous hook to execute before original retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec doBeforeRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncBeforeRetry) {
@@ -297,7 +301,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				(rs, m) -> asyncPreRetry.apply(rs, m).then(doAsyncBeforeRetry.apply(rs)),
@@ -310,7 +314,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * thus <strong>delaying</strong> the resulting retry trigger with the additional {@link Mono}.
 	 *
 	 * @param doAsyncAfterRetry the asynchronous hook to execute after original retry trigger is emitted
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec doAfterRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncAfterRetry) {
@@ -321,7 +325,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -338,7 +342,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 *
 	 * @param retryExhaustedGenerator the {@link Function} that generates the {@link Throwable} for the last
 	 * {@link RetrySignal}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec onRetryExhaustedThrow(BiFunction<RetryBackoffSpec, RetrySignal, Throwable> retryExhaustedGenerator) {
 		return new RetryBackoffSpec(
@@ -348,7 +352,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -366,7 +370,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * the burst, meaning the next error after a recovery will be retried with a {@link #minBackoff(Duration)} delay.
 	 *
 	 * @param isTransientErrors {@code true} to activate transient mode
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec transientErrors(boolean isTransientErrors) {
 		return new RetryBackoffSpec(
@@ -376,7 +380,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -390,7 +394,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * when the strategy was initially not a backoff one.
 	 *
 	 * @param minBackoff the minimum backoff {@link Duration}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec minBackoff(Duration minBackoff) {
 		return new RetryBackoffSpec(
@@ -400,7 +404,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -414,7 +418,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * strategy. Defaults to {@code Duration.ofMillis(Long.MAX_VALUE)}.
 	 *
 	 * @param maxBackoff the maximum backoff {@link Duration}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec maxBackoff(Duration maxBackoff) {
 		return new RetryBackoffSpec(
@@ -424,7 +428,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -439,7 +443,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 	 * Defaults to {@code 0.5} (a jitter of at most 50% of the computed delay).
 	 *
 	 * @param jitterFactor the new jitter factor as a {@code double} between {@code 0d} and {@code 1d}
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetryBackoffSpec jitter(double jitterFactor) {
 		return new RetryBackoffSpec(
@@ -449,7 +453,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -459,14 +463,13 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 
 	/**
 	 * Set a {@link Scheduler} on which to execute the delays computed by the exponential backoff
-	 * strategy. This method switches to an exponential backoff strategy with a zero minimum backoff
-	 * if not already a backoff strategy. Defaults to {@link Schedulers#parallel()} in the backoff
-	 * strategy.
+	 * strategy. Defaults to a deferred resolution of the current {@link Schedulers#parallel()} (use
+	 * {@code null} to reset to this default).
 	 *
-	 * @param backoffScheduler the {@link Scheduler} to use
-	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
+	 * @param backoffScheduler the {@link Scheduler} to use, or {@code null} to revert to the default
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
 	 */
-	public RetryBackoffSpec scheduler(Scheduler backoffScheduler) {
+	public RetryBackoffSpec scheduler(@Nullable Scheduler backoffScheduler) {
 		return new RetryBackoffSpec(
 				this.maxAttempts,
 				this.errorFilter,
@@ -474,7 +477,7 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				Objects.requireNonNull(backoffScheduler, "backoffScheduler"),
+				backoffScheduler == null ? Schedulers::parallel : () -> backoffScheduler,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -488,7 +491,6 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 
 	protected void validateArguments() {
 		if (jitterFactor < 0 || jitterFactor > 1) throw new IllegalArgumentException("jitterFactor must be between 0 and 1 (default 0.5)");
-		Objects.requireNonNull(this.backoffScheduler, "backoffScheduler must not be null (default Schedulers.parallel())");
 	}
 
 	@Override
@@ -554,13 +556,9 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 				jitter = random.nextLong(lowBound, highBound);
 			}
 			Duration effectiveBackoff = nextBackoff.plusMillis(jitter);
-			return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff, backoffScheduler),
+			return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff,
+					backoffSchedulerSupplier.get()),
 					syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry);
 		});
-	}
-
-	@Override
-	public Retry get() {
-		return this;
 	}
 }
