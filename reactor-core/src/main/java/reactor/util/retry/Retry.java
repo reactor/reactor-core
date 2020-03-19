@@ -108,6 +108,8 @@ public abstract class Retry {
 	/**
 	 * A {@link RetryBackoffSpec} preconfigured for exponential backoff strategy with jitter, given a maximum number of retry attempts
 	 * and a minimum {@link Duration} for the backoff.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/retrySpecBackoff.svg" alt="">
 	 *
 	 * @param maxAttempts the maximum number of retry attempts to allow
 	 * @param minBackoff the minimum {@link Duration} for the first backoff
@@ -115,7 +117,6 @@ public abstract class Retry {
 	 * @see RetryBackoffSpec#maxAttempts(long)
 	 * @see RetryBackoffSpec#minBackoff(Duration)
 	 */
-	//FIXME marble diagram
 	public static RetryBackoffSpec backoff(long maxAttempts, Duration minBackoff) {
 		return new RetryBackoffSpec(maxAttempts, t -> true, false, minBackoff, MAX_BACKOFF, 0.5d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
@@ -125,6 +126,8 @@ public abstract class Retry {
 	/**
 	 * A {@link RetryBackoffSpec} preconfigured for fixed delays (min backoff equals max backoff, no jitter), given a maximum number of retry attempts
 	 * and the fixed {@link Duration} for the backoff.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/retrySpecFixed.svg" alt="">
 	 * <p>
 	 * Note that calling {@link RetryBackoffSpec#minBackoff(Duration)} or {@link RetryBackoffSpec#maxBackoff(Duration)} would switch
 	 * back to an exponential backoff strategy.
@@ -136,7 +139,6 @@ public abstract class Retry {
 	 * @see RetryBackoffSpec#minBackoff(Duration)
 	 * @see RetryBackoffSpec#maxBackoff(Duration)
 	 */
-	//FIXME marble diagram
 	public static RetryBackoffSpec fixedDelay(long maxAttempts, Duration fixedDelay) {
 		return new RetryBackoffSpec(maxAttempts, t -> true, false, fixedDelay, fixedDelay, 0d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
@@ -145,12 +147,13 @@ public abstract class Retry {
 
 	/**
 	 * A {@link RetrySpec} preconfigured for a simple strategy with maximum number of retry attempts.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/retrySpecAttempts.svg" alt="">
 	 *
 	 * @param max the maximum number of retry attempts to allow
 	 * @return the max attempt spec for further configuration
 	 * @see RetrySpec#maxAttempts(long)
 	 */
-	//FIXME marble diagram
 	public static RetrySpec max(long max) {
 		return new RetrySpec(max, t -> true, false, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetrySpec.RETRY_EXCEPTION_GENERATOR);
@@ -160,13 +163,14 @@ public abstract class Retry {
 	 * A {@link RetrySpec} preconfigured for a simple strategy with maximum number of retry attempts over
 	 * subsequent transient errors. An {@link org.reactivestreams.Subscriber#onNext(Object)} between
 	 * errors resets the counter (see {@link RetrySpec#transientErrors(boolean)}).
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/retrySpecInARow.svg" alt="">
 	 *
 	 * @param maxInARow the maximum number of retry attempts to allow in a row, reset by successful onNext
 	 * @return the max in a row spec for further configuration
 	 * @see RetrySpec#maxAttempts(long)
 	 * @see RetrySpec#transientErrors(boolean)
 	 */
-	//FIXME marble diagram, point to it in RetrySpec#transientErrors javadoc
 	public static RetrySpec maxInARow(long maxInARow) {
 		return new RetrySpec(maxInARow, t -> true, true, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RETRY_EXCEPTION_GENERATOR);
