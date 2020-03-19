@@ -23,12 +23,14 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.annotation.Nullable;
 
 /**
  * A {@link Retry} strategy based on exponential backoffs, with configurable features. Use {@link Retry#backoff(long, Duration)}
@@ -86,10 +88,10 @@ public final class RetryBackoffSpec extends Retry {
 	public final double    jitterFactor;
 
 	/**
-	 * The configured {@link Scheduler} on which to execute backoffs.
+	 * The configured {@link Supplier} of {@link Scheduler} on which to execute backoffs.
 	 * @see #scheduler(Scheduler)
 	 */
-	public final Scheduler backoffScheduler;
+	public final Supplier<Scheduler> backoffSchedulerSupplier;
 
 	/**
 	 * The configured maximum for retry attempts.
@@ -125,7 +127,7 @@ public final class RetryBackoffSpec extends Retry {
 			Predicate<? super Throwable> aThrowablePredicate,
 			boolean isTransientErrors,
 			Duration minBackoff, Duration maxBackoff, double jitterFactor,
-			Scheduler backoffScheduler,
+			Supplier<Scheduler> backoffSchedulerSupplier,
 			Consumer<RetrySignal> doPreRetry,
 			Consumer<RetrySignal> doPostRetry,
 			BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPreRetry,
@@ -137,7 +139,7 @@ public final class RetryBackoffSpec extends Retry {
 		this.minBackoff = minBackoff;
 		this.maxBackoff = maxBackoff;
 		this.jitterFactor = jitterFactor;
-		this.backoffScheduler = backoffScheduler;
+		this.backoffSchedulerSupplier = backoffSchedulerSupplier;
 		this.syncPreRetry = doPreRetry;
 		this.syncPostRetry = doPostRetry;
 		this.asyncPreRetry = asyncPreRetry;
@@ -161,7 +163,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -185,7 +187,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -224,7 +226,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -250,7 +252,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry.andThen(doBeforeRetry),
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -275,7 +277,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry.andThen(doAfterRetry),
 				this.asyncPreRetry,
@@ -299,7 +301,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				(rs, m) -> asyncPreRetry.apply(rs, m).then(doAsyncBeforeRetry.apply(rs)),
@@ -323,7 +325,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -350,7 +352,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -378,7 +380,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -402,7 +404,7 @@ public final class RetryBackoffSpec extends Retry {
 				minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -426,7 +428,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				maxBackoff,
 				this.jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -451,7 +453,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				jitterFactor,
-				this.backoffScheduler,
+				this.backoffSchedulerSupplier,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -461,14 +463,13 @@ public final class RetryBackoffSpec extends Retry {
 
 	/**
 	 * Set a {@link Scheduler} on which to execute the delays computed by the exponential backoff
-	 * strategy. This method switches to an exponential backoff strategy with a zero minimum backoff
-	 * if not already a backoff strategy. Defaults to {@link Schedulers#parallel()} in the backoff
-	 * strategy.
+	 * strategy. Defaults to a deferred resolution of the current {@link Schedulers#parallel()} (use
+	 * {@code null} to reset to this default).
 	 *
-	 * @param backoffScheduler the {@link Scheduler} to use
+	 * @param backoffScheduler the {@link Scheduler} to use, or {@code null} to revert to the default
 	 * @return a new copy of the builder which can either be further configured or used as {@link Retry}
 	 */
-	public RetryBackoffSpec scheduler(Scheduler backoffScheduler) {
+	public RetryBackoffSpec scheduler(@Nullable Scheduler backoffScheduler) {
 		return new RetryBackoffSpec(
 				this.maxAttempts,
 				this.errorFilter,
@@ -476,7 +477,7 @@ public final class RetryBackoffSpec extends Retry {
 				this.minBackoff,
 				this.maxBackoff,
 				this.jitterFactor,
-				Objects.requireNonNull(backoffScheduler, "backoffScheduler"),
+				backoffScheduler == null ? Schedulers::parallel : () -> backoffScheduler,
 				this.syncPreRetry,
 				this.syncPostRetry,
 				this.asyncPreRetry,
@@ -490,7 +491,6 @@ public final class RetryBackoffSpec extends Retry {
 
 	protected void validateArguments() {
 		if (jitterFactor < 0 || jitterFactor > 1) throw new IllegalArgumentException("jitterFactor must be between 0 and 1 (default 0.5)");
-		Objects.requireNonNull(this.backoffScheduler, "backoffScheduler must not be null (default Schedulers.parallel())");
 	}
 
 	@Override
@@ -556,7 +556,8 @@ public final class RetryBackoffSpec extends Retry {
 				jitter = random.nextLong(lowBound, highBound);
 			}
 			Duration effectiveBackoff = nextBackoff.plusMillis(jitter);
-			return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff, backoffScheduler),
+			return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff,
+					backoffSchedulerSupplier.get()),
 					syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry);
 		});
 	}

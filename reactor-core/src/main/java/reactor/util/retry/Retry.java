@@ -117,7 +117,7 @@ public abstract class Retry {
 	 */
 	//FIXME marble diagram
 	public static RetryBackoffSpec backoff(long maxAttempts, Duration minBackoff) {
-		return new RetryBackoffSpec(maxAttempts, t -> true, false, minBackoff, MAX_BACKOFF, 0.5d, Schedulers.parallel(),
+		return new RetryBackoffSpec(maxAttempts, t -> true, false, minBackoff, MAX_BACKOFF, 0.5d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);
 	}
@@ -138,7 +138,7 @@ public abstract class Retry {
 	 */
 	//FIXME marble diagram
 	public static RetryBackoffSpec fixedDelays(long maxAttempts, Duration fixedDelay) {
-		return new RetryBackoffSpec(maxAttempts, t -> true, false, fixedDelay, fixedDelay, 0d, Schedulers.parallel(),
+		return new RetryBackoffSpec(maxAttempts, t -> true, false, fixedDelay, fixedDelay, 0d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);
 	}
