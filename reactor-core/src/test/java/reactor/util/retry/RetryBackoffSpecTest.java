@@ -29,21 +29,14 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxRetryWhenTest;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
-import reactor.test.scheduler.VirtualTimeScheduler;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class RetryBackoffSpecTest {
-
-	@Test
-	public void suppressingSchedulerFails() {
-		assertThatNullPointerException().isThrownBy(() -> Retry.backoff(1, Duration.ZERO).scheduler(null))
-		                                .withMessage("backoffScheduler");
-	}
 
 	@Test
 	public void builderMethodsProduceNewInstances() {
