@@ -22,15 +22,16 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * A builder for a simple count-based retry strategy with fine grained options: errors that match
- * the {@link #filter(Predicate)} are retried (by default all), up to {@link #maxAttempts(long)} times.
+ * A simple count-based {@link Retry} strategy with configurable features. Use {@link Retry#max(long)},
+ * {@link Retry#maxInARow(long)} or {@link Retry#indefinitely()} to obtain a preconfigured instance to start with.
+ * <p>
+ * Only errors that match the {@link #filter(Predicate)} are retried (by default all), up to {@link #maxAttempts(long)} times.
  * <p>
  * When the maximum attempt of retries is reached, a runtime exception is propagated downstream which
  * can be pinpointed with {@link reactor.core.Exceptions#isRetryExhausted(Throwable)}. The cause of
@@ -47,7 +48,7 @@ import reactor.core.publisher.Mono;
  *
  * @author Simon Baslé
  */
-public final class RetrySpec implements Retry, Supplier<Retry> {
+public final class RetrySpec extends Retry {
 
 	static final Duration                                        MAX_BACKOFF                 = Duration.ofMillis(Long.MAX_VALUE);
 	static final Consumer<RetrySignal>                           NO_OP_CONSUMER              = rs -> {};
@@ -372,10 +373,5 @@ public final class RetrySpec implements Retry, Supplier<Retry> {
 		Mono<Void> postRetryMono = asyncPostRetry != NO_OP_BIFUNCTION ? asyncPostRetry.apply(copyOfSignal, postRetrySyncMono) : postRetrySyncMono;
 
 		return preRetryMono.then(originalCompanion).flatMap(postRetryMono::thenReturn);
-	}
-
-	@Override
-	public Retry get() {
-		return this;
 	}
 }

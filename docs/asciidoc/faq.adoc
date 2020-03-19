@@ -176,7 +176,7 @@ an unstable state and is not likely to immediately recover from it. So blindly
 retrying immediately is likely to produce yet another error and add to the
 instability.
 
-Since `3.3.4.RELEASE`, Reactor comes with a builder for such a retry baked in: `Retry.backoff`.
+Since `3.3.4.RELEASE`, Reactor comes with a builder for such a retry, to be used with `Flux#retryWhen`: `Retry.backoff`.
 
 The following example showcases a simple use of the builder, with hooks logging message right before
 and after the retry attempt delays.

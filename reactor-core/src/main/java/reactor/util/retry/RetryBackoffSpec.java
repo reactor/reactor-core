@@ -23,7 +23,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -32,12 +31,15 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 /**
- * A builder for a retry strategy based on exponential backoffs, with fine grained options.
+ * A {@link Retry} strategy based on exponential backoffs, with configurable features. Use {@link Retry#backoff(long, Duration)}
+ * to obtain a preconfigured instance to start with.
+ * <p>
  * Retry delays are randomized with a user-provided {@link #jitter(double)} factor between {@code 0.d} (no jitter)
  * and {@code 1.0} (default is {@code 0.5}).
  * Even with the jitter, the effective backoff delay cannot be less than {@link #minBackoff(Duration)}
  * nor more than {@link #maxBackoff(Duration)}. The delays and subsequent attempts are executed on the
- * provided backoff {@link #scheduler(Scheduler)}.
+ * provided backoff {@link #scheduler(Scheduler)}. Alternatively, {@link Retry#fixedDelays(long, Duration)} provides
+ * a strategy where the min and max backoffs are the same and jitters are deactivated.
  * <p>
  * Only errors that match the {@link #filter(Predicate)} are retried (by default all),
  * and the number of attempts can also limited with {@link #maxAttempts(long)}.
@@ -56,7 +58,7 @@ import reactor.core.scheduler.Schedulers;
  *
  * @author Simon Baslé
  */
-public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
+public final class RetryBackoffSpec extends Retry {
 
 	static final BiFunction<RetryBackoffSpec, RetrySignal, Throwable> BACKOFF_EXCEPTION_GENERATOR = (builder, rs) ->
 			Exceptions.retryExhausted("Retries exhausted: " + (
@@ -557,10 +559,5 @@ public final class RetryBackoffSpec implements Retry, Supplier<Retry> {
 			return RetrySpec.applyHooks(copy, Mono.delay(effectiveBackoff, backoffScheduler),
 					syncPreRetry, syncPostRetry, asyncPreRetry, asyncPostRetry);
 		});
-	}
-
-	@Override
-	public Retry get() {
-		return this;
 	}
 }

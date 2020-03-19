@@ -377,28 +377,4 @@ public class RetrySpecTest {
 				"AsyncAfter D"
 		);
 	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void smokeTestLambdaAmbiguity() {
-		//the following should just compile
-
-		Function<Flux<Throwable>, Publisher<?>> functionBased = companion -> companion.take(3);
-
-		Flux.range(1, 10)
-		    .retryWhen(functionBased)
-		    .blockLast();
-
-		Flux.range(1, 10)
-		    .retryWhen(Retry.max(1).get())
-		    .blockLast();
-
-		Mono.just(1)
-		    .retryWhen(functionBased)
-		    .block();
-
-		Mono.just(1)
-		    .retryWhen(Retry.max(1))
-		    .block();
-	}
 }

@@ -17,6 +17,7 @@
 package reactor.util.retry;
 
 import java.time.Duration;
+import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 
@@ -26,13 +27,25 @@ import reactor.core.scheduler.Schedulers;
 import static reactor.util.retry.RetrySpec.*;
 
 /**
- * Functional interface to configure retries depending on a companion {@link Flux} of {@link RetrySignal},
- * as well as builders for such {@link Flux#retryWhen(Retry)} retries} companions.
+ * Base abstract class for a strategy to decide when to retry given a companion {@link Flux} of {@link RetrySignal},
+ * for use with {@link Flux#retryWhen(Retry)} and {@link reactor.core.publisher.Mono#retryWhen(Retry)}.
+ * Also provides access to configurable built-in strategies via static factory methods:
+ * <ul>
+ *     <li>{@link #indefinitely()}</li>
+ *     <li>{@link #max(long)}</li>
+ *     <li>{@link #maxInARow(long)}</li>
+ *     <li>{@link #fixedDelays(long, Duration)}</li>
+ *     <li>{@link #backoff(long, Duration)}</li>
+ * </ul>
+ * <p>
+ * Users are encouraged to provide either concrete custom {@link Retry} strategies or builders that produce
+ * such concrete {@link Retry}. The {@link RetrySpec} returned by eg. {@link #max(long)} is a good inspiration
+ * for a fluent approach that generates a {@link Retry} at each step and uses immutability/copy-on-write to enable
+ * sharing of intermediate steps (that can thus be considered templates).
  *
  * @author Simon Baslé
  */
-@FunctionalInterface
-public interface Retry {
+public abstract class Retry {
 
 	/**
 	 * The intent of the functional {@link Retry} class is to let users configure how to react to {@link RetrySignal}
@@ -41,11 +54,11 @@ public interface Retry {
 	 * the attempt is delayed as well. This method generates the companion, out of a {@link Flux} of {@link RetrySignal},
 	 * which itself can serve as the simplest form of retry companion (indefinitely and immediately retry on any error).
 	 *
-	 * @param retrySignalCompanion the original {@link Flux} of {@link RetrySignal}, notifying of each source error that
-	 * _might_ result in a retry attempt, with context around the error and current retry cycle.
+	 * @param retrySignals the original {@link Flux} of {@link RetrySignal}, notifying of each source error that
+	 * <i>might</i> result in a retry attempt, with context around the error and current retry cycle.
 	 * @return the actual companion to use, which might delay or limit retry attempts
 	 */
-	Publisher<?> generateCompanion(Flux<RetrySignal> retrySignalCompanion);
+	public abstract Publisher<?> generateCompanion(Flux<RetrySignal> retrySignals);
 
 	/**
 	 * State for a {@link Flux#retryWhen(Retry)} Flux retry} or {@link reactor.core.publisher.Mono#retryWhen(Retry) Mono retry}.
@@ -53,7 +66,7 @@ public interface Retry {
 	 * a retry as well as two indexes: the number of errors that happened so far (and were retried) and the same number,
 	 * but only taking into account <strong>subsequent</strong> errors (see {@link #totalRetriesInARow()}).
 	 */
-	interface RetrySignal {
+	public interface RetrySignal {
 
 		/**
 		 * The ZERO BASED index number of this error (can also be read as how many retries have occurred
@@ -98,12 +111,34 @@ public interface Retry {
 	 *
 	 * @param maxAttempts the maximum number of retry attempts to allow
 	 * @param minBackoff the minimum {@link Duration} for the first backoff
-	 * @return the builder for further configuration
+	 * @return the exponential backoff spec for further configuration
 	 * @see RetryBackoffSpec#maxAttempts(long)
 	 * @see RetryBackoffSpec#minBackoff(Duration)
 	 */
-	static RetryBackoffSpec backoff(long maxAttempts, Duration minBackoff) {
+	//FIXME marble diagram
+	public static RetryBackoffSpec backoff(long maxAttempts, Duration minBackoff) {
 		return new RetryBackoffSpec(maxAttempts, t -> true, false, minBackoff, MAX_BACKOFF, 0.5d, Schedulers.parallel(),
+				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
+				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);
+	}
+
+	/**
+	 * A {@link RetryBackoffSpec} preconfigured for fixed delays (min backoff equals max backoff, no jitter), given a maximum number of retry attempts
+	 * and the fixed {@link Duration} for the backoff.
+	 * <p>
+	 * Note that calling {@link RetryBackoffSpec#minBackoff(Duration)} or {@link RetryBackoffSpec#maxBackoff(Duration)} would switch
+	 * back to an exponential backoff strategy.
+	 *
+	 * @param maxAttempts the maximum number of retry attempts to allow
+	 * @param fixedDelay the {@link Duration} of the fixed delays
+	 * @return the fixed delays spec for further configuration
+	 * @see RetryBackoffSpec#maxAttempts(long)
+	 * @see RetryBackoffSpec#minBackoff(Duration)
+	 * @see RetryBackoffSpec#maxBackoff(Duration)
+	 */
+	//FIXME marble diagram
+	public static RetryBackoffSpec fixedDelays(long maxAttempts, Duration fixedDelay) {
+		return new RetryBackoffSpec(maxAttempts, t -> true, false, fixedDelay, fixedDelay, 0d, Schedulers.parallel(),
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);
 	}
@@ -112,10 +147,11 @@ public interface Retry {
 	 * A {@link RetrySpec} preconfigured for a simple strategy with maximum number of retry attempts.
 	 *
 	 * @param max the maximum number of retry attempts to allow
-	 * @return the builder for further configuration
+	 * @return the max attempt spec for further configuration
 	 * @see RetrySpec#maxAttempts(long)
 	 */
-	static RetrySpec max(long max) {
+	//FIXME marble diagram
+	public static RetrySpec max(long max) {
 		return new RetrySpec(max, t -> true, false, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetrySpec.RETRY_EXCEPTION_GENERATOR);
 	}
@@ -126,13 +162,40 @@ public interface Retry {
 	 * errors resets the counter (see {@link RetrySpec#transientErrors(boolean)}).
 	 *
 	 * @param maxInARow the maximum number of retry attempts to allow in a row, reset by successful onNext
-	 * @return the builder for further configuration
+	 * @return the max in a row spec for further configuration
 	 * @see RetrySpec#maxAttempts(long)
 	 * @see RetrySpec#transientErrors(boolean)
 	 */
-	static RetrySpec maxInARow(long maxInARow) {
+	//FIXME marble diagram, point to it in RetrySpec#transientErrors javadoc
+	public static RetrySpec maxInARow(long maxInARow) {
 		return new RetrySpec(maxInARow, t -> true, true, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RETRY_EXCEPTION_GENERATOR);
+	}
+
+	/**
+	 * A {@link RetrySpec} preconfigured for the most simplistic retry strategy: retry immediately and indefinitely
+	 * (similar to {@link Flux#retry()}).
+	 *
+	 * @return the retry indefinitely spec for further configuration
+	 */
+	public static RetrySpec indefinitely() {
+		return new RetrySpec(Long.MAX_VALUE, t -> true, false, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
+				RetrySpec.RETRY_EXCEPTION_GENERATOR);
+	}
+
+	/**
+	 * A wrapper around {@link Function} to provide {@link Retry} by using lambda expressions.
+	 *
+	 * @param function the {@link Function} representing the desired {@link Retry} strategy as a lambda
+	 * @return the {@link Retry} strategy adapted from the {@link Function}
+	 */
+	public static final Retry fromFunction(Function<Flux<RetrySignal>, Publisher<?>> function) {
+		return new Retry() {
+			@Override
+			public Publisher<?> generateCompanion(Flux<RetrySignal> retrySignalCompanion) {
+				return function.apply(retrySignalCompanion);
+			}
+		};
 	}
 
 }

@@ -3716,13 +3716,16 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a {@link Mono} that retries on onError when the companion {@link Publisher} produces an
 	 * onNext signal
-	 * @deprecated use {@link #retryWhen(Retry)} instead, to be removed in 3.4
+	 * @deprecated use {@link #retryWhen(Retry)} instead, to be removed in 3.4. Lambda Functions that don't make
+	 * use of the error can simply be converted by wrapping via {@link Retry#fromFunction(Function)}.
+	 * Functions that do use the error will additionally need to map the {@link reactor.util.retry.Retry.RetrySignal}
+	 * emitted by the companion to its {@link Retry.RetrySignal#failure()}.
 	 */
 	@Deprecated
 	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
 		Objects.requireNonNull(whenFactory, "whenFactory");
-		return onAssembly(new MonoRetryWhen<>(this, (Flux<Retry.RetrySignal> rws) -> whenFactory.apply(rws.map(
-				Retry.RetrySignal::failure))));
+		return onAssembly(new MonoRetryWhen<>(this, Retry.fromFunction(rws -> whenFactory.apply(rws.map(
+				Retry.RetrySignal::failure)))));
 	}
 
 	/**
@@ -3752,7 +3755,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <blockquote>
 	 * <pre>
 	 * {@code
-	 * Retry customStrategy = companion -> companion.handle((retrySignal, sink) -> {
+	 * Retry customStrategy = Retry.fromFunction(companion -> companion.handle((retrySignal, sink) -> {
 	 * 	    Context ctx = sink.currentContext();
 	 * 	    int rl = ctx.getOrDefault("retriesLeft", 0);
 	 * 	    if (rl > 0) {
@@ -3763,7 +3766,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * 	    } else {
 	 * 	        sink.error(Exceptions.retryExhausted("retries exhausted", retrySignal.failure()));
 	 * 	    }
-	 * });
+	 * }));
 	 * Mono<T> retried = originalMono.retryWhen(customStrategy);
 	 * }</pre>
 	 * </blockquote>
