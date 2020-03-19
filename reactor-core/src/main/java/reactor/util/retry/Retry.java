@@ -34,7 +34,7 @@ import static reactor.util.retry.RetrySpec.*;
  *     <li>{@link #indefinitely()}</li>
  *     <li>{@link #max(long)}</li>
  *     <li>{@link #maxInARow(long)}</li>
- *     <li>{@link #fixedDelays(long, Duration)}</li>
+ *     <li>{@link #fixedDelay(long, Duration)}</li>
  *     <li>{@link #backoff(long, Duration)}</li>
  * </ul>
  * <p>
@@ -137,7 +137,7 @@ public abstract class Retry {
 	 * @see RetryBackoffSpec#maxBackoff(Duration)
 	 */
 	//FIXME marble diagram
-	public static RetryBackoffSpec fixedDelays(long maxAttempts, Duration fixedDelay) {
+	public static RetryBackoffSpec fixedDelay(long maxAttempts, Duration fixedDelay) {
 		return new RetryBackoffSpec(maxAttempts, t -> true, false, fixedDelay, fixedDelay, 0d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);

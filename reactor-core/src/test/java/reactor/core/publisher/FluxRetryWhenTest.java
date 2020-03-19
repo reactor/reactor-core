@@ -342,7 +342,7 @@ public class FluxRetryWhenTest {
 			else {
 				s.error(new RuntimeException("test " + i));
 			}
-		}).retryWhen(Retry.fixedDelays(3, Duration.ofSeconds(3))
+		}).retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(3))
 				.doBeforeRetry(rs -> System.out.println(rs.copy()))
 		);
 	}

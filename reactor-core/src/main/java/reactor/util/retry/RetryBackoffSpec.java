@@ -40,7 +40,7 @@ import reactor.util.annotation.Nullable;
  * and {@code 1.0} (default is {@code 0.5}).
  * Even with the jitter, the effective backoff delay cannot be less than {@link #minBackoff(Duration)}
  * nor more than {@link #maxBackoff(Duration)}. The delays and subsequent attempts are executed on the
- * provided backoff {@link #scheduler(Scheduler)}. Alternatively, {@link Retry#fixedDelays(long, Duration)} provides
+ * provided backoff {@link #scheduler(Scheduler)}. Alternatively, {@link Retry#fixedDelay(long, Duration)} provides
  * a strategy where the min and max backoffs are the same and jitters are deactivated.
  * <p>
  * Only errors that match the {@link #filter(Predicate)} are retried (by default all),
