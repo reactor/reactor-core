@@ -4574,7 +4574,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		if (source instanceof Flux) {
 			return new MonoSourceFlux<>((Flux<T>) source);
 		}
-		if(source instanceof Fuseable){
+		if(source instanceof Fuseable) {
 			return new MonoSourceFuseable<>(source);
 		}
 		return new MonoSource<>(source);
