@@ -38,6 +38,7 @@ plugins {
 }
 
 apply from: "gradle/doc.gradle"
+apply from: "gradle/releaser.gradle"
 
 ext {
   //also set up the special version at root, for refguide
