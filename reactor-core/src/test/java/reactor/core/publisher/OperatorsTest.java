@@ -162,38 +162,33 @@ public class OperatorsTest {
 	public void drainSubscriber() {
 		AtomicBoolean requested = new AtomicBoolean();
 		AtomicBoolean errored = new AtomicBoolean();
-		try {
-			Hooks.onErrorDropped(e -> {
-				assertThat(Exceptions.isErrorCallbackNotImplemented(e)).isTrue();
-				assertThat(e.getCause()).hasMessage("test");
-				errored.set(true);
+		Hooks.onErrorDropped(e -> {
+			assertThat(Exceptions.isErrorCallbackNotImplemented(e)).isTrue();
+			assertThat(e.getCause()).hasMessage("test");
+			errored.set(true);
+		});
+		Flux.from(s -> {
+			assertThat(s).isEqualTo(Operators.drainSubscriber());
+			s.onSubscribe(new Subscription() {
+				@Override
+				public void request(long n) {
+					assertThat(n).isEqualTo(Long.MAX_VALUE);
+					requested.set(true);
+				}
+
+				@Override
+				public void cancel() {
+
+				}
 			});
-			Flux.from(s -> {
-				assertThat(s).isEqualTo(Operators.drainSubscriber());
-				s.onSubscribe(new Subscription() {
-					@Override
-					public void request(long n) {
-						assertThat(n).isEqualTo(Long.MAX_VALUE);
-						requested.set(true);
-					}
+			s.onNext("ignored"); //dropped
+			s.onComplete(); //dropped
+			s.onError(new Exception("test"));
+		})
+		    .subscribe(Operators.drainSubscriber());
 
-					@Override
-					public void cancel() {
-
-					}
-				});
-				s.onNext("ignored"); //dropped
-				s.onComplete(); //dropped
-				s.onError(new Exception("test"));
-			})
-			    .subscribe(Operators.drainSubscriber());
-
-			assertThat(requested.get()).isTrue();
-			assertThat(errored.get()).isTrue();
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-		}
+		assertThat(requested.get()).isTrue();
+		assertThat(errored.get()).isTrue();
 	}
 
 	@Test
@@ -286,20 +281,13 @@ public class OperatorsTest {
 		Exception error = new IllegalStateException("boom");
 		DeferredSubscription s = new Operators.DeferredSubscription();
 
-		try {
-			assertThat(s.isCancelled()).as("s initially cancelled").isFalse();
+		assertThat(s.isCancelled()).as("s initially cancelled").isFalse();
 
-			Throwable e = Operators.onNextError("foo", error, c, s);
-			assertThat(e).isNull();
-			assertThat(nextDropped).containsExactly("foo");
-			assertThat(errorDropped).containsExactly(error);
-			assertThat(s.isCancelled()).as("s cancelled").isFalse();
-		}
-		finally {
-			Hooks.resetOnNextDropped();
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextError();
-		}
+		Throwable e = Operators.onNextError("foo", error, c, s);
+		assertThat(e).isNull();
+		assertThat(nextDropped).containsExactly("foo");
+		assertThat(errorDropped).containsExactly(error);
+		assertThat(s.isCancelled()).as("s cancelled").isFalse();
 	}
 
 	@Test
@@ -311,18 +299,12 @@ public class OperatorsTest {
 
 		Context c = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, OnNextFailureStrategy.RESUME_DROP);
 		Exception error = new IllegalStateException("boom");
-		try {
-			assertThat(Hooks.onNextErrorHook).as("no global hook").isNull();
+		assertThat(Hooks.onNextErrorHook).as("no global hook").isNull();
 
-			RuntimeException e = Operators.onNextPollError("foo", error, c);
-			assertThat(e).isNull();
-			assertThat(nextDropped).containsExactly("foo");
-			assertThat(errorDropped).containsExactly(error);
-		}
-		finally {
-			Hooks.resetOnNextDropped();
-			Hooks.resetOnErrorDropped();
-		}
+		RuntimeException e = Operators.onNextPollError("foo", error, c);
+		assertThat(e).isNull();
+		assertThat(nextDropped).containsExactly("foo");
+		assertThat(errorDropped).containsExactly(error);
 	}
 
 	@Test

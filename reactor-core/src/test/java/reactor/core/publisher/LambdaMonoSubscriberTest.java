@@ -236,40 +236,29 @@ public class LambdaMonoSubscriberTest {
 	public void errorMonoState(){
 		Hooks.onErrorDropped(e -> assertTrue(e.getMessage().equals("test2")));
 		Hooks.onNextDropped(d -> assertTrue(d.equals("test2")));
-		try {
-			Mono.fromDirect(s -> {
-				assertTrue(s instanceof LambdaMonoSubscriber);
-				LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>) s;
-				Operators.error(s, new Exception("test"));
-				s.onComplete();
-				s.onError(new Exception("test2"));
-				s.onNext("test2");
-				assertTrue(bfs.scan(Scannable.Attr.TERMINATED));
-				bfs.dispose();
-			})
-			          .subscribe(s -> {
-			          }, e -> {
-			          }, () -> {
-			          });
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		Mono.fromDirect(s -> {
+			assertTrue(s instanceof LambdaMonoSubscriber);
+			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>) s;
+			Operators.error(s, new Exception("test"));
+			s.onComplete();
+			s.onError(new Exception("test2"));
+			s.onNext("test2");
+			assertTrue(bfs.scan(Scannable.Attr.TERMINATED));
+			bfs.dispose();
+		})
+		          .subscribe(s -> {
+		          }, e -> {
+		          }, () -> {
+		          });
 	}
 
 	@Test
 	public void completeHookErrorDropped() {
 		Hooks.onErrorDropped(e -> assertTrue(e.getMessage().equals("complete")));
-		try {
-			Mono.just("foo")
-		        .subscribe(v -> {},
-				        e -> {},
-				        () -> { throw new IllegalStateException("complete");});
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-		}
+		Mono.just("foo")
+	        .subscribe(v -> {},
+			        e -> {},
+			        () -> { throw new IllegalStateException("complete");});
 	}
 
 	@Test

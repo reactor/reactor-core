@@ -78,10 +78,6 @@ public class RejectedExecutionTest {
 	@After
 	public void tearDown() {
 		scheduler.dispose();
-		Hooks.resetOnNextDropped();
-		Hooks.resetOnErrorDropped();
-		Hooks.resetOnOperatorError();
-		Schedulers.resetOnHandleError();
 		onNexts.clear();
 		onErrors.clear();
 		onNextDropped.clear();

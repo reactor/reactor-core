@@ -52,23 +52,17 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
 
-			String data = "foo";
-			Throwable exception = new NullPointerException("foo");
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-			assertThat(strategy.test(exception, data)).isTrue();
-			Throwable t = strategy.process(exception, data, Context.empty());
+		assertThat(strategy.test(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThat(t).isNull();
-			assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
-			assertThat(value.get()).isEqualTo("foo");
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(t).isNull();
+		assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
+		assertThat(value.get()).isEqualTo("foo");
 	}
 
 	@Test
@@ -78,24 +72,18 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
 
-			String data = "foo";
-			Throwable exception = new NoSuchMethodError("foo");
+		String data = "foo";
+		Throwable exception = new NoSuchMethodError("foo");
 
-			assertThat(strategy.test(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 
-			assertThatExceptionOfType(NoSuchMethodError.class)
-					.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
+		assertThatExceptionOfType(NoSuchMethodError.class)
+				.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
 
-			assertThat(error.get()).isNull();
-			assertThat(value.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(error.get()).isNull();
+		assertThat(value.get()).isNull();
 	}
 
 
@@ -106,24 +94,18 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
-					e -> e instanceof NullPointerException);
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+				e -> e instanceof NullPointerException);
 
-			String data = "foo";
-			Throwable exception = new NullPointerException("foo");
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-			assertThat(strategy.test(exception, data)).isTrue();
-			Throwable t = strategy.process(exception, data, Context.empty());
+		assertThat(strategy.test(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThat(t).isNull();
-			assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
-			assertThat(value.get()).isEqualTo("foo");
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(t).isNull();
+		assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
+		assertThat(value.get()).isEqualTo("foo");
 	}
 
 	@Test
@@ -133,26 +115,20 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
-					e -> e instanceof IllegalArgumentException);
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+				e -> e instanceof IllegalArgumentException);
 
-			String data = "foo";
-			Throwable exception = new NullPointerException("foo");
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-			assertThat(strategy.test(exception, data)).isFalse();
-			Throwable t = strategy.process(exception, data, Context.empty());
+		assertThat(strategy.test(exception, data)).isFalse();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThat(t)
-					.isSameAs(exception)
-					.hasNoSuppressedExceptions();
-			assertThat(error.get()).isNull();
-			assertThat(value.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(t)
+				.isSameAs(exception)
+				.hasNoSuppressedExceptions();
+		assertThat(error.get()).isNull();
+		assertThat(value.get()).isNull();
 	}
 
 	@Test
@@ -162,26 +138,20 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
-					e -> e instanceof NoSuchMethodError);
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+				e -> e instanceof NoSuchMethodError);
 
-			String data = "foo";
-			Throwable exception = new NoSuchMethodError("foo");
+		String data = "foo";
+		Throwable exception = new NoSuchMethodError("foo");
 
-			assertThat(strategy.test(exception, data)).isTrue();
-			Throwable t = strategy.process(exception, data, Context.empty());
+		assertThat(strategy.test(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThat(t).isNull();
-			assertThat(error.get())
-					.isInstanceOf(NoSuchMethodError.class)
-					.hasMessage("foo");
-			assertThat(value.get()).isEqualTo("foo");
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(t).isNull();
+		assertThat(error.get())
+				.isInstanceOf(NoSuchMethodError.class)
+				.hasMessage("foo");
+		assertThat(value.get()).isEqualTo("foo");
 	}
 
 	@Test
@@ -191,25 +161,19 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
-					e -> e instanceof NullPointerException);
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+				e -> e instanceof NullPointerException);
 
-			String data = "foo";
-			Throwable exception = new NoSuchMethodError("foo");
+		String data = "foo";
+		Throwable exception = new NoSuchMethodError("foo");
 
-			assertThat(strategy.test(exception, data)).isFalse();
+		assertThat(strategy.test(exception, data)).isFalse();
 
-			assertThatExceptionOfType(NoSuchMethodError.class)
-					.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
+		assertThatExceptionOfType(NoSuchMethodError.class)
+				.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
 
-			assertThat(error.get()).isNull();
-			assertThat(value.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(error.get()).isNull();
+		assertThat(value.get()).isNull();
 	}
 
 	@Test
@@ -219,30 +183,24 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(value::set);
 
-		try {
-			IllegalStateException failurePredicate = new IllegalStateException("boomInPredicate");
+		IllegalStateException failurePredicate = new IllegalStateException("boomInPredicate");
 
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
-					e -> { throw failurePredicate; });
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+				e -> { throw failurePredicate; });
 
-			String data = "foo";
-			Throwable exception = new NullPointerException("foo");
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-			assertThatExceptionOfType(IllegalStateException.class)
-					.isThrownBy(() -> strategy.test(exception, data))
-					.withMessage("boomInPredicate");
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> strategy.test(exception, data))
+				.withMessage("boomInPredicate");
 
-			assertThatExceptionOfType(IllegalStateException.class)
-					.isThrownBy(() -> strategy.process(exception, data, Context.empty()))
-					.withMessage("boomInPredicate");
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> strategy.process(exception, data, Context.empty()))
+				.withMessage("boomInPredicate");
 
-			assertThat(error.get()).isNull();
-			assertThat(value.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(error.get()).isNull();
+		assertThat(value.get()).isNull();
 	}
 
 	@Test
@@ -252,23 +210,17 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(v -> { throw failure; });
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
 
-			String data = "foo";
-			Throwable exception = new NullPointerException("foo");
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-			Throwable t = strategy.process(exception, data, Context.empty());
-			assertThat(t)
-					.hasMessage("value hook")
-					.hasSuppressedException(exception);
+		Throwable t = strategy.process(exception, data, Context.empty());
+		assertThat(t)
+				.hasMessage("value hook")
+				.hasSuppressedException(exception);
 
-			assertThat(error.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(error.get()).isNull();
 	}
 
 	@Test
@@ -278,23 +230,17 @@ public class OnNextFailureStrategyTest {
 		Hooks.onNextDropped(value::set);
 		Hooks.onErrorDropped(v -> { throw failure; });
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
 
-			String data = "foo";
-			Throwable exception = new NullPointerException("foo");
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-			Throwable t = strategy.process(exception, data, Context.empty());
-			assertThat(t)
-					.hasMessage("error hook")
-					.hasSuppressedException(exception);
+		Throwable t = strategy.process(exception, data, Context.empty());
+		assertThat(t)
+				.hasMessage("error hook")
+				.hasSuppressedException(exception);
 
-			assertThat(value.get()).isEqualTo("foo");
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(value.get()).isEqualTo("foo");
 	}
 
 	@Test
@@ -303,24 +249,18 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(e -> { throw Exceptions.propagate(e); });
 		Hooks.onNextDropped(value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
 
-			String data = "foo";
-			Throwable exception = new IllegalArgumentException("foo");
+		String data = "foo";
+		Throwable exception = new IllegalArgumentException("foo");
 
-			assertThat(strategy.test(exception, data)).as("predicate matches").isTrue();
-			Throwable t = strategy.process(exception, data, Context.empty());
+		assertThat(strategy.test(exception, data)).as("predicate matches").isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThat(t)
-					.isSameAs(exception)
-					.hasNoSuppressedExceptions();
-			assertThat(value.get()).isEqualTo("foo");
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(t)
+				.isSameAs(exception)
+				.hasNoSuppressedExceptions();
+		assertThat(value.get()).isEqualTo("foo");
 	}
 
 
@@ -548,26 +488,20 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(error::set);
 		Hooks.onNextDropped(value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(t -> t instanceof IllegalArgumentException,
-					(t, v) -> { throw Exceptions.propagate(t);});
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(t -> t instanceof IllegalArgumentException,
+				(t, v) -> { throw Exceptions.propagate(t);});
 
-			String data = "foo";
-			Throwable exception = new IllegalArgumentException("foo");
+		String data = "foo";
+		Throwable exception = new IllegalArgumentException("foo");
 
-			assertThat(strategy.test(exception, data)).as("predicate matches").isTrue();
-			Throwable t = strategy.process(exception, data, Context.empty());
+		assertThat(strategy.test(exception, data)).as("predicate matches").isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThat(t)
-					.isSameAs(exception)
-					.hasNoSuppressedExceptions();
-			assertThat(error).hasValue(null);
-			assertThat(value).hasValue(null);
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(t)
+				.isSameAs(exception)
+				.hasNoSuppressedExceptions();
+		assertThat(error).hasValue(null);
+		assertThat(value).hasValue(null);
 	}
 
 	@Test

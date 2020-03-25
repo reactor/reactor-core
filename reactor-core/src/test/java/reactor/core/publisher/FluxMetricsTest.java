@@ -219,28 +219,23 @@ public class FluxMetricsTest {
 		AtomicReference<Throwable> errorDropped = new AtomicReference<>();
 		Hooks.onErrorDropped(errorDropped::set);
 		Exception dropError = new IllegalStateException("malformedOnError");
-		try {
-			TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
-			Flux<Integer> source = testPublisher.flux().hide();
+		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
+		Flux<Integer> source = testPublisher.flux().hide();
 
-			new FluxMetrics<>(source, registry)
-					.subscribe();
+		new FluxMetrics<>(source, registry)
+				.subscribe();
 
-			testPublisher.next(1)
-			             .complete()
-			             .error(dropError);
+		testPublisher.next(1)
+		             .complete()
+		             .error(dropError);
 
-			Counter malformedMeter = registry
-					.find(METER_MALFORMED)
-					.counter();
+		Counter malformedMeter = registry
+				.find(METER_MALFORMED)
+				.counter();
 
-			assertThat(malformedMeter).isNotNull();
-			assertThat(malformedMeter.count()).isEqualTo(1);
-			assertThat(errorDropped).hasValue(dropError);
-		}
-		finally{
-			Hooks.resetOnErrorDropped();
-		}
+		assertThat(malformedMeter).isNotNull();
+		assertThat(malformedMeter.count()).isEqualTo(1);
+		assertThat(errorDropped).hasValue(dropError);
 	}
 
 	@Test

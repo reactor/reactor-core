@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1026,13 +1025,6 @@ assertThat(errorCount).hasValue(6); // <6>
 		}
 	}
 
-	@After
-	public void removeHooks() {
-		if (testName.getMethodName().startsWith("debuggingActivated")) {
-			Hooks.resetOnOperatorDebug();
-		}
-	}
-
 	public Mono<String> toDebug; //please overlook the public class attribute :p
 
 	private void printAndAssert(Throwable t, boolean checkForAssemblySuppressed) {
@@ -1048,7 +1040,7 @@ assertThat(errorCount).hasValue(6); // <6>
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageContaining("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1012)\n");
+						.hasMessageContaining("Flux.single ⇢ at reactor.guide.GuideTests.scatterAndGather(GuideTests.java:1011)\n");
 			});
 		}
 	}
