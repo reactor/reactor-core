@@ -4189,31 +4189,31 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		CorePublisher publisher = Operators.onLastAssembly(this);
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
-		if (publisher instanceof OptimizableOperator) {
-			OptimizableOperator operator = (OptimizableOperator) publisher;
-			while (true) {
-				try {
+		try {
+			if (publisher instanceof OptimizableOperator) {
+				OptimizableOperator operator = (OptimizableOperator) publisher;
+				while (true) {
 					subscriber = operator.subscribeOrReturn(subscriber);
-				}
-				catch (Throwable e) {
-					Operators.error(subscriber, Operators.onOperatorError(e, subscriber.currentContext()));
-					return;
-				}
-				if (subscriber == null) {
-					// null means "I will subscribe myself", returning...
-					return;
-				}
+					if (subscriber == null) {
+						// null means "I will subscribe myself", returning...
+						return;
+					}
 
-				OptimizableOperator newSource = operator.nextOptimizableSource();
-				if (newSource == null) {
-					publisher = operator.source();
-					break;
+					OptimizableOperator newSource = operator.nextOptimizableSource();
+					if (newSource == null) {
+						publisher = operator.source();
+						break;
+					}
+					operator = newSource;
 				}
-				operator = newSource;
 			}
-		}
 
-		publisher.subscribe(subscriber);
+			publisher.subscribe(subscriber);
+		}
+		catch (Throwable e) {
+			Operators.reportThrowInSubscribe(subscriber, e);
+			return;
+		}
 	}
 
 	/**

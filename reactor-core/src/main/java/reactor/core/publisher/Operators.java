@@ -185,6 +185,16 @@ public abstract class Operators {
 		s.onError(e);
 	}
 
+	public static void reportThrowInSubscribe(CoreSubscriber subscriber, Throwable e) {
+		try {
+			subscriber.onSubscribe(Operators.EmptySubscription.INSTANCE);
+		}
+		catch (Throwable onSubscribeError) {
+			e.addSuppressed(onSubscribeError);
+		}
+		subscriber.onError(onOperatorError(e, subscriber.currentContext()));
+	}
+
 	/**
 	 * Create a function that can be used to support a custom operator via
 	 * {@link CoreSubscriber} decoration. The function is compatible with

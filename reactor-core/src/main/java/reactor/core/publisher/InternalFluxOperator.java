@@ -50,24 +50,24 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
 		OptimizableOperator operator = this;
-		while (true) {
-			try {
+		try {
+			while (true) {
 				subscriber = operator.subscribeOrReturn(subscriber);
+				if (subscriber == null) {
+					// null means "I will subscribe myself", returning...
+					return;
+				}
+				OptimizableOperator newSource = operator.nextOptimizableSource();
+				if (newSource == null) {
+					operator.source().subscribe(subscriber);
+					return;
+				}
+				operator = newSource;
 			}
-			catch (Throwable e) {
-				Operators.error(subscriber, Operators.onOperatorError(e, subscriber.currentContext()));
-				return;
-			}
-			if (subscriber == null) {
-				// null means "I will subscribe myself", returning...
-				return;
-			}
-			OptimizableOperator newSource = operator.nextOptimizableSource();
-			if (newSource == null) {
-				operator.source().subscribe(subscriber);
-				return;
-			}
-			operator = newSource;
+		}
+		catch (Throwable e) {
+			Operators.reportThrowInSubscribe(subscriber, e);
+			return;
 		}
 	}
 
