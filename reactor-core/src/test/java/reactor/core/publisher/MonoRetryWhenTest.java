@@ -21,11 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
 
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -47,9 +45,9 @@ public class MonoRetryWhenTest {
 			else {
 				s.error(new RuntimeException("test " + i));
 			}
-		}).retryWhen((Function<Flux<Throwable>, Publisher<?>>) companion -> companion
+		}).retryWhen(Retry.from(companion -> companion
 				.zipWith(Flux.range(1, 3), (t1, t2) -> t2)
-				.flatMap(time -> Mono.delay(Duration.ofSeconds(time))));
+				.flatMap(time -> Mono.delay(Duration.ofSeconds(time)))));
 	}
 
 	@Test

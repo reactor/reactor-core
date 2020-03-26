@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -131,6 +132,7 @@ public class MonoProcessorTest {
 		mp.block(Duration.ofMillis(1));
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void MonoProcessorRejectedDoOnSuccessOrError() {
 		MonoProcessor<String> mp = MonoProcessor.create();
@@ -170,6 +172,7 @@ public class MonoProcessorTest {
 		assertThat(mp.isError()).isTrue();
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void MonoProcessorSuccessDoOnSuccessOrError() {
 		MonoProcessor<String> mp = MonoProcessor.create();

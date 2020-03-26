@@ -19,10 +19,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+
 import reactor.test.StepVerifier;
 
 public class MonoRetryPredicateTest {
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void twoRetryNormalSupplier() {
 		AtomicInteger i = new AtomicInteger();
@@ -43,6 +45,7 @@ public class MonoRetryPredicateTest {
 		            .verify();
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void twoRetryErrorSupplier() {
 		AtomicInteger i = new AtomicInteger();

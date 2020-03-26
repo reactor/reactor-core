@@ -61,13 +61,14 @@ public class FluxRetryWhenTest {
 		new FluxRetryWhen<>(null, Retry.from(v -> v));
 	}
 
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({"deprecation", "unchecked", "rawtypes", "ConstantConditions"})
 	@Test(expected = NullPointerException.class)
 	public void whenThrowableFactoryNull() {
 		Flux.never()
 		    .retryWhen((Function) null);
 	}
 
+	@SuppressWarnings("ConstantConditions")
 	@Test(expected = NullPointerException.class)
 	public void whenRetrySignalFactoryNull() {
 		Flux.never()
@@ -863,6 +864,7 @@ public class FluxRetryWhenTest {
 		});
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void retryWhenThrowableCompanionIsComparableToRetryWhenRetryFromFunction() {
 		AtomicInteger sourceHelper = new AtomicInteger();
@@ -875,7 +877,6 @@ public class FluxRetryWhenTest {
 			}
 		});
 
-		//noinspection deprecation
 		StepVerifier.withVirtualTime(() -> source.retryWhen(companion -> companion.delayElements(Duration.ofSeconds(3))))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(3 * 3))

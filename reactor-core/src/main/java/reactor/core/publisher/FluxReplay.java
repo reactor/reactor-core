@@ -1009,7 +1009,14 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			long ttl,
 			@Nullable Scheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 		this.history = history;
 		if(history < 0){
 			throw new IllegalArgumentException("History cannot be negative : " + history);

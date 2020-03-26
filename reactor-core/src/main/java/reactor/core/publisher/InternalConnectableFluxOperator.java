@@ -36,7 +36,14 @@ abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> 
 	 */
 	public InternalConnectableFluxOperator(ConnectableFlux<I> source) {
 		this.source = source;
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, I> optimSource = (OptimizableOperator<?, I>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 	}
 
 	@Override

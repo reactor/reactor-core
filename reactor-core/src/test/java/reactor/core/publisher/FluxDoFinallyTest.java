@@ -26,14 +26,15 @@ import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static reactor.core.Fuseable.*;
 
 public class FluxDoFinallyTest implements Consumer<SignalType> {
@@ -339,7 +340,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		catch (Throwable e) {
 			Throwable _e = Exceptions.unwrap(e);
 			assertNotSame(e, _e);
-			assertThat(_e, is(instanceOf(IllegalStateException.class)));
+			assertThat(_e).isInstanceOf(IllegalStateException.class);
 		}
 	}
 
@@ -358,7 +359,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		catch (Throwable e) {
 			Throwable _e = Exceptions.unwrap(e);
 			assertNotSame(e, _e);
-			assertThat(_e, is(instanceOf(IllegalStateException.class)));
+			assertThat(_e).isInstanceOf(IllegalStateException.class);
 		}
 	}
 

@@ -21,9 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import org.junit.Test;
+
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+@SuppressWarnings("deprecation") //retry with Predicate are deprecated, the underlying implementation is going to be removed ultimately
 public class FluxRetryPredicateTest {
 
 	final Flux<Integer> source = Flux.concat(Flux.range(1, 5),

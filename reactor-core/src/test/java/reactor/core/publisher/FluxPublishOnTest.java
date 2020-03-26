@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.assertj.core.api.Assertions;
-import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -46,6 +44,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -62,10 +61,8 @@ import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
@@ -83,7 +80,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			step.verifyErrorSatisfies(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException));
 		}
 		catch (Exception e) {
-			assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
+			assertThat(Exceptions.unwrap(e)).isInstanceOf(RejectedExecutionException.class);
 		}
 	}
 
@@ -95,7 +92,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 					.verify(Duration.ofMillis(1));
 		}
 		catch (Exception e) {
-			assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
+			assertThat(Exceptions.unwrap(e)).isInstanceOf(RejectedExecutionException.class);
 		}
 		catch (AssertionError e){
 			if(!e.getMessage().contains("timed out")) {
@@ -885,23 +882,17 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		ts.await(Duration.ofMillis(100))
 		  .assertComplete();
 
-		Assert.assertThat("downstream didn't single request",
-				downstreamRequests.size(),
-				is(1));
-		Assert.assertThat("downstream didn't request 400",
-				downstreamRequests.get(0),
-				is(400L));
+		assertThat(downstreamRequests.size()).as("downstream number of requests").isOne();
+		assertThat(downstreamRequests.get(0)).as("unique request").isEqualTo(400L);
 		long total = 0L;
 		for (Long requested : upstreamRequests) {
 			total += requested;
-			Assert.assertThat("rate limit not applied to request: " + requested,
-					//30 is the optimization that eagerly prefetches when 3/4 of the request has been served
-					requested,
-					anyOf(is(40L), is(30L)));
+			//30 is the optimization that eagerly prefetches when 3/4 of the request has been served
+			assertThat(requested).as("rate limit check").isIn(40L, 30L);
 		}
-		Assert.assertThat("bad upstream total request",
-				total,
-				allOf(is(greaterThanOrEqualTo(400L)), is(lessThan(440L))));
+		assertThat(total).as("upstream total request")
+		                 .isGreaterThanOrEqualTo(400L)
+		                 .isLessThan(440L);
 	}
 
 	@Test
@@ -918,7 +909,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		            .expectNextCount(14)
 		            .verifyComplete();
 
-		Assertions.assertThat(rebatchedRequest)
+		assertThat(rebatchedRequest)
 		          .containsExactly(10L, 8L);
 	}
 
@@ -936,7 +927,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		            .expectNextCount(14)
 		            .verifyComplete();
 
-		Assertions.assertThat(rebatchedRequest)
+		assertThat(rebatchedRequest)
 		          .containsExactly(10L, 2L, 2L, 2L, 2L, 2L, 2L, 2L);
 	}
 
@@ -983,9 +974,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 			hookLatch.await();
 
-			Assert.assertThat(throwableInOnOperatorError.get(),
-					CoreMatchers.instanceOf(RejectedExecutionException.class));
-			Assert.assertSame(dataInOnOperatorError.get(), 0);
+			assertThat(throwableInOnOperatorError.get()).isInstanceOf(RejectedExecutionException.class);
+			assertThat(dataInOnOperatorError).hasValue(0);
 		}
 		finally {
 			Hooks.resetOnOperatorError();
@@ -1039,10 +1029,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 			hookLatch.await();
 
-			Assert.assertThat(throwableInOnOperatorError.get(),
-					CoreMatchers.instanceOf(RejectedExecutionException.class));
-			Assert.assertSame(throwableInOnOperatorError.get()
-			                                            .getSuppressed()[0], exception);
+			assertThat(throwableInOnOperatorError.get()).isInstanceOf(RejectedExecutionException.class);
+			assertThat(throwableInOnOperatorError.get().getSuppressed()[0]).isSameAs(exception);
 		}
 		finally {
 			Hooks.resetOnOperatorError();
@@ -1057,8 +1045,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		CountDownLatch hookLatch = new CountDownLatch(1);
 
 		Hooks.onOperatorError((t, d) -> {
-			assertTrue(t instanceof RejectedExecutionException);
-			assertTrue(d != null);
+			assertThat(t).isInstanceOf(RejectedExecutionException.class);
+			assertThat(d).isNotNull();
 			hookLatch.countDown();
 			return t;
 		});
@@ -1183,12 +1171,11 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 				                            Long prevThreadId =
 						                            seenConsumer.put(o, curThreadId);
 				                            if (prevThreadId != null) {
-					                            System.out.println(String.format(
+					                            fail(String.format(
 							                            "The object %d has already been seen by the consumer on the thread %d, current thread %d",
 							                            o,
 							                            prevThreadId,
 							                            curThreadId));
-					                            fail();
 				                            }
 
 				                            consumerLatch.countDown();
@@ -1200,9 +1187,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		}
 
 		internalLatch.await(5, TimeUnit.SECONDS);
-		assertEquals(COUNT, internalCounter.get());
+		assertThat(internalCounter).as("after 5s").hasValue(COUNT);
 		consumerLatch.await(5, TimeUnit.SECONDS);
-		assertEquals(COUNT, consumerCounter.get());
+		assertThat(internalCounter).as("after 10s").hasValue(COUNT);
 	}
 
 	@Test
@@ -1239,8 +1226,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			s.next(String.valueOf(i));
 		}
 		latch.await(15, TimeUnit.SECONDS);
-		assertTrue(latch.getCount() + " of " + items + " items were not counted down",
-				latch.getCount() == 0);
+		assertThat(latch.getCount())
+				.withFailMessage("%d of %d items were not counted down", latch.getCount(), items)
+				.isZero();
 	}
 
 	@Test
@@ -1272,27 +1260,27 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-        Assertions.assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
-        Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
-        Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
-        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
         //once cancelled, there shouldn't be any draining left
         // => better place to test that BUFFERED reflects the size of the queue
         test.queue.add(1);
         test.queue.add(1);
-        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
     }
 
 	@Test
@@ -1305,24 +1293,24 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-        Assertions.assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
-        Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
         test.queue.add(1);
-        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
-        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
-        Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
-        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
     //see https://github.com/reactor/reactor-core/issues/767
@@ -1340,8 +1328,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	    StepVerifier.create(flux)
 	                .expectFusion(Fuseable.ASYNC)
 	                .assertNext(tuple -> {
-	                	Assertions.assertThat(tuple.getT1()).isEqualTo("a");
-		                Assertions.assertThat(tuple.getT2()).isEqualTo("b");
+	                	assertThat(tuple.getT1()).isEqualTo("a");
+		                assertThat(tuple.getT2()).isEqualTo("b");
 	                })
 	                .verifyComplete();
     }
@@ -1362,8 +1350,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	    StepVerifier.create(flux)
 	                .expectFusion(Fuseable.ASYNC)
 	                .assertNext(tuple -> {
-	                	Assertions.assertThat(tuple.getT1()).isEqualTo("a");
-		                Assertions.assertThat(tuple.getT2()).isEqualTo("b");
+	                	assertThat(tuple.getT1()).isEqualTo("a");
+		                assertThat(tuple.getT2()).isEqualTo("b");
 	                })
 	                .verifyComplete();
     }
@@ -1388,8 +1376,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		        }
 	        });
 
-	    Assertions.assertThat(latch.await(1, TimeUnit.SECONDS)).as("took less than 1s").isTrue();
-	    Assertions.assertThat(request.sum()).as("request not compounded").isEqualTo(100L);
+	    assertThat(latch.await(1, TimeUnit.SECONDS)).as("took less than 1s").isTrue();
+	    assertThat(request.sum()).as("request not compounded").isEqualTo(100L);
     }
 
 	private static class FailNullWorkerScheduler implements Scheduler {
@@ -1470,7 +1458,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		);
 		Scannable runOnScannable = publishOnScannable.scan(Scannable.Attr.RUN_ON);
 
-		Assertions.assertThat(runOnScannable).isNotNull()
+		assertThat(runOnScannable).isNotNull()
 		                          .matches(Scannable::isScanAvailable, "isScanAvailable");
 
 		System.out.println(runOnScannable + " isScannable " + runOnScannable.isScanAvailable());

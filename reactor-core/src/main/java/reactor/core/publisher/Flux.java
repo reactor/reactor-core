@@ -9117,9 +9117,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #transformDeferred(Function) for deferred composition of {@link Flux} for each {@link Subscriber}
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		if (Hooks.DETECT_CONTEXT_LOSS) {
-			//noinspection unchecked,rawtypes
 			transformer = new ContextTrackingFunctionWrapper(transformer);
 		}
 		return onAssembly(from(transformer.apply(this)));
@@ -9142,10 +9142,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #transform(Function) transform() for immmediate transformation of {@link Flux}
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				//noinspection unchecked,rawtypes
 				return new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this);
 			}
 			return transformer.apply(this);

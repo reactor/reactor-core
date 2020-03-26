@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -37,7 +38,14 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 
 	protected InternalMonoOperator(Mono<? extends I> source) {
 		super(source);
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, I> optimSource = (OptimizableOperator<?, I>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 	}
 
 	@Override

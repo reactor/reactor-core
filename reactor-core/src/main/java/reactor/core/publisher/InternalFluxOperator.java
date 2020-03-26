@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -35,7 +36,14 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 	 */
 	protected InternalFluxOperator(Flux<? extends I> source) {
 		super(source);
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, I> optimSource = (OptimizableOperator<?, I>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 	}
 
 	@Override

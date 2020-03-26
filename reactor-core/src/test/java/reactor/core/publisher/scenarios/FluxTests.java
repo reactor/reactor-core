@@ -52,6 +52,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -71,6 +72,7 @@ import reactor.util.Loggers;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1425,7 +1427,7 @@ public class FluxTests extends AbstractReactorTest {
 			Thread.setDefaultUncaughtExceptionHandler(null);
 			Schedulers.resetOnHandleError();
 		}
-		Assert.assertThat("Uncaught error not handled", handled.get(), is(true));
+		assertThat(handled).as("Uncaught error handler").isTrue();
 		if (failure.get() != null) {
 			fail(failure.get());
 		}

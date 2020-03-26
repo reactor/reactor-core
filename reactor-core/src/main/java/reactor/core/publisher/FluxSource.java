@@ -44,7 +44,14 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 	 */
 	FluxSource(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, I> optimSource = (OptimizableOperator<?, I>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 	}
 
 	/**

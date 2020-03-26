@@ -26,13 +26,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-
 import javax.annotation.Nullable;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -49,7 +49,6 @@ import reactor.util.context.Context;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.parallel;
 
@@ -397,7 +396,7 @@ public class FluxPeekFuseableTest {
 		ts.assertNoValues();
 		ts.assertComplete();
 
-		Assert.assertThat(errorCallbackCapture.get(), is(nullValue()));
+		assertThat(errorCallbackCapture).hasValue(null);
 
 
 		//same with after error
@@ -418,7 +417,7 @@ public class FluxPeekFuseableTest {
 		ts.assertNoValues();
 		ts.assertError(NullPointerException.class);
 
-		Assert.assertThat(errorCallbackCapture.get(), is(instanceOf(NullPointerException.class)));
+		assertThat(errorCallbackCapture.get()).isInstanceOf(NullPointerException.class);
 	}
 
 	@Test

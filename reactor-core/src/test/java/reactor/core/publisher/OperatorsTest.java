@@ -33,7 +33,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
 import javax.annotation.Nullable;
 
 import org.assertj.core.api.Assertions;
@@ -41,6 +40,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -861,6 +861,7 @@ public class OperatorsTest {
 				return n;
 			}
 		};
+		@SuppressWarnings("unchecked")
 		List<Integer> mock = Mockito.mock(List.class);
 		Mockito.when(mock.iterator()).thenReturn(failingIterator);
 

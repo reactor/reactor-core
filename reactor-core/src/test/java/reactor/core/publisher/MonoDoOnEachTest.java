@@ -30,6 +30,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -401,16 +402,12 @@ public class MonoDoOnEachTest {
 				    		throw new IllegalStateException("boomChild");
 					    }
 				    })
-				    .doOnSuccessOrError((v, e) -> {
-					    if (e == null) eventOrder.add("childSuccess");
-					    else eventOrder.add("childError");
-				    })
+				    .doOnSuccess(v -> eventOrder.add("childSuccess"))
+				    .doOnError(e -> eventOrder.add("childError"))
 		    )
 		    .doOnEach(sig -> eventOrder.add("parentEach" + sig))
-		    .doOnSuccessOrError((v, e) -> {
-			    if (e == null) eventOrder.add("parentSuccess");
-			    else eventOrder.add("parentError");
-		    })
+		    .doOnSuccess(v -> eventOrder.add("parentSuccess"))
+		    .doOnError(e -> eventOrder.add("parentError"))
 		    .onErrorReturn("boom expected")
 		    .block();
 
@@ -434,16 +431,12 @@ public class MonoDoOnEachTest {
 				                            throw new IllegalStateException("boomChild");
 			                            }
 		                            })
-		                            .doOnSuccessOrError((v, e) -> {
-			                            if (e == null) eventOrder.add("childSuccess");
-			                            else eventOrder.add("childError");
-		                            })
+		                            .doOnSuccess(v -> eventOrder.add("childSuccess"))
+		                            .doOnError(e -> eventOrder.add("childError"))
 		    )
 		    .doOnEach(sig -> eventOrder.add("parentEach" + sig))
-		    .doOnSuccessOrError((v, e) -> {
-			    if (e == null) eventOrder.add("parentSuccess");
-			    else eventOrder.add("parentError");
-		    })
+		    .doOnSuccess(v -> eventOrder.add("parentSuccess"))
+		    .doOnError(e -> eventOrder.add("parentError"))
 		    .onErrorReturn("boom expected")
 		    .block();
 
