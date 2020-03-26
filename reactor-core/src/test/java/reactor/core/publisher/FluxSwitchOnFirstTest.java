@@ -1707,7 +1707,7 @@ public class FluxSwitchOnFirstTest {
     }
 
     @Test
-    public void сancelAndRequestRacingWithOnCompleteAfterTest() {
+    public void cancelAndRequestRacingWithOnCompleteAfterTest() {
         Long signal = 1L;
         Function<CoreSubscriber, FluxSwitchOnFirst.AbstractSwitchOnFirstMain>[] factories = new Function[] {
                 (assertSubscriber) -> new FluxSwitchOnFirst.SwitchOnFirstMain((CoreSubscriber)assertSubscriber, (s, f) -> f, true),
