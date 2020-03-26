@@ -462,8 +462,6 @@ public class FluxTakeTest {
 		})
 		                        .take(2))
 		            .verifyErrorMessage("test");
-
-		Hooks.resetOnErrorDropped();
 	}
 
 	@Test
@@ -480,8 +478,6 @@ public class FluxTakeTest {
 		})
 		                        .take(2).filter(d -> true))
 		            .verifyErrorMessage("test");
-
-		Hooks.resetOnErrorDropped();
 	}
 
 
@@ -502,8 +498,6 @@ public class FluxTakeTest {
 			            up.actual.onError(new Exception("test2"));
 		            })
 		            .verifyErrorMessage("test");
-
-		Hooks.resetOnErrorDropped();
 	}
 
 	@Test

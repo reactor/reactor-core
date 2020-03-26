@@ -28,7 +28,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -49,16 +48,6 @@ import static org.assertj.core.api.Assertions.*;
  * @author Stephane Maldini
  */
 public class HooksTest {
-
-	@After
-	public void resetAllHooks() {
-		Hooks.resetOnOperatorError();
-		Hooks.resetOnNextDropped();
-		Hooks.resetOnErrorDropped();
-		Hooks.resetOnOperatorDebug();
-		Hooks.resetOnEachOperator();
-		Hooks.resetOnLastOperator();
-	}
 
 	void simpleFlux(){
 		Flux.just(1)
@@ -739,24 +728,18 @@ public class HooksTest {
 	@Test
 	public void testMultiReceiver() throws Exception {
 		Hooks.onOperatorDebug();
-		try {
+		ConnectableFlux<?> t = Flux.empty()
+		    .then(Mono.defer(() -> {
+			    throw new RuntimeException();
+		    })).flux().publish();
 
-			ConnectableFlux<?> t = Flux.empty()
-			    .then(Mono.defer(() -> {
-				    throw new RuntimeException();
-			    })).flux().publish();
+		t.map(d -> d).subscribe(null,
+				e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t|_ Flux.publish"));
 
-			t.map(d -> d).subscribe(null,
-					e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("\t|_ Flux.publish"));
+		t.filter(d -> true).subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("|_____ Flux.publish"));
+		t.distinct().subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("_________  Flux.publish"));
 
-			t.filter(d -> true).subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("|_____ Flux.publish"));
-			t.distinct().subscribe(null, e -> assertThat(e.getSuppressed()[0]).hasMessageContaining("_________  Flux.publish"));
-
-			t.connect();
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
+		t.connect();
 	}
 
 	@Test

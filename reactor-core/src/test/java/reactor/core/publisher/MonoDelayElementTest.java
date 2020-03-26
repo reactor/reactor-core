@@ -132,17 +132,13 @@ public class MonoDelayElementTest {
 		AtomicReference<Throwable> errorDropped = new AtomicReference<>();
 		Hooks.onErrorDropped(errorDropped::set);
 
-		try {
-			StepVerifier.withVirtualTime(() ->
-					new MonoDelayElement<>(source.mono(), 2, TimeUnit.SECONDS, defaultSchedulerForDelay()))
-			            .expectSubscription()
-			            .then(() -> source.next("foo").error(new IllegalStateException("boom")))
-			            .expectNoEvent(Duration.ofSeconds(2))
-			            .expectNext("foo")
-			            .verifyComplete();
-		} finally {
-			Hooks.resetOnErrorDropped();
-		}
+		StepVerifier.withVirtualTime(() ->
+				new MonoDelayElement<>(source.mono(), 2, TimeUnit.SECONDS, defaultSchedulerForDelay()))
+		            .expectSubscription()
+		            .then(() -> source.next("foo").error(new IllegalStateException("boom")))
+		            .expectNoEvent(Duration.ofSeconds(2))
+		            .expectNext("foo")
+		            .verifyComplete();
 
 		assertThat(errorDropped.get()).isNull();
 	}
@@ -302,19 +298,14 @@ public class MonoDelayElementTest {
 			s.onError(new IllegalStateException("boom"));
 		});
 
-		try {
-			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
-					2,
-					TimeUnit.SECONDS,
-					defaultSchedulerForDelay()))
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofSeconds(2))
-			            .expectNext("foo")
-			            .verifyComplete();
-		}
-		finally {
-			Hooks.resetOnErrorDropped();
-		}
+		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
+				2,
+				TimeUnit.SECONDS,
+				defaultSchedulerForDelay()))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(2))
+		            .expectNext("foo")
+		            .verifyComplete();
 		assertThat(dropped.get()).hasMessage("boom")
 		                         .isInstanceOf(IllegalStateException.class);
 	}

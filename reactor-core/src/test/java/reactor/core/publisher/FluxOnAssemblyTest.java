@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import org.junit.After;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -35,11 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FluxOnAssemblyTest {
-
-	@After
-	public void tearDown() {
-		Hooks.resetOnOperatorDebug();
-	}
 
 	@Test
 	public void stacktraceHeaderTraceEmpty() {
@@ -96,25 +90,20 @@ public class FluxOnAssemblyTest {
 
 		Hooks.onOperatorDebug();
 
-		try {
-			Flux<Integer> tested = Flux.range(1, 10)
-			                           .map(i -> i < 3 ? i : null)
-			                           .filter(i -> i % 2 == 0)
-			                           .checkpoint()
-			                           .doOnError(t -> t.printStackTrace(new PrintWriter(
-					                           sw)));
-			StepVerifier.create(tested)
-			            .expectNext(2)
-			            .verifyError();
+		Flux<Integer> tested = Flux.range(1, 10)
+		                           .map(i -> i < 3 ? i : null)
+		                           .filter(i -> i % 2 == 0)
+		                           .checkpoint()
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(
+				                           sw)));
+		StepVerifier.create(tested)
+		            .expectNext(2)
+		            .verifyError();
 
-			String debugStack = sw.toString();
+		String debugStack = sw.toString();
 
-			assertThat(debugStack).contains(
-					"Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :");
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
+		assertThat(debugStack).contains(
+				"Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :");
 	}
 
 	@Test

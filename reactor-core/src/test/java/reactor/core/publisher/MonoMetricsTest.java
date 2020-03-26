@@ -202,27 +202,22 @@ public class MonoMetricsTest {
 		AtomicReference<Throwable> errorDropped = new AtomicReference<>();
 		Hooks.onErrorDropped(errorDropped::set);
 		Exception dropError = new IllegalStateException("malformedOnError");
-		try {
-			TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
-			Mono<Integer> source = testPublisher.mono().hide();
+		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
+		Mono<Integer> source = testPublisher.mono().hide();
 
-			new MonoMetrics<>(source, registry)
-					.subscribe();
+		new MonoMetrics<>(source, registry)
+				.subscribe();
 
-			testPublisher.complete()
-			             .error(dropError);
+		testPublisher.complete()
+		             .error(dropError);
 
-			Counter malformedMeter = registry
-					.find(METER_MALFORMED)
-					.counter();
+		Counter malformedMeter = registry
+				.find(METER_MALFORMED)
+				.counter();
 
-			assertThat(malformedMeter).isNotNull();
-			assertThat(malformedMeter.count()).isEqualTo(1);
-			assertThat(errorDropped).hasValue(dropError);
-		}
-		finally{
-			Hooks.resetOnErrorDropped();
-		}
+		assertThat(malformedMeter).isNotNull();
+		assertThat(malformedMeter.count()).isEqualTo(1);
+		assertThat(errorDropped).hasValue(dropError);
 	}
 
 	@Test

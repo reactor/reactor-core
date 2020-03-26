@@ -55,9 +55,6 @@ public class HooksTraceTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("MonoCallable"));
 			return;
 		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
 		throw new IllegalStateException();
 	}
 
@@ -81,9 +78,6 @@ public class HooksTraceTest {
 					("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_      Mono.map ⇢ at reactor.HooksTraceTest.testTrace2(HooksTraceTest.java:"));
 			return;
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
 		}
 		throw new IllegalStateException();
 	}
@@ -109,9 +103,6 @@ public class HooksTraceTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_    Flux.share ⇢ at reactor.HooksTraceTest.testTrace3(HooksTraceTest.java:"));
 			return;
 		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
 		throw new IllegalStateException();
 	}
 
@@ -132,9 +123,6 @@ public class HooksTraceTest {
 					("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_  Mono.flatMap ⇢ at reactor.HooksTraceTest.lambda$testTraceDefer$14(HooksTraceTest.java:"));
 			return;
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
 		}
 		throw new IllegalStateException();
 	}
@@ -158,9 +146,6 @@ public class HooksTraceTest {
 			                                      .contains("|_  Mono.flatMap ⇢ at reactor.HooksTraceTest.testTraceComposed(HooksTraceTest.java:"));
 			return;
 		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
 		throw new IllegalStateException();
 	}
 
@@ -183,9 +168,6 @@ public class HooksTraceTest {
 					("HooksTraceTest.java:"));
 			assertThat(e.getSuppressed()[0].getMessage()).contains("|_  Flux.flatMap ⇢ at reactor.HooksTraceTest.testTraceComposed2(HooksTraceTest.java:");
 			return;
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
 		}
 		throw new IllegalStateException();
 	}
@@ -214,28 +196,22 @@ public class HooksTraceTest {
 	@Test
 	public void testMultiReceiver() throws Exception {
 		Hooks.onOperatorDebug();
-		try {
+		ConnectableFlux<?> t = Flux.empty()
+		    .then(Mono.defer(() -> {
+			    throw new RuntimeException();
+		    })).flux().publish();
 
-			ConnectableFlux<?> t = Flux.empty()
-			    .then(Mono.defer(() -> {
-				    throw new RuntimeException();
-			    })).flux().publish();
+		t.map(d -> d).subscribe(null,
+				e -> assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_ Flux.publish"));
 
-			t.map(d -> d).subscribe(null,
-					e -> assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_ Flux.publish"));
+		t.filter(d -> true).subscribe(null, e -> {
+			assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_____ Flux.publish");
+		});
+		t.distinct().subscribe(null, e -> {
+			assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_________  Flux.publish");
+		});
 
-			t.filter(d -> true).subscribe(null, e -> {
-				assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_____ Flux.publish");
-			});
-			t.distinct().subscribe(null, e -> {
-				assertThat(e.getSuppressed()[0].getMessage()).contains("\t|_________  Flux.publish");
-			});
-
-			t.connect();
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
+		t.connect();
 	}
 
 	@Test
@@ -349,8 +325,6 @@ public class HooksTraceTest {
 		                                .log())
 		            .expectNext(1, 1)
 		            .verifyComplete();
-
-		Hooks.resetOnLastOperator();
 	}
 
 	@Test
@@ -395,8 +369,6 @@ public class HooksTraceTest {
 		                                .log())
 		            .expectNext(6, 6)
 		            .verifyComplete();
-
-		Hooks.resetOnEachOperator();
 	}
 
 }

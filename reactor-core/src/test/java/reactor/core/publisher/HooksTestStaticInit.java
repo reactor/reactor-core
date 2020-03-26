@@ -32,7 +32,6 @@
 
 package reactor.core.publisher;
 
-import org.junit.After;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,16 +41,6 @@ public class HooksTestStaticInit {
 
 	//IMPORTANT: this test case depends on System property
 	// `reactor.trace.operatorStacktrace` be set to `true`
-
-	@After
-	public void resetAllHooks() {
-		Hooks.resetOnOperatorError();
-		Hooks.resetOnNextDropped();
-		Hooks.resetOnErrorDropped();
-		Hooks.resetOnOperatorDebug();
-		Hooks.resetOnEachOperator();
-		Hooks.resetOnLastOperator();
-	}
 
 	@Test
 	public void syspropDebugModeShouldNotFail() {

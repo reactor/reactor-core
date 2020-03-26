@@ -61,12 +61,8 @@ public class OperatorDisposablesTest {
 	public void validationNull() {
 		Hooks.onErrorDropped(e -> assertThat(e).isInstanceOf(NullPointerException.class)
 		                                       .hasMessage("next is null"));
-		try {
-			assertThat(OperatorDisposables.validate(null, null,
-					e -> Operators.onErrorDropped(e, Context.empty()))).isFalse();
-		} finally {
-			Hooks.resetOnErrorDropped();
-		}
+		assertThat(OperatorDisposables.validate(null, null,
+				e -> Operators.onErrorDropped(e, Context.empty()))).isFalse();
 	}
 
 	@Test

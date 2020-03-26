@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.ReactorTestExecutionListener;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -56,7 +57,6 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	@After
 	public void afterScenariosRun(){
-		resetHooks();
 		defaultEmpty = false;
 	}
 
@@ -445,7 +445,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 				throw Exceptions.bubble(e);
 			}
 			finally {
-				resetHooks();
+				ReactorTestExecutionListener.reset();
 			}
 		}
 	}
@@ -949,14 +949,6 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		Scannable.from(parent)
 		         .inners()
 		         .forEach(this::touchInner);
-	}
-
-	final void resetHooks() {
-		Hooks.resetOnErrorDropped();
-		Hooks.resetOnNextDropped();
-		Hooks.resetOnEachOperator();
-		Hooks.resetOnOperatorError();
-		Hooks.resetOnLastOperator();
 	}
 
 	final  void testPublisherSource(OperatorScenario<I, PI, O, PO> scenario, TestPublisher<I> ts) {

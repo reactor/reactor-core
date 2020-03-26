@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.junit.After;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -50,11 +49,6 @@ public class TailCallSubscribeTest {
         //noinspection unchecked
         return (Mono) mono;
     };
-
-    @After
-    public void tearDown() {
-        Hooks.resetOnOperatorDebug();
-    }
 
     @Test
     public void testStackDepth() throws Exception {

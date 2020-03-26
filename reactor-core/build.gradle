@@ -64,6 +64,7 @@ dependencies {
 
   testCompile "junit:junit:$jUnitVersion"
   testCompile "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
+  testCompile "org.junit.platform:junit-platform-launcher:1.6.1"
   testCompile "org.junit.jupiter:junit-jupiter-params:${jUnitJupiterVersion}"
   testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
   testRuntime "org.junit.vintage:junit-vintage-engine:${jUnitJupiterVersion}"
