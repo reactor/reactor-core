@@ -15,7 +15,7 @@ dependencies {
   compileOnly "io.projectreactor:reactor-core:${perfBaselineVersion}"
 
   implementation "org.openjdk.jmh:jmh-core:1.21"
-  implementation "io.projectreactor.addons:reactor-extra:3.3.0.M1", {
+  implementation "io.projectreactor.addons:reactor-extra:3.3.3.RELEASE", {
     exclude group: 'io.projectreactor', module: 'reactor-core'
   }
   annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:1.21"
