@@ -185,8 +185,9 @@ public interface Context {
 				throw new NullPointerException("null value for key " + key);
 			}
 		});
-		//noinspection unchecked
-		return new ContextN((Map) map);
+		@SuppressWarnings("unchecked")
+		final Map<Object, Object> generifiedMap = (Map<Object, Object>) map;
+		return new ContextN(generifiedMap);
 	}
 
 	/**

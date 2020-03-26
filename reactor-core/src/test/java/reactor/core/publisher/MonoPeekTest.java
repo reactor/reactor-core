@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 
@@ -33,8 +34,10 @@ public class MonoPeekTest {
 		Mono<String> mp = Mono.error(new Exception("test"));
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		mp.doOnSuccessOrError((s, f) -> ref.set(f))
-		  .subscribe();
+		@SuppressWarnings("deprecation")
+		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(f));
+
+		mono.subscribe();
 
 		assertThat(ref.get()).hasMessage("test");
 	}
@@ -44,8 +47,10 @@ public class MonoPeekTest {
 		Mono<String> mp = Mono.just("test");
 		AtomicReference<String> ref = new AtomicReference<>();
 
-		mp.doOnSuccessOrError((s, f) -> ref.set(s))
-		  .subscribe();
+		@SuppressWarnings("deprecation")
+		Mono<String> mono = mp.doOnSuccessOrError((s, f) -> ref.set(s));
+
+		mono.subscribe();
 
 		assertThat(ref.get()).isEqualToIgnoringCase("test");
 	}

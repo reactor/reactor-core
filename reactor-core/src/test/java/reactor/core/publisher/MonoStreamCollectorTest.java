@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -246,8 +247,9 @@ public class MonoStreamCollectorTest {
 		assertThat(discarded).doesNotHaveAnyElementsOfTypes(Integer.class)
 		                     .hasOnlyElementsOfType(Map.class)
 		                     .hasSize(1);
-		//noinspection unchecked
-		assertThat(((Map) discarded.get(0)).keySet()).containsExactly(1, 2, 3, 4);
+		@SuppressWarnings("unchecked")
+		Map<Object, Object> discardedMap = (Map<Object, Object>) discarded.get(0);
+		assertThat(discardedMap.keySet()).containsExactly(1, 2, 3, 4);
 	}
 
 	@Test
@@ -269,8 +271,9 @@ public class MonoStreamCollectorTest {
 		assertThat(discarded).doesNotHaveAnyElementsOfTypes(Long.class)
 		                     .hasOnlyElementsOfType(Map.class)
 		                     .hasSize(1);
-		//noinspection unchecked
-		assertThat((Map) discarded.get(0)).containsOnlyKeys(0L, 1L);
+		@SuppressWarnings("unchecked")
+		Map<Object, Object> discardedMap = (Map<Object, Object>) discarded.get(0);
+		assertThat(discardedMap).containsOnlyKeys(0L, 1L);
 	}
 
 	@Test
@@ -292,8 +295,9 @@ public class MonoStreamCollectorTest {
 		assertThat(discarded).doesNotHaveAnyElementsOfTypes(Integer.class, Set.class)
 		                     .hasOnlyElementsOfType(Map.class)
 		                     .hasSize(1);
-		//noinspection unchecked
-		assertThat(((Map) discarded.get(0))).containsOnlyKeys(1, 2, 3, 4);
+		@SuppressWarnings("unchecked")
+		Map<Object, Object> discardedMap = (Map<Object, Object>) discarded.get(0);
+		assertThat(discardedMap).containsOnlyKeys(1, 2, 3, 4);
 	}
 
 }

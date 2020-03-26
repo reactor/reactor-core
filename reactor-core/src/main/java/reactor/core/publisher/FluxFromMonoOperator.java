@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -44,9 +45,17 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 	 *
 	 * @param source the {@link Publisher} to decorate
 	 */
+	@SuppressWarnings("unchecked")
 	protected FluxFromMonoOperator(Mono<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, I> optimSource = (OptimizableOperator<?, I>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 	}
 
 	@Override

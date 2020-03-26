@@ -24,14 +24,12 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
+
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
 import static reactor.core.Fuseable.SYNC;
 
 /**
@@ -165,7 +163,7 @@ public class MonoDoFinallyTest implements Consumer<SignalType> {
 		catch (Throwable e) {
 			Throwable _e = Exceptions.unwrap(e);
 			assertNotSame(e, _e);
-			assertThat(_e, is(instanceOf(IllegalStateException.class)));
+			assertThat(_e).isInstanceOf(IllegalStateException.class);
 		}
 	}
 
@@ -184,7 +182,7 @@ public class MonoDoFinallyTest implements Consumer<SignalType> {
 		catch (Throwable e) {
 			Throwable _e = Exceptions.unwrap(e);
 			assertNotSame(e, _e);
-			assertThat(_e, is(instanceOf(IllegalStateException.class)));
+			assertThat(_e).isInstanceOf(IllegalStateException.class);
 		}
 	}
 

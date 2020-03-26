@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -38,7 +39,6 @@ import reactor.util.concurrent.Queues;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.parallel;
 
@@ -628,7 +628,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		ts.assertNoValues();
 		ts.assertComplete();
 
-		Assert.assertThat(errorCallbackCapture.get(), is(nullValue()));
+		assertThat(errorCallbackCapture).hasValue(null);
 
 		//same with after error
 		errorCallbackCapture.set(null);
@@ -655,8 +655,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		ts.assertNoValues();
 		ts.assertError(NullPointerException.class);
 
-		Assert.assertThat(errorCallbackCapture.get(),
-				is(instanceOf(NullPointerException.class)));
+		assertThat(errorCallbackCapture.get()).isInstanceOf(NullPointerException.class);
 	}
 
 	@Test

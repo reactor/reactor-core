@@ -38,7 +38,14 @@ final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, SourcePro
 
 	FluxSourceFuseable(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, I> optimSource = (OptimizableOperator<?, I>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 	}
 
 	/**

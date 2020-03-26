@@ -4689,9 +4689,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #transformDeferred(Function) transformDeferred(Function) for deferred composition of {@link Mono} for each {@link Subscriber}
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		if (Hooks.DETECT_CONTEXT_LOSS) {
-			//noinspection unchecked,rawtypes
 			transformer = new ContextTrackingFunctionWrapper(transformer);
 		}
 		return onAssembly(from(transformer.apply(this)));
@@ -4716,10 +4716,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 * @see #transform(Function)
 	 */
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				//noinspection unchecked,rawtypes
 				return from(new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this));
 			}
 			return from(transformer.apply(this));

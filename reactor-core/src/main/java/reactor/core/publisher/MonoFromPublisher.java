@@ -42,7 +42,14 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable,
 
 	MonoFromPublisher(Publisher<? extends T> source) {
 		this.source = Objects.requireNonNull(source, "publisher");
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 	}
 
 	@Override

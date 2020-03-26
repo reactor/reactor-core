@@ -38,7 +38,14 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 
 	MonoSourceFuseable(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
-		this.optimizableOperator = source instanceof OptimizableOperator ? (OptimizableOperator) source : null;
+		if (source instanceof OptimizableOperator) {
+			@SuppressWarnings("unchecked")
+			OptimizableOperator<?, I> optimSource = (OptimizableOperator<?, I>) source;
+			this.optimizableOperator = optimSource;
+		}
+		else {
+			this.optimizableOperator = null;
+		}
 	}
 
 	/**
@@ -47,7 +54,6 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 	 * @param actual
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super I> actual) {
 		source.subscribe(actual);
 	}

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
+
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -73,7 +74,7 @@ public class MonoUsingTest {
 		AtomicInteger cleanup = new AtomicInteger();
 
 		Mono.using(() -> 1, r -> Mono.just(1)
-		                             .doOnSuccessOrError((value, error) ->  Assert.assertEquals(0, cleanup.get())),
+		                             .doOnTerminate(() ->  assertThat(cleanup).hasValue(0)),
 				cleanup::set,
 				true)
 		    .subscribe(ts);

@@ -20,12 +20,10 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 
-import reactor.core.CoreTest;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.SynchronousSubscription;
 import reactor.core.Scannable;
@@ -34,8 +32,7 @@ import reactor.test.util.TestLogger;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 public class SignalLoggerTests {
@@ -55,7 +52,7 @@ public class SignalLoggerTests {
 		SignalLogger signalLogger = new SignalLogger<>(Flux.empty(), null, Level.INFO, false, it -> logger);
 		signalLogger.safeLog(SignalType.ON_NEXT, 404);
 
-		Assertions.assertThat(logger.getOutContent())
+		assertThat(logger.getOutContent())
 		          .contains("UnsupportedOperationException has been raised by the logging framework, does your log() placement make sense? " +
 				          "eg. 'window(2).log()' instead of 'window(2).flatMap(w -> w.log())' - " +
 				          "java.lang.UnsupportedOperationException: boom on integer")
@@ -70,7 +67,7 @@ public class SignalLoggerTests {
 
 		signalLogger.safeLog(SignalType.ON_NEXT, new FluxPeekFuseableTest.AssertQueueSubscription<>());
 
-		Assertions.assertThat(logger.getOutContent())
+		assertThat(logger.getOutContent())
 		          .contains("A Fuseable Subscription has been passed to the logging framework, this is generally a sign of a misplaced log(), " +
 				          "eg. 'window(2).log()' instead of 'window(2).flatMap(w -> w.log())'")
 		          .contains("onNext(reactor.core.publisher.FluxPeekFuseableTest$AssertQueueSubscription");
@@ -127,28 +124,28 @@ public class SignalLoggerTests {
 
 	@Test
 	public void nullSubscriptionAsString() {
-		assertThat(SignalLogger.subscriptionAsString(null), is("null subscription"));
+		assertThat(SignalLogger.subscriptionAsString(null)).isEqualTo("null subscription");
 	}
 
 	@Test
 	public void normalSubscriptionAsString() {
 		Subscription s = new FluxPeek.PeekSubscriber<>(null, null);
 
-		assertThat(SignalLogger.subscriptionAsString(s), is("FluxPeek.PeekSubscriber"));
+		assertThat(SignalLogger.subscriptionAsString(s)).isEqualTo("FluxPeek.PeekSubscriber");
 	}
 
 	@Test
 	public void synchronousSubscriptionAsString() {
 		SynchronousSubscription<Object> s = new FluxArray.ArraySubscription<>(null, null);
 
-		assertThat(SignalLogger.subscriptionAsString(s), is("[Synchronous Fuseable] FluxArray.ArraySubscription"));
+		assertThat(SignalLogger.subscriptionAsString(s)).isEqualTo("[Synchronous Fuseable] FluxArray.ArraySubscription");
 	}
 
 	@Test
 	public void queueSubscriptionAsString() {
 		Fuseable.QueueSubscription<Object> s = Operators.EmptySubscription.INSTANCE;
 
-		assertThat(SignalLogger.subscriptionAsString(s), is("[Fuseable] Operators.EmptySubscription"));
+		assertThat(SignalLogger.subscriptionAsString(s)).isEqualTo("[Fuseable] Operators.EmptySubscription");
 	}
 
 	@Test
@@ -161,7 +158,7 @@ public class SignalLoggerTests {
 			public void cancel() {}
 		};
 
-		assertThat(SignalLogger.subscriptionAsString(s), is("SignalLoggerTests$2"));
+		assertThat(SignalLogger.subscriptionAsString(s)).isEqualTo("SignalLoggerTests$2");
 	}
 
 	@Test
@@ -169,7 +166,7 @@ public class SignalLoggerTests {
 		Mono<String> source = Mono.just("").map(i -> i);
 		SignalLogger<String> sl = new SignalLogger<>(source, null, Level.INFO, false);
 
-		Assertions.assertThat(sl.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(sl.scan(Scannable.Attr.PARENT)).isSameAs(source);
 	}
 
 	@Test

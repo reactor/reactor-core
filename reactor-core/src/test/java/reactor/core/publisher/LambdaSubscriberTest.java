@@ -19,14 +19,13 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.Scannable;
 import reactor.util.context.Context;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 public class LambdaSubscriberTest {
@@ -40,7 +39,7 @@ public class LambdaSubscriberTest {
 		    .doOnNext(contextRef::set)
 		    .subscribe(null, null, null, Context.of("subscriber", "context"));
 
-		Assertions.assertThat(contextRef.get())
+		assertThat(contextRef.get())
 		          .isNotNull()
 		          .matches(c -> c.hasKey("subscriber"));
 	}
@@ -56,7 +55,7 @@ public class LambdaSubscriberTest {
 		//now trigger drop
 		sub.onError(expectDropped);
 
-		Assertions.assertThat(droppedRef).hasValue(expectDropped);
+		assertThat(droppedRef).hasValue(expectDropped);
 	}
 
 	@Test
@@ -74,12 +73,9 @@ public class LambdaSubscriberTest {
 		//the error is expected to be propagated through onError
 		tested.onSubscribe(testSubscription);
 
-		assertThat("unexpected exception in onError",
-				errorHolder.get(), is(instanceOf(IllegalArgumentException.class)));
-		assertThat("subscription has not been cancelled",
-				testSubscription.isCancelled, is(true));
-		assertThat("unexpected request",
-				testSubscription.requested, is(equalTo(-1L)));
+		assertThat(errorHolder.get()).as("onError").isInstanceOf(IllegalArgumentException.class);
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isTrue();
+		assertThat(testSubscription.requested).as("subscription requested").isEqualTo(-1L);
 	}
 
 	@Test
@@ -103,11 +99,9 @@ public class LambdaSubscriberTest {
 			//expected
 		}
 
-		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has been cancelled despite fatal exception",
-				testSubscription.isCancelled, is(not(true)));
-		assertThat("unexpected request",
-				testSubscription.requested, is(equalTo(-1L)));
+		assertThat(errorHolder.get()).as("onError").isNull();
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isFalse();
+		assertThat(testSubscription.requested).as("subscription requested").isEqualTo(-1L);
 	}
 
 	@Test
@@ -126,13 +120,10 @@ public class LambdaSubscriberTest {
 
 		tested.onSubscribe(testSubscription);
 
-		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has been cancelled",
-				testSubscription.isCancelled, is(not(true)));
-		assertThat("didn't consume the subscription",
-				subscriptionHolder.get(), is(equalTo(testSubscription)));
-		assertThat("didn't request the subscription",
-				testSubscription.requested, is(equalTo(32L)));
+		assertThat(errorHolder.get()).as("onError").isNull();
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isFalse();
+		assertThat(subscriptionHolder.get()).as("consumed subscription").isSameAs(testSubscription);
+		assertThat(testSubscription.requested).as("subscription requested").isEqualTo(32L);
 	}
 
 	@Test
@@ -147,13 +138,9 @@ public class LambdaSubscriberTest {
 
 		tested.onSubscribe(testSubscription);
 
-		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has been cancelled",
-				testSubscription.isCancelled, is(not(true)));
-		assertThat("didn't request the subscription",
-				testSubscription.requested, is(not(equalTo(-1L))));
-		assertThat("didn't request max",
-				testSubscription.requested, is(equalTo(Long.MAX_VALUE)));
+		assertThat(errorHolder.get()).as("onError").isNull();
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isFalse();
+		assertThat(testSubscription.requested).as("subscription requested").isEqualTo(Long.MAX_VALUE);
 	}
 
 	@Test
@@ -172,10 +159,8 @@ public class LambdaSubscriberTest {
 		//the error is expected to be propagated through onError
 		tested.onNext("foo");
 
-		assertThat("unexpected exception in onError",
-				errorHolder.get(), is(instanceOf(IllegalArgumentException.class)));
-		assertThat("subscription has not been cancelled",
-				testSubscription.isCancelled, is(true));
+		assertThat(errorHolder.get()).as("onError").isInstanceOf(IllegalArgumentException.class);
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isTrue();
 	}
 
 	@Test
@@ -200,9 +185,8 @@ public class LambdaSubscriberTest {
 			//expected
 		}
 
-		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has been cancelled despite fatal exception",
-				testSubscription.isCancelled, is(not(true)));
+		assertThat(errorHolder.get()).as("onError").isNull();
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isFalse();
 	}
 
 	@Test
@@ -211,16 +195,16 @@ public class LambdaSubscriberTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
-		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.dispose();
 
-		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	private static class TestSubscription implements Subscription {

@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -43,7 +44,6 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
-import reactor.util.function.Tuple2;
 
 import static reactor.core.Fuseable.NONE;
 
@@ -1384,7 +1384,14 @@ public abstract class Operators {
 
 		CorePublisherAdapter(Publisher<T> publisher) {
 			this.publisher = publisher;
-			this.optimizableOperator = publisher instanceof OptimizableOperator ? (OptimizableOperator) publisher : null;
+			if (publisher instanceof OptimizableOperator) {
+				@SuppressWarnings("unchecked")
+				OptimizableOperator<?, T> optimSource = (OptimizableOperator<?, T>) publisher;
+				this.optimizableOperator = optimSource;
+			}
+			else {
+				this.optimizableOperator = null;
+			}
 		}
 
 		@Override

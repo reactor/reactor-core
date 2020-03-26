@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Test;
+
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
@@ -139,6 +140,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
+		@SuppressWarnings("deprecation")
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -166,6 +168,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
+		@SuppressWarnings("deprecation")
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -194,6 +197,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
+		@SuppressWarnings("deprecation")
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -220,6 +224,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
+		@SuppressWarnings("deprecation")
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -247,6 +252,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
+		@SuppressWarnings("deprecation")
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -274,6 +280,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
+		@SuppressWarnings("deprecation")
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -302,6 +309,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
+		@SuppressWarnings("deprecation")
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -328,6 +336,7 @@ public class MonoPeekAfterTest {
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
+		@SuppressWarnings("deprecation")
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
@@ -422,11 +431,13 @@ public class MonoPeekAfterTest {
 	@Test
 	public void onSuccessOrErrorCallbackFailureInterruptsOnNext() {
 		LongAdder invoked = new LongAdder();
-		StepVerifier.create(Mono.just("foo")
+		@SuppressWarnings("deprecation")
+		Mono<String> mono = Mono.just("foo")
 		                        .doOnSuccessOrError((v, t) -> {
 			                        invoked.increment();
 			                        throw new IllegalArgumentException(v);
-		                        }))
+		                        });
+		StepVerifier.create(mono)
 		            .expectErrorMessage("foo")
 		            .verify();
 
@@ -437,11 +448,13 @@ public class MonoPeekAfterTest {
 	public void afterSuccessOrErrorCallbackFailureInterruptsOnNextAndThrows() {
 		LongAdder invoked = new LongAdder();
 		try {
-			StepVerifier.create(Mono.just("foo")
+			@SuppressWarnings("deprecation")
+			Mono<String> mono = Mono.just("foo")
 			                        .doAfterSuccessOrError((v, t) -> {
 				                        invoked.increment();
 				                        throw new IllegalArgumentException(v);
-			                        }))
+			                        });
+			StepVerifier.create(mono)
 			            .expectNext("bar") //irrelevant
 			            .expectErrorMessage("baz") //irrelevant
 			            .verify();
@@ -498,12 +511,14 @@ public class MonoPeekAfterTest {
 
 		IllegalArgumentException err = new IllegalArgumentException("boom");
 
-		StepVerifier.create(Mono.<String>error(err)
-		                        .doOnSuccessOrError((v, t) -> {
-			                        invoked.increment();
-			                        value.set(v);
-			                        error.set(t);
-		                        }))
+		@SuppressWarnings("deprecation")
+		Mono<String> test = Mono.<String>error(err)
+				.doOnSuccessOrError((v, t) -> {
+					invoked.increment();
+					value.set(v);
+					error.set(t);
+				});
+		StepVerifier.create(test)
 		            .expectErrorMessage("boom")
 		            .verify();
 
@@ -520,12 +535,14 @@ public class MonoPeekAfterTest {
 
 		IllegalArgumentException err = new IllegalArgumentException("boom");
 
-		StepVerifier.create(Mono.<String>error(err)
-				.doAfterSuccessOrError((v, t) -> {
-					invoked.increment();
-					value.set(v);
-					error.set(t);
-				}))
+		@SuppressWarnings("deprecation")
+		Mono<String> mono = Mono.<String>error(err).doAfterSuccessOrError((v, t) -> {
+			invoked.increment();
+			value.set(v);
+			error.set(t);
+		});
+
+		StepVerifier.create(mono)
 		            .expectErrorMessage("boom")
 		            .verify();
 
@@ -571,12 +588,14 @@ public class MonoPeekAfterTest {
 		AtomicReference<String> value = new AtomicReference<>();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		StepVerifier.create(Mono.<String>empty()
-				.doOnSuccessOrError((v, t) -> {
-					invoked.increment();
-					value.set(v);
-					error.set(t);
-				}))
+		@SuppressWarnings("deprecation")
+		Mono<String> mono = Mono.<String>empty().doOnSuccessOrError((v, t) -> {
+			invoked.increment();
+			value.set(v);
+			error.set(t);
+		});
+
+		StepVerifier.create(mono)
 		            .expectComplete()
 		            .verify();
 
@@ -591,12 +610,14 @@ public class MonoPeekAfterTest {
 		AtomicReference<String> value = new AtomicReference<>();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		StepVerifier.create(Mono.<String>empty()
+		@SuppressWarnings("deprecation")
+		Mono<String> mono = Mono.<String>empty()
 				.doAfterSuccessOrError((v, t) -> {
 					invoked.increment();
 					value.set(v);
 					error.set(t);
-				}))
+				});
+		StepVerifier.create(mono)
 		            .expectComplete()
 		            .verify();
 

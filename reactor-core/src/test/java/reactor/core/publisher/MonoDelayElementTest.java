@@ -320,8 +320,9 @@ public class MonoDelayElementTest {
 				.doOnSubscribe(s -> {
 					assertThat(s).isInstanceOf(MonoDelayElement.DelayElementSubscriber.class);
 
-					MonoDelayElement.DelayElementSubscriber delayedSubscriber =
-							(MonoDelayElement.DelayElementSubscriber) s;
+					@SuppressWarnings("unchecked")
+					MonoDelayElement.DelayElementSubscriber<Integer> delayedSubscriber =
+							(MonoDelayElement.DelayElementSubscriber<Integer>) s;
 
 					upstream.set(delayedSubscriber.scan(Scannable.Attr.PARENT));
 				}))
@@ -342,7 +343,7 @@ public class MonoDelayElementTest {
 			s.onNext("foo");
 		})
 		.doOnCancel(sourceOnCancel::incrementAndGet)
-		.doOnSuccessOrError((v, e) -> sourceOnTerminate.incrementAndGet());
+		.doOnTerminate(sourceOnTerminate::incrementAndGet);
 
 
 		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
@@ -350,7 +351,7 @@ public class MonoDelayElementTest {
 				TimeUnit.SECONDS,
 				defaultSchedulerForDelay())
 				.doOnCancel(onCancel::incrementAndGet)
-				.doOnSuccessOrError((v, e) -> onTerminate.incrementAndGet()))
+				.doOnTerminate(onTerminate::incrementAndGet))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(2))
 		            .expectNext("foo")
