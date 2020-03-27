@@ -21,11 +21,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
-
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -34,14 +36,12 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.test.StepVerifier;
 import reactor.util.annotation.Nullable;
-import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.*;
@@ -53,23 +53,19 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	OperatorScenario<I, PI, O, PO> defaultScenario;
 
-	boolean defaultEmpty = false;
+	boolean defaultEmpty;
 
-	@After
-	public void afterScenariosRun(){
-		defaultEmpty = false;
-	}
-
+	@BeforeEach
 	@Before
 	public final void initDefaultScenario() {
+		defaultEmpty = false;
 		defaultScenario = defaultScenarioOptions(new OperatorScenario<>(null, null));
 	}
 
-	@Test
-	public final void cancelOnSubscribe() {
+	@TestFactory
+	public final Stream<DynamicTest> cancelOnSubscribe() {
 		defaultEmpty = true;
-		forEachScenario(scenarios_operatorSuccess(), s -> {
-
+		return toDynamicTests(scenarios_operatorSuccess(), s -> {
 			OperatorScenario<I, PI, O, PO> scenario = s.duplicate()
 			                                            .receiverEmpty()
 			                                            .receiverDemand(0);
@@ -103,14 +99,12 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			this.inputFusedSyncOutputFusedSyncCancel(scenario);
 
 			this.inputFusedSyncOutputFusedSyncConditionalCancel(scenario);
-
 		});
 	}
 
-	@Test
-	@SuppressWarnings("unchecked")
-	public final void assertPrePostState() {
-		forEachScenario(scenarios_touchAndAssertState(), scenario -> {
+	@TestFactory
+	public final Stream<DynamicTest> assertPrePostState() {
+		return toDynamicTests(scenarios_touchAndAssertState(), scenario -> {
 			this.inputHiddenOutputState(scenario);
 
 			this.inputHiddenOutputConditionalState(scenario);
@@ -121,9 +115,9 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		});
 	}
 
-	@Test
-	public final void sequenceOfNextAndComplete() {
-		forEachScenario(scenarios_operatorSuccess(), scenario -> {
+	@TestFactory
+	public final Stream<DynamicTest> sequenceOfNextAndComplete() {
+		return toDynamicTests(scenarios_operatorSuccess(), scenario -> {
 			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
 
 			if (verifier == null) {
@@ -157,15 +151,14 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			verifier.accept(this.inputConditionalOutputConditional(scenario));
 			verifier.accept(this.inputFusedConditionalOutputConditional(scenario));
 			verifier.accept(this.inputFusedConditionalOutputConditionalTryNext(scenario));
-
 		});
 	}
 
-	@Test
-	public final void sequenceOfNextWithCallbackError() {
+	@TestFactory
+	public final Stream<DynamicTest> sequenceOfNextWithCallbackError() {
 		defaultEmpty = true;
 		defaultScenario.producerError(new RuntimeException("test"));
-		forEachScenario(scenarios_operatorError(), scenario -> {
+		return toDynamicTests(scenarios_operatorError(), scenario -> {
 			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
 
 			String m = scenario.producerError.getMessage();
@@ -230,11 +223,11 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		});
 	}
 
-	@Test
-	public final void errorOnSubscribe() {
+	@TestFactory
+	public final Stream<DynamicTest> errorOnSubscribe() {
 		defaultEmpty = true;
 		defaultScenario.producerError(new RuntimeException("test"));
-		forEachScenario(scenarios_errorFromUpstreamFailure(), s -> {
+		return toDynamicTests(scenarios_errorFromUpstreamFailure(), s -> {
 			OperatorScenario<I, PI, O, PO> scenario = s.duplicate();
 
 			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
@@ -287,20 +280,18 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			if (scenario.prefetch() != -1 || (fusion & Fuseable.ASYNC) != 0) {
 				verifier.accept(this.inputFusedAsyncErrorOutputFusedAsync(scenario));
 			}
-
 		});
 	}
 
-	@Test
-	public final void sequenceOfNextAndCancel() {
-		forEachScenario(scenarios_operatorSuccess(), scenario -> {
-
+	@TestFactory
+	public final Stream<DynamicTest> sequenceOfNextAndCancel() {
+		return toDynamicTests(scenarios_operatorSuccess(), scenario -> {
 		});
 	}
 
-	@Test
-	public final void sequenceOfNextAndError() {
-		forEachScenario(scenarios_operatorSuccess(), scenario -> {
+	@TestFactory
+	public final Stream<DynamicTest> sequenceOfNextAndError() {
+		return toDynamicTests(scenarios_operatorSuccess(), scenario -> {
 		});
 	}
 
@@ -1067,6 +1058,20 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			}
 		}
 		return f;
+	}
+
+	private Stream<DynamicTest> toDynamicTests(
+			List<? extends OperatorScenario<I, PI, O, PO>> scenarios,
+			ThrowingConsumer<OperatorScenario<I, PI, O, PO>> executable
+	) {
+		return scenarios.stream().map(scenario -> {
+			return DynamicTest.dynamicTest(scenario.toString(), () -> {
+				if (scenario.stack != null) {
+					System.out.println("\tat " + scenario.stack.getStackTrace()[2]);
+				}
+				executable.accept(scenario);
+			});
+		});
 	}
 
 }

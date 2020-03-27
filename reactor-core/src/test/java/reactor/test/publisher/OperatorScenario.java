@@ -277,9 +277,17 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		return body;
 	}
 
-	@Nullable
 	final String description() {
-		return description;
+		if (description != null) {
+			return description;
+		}
+
+		if (stack != null) {
+			StackTraceElement element = stack.getStackTrace()[2];
+			return element.getFileName() + ":" + element.getLineNumber();
+		}
+
+		return toString();
 	}
 
 	OperatorScenario<I, PI, O, PO> duplicate() {
