@@ -35,6 +35,7 @@ import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferWhen.BufferWhenMainSubscriber;
@@ -47,6 +48,7 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -113,30 +115,34 @@ public class FluxBufferWhenTest {
 		}
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		final UnicastProcessor<Wrapper> processor = UnicastProcessor.create();
 
-		Flux<Integer> emitter = Flux.range(1, 200)
-		                            .delayElements(Duration.ofMillis(25))
-		                            .doOnNext(i -> processor.onNext(retainedDetector.tracked(new Wrapper(i))))
-		                            .doOnError(processor::onError)
-		                            .doOnComplete(processor::onComplete);
+		Flux<Wrapper> emitter = Flux.range(1, 400)
+		                            .delayElements(Duration.ofMillis(10))
+		                            .map(i -> retainedDetector.tracked(new Wrapper(i)));
 
 		Mono<List<Tuple3<Long, String, Long>>> buffers =
-				processor.buffer(Duration.ofMillis(500), Duration.ofMillis(250))
-				         .filter(b -> b.size() > 0)
-				         .index()
-				         .doOnNext(it -> System.gc())
-				         //index, bounds of buffer, finalized
-				         .map(t2 -> Tuples.of(t2.getT1(),
-						         String.format("from %s to %s", t2.getT2().get(0),
-								         t2.getT2().get(t2.getT2().size() - 1)),
-						         retainedDetector.finalizedCount()))
-				         .doOnNext(v -> LOGGER.debug(v.toString()))
-				         .doOnComplete(latch::countDown)
-				         .collectList();
+				emitter.buffer(Duration.ofMillis(1000), Duration.ofMillis(500))
+				       .filter(b -> b.size() > 0)
+				       .index()
+				       .elapsed()
+				       .doOnNext(it -> System.gc())
+				       //index, bounds of buffer, finalized
+				       .map(elapsed -> {
+					       long millis = elapsed.getT1();
+					       Tuple2<Long, List<Wrapper>> t2 = elapsed.getT2();
+					       Tuple3<Long, String, Long> stat = Tuples.of(t2.getT1(),
+							       String.format("from %s to %s",
+									       t2.getT2().get(0),
+									       t2.getT2().get(t2.getT2().size() - 1)),
+							       retainedDetector.finalizedCount());
 
-		emitter.subscribe();
-		List<Tuple3<Long, String, Long>> finalizeStats = buffers.block(Duration.ofSeconds(30));
+					       LOGGER.info("{}ms : {}", millis, stat);
+					       return stat;
+				       })
+				       .doOnComplete(latch::countDown)
+				       .collectList();
+
+		List<Tuple3<Long, String, Long>> finalizeStats = buffers.block(Duration.ofSeconds(50));
 
 		Condition<? super Tuple3<Long, String, Long>> hasFinalized = new Condition<>(
 				t3 -> t3.getT3() > 0, "has finalized");

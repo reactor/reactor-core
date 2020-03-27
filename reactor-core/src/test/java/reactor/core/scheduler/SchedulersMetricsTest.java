@@ -253,7 +253,7 @@ public class SchedulersMetricsTest {
 			assertThat(timers.stream()
 			                 .reduce(0d, (time, timer) -> time + timer.totalTime(TimeUnit.MILLISECONDS), Double::sum))
 					.as("total durations")
-					.isEqualTo(600 + 400 + 200, offset(30.0d));
+					.isEqualTo(600 + 400 + 200, offset(50d));
 			assertThat(timers.stream().mapToLong(Timer::count).sum())
 					.as("count")
 					.isEqualTo(taskCount);
