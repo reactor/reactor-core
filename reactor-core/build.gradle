@@ -16,9 +16,18 @@
 import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
-apply plugin: 'osgi'
+apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'org.unbroken-dome.test-sets'
 apply plugin: 'kotlin'
+
+ext {
+	bndOptions = [
+			"Export-Package": "!*internal*,reactor.*;-noimport:=true",
+			"Import-Package": '!javax.annotation,org.slf4j;resolution:=optional;version="[1.5.4,2)",kotlin.*;resolution:=optional,io.micrometer.*;resolution:=optional,reactor.blockhound.*;resolution:=optional,*',
+			"Bundle-Name" : "reactor-core",
+			"Bundle-SymbolicName" : "io.projectreactor.reactor-core"
+	]
+}
 
 sourceSets {
   noMicrometerTest {
@@ -217,8 +226,8 @@ jar {
 	attributes 'Implementation-Title': 'reactor-core',
 			'Implementation-Version': version,
 			'Automatic-Module-Name': 'reactor.core'
-	instruction 'Import-Package', bundleImportPackages.join(',')
   }
+	bnd(bndOptions)
 }
 
 jacocoTestReport.dependsOn test

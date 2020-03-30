@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.internal.plugins.osgi.OsgiHelper;
 
 /**
  * Looks for a {@code -PversionBranch=foo} type of property and uses that as an additional
@@ -33,8 +32,6 @@ import org.gradle.api.internal.plugins.osgi.OsgiHelper;
  * @author Simon Baslé
  */
 public class CustomVersionPlugin implements Plugin<Project> {
-
-	private OsgiHelper osgiHelper = new OsgiHelper();
 
 	private static final String CUSTOM_VERSION_PROPERTY = "versionBranch";
 	private static final String SNAPSHOT_SUFFIX         = ".BUILD-SNAPSHOT";
@@ -64,7 +61,7 @@ public class CustomVersionPlugin implements Plugin<Project> {
 
 		String realVersion = version.replace(SNAPSHOT_SUFFIX, "." + versionBranch + SNAPSHOT_SUFFIX);
 		project.setVersion(realVersion);
-		System.out.println("Building custom snapshot for " + project + ": '" + project.getVersion() + "' (osgi: '" + osgiHelper.getVersion(realVersion) + "')");
+		System.out.println("Building custom snapshot for " + project + ": '" + project.getVersion());
 	}
 
 }

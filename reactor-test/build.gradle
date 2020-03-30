@@ -15,10 +15,19 @@
  */
 import me.champeau.gradle.japicmp.JapicmpTask
 
-apply plugin: 'osgi'
+apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'kotlin'
 
 description = 'Reactor Test support'
+
+ext {
+  bndOptions = [
+          "Export-Package": "!*internal*,reactor.test*;-noimport:=true",
+          "Import-Package": '!javax.annotation,kotlin.*;resolution:=optional,*',
+          "Bundle-Name" : "reactor-test",
+          "Bundle-SymbolicName" : "io.projectreactor.reactor-test"
+  ]
+}
 
 dependencies {
   compile project(":reactor-core")
@@ -82,6 +91,7 @@ jar {
             'Implementation-Version': version,
             'Automatic-Module-Name': 'reactor.test'
   }
+  bnd(bndOptions)
 }
 
 jar.finalizedBy(downloadBaseline)

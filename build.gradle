@@ -15,7 +15,7 @@
  */
 buildscript {
   //we define kotlin version for benefit of both core and test (see kotlin-gradle-plugin below)
-  ext.kotlinVersion = '1.3.31'
+  ext.kotlinVersion = '1.3.71'
   repositories {
 	maven { url "https://repo.spring.io/plugins-release" }
   }
@@ -25,6 +25,7 @@ buildscript {
   }
 }
 
+
 plugins {
 	id "com.github.johnrengelman.shadow" version "4.0.2"
 	id 'org.asciidoctor.convert' version '1.5.11'
@@ -33,6 +34,7 @@ plugins {
 	id "org.unbroken-dome.test-sets" version "2.1.1" apply false // 2.x version does not work with Gradle 4.10
 	id 'com.gradle.build-scan' version '2.4.2'
 	id "com.jfrog.artifactory" version "4.9.8" apply false
+	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 }
 
 apply plugin: "io.reactor.gradle.detect-ci"
@@ -46,14 +48,6 @@ ext {
 		jdkJavadoc = "https://docs.oracle.com/en/java/javase/$jdk/docs/api/"
 	}
 	println "JDK Javadoc link for this build is ${rootProject.jdkJavadoc}"
-
-  bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
-						  'kotlin.*;resolution:=optional',
-						  'io.micrometer.*;resolution:=optional',
-						  'reactor.blockhound.*;resolution:=optional',
-						  '!javax.annotation',
-						  '!javax.annotation.meta',
-						  '*']
 
   /*
    * Note that some versions can be bumped by a script.
