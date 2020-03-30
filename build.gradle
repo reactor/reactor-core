@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 buildscript {
-  ext.kotlinVersion = '1.2.51'
+  ext.kotlinVersion = '1.3.71'
   repositories {
 	maven { url "https://repo.spring.io/plugins-release" }
   }
@@ -28,6 +27,7 @@ buildscript {
   }
 }
 
+
 plugins {
 	id 'org.asciidoctor.convert' version '1.5.9.2'
 	id "me.champeau.gradle.jmh" version "0.4.7" apply false
@@ -35,6 +35,7 @@ plugins {
 	id "me.champeau.gradle.japicmp" version "0.2.6"
 	id "de.undercouch.download" version "3.4.3"
 	id "com.jfrog.artifactory" version "4.9.8" apply false
+	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 }
 
 apply from: "gradle/doc.gradle"
@@ -70,21 +71,12 @@ ext {
 
   javadocLinks = [jdkJavadoc,
 				  "https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
-
-
-  bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
-						  'kotlin.*;resolution:=optional',
-						  'io.micrometer.*;resolution:=optional',
-						  '!javax.annotation',
-						  '!javax.annotation.meta',
-						  '*']
 }
 
 configure(subprojects) { p ->
 	apply plugin: 'java'
 	apply plugin: 'kotlin'
 	apply plugin: 'jacoco'
-	apply plugin: 'osgi'
 	apply plugin: 'propdeps'
 	apply from: "${rootDir}/gradle/setup.gradle"
 
@@ -100,7 +92,6 @@ configure(subprojects) { p ->
 				realVersion = p.version.toString().replace("BUILD-SNAPSHOT", versionBranch + ".BUILD-SNAPSHOT")
 				p.version = realVersion
 				println "Building special ${project} snapshot ${p.version}"
-				println "OSGI version would be: ${new OsgiHelper().getVersion(p.version.toString())}"
 			}
 		}
 	}
@@ -119,7 +110,7 @@ configure(subprojects) { p ->
   }
 
   jacoco {
-	toolVersion = '0.8.2'
+	toolVersion = '0.8.5'
   }
 
   jacocoTestReport {

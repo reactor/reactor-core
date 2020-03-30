@@ -16,8 +16,18 @@
 import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'org.jetbrains.dokka'
+apply plugin: 'biz.aQute.bnd.builder'
 
 description = 'Reactor Test support'
+
+ext {
+  bndOptions = [
+          "Export-Package": "!*internal*,reactor.test*;-noimport:=true",
+          "Import-Package": '!javax.annotation,kotlin.*;resolution:=optional,*',
+          "Bundle-Name" : "reactor-test",
+          "Bundle-SymbolicName" : "io.projectreactor.reactor-test"
+  ]
+}
 
 dependencies {
   compile project(":reactor-core")
@@ -132,6 +142,15 @@ task kdocZip(type: Zip, dependsOn: dokka) {
   //ends up similar to javadoc jar: reactor-test-xxx.RELEASE-kdoc.zip
   archiveClassifier.set('kdoc')
   from("${project.buildDir}/docs/kdoc")
+}
+
+
+jar {
+  manifest {
+    attributes 'Implementation-Title': 'reactor-test',
+            'Implementation-Version': version
+  }
+  bnd(bndOptions)
 }
 
 jar.finalizedBy(downloadBaseline)
