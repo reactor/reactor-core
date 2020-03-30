@@ -1160,8 +1160,8 @@ public class FluxUsingWhenTest {
 		});
 
 		Thread.sleep(300);
-		assertThat(cleanupCount.sum()).isEqualTo(1000);
-		assertThat(cancelled).as("source cancelled").isTrue();
+			          assertThat(cleanupCount.sum()).isEqualTo(1000);
+			          assertThat(cancelled).as("source cancelled").isTrue();
 	}
 
 	@Test

@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'reactor'
+plugins {
+	id "com.gradle.enterprise" version "3.2"
+}
 
+rootProject.name = 'reactor'
 
 include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools'

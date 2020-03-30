@@ -31,8 +31,8 @@ plugins {
 	id 'org.asciidoctor.convert' version '1.5.11'
 	id "me.champeau.gradle.japicmp" version "0.2.6"
 	id "de.undercouch.download" version "3.4.3"
-	id "org.unbroken-dome.test-sets" version "2.1.1" apply false // 2.x version does not work with Gradle 4.10
-	id 'com.gradle.build-scan' version '2.4.2'
+	id "org.unbroken-dome.test-sets" version "3.0.0" apply false
+	//note: build scan plugin now must be applied in settings.gradle
 	id "com.jfrog.artifactory" version "4.9.8" apply false
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 }
@@ -60,7 +60,7 @@ ext {
   jsr166BackportVersion = '1.0.0.RELEASE'
 
   // Blockhound
-  blockhoundVersion = '1.0.0.RELEASE'
+  blockhoundVersion = '1.0.3.RELEASE'
 
   // Logging
   slf4jVersion = '1.7.12'
@@ -82,13 +82,15 @@ ext {
 //typically, for local usage, you would temporarily set the env with:
 // `GRADLE_ENTERPRISE_URL=https://myge.example.com/ gradle foo`
 if (System.getenv('GRADLE_ENTERPRISE_URL')) {
-	buildScan {
-		captureTaskInputFiles = true
-		obfuscation {
-			ipAddresses { addresses -> addresses.collect { '0.0.0.0' } }
+	gradleEnterprise {
+		buildScan {
+			captureTaskInputFiles = true
+			obfuscation {
+				ipAddresses { addresses -> addresses.collect { '0.0.0.0' } }
+			}
+			publishAlways()
+			server = System.getenv('GRADLE_ENTERPRISE_URL')
 		}
-		publishAlways()
-		server = System.getenv('GRADLE_ENTERPRISE_URL')
 	}
 }
 
