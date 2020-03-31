@@ -165,21 +165,7 @@ javadoc {
   }
 }
 
-task testStaticInit(type: Test, group: 'verification') {
-  systemProperty 'reactor.trace.operatorStacktrace', 'true'
-  include '**/*TestStaticInit.*'
-  doFirst {
-	println "Additional tests from `testStaticInit` ($includes)"
-  }
-  afterSuite { TestDescriptor descriptor, TestResult result ->
-	if (result.testCount > 0 && (result.skippedTestCount + result.failedTestCount + result.successfulTestCount == 0)) {
-	  throw new GradleException("No static initialization tests were executed")
-	}
-  }
-}
-
 task loops(type: Test, group: 'verification') {
-  mustRunAfter testStaticInit
   include '**/*Loop.*'
   doFirst {
 	println "Additional tests from `loops` ($includes)"
@@ -187,7 +173,6 @@ task loops(type: Test, group: 'verification') {
 }
 
 task testNG(type: Test, group: 'verification') {
-  mustRunAfter testStaticInit
   useTestNG()
   include '**/*Verification.*'
   doFirst {
@@ -210,10 +195,9 @@ tasks.withType(Test).all {
 }
 
 //inherit basic test task + common configuration in root
-//always depend on testStaticInit, skip testNG on Travis, skip loops when not releasing
+//always depend on testNoMicrometer, skip testNG on Travis, skip loops when not releasing
 //note that this way the tasks can be run individually
 check {
-  dependsOn testStaticInit
   dependsOn testNoMicrometer
   if (!detectedCiServers.contains("TRAVIS")) {
 	dependsOn testNG

@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
+
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 import reactor.core.publisher.FluxOnAssembly.MethodReturnSnapshot;
@@ -578,9 +579,8 @@ public abstract class Hooks {
 	 */
 	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
 
-	static boolean GLOBAL_TRACE =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
-					"false"));
+	static boolean GLOBAL_TRACE = initStaticGlobalTrace();
+
 
 	static boolean DETECT_CONTEXT_LOSS = false;
 
@@ -588,6 +588,12 @@ public abstract class Hooks {
 		onEachOperatorHooks = new LinkedHashMap<>(1);
 		onLastOperatorHooks = new LinkedHashMap<>(1);
 		onOperatorErrorHooks = new LinkedHashMap<>(1);
+	}
+
+	//isolated on static method for testing purpose
+	static boolean initStaticGlobalTrace() {
+		return Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
+				"false"));
 	}
 
 	Hooks() {
