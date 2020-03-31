@@ -353,9 +353,8 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 		System.gc();
 		await().untilAsserted(() -> {
-			assertThat(retainedDetector.finalizedCount())
-					.as("none retained after cancel")
-					.isEqualTo(50);
+			System.gc();
+			retainedDetector.assertAllFinalized();
 		});
 	}
 
