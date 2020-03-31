@@ -34,6 +34,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -44,7 +45,8 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Stephane Maldini
@@ -74,6 +76,25 @@ public class HooksTest {
 
 		public TestException(String message) {
 			super(message);
+		}
+	}
+
+
+	@Test
+	public void staticActivationOfOperatorDebug() {
+		String oldProp = System.setProperty("reactor.trace.operatorStacktrace", "true");
+		//this will be reset by the ReactorTestExecutionListener
+		Hooks.GLOBAL_TRACE = Hooks.initStaticGlobalTrace();
+
+		try {
+			assertThat(Hooks.GLOBAL_TRACE).isTrue();
+			//would throw NPE due to https://github.com/reactor/reactor-core/issues/985
+			Mono.just("hello").subscribe();
+		}
+		finally {
+			if (oldProp != null) {
+				System.setProperty("reactor.trace.operatorStacktrace", oldProp);
+			}
 		}
 	}
 
