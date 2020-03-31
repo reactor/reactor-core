@@ -22,8 +22,17 @@ apply plugin: 'kotlin'
 
 ext {
 	bndOptions = [
-			"Export-Package": "!*internal*,reactor.*;-noimport:=true",
-			"Import-Package": '!javax.annotation,org.slf4j;resolution:=optional;version="[1.5.4,2)",kotlin.*;resolution:=optional,io.micrometer.*;resolution:=optional,reactor.blockhound.*;resolution:=optional,*',
+			"Export-Package": [
+					"!*internal*",
+					"reactor.*;-noimport:=true"
+			].join(","),
+			"Import-Package": [
+					"!javax.annotation",
+					'org.slf4j;resolution:=optional;version="[1.5.4,2)"',
+					"kotlin.*;resolution:=optional",
+					"reactor.blockhound.*;resolution:=optional",
+					"io.micrometer.*;resolution:=optional","*"
+			].join(","),
 			"Bundle-Name" : "reactor-core",
 			"Bundle-SymbolicName" : "io.projectreactor.reactor-core"
 	]
@@ -237,28 +246,10 @@ jar.finalizedBy(downloadBaseline)
 if (JavaVersion.current().java9Compatible) {
   sourceSets {
 	java8stubs.java.srcDirs = ['src/main/java8stubs']
-	java9 {
-	  compileClasspath += main.output
-	  java.srcDirs = ['src/main/java9']
-	}
   }
 
   tasks.withType(JavaCompile).all {
-	if (it == compileJava9Java) {
-	  sourceCompatibility = targetCompatibility = 9
-	  options.compilerArgs.addAll(['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED'])
-	}
-	else {
 	  sourceCompatibility = targetCompatibility = 8
-	}
-  }
-
-  [jar]*.each {
-	it.from sourceSets.java9.output
-  }
-
-  tasks.withType(Test).all {
-	classpath = sourceSets.java9.output + files(it.classpath)
   }
 
   tasks.withType(Javadoc).all {
