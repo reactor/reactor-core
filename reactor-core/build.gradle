@@ -24,14 +24,16 @@ ext {
 	bndOptions = [
 			"Export-Package": [
 					"!*internal*",
-					"reactor.*;-noimport:=true"
+					"!reactor.blockhound*",
+					"reactor.*"
 			].join(","),
 			"Import-Package": [
 					"!javax.annotation",
 					'org.slf4j;resolution:=optional;version="[1.5.4,2)"',
 					"kotlin.*;resolution:=optional",
 					"reactor.blockhound.*;resolution:=optional",
-					"io.micrometer.*;resolution:=optional","*"
+					"io.micrometer.*;resolution:=optional",
+					"*"
 			].join(","),
 			"Bundle-Name" : "reactor-core",
 			"Bundle-SymbolicName" : "io.projectreactor.reactor-core"
