@@ -22,8 +22,14 @@ description = 'Reactor Test support'
 
 ext {
   bndOptions = [
-          "Export-Package": "!*internal*,reactor.test*;-noimport:=true",
-          "Import-Package": '!javax.annotation,kotlin.*;resolution:=optional,*',
+          "Export-Package": [
+                  "!*internal*",
+                  "reactor.test*;-noimport:=true"
+          ].join(","),
+          "Import-Package": [
+                  "!javax.annotation",
+                  "kotlin.*;resolution:=optional,*"
+          ].join(","),
           "Bundle-Name" : "reactor-test",
           "Bundle-SymbolicName" : "io.projectreactor.reactor-test"
   ]
