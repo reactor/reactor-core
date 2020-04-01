@@ -637,7 +637,7 @@ public class FluxMergeOrderedTest {
 							Comparator.naturalOrder(),
 							Flux.just(1), null);
 				})
-                .withMessage("sources[1] is null");
+				.withMessage("sources[1] is null");
 	}
 
 	@Test
