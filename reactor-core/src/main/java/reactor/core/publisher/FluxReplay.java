@@ -1069,7 +1069,13 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		cancelSupport.accept(s);
 		if (doConnect) {
-			source.subscribe(s);
+			try {
+				source.subscribe(s);
+			}
+			catch (Throwable e) {
+				Operators.reportThrowInSubscribe(connection, e);
+				return;
+			}
 		}
 	}
 
