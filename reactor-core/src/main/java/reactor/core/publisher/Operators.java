@@ -185,11 +185,12 @@ public abstract class Operators {
 		s.onError(e);
 	}
 
-	public static void reportThrowInSubscribe(CoreSubscriber subscriber, Throwable e) {
+	public static void reportThrowInSubscribe(CoreSubscriber<?> subscriber, Throwable e) {
 		try {
-			subscriber.onSubscribe(Operators.EmptySubscription.INSTANCE);
+			subscriber.onSubscribe(EmptySubscription.INSTANCE);
 		}
 		catch (Throwable onSubscribeError) {
+			Exceptions.throwIfFatal(onSubscribeError);
 			e.addSuppressed(onSubscribeError);
 		}
 		subscriber.onError(onOperatorError(e, subscriber.currentContext()));
