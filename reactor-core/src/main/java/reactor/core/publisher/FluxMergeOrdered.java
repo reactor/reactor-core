@@ -60,6 +60,14 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 		this.sources = Objects.requireNonNull(sources, "sources must be non-null");
+
+		for (int i = 0; i < sources.length; i++) {
+			Publisher<? extends T> source = sources[i];
+			if (source == null) {
+				throw new NullPointerException("sources[" + i + "] is null");
+			}
+		}
+
 		this.prefetch = prefetch;
 		this.queueSupplier = queueSupplier;
 		this.valueComparator = valueComparator;

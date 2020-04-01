@@ -630,24 +630,14 @@ public class FluxMergeOrderedTest {
 
 	@Test
 	@SuppressWarnings("unchecked") //safe varargs
-	public void nullSecond() {
-		FluxMergeOrdered<Integer> test = new FluxMergeOrdered<>(2, Queues.small(),
-				Comparator.naturalOrder(),
-				Flux.just(1), null);
-
-		assertThatNullPointerException().isThrownBy(test::subscribe)
-		                                .withMessage("subscribed with a null source: sources[1]");
-	}
-
-	@Test
-	@SuppressWarnings("unchecked") //safe varargs
-	public void nullFirst() {
-		FluxMergeOrdered<Integer> test = new FluxMergeOrdered<>(2, Queues.small(),
-				Comparator.naturalOrder(),
-				null, Flux.just(1), null);
-
-		assertThatNullPointerException().isThrownBy(test::subscribe)
-		                                .withMessage("subscribed with a null source: sources[0]");
+	public void nullInSourceArray() {
+		assertThatNullPointerException()
+				.isThrownBy(() -> {
+					new FluxMergeOrdered<>(2, Queues.small(),
+							Comparator.naturalOrder(),
+							Flux.just(1), null);
+				})
+                .withMessage("sources[1] is null");
 	}
 
 	@Test
