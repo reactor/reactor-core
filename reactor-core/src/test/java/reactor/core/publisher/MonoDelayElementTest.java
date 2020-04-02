@@ -145,25 +145,16 @@ public class MonoDelayElementTest {
 
 	@Test
 	public void onNextOnDisposedSchedulerThrows() {
-		Scheduler scheduler = Schedulers.newSingle("onNextOnDisposedSchedulerThrows");
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
 		scheduler.dispose();
 		Mono<String> source = Mono.just("foo").hide();
 
-		try {
-			StepVerifier.create(new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, scheduler))
-			            .expectSubscription()
-			            .verifyComplete(); //complete not relevant
-			fail("expected exception here");
-		}
-		catch (Throwable e) {
-			Throwable t = Exceptions.unwrap(e);
-
-			assertThat(t).isEqualTo(e)
-		                 .isInstanceOf(RejectedExecutionException.class)
-		                 .hasMessage("Scheduler unavailable");
-
-			assertThat(e).satisfies(Exceptions::isBubbling);
-		}
+		StepVerifier.create(new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, scheduler))
+		            .expectErrorSatisfies(e -> {
+		            	assertThat(e)
+					            .isInstanceOf(RejectedExecutionException.class)
+					            .hasMessage("Scheduler unavailable");
+		            });
 	}
 
 	@Test
@@ -190,24 +181,19 @@ public class MonoDelayElementTest {
 	public void cancelUpstreamOnceWhenRejected() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		vts.dispose();
-		AtomicLong upstreamCancelCount = new AtomicLong();
 
-		Mono<String> source = Mono.just("foo").log().hide()
-		                          .doOnCancel(upstreamCancelCount::incrementAndGet);
+		TestPublisher<Object> testPublisher = TestPublisher.createCold();
+		testPublisher.emit("Hello");
 
-		try {
-			StepVerifier.withVirtualTime(
-					() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, vts).log(),
-					() -> vts, Long.MAX_VALUE)
-			            .expectSubscription()
-			            .verifyComplete();
-		}
-		catch (Throwable e) {
-			assertThat(e).hasMessageContaining("Scheduler unavailable");
-		}
-		finally {
-			assertThat(upstreamCancelCount.get()).isEqualTo(1);
-		}
+		StepVerifier.create(new MonoDelayElement<>(testPublisher.mono(), 2, TimeUnit.SECONDS, vts))
+		            .verifyErrorSatisfies(e -> {
+			            assertThat(e)
+					            .isInstanceOf(RejectedExecutionException.class)
+					            .hasMessage("Scheduler unavailable");
+		            });
+
+		testPublisher.assertWasRequested();
+		testPublisher.assertCancelled(1);
 	}
 
 	@Test
