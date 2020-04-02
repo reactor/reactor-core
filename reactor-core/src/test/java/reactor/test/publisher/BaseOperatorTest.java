@@ -235,28 +235,23 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			if (verifier == null) {
 				String m = exception().getMessage();
 				verifier = step -> {
-					try {
-						if (scenario.shouldHitDropErrorHookAfterTerminate() || scenario.shouldHitDropNextHookAfterTerminate()) {
-							StepVerifier.Assertions assertions =
-									scenario.applySteps(step)
-									        .expectErrorMessage(m)
-									        .verifyThenAssertThat();
-							if(scenario.shouldHitDropErrorHookAfterTerminate()){
-								assertions.hasDroppedErrorsSatisfying(c -> {
-									assertThat(c.stream().findFirst().get()).hasMessage(scenario.droppedError.getMessage());
-								});
-							}
-							if(scenario.shouldHitDropNextHookAfterTerminate()){
-								assertions.hasDropped(scenario.droppedItem);
-							}
+					if (scenario.shouldHitDropErrorHookAfterTerminate() || scenario.shouldHitDropNextHookAfterTerminate()) {
+						StepVerifier.Assertions assertions =
+								scenario.applySteps(step)
+								        .expectErrorMessage(m)
+								        .verifyThenAssertThat();
+						if(scenario.shouldHitDropErrorHookAfterTerminate()){
+							assertions.hasDroppedErrorsSatisfying(c -> {
+								assertThat(c.stream().findFirst().get()).hasMessage(scenario.droppedError.getMessage());
+							});
 						}
-						else {
-							scenario.applySteps(step)
-							        .verifyErrorMessage(m);
+						if(scenario.shouldHitDropNextHookAfterTerminate()){
+							assertions.hasDropped(scenario.droppedItem);
 						}
 					}
-					catch (Exception e) {
-						assertThat(Exceptions.unwrap(e)).hasMessage(m);
+					else {
+						scenario.applySteps(step)
+						        .verifyErrorMessage(m);
 					}
 				};
 			}

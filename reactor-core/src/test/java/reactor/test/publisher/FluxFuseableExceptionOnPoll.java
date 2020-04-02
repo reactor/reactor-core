@@ -76,6 +76,8 @@ final class FluxFuseableExceptionOnPoll<T> extends FluxOperator<T, T>
 
 		@Override
 		public boolean tryOnNext(T t) {
+			// Make it easier to debug
+			exception.addSuppressed(new Exception("thrown at"));
 			throw exception;
 		}
 
@@ -88,6 +90,8 @@ final class FluxFuseableExceptionOnPoll<T> extends FluxOperator<T, T>
 		@Override
 		public void onNext(T t) {
 			if (t != null) {
+				// Make it easier to debug
+				exception.addSuppressed(new Exception("thrown at"));
 				throw exception;
 			}
 			actual.onNext(null);
@@ -113,6 +117,8 @@ final class FluxFuseableExceptionOnPoll<T> extends FluxOperator<T, T>
 		public T poll() {
 			T t = qs.poll();
 			if (t != null) {
+				// Make it easier to debug
+				exception.addSuppressed(new Exception("thrown at"));
 				throw exception;
 			}
 			return null;

@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -57,10 +59,46 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 					.prefetch(3),
 
 				scenario(f -> f.zipWith(Flux.<String>error(exception()),
-						(a, b) -> a)).shouldHitDropErrorHookAfterTerminate(false),
+						(a, b) -> a)).shouldHitDropErrorHookAfterTerminate(false)
+		);
+	}
 
-				scenario(f -> f.zipWith(Flux.<String>error(exception()).hide(),
-						(a, b) -> a)));
+	@ParameterizedTest
+	@CsvSource({
+			"false, false, first",
+			"true, false, first",
+			"false, true, second",
+			"true, true, first",
+	})
+	public void testTwoErrors(boolean firstIsScalar, boolean secondIsScalar, String expectedMessage) {
+		Flux<Object> first = Flux.error(new Exception("first")).as(f -> firstIsScalar ? f : f.hide());
+		Flux<Object> second = Flux.error(new Exception("second")).as(f -> secondIsScalar ? f : f.hide());
+		StepVerifier.create(first.zipWith(second)).verifyErrorMessage(expectedMessage);
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"false, false, first",
+			"true, false, first",
+			"false, true, first",
+			"true, true, first",
+	})
+	public void testTwoErrorsFusion(boolean firstIsFuseable, boolean secondIsFuseable, String expectedMessage) {
+		Flux<Object> first = Flux
+				.just(1)
+				.map(i -> {
+					throw new RuntimeException("first");
+				})
+				.as(f -> firstIsFuseable ? f : f.hide());
+
+		Flux<Object> second = Flux
+				.just(1)
+				.map(i -> {
+					throw new RuntimeException("second");
+				})
+				.as(f -> secondIsFuseable ? f : f.hide());
+
+		StepVerifier.create(first.zipWith(second)).verifyErrorMessage(expectedMessage);
 	}
 
 	/*@Test

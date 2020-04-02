@@ -54,16 +54,8 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
-		R container;
-
-		try {
-			container = Objects.requireNonNull(supplier.get(),
-					"The supplier returned a null container");
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return null;
-		}
+		R container = Objects.requireNonNull(supplier.get(),
+				"The supplier returned a null container");
 
 		return new CollectSubscriber<>(actual, action, container);
 	}

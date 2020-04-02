@@ -35,14 +35,7 @@ final class MonoSubscriberContext<T> extends InternalMonoOperator<T, T> implemen
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		Context c;
-		try {
-			c = doOnContext.apply(actual.currentContext());
-		}
-		catch (Throwable t) {
-			Operators.error(actual, Operators.onOperatorError(t, actual.currentContext()));
-			return null;
-		}
+		Context c = doOnContext.apply(actual.currentContext());
 
 		return new FluxContextStart.ContextStartSubscriber<>(actual, c);
 	}

@@ -53,15 +53,8 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		MonoPublishMulticaster<T> multicast = new MonoPublishMulticaster<>(actual.currentContext());
 
-		Mono<? extends R> out;
-		try {
-			out = Objects.requireNonNull(transform.apply(fromDirect(multicast)),
-					"The transform returned a null Mono");
-		}
-		catch (Throwable ex) {
-			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
-			return null;
-		}
+		Mono<? extends R> out = Objects.requireNonNull(transform.apply(fromDirect(multicast)),
+				"The transform returned a null Mono");
 
 		if (out instanceof Fuseable) {
 			out.subscribe(new FluxPublishMulticast.CancelFuseableMulticaster<>(actual, multicast));

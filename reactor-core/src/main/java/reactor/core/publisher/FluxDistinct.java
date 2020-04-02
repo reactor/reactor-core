@@ -62,16 +62,8 @@ final class FluxDistinct<T, K, C> extends InternalFluxOperator<T, T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		C collection;
-
-		try {
-			collection = Objects.requireNonNull(collectionSupplier.get(),
-					"The collectionSupplier returned a null collection");
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return null;
-		}
+		C collection = Objects.requireNonNull(collectionSupplier.get(),
+				"The collectionSupplier returned a null collection");
 
 		if (actual instanceof ConditionalSubscriber) {
 			return new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,

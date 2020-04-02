@@ -132,11 +132,17 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 	@Override
 	public void subscribe(CoreSubscriber<? super R> actual) {
 		Publisher<? extends T>[] srcs = sources;
-		if (srcs != null) {
-			handleArrayMode(actual, srcs);
+		try {
+			if (srcs != null) {
+				handleArrayMode(actual, srcs);
+			}
+			else {
+				handleIterableMode(actual, sourcesIterable);
+			}
 		}
-		else {
-			handleIterableMode(actual, sourcesIterable);
+		catch (Throwable e) {
+			Operators.reportThrowInSubscribe(actual, e);
+			return;
 		}
 	}
 
@@ -372,7 +378,12 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				}
 				ZipSingleSubscriber<T> s = a[i];
 				if (s != null) {
-					sources[i].subscribe(s);
+					try {
+						sources[i].subscribe(s);
+					}
+					catch (Throwable e) {
+						Operators.reportThrowInSubscribe(s, e);
+					}
 				}
 			}
 		}
@@ -576,7 +587,13 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 				if (cancelled || error != null) {
 					return;
 				}
-				sources[i].subscribe(a[i]);
+				ZipInner<T> s = a[i];
+				try {
+					sources[i].subscribe(s);
+				}
+				catch (Throwable e) {
+					Operators.reportThrowInSubscribe(s, e);
+				}
 			}
 		}
 

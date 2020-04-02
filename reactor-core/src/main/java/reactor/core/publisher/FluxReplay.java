@@ -1069,22 +1069,34 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		cancelSupport.accept(s);
 		if (doConnect) {
-			source.subscribe(s);
+			try {
+				source.subscribe(s);
+			}
+			catch (Throwable e) {
+				Operators.reportThrowInSubscribe(connection, e);
+				return;
+			}
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		CoreSubscriber nextSubscriber = subscribeOrReturn(actual);
-		if (nextSubscriber == null) {
+		try {
+			CoreSubscriber nextSubscriber = subscribeOrReturn(actual);
+			if (nextSubscriber == null) {
+				return;
+			}
+			source.subscribe(nextSubscriber);
+		}
+		catch (Throwable e) {
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
-		source.subscribe(nextSubscriber);
 	}
 
 	@Override
-	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) throws Throwable {
 		boolean expired;
 		for (; ; ) {
 			ReplaySubscriber<T> c = connection;

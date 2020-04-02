@@ -50,15 +50,8 @@ final class FluxSubscribeOn<T> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		Worker worker;
-
-		try {
-			worker = Objects.requireNonNull(scheduler.createWorker(),
-					"The scheduler returned a null Function");
-		} catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return null;
-		}
+		Worker worker = Objects.requireNonNull(scheduler.createWorker(),
+				"The scheduler returned a null Function");
 
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source,
 				actual, worker, requestOnSeparateThread);

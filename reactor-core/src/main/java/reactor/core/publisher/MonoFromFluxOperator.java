@@ -69,18 +69,24 @@ abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable,
 	@SuppressWarnings("unchecked")
 	public final void subscribe(CoreSubscriber<? super O> subscriber) {
 		OptimizableOperator operator = this;
-		while (true) {
-			subscriber = operator.subscribeOrReturn(subscriber);
-			if (subscriber == null) {
-				// null means "I will subscribe myself", returning...
-				return;
+		try {
+			while (true) {
+				subscriber = operator.subscribeOrReturn(subscriber);
+				if (subscriber == null) {
+					// null means "I will subscribe myself", returning...
+					return;
+				}
+				OptimizableOperator newSource = operator.nextOptimizableSource();
+				if (newSource == null) {
+					operator.source().subscribe(subscriber);
+					return;
+				}
+				operator = newSource;
 			}
-			OptimizableOperator newSource = operator.nextOptimizableSource();
-			if (newSource == null) {
-				operator.source().subscribe(subscriber);
-				return;
-			}
-			operator = newSource;
+		}
+		catch (Throwable e) {
+			Operators.reportThrowInSubscribe(subscriber, e);
+			return;
 		}
 	}
 

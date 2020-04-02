@@ -8244,24 +8244,30 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		CorePublisher publisher = Operators.onLastAssembly(this);
 		CoreSubscriber subscriber = Operators.toCoreSubscriber(actual);
 
-		if (publisher instanceof OptimizableOperator) {
-			OptimizableOperator operator = (OptimizableOperator) publisher;
-			while (true) {
-				subscriber = operator.subscribeOrReturn(subscriber);
-				if (subscriber == null) {
-					// null means "I will subscribe myself", returning...
-					return;
+		try {
+			if (publisher instanceof OptimizableOperator) {
+				OptimizableOperator operator = (OptimizableOperator) publisher;
+				while (true) {
+					subscriber = operator.subscribeOrReturn(subscriber);
+					if (subscriber == null) {
+						// null means "I will subscribe myself", returning...
+						return;
+					}
+					OptimizableOperator newSource = operator.nextOptimizableSource();
+					if (newSource == null) {
+						publisher = operator.source();
+						break;
+					}
+					operator = newSource;
 				}
-				OptimizableOperator newSource = operator.nextOptimizableSource();
-				if (newSource == null) {
-					publisher = operator.source();
-					break;
-				}
-				operator = newSource;
 			}
-		}
 
-		publisher.subscribe(subscriber);
+			publisher.subscribe(subscriber);
+		}
+		catch (Throwable e) {
+			Operators.reportThrowInSubscribe(subscriber, e);
+			return;
+		}
 	}
 
 	/**

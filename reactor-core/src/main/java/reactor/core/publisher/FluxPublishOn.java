@@ -83,16 +83,8 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 	@Override
 	@SuppressWarnings("unchecked")
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		Worker worker;
-
-		try {
-			worker = Objects.requireNonNull(scheduler.createWorker(),
-					"The scheduler returned a null worker");
-		}
-		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
-			return null;
-		}
+		Worker worker = Objects.requireNonNull(scheduler.createWorker(),
+				"The scheduler returned a null worker");
 
 		if (actual instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
