@@ -260,7 +260,6 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 	}
 
 	private void discardMultiple(LinkedArrayNode<T> head) {
-		synchronized (actual) {
 		LinkedArrayNode<T> originalHead = head;
 		LinkedArrayNode<T> h = head;
 		while (h != null) {
@@ -274,7 +273,6 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 				originalHead = this.head;
 				h = originalHead;
 			}
-		}
 		}
 	}
 

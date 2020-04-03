@@ -16,10 +16,7 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -30,16 +27,14 @@ import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 public class SerializedSubscriberTest {
 
 	@Test
 	public void onNextRaceWithCancelDoesNotLeak() {
-		int i = 0;
-		do {
+		int loops = 0;
+		while (loops < 100_000) {
 			CopyOnWriteArrayList<Object> discarded = new CopyOnWriteArrayList<>();
-
 			AssertSubscriber<Integer> consumer = new AssertSubscriber<>(
 					Operators.enableOnDiscard(Context.empty(), discarded::add),
 					Long.MAX_VALUE);
@@ -47,6 +42,7 @@ public class SerializedSubscriberTest {
 			SerializedSubscriber<Integer> leaky = new SerializedSubscriber<>(consumer);
 			leaky.onSubscribe(Operators.emptySubscription());
 
+			//we use constant so that if debugging is needed we can identify which step caused an issue
 			leaky.onNext(1);
 			RaceTestUtils.race(
 					() -> {
@@ -59,28 +55,24 @@ public class SerializedSubscriberTest {
 					}
 			);
 
+			//since we want to test for the race condition, we're not interested in iterations where all gets consumed or all gets discarded
+			//however, we'll smoke test that in these cases at least the other side (discarded or consumed) sees the total number of elements
 			if (consumer.values().size() == 4) {
 				assertThat(discarded).as("when consumed all, none discarded").isEmpty();
-				System.out.println("consumed all, looping once more");
 				continue;
 			}
-
 			if (discarded.size() == 4) {
 				assertThat(consumer.values()).as("when discarded all, none consumed").isEmpty();
-				System.out.println("discarded all, looping once more");
 				continue;
 			}
 
-			try {
-				assertThat(discarded.size() + consumer.values().size())
-						.as("elements discarded or passed down in round #%s: <%s> and <%s>", i, discarded, consumer.values())
-						.isEqualTo(4);
-			} catch (AssertionError assertionError) {
-				throw assertionError;
-			}
+			//now the meat of the test is to check that total discarded + total seen by consumer = total produced
+			assertThat(discarded.size() + consumer.values().size())
+					.as("elements discarded or passed down in round #%s: <%s> and <%s>", loops, discarded, consumer.values())
+					.isEqualTo(4);
 
-			i++;
-		} while (i < 1000);
+			loops++;
+		}
 	}
 
 
