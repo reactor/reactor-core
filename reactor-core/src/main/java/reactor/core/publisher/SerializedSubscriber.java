@@ -16,8 +16,8 @@
 
 package reactor.core.publisher;
 
-
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
 
@@ -37,9 +37,9 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 	final CoreSubscriber<? super T> actual;
 
-	boolean emitting;
+	boolean drainLoopInProgress;
 
-	boolean missed;
+	boolean concurrentlyAddedContent;
 
 	volatile boolean done;
 
@@ -69,21 +69,23 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 	@Override
 	public void onNext(T t) {
 		if (cancelled || done) {
+			Operators.onDiscard(t, actual.currentContext());
 			return;
 		}
 
 		synchronized (this) {
 			if (cancelled || done) {
+				Operators.onDiscard(t, actual.currentContext());
 				return;
 			}
 
-			if (emitting) {
+			if (drainLoopInProgress) {
 				serAdd(t);
-				missed = true;
+				concurrentlyAddedContent = true;
 				return;
 			}
 
-			emitting = true;
+			drainLoopInProgress = true;
 		}
 
 		actual.onNext(t);
@@ -105,8 +107,8 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 			done = true;
 			error = t;
 
-			if (emitting) {
-				missed = true;
+			if (drainLoopInProgress) {
+				concurrentlyAddedContent = true;
 				return;
 			}
 		}
@@ -127,8 +129,8 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 			done = true;
 
-			if (emitting) {
-				missed = true;
+			if (drainLoopInProgress) {
+				concurrentlyAddedContent = true;
 				return;
 			}
 		}
@@ -148,6 +150,11 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 	}
 
 	void serAdd(T value) {
+		if (cancelled) {
+			Operators.onDiscard(value, actual.currentContext());
+			return;
+		}
+
 		LinkedArrayNode<T> t = tail;
 
 		if (t == null) {
@@ -167,12 +174,21 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 				t.array[t.count++] = value;
 			}
 		}
+		if (cancelled) {
+			//this case could mean serDrainLoop "won" and cleared an old view of the nodes first,
+			// then we added "from scratch", so we remain with a single-element node containing `value`
+			// => we can simply discard `value`
+			Operators.onDiscard(value, actual.currentContext());
+		}
 	}
 
 	void serDrainLoop(CoreSubscriber<? super T> actual) {
 		for (; ; ) {
 
 			if (cancelled) {
+				synchronized (this) {
+					discardMultiple(this.head);
+				}
 				return;
 			}
 
@@ -182,15 +198,16 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 			synchronized (this) {
 				if (cancelled) {
+					discardMultiple(this.head);
 					return;
 				}
 
-				if (!missed) {
-					emitting = false;
+				if (!concurrentlyAddedContent) {
+					drainLoopInProgress = false;
 					return;
 				}
 
-				missed = false;
+				concurrentlyAddedContent = false;
 
 				d = done;
 				e = error;
@@ -198,6 +215,10 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 				head = null;
 				tail = null;
+
+//				if (cancelled) {
+//					discardMultiple(n);
+//				}
 			}
 
 			while (n != null) {
@@ -208,6 +229,9 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 				for (int i = 0; i < c; i++) {
 
 					if (cancelled) {
+						synchronized (this) {
+							discardMultiple(n);
+						}
 						return;
 					}
 
@@ -218,6 +242,9 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 			}
 
 			if (cancelled) {
+				synchronized (this) {
+					discardMultiple(this.head);
+				}
 				return;
 			}
 
@@ -229,6 +256,25 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 				actual.onComplete();
 				return;
 			}
+		}
+	}
+
+	private void discardMultiple(LinkedArrayNode<T> head) {
+		synchronized (actual) {
+		LinkedArrayNode<T> originalHead = head;
+		LinkedArrayNode<T> h = head;
+		while (h != null) {
+			//discard
+			for (int i = 0; i < h.count; i++) {
+				Operators.onDiscard(h.array[i], actual.currentContext());
+			}
+			h = h.next;
+
+			if (h == null && this.head != originalHead) {
+				originalHead = this.head;
+				h = originalHead;
+			}
+		}
 		}
 	}
 

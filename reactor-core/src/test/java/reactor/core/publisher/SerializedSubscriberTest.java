@@ -16,13 +16,73 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.Scannable;
+import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class SerializedSubscriberTest {
+
+	@Test
+	public void onNextRaceWithCancelDoesNotLeak() {
+		int i = 0;
+		do {
+			CopyOnWriteArrayList<Object> discarded = new CopyOnWriteArrayList<>();
+
+			AssertSubscriber<Integer> consumer = new AssertSubscriber<>(
+					Operators.enableOnDiscard(Context.empty(), discarded::add),
+					Long.MAX_VALUE);
+
+			SerializedSubscriber<Integer> leaky = new SerializedSubscriber<>(consumer);
+			leaky.onSubscribe(Operators.emptySubscription());
+
+			leaky.onNext(1);
+			RaceTestUtils.race(
+					() -> {
+						leaky.onNext(2);
+						leaky.onNext(4);
+					},
+					() -> {
+						leaky.onNext(3);
+						leaky.cancel();
+					}
+			);
+
+			if (consumer.values().size() == 4) {
+				assertThat(discarded).as("when consumed all, none discarded").isEmpty();
+				System.out.println("consumed all, looping once more");
+				continue;
+			}
+
+			if (discarded.size() == 4) {
+				assertThat(consumer.values()).as("when discarded all, none consumed").isEmpty();
+				System.out.println("discarded all, looping once more");
+				continue;
+			}
+
+			try {
+				assertThat(discarded.size() + consumer.values().size())
+						.as("elements discarded or passed down in round #%s: <%s> and <%s>", i, discarded, consumer.values())
+						.isEqualTo(4);
+			} catch (AssertionError assertionError) {
+				throw assertionError;
+			}
+
+			i++;
+		} while (i < 1000);
+	}
+
 
 	@Test
 	public void scanSerializedSubscriber() {
