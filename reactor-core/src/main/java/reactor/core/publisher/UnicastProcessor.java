@@ -213,7 +213,7 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drainRegular(Subscriber<? super T> a) {
+	void drainRegular(CoreSubscriber<? super T> a) {
 		int missed = 1;
 
 		final Queue<T> q = queue;
@@ -259,7 +259,7 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drainFused(Subscriber<? super T> a) {
+	void drainFused(CoreSubscriber<? super T> a) {
 		int missed = 1;
 
 		final Queue<T> q = queue;
@@ -267,7 +267,7 @@ public final class UnicastProcessor<T>
 		for (;;) {
 
 			if (cancelled) {
-				q.clear();
+				Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
 				actual = null;
 				return;
 			}
@@ -303,7 +303,7 @@ public final class UnicastProcessor<T>
 		int missed = 1;
 
 		for (;;) {
-			Subscriber<? super T> a = actual;
+			CoreSubscriber<? super T> a = actual;
 			if (a != null) {
 
 				if (outputFused) {
@@ -321,9 +321,9 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, Queue<T> q) {
+	boolean checkTerminated(boolean d, boolean empty, CoreSubscriber<? super T> a, Queue<T> q) {
 		if (cancelled) {
-			q.clear();
+			Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
 			actual = null;
 			return true;
 		}
@@ -449,11 +449,9 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		if (!outputFused) {
-			if (WIP.getAndIncrement(this) == 0) {
-				queue.clear();
-				actual = null;
-			}
+		if (WIP.getAndIncrement(this) == 0) {
+			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+			actual = null;
 		}
 	}
 
@@ -475,7 +473,7 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void clear() {
-		queue.clear();
+		Operators.onDiscardQueueWithClear(queue, currentContext(), null);
 	}
 
 	@Override
