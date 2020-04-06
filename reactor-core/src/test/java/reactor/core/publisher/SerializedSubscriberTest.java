@@ -85,12 +85,9 @@ public class SerializedSubscriberTest {
 	//direct transcription of test case exposed in https://github.com/reactor/reactor-core/issues/2077
 	@Test
 	public void testLeakWithRetryWhenImmediatelyCancelled() throws InterruptedException {
-
 		AtomicInteger counter = new AtomicInteger();
 		AtomicInteger discarded = new AtomicInteger();
 		AtomicInteger seen = new AtomicInteger();
-		AtomicInteger dropped = new AtomicInteger();
-		Hooks.onNextDropped(o -> dropped.incrementAndGet());
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		Flux.<Integer>generate(s -> {
@@ -122,8 +119,8 @@ public class SerializedSubscriberTest {
 		      .untilAsserted(() -> {
 			      //counter now holds the next value it would have emitted, so total emitted == counter - 1
 			      assertThat(counter.get() - 1)
-					      .withFailMessage("counter not equal to seen+discarded+dropped: Expected <%s>, got <%s+%s+%s>=<%s>",
-							      counter, seen, discarded, dropped, dropped.get() + seen.get() + discarded.get())
+					      .withFailMessage("counter not equal to seen+discarded: Expected <%s>, got <%s+%s>=<%s>",
+							      counter, seen, discarded, seen.get() + discarded.get())
 					      .isEqualTo(seen.get() + discarded.get());
 		      });
 	}
