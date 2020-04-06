@@ -32,14 +32,36 @@ import org.objectweb.asm.Type;
 
 public class ReactorDebugAgent {
 
+	private static final String INSTALLED_PROPERTY = "reactor.tools.agent.installed";
+
 	private static Instrumentation instrumentation;
 
+	/**
+	 * This method is a part of the Java Agent contract and should not be
+	 * used directly.
+	 *
+	 * @deprecated to discourage the usage from user's code
+	 */
+	@Deprecated
+	public static void premain(String args, Instrumentation instrumentation) {
+		instrument(instrumentation);
+		System.setProperty(INSTALLED_PROPERTY, "true");
+	}
+
 	public static synchronized void init() {
+		if (System.getProperty(INSTALLED_PROPERTY) != null) {
+			return;
+		}
+
 		if (instrumentation != null) {
 			return;
 		}
 		instrumentation = ByteBuddyAgent.install();
 
+		instrument(instrumentation);
+	}
+
+	private static void instrument(Instrumentation instrumentation) {
 		ClassFileTransformer transformer = new ClassFileTransformer() {
 			@Override
 			public byte[] transform(
@@ -140,6 +162,11 @@ public class ReactorDebugAgent {
 	}
 
 	public static synchronized void processExistingClasses() {
+		if (System.getProperty(INSTALLED_PROPERTY) != null) {
+			// processExistingClasses is a NOOP when running as an agent
+			return;
+		}
+
 		if (instrumentation == null) {
 			throw new IllegalStateException("Must be initialized first!");
 		}
