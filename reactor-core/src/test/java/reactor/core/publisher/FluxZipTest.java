@@ -898,48 +898,56 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	@SuppressWarnings("rawtypes")
 	public void backpressuredAsyncFusedError() {
 		Hooks.onErrorDropped(c -> {
 			assertThat(c).hasMessage("test2");
 		});
 		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxZip.ZipInner[] inner = new FluxZip.ZipInner[1];
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
 				up,
 				Flux.just(2, 3, 5)), 0)
+					.expectSubscription()
+					.then(() -> inner[0] = ((FluxZip.ZipInner) up.actual))
 		            .then(() -> up.onNext(1))
 		            .thenRequest(1)
 		            .expectNext(3)
 		            .then(() -> up.onNext(2))
 		            .thenRequest(1)
 		            .expectNext(5)
-		            .then(() -> up.actual.onError(new Exception("test")))
-		            .then(() -> up.actual.onError(new Exception("test2")))
+		            .then(() -> inner[0].onError(new Exception("test")))
+		            .then(() -> inner[0].onError(new Exception("test2")))
 		            .verifyErrorMessage("test");
 	}
 
 	@Test
+	@SuppressWarnings("rawtypes")
 	public void backpressuredAsyncFusedErrorHideAll() {
 		Hooks.onErrorDropped(c -> {
 			assertThat(c).hasMessage("test2");
 		});
 		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxZip.ZipInner[] inner = new FluxZip.ZipInner[1];
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1], 1, up, s -> {
 			assertThat(((FluxZip.ZipInner) up.actual).parent.subscribers[1].done).isFalse();
 			Flux.just(2, 3, 5)
 			    .subscribe(s);
 		})
 		                        .hide(), 0)
+					.expectSubscription()
+					.then(() -> inner[0] = ((FluxZip.ZipInner) up.actual))
 		            .then(() -> up.onNext(1))
 		            .thenRequest(1)
 		            .expectNext(3)
 		            .then(() -> up.onNext(2))
 		            .thenRequest(1)
 		            .expectNext(5)
-		            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).done).isFalse())
-		            .then(() -> up.actual.onError(new Exception("test")))
-		            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).done).isTrue())
-		            .then(() -> up.actual.onError(new Exception("test2")))
+		            .then(() -> assertThat(inner[0].done).isFalse())
+		            .then(() -> inner[0].onError(new Exception("test")))
+		            .then(() -> assertThat(inner[0].done).isTrue())
+		            .then(() -> inner[0].onError(new Exception("test2")))
 		            .verifyErrorMessage("test");
 	}
 
