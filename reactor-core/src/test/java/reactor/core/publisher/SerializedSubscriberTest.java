@@ -17,11 +17,15 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
@@ -30,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class SerializedSubscriberTest {
 
+	//see https://github.com/reactor/reactor-core/issues/2077
 	@Test
 	public void onNextRaceWithCancelDoesNotLeak() {
 		int loops = 0;
@@ -75,6 +80,44 @@ public class SerializedSubscriberTest {
 		}
 	}
 
+	//direct transcription of test case exposed in https://github.com/reactor/reactor-core/issues/2077
+	@Test
+	public void testLeakWithRetryWhenImmediatelyCancelled() throws InterruptedException {
+		Hooks.onNextDroppedFail();
+
+		AtomicInteger counter = new AtomicInteger();
+		AtomicInteger discarded = new AtomicInteger();
+		AtomicInteger seen = new AtomicInteger();
+		final CountDownLatch latch = new CountDownLatch(1);
+		Flux.<Integer>generate(s -> {
+			int i = counter.incrementAndGet();
+			if (i == 100_000) {
+				s.next(i);
+				s.complete();
+			}
+			else {
+				s.next(i);
+			}
+		})
+		    .publishOn(Schedulers.single())
+		    .retryWhen(p -> p.take(3))
+		    .cancelOn(Schedulers.parallel())
+		    .doOnDiscard(Integer.class, i -> discarded.incrementAndGet())
+		    .doFinally(sig -> latch.countDown())
+		    .doOnNext(i -> seen.incrementAndGet())
+            .subscribeWith(new BaseSubscriber<Integer>() {
+	            @Override
+	            protected void hookOnNext(Integer value) {
+		            cancel();
+	            }
+            });
+
+		assertThat(latch.await(5, TimeUnit.SECONDS)).as("latch 5s").isTrue();
+		//counter now holds the next value it would have emitted, so total emitted == counter - 1
+		assertThat(counter.get() - 1)
+				.withFailMessage("counter not equal to seen+discarded: Expected <%s>, got <%s+%s>=<%s>", counter, seen, discarded, seen.get() + discarded.get())
+				.isEqualTo(seen.get() + discarded.get());
+	}
 
 	@Test
 	public void scanSerializedSubscriber() {
