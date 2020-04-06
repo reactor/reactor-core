@@ -21,6 +21,7 @@ description = 'Reactor Tools'
 
 testSets {
     jarFileTest
+    javaAgentTest
 }
 
 configurations {
@@ -71,6 +72,14 @@ test {
 
 jar {
     archiveClassifier.set('original')
+
+    manifest {
+        attributes(
+                'Can-Retransform-Classes': 'true',
+                'Can-Redefine-Classes': 'true',
+                'Premain-Class': 'reactor.tools.agent.ReactorDebugAgent',
+        )
+    }
 }
 
 shadowJar {
@@ -138,6 +147,19 @@ task shadedJarTest(type: Test) {
     dependsOn(shadowJar)
 }
 project.tasks.check.dependsOn(shadedJarTest)
+
+javaAgentTest {
+    dependsOn(tasks.shadowJar)
+
+    jvmArgs = [
+            "-javaagent:${shadowJar.outputs.files.singleFile}",
+            "-Xverify:all",
+            JavaVersion.current().isJava9Compatible()
+                    ? "-Xlog:redefine+class*=warning"
+                    : "-XX:TraceRedefineClasses=2"
+    ]
+}
+project.tasks.check.dependsOn(javaAgentTest)
 
 tasks.withType(Test).all {
     useJUnitPlatform()
