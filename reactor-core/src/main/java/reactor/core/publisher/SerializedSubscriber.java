@@ -68,14 +68,22 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 	@Override
 	public void onNext(T t) {
-		if (cancelled || done) {
+		if (cancelled) {
 			Operators.onDiscard(t, actual.currentContext());
+			return;
+		}
+		if (done) {
+			Operators.onNextDropped(t, actual.currentContext());
 			return;
 		}
 
 		synchronized (this) {
-			if (cancelled || done) {
+			if (cancelled) {
 				Operators.onDiscard(t, actual.currentContext());
+				return;
+			}
+			if (done) {
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
