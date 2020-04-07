@@ -408,6 +408,89 @@ Use it only if you see that some call-sites are not instrumented.
 to perform the self-attach.
 Self-attach may not work on some JVMs, please refer to ByteBuddy's documentation for more details.
 
+=== Running ReactorDebugAgent as a Java Agent
+If your environment does not support ByteBuddy's self-attachment, you can run `reactor-tools` as a
+Java Agent:
+====
+[source,shell]
+----
+java -javaagent reactor-tools.jar -jar app.jar
+----
+====
+
+=== Running ReactorDebugAgent at build time
+It is also possible to run `reactor-tools` at build time. To do so, you need to apply it as a
+plugin for ByteBuddy's build instrumentation.
+
+WARNING: The transformation will only be applied to your project's classes. The classpath libraries will not be instrumented.
+
+.reactor-tools with https://github.com/raphw/byte-buddy/tree/byte-buddy-1.10.9/byte-buddy-maven-plugin[ByteBuddy's Maven plugin]
+====
+[source,xml]
+----
+<dependencies>
+	<dependency>
+		<groupId>io.projectreactor</groupId>
+		<artifactId>reactor-tools</artifactId>
+		<1>
+		<classifier>original</classifier> <2>
+		<scope>runtime</scope>
+	</dependency>
+</dependencies>
+
+<build>
+	<plugins>
+		<plugin>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy-maven-plugin</artifactId>
+			<configuration>
+				<transformations>
+					<transformation>
+						<plugin>reactor.tools.agent.ReactorDebugByteBuddyPlugin</plugin>
+					</transformation>
+				</transformations>
+			</configuration>
+		</plugin>
+	</plugins>
+</build>
+----
+<1> If you use the <<getting,BOM>>, you do not need to specify a `<version>`.
+<2> `classifier` here is important.
+====
+
+.reactor-tools with https://github.com/raphw/byte-buddy/tree/byte-buddy-1.10.9/byte-buddy-gradle-plugin[ByteBuddy's Gradle plugin]
+====
+[source,groovy]
+----
+plugins {
+	id 'net.bytebuddy.byte-buddy-gradle-plugin' version '1.10.9'
+}
+
+configurations {
+	byteBuddyPlugin
+}
+
+dependencies {
+	byteBuddyPlugin(
+			group: 'io.projectreactor',
+			name: 'reactor-tools',
+			<1>
+			classifier: 'original', <2>
+	)
+}
+
+byteBuddy {
+	transformation {
+		plugin = "reactor.tools.agent.ReactorDebugByteBuddyPlugin"
+		classPath = configurations.byteBuddyPlugin
+	}
+}
+----
+<1> If you use the <<getting,BOM>>, you do not need to specify a `version`.
+<2> `classifier` here is important.
+====
+
+
 == Logging a Sequence
 
 In addition to stack trace debugging and analysis, another powerful tool to have in your

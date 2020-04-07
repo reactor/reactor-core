@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+plugins {
+    id 'net.bytebuddy.byte-buddy-gradle-plugin' version '1.10.9' apply false
+}
+
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'org.unbroken-dome.test-sets'
 
@@ -22,22 +26,22 @@ description = 'Reactor Tools'
 testSets {
     jarFileTest
     javaAgentTest
+    buildPluginTest
 }
 
 configurations {
     shaded
 }
-project.tasks.test.classpath += configurations.shaded
 
 dependencies {
     compile project(':reactor-core')
 
-    shaded 'org.ow2.asm:asm:7.1'
-    shaded 'org.ow2.asm:asm-util:7.1'
-    shaded 'org.ow2.asm:asm-commons:7.1'
-    shaded 'net.bytebuddy:byte-buddy-agent:1.9.6'
+    shaded 'net.bytebuddy:byte-buddy-agent:1.10.9'
+    shaded 'net.bytebuddy:byte-buddy:1.10.9'
     for (dependency in project.configurations.shaded.dependencies) {
         compileOnly(dependency)
+        testRuntime(dependency)
+        javaAgentTestRuntime(dependency)
     }
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
@@ -47,7 +51,6 @@ dependencies {
     testCompile 'cglib:cglib:3.3.0'
 
     jarFileTestCompile 'org.assertj:assertj-core:3.12.2' //FIXME bump in root and use property
-    jarFileTestCompile 'junit:junit:4.12'
 }
 
 test {
@@ -115,6 +118,10 @@ shadowJar {
     exclude 'META-INF/*'
     exclude 'META-INF/maven*/**'
     exclude 'META-INF/versions/*'
+    exclude 'META-INF/licenses/*'
+
+    // TODO discuss with ByteBuddy folks how to shade it
+    exclude 'win32-x86*/**'
 }
 
 project.tasks.build.dependsOn(shadowJar)
@@ -160,6 +167,20 @@ javaAgentTest {
     ]
 }
 project.tasks.check.dependsOn(javaAgentTest)
+
+// See https://github.com/raphw/byte-buddy/issues/833
+compileBuildPluginTestJava.doLast(
+        new net.bytebuddy.build.gradle.TransformationAction(
+                project,
+                new net.bytebuddy.build.gradle.ByteBuddyExtension(project).tap {
+                    transformation {
+                        plugin = "reactor.tools.agent.ReactorDebugByteBuddyPlugin"
+                    }
+                },
+                compileBuildPluginTestJava
+        )
+)
+project.tasks.check.dependsOn(buildPluginTest)
 
 tasks.withType(Test).all {
     useJUnitPlatform()
