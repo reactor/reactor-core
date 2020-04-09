@@ -1130,7 +1130,7 @@ final class DefaultStepVerifierBuilder<T>
 					setFailure(null, "an unexpected Subscription has been received: %s; actual: cancelled",
 							subscription);
 				}
-				else {
+				else if (!Operators.canBeIgnored(subscription)) {
 					setFailure(null, "an unexpected Subscription has been received: %s; actual: ",
 							subscription,
 							this);

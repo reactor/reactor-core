@@ -174,6 +174,15 @@ public abstract class Operators {
 	}
 
 	/**
+	 * TODO
+	 * @param subscription
+	 * @return
+	 */
+	public static boolean canBeIgnored(Subscription subscription) {
+		return subscription instanceof ErrorInSubscribeSubscription;
+	}
+
+	/**
 	 * Calls onSubscribe on the target Subscriber with the empty instance followed by a call to onError with the
 	 * supplied error.
 	 *
@@ -187,7 +196,7 @@ public abstract class Operators {
 
 	public static void reportThrowInSubscribe(CoreSubscriber<?> subscriber, Throwable e) {
 		try {
-			subscriber.onSubscribe(EmptySubscription.INSTANCE);
+			subscriber.onSubscribe(ErrorInSubscribeSubscription.INSTANCE);
 		}
 		catch (Throwable onSubscribeError) {
 			Exceptions.throwIfFatal(onSubscribeError);
@@ -1542,6 +1551,20 @@ public abstract class Operators {
 			return 0;
 		}
 
+	}
+
+	enum ErrorInSubscribeSubscription implements Subscription {
+		INSTANCE;
+
+		@Override
+		public void request(long l) {
+			// deliberately no op
+		}
+
+		@Override
+		public void cancel() {
+			// deliberately no op
+		}
 	}
 
 	/**
