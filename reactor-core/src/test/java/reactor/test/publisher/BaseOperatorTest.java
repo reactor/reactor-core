@@ -21,9 +21,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.junit.Before;
+import org.junit.function.ThrowingRunnable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
@@ -42,6 +44,8 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.test.StepVerifier;
 import reactor.util.annotation.Nullable;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.*;
@@ -227,54 +231,88 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	public final Stream<DynamicTest> errorOnSubscribe() {
 		defaultEmpty = true;
 		defaultScenario.producerError(new RuntimeException("test"));
-		return toDynamicTests(scenarios_errorFromUpstreamFailure(), s -> {
-			OperatorScenario<I, PI, O, PO> scenario = s.duplicate();
 
-			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
+		Consumer<OperatorScenario<I, PI, O, PO>> prepareVerifier = scenario -> {
+			if (scenario.verifier() != null) {
+				return;
+			}
 
-			if (verifier == null) {
-				String m = exception().getMessage();
-				verifier = step -> {
-					if (scenario.shouldHitDropErrorHookAfterTerminate() || scenario.shouldHitDropNextHookAfterTerminate()) {
-						StepVerifier.Assertions assertions =
-								scenario.applySteps(step)
-								        .expectErrorMessage(m)
-								        .verifyThenAssertThat();
-						if(scenario.shouldHitDropErrorHookAfterTerminate()){
-							assertions.hasDroppedErrorsSatisfying(c -> {
-								assertThat(c.stream().findFirst().get()).hasMessage(scenario.droppedError.getMessage());
-							});
-						}
-						if(scenario.shouldHitDropNextHookAfterTerminate()){
-							assertions.hasDropped(scenario.droppedItem);
-						}
-					}
-					else {
+			String m = exception().getMessage();
+			scenario.verifier = step -> {
+				StepVerifier.Assertions assertions =
 						scenario.applySteps(step)
-						        .verifyErrorMessage(m);
-					}
-				};
+						        .expectErrorMessage(m)
+						        .verifyThenAssertThat();
+
+				if (scenario.shouldHitDropErrorHookAfterTerminate()) {
+					assertions.hasDroppedErrorsSatisfying(c -> {
+						assertThat(c.stream().findFirst().get()).hasMessage(scenario.droppedError.getMessage());
+					});
+				}
+				else {
+					assertions.hasNotDroppedErrors();
+				}
+
+				if (scenario.shouldHitDropNextHookAfterTerminate()) {
+					assertions.hasDropped(scenario.droppedItem);
+				}
+				else {
+					assertions.hasNotDroppedElements();
+				}
+			};
+		};
+
+		return scenarios_errorFromUpstreamFailure().stream().flatMap(originalScenario -> {
+			Stream<Tuple2<String, Function<OperatorScenario<I, PI, O, PO>, StepVerifier.Step<O>>>> steps = Stream.of(
+					Tuples.of("inputHiddenError", this::inputHiddenError),
+					Tuples.of("inputHiddenErrorOutputConditional", this::inputHiddenErrorOutputConditional),
+					Tuples.of("inputConditionalError", this::inputConditionalError),
+					Tuples.of("inputConditionalErrorOutputConditional", this::inputConditionalErrorOutputConditional),
+					Tuples.of("inputFusedError", s -> {
+						s.shouldHitDropErrorHookAfterTerminate(false);
+						s.shouldHitDropNextHookAfterTerminate(false);
+						return this.inputFusedError(s);
+					}),
+					Tuples.of("inputFusedErrorOutputFusedConditional", s -> {
+						s.shouldHitDropErrorHookAfterTerminate(false);
+						s.shouldHitDropNextHookAfterTerminate(false);
+						return this.inputFusedErrorOutputFusedConditional(s);
+					})
+			);
+
+			if (originalScenario.prefetch() != -1 || (originalScenario.fusionMode() & Fuseable.SYNC) != 0) {
+				steps = Stream.concat(steps, Stream.of(
+						Tuples.of("inputFusedSyncErrorOutputFusedSync", s -> {
+							s.shouldHitDropErrorHookAfterTerminate(false);
+							s.shouldHitDropNextHookAfterTerminate(false);
+							return this.inputFusedSyncErrorOutputFusedSync(s);
+						})
+				));
 			}
 
-			int fusion = scenario.fusionMode();
-
-			verifier.accept(this.inputHiddenError(scenario));
-			verifier.accept(this.inputHiddenErrorOutputConditional(scenario));
-			verifier.accept(this.inputConditionalError(scenario));
-			verifier.accept(this.inputConditionalErrorOutputConditional(scenario));
-
-			scenario.shouldHitDropErrorHookAfterTerminate(false)
-			        .shouldHitDropNextHookAfterTerminate(false);
-
-			verifier.accept(this.inputFusedError(scenario));
-			verifier.accept(this.inputFusedErrorOutputFusedConditional(scenario));
-
-			if (scenario.prefetch() != -1 || (fusion & Fuseable.SYNC) != 0) {
-				verifier.accept(this.inputFusedSyncErrorOutputFusedSync(scenario));
+			if (originalScenario.prefetch() != -1 || (originalScenario.fusionMode() & Fuseable.ASYNC) != 0) {
+				steps = Stream.concat(steps, Stream.of(
+						Tuples.of("inputFusedAsyncErrorOutputFusedAsync", s -> {
+							s.shouldHitDropErrorHookAfterTerminate(false);
+							s.shouldHitDropNextHookAfterTerminate(false);
+							return this.inputFusedAsyncErrorOutputFusedAsync(s);
+						})
+				));
 			}
-			if (scenario.prefetch() != -1 || (fusion & Fuseable.ASYNC) != 0) {
-				verifier.accept(this.inputFusedAsyncErrorOutputFusedAsync(scenario));
-			}
+
+			return steps.map(tuple -> {
+				String subScenarioName = tuple.getT1();
+				Function<OperatorScenario<I, PI, O, PO>, StepVerifier.Step<O>> stepFunction = tuple.getT2();
+
+				OperatorScenario<I, PI, O, PO> subScenario = originalScenario.duplicate();
+				subScenario.description = subScenario.description() + "#" + subScenarioName;
+				prepareVerifier.accept(subScenario);
+
+				return toDynamicTest(subScenario, () -> {
+					StepVerifier.Step<O> step = stepFunction.apply(subScenario);
+					subScenario.verifier().accept(step);
+				});
+			});
 		});
 	}
 
@@ -1060,12 +1098,18 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			ThrowingConsumer<OperatorScenario<I, PI, O, PO>> executable
 	) {
 		return scenarios.stream().map(scenario -> {
-			return DynamicTest.dynamicTest(scenario.toString(), () -> {
-				if (scenario.stack != null) {
-					System.out.println("\tat " + scenario.stack.getStackTrace()[2]);
-				}
+			return toDynamicTest(scenario, () -> {
 				executable.accept(scenario);
 			});
+		});
+	}
+
+	private DynamicTest toDynamicTest(OperatorScenario<I, PI, O, PO> scenario, ThrowingRunnable runnable) {
+		return DynamicTest.dynamicTest(scenario.description(), () -> {
+			if (scenario.stack != null) {
+				System.out.println("\tat " + scenario.stack.getStackTrace()[2]);
+			}
+			runnable.run();
 		});
 	}
 
