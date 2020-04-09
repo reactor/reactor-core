@@ -41,6 +41,14 @@ final class MonoLiftFuseable<I, O> extends MonoOperator<I, O>
 	}
 
 	@Override
+	public String stepName() {
+		if (source instanceof Scannable) {
+			return Scannable.from(source).stepName();
+		}
+		return super.stepName();
+	}
+
+	@Override
 	public void subscribe(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input = lifter.apply(source, actual);
 

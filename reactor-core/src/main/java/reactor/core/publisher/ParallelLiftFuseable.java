@@ -66,6 +66,14 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 	}
 
 	@Override
+	public String stepName() {
+		if (source instanceof Scannable) {
+			return Scannable.from(source).stepName();
+		}
+		return Scannable.super.stepName();
+	}
+
+	@Override
 	protected void subscribe(CoreSubscriber<? super O>[] s) {
 		@SuppressWarnings("unchecked") CoreSubscriber<? super I>[] subscribers =
 				new CoreSubscriber[parallelism()];

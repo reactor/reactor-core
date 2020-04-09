@@ -557,6 +557,7 @@ public class ScannableTest {
 		}
 
 		assertThat(downstream).containsExactly(
+				"Flux.from ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:537)",
 				"Flux.map ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
 				"Flux.delayElements ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
 				"Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
@@ -564,7 +565,7 @@ public class ScannableTest {
 				"lambda");
 
 		assertThat(upstream).containsExactly(
-				"source(FluxSource)",
+				"Flux.from ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:537)",
 				"Flux.map ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
 				"Flux.delayElements ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
 				"Flux.filter ⇢ reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
@@ -617,7 +618,7 @@ public class ScannableTest {
 		assertThat(Scannable.from(flux).steps())
 				.containsExactly(
 						"source(FluxJust)",
-						"Flux.checkpoint ⇢ reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:614)",
+						"Flux.checkpoint ⇢ reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:615)",
 						"map"
 				);
 	}

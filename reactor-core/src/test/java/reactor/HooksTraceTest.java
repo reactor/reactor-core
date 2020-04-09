@@ -19,53 +19,50 @@ package reactor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
+
 import reactor.core.Scannable;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Operators;
-import reactor.core.publisher.ParallelFlux;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Stephane Maldini
  */
 public class HooksTraceTest {
 
-	@Test
-	public void testTrace() throws Exception {
-		Hooks.onOperatorDebug();
-		try {
-			Mono.fromCallable(() -> {
-				throw new RuntimeException();
-			})
-			    .map(d -> d)
-			    .block();
-		}
-		catch(Exception e){
-			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("MonoCallable"));
-			return;
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
-		throw new IllegalStateException();
+	@After
+	public void resetHooks() {
+		Hooks.resetOnEachOperator();
+		Hooks.resetOnLastOperator();
+		Hooks.resetOnOperatorDebug();
 	}
 
 	@Test
-	public void testTrace2() throws Exception {
+	public void testTrace() {
 		Hooks.onOperatorDebug();
 
-		try {
+		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() ->
+				Mono.fromCallable(() -> {
+					throw new RuntimeException("test");
+				})
+				    .map(d -> d)
+				    .block()
+		).satisfies(r -> assertThat(r.getSuppressed()[0]).hasMessageContaining("Assembly trace from producer [reactor.core.publisher.MonoCallable]"));
+	}
+
+	@Test
+	public void testTrace2() {
+		Hooks.onOperatorDebug();
+
+		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() ->
 			Mono.just(1)
 			    .map(d -> {
 				    throw new RuntimeException();
@@ -73,125 +70,89 @@ public class HooksTraceTest {
 			    .filter(d -> true)
 			    .doOnNext(d -> System.currentTimeMillis())
 			    .map(d -> d)
-			    .block();
-		}
-		catch(Exception e){
-			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map ⇢ reactor.HooksTraceTest.testTrace2(HooksTraceTest.java:"));
-			return;
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
-		throw new IllegalStateException();
+			    .block()
+		).satisfies(e -> assertThat(e.getSuppressed()[0])
+				.hasMessageContaining("HooksTraceTest.java:")
+				.hasMessageContaining("|_\tMono.map ⇢ reactor.HooksTraceTest.lambda$testTrace2$8(HooksTraceTest.java:")
+		);
 	}
 
 	@Test
-	public void testTrace3() throws Exception {
+	public void testTrace3() {
 		Hooks.onOperatorDebug();
-		try {
-			Flux.just(1)
-			    .map(d -> {
-				    throw new RuntimeException();
-			    })
-			    .share()
-			    .filter(d -> true)
-			    .doOnNext(d -> System.currentTimeMillis())
-			    .map(d -> d)
-			    .blockLast();
-		}
-		catch(Exception e){
-			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux.share ⇢ reactor.HooksTraceTest.testTrace3(HooksTraceTest.java:"));
-			return;
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
-		throw new IllegalStateException();
+		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() ->
+				Flux.just(1)
+				    .map(d -> {
+					    throw new RuntimeException();
+				    })
+				    .share()
+				    .filter(d -> true)
+				    .doOnNext(d -> System.currentTimeMillis())
+				    .map(d -> d)
+				    .blockLast()
+		).satisfies(e -> assertThat(e.getSuppressed()[0])
+				.hasMessageContaining("HooksTraceTest.java:")
+				.hasMessageContaining("|_\tFlux.share ⇢ reactor.HooksTraceTest.lambda$testTrace3$14(HooksTraceTest.java:")
+		);
 	}
 
 	@Test
-	public void testTraceDefer() throws Exception {
+	public void testTraceDefer() {
 		Hooks.onOperatorDebug();
 		try {
+			//avoid wrapping this in yet another lambda (eg. AssertJ assertThatExceptionOfType().isThrownBy)
+			//because in Java 8 at least it seems to cause the StackTraceElement to miss the method name: `lambda$null$xxx`
 			Mono.defer(() -> Mono.just(1)
-			                     .flatMap(d -> Mono.error(new RuntimeException()))
+			                     .flatMap(d -> Mono.error(new IllegalStateException("boom")))
 			                     .filter(d -> true)
 			                     .doOnNext(d -> System.currentTimeMillis())
 			                     .map(d -> d))
 			    .block();
+			fail("Expected IllegalStateException here");
 		}
-		catch(Exception e){
-			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.flatMap ⇢ reactor.HooksTraceTest.lambda$testTraceDefer$14(HooksTraceTest.java:"));
-			return;
+		catch (IllegalStateException ise) {
+			assertThat(ise.getSuppressed()[0])
+					.hasMessageContaining("HooksTraceTest.java:")
+					.hasMessageContaining("|_\tMono.flatMap ⇢ reactor.HooksTraceTest.lambda$testTraceDefer$20(HooksTraceTest.java:");
 		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
-		throw new IllegalStateException();
 	}
 
 	@Test
-	public void testTraceComposed() throws Exception {
+	public void testTraceComposed() {
 		Hooks.onOperatorDebug();
-		try {
-			Mono.just(1)
-			    .flatMap(d -> Mono.error(new RuntimeException()))
-			    .filter(d -> true)
-			    .doOnNext(d -> System.currentTimeMillis())
-			    .map(d -> d)
-			    .block();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage()
-			                                      .contains("HooksTraceTest.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage()
-			                                      .contains("|_\tMono.flatMap ⇢ reactor.HooksTraceTest.testTraceComposed(HooksTraceTest.java:"));
-			return;
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
-		throw new IllegalStateException();
+		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() ->
+				Mono.just(1)
+				    .flatMap(d -> Mono.error(new RuntimeException()))
+				    .filter(d -> true)
+				    .doOnNext(d -> System.currentTimeMillis())
+				    .map(d -> d)
+				    .block()
+		).satisfies(e -> assertThat(e.getSuppressed()[0])
+				.hasMessageContaining("HooksTraceTest.java:")
+				.hasMessageContaining("|_\tMono.flatMap ⇢ reactor.HooksTraceTest.lambda$testTraceComposed$25(HooksTraceTest.java:")
+		);
 	}
 
 	@Test
-	public void testTraceComposed2() throws Exception {
+	public void testTraceComposed2() {
 		Hooks.onOperatorDebug();
-		try {
-			Flux.just(1)
-			    .flatMap(d -> {
-				    throw new RuntimeException();
-			    })
-			    .filter(d -> true)
-			    .doOnNext(d -> System.currentTimeMillis())
-			    .map(d -> d)
-			    .blockLast();
-		}
-		catch(Exception e){
-			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("HooksTraceTest.java:"));
-			assertThat(e.getSuppressed()[0].getMessage()).contains("|_\tFlux.flatMap ⇢ reactor.HooksTraceTest.testTraceComposed2(HooksTraceTest.java:");
-			return;
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
-		throw new IllegalStateException();
+		assertThatExceptionOfType(RuntimeException.class).isThrownBy(() ->
+				Flux.just(1)
+				    .flatMap(d -> {
+					    throw new RuntimeException();
+				    })
+				    .filter(d -> true)
+				    .doOnNext(d -> System.currentTimeMillis())
+				    .map(d -> d)
+				    .blockLast()
+		).satisfies(e -> assertThat(e.getSuppressed()[0])
+				.hasMessageContaining("HooksTraceTest.java:")
+				.hasMessageContaining("|_\tFlux.flatMap ⇢ reactor.HooksTraceTest.lambda$testTraceComposed2$31(HooksTraceTest.java:")
+		);
 	}
 
 	@Test
-	public void testOnLastPublisher() throws Exception {
+	public void testOnLastPublisher() {
 		List<Publisher> l = new ArrayList<>();
 		Hooks.onLastOperator(p -> {
 			System.out.println(Scannable.from(p).parents().count());
@@ -206,196 +167,27 @@ public class HooksTraceTest {
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
 
-		Hooks.resetOnLastOperator();
-
 		assertThat(l).hasSize(5);
 	}
 
 	@Test
-	public void testMultiReceiver() throws Exception {
+	public void testMultiReceiver() {
 		Hooks.onOperatorDebug();
-		try {
+		ConnectableFlux<?> t = Flux.empty()
+		                           .then(Mono.defer(() -> {
+			                           throw new RuntimeException();
+		                           })).flux().publish();
 
-			ConnectableFlux<?> t = Flux.empty()
-			    .then(Mono.defer(() -> {
-				    throw new RuntimeException();
-			    })).flux().publish();
+		t.map(d -> d).subscribe(null,
+				e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+						("\t|_\tFlux.publish")));
 
-			t.map(d -> d).subscribe(null,
-					e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-							("\t|_\tFlux.publish")));
+		t.filter(d -> true).subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+				("\t\t|_\tFlux.publish")));
+		t.distinct().subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+				("\t\t\t|_\tFlux.publish")));
 
-			t.filter(d -> true).subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("\t\t|_\tFlux.publish")));
-			t.distinct().subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("\t\t\t|_\tFlux.publish")));
-
-			t.connect();
-		}
-		finally {
-			Hooks.resetOnOperatorDebug();
-		}
-	}
-
-	@Test
-	public void lastOperatorTest() {
-		Hooks.onLastOperator(Operators.lift((sc, sub) ->
-				new CoreSubscriber<Object>(){
-					@Override
-					public void onSubscribe(Subscription s) {
-						sub.onSubscribe(s);
-					}
-
-					@Override
-					public void onNext(Object o) {
-						sub.onNext(((Integer)o) + 1);
-					}
-
-					@Override
-					public void onError(Throwable t) {
-						sub.onError(t);
-					}
-
-					@Override
-					public void onComplete() {
-						sub.onComplete();
-					}
-				}));
-
-		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
-		            .expectNext(2, 3, 4)
-		            .verifyComplete();
-
-		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
-		            .expectNext(2)
-		            .verifyComplete();
-
-		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                        .log()
-		                        .log())
-		            .expectNext(2, 2)
-		            .verifyComplete();
-
-		Hooks.resetOnLastOperator();
-	}
-
-	@Test
-	public void lastOperatorFilterTest() {
-		Hooks.onLastOperator(Operators.lift(sc -> sc.tags()
-		                                            .anyMatch(t -> t.getT1()
-		                                                            .contains("metric")),
-				(sc, sub) -> new CoreSubscriber<Object>() {
-					@Override
-					public void onSubscribe(Subscription s) {
-						sub.onSubscribe(s);
-					}
-
-					@Override
-					public void onNext(Object o) {
-						sub.onNext(((Integer) o) + 1);
-					}
-
-					@Override
-					public void onError(Throwable t) {
-						sub.onError(t);
-					}
-
-					@Override
-					public void onComplete() {
-						sub.onComplete();
-					}
-				}));
-
-		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .tag("metric", "test")
-		                        .log()
-		                        .log())
-		            .expectNext(2, 3, 4)
-		            .verifyComplete();
-
-		StepVerifier.create(Mono.just(1)
-		                        .tag("metric", "test")
-		                        .log()
-		                        .log())
-		            .expectNext(2)
-		            .verifyComplete();
-
-		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                                .tag("metric", "test")
-		                                .log()
-		                                .log())
-		            .expectNext(2, 2)
-		            .verifyComplete();
-
-		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
-		            .expectNext(1, 2, 3)
-		            .verifyComplete();
-
-		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
-		            .expectNext(1)
-		            .verifyComplete();
-
-		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                                .log()
-		                                .log())
-		            .expectNext(1, 1)
-		            .verifyComplete();
-
-		Hooks.resetOnLastOperator();
-	}
-
-	@Test
-	public void eachOperatorTest() {
-		Hooks.onEachOperator(Operators.lift((sc, sub) ->
-				new CoreSubscriber<Object>(){
-					@Override
-					public void onSubscribe(Subscription s) {
-						sub.onSubscribe(s);
-					}
-
-					@Override
-					public void onNext(Object o) {
-						sub.onNext(((Integer)o) + 1);
-					}
-
-					@Override
-					public void onError(Throwable t) {
-						sub.onError(t);
-					}
-
-					@Override
-					public void onComplete() {
-						sub.onComplete();
-					}
-				}));
-
-		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
-		            .expectNext(4, 5, 6)
-		            .verifyComplete();
-
-		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
-		            .expectNext(4)
-		            .verifyComplete();
-
-		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                                .log()
-		                                .log())
-		            .expectNext(6, 6)
-		            .verifyComplete();
-
-		Hooks.resetOnEachOperator();
+		t.connect();
 	}
 
 }

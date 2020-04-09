@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,13 +27,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
+import org.junit.After;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Signal;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -47,6 +51,12 @@ import static org.junit.Assert.assertTrue;
  * @author Stephane Maldini
  */
 public class MonoTests {
+
+	@After
+	public void resetHooks() {
+		Hooks.resetOnEachOperator();
+		Hooks.resetOnLastOperator();
+	}
 
 	@Test
 	public void errorContinueOnMonoReduction() {
@@ -303,5 +313,157 @@ public class MonoTests {
 		String cacheHit3 = cached.block();
 		Assertions.assertThat(cacheHit3).as("cacheHit3").isEqualTo("GOOD1");
 		Assertions.assertThat(contextFillCount).as("cacheHit3").hasValue(4);
+	}
+
+	@Test
+	public void monoFromMonoDoesntCallAssemblyHook() {
+		final Mono<Integer> source = Mono.just(1);
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.from(source);
+		Assertions.assertThat(wrappedCount).hasValue(0);
+	}
+
+	@Test
+	public void monoFromFluxWrappingMonoDoesntCallAssemblyHook() {
+		final Flux<Integer> source = Flux.from(Mono.just(1).hide());
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.from(source);
+		Assertions.assertThat(wrappedCount).hasValue(0);
+	}
+
+	@Test
+	public void monoFromCallableFluxCallsAssemblyHook() {
+		final Flux<Integer> source = Flux.just(1);
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.from(source);
+		Assertions.assertThat(wrappedCount).hasValue(1);
+	}
+
+	@Test
+	public void monoFromFluxCallsAssemblyHook() {
+		final Flux<Integer> source = Flux.just(1).hide();
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.from(source);
+		Assertions.assertThat(wrappedCount).hasValue(1);
+	}
+
+	@Test
+	public void monoFromPublisherCallsAssemblyHook() {
+		final Publisher<Integer> source = TestPublisher.create();
+		Assertions.assertThat(source).isNotInstanceOf(Flux.class); //smoke test this is a Publisher
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.from(source);
+		Assertions.assertThat(wrappedCount).hasValue(1);
+	}
+
+	@Test
+	public void monoFromDirectMonoDoesntCallAssemblyHook() {
+		final Mono<Integer> source = Mono.just(1);
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.fromDirect(source);
+		Assertions.assertThat(wrappedCount).hasValue(0);
+	}
+
+	@Test
+	public void monoFromDirectFluxWrappingMonoDoesntCallAssemblyHook() {
+		final Flux<Integer> source = Flux.from(Mono.just(1).hide());
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.fromDirect(source);
+		Assertions.assertThat(wrappedCount).hasValue(0);
+	}
+
+	@Test
+	public void monoFromDirectCallableFluxCallsAssemblyHook() {
+		final Flux<Integer> source = Flux.just(1);
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.fromDirect(source);
+		Assertions.assertThat(wrappedCount).hasValue(1);
+	}
+
+	@Test
+	public void monoFromDirectFluxCallsAssemblyHook() {
+		final Flux<Integer> source = Flux.just(1).hide();
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.fromDirect(source);
+		Assertions.assertThat(wrappedCount).hasValue(1);
+	}
+
+	@Test
+	public void monoFromDirectPublisherCallsAssemblyHook() {
+		final Publisher<Integer> source = TestPublisher.create();
+		Assertions.assertThat(source).isNotInstanceOf(Flux.class); //smoke test this is a Publisher
+
+		//set the hook AFTER the original operators have been invoked (since they trigger assembly themselves)
+		AtomicInteger wrappedCount = new AtomicInteger();
+		Hooks.onEachOperator(p -> {
+			wrappedCount.incrementAndGet();
+			return p;
+		});
+
+		Mono.fromDirect(source);
+		Assertions.assertThat(wrappedCount).hasValue(1);
 	}
 }
