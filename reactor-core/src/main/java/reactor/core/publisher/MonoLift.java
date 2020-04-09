@@ -20,6 +20,7 @@ import java.util.function.BiFunction;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * @author Stephane Maldini
@@ -43,5 +44,13 @@ final class MonoLift<I, O> extends InternalMonoOperator<I, O> {
 		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
 
 		return input;
+	}
+
+	@Override
+	public String stepName() {
+		if (source instanceof Scannable) {
+			return Scannable.from(source).stepName();
+		}
+		return super.stepName();
 	}
 }
