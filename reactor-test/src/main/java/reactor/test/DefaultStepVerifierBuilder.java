@@ -1131,9 +1131,9 @@ final class DefaultStepVerifierBuilder<T>
 							subscription);
 				}
 				else if (!Operators.canBeIgnored(subscription)) {
-					setFailure(null, "an unexpected Subscription has been received: %s; actual: ",
+					setFailure(null, "an unexpected Subscription has been received: %s; actual: %s",
 							subscription,
-							this);
+							this.get());
 				}
 			}
 		}
