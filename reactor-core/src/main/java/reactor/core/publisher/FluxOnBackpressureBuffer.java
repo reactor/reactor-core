@@ -235,7 +235,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 					T t = q.poll();
 					boolean empty = t == null;
 
-					if (checkTerminated(d, empty, a)) {
+					if (checkTerminated(d, empty, a, t)) {
 						return;
 					}
 
@@ -249,7 +249,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 				}
 
 				if (r == e) {
-					if (checkTerminated(done, q.isEmpty(), a)) {
+					if (checkTerminated(done, q.isEmpty(), a, null)) {
 						return;
 					}
 				}
@@ -317,7 +317,14 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 
 				if (!enabledFusion) {
 					if (WIP.getAndIncrement(this) == 0) {
-						Operators.onDiscardQueueWithClear(queue, ctx, null);
+						int m = 1;
+						for (;;) {
+							Operators.onDiscardQueueWithClear(queue, ctx, null);
+							m = WIP.addAndGet(this, -m);
+							if (m == 0) {
+								return;
+							}
+						}
 					}
 				}
 			}
@@ -358,9 +365,10 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 			return actual;
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, @Nullable T v) {
 			if (cancelled) {
 				s.cancel();
+				Operators.onDiscard(v, ctx);
 				Operators.onDiscardQueueWithClear(queue, ctx, null);
 				return true;
 			}

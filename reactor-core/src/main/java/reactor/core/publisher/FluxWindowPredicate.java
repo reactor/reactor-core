@@ -639,7 +639,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 					T t = q.poll();
 					boolean empty = t == null;
 
-					if (checkTerminated(d, empty, a, q)) {
+					if (checkTerminated(d, empty, a, q, t)) {
 						return;
 					}
 
@@ -653,7 +653,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 				}
 
 				if (r == e) {
-					if (checkTerminated(done, q.isEmpty(), a, q)) {
+					if (checkTerminated(done, q.isEmpty(), a, q, null)) {
 						return;
 					}
 				}
@@ -730,8 +730,9 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q, @Nullable T t) {
 			if (cancelled) {
+				Operators.onDiscard(t, ctx);
 				Operators.onDiscardQueueWithClear(q, ctx, null);
 				ctx = Context.empty();
 				actual = null;
@@ -757,6 +758,7 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 			Subscriber<? super T> a = actual;
 
 			if (!queue.offer(t)) {
+				Operators.onDiscard(t, ctx);
 				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
 						ctx));
 				return;
@@ -837,7 +839,16 @@ final class FluxWindowPredicate<T> extends InternalFluxOperator<T, Flux<T>>
 
 			if (!enableOperatorFusion) {
 				if (WIP.getAndIncrement(this) == 0) {
-					Operators.onDiscardQueueWithClear(queue, ctx, null);
+					int m = 1;
+					for (;;) {
+						Operators.onDiscardQueueWithClear(queue, ctx, null);
+
+						m = WIP.addAndGet(this, -m);
+
+						if (m == 0) {
+							return;
+						}
+					}
 				}
 			}
 

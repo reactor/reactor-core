@@ -229,7 +229,7 @@ public final class UnicastProcessor<T>
 				T t = q.poll();
 				boolean empty = t == null;
 
-				if (checkTerminated(d, empty, a, q)) {
+				if (checkTerminated(d, empty, a, q, t)) {
 					return;
 				}
 
@@ -243,7 +243,7 @@ public final class UnicastProcessor<T>
 			}
 
 			if (r == e) {
-				if (checkTerminated(done, q.isEmpty(), a, q)) {
+				if (checkTerminated(done, q.isEmpty(), a, q, null)) {
 					return;
 				}
 			}
@@ -321,8 +321,9 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	boolean checkTerminated(boolean d, boolean empty, CoreSubscriber<? super T> a, Queue<T> q) {
+	boolean checkTerminated(boolean d, boolean empty, CoreSubscriber<? super T> a, Queue<T> q, @Nullable T t) {
 		if (cancelled) {
+			Operators.onDiscard(t, a.currentContext());
 			Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
 			actual = null;
 			return true;
@@ -371,7 +372,7 @@ public final class UnicastProcessor<T>
 		if (!queue.offer(t)) {
 			Throwable ex = Operators.onOperatorError(null,
 					Exceptions.failWithOverflow(), t, currentContext());
-			if(onOverflow != null) {
+			if (onOverflow != null) {
 				try {
 					onOverflow.accept(t);
 				}
@@ -380,7 +381,8 @@ public final class UnicastProcessor<T>
 					ex.initCause(e);
 				}
 			}
-			onError(Operators.onOperatorError(null, ex, t, currentContext()));
+			Operators.onDiscard(t, currentContext());
+			onError(ex);
 			return;
 		}
 		drain();
@@ -450,7 +452,17 @@ public final class UnicastProcessor<T>
 		doTerminate();
 
 		if (WIP.getAndIncrement(this) == 0) {
-			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+			int m = 1;
+
+			// possible racing between offer and clear, so we need to ensure all offered elements are drained
+			for (;;) {
+				Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+				m = WIP.addAndGet(this, -m);
+
+				if (m == 0) {
+					break;
+				}
+			}
 			actual = null;
 		}
 	}
