@@ -203,6 +203,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (Attr.BUFFERED == key) return queue.size();
+		if (Attr.PREFETCH == key) return Integer.MAX_VALUE;
 		return super.scanUnsafe(key);
 	}
 
@@ -310,6 +311,14 @@ public final class UnicastProcessor<T>
 					drainFused(a);
 				} else {
 					drainRegular(a);
+				}
+				return;
+			}
+
+			if (cancelled) {
+				T v;
+				while ((v = queue.poll()) != null) {
+					Operators.onNextDropped(v, Context.empty());
 				}
 				return;
 			}
