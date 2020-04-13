@@ -1024,20 +1024,20 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void onNext(R t) {
-			if (done) {
-				Operators.onNextDropped(t, parent.currentContext());
-				return;
-			}
-
-			if (s == Operators.cancelledSubscription()) {
-				Operators.onDiscard(t, parent.currentContext());
-				return;
-			}
-
 			if (sourceMode == Fuseable.ASYNC) {
 				parent.drain();
 			}
 			else {
+				if (done) {
+					Operators.onNextDropped(t, parent.currentContext());
+					return;
+				}
+
+				if (s == Operators.cancelledSubscription()) {
+					Operators.onDiscard(t, parent.currentContext());
+					return;
+				}
+
 				parent.tryEmit(this, t);
 			}
 		}
