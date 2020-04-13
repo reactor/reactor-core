@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Spliterator;
@@ -30,6 +31,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import com.sun.org.apache.bcel.internal.generic.RET;
+import org.jetbrains.annotations.NotNull;
+import org.omg.CORBA.PUBLIC_MEMBER;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -1480,6 +1484,107 @@ public abstract class Operators {
 		}
 	};
 	//
+
+	static class DiscardingQueue<T> implements Queue<T> {
+		String NOT_SUPPORTED_MESSAGE = "Although DiscardingQueue extends Queue it is purely internal" +
+				" and only guarantees support for offer/poll/clear/size/isEmpty." +
+				" Instances shouldn't be used/exposed as Queue outside of Reactor operators.";
+
+		Context context() {
+			return Context.empty();
+		}
+
+		@Override
+		public boolean offer(T t) {
+			Operators.onDiscard(t, context());
+			return true;
+		}
+
+		@Override
+		public boolean add(T t) {
+			return offer(t);
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			return false;
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public Object[] toArray() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@NotNull
+		@Override
+		public <T1> T1[] toArray(@NotNull T1[] a) {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public boolean remove(Object o) {
+			return false;
+		}
+
+		@Override
+		public boolean containsAll(@NotNull Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public boolean addAll(@NotNull Collection<? extends T> c) {
+			return false;
+		}
+
+		@Override
+		public boolean removeAll(@NotNull Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public boolean retainAll(@NotNull Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+		}
+
+		@Override
+		public T remove() {
+			throw new NoSuchElementException();
+		}
+
+		@Override
+		public T poll() {
+			return null;
+		}
+
+		@Override
+		public T element() {
+			throw new UnsupportedOperationException(NOT_SUPPORTED_MESSAGE);
+		}
+
+		@Override
+		public T peek() {
+			return null;
+		}
+	}
 
 	final static class CancelledSubscription implements Subscription, Scannable {
 		static final CancelledSubscription INSTANCE = new CancelledSubscription();
