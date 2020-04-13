@@ -57,23 +57,22 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
-//		CoreSubscriber<T> serial = s;
+		CoreSubscriber<T> serial = Operators.serialize(s);
 
 		RetryWhenMainSubscriber<T> main =
-				new RetryWhenMainSubscriber<>(s, signaller, source);
+				new RetryWhenMainSubscriber<>(serial, signaller, source);
 
 		other.main = main;
+		serial.onSubscribe(main);
 
 		Publisher<?> p;
 		try {
 			p = Objects.requireNonNull(whenSourceFactory.generateCompanion(other), "The whenSourceFactory returned a null Publisher");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e, s.currentContext()));
+			s.onError(Operators.onOperatorError(e, s.currentContext()));
 			return;
 		}
-
-		s.onSubscribe(main);
 		p.subscribe(other);
 
 		if (!main.cancelled) {
