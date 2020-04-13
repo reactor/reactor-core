@@ -29,7 +29,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         Hooks.onNextDropped(Tracked::safeRelease);
         Scheduler scheduler = Schedulers.newParallel("testScheduler", subscriptionsNumber());
         scheduler.start();
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             int[] index = new int[] { 0 };
             FluxSink<Tracked<?>> sink[] = new FluxSink[subscriptionsNumber()];
             Publisher<Tracked<?>> source = transform(Flux.create(s -> {
@@ -70,7 +70,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             FluxSink<Tracked<?>> sink[] = new FluxSink[1];
             Publisher<Tracked<?>> source = transform(Flux.create(s -> {
                 sink[0] = s;
@@ -106,7 +106,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             FluxSink<Tracked<?>> sink[] = new FluxSink[1];
             Publisher<Tracked<?>> source = transform(Flux.create(s -> {
                 sink[0] = s;
@@ -140,7 +140,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             FluxSink<Tracked<?>> sink[] = new FluxSink[1];
             Publisher<Tracked<?>> source = transform(Flux.create(s -> {
                 sink[0] = s;
