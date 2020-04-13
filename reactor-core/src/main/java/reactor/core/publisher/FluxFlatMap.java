@@ -210,7 +210,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		return false;
 	}
 
-	static final class FlatMapMain<T, R> extends FlatMapTracker<FlatMapInner<R>>
+	static final class FlatMapMain<T, R> extends FlatMapTracker<FlatMapInner<R>, R>
 			implements InnerOperator<T, R> {
 
 		final boolean                                               delayError;
@@ -307,6 +307,11 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
+		@Override
+		Context context() {
+			return currentContext();
+		}
+
 		@SuppressWarnings("unchecked")
 		@Override
 		FlatMapInner<R>[] empty() {
@@ -350,11 +355,17 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 				if (WIP.getAndIncrement(this) == 0) {
 					Queue<R> sq = this.scalarQueue;
+					FlatMapInner<R>[] as = this.array;
 					this.scalarQueue = null;
 					s.cancel();
 					unsubscribe();
 					int m = 1;
 					for (;;) {
+						for (FlatMapInner<R> fmi : as) {
+							if (fmi != null) {
+								Operators.onDiscardQueueWithClear(fmi.queue, ctx, null);
+							}
+						}
 						Operators.onDiscardQueueWithClear(sq, ctx, null);
 						m = WIP.addAndGet(this, -m);
 						if (m == 0) {
@@ -425,8 +436,10 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 			}
 			else {
 				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch);
-				if (add(inner)) {
+				if (addEntry(inner)) {
 					p.subscribe(inner);
+				} else {
+					Operators.onDiscard(t, actual.currentContext());
 				}
 			}
 
@@ -547,11 +560,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					inner.request(1);
 				}
 				else {
-					if (q == null) {
-						q = getOrCreateInnerQueue(inner);
-					}
-
-					if (!q.offer(v) && failOverflow(v, inner)){
+					if (!getOrCreateInnerQueueAndOffer(inner, v) && failOverflow(v, inner)){
 						inner.done = true;
 						drainLoop();
 						return;
@@ -564,9 +573,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				drainLoop();
 			}
 			else {
-				Queue<R> q = getOrCreateInnerQueue(inner);
-
-				if (!q.offer(v) && failOverflow(v, inner)) {
+				if (!getOrCreateInnerQueueAndOffer(inner, v) && failOverflow(v, inner)) {
 					inner.done = true;
 				}
 				drain();
@@ -595,9 +602,9 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 				Queue<R> sq = scalarQueue;
 
-				boolean noSources = isEmpty();
+				boolean noSources = !hasEntries();
 
-				if (checkTerminated(d, noSources && (sq == null || sq.isEmpty()), a, null)) {
+				if (checkTerminated(d, noSources && (sq == null || sq.isEmpty()), a, as, null)) {
 					return;
 				}
 
@@ -616,7 +623,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 						boolean empty = v == null;
 
-						if (checkTerminated(d, false, a, v)) {
+						if (checkTerminated(d, false, a, as, v)) {
 							return;
 						}
 
@@ -648,6 +655,11 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
+							for (FlatMapInner<R> fmi : as) {
+								if (fmi != null) {
+									Operators.onDiscardQueueWithClear(fmi.queue, ctx, null);
+								}
+							}
 							Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
 							scalarQueue = null;
 							s.cancel();
@@ -660,7 +672,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 							d = inner.done;
 							Queue<R> q = inner.queue;
 							if (d && q == null) {
-								remove(inner.index);
+								removeEntry(inner.index);
 								again = true;
 								replenishMain++;
 							}
@@ -686,12 +698,12 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 									boolean empty = v == null;
 
-									if (checkTerminated(d, false, a, v)) {
+									if (checkTerminated(d, false, a, as, v)) {
 										return;
 									}
 
 									if (d && empty) {
-										remove(inner.index);
+										removeEntry(inner.index);
 										again = true;
 										replenishMain++;
 										break;
@@ -710,7 +722,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 									d = inner.done;
 									boolean empty = q.isEmpty();
 									if (d && empty) {
-										remove(inner.index);
+										removeEntry(inner.index);
 										again = true;
 										replenishMain++;
 									}
@@ -749,6 +761,11 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
+							for (FlatMapInner<R> fmi : as) {
+								if (fmi != null) {
+									Operators.onDiscardQueueWithClear(fmi.queue, ctx, null);
+								}
+							}
 							Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
 							scalarQueue = null;
 							s.cancel();
@@ -771,7 +788,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 						}
 
 						if (d && empty) {
-							remove(inner.index);
+							removeEntry(inner.index);
 							again = true;
 							replenishMain++;
 						}
@@ -793,9 +810,14 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable R v) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, FlatMapInner<R>[] as, @Nullable R v) {
 			if (cancelled) {
 				Operators.onDiscard(v, ctx);
+				for (FlatMapInner<R> fmi : as) {
+					if (fmi != null) {
+						Operators.onDiscardQueueWithClear(fmi.queue, ctx, null);
+					}
+				}
 				Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
 				scalarQueue = null;
 				s.cancel();
@@ -907,13 +929,33 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 			drainLoop();
 		}
 
-		Queue<R> getOrCreateInnerQueue(FlatMapInner<R> inner) {
+		boolean getOrCreateInnerQueueAndOffer(FlatMapInner<R> inner, R value) {
 			Queue<R> q = inner.queue;
 			if (q == null) {
-				q = innerQueueSupplier.get();
-				inner.queue = q;
+				Queue<R> nq = innerQueueSupplier.get();
+				// assume we have space so false is unlikely here
+				nq.offer(value);
+				for (;;) {
+					q = inner.queue;
+
+					if (q == this) {
+						Operators.onDiscardQueueWithClear(nq, currentContext(), null);
+						return true;
+					}
+
+					if (FlatMapInner.QUEUE.compareAndSet(inner, q, nq)) {
+						return true;
+					}
+				}
 			}
-			return q;
+
+			boolean isOffered = q.offer(value);
+
+			if (inner.queue == this) {
+				Operators.onDiscardQueueWithClear(q, currentContext(), null);
+			}
+
+			return isOffered;
 		}
 
 	}
@@ -934,9 +976,14 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 						Subscription.class,
 						"s");
 
-		long produced;
-
 		volatile Queue<R> queue;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<FlatMapInner, Queue> QUEUE =
+				AtomicReferenceFieldUpdater.newUpdater(FlatMapInner.class,
+						Queue.class,
+						"queue");
+
+		long produced;
 
 		volatile boolean done;
 
@@ -980,6 +1027,16 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 		@Override
 		public void onNext(R t) {
+			if (done) {
+				Operators.onNextDropped(t, parent.currentContext());
+				return;
+			}
+
+			if (s == Operators.cancelledSubscription()) {
+				Operators.onDiscard(t, parent.currentContext());
+				return;
+			}
+
 			if (sourceMode == Fuseable.ASYNC) {
 				parent.drain();
 			}
@@ -1021,6 +1078,8 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		public void cancel() {
 			Operators.terminate(S, this);
+			@SuppressWarnings("unchecked")
+			Queue<R> queue = QUEUE.getAndSet(this, parent);
 			Operators.onDiscardQueueWithClear(queue, parent.ctx, null);
 		}
 
@@ -1039,7 +1098,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 	}
 }
 
-abstract class FlatMapTracker<T> {
+abstract class FlatMapTracker<T, R> extends Operators.DiscardingQueue<R> {
 
 	volatile T[] array = empty();
 
@@ -1089,7 +1148,7 @@ abstract class FlatMapTracker<T> {
 		return array;
 	}
 
-	final boolean add(T entry) {
+	final boolean addEntry(T entry) {
 		T[] a = array;
 		if (a == terminated()) {
 			return false;
@@ -1128,7 +1187,7 @@ abstract class FlatMapTracker<T> {
 		return true;
 	}
 
-	final void remove(int index) {
+	final void removeEntry(int index) {
 		synchronized (this) {
 			T[] a = array;
 			if (a != terminated()) {
@@ -1160,8 +1219,8 @@ abstract class FlatMapTracker<T> {
 		producerIndex = pi + 1;
 	}
 
-	final boolean isEmpty() {
-		return size == 0;
+	final boolean hasEntries() {
+		return size != 0;
 	}
 }
 
