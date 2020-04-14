@@ -230,18 +230,17 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	@TestFactory
 	public final Stream<DynamicTest> errorOnSubscribe() {
 		defaultEmpty = true;
-		defaultScenario.producerError(new RuntimeException("test"));
+		String exceptionMessage = "test";
 
 		Consumer<OperatorScenario<I, PI, O, PO>> prepareVerifier = scenario -> {
 			if (scenario.verifier() != null) {
 				return;
 			}
 
-			String m = exception().getMessage();
 			scenario.verifier = step -> {
 				StepVerifier.Assertions assertions =
 						scenario.applySteps(step)
-						        .expectErrorMessage(m)
+						        .expectErrorMessage(exceptionMessage)
 						        .verifyThenAssertThat();
 
 				if (scenario.shouldHitDropErrorHookAfterTerminate()) {
@@ -309,6 +308,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 				prepareVerifier.accept(subScenario);
 
 				return toDynamicTest(subScenario, () -> {
+					defaultScenario.producerError(new RuntimeException(exceptionMessage));
 					StepVerifier.Step<O> step = stepFunction.apply(subScenario);
 					subScenario.verifier().accept(step);
 				});
