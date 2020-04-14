@@ -174,12 +174,15 @@ public abstract class Operators {
 	}
 
 	/**
-	 * TODO
-	 * @param subscription
-	 * @return
+	 * Check whether the provided {@link Subscription} is the one used to satisfy Spec's §1.9 rule
+	 * before signalling an error.
+	 *
+	 * @param subscription the subscription to test.
+	 * @return true if passed subscription is a subscription created in {{@link #error(Subscriber, Throwable)}}
+	 * or {@link #reportThrowInSubscribe(CoreSubscriber, Throwable)}.
 	 */
-	public static boolean canBeIgnored(Subscription subscription) {
-		return subscription instanceof ErrorInSubscribeSubscription;
+	public static boolean isOnErrorSubscription(Subscription subscription) {
+		return subscription instanceof OnErrorSubscription;
 	}
 
 	/**
@@ -190,13 +193,13 @@ public abstract class Operators {
 	 * @param e the actual error
 	 */
 	public static void error(Subscriber<?> s, Throwable e) {
-		s.onSubscribe(EmptySubscription.INSTANCE);
+		s.onSubscribe(OnErrorSubscription.INSTANCE);
 		s.onError(e);
 	}
 
 	public static void reportThrowInSubscribe(CoreSubscriber<?> subscriber, Throwable e) {
 		try {
-			subscriber.onSubscribe(ErrorInSubscribeSubscription.INSTANCE);
+			subscriber.onSubscribe(OnErrorSubscription.INSTANCE);
 		}
 		catch (Throwable onSubscribeError) {
 			Exceptions.throwIfFatal(onSubscribeError);
@@ -1553,8 +1556,13 @@ public abstract class Operators {
 
 	}
 
-	enum ErrorInSubscribeSubscription implements Subscription {
+	enum OnErrorSubscription implements Subscription, QueueSubscription<Object> {
 		INSTANCE;
+
+		@Override
+		public Object poll() {
+			return null;
+		}
 
 		@Override
 		public void request(long l) {
@@ -1564,6 +1572,26 @@ public abstract class Operators {
 		@Override
 		public void cancel() {
 			// deliberately no op
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return NONE;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public void clear() {
+
 		}
 	}
 
