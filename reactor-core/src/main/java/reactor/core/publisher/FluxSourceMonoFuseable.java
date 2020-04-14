@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 
 /**
  * @author Stephane Maldini
@@ -35,5 +36,14 @@ final class FluxSourceMonoFuseable<I> extends FluxFromMonoOperator<I, I> impleme
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		return actual;
+	}
+
+
+	@Override
+	public String stepName() {
+		if (source instanceof Scannable) {
+			return "FluxFromMono(" + Scannable.from(source).stepName() + ")";
+		}
+		return "FluxFromMono(" + source.toString() + ")";
 	}
 }

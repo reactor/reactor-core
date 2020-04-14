@@ -42,6 +42,31 @@ import reactor.util.context.Context;
  */
 public abstract class Hooks {
 
+	/**
+	 * Utility method to convert a {@link Publisher} to a {@link Flux} without applying {@link Hooks}.
+	 *
+	 * @param publisher the {@link Publisher} to convert to a {@link Flux}
+	 * @param <T> the type of data emitted by the {@link Publisher}
+	 * @return the {@link Publisher} wrapped as a {@link Flux}, or the original if it was a {@link Flux}
+	 */
+	public static <T> Flux<T> convertToFluxBypassingHooks(Publisher<T> publisher) {
+		return Flux.wrap(publisher);
+	}
+
+	/**
+	 * Utility method to convert a {@link Publisher} to a {@link Mono} without applying {@link Hooks}.
+	 * Can optionally perform a "direct" (or unsafe) conversion when the caller is certain the {@link Publisher}
+	 * has {@link Mono} semantics.
+	 *
+	 * @param publisher the {@link Publisher} to convert to a {@link Mono}
+	 * @param enforceMonoContract {@code true} to ensure {@link Mono} semantics (by cancelling on first onNext if source isn't already a {@link Mono}),
+	 * {@code false} to perform a direct conversion (see {@link Mono#fromDirect(Publisher)}).
+	 * @param <T> the type of data emitted by the {@link Publisher}
+	 * @return the {@link Publisher} wrapped as a {@link Mono}, or the original if it was a {@link Mono}
+	 */
+	public static <T> Mono<T> convertToMonoBypassingHooks(Publisher<T> publisher, boolean enforceMonoContract) {
+		return Mono.wrap(publisher, enforceMonoContract);
+	}
 
 
 	/**
@@ -61,6 +86,7 @@ public abstract class Hooks {
 	 * This pointcut function cannot make use of {@link Flux}, {@link Mono} or
 	 * {@link ParallelFlux} APIs as it would lead to a recursive call to the hook: the
 	 * operator calls would effectively invoke onEachOperator from onEachOperator.
+	 * See {@link #convertToFluxBypassingHooks(Publisher)} and {@link #convertToMonoBypassingHooks(Publisher, boolean)}.
 	 *
 	 * @param onEachOperator the sub-hook: a function to intercept each operation call
 	 * (e.g. {@code map (fn)} and {@code map(fn2)} in {@code flux.map(fn).map(fn2).subscribe()})
@@ -92,6 +118,7 @@ public abstract class Hooks {
 	 * This pointcut function cannot make use of {@link Flux}, {@link Mono} or
 	 * {@link ParallelFlux} APIs as it would lead to a recursive call to the hook: the
 	 * operator calls would effectively invoke onEachOperator from onEachOperator.
+	 * See {@link #convertToFluxBypassingHooks(Publisher)} and {@link #convertToMonoBypassingHooks(Publisher, boolean)}.
 	 *
 	 * @param key the key for the sub-hook to add/replace
 	 * @param onEachOperator the sub-hook: a function to intercept each operation call
@@ -180,6 +207,7 @@ public abstract class Hooks {
 	 * This pointcut function cannot make use of {@link Flux}, {@link Mono} or
 	 * {@link ParallelFlux} APIs as it would lead to a recursive call to the hook: the
 	 * operator calls would effectively invoke onEachOperator from onEachOperator.
+	 * See {@link #convertToFluxBypassingHooks(Publisher)} and {@link #convertToMonoBypassingHooks(Publisher, boolean)}.
 	 *
 	 * @param onLastOperator the sub-hook: a function to intercept last operation call
 	 * (e.g. {@code map(fn2)} in {@code flux.map(fn).map(fn2).subscribe()})
@@ -211,6 +239,7 @@ public abstract class Hooks {
 	 * This pointcut function cannot make use of {@link Flux}, {@link Mono} or
 	 * {@link ParallelFlux} APIs as it would lead to a recursive call to the hook: the
 	 * operator calls would effectively invoke onEachOperator from onEachOperator.
+	 * See {@link #convertToFluxBypassingHooks(Publisher)} and {@link #convertToMonoBypassingHooks(Publisher, boolean)}.
 	 *
 	 * @param key the key for the sub-hook to add/replace
 	 * @param onLastOperator the sub-hook: a function to intercept last operation call

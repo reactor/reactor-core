@@ -23,8 +23,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
@@ -551,18 +552,19 @@ public class ScannableTest {
 		thisOperator.steps().forEach(upstream::add);
 
 		assertThat(downstream).containsExactly(
-				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:541)",
-				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
-				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
-				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.from ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:537)",
+				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
+				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
+				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)",
 				"lambda");
 
 		assertThat(upstream).containsExactly(
-				"source(FluxSource)",
-				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:541)",
-				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
-				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
-				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)");
+				"Flux.from ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:537)",
+				"Flux.map ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:542)",
+				"Flux.delayElements ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:543)",
+				"Flux.filter ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:544)",
+				"Flux.reduce ⇢ at reactor.core.ScannableTest.operatorChainWithDebugMode(ScannableTest.java:545)");
 	}
 
 	@Test
@@ -611,7 +613,7 @@ public class ScannableTest {
 		assertThat(Scannable.from(flux).steps())
 				.containsExactly(
 						"source(FluxJust)",
-						"Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:608)",
+						"Flux.checkpoint ⇢ at reactor.core.ScannableTest.operatorChainWithCheckpoint(ScannableTest.java:610)",
 						"map"
 				);
 	}

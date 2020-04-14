@@ -59,6 +59,14 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 	}
 
 	@Override
+	public String stepName() {
+		if (source instanceof Scannable) {
+			return Scannable.from(source).stepName();
+		}
+		return super.stepName();
+	}
+
+	@Override
 	public final CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);

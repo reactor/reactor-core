@@ -37,6 +37,14 @@ final class FluxLift<I, O> extends InternalFluxOperator<I, O> {
 	}
 
 	@Override
+	public String stepName() {
+		if (source instanceof Scannable) {
+			return Scannable.from(source).stepName();
+		}
+		return super.stepName();
+	}
+
+	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);
