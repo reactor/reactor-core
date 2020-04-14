@@ -65,7 +65,7 @@ final class ConnectableLiftFuseable<I, O> extends InternalConnectableFluxOperato
 		if (source instanceof Scannable) {
 			return Scannable.from(source).stepName();
 		}
-		return Scannable.super.stepName();
+		return super.stepName();
 	}
 
 	@Override
