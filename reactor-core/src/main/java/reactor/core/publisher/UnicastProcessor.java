@@ -213,7 +213,7 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drainRegular(Subscriber<? super T> a) {
+	void drainRegular(CoreSubscriber<? super T> a) {
 		int missed = 1;
 
 		final Queue<T> q = queue;
@@ -229,7 +229,7 @@ public final class UnicastProcessor<T>
 				T t = q.poll();
 				boolean empty = t == null;
 
-				if (checkTerminated(d, empty, a, q)) {
+				if (checkTerminated(d, empty, a, q, t)) {
 					return;
 				}
 
@@ -243,7 +243,7 @@ public final class UnicastProcessor<T>
 			}
 
 			if (r == e) {
-				if (checkTerminated(done, q.isEmpty(), a, q)) {
+				if (checkTerminated(done, q.isEmpty(), a, q, null)) {
 					return;
 				}
 			}
@@ -259,7 +259,7 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drainFused(Subscriber<? super T> a) {
+	void drainFused(CoreSubscriber<? super T> a) {
 		int missed = 1;
 
 		final Queue<T> q = queue;
@@ -267,7 +267,7 @@ public final class UnicastProcessor<T>
 		for (;;) {
 
 			if (cancelled) {
-				q.clear();
+				Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
 				actual = null;
 				return;
 			}
@@ -303,7 +303,7 @@ public final class UnicastProcessor<T>
 		int missed = 1;
 
 		for (;;) {
-			Subscriber<? super T> a = actual;
+			CoreSubscriber<? super T> a = actual;
 			if (a != null) {
 
 				if (outputFused) {
@@ -321,9 +321,10 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, Queue<T> q) {
+	boolean checkTerminated(boolean d, boolean empty, CoreSubscriber<? super T> a, Queue<T> q, @Nullable T t) {
 		if (cancelled) {
-			q.clear();
+			Operators.onDiscard(t, a.currentContext());
+			Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
 			actual = null;
 			return true;
 		}
@@ -371,7 +372,7 @@ public final class UnicastProcessor<T>
 		if (!queue.offer(t)) {
 			Throwable ex = Operators.onOperatorError(null,
 					Exceptions.failWithOverflow(), t, currentContext());
-			if(onOverflow != null) {
+			if (onOverflow != null) {
 				try {
 					onOverflow.accept(t);
 				}
@@ -380,7 +381,8 @@ public final class UnicastProcessor<T>
 					ex.initCause(e);
 				}
 			}
-			onError(Operators.onOperatorError(null, ex, t, currentContext()));
+			Operators.onDiscard(t, currentContext());
+			onError(ex);
 			return;
 		}
 		drain();
@@ -449,11 +451,19 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		if (!outputFused) {
-			if (WIP.getAndIncrement(this) == 0) {
-				queue.clear();
-				actual = null;
+		if (WIP.getAndIncrement(this) == 0) {
+			int m = 1;
+
+			// possible racing between offer and clear, so we need to ensure all offered elements are drained
+			for (;;) {
+				Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+				m = WIP.addAndGet(this, -m);
+
+				if (m == 0) {
+					break;
+				}
 			}
+			actual = null;
 		}
 	}
 
@@ -475,7 +485,7 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void clear() {
-		queue.clear();
+		Operators.onDiscardQueueWithClear(queue, currentContext(), null);
 	}
 
 	@Override

@@ -349,10 +349,18 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				cancelled = true;
 
 				if (WIP.getAndIncrement(this) == 0) {
-					Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
-					scalarQueue = null;
+					Queue<R> sq = this.scalarQueue;
+					this.scalarQueue = null;
 					s.cancel();
 					unsubscribe();
+					int m = 1;
+					for (;;) {
+						Operators.onDiscardQueueWithClear(sq, ctx, null);
+						m = WIP.addAndGet(this, -m);
+						if (m == 0) {
+							return;
+						}
+					}
 				}
 			}
 		}
@@ -382,6 +390,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
+				Context ctx = this.ctx;
 				Throwable e_ = Operators.onNextError(t, e, ctx, s);
 				Operators.onDiscard(t, ctx);
 				if (e_ != null) {
@@ -588,7 +597,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 				boolean noSources = isEmpty();
 
-				if (checkTerminated(d, noSources && (sq == null || sq.isEmpty()), a)) {
+				if (checkTerminated(d, noSources && (sq == null || sq.isEmpty()), a, null)) {
 					return;
 				}
 
@@ -607,7 +616,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 						boolean empty = v == null;
 
-						if (checkTerminated(d, false, a)) {
+						if (checkTerminated(d, false, a, v)) {
 							return;
 						}
 
@@ -677,7 +686,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 									boolean empty = v == null;
 
-									if (checkTerminated(d, false, a)) {
+									if (checkTerminated(d, false, a, v)) {
 										return;
 									}
 
@@ -784,8 +793,9 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable R v) {
 			if (cancelled) {
+				Operators.onDiscard(v, ctx);
 				Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
 				scalarQueue = null;
 				s.cancel();
@@ -813,6 +823,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					Throwable e = error;
 					if (e != null && e != Exceptions.TERMINATED) {
 						e = Exceptions.terminate(ERROR, this);
+						Operators.onDiscard(v, ctx);
 						Operators.onDiscardQueueWithClear(scalarQueue, ctx, null);
 						scalarQueue = null;
 						s.cancel();
@@ -854,6 +865,8 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 			Throwable e = Operators.onOperatorError(toCancel,
 					Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 					v, actual.currentContext());
+
+			Operators.onDiscard(v, ctx);
 
 			if (!Exceptions.addThrowable(ERROR, this, e)) {
 				Operators.onErrorDropped(e, actual.currentContext());
