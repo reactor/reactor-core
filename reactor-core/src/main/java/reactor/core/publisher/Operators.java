@@ -174,6 +174,17 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Check whether the provided {@link Subscription} is the one used to satisfy Spec's §1.9 rule
+	 * before signalling an error.
+	 *
+	 * @param subscription the subscription to test.
+	 * @return true if passed subscription is a subscription created in {@link #reportThrowInSubscribe(CoreSubscriber, Throwable)}.
+	 */
+	public static boolean canAppearAfterOnSubscribe(Subscription subscription) {
+		return subscription instanceof OnErrorSubscription;
+	}
+
+	/**
 	 * Calls onSubscribe on the target Subscriber with the empty instance followed by a call to onError with the
 	 * supplied error.
 	 *
@@ -187,7 +198,7 @@ public abstract class Operators {
 
 	public static void reportThrowInSubscribe(CoreSubscriber<?> subscriber, Throwable e) {
 		try {
-			subscriber.onSubscribe(EmptySubscription.INSTANCE);
+			subscriber.onSubscribe(OnErrorSubscription.INSTANCE);
 		}
 		catch (Throwable onSubscribeError) {
 			Exceptions.throwIfFatal(onSubscribeError);
@@ -1542,6 +1553,20 @@ public abstract class Operators {
 			return 0;
 		}
 
+	}
+
+	enum OnErrorSubscription implements Subscription {
+		INSTANCE;
+
+		@Override
+		public void request(long l) {
+			// deliberately no op
+		}
+
+		@Override
+		public void cancel() {
+			// deliberately no op
+		}
 	}
 
 	/**

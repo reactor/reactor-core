@@ -133,7 +133,7 @@ public class MonoDoFirstTest {
 
 		assertThat(test).as("doFirst not fuseable").isNotInstanceOf(Fuseable.class);
 		StepVerifier.create(test)
-		            .expectSubscriptionMatches(sub -> sub instanceof Operators.EmptySubscription)
+		            .expectSubscription()
 		            .verifyErrorMessage("expected");
 	}
 
@@ -146,7 +146,7 @@ public class MonoDoFirstTest {
 
 		assertThat(test).as("doFirst is fuseable").isInstanceOf(Fuseable.class);
 		StepVerifier.create(test)
-		            .expectSubscriptionMatches(sub -> sub instanceof Operators.EmptySubscription)
+		            .expectSubscription()
 		            .verifyErrorMessage("expected");
 	}
 

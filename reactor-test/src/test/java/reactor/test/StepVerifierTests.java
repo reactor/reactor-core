@@ -37,12 +37,14 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
+import reactor.core.publisher.Operators;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -2374,5 +2376,22 @@ public class StepVerifierTests {
 		            .expectNoEvent(Duration.ofMillis(10))
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(2));
+	}
+
+	// See https://github.com/reactor/reactor-core/issues/2107
+	@Test
+	public void mutualizedSubscribeErrorHandlingPostOnSubscribe() {
+		Flux<Object> errorInSubscribeFlux = new Flux<Object>() {
+			@Override
+			public void subscribe(CoreSubscriber<? super Object> actual) {
+				actual.onSubscribe(Operators.emptySubscription());
+				throw new IllegalStateException("ErrorInSubscribeFlux");
+			}
+		};
+		StepVerifier.create(errorInSubscribeFlux).verifyErrorSatisfies(e -> {
+            assertThat(e)
+		            .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("ErrorInSubscribeFlux");
+        });
 	}
 }

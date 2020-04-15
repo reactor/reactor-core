@@ -1130,7 +1130,8 @@ final class DefaultStepVerifierBuilder<T>
 					setFailure(null, "an unexpected Subscription has been received: %s; actual: cancelled",
 							subscription);
 				}
-				else {
+				// subscribeOrReturn may throw an exception after calling onSubscribe.
+				else if (!Operators.canAppearAfterOnSubscribe(subscription)) {
 					setFailure(null, "an unexpected Subscription has been received: %s; actual: %s",
 							subscription,
 							this.get());
