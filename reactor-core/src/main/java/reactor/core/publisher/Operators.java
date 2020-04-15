@@ -178,10 +178,9 @@ public abstract class Operators {
 	 * before signalling an error.
 	 *
 	 * @param subscription the subscription to test.
-	 * @return true if passed subscription is a subscription created in {{@link #error(Subscriber, Throwable)}}
-	 * or {@link #reportThrowInSubscribe(CoreSubscriber, Throwable)}.
+	 * @return true if passed subscription is a subscription created in {@link #reportThrowInSubscribe(CoreSubscriber, Throwable)}.
 	 */
-	public static boolean isOnErrorSubscription(Subscription subscription) {
+	public static boolean canAppearAfterOnSubscribe(Subscription subscription) {
 		return subscription instanceof OnErrorSubscription;
 	}
 
@@ -193,7 +192,7 @@ public abstract class Operators {
 	 * @param e the actual error
 	 */
 	public static void error(Subscriber<?> s, Throwable e) {
-		s.onSubscribe(OnErrorSubscription.INSTANCE);
+		s.onSubscribe(EmptySubscription.INSTANCE);
 		s.onError(e);
 	}
 
@@ -1556,13 +1555,8 @@ public abstract class Operators {
 
 	}
 
-	enum OnErrorSubscription implements Subscription, QueueSubscription<Object> {
+	enum OnErrorSubscription implements Subscription {
 		INSTANCE;
-
-		@Override
-		public Object poll() {
-			return null;
-		}
 
 		@Override
 		public void request(long l) {
@@ -1572,26 +1566,6 @@ public abstract class Operators {
 		@Override
 		public void cancel() {
 			// deliberately no op
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			return NONE;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return true;
-		}
-
-		@Override
-		public void clear() {
-
 		}
 	}
 
