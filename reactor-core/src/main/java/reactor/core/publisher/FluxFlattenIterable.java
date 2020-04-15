@@ -279,8 +279,15 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 				if (WIP.getAndIncrement(this) == 0) {
 					Context context = actual.currentContext();
-					Operators.onDiscardQueueWithClear(queue, context, null);
-					Operators.onDiscardMultiple(current, currentKnownToBeFinite, context);
+					int m = 0;
+					for (;;) {
+						Operators.onDiscardQueueWithClear(queue, context, null);
+						Operators.onDiscardMultiple(current, currentKnownToBeFinite, context);
+						m = WIP.addAndGet(this, -m);
+						if (m == 0) {
+							return;
+						}
+					}
 				}
 			}
 		}
