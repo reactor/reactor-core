@@ -223,10 +223,6 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 				head = null;
 				tail = null;
-
-//				if (cancelled) {
-//					discardMultiple(n);
-//				}
 			}
 
 			while (n != null) {
