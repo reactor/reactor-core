@@ -1,12 +1,15 @@
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import reactor.util.concurrent.Queues;
 
 public class FluxMergeOnDiscardShouldNotLeakTest extends AbstractOnDiscardShouldNotLeakTest {
 
+    public FluxMergeOnDiscardShouldNotLeakTest(boolean conditional, boolean fused) {
+        super(conditional, fused);
+    }
+
     @Override
-    Publisher<Tracked<?>> transform(Flux<Tracked<?>> upstream) {
+    Flux<Tracked<?>> transform(Flux<Tracked<?>> upstream) {
         Flux<Tracked<?>>[] inners = new Flux[subscriptionsNumber()];
         for (int i = 0; i < subscriptionsNumber(); i++) {
             inners[i] = upstream;

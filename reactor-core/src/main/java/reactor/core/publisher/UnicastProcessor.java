@@ -296,8 +296,21 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drain() {
+	void drain(@Nullable T dataSignal) {
 		if (WIP.getAndIncrement(this) != 0) {
+			CoreSubscriber<? super T> a = this.actual;
+
+			if (dataSignal != null && cancelled) {
+				if (a != null) {
+					Operators.onDiscard(dataSignal, a.currentContext());
+				} else {
+					T v;
+					while ((v = queue.poll()) != null) {
+						Operators.onNextDropped(v, Context.empty());
+					}
+					return;
+				}
+			}
 			return;
 		}
 
@@ -311,14 +324,6 @@ public final class UnicastProcessor<T>
 					drainFused(a);
 				} else {
 					drainRegular(a);
-				}
-				return;
-			}
-
-			if (cancelled) {
-				T v;
-				while ((v = queue.poll()) != null) {
-					Operators.onNextDropped(v, Context.empty());
 				}
 				return;
 			}
@@ -394,7 +399,7 @@ public final class UnicastProcessor<T>
 			onError(ex);
 			return;
 		}
-		drain();
+		drain(t);
 	}
 
 	@Override
@@ -409,7 +414,7 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		drain();
+		drain(null);
 	}
 
 	@Override
@@ -422,7 +427,7 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		drain();
+		drain(null);
 	}
 
 	@Override
@@ -435,7 +440,7 @@ public final class UnicastProcessor<T>
 			if (cancelled) {
 				this.actual = null;
 			} else {
-				drain();
+				drain(null);
 			}
 		} else {
 			Operators.error(actual, new IllegalStateException("UnicastProcessor " +
@@ -447,7 +452,7 @@ public final class UnicastProcessor<T>
 	public void request(long n) {
 		if (Operators.validate(n)) {
 			Operators.addCap(REQUESTED, this, n);
-			drain();
+			drain(null);
 		}
 	}
 
@@ -461,17 +466,7 @@ public final class UnicastProcessor<T>
 		doTerminate();
 
 		if (WIP.getAndIncrement(this) == 0) {
-			int m = 1;
-
-			// possible racing between offer and clear, so we need to ensure all offered elements are drained
-			for (;;) {
-				Operators.onDiscardQueueWithClear(queue, currentContext(), null);
-				m = WIP.addAndGet(this, -m);
-
-				if (m == 0) {
-					break;
-				}
-			}
+			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
 			actual = null;
 		}
 	}

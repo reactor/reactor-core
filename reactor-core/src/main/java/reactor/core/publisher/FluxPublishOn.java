@@ -215,6 +215,12 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
+
+			if (cancelled) {
+				Operators.onDiscard(t, actual.currentContext());
+				return;
+			}
+
 			if (!queue.offer(t)) {
 				error = Operators.onOperatorError(s,
 						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
@@ -265,15 +271,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
-				int m = 1;
-				for (;;) {
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
-
-					m = WIP.addAndGet(this, -m);
-					if (m == 0) {
-						return;
-					}
-				}
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 			}
 		}
 
@@ -282,6 +280,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
+				if (dataSignal != null && cancelled) {
+					Operators.onDiscard(dataSignal, actual.currentContext());
+				}
 				return;
 			}
 
@@ -746,15 +747,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
-				int m = 1;
-				for (;;) {
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
-
-					m = WIP.addAndGet(this, -m);
-					if (m == 0) {
-						return;
-					}
-				}
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 			}
 		}
 
@@ -763,6 +756,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
+				if (dataSignal != null && cancelled) {
+					Operators.onDiscard(dataSignal, actual.currentContext());
+				}
 				return;
 			}
 

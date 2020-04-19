@@ -352,23 +352,10 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 				if (WIP.getAndIncrement(this) == 0) {
 					Queue<R> sq = this.scalarQueue;
-					FlatMapInner<R>[] as = this.array;
 					this.scalarQueue = null;
 					s.cancel();
 					unsubscribe();
-					int m = 1;
-					for (;;) {
-						for (FlatMapInner<R> fmi : as) {
-							if (fmi != null) {
-								Operators.onDiscardQueueWithClear(fmi.queue, actual.currentContext(), null);
-							}
-						}
-						Operators.onDiscardQueueWithClear(sq, actual.currentContext(), null);
-						m = WIP.addAndGet(this, -m);
-						if (m == 0) {
-							return;
-						}
-					}
+					Operators.onDiscardQueueWithClear(sq, actual.currentContext(), null);
 				}
 			}
 		}

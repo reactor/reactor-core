@@ -3,22 +3,45 @@ package reactor.core.publisher;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Assumptions;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
+@RunWith(Parameterized.class)
 public abstract class AbstractOnDiscardShouldNotLeakTest {
 
-    abstract Publisher<Tracked<?>> transform(Flux<Tracked<?>> upstream);
+
+    @Parameterized.Parameters
+    public static Collection<Boolean[]> data() {
+        return Arrays.asList(new Boolean[][] {
+            { false, false },
+            { true, false },
+            { false, true },
+            { true, true }
+        });
+    }
+
+    private final boolean conditional;
+    private final boolean fused;
+
+    public AbstractOnDiscardShouldNotLeakTest(boolean conditional, boolean fused) {
+        this.conditional = conditional;
+        this.fused = fused;
+    }
+
+    abstract Flux<Tracked<?>> transform(Flux<Tracked<?>> upstream);
 
     int subscriptionsNumber() {
         return 1;
@@ -29,19 +52,26 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         Hooks.onNextDropped(Tracked::safeRelease);
         Scheduler scheduler = Schedulers.newParallel("testScheduler", subscriptionsNumber());
         scheduler.start();
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             int[] index = new int[] { 0 };
             FluxSink<Tracked<?>> sink[] = new FluxSink[subscriptionsNumber()];
-            Publisher<Tracked<?>> source = transform(Flux.create(s -> {
+            Flux<Tracked<?>> source = transform(Flux.create(s -> {
                 sink[index[0]++] = s;
             }, FluxSink.OverflowStrategy.IGNORE));
 
-            AssertSubscriber<Tracked<?>> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, Tracked::safeRelease));
+            if (conditional) {
+                source = source.filter(t -> true);
+            }
+
+            AssertSubscriber<Tracked<?>> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, Tracked::safeRelease), 0);
+            if (fused) {
+                assertSubscriber.requestedFusionMode(Fuseable.ANY);
+            }
             source.subscribe(assertSubscriber);
 
             if (subscriptionsNumber() == 1) {
                 Tracked<Integer> value = new Tracked<>(1);
-                RaceTestUtils.race(assertSubscriber::cancel, () -> sink[0].next(value), scheduler);
+                RaceTestUtils.race(() -> RaceTestUtils.race(assertSubscriber::cancel, () -> assertSubscriber.request(Long.MAX_VALUE)), () -> sink[0].next(value), scheduler);
             } else {
                 int startIndex = --index[0];
                 Tracked<Integer> value1 = new Tracked<>(startIndex);
@@ -55,7 +85,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
                     Runnable nextAction = action;
                     action = () -> RaceTestUtils.race(nextAction, () -> sink[nextIndex].next(nextValue), scheduler);
                 }
-                RaceTestUtils.race(assertSubscriber::cancel, action, scheduler);
+                RaceTestUtils.race(() -> RaceTestUtils.race(assertSubscriber::cancel, () -> assertSubscriber.request(Long.MAX_VALUE)), action, scheduler);
             }
 
             List<Tracked<?>> values = assertSubscriber.values();
@@ -70,11 +100,13 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             FluxSink<Tracked<?>> sink[] = new FluxSink[1];
-            Publisher<Tracked<?>> source = transform(Flux.create(s -> {
-                sink[0] = s;
-            }, FluxSink.OverflowStrategy.IGNORE));
+            Flux<Tracked<?>> source = transform(Flux.create(s -> sink[0] = s, FluxSink.OverflowStrategy.IGNORE));
+
+            if (conditional) {
+                source = source.filter(t -> true);
+            }
 
             Scannable scannable = Scannable.from(source);
             Integer prefetch = scannable.scan(Scannable.Attr.PREFETCH);
@@ -83,6 +115,9 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
                     .isNotZero();
 
             AssertSubscriber<Tracked<?>> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, Tracked::safeRelease), 0);
+            if (fused) {
+                assertSubscriber.requestedFusionMode(Fuseable.ANY);
+            }
             source.subscribe(assertSubscriber);
 
             sink[0].next(new Tracked<>(1));
@@ -106,11 +141,15 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             FluxSink<Tracked<?>> sink[] = new FluxSink[1];
-            Publisher<Tracked<?>> source = transform(Flux.create(s -> {
+            Flux<Tracked<?>> source = transform(Flux.create(s -> {
                 sink[0] = s;
             }, FluxSink.OverflowStrategy.IGNORE));
+
+            if (conditional) {
+                source = source.filter(t -> true);
+            }
 
             Scannable scannable = Scannable.from(source);
             Integer prefetch = scannable.scan(Scannable.Attr.PREFETCH);
@@ -119,6 +158,9 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
                     .isNotZero();
 
             AssertSubscriber<Tracked<?>> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, Tracked::safeRelease), 0);
+            if (fused) {
+                assertSubscriber.requestedFusionMode(Fuseable.ANY);
+            }
             source.subscribe(assertSubscriber);
 
             sink[0].next(new Tracked<>(1));
@@ -140,11 +182,15 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             FluxSink<Tracked<?>> sink[] = new FluxSink[1];
-            Publisher<Tracked<?>> source = transform(Flux.create(s -> {
+            Flux<Tracked<?>> source = transform(Flux.create(s -> {
                 sink[0] = s;
             }, FluxSink.OverflowStrategy.IGNORE));
+
+            if (conditional) {
+                source = source.filter(t -> true);
+            }
 
             Scannable scannable = Scannable.from(source);
             Integer prefetch = scannable.scan(Scannable.Attr.PREFETCH);
@@ -153,6 +199,9 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
                     .isNotZero();
 
             AssertSubscriber<Tracked<?>> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, Tracked::safeRelease), 0);
+            if (fused) {
+                assertSubscriber.requestedFusionMode(Fuseable.ANY);
+            }
             source.subscribe(assertSubscriber);
 
             sink[0].next(new Tracked<>(1));
@@ -231,3 +280,4 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         }
     }
 }
+

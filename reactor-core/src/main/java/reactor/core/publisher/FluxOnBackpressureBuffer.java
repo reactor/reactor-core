@@ -169,7 +169,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 				onError(ex);
 				return;
 			}
-			drain();
+			drain(t);
 		}
 
 		@Override
@@ -180,7 +180,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 			}
 			error = t;
 			done = true;
-			drain();
+			drain(null);
 		}
 
 		@Override
@@ -189,11 +189,14 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 				return;
 			}
 			done = true;
-			drain();
+			drain(null);
 		}
 
-		void drain() {
+		void drain(@Nullable T dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
+				if (dataSignal != null && cancelled) {
+					Operators.onDiscard(dataSignal, actual.currentContext());
+				}
 				return;
 			}
 
@@ -304,7 +307,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.addCap(REQUESTED, this, n);
-				drain();
+				drain(null);
 			}
 		}
 
@@ -317,14 +320,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 
 				if (!enabledFusion) {
 					if (WIP.getAndIncrement(this) == 0) {
-						int m = 1;
-						for (;;) {
-							Operators.onDiscardQueueWithClear(queue, ctx, null);
-							m = WIP.addAndGet(this, -m);
-							if (m == 0) {
-								return;
-							}
-						}
+						Operators.onDiscardQueueWithClear(queue, ctx, null);
 					}
 				}
 			}
