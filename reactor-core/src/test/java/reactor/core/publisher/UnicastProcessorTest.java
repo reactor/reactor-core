@@ -179,7 +179,7 @@ public class UnicastProcessorTest {
 	}
 
 	@Test
-	public void subscriptionCancelNullifiesActual() {
+	public void subscriptionCancelUpdatesDownstreamCount() {
 		UnicastProcessor<String> processor = UnicastProcessor.create();
 
 		assertThat(processor.downstreamCount())
@@ -193,7 +193,7 @@ public class UnicastProcessorTest {
 				.as("after subscribe")
 				.isEqualTo(1);
 		assertThat(processor.actual())
-				.as("after subscribe")
+				.as("after subscribe has actual")
 				.isSameAs(subscriber);
 
 		subscription.dispose();
@@ -201,8 +201,5 @@ public class UnicastProcessorTest {
 		assertThat(processor.downstreamCount())
 				.as("after subscription cancel")
 				.isZero();
-		assertThat(processor.actual())
-				.as("after subscription cancel")
-				.isNull();
 	}
 }
