@@ -162,6 +162,8 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 						finally {
 							disposeResource(false);
 						}
+					} else {
+						Operators.onNextDropped(value, actual.currentContext());
 					}
 					return;
 				}
