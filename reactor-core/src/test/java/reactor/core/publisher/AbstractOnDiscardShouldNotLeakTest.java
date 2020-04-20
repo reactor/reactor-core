@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RunWith(Parameterized.class)
 public abstract class AbstractOnDiscardShouldNotLeakTest {
 
-
     @Parameterized.Parameters
     public static Collection<Boolean[]> data() {
         return Arrays.asList(new Boolean[][] {
@@ -48,7 +47,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
     }
 
     @Test
-    public void ensureNoLeaksOnCancelOnNext1() {
+    public void ensureMultipleSubscribersSupportWithNoLeaksWhenRacingCancelAndOnNextAndRequest() {
         Hooks.onNextDropped(Tracked::safeRelease);
         Scheduler scheduler = Schedulers.newParallel("testScheduler", subscriptionsNumber());
         scheduler.start();
@@ -96,7 +95,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
     }
 
     @Test
-    public void ensureNoLeaksOnCancelOnNext2() {
+    public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnNext() {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
@@ -137,7 +136,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
     }
 
     @Test
-    public void ensureNoLeaksOnCancelOnNext3() {
+    public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnComplete() {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
@@ -178,7 +177,50 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
     }
 
     @Test
-    public void ensureNoLeaksOnCancelOnNext4() {
+    public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnError() {
+        Assumptions.assumeThat(subscriptionsNumber())
+                .isOne();
+        Hooks.onNextDropped(Tracked::safeRelease);
+        for (int i = 0; i < 10000; i++) {
+            FluxSink<Tracked<?>> sink[] = new FluxSink[1];
+            Flux<Tracked<?>> source = transform(Flux.create(s -> {
+                sink[0] = s;
+            }, FluxSink.OverflowStrategy.IGNORE));
+
+            if (conditional) {
+                source = source.filter(t -> true);
+            }
+
+            Scannable scannable = Scannable.from(source);
+            Integer prefetch = scannable.scan(Scannable.Attr.PREFETCH);
+
+            Assumptions.assumeThat(prefetch)
+                    .isNotZero();
+
+            AssertSubscriber<Tracked<?>> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, Tracked::safeRelease), 0);
+            if (fused) {
+                assertSubscriber.requestedFusionMode(Fuseable.ANY);
+            }
+            source.subscribe(assertSubscriber);
+
+            sink[0].next(new Tracked<>(1));
+            sink[0].next(new Tracked<>(2));
+            sink[0].next(new Tracked<>(3));
+            sink[0].next(new Tracked<>(4));
+
+            RaceTestUtils.race(assertSubscriber::cancel, () -> sink[0].error(new RuntimeException("test")));
+
+            List<Tracked<?>> values = assertSubscriber.values();
+            values.forEach(Tracked::release);
+            assertSubscriber.assertTerminated()
+                    .assertErrorMessage("test");
+
+            Tracked.assertNoLeaks();
+        }
+    }
+
+    @Test
+    public void ensureNoLeaksPopulatedQueueAndRacingCancelAndRequest() {
         Assumptions.assumeThat(subscriptionsNumber())
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);

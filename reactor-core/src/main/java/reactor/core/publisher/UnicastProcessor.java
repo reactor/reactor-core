@@ -298,18 +298,8 @@ public final class UnicastProcessor<T>
 
 	void drain(@Nullable T dataSignal) {
 		if (WIP.getAndIncrement(this) != 0) {
-			CoreSubscriber<? super T> a = this.actual;
-
 			if (dataSignal != null && cancelled) {
-				if (a != null) {
-					Operators.onDiscard(dataSignal, a.currentContext());
-				} else {
-					T v;
-					while ((v = queue.poll()) != null) {
-						Operators.onNextDropped(v, Context.empty());
-					}
-					return;
-				}
+				Operators.onDiscard(dataSignal, a.currentContext());
 			}
 			return;
 		}

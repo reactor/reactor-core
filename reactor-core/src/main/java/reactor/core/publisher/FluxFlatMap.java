@@ -529,6 +529,8 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			}
 		}
 
+		// 1 case - we dont have any quue at all
+
 		void tryEmit(FlatMapInner<R> inner, R v) {
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				long r = requested;
