@@ -3787,6 +3787,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/delaySequence.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards elements currently being delayed
+	 * 	 * if the sequence is cancelled during the delay.
+	 *
 	 * @param delay {@link Duration} to shift the sequence by
 	 * @return an shifted {@link Flux} emitting at the same frequency as the source
 	 */
@@ -3813,6 +3816,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/delaySequence.svg" alt="">
+	 *
+	 * @reactor.discard This operator discards elements currently being delayed
+	 * if the sequence is cancelled during the delay.
 	 *
 	 * @param delay {@link Duration} to shift the sequence by
 	 * @param timer a time-capable {@link Scheduler} instance to delay signals on
@@ -8567,9 +8573,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/timeoutPublisherFunctionForFlux.svg" alt="">
 	 *
+	 * @reactor.discard This operator discards an element if it comes right after the timeout.
+	 *
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
 	 * @param nextTimeoutFactory the timeout {@link Publisher} factory for each next item
-	 *
 	 * @param <U> the type of the elements of the first timeout Publisher
 	 * @param <V> the type of the elements of the subsequent timeout Publishers
 	 *
