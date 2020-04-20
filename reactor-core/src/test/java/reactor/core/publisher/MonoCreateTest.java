@@ -16,16 +16,20 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -334,6 +338,31 @@ public class MonoCreateTest {
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void ensuresElementsIsDiscarded() {
+		for (int i = 0; i < 10000; i++) {
+			final ArrayList<Object> collector = new ArrayList<>();
+			Hooks.onNextDropped(collector::add);
+			AssertSubscriber<Object> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, collector::add), 1);
+
+			MonoSink<Object>[] sinks = new MonoSink[1];
+
+			Mono.create(sink -> sinks[0] = sink)
+					.subscribe(assertSubscriber);
+
+			Object testObject = new Object();
+			RaceTestUtils.race(() -> sinks[0].success(testObject), () -> assertSubscriber.cancel());
+
+			if (assertSubscriber.values().isEmpty()) {
+				Assertions.assertThat(collector)
+						.containsExactly(testObject);
+			} else {
+				assertSubscriber.awaitAndAssertNextValues(testObject);
+			}
+			Hooks.resetOnNextDropped();
+		}
 	}
 
 	@Test
