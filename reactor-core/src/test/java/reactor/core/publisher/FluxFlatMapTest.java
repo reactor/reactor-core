@@ -1040,7 +1040,7 @@ public class FluxFlatMapTest {
 
 		ps.onNext(2);
 
-		fmm.drain();
+		fmm.drain(null);
 
 		ts.assertValues(1, 2);
 	}
@@ -1065,7 +1065,7 @@ public class FluxFlatMapTest {
 
 		fmm.onNext(Flux.just(2));
 
-		fmm.drain();
+		fmm.drain(null);
 
 		ts.assertValues(1, 2);
 	}

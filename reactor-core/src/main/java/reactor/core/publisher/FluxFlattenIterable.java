@@ -242,14 +242,14 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 					return;
 				}
 			}
-			drain();
+			drain(t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
-				drain();
+				drain(null);
 			}
 			else {
 				Operators.onErrorDropped(t, actual.currentContext());
@@ -259,14 +259,14 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 		@Override
 		public void onComplete() {
 			done = true;
-			drain();
+			drain(null);
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.addCap(REQUESTED, this, n);
-				drain();
+				drain(null);
 			}
 		}
 
@@ -662,8 +662,11 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 			}
 		}
 
-		void drain() {
+		void drain(@Nullable T dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
+				if (dataSignal != null && cancelled) {
+					Operators.onDiscard(dataSignal, actual.currentContext());
+				}
 				return;
 			}
 
