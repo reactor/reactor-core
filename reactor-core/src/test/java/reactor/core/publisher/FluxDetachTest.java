@@ -18,6 +18,8 @@ package reactor.core.publisher;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.awaitility.Awaitility;
+import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
@@ -145,11 +147,15 @@ public class FluxDetachTest {
 		ts.cancel();
 		o = null;
 
-		System.gc();
-		Thread.sleep(200);
-
-		Assert.assertNull("Object retained!", wr.get());
-
+		Awaitility.with().pollDelay(Duration.ZERO).pollInterval(Duration.ONE_MILLISECOND)
+			.await()
+			.atMost(Duration.FIVE_SECONDS)
+			.untilAsserted(() -> {
+				System.gc();
+				Object garbage = new Object();
+				Assert.assertNull("Object retained!", wr.get());
+				garbage.toString();
+			});
 	}
 
 	@Test

@@ -39,6 +39,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -938,10 +939,6 @@ public class FluxFlatMapTest {
 	}
 
 	void assertAfterOnNextInnerState(InnerConsumer s) {
-		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
-	}
-
-	void assertAfterOnNextInnerState2(InnerConsumer s) {
 		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 	}
 
@@ -985,13 +982,15 @@ public class FluxFlatMapTest {
 			                        s.onNext(f);
 			                        assertAfterOnNextInnerState(((FluxFlatMap.FlatMapInner) s));
 			                        assertAfterOnCompleteInnerState(((FluxFlatMap.FlatMapInner) s));
-			                        assertThat(((FluxFlatMap.FlatMapInner)s).scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+			                        // element is discarded, so buffer MUST be empty
+			                        assertThat(((FluxFlatMap.FlatMapInner)s).scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 			                        s.onComplete();
-			                        assertAfterOnCompleteInnerState(((FluxFlatMap.FlatMapInner) s));
+			                        assertAfterOnCompleteInnerState2(((FluxFlatMap.FlatMapInner) s));
 		                        }), 1), 1)
 		            .expectNext(1)
 		            .thenCancel()
-		.verify();
+		.verifyThenAssertThat()
+		.hasDiscarded(1);
 	}
 
 	@Test
@@ -1088,7 +1087,7 @@ public class FluxFlatMapTest {
 			                        assertAfterOnSubscribeInnerState(((FluxFlatMap
 					                        .FlatMapInner) s).parent);
 			                        s.onNext(f);
-			                        assertAfterOnNextInnerState2(((FluxFlatMap
+			                        assertAfterOnNextInnerState(((FluxFlatMap
 					                        .FlatMapInner) s));
 			                        s.onComplete();
 			                        assertAfterOnCompleteInnerState2(((FluxFlatMap.FlatMapInner) s));
@@ -1578,40 +1577,59 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void errorModeContinueInternalErrorStopStrategy() {
-		Flux<Integer> test = Flux
-				.just(0, 1)
-				.hide()
-				.flatMap(f ->  Flux.range(f, 1).map(i -> 1/i).onErrorStop())
-				.onErrorContinue(OnNextFailureStrategyTest::drop);
+		for (int iterations = 0; iterations < 1000; iterations++) {
+			AtomicInteger i = new AtomicInteger();
+			TestPublisher<Integer>[] inners = new TestPublisher[]{
+					TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE),
+					TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE)
+			};
+			Flux<Integer> test = Flux
+					.just(0, 1)
+					.hide()
+					.flatMap(f -> inners[i.getAndIncrement()].flux().map(n -> n / f).onErrorStop())
+					.onErrorContinue(OnNextFailureStrategyTest::drop);
 
-		StepVerifier.create(test)
-				.expectNoFusionSupport()
-				.expectNext(1)
-				.expectComplete()
-				.verifyThenAssertThat()
-				.hasNotDroppedElements()
-				.hasDroppedErrors(1);
+			StepVerifier.create(test)
+					.expectNoFusionSupport()
+					.then(() -> {
+						inners[0].next(1).complete();
+						inners[1].next(1).complete();
+					})
+					.expectNext(1)
+					.expectComplete()
+					.verifyThenAssertThat()
+					.hasNotDroppedElements()
+					.hasDroppedErrors(1);
+		}
 	}
 
 	@Test
 	public void errorModeContinueInternalErrorStopStrategyAsync() {
-		Flux<Integer> test = Flux
-				.just(0, 1)
-				.hide()
-				.flatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1/i).onErrorStop())
-				.onErrorContinue(OnNextFailureStrategyTest::drop);
+		for (int iterations = 0; iterations < 1000; iterations++) {
+			AtomicInteger i = new AtomicInteger();
+			TestPublisher<Integer>[] inners = new TestPublisher[]{
+				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE),
+				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE)
+			};
+			Flux<Integer> test = Flux
+					.just(0, 1)
+					.hide()
+					.flatMap(f -> inners[i.getAndIncrement()].flux().map(n -> n / f).onErrorStop())
+					.onErrorContinue(OnNextFailureStrategyTest::drop);
 
-		StepVerifier.Assertions assertions = StepVerifier
-				.create(test)
-				.expectNoFusionSupport()
-				.expectNext(1)
-				.expectComplete()
-				.verifyThenAssertThat();
+			StepVerifier.Assertions assertions = StepVerifier
+					.create(test)
+					.expectNoFusionSupport()
+					.then(() -> RaceTestUtils.race(() -> inners[0].next(1).complete(), () -> inners[1].next(1).complete()))
+					.expectNext(1)
+					.expectComplete()
+					.verifyThenAssertThat();
 
-		Awaitility.with().pollDelay(org.awaitility.Duration.ZERO).pollInterval(org.awaitility.Duration.ONE_MILLISECOND)
-		          .await()
-		          .atMost(org.awaitility.Duration.ONE_SECOND)
-		          .untilAsserted(() -> assertions.hasNotDroppedElements().hasDroppedErrors(1));
+			Awaitility.with().pollDelay(org.awaitility.Duration.ZERO).pollInterval(org.awaitility.Duration.ONE_MILLISECOND)
+					.await()
+					.atMost(org.awaitility.Duration.ONE_SECOND)
+					.untilAsserted(() -> assertions.hasNotDroppedElements().hasDroppedErrors(1));
+		}
 	}
 
 	@Test
