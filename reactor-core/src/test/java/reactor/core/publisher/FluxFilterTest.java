@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -479,5 +481,33 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		subscriber.tryOnNext(2);
 
 		assertThat(discarded).containsExactly(1);
+	}
+
+	@Test
+	public void macroFusionNormal() {
+		Predicate<Object> notArray = o -> !o.getClass().isArray();
+		Predicate<Number> isEven = n -> n.intValue() % 2 == 0;
+		Predicate<Integer> isSmall = i -> i < 4;
+
+		final Flux<Integer> filter = Flux.just(1, 2, 3, 4)
+		                                 .hide()
+		                                 .filter(notArray)
+		                                 .filter(isSmall)
+		                                 .filter(isEven);
+
+		assertThat(Scannable.from(filter).steps())
+				.as("only one filter publisher")
+				.containsExactly("source(FluxArray)", "hide", "filter");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		filter.doOnSubscribe(subRef::set).subscribe();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("only one filter subscriber")
+				.containsOnlyOnce("filter");
+
+		filter.as(StepVerifier::create)
+		      .expectNoFusionSupport()
+		      .expectNext(2)
+		      .verifyComplete();
 	}
 }

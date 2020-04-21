@@ -16,6 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
@@ -311,4 +314,30 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
                             .hasDiscardedElementsSatisfying(list -> assertThat(list).containsExactly(1, 3, 5, 7, 9));
 	}
 
+	@Test
+	public void macroFusionWithFuseable() {
+		Predicate<Object> notArray = o -> !o.getClass().isArray();
+		Predicate<Number> isEven = n -> n.intValue() % 2 == 0;
+		Predicate<Integer> isSmall = i -> i < 4;
+
+		final Flux<Integer> filter = Flux.just(1, 2, 3, 4)
+		                               .filter(notArray)
+		                               .filter(isSmall)
+		                               .filter(isEven);
+
+		assertThat(Scannable.from(filter).steps())
+				.as("only one filter publisher")
+				.containsExactly("source(FluxArray)", "filter");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		filter.doOnSubscribe(subRef::set).subscribe();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("only one filter subscriber")
+				.containsOnlyOnce("filter");
+
+		filter.as(StepVerifier::create)
+		      .expectFusion()
+		      .expectNext(2)
+		      .verifyComplete();
+	}
 }

@@ -17,10 +17,19 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+
+import reactor.core.CorePublisher;
+import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.MonoOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoMapTest extends MonoOperatorTest<String, String> {
 
@@ -193,5 +202,51 @@ public class MonoMapTest extends MonoOperatorTest<String, String> {
 		ts.assertValues(2)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	@Test
+	public void macroFusionNormal() {
+		final Mono<String[]> map = Mono.just(1)
+		                               .hide()
+		                               .map(i -> i + 100)
+		                               .map(i -> "value" + i + "=" + i)
+		                               .map(v -> v.split("="));
+
+		assertThat(Scannable.from(map).steps())
+				.as("only one map publisher")
+				.containsExactly("source(MonoJust)", "hide", "map");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		map.doOnSubscribe(subRef::set).subscribe();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.containsOnlyOnce("map");
+
+
+		map.as(StepVerifier::create)
+		   .expectNoFusionSupport()
+		   .assertNext(a -> assertThat(a).containsExactly("value101", "101"))
+		   .verifyComplete();
+	}
+
+	@Test
+	public void macroFusionWithFuseable() {
+		final Mono<String[]> map = Mono.just(1)
+		                               .map(i -> i + 100)
+		                               .map(i -> "value" + i + "=" + i)
+		                               .map(v -> v.split("="));
+
+		assertThat(Scannable.from(map).steps())
+				.as("only one map publisher")
+				.containsExactly("source(MonoJust)", "map");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		map.doOnSubscribe(subRef::set).subscribe();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.containsOnlyOnce("map");
+
+		map.as(StepVerifier::create)
+		   .expectFusion()
+		   .assertNext(a -> assertThat(a).containsExactly("value101", "101"))
+		   .verifyComplete();
 	}
 }

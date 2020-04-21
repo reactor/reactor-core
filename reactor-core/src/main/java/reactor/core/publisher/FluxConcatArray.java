@@ -97,7 +97,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 	 * @param source the new source to merge with the others
 	 * @return the new FluxConcatArray instance
 	 */
-	FluxConcatArray<T> concatAdditionalSourceLast(Publisher<? extends T> source) {
+	FluxConcatArray<T> newMacroFused(Publisher<? extends T> source) {
 		int n = array.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];
@@ -117,7 +117,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 	 * @return the new FluxConcatArray instance
 	 */
 	@SuppressWarnings("unchecked")
-	<V> FluxConcatArray<V> concatAdditionalIgnoredLast(Publisher<? extends V>
+	<V> FluxConcatArray<V> newMacroFusedIgnoringLast(Publisher<? extends V>
 			source) {
 		int n = array.length;
 		Publisher<? extends V>[] newArray = new Publisher[n + 1];
@@ -138,7 +138,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 	 * @param source the new source to merge with the others
 	 * @return the new FluxConcatArray instance
 	 */
-	FluxConcatArray<T> concatAdditionalSourceFirst(Publisher<? extends T> source) {
+	FluxConcatArray<T> newMacroFusedInFirstPosition(Publisher<? extends T> source) {
 		int n = array.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];

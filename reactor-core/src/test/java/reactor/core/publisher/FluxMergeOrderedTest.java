@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -271,7 +270,7 @@ public class FluxMergeOrderedTest {
 				Flux.just(1, 2),
 				Flux.just(3, 4));
 
-		FluxMergeOrdered<Integer> fmo2 = fmo.mergeAdditionalSource(Flux.just(5, 6), Comparator.naturalOrder());
+		FluxMergeOrdered<Integer> fmo2 = fmo.newMacroFused(Flux.just(5, 6), Comparator.naturalOrder());
 
 		assertThat(fmo2).isNotSameAs(fmo);
 		assertThat(fmo2.sources).startsWith(fmo.sources)

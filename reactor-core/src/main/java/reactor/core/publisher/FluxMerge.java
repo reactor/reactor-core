@@ -79,7 +79,7 @@ final class FluxMerge<T> extends Flux<T> implements SourceProducer<T> {
 	 * @param newQueueSupplier a function that should return a new queue supplier based on the change in the maxConcurrency value
 	 * @return the new FluxMerge instance
 	 */
-	FluxMerge<T> mergeAdditionalSource(Publisher<? extends T> source, IntFunction<Supplier<? extends Queue<T>>> newQueueSupplier) {
+	FluxMerge<T> newMacroFused(Publisher<? extends T> source, IntFunction<Supplier<? extends Queue<T>>> newQueueSupplier) {
 		int n = sources.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];

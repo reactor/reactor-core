@@ -76,6 +76,56 @@ final class FluxPeekFuseable<T> extends InternalFluxOperator<T, T>
 		this.onCancelCall = onCancelCall;
 	}
 
+	Flux<T> newMacroFused(
+			@Nullable Consumer<? super Subscription> subscribe,
+			@Nullable Consumer<? super T> next,
+			@Nullable Consumer<? super Throwable> error,
+			@Nullable Runnable complete,
+			@Nullable Runnable afterTerminate,
+			@Nullable LongConsumer request,
+			@Nullable Runnable cancel) {
+		Consumer<? super Subscription> newSubscribe = this.onSubscribeCall;
+		if (this.onSubscribeCall == null) newSubscribe = subscribe;
+		else if (subscribe != null) newSubscribe = sub -> { this.onSubscribeCall.accept(sub); subscribe.accept(sub); };
+
+		Consumer<? super T> newNext = this.onNextCall;
+		if (this.onNextCall == null) newNext = next;
+		else if (next != null) newNext = v -> { this.onNextCall.accept(v); next.accept(v); };
+
+		Consumer<? super Throwable> newError = this.onErrorCall;
+		if (this.onErrorCall == null) newError = error;
+		//for errors, we want to always attempt to execute consecutive doOnError calls.
+		//so we try-catch, setting previous error as a cause to the new one
+		else if (error != null) newError = t -> {
+			try {
+				this.onErrorCall.accept(t);
+			}
+			catch (Throwable t2) {
+				error.accept(Exceptions.addSuppressed(t2, t));
+				return;
+			}
+			error.accept(t);
+		};
+
+		Runnable newComplete = this.onCompleteCall;
+		if (this.onCompleteCall == null) newComplete = complete;
+		else if (complete != null) newComplete = () -> { this.onCompleteCall.run(); complete.run(); };
+
+		Runnable newAfterTerminate = this.onAfterTerminateCall;
+		if (this.onAfterTerminateCall == null) newAfterTerminate = afterTerminate;
+		else if (afterTerminate != null) newAfterTerminate = () -> { this.onAfterTerminateCall.run(); afterTerminate.run(); };
+
+		LongConsumer newRequest = this.onRequestCall;
+		if (this.onRequestCall == null) newRequest = request;
+		else if (request != null) newRequest = this.onRequestCall.andThen(request);
+
+		Runnable newCancel = this.onCancelCall;
+		if (this.onCancelCall == null) newCancel = cancel;
+		else if (cancel != null) newCancel = () -> { this.onCancelCall.run(); cancel.run(); };
+
+		return new FluxPeekFuseable<>(this.source, newSubscribe, newNext, newError, newComplete, newAfterTerminate, newRequest, newCancel);
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -486,5 +487,56 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 		finally {
 			Hooks.resetOnNextError();
 		}
+	}
+
+	@Test
+	public void macroFusionNormal() {
+		final Flux<String[]> map = Flux.just(1, 2, 3)
+		                               .hide()
+		                               .map(i -> i + 100)
+		                               .map(i -> "value" + i + "=" + i)
+		                               .map(v -> v.split("="));
+
+		assertThat(Scannable.from(map).steps())
+				.as("only one map publisher")
+				.containsExactly("source(FluxArray)", "hide", "map");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		map.doOnSubscribe(subRef::set).subscribe();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("only one map subscriber")
+				.containsOnlyOnce("map");
+
+		map.as(StepVerifier::create)
+		   .expectNoFusionSupport()
+		   .assertNext(a -> assertThat(a).containsExactly("value101", "101"))
+		   .assertNext(a -> assertThat(a).containsExactly("value102", "102"))
+		   .assertNext(a -> assertThat(a).containsExactly("value103", "103"))
+		   .verifyComplete();
+	}
+
+	@Test
+	public void macroFusionWithFuseable() {
+		final Flux<String[]> map = Flux.just(1, 2, 3)
+		                               .map(i -> i + 100)
+		                               .map(i -> "value" + i + "=" + i)
+		                               .map(v -> v.split("="));
+
+		assertThat(Scannable.from(map).steps())
+				.as("only one map publisher")
+				.containsExactly("source(FluxArray)", "map");
+
+		AtomicReference<Subscription> subRef = new AtomicReference<>();
+		map.doOnSubscribe(subRef::set).subscribe();
+		assertThat(Scannable.from(subRef.get()).steps())
+				.as("only one map subscriber")
+				.containsOnlyOnce("map");
+
+		map.as(StepVerifier::create)
+		   .expectFusion()
+		   .assertNext(a -> assertThat(a).containsExactly("value101", "101"))
+		   .assertNext(a -> assertThat(a).containsExactly("value102", "102"))
+		   .assertNext(a -> assertThat(a).containsExactly("value103", "103"))
+		   .verifyComplete();
 	}
 }
