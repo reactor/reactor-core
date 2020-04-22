@@ -159,6 +159,10 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				Operators.onNextDropped(t, ctx);
 				return;
 			}
+			if (cancelled) {
+				Operators.onDiscard(t, ctx);
+			}
+
 			if ((capacityOrSkip != Integer.MAX_VALUE && queue.size() >= capacityOrSkip) || !queue.offer(t)) {
 				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), t, ctx);
 				if (onOverflow != null) {
@@ -212,7 +216,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				if (a != null) {
 
 					if (enabledFusion) {
-						drainFused(a);
+						drainFused(a, dataSignal);
 					}
 					else {
 						drainRegular(a);
@@ -273,7 +277,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			}
 		}
 
-		void drainFused(Subscriber<? super T> a) {
+		void drainFused(Subscriber<? super T> a, @Nullable T dataSignal) {
 			int missed = 1;
 
 			final Queue<T> q = queue;
@@ -281,8 +285,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			for (; ; ) {
 
 				if (cancelled) {
-					s.cancel();
-					Operators.onDiscardQueueWithClear(q, ctx, null);
+					Operators.onDiscard(dataSignal, ctx);
 					return;
 				}
 
@@ -298,6 +301,11 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 					else {
 						a.onComplete();
 					}
+					return;
+				}
+
+				if (cancelled) {
+					Operators.onDiscard(dataSignal, ctx);
 					return;
 				}
 
@@ -323,8 +331,8 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 
 				s.cancel();
 
-				if (!enabledFusion) {
-					if (WIP.getAndIncrement(this) == 0) {
+				if (WIP.getAndIncrement(this) == 0) {
+					if (!enabledFusion) {
 						Operators.onDiscardQueueWithClear(queue, ctx, null);
 					}
 				}

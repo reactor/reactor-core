@@ -215,7 +215,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
-				trySchedule(this, null, null /* t always null */);
+				trySchedule(this, null, t);
 				return;
 			}
 
@@ -274,13 +274,15 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			if (cancelled) {
 				return;
 			}
-
-			cancelled = true;
 			s.cancel();
+			cancelled = true;
+
 			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				if (!outputFused) {
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				}
 			}
 		}
 
@@ -757,8 +759,13 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				return;
 			}
 
-			cancelled = true;
-			s.cancel();
+			if (sourceMode == ASYNC) {
+				s.cancel();
+				cancelled = true;
+			} else {
+				cancelled = true;
+				s.cancel();
+			}
 			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {

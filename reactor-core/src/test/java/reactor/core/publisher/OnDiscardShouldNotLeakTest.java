@@ -31,20 +31,28 @@ public class OnDiscardShouldNotLeakTest {
 
     //add DiscardScenarios here to test more operators
     private static DiscardScenario[] SCENARIOS = new DiscardScenario[] {
-                DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
-                DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
-                DiscardScenario.rawSource("flatMapInner", 1, raw -> Flux.just(1).flatMap(f -> raw)),
-                DiscardScenario.fluxSource("flatMap", 1, main -> main.flatMap(f -> Mono.just(f).hide().flux())),
-                DiscardScenario.fluxSource("flatMapIterable", 1, f -> f.flatMapIterable(Arrays::asList)),
-                DiscardScenario.fluxSource("publishOnDelayErrors", 1, f -> f.publishOn(Schedulers.immediate())),
-                DiscardScenario.fluxSource("publishOnImmediateErrors", 1, f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE))
+//                DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
+//                DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
+                DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", 1, trackedFlux ->
+                    trackedFlux
+                        .onBackpressureBuffer(32)
+                        .publishOn(Schedulers.immediate())),
+//                DiscardScenario.rawSource("flatMapInner", 1, raw -> Flux.just(1).flatMap(f -> raw)),
+//                DiscardScenario.fluxSource("flatMap", 1, main -> main.flatMap(f -> Mono.just(f).hide().flux())),
+//                DiscardScenario.fluxSource("PublishOnAndOnBackpressureBuffer", 1, main ->
+//                    main
+//                        .publishOn(Schedulers.immediate())
+//                        .onBackpressureBuffer()),
+//                DiscardScenario.fluxSource("flatMapIterable", 1, f -> f.flatMapIterable(Arrays::asList)),
+//                DiscardScenario.fluxSource("publishOnDelayErrors", 1, f -> f.publishOn(Schedulers.immediate())),
+//                DiscardScenario.fluxSource("publishOnImmediateErrors", 1, f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE))
     };
 
     private static boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
             { false, false },
-            { true, false },
-            { false, true },
-            { true, true }
+//            { true, false },
+//            { false, true },
+//            { true, true }
     };
 
     @Parameterized.Parameters(name = " {2} | conditional={0}, fused={1}")
@@ -69,7 +77,7 @@ public class OnDiscardShouldNotLeakTest {
     public void setUp() {
         scheduler = Schedulers.newParallel(discardScenario.scenarioDescription + "DiscardScheduler", discardScenario.subscriptionsNumber + 1);
         scheduler.start();
-        
+
         tracker = new MemoryUtils.OffHeapDetector();
         Hooks.onNextDropped(Tracked::safeRelease);
         Hooks.onErrorDropped(e -> {});
@@ -150,7 +158,7 @@ public class OnDiscardShouldNotLeakTest {
         int subscriptionsNumber = discardScenario.subscriptionsNumber;
         Assumptions.assumeThat(subscriptionsNumber)
                 .isGreaterThan(1);
-        
+
         for (int i = 0; i < 10000; i++) {
             tracker.reset();
             int[] index = new int[] {subscriptionsNumber};
@@ -207,7 +215,7 @@ public class OnDiscardShouldNotLeakTest {
     @Test
     public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnNext() {
         Assumptions.assumeThat(discardScenario.subscriptionsNumber).isOne();
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 10000000; i++) {
             tracker.reset();
             TestPublisher<Tracked> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.REQUEST_OVERFLOW);
             Publisher<Tracked> source = discardScenario.producePublisherFromSources(testPublisher);
