@@ -1,5 +1,15 @@
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Assumptions;
 import org.junit.After;
@@ -8,6 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.reactivestreams.Publisher;
+
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -15,46 +26,49 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import reactor.util.concurrent.Queues;
 
 @RunWith(Parameterized.class)
-public abstract class AbstractOnDiscardShouldNotLeakTest {
+public class OnDiscardShouldNotLeakTest {
 
-    @Parameterized.Parameters
-    public static Collection<Boolean[]> data() {
-        return Arrays.asList(new Boolean[][] {
+    //add DiscardScenarios here to test more operators
+    private static DiscardScenario[] SCENARIOS = new DiscardScenario[] {
+                DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
+                DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
+                DiscardScenario.rawSource("flatMapInner", 1, raw -> Flux.just(1).flatMap(f -> raw)),
+                DiscardScenario.fluxSource("flatMap", 1, main -> main.flatMap(f -> Mono.just(f).hide().flux())),
+                DiscardScenario.fluxSource("flatMapIterable", 1, f -> f.flatMapIterable(Arrays::asList)),
+                DiscardScenario.fluxSource("publishOnDelayErrors", 1, f -> f.publishOn(Schedulers.immediate())),
+                DiscardScenario.fluxSource("publishOnImmediateErrors", 1, f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE))
+    };
+
+    private static boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
             { false, false },
             { true, false },
             { false, true },
             { true, true }
-        });
+    };
+
+    @Parameterized.Parameters(name = " {2} | conditional={0}, fused={1}")
+    public static Collection<Object[]> data() {
+        List<Object[]> parameters = new ArrayList<>(CONDITIONAL_AND_FUSED.length * SCENARIOS.length);
+        for (DiscardScenario scenario : SCENARIOS) {
+            for (boolean[] booleans : CONDITIONAL_AND_FUSED) {
+                parameters.add(new Object[] { booleans[0], booleans[1], scenario });
+            }
+        }
+        return parameters;
     }
 
     private final boolean conditional;
     private final boolean fused;
+    private final DiscardScenario discardScenario;
     
     private Scheduler scheduler;
 
-    public AbstractOnDiscardShouldNotLeakTest(boolean conditional, boolean fused) {
-        this.conditional = conditional;
-        this.fused = fused;
-    }
-
-    protected abstract Publisher<Tracked<?>> transform(TestPublisher<Tracked<?>> main, TestPublisher<Tracked<?>>... additional);
-
-    int subscriptionsNumber() {
-        return 1;
-    }
-    
     @Before
     public void setUp() {
-        scheduler = Schedulers.newParallel("testScheduler", subscriptionsNumber() + 1);
+        scheduler = Schedulers.newParallel(discardScenario.scenarioDescription + "DiscardScheduler", discardScenario.subscriptionsNumber + 1);
         scheduler.start();
     }
 
@@ -67,12 +81,18 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
         scheduler.dispose();
     }
 
+    public OnDiscardShouldNotLeakTest(boolean conditional, boolean fused, DiscardScenario discardScenario) {
+        this.conditional = conditional;
+        this.fused = fused;
+        this.discardScenario = discardScenario;
+    }
+
     @Test
     public void ensureMultipleSubscribersSupportWithNoLeaksWhenRacingCancelAndOnNextAndRequest() {
         Hooks.onNextDropped(Tracked::safeRelease);
         Hooks.onErrorDropped(e -> {});
         Hooks.onOperatorError((e,v) -> null);
-        int subscriptionsNumber = subscriptionsNumber();
+        int subscriptionsNumber = discardScenario.subscriptionsNumber;
         for (int i = 0; i < 10000; i++) {
             int[] index = new int[] {subscriptionsNumber};
             TestPublisher<Tracked<?>>[] testPublishers = new TestPublisher[subscriptionsNumber];
@@ -81,7 +101,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
                 testPublishers[i1] = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.REQUEST_OVERFLOW);
             }
 
-            Publisher<Tracked<?>> source = transform(testPublishers[0], Arrays.copyOfRange(testPublishers, 1, testPublishers.length));
+            Publisher<Tracked<?>> source = discardScenario.producePublisherFromSources(testPublishers[0], Arrays.copyOfRange(testPublishers, 1, testPublishers.length));
 
             if (conditional) {
                 if (source instanceof Flux) {
@@ -121,12 +141,11 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
 
             Tracked.assertNoLeaks();
         }
-        scheduler.dispose();
     }
 
     @Test
     public void ensureMultipleSubscribersSupportWithNoLeaksWhenPopulatedQueueRacingCancelAndOnNextAndRequest() {
-        int subscriptionsNumber = subscriptionsNumber();
+        int subscriptionsNumber = discardScenario.subscriptionsNumber;
         Assumptions.assumeThat(subscriptionsNumber)
                 .isGreaterThan(1);
         Hooks.onNextDropped(Tracked::safeRelease);
@@ -140,7 +159,7 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
                 testPublishers[i1] = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.REQUEST_OVERFLOW);
             }
 
-            Publisher<Tracked<?>> source = transform(testPublishers[0], Arrays.copyOfRange(testPublishers, 1, testPublishers.length));
+            Publisher<Tracked<?>> source = discardScenario.producePublisherFromSources(testPublishers[0], Arrays.copyOfRange(testPublishers, 1, testPublishers.length));
 
             if (conditional) {
                 if (source instanceof Flux) {
@@ -182,21 +201,17 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
 
             Tracked.assertNoLeaks();
         }
-        scheduler.dispose();
     }
 
     @Test
     public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnNext() {
-        Assumptions.assumeThat(subscriptionsNumber())
-                .isOne();
+        Assumptions.assumeThat(discardScenario.subscriptionsNumber).isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
         Hooks.onErrorDropped(e -> {});
         Hooks.onOperatorError((e,v) -> null);
-        Scheduler scheduler = Schedulers.newParallel("testScheduler", subscriptionsNumber() + 1);
-        scheduler.start();
         for (int i = 0; i < 10000; i++) {
             TestPublisher<Tracked<?>> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.REQUEST_OVERFLOW);
-            Publisher<Tracked<?>> source = transform(testPublisher);
+            Publisher<Tracked<?>> source = discardScenario.producePublisherFromSources(testPublisher);
 
             if (conditional) {
                 if (source instanceof Flux) {
@@ -236,21 +251,18 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
 
             Tracked.assertNoLeaks();
         }
-        scheduler.dispose();
     }
 
     @Test
     public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnComplete() {
-        Assumptions.assumeThat(subscriptionsNumber())
+        Assumptions.assumeThat(discardScenario.subscriptionsNumber)
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
         Hooks.onErrorDropped(e -> {});
         Hooks.onOperatorError((e,v) -> null);
-        Scheduler scheduler = Schedulers.newParallel("testScheduler", subscriptionsNumber() + 1);
-        scheduler.start();
         for (int i = 0; i < 10000; i++) {
             TestPublisher<Tracked<?>> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.REQUEST_OVERFLOW);
-            Publisher<Tracked<?>> source = transform(testPublisher);
+            Publisher<Tracked<?>> source = discardScenario.producePublisherFromSources(testPublisher);
 
             if (conditional) {
                 if (source instanceof Flux) {
@@ -284,21 +296,19 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
 
             Tracked.assertNoLeaks();
         }
-        scheduler.dispose();
     }
 
     @Test
     public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOnError() {
-        Assumptions.assumeThat(subscriptionsNumber())
+        Assumptions.assumeThat(discardScenario.subscriptionsNumber)
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
         Hooks.onErrorDropped(e -> {});
         Hooks.onOperatorError((e,v) -> null);
-        Scheduler scheduler = Schedulers.newParallel("testScheduler", subscriptionsNumber() + 1);
-        scheduler.start();
         for (int i = 0; i < 10000; i++) {
             TestPublisher<Tracked<?>> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.REQUEST_OVERFLOW);
-            Publisher<Tracked<?>> source = transform(testPublisher);
+            @SuppressWarnings("unchecked")
+            Publisher<Tracked<?>> source = discardScenario.producePublisherFromSources(testPublisher);
 
             if (conditional) {
                 if (source instanceof Flux) {
@@ -336,21 +346,19 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
 
             Tracked.assertNoLeaks();
         }
-        scheduler.dispose();
     }
 
     @Test
     public void ensureNoLeaksPopulatedQueueAndRacingCancelAndOverflowError() {
-        Assumptions.assumeThat(subscriptionsNumber())
+        Assumptions.assumeThat(discardScenario.subscriptionsNumber)
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
         Hooks.onErrorDropped(e -> {});
         Hooks.onOperatorError((e,v) -> null);
-        Scheduler scheduler = Schedulers.newParallel("testScheduler", subscriptionsNumber() + 1);
-        scheduler.start();
         for (int i = 0; i < 10000; i++) {
             TestPublisher<Tracked<?>> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.REQUEST_OVERFLOW);
-            Publisher<Tracked<?>> source = transform(testPublisher);
+            @SuppressWarnings("unchecked")
+            Publisher<Tracked<?>> source = discardScenario.producePublisherFromSources(testPublisher);
 
             if (conditional) {
                 if (source instanceof Flux) {
@@ -397,19 +405,19 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
 
             Tracked.assertNoLeaks();
         }
-        scheduler.dispose();
     }
 
     @Test
     public void ensureNoLeaksPopulatedQueueAndRacingCancelAndRequest() {
-        Assumptions.assumeThat(subscriptionsNumber())
+        Assumptions.assumeThat(discardScenario.subscriptionsNumber)
                 .isOne();
         Hooks.onNextDropped(Tracked::safeRelease);
         Hooks.onErrorDropped(e -> {});
         Hooks.onOperatorError((e,v) -> null);
         for (int i = 0; i < 10000; i++) {
             TestPublisher<Tracked<?>> testPublisher = TestPublisher.createNoncompliant(TestPublisher.Violation.DEFER_CANCELLATION, TestPublisher.Violation.REQUEST_OVERFLOW);
-            Publisher<Tracked<?>> source = transform(testPublisher);
+            @SuppressWarnings("unchecked")
+            Publisher<Tracked<?>> source = discardScenario.producePublisherFromSources(testPublisher);
 
             if (conditional) {
                 if (source instanceof Flux) {
@@ -443,7 +451,6 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
 
             Tracked.assertNoLeaks();
         }
-        scheduler.dispose();
     }
 
     public static final class Tracked<T> extends AtomicBoolean {
@@ -505,6 +512,57 @@ public abstract class AbstractOnDiscardShouldNotLeakTest {
                     " value=" + value +
                     " released=" + get() +
                     " }";
+        }
+    }
+
+    static class DiscardScenario {
+
+        static DiscardScenario rawSource(String desc, int subs, Function<TestPublisher<Tracked<?>>, Publisher<Tracked<?>>> rawToPublisherProducer) {
+            return new DiscardScenario(desc, subs, (main, others) -> rawToPublisherProducer.apply(main));
+        }
+
+        static DiscardScenario fluxSource(String desc, int subs, Function<Flux<Tracked<?>>, Publisher<Tracked<?>>> fluxToPublisherProducer) {
+            return new DiscardScenario(desc, subs, (main, others) -> fluxToPublisherProducer.apply(main.flux()));
+        }
+
+        static DiscardScenario allFluxSourceArray(String desc, int subs,
+                Function<Flux<Tracked<?>>[], Publisher<Tracked<?>>> producer) {
+            return new DiscardScenario(desc, subs, (main, others) -> {
+                @SuppressWarnings("unchecked")
+                Flux<Tracked<?>>[] inners = new Flux[subs];
+                inners[0] = main.flux();
+                for (int i = 1; i < subs; i++) {
+                    inners[i] = others[i - 1].flux();
+                }
+                return producer.apply(inners);
+            });
+        }
+
+        final String scenarioDescription;
+        final int subscriptionsNumber;
+
+        private final BiFunction<TestPublisher<Tracked<?>>, TestPublisher<Tracked<?>>[], Publisher<Tracked<?>>>
+                publisherProducer;
+
+        DiscardScenario(String description, int subscriptionsNumber, Function<TestPublisher<Tracked<?>>, Publisher<Tracked<?>>> simplePublisherProducer) {
+            this.scenarioDescription = description;
+            this.subscriptionsNumber = subscriptionsNumber;
+            this.publisherProducer = (main, others) -> simplePublisherProducer.apply(main);
+        }
+
+        DiscardScenario(String description, int subscriptionsNumber, BiFunction<TestPublisher<Tracked<?>>, TestPublisher<Tracked<?>>[], Publisher<Tracked<?>>> publisherProducer) {
+            this.scenarioDescription = description;
+            this.subscriptionsNumber = subscriptionsNumber;
+            this.publisherProducer = publisherProducer;
+        }
+        
+        Publisher<Tracked<?>> producePublisherFromSources(TestPublisher<Tracked<?>> mainSource, TestPublisher<Tracked<?>>... otherSources) {
+            return publisherProducer.apply(mainSource, otherSources);
+        }
+
+        @Override
+        public String toString() {
+            return scenarioDescription;
         }
     }
 }
