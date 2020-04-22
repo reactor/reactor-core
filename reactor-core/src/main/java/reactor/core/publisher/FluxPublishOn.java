@@ -215,7 +215,14 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
+
+			if (cancelled) {
+				Operators.onDiscard(t, actual.currentContext());
+				return;
+			}
+
 			if (!queue.offer(t)) {
+				Operators.onDiscard(t, actual.currentContext());
 				error = Operators.onOperatorError(s,
 						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 						t, actual.currentContext());
@@ -274,6 +281,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
+				if (dataSignal != null && cancelled) {
+					Operators.onDiscard(dataSignal, actual.currentContext());
+				}
 				return;
 			}
 
@@ -312,6 +322,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					}
 
 					if (cancelled) {
+						Operators.onDiscard(v, actual.currentContext());
 						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
 						return;
 					}
@@ -379,7 +390,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 					boolean empty = v == null;
 
-					if (checkTerminated(d, empty, a)) {
+					if (checkTerminated(d, empty, a, v)) {
 						return;
 					}
 
@@ -399,7 +410,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					}
 				}
 
-				if (e == r && checkTerminated(done, q.isEmpty(), a)) {
+				if (e == r && checkTerminated(done, q.isEmpty(), a, null)) {
 					return;
 				}
 
@@ -424,7 +435,6 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 
 				if (cancelled) {
 					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
-
 					return;
 				}
 
@@ -477,8 +487,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v) {
 			if (cancelled) {
+				Operators.onDiscard(v, actual.currentContext());
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				return true;
 			}
@@ -498,6 +509,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				else {
 					Throwable e = error;
 					if (e != null) {
+						Operators.onDiscard(v, actual.currentContext());
 						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 						doError(a, e);
 						return true;
@@ -688,7 +700,14 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
+
+			if (cancelled) {
+				Operators.onDiscard(t, actual.currentContext());
+				return;
+			}
+
 			if (!queue.offer(t)) {
+				Operators.onDiscard(t, actual.currentContext());
 				error = Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
 						actual.currentContext());
 				done = true;
@@ -744,6 +763,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
+				if (dataSignal != null && cancelled) {
+					Operators.onDiscard(dataSignal, actual.currentContext());
+				}
 				return;
 			}
 
@@ -781,6 +803,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					}
 
 					if (cancelled) {
+						Operators.onDiscard(v, actual.currentContext());
 						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
 						return;
 					}
@@ -847,7 +870,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					}
 					boolean empty = v == null;
 
-					if (checkTerminated(d, empty, a)) {
+					if (checkTerminated(d, empty, a, v)) {
 						return;
 					}
 
@@ -867,7 +890,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 					}
 				}
 
-				if (emitted == r && checkTerminated(done, q.isEmpty(), a)) {
+				if (emitted == r && checkTerminated(done, q.isEmpty(), a, null)) {
 					return;
 				}
 
@@ -967,8 +990,9 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v) {
 			if (cancelled) {
+				Operators.onDiscard(v, actual.currentContext());
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 				return true;
 			}
@@ -988,6 +1012,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 				else {
 					Throwable e = error;
 					if (e != null) {
+						Operators.onDiscard(v, actual.currentContext());
 						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
 						doError(a, e);
 						return true;

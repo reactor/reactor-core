@@ -169,7 +169,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 				onError(ex);
 				return;
 			}
-			drain();
+			drain(t);
 		}
 
 		@Override
@@ -180,7 +180,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 			}
 			error = t;
 			done = true;
-			drain();
+			drain(null);
 		}
 
 		@Override
@@ -189,11 +189,14 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 				return;
 			}
 			done = true;
-			drain();
+			drain(null);
 		}
 
-		void drain() {
+		void drain(@Nullable T dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
+				if (dataSignal != null && cancelled) {
+					Operators.onDiscard(dataSignal, actual.currentContext());
+				}
 				return;
 			}
 
@@ -235,7 +238,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 					T t = q.poll();
 					boolean empty = t == null;
 
-					if (checkTerminated(d, empty, a)) {
+					if (checkTerminated(d, empty, a, t)) {
 						return;
 					}
 
@@ -249,7 +252,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 				}
 
 				if (r == e) {
-					if (checkTerminated(done, q.isEmpty(), a)) {
+					if (checkTerminated(done, q.isEmpty(), a, null)) {
 						return;
 					}
 				}
@@ -304,7 +307,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.addCap(REQUESTED, this, n);
-				drain();
+				drain(null);
 			}
 		}
 
@@ -358,9 +361,10 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 			return actual;
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a) {
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, @Nullable T v) {
 			if (cancelled) {
 				s.cancel();
+				Operators.onDiscard(v, ctx);
 				Operators.onDiscardQueueWithClear(queue, ctx, null);
 				return true;
 			}
