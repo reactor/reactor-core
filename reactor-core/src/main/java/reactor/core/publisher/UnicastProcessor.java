@@ -154,6 +154,7 @@ public final class UnicastProcessor<T>
 	volatile boolean done;
 	Throwable error;
 
+	boolean hasDownstream; //important to not loose the downstream too early and miss discard hook, while having relevant hasDownstreams()
 	volatile CoreSubscriber<? super T> actual;
 
 	volatile boolean cancelled;
@@ -203,6 +204,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (Attr.BUFFERED == key) return queue.size();
+		if (Attr.PREFETCH == key) return Integer.MAX_VALUE;
 		return super.scanUnsafe(key);
 	}
 
@@ -229,7 +231,7 @@ public final class UnicastProcessor<T>
 				T t = q.poll();
 				boolean empty = t == null;
 
-				if (checkTerminated(d, empty, a, q)) {
+				if (checkTerminated(d, empty, a, q, t)) {
 					return;
 				}
 
@@ -243,7 +245,7 @@ public final class UnicastProcessor<T>
 			}
 
 			if (r == e) {
-				if (checkTerminated(done, q.isEmpty(), a, q)) {
+				if (checkTerminated(done, q.isEmpty(), a, q, null)) {
 					return;
 				}
 			}
@@ -268,7 +270,7 @@ public final class UnicastProcessor<T>
 
 			if (cancelled) {
 				Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
-				actual = null;
+				hasDownstream = false;
 				return;
 			}
 
@@ -277,7 +279,7 @@ public final class UnicastProcessor<T>
 			a.onNext(null);
 
 			if (d) {
-				actual = null;
+				hasDownstream = false;
 
 				Throwable ex = error;
 				if (ex != null) {
@@ -295,8 +297,11 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drain() {
+	void drain(@Nullable T dataSignalOfferedBeforeDrain) {
 		if (WIP.getAndIncrement(this) != 0) {
+			if (dataSignalOfferedBeforeDrain != null && cancelled) {
+				Operators.onDiscard(dataSignalOfferedBeforeDrain, actual.currentContext());
+			}
 			return;
 		}
 
@@ -321,15 +326,16 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	boolean checkTerminated(boolean d, boolean empty, CoreSubscriber<? super T> a, Queue<T> q) {
+	boolean checkTerminated(boolean d, boolean empty, CoreSubscriber<? super T> a, Queue<T> q, @Nullable T t) {
 		if (cancelled) {
+			Operators.onDiscard(t, a.currentContext());
 			Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
-			actual = null;
+			hasDownstream = false;
 			return true;
 		}
 		if (d && empty) {
 			Throwable e = error;
-			actual = null;
+			hasDownstream = false;
 			if (e != null) {
 				a.onError(e);
 			} else {
@@ -369,9 +375,10 @@ public final class UnicastProcessor<T>
 		}
 
 		if (!queue.offer(t)) {
+			Context ctx = actual.currentContext();
 			Throwable ex = Operators.onOperatorError(null,
-					Exceptions.failWithOverflow(), t, currentContext());
-			if(onOverflow != null) {
+					Exceptions.failWithOverflow(), t, ctx);
+			if (onOverflow != null) {
 				try {
 					onOverflow.accept(t);
 				}
@@ -380,10 +387,11 @@ public final class UnicastProcessor<T>
 					ex.initCause(e);
 				}
 			}
-			onError(Operators.onOperatorError(null, ex, t, currentContext()));
+			Operators.onDiscard(t, ctx);
+			onError(ex);
 			return;
 		}
-		drain();
+		drain(t);
 	}
 
 	@Override
@@ -398,7 +406,7 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		drain();
+		drain(null);
 	}
 
 	@Override
@@ -411,7 +419,7 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		drain();
+		drain(null);
 	}
 
 	@Override
@@ -419,12 +427,13 @@ public final class UnicastProcessor<T>
 		Objects.requireNonNull(actual, "subscribe");
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
+			this.hasDownstream = true;
 			actual.onSubscribe(this);
 			this.actual = actual;
 			if (cancelled) {
-				this.actual = null;
+				this.hasDownstream = false;
 			} else {
-				drain();
+				drain(null);
 			}
 		} else {
 			Operators.error(actual, new IllegalStateException("UnicastProcessor " +
@@ -436,7 +445,7 @@ public final class UnicastProcessor<T>
 	public void request(long n) {
 		if (Operators.validate(n)) {
 			Operators.addCap(REQUESTED, this, n);
-			drain();
+			drain(null);
 		}
 	}
 
@@ -451,7 +460,7 @@ public final class UnicastProcessor<T>
 
 		if (WIP.getAndIncrement(this) == 0) {
 			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
-			actual = null;
+			hasDownstream = false;
 		}
 	}
 
@@ -513,6 +522,6 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public boolean hasDownstreams() {
-		return actual != null;
+		return hasDownstream;
 	}
 }
