@@ -159,6 +159,10 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				Operators.onNextDropped(t, ctx);
 				return;
 			}
+			if (cancelled) {
+				Operators.onDiscard(t, ctx);
+			}
+
 			if ((capacityOrSkip != Integer.MAX_VALUE && queue.size() >= capacityOrSkip) || !queue.offer(t)) {
 				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), t, ctx);
 				if (onOverflow != null) {
@@ -281,8 +285,9 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			for (; ; ) {
 
 				if (cancelled) {
-					s.cancel();
-					Operators.onDiscardQueueWithClear(q, ctx, null);
+					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// to prevent any racing done by downstream
+					this.clear();
 					return;
 				}
 
@@ -323,8 +328,10 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 
 				s.cancel();
 
-				if (!enabledFusion) {
-					if (WIP.getAndIncrement(this) == 0) {
+				if (WIP.getAndIncrement(this) == 0) {
+					if (!enabledFusion) {
+						// discard MUST be happening only and only if there is no racing on elements consumption
+						// which is guaranteed by the WIP guard here in case non-fused output
 						Operators.onDiscardQueueWithClear(queue, ctx, null);
 					}
 				}
@@ -349,7 +356,12 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 
 		@Override
 		public void clear() {
-			Operators.onDiscardQueueWithClear(queue, ctx, null);
+			// use synchronization on the queue instance as the best way to ensure there is no racing on draining
+			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
+			// this should not ber performance costly with the assumption the cancel is rare operation
+			synchronized (this) {
+				Operators.onDiscardQueueWithClear(queue, ctx, null);
+			}
 		}
 
 		@Override

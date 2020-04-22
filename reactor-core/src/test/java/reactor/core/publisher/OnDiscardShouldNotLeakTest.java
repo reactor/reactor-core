@@ -45,24 +45,50 @@ import reactor.util.concurrent.Queues;
 @RunWith(Parameterized.class)
 public class OnDiscardShouldNotLeakTest {
 
-	//add DiscardScenarios here to test more operators
-	private static DiscardScenario[] SCENARIOS = new DiscardScenario[] {
-			DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
-			DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
-			DiscardScenario.rawSource("flatMapInner", 1, raw -> Flux.just(1).flatMap(f -> raw)),
-			DiscardScenario.fluxSource("flatMap", 1, main -> main.flatMap(f -> Mono.just(f).hide().flux())),
-			DiscardScenario.fluxSource("flatMapIterable", 1, f -> f.flatMapIterable(Arrays::asList)),
-			DiscardScenario.fluxSource("publishOnDelayErrors", 1, f -> f.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("publishOnImmediateErrors", 1, f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
-			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(UnicastProcessor.create()))
-	};
+    //add DiscardScenarios here to test more operators
+    private static DiscardScenario[] SCENARIOS = new DiscardScenario[] {
+                DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
+                DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
+                DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", 1, trackedFlux ->
+                    trackedFlux
+                        .onBackpressureBuffer()
+                        .publishOn(Schedulers.immediate())),
+				DiscardScenario.fluxSource("onBackpressureBufferAndPublishOnWithMaps", 1, trackedFlux ->
+					trackedFlux
+						.onBackpressureBuffer()
+						.map(Function.identity())
+						.map(Function.identity())
+						.map(Function.identity())
+						.publishOn(Schedulers.immediate())),
+                DiscardScenario.rawSource("flatMapInner", 1, raw -> Flux.just(1).flatMap(f -> raw)),
+                DiscardScenario.fluxSource("flatMap", 1, main -> main.flatMap(f -> Mono.just(f).hide().flux())),
+				DiscardScenario.fluxSource("PublishOnAndPublishOn", 1, main ->
+					main
+						.publishOn(Schedulers.immediate())
+						.publishOn(Schedulers.immediate())),
+                DiscardScenario.fluxSource("PublishOnAndPublishOnWithMaps", 1, main ->
+                    main
+                        .publishOn(Schedulers.immediate())
+                        .map(Function.identity())
+                        .map(Function.identity())
+                        .map(Function.identity())
+                        .publishOn(Schedulers.immediate())),
+                DiscardScenario.fluxSource("flatMapIterable", 1, f -> f.flatMapIterable(Arrays::asList)),
+                DiscardScenario.fluxSource("publishOnDelayErrors", 1, f -> f.publishOn(Schedulers.immediate())),
+                DiscardScenario.fluxSource("publishOnImmediateErrors", 1, f -> f.publishOn(Schedulers.immediate(), false, Queues.SMALL_BUFFER_SIZE)),
+                DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(UnicastProcessor.create())),
+                DiscardScenario.fluxSource("unicastProcessorAndPublishOn", 1, f ->
+					f
+						.subscribeWith(UnicastProcessor.create())
+						.publishOn(Schedulers.immediate())),
+    };
 
-	private static boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
-			{ false, false },
-			{ true, false },
-			{ false, true },
-			{ true, true }
-	};
+    private static boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
+            { false, false },
+            { true, false },
+            { false, true },
+            { true, true }
+    };
 
 	@Parameterized.Parameters(name = " {2} | conditional={0}, fused={1}")
 	public static Collection<Object[]> data() {

@@ -269,7 +269,9 @@ public final class UnicastProcessor<T>
 		for (;;) {
 
 			if (cancelled) {
-				Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
+				// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+				// to prevent any racing done by downstream
+				this.clear();
 				hasDownstream = false;
 				return;
 			}
@@ -459,7 +461,11 @@ public final class UnicastProcessor<T>
 		doTerminate();
 
 		if (WIP.getAndIncrement(this) == 0) {
-			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+			if (!outputFused) {
+				// discard MUST be happening only and only if there is no racing on elements consumption
+				// which is guaranteed by the WIP guard here in case non-fused output
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+			}
 			hasDownstream = false;
 		}
 	}
@@ -482,7 +488,12 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void clear() {
-		Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+		// use synchronization on the queue instance as the best way to ensure there is no racing on draining
+		// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
+		// this should not ber performance costly with the assumption the cancel is rare operation
+		synchronized (this) {
+			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+		}
 	}
 
 	@Override

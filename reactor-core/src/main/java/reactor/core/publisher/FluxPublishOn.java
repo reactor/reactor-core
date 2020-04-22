@@ -280,7 +280,15 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				if (sourceMode == ASYNC) {
+					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+					queue.clear();
+				}
+				else if (!outputFused) {
+					// discard MUST be happening only and only if there is no racing on elements consumption
+					// which is guaranteed by the WIP guard here in case non-fused output
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				}
 			}
 		}
 
@@ -289,8 +297,15 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
-				if (dataSignal != null && cancelled) {
-					Operators.onDiscard(dataSignal, actual.currentContext());
+				if (cancelled) {
+					if (sourceMode == ASYNC) {
+						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+						queue.clear();
+					}
+					else {
+						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
+						Operators.onDiscard(dataSignal, actual.currentContext());
+					}
 				}
 				return;
 			}
@@ -299,7 +314,18 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				worker.schedule(this);
 			}
 			catch (RejectedExecutionException ree) {
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				if (sourceMode == ASYNC) {
+					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+					queue.clear();
+				} else if (outputFused) {
+					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// to prevent any racing done by downstream
+					this.clear();
+				}
+				else {
+					// In all other modes we are free to discard queue immediately since there is no racing on pooling
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				}
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
 						actual.currentContext()));
 			}
@@ -390,7 +416,14 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+						if (sourceMode == ASYNC) {
+							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+							queue.clear();
+						} else {
+							// discard MUST be happening only and only if there is no racing on elements consumption
+							// which is guaranteed by the WIP guard here
+							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						}
 
 						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
 						return;
@@ -442,7 +475,9 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			for (; ; ) {
 
 				if (cancelled) {
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// to prevent any racing done by downstream
+					this.clear();
 					return;
 				}
 
@@ -498,7 +533,14 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v) {
 			if (cancelled) {
 				Operators.onDiscard(v, actual.currentContext());
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				if (sourceMode == ASYNC) {
+					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+					queue.clear();
+				} else {
+					// discard MUST be happening only and only if there is no racing on elements consumption
+					// which is guaranteed by the WIP guard here
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				}
 				return true;
 			}
 			if (d) {
@@ -518,7 +560,14 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					Throwable e = error;
 					if (e != null) {
 						Operators.onDiscard(v, actual.currentContext());
-						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						if (sourceMode == ASYNC) {
+							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+							queue.clear();
+						} else {
+							// discard MUST be happening only and only if there is no racing on elements consumption
+							// which is guaranteed by the WIP guard here
+							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						}
 						doError(a, e);
 						return true;
 					}
@@ -555,7 +604,12 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void clear() {
-			Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+			// use synchronization on the operator instance as the best way to ensure there is no racing on draining
+			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
+			// this should not ber performance costly with the assumption the cancel is rare operation
+			synchronized (this) {
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+			}
 		}
 
 		@Override
@@ -700,7 +754,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
-				trySchedule(this, null, null);
+				trySchedule(this, null, null /* t always null */);
 				return;
 			}
 
@@ -725,7 +779,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void onError(Throwable t) {
-			if(done){
+			if (done) {
 				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
@@ -736,7 +790,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void onComplete() {
-			if(done){
+			if (done) {
 				return;
 			}
 			done = true;
@@ -762,7 +816,15 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				if (sourceMode == ASYNC) {
+					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+					queue.clear();
+				}
+				else if (!outputFused) {
+					// discard MUST be happening only and only if there is no racing on elements consumption
+					// which is guaranteed by the WIP guard here in case non-fused output
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				}
 			}
 		}
 
@@ -771,8 +833,15 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
-				if (dataSignal != null && cancelled) {
-					Operators.onDiscard(dataSignal, actual.currentContext());
+				if (cancelled) {
+					if (sourceMode == ASYNC) {
+						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+						queue.clear();
+					}
+					else {
+						// discard given dataSignal since no more is enqueued (spec guarantees serialised onXXX calls)
+						Operators.onDiscard(dataSignal, actual.currentContext());
+					}
 				}
 				return;
 			}
@@ -781,7 +850,18 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				worker.schedule(this);
 			}
 			catch (RejectedExecutionException ree) {
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				if (sourceMode == ASYNC) {
+					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+					queue.clear();
+				} else if (outputFused) {
+					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// to prevent any racing done by downstream
+					this.clear();
+				}
+				else {
+					// In all other modes we are free to discard queue immediately since there is no racing on pooling
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				}
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
 						actual.currentContext()));
 			}
@@ -871,7 +951,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						Operators.onDiscardQueueWithClear(q, actual.currentContext(), null);
+						// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+						q.clear();
 
 						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
 						return;
@@ -924,7 +1005,9 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			for (; ; ) {
 
 				if (cancelled) {
-					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// to prevent any racing done by downstream
+					this.clear();
 					return;
 				}
 
@@ -1001,7 +1084,14 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, @Nullable T v) {
 			if (cancelled) {
 				Operators.onDiscard(v, actual.currentContext());
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				if (sourceMode == ASYNC) {
+					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+					queue.clear();
+				} else {
+					// discard MUST be happening only and only if there is no racing on elements consumption
+					// which is guaranteed by the WIP guard here
+					Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				}
 				return true;
 			}
 			if (d) {
@@ -1021,7 +1111,14 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					Throwable e = error;
 					if (e != null) {
 						Operators.onDiscard(v, actual.currentContext());
-						Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						if (sourceMode == ASYNC) {
+							// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
+							queue.clear();
+						} else {
+							// discard MUST be happening only and only if there is no racing on elements consumption
+							// which is guaranteed by the WIP guard here
+							Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+						}
 						doError(a, e);
 						return true;
 					}
@@ -1037,7 +1134,12 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void clear() {
-			Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+			// use synchronization on the queue instance as the best way to ensure there is no racing on draining
+			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
+			// this should not ber performance costly with the assumption the cancel is rare operation
+			synchronized (this) {
+				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+			}
 		}
 
 		@Override
