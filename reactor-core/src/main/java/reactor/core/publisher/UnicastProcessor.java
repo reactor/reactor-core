@@ -464,7 +464,7 @@ public final class UnicastProcessor<T>
 			if (!outputFused) {
 				// discard MUST be happening only and only if there is no racing on elements consumption
 				// which is guaranteed by the WIP guard here in case non-fused output
-				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+				Operators.onDiscardQueueWithClear(queue, currentContext(), null);
 			}
 			hasDownstream = false;
 		}
