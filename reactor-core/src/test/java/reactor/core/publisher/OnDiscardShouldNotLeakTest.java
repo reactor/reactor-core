@@ -45,7 +45,7 @@ import reactor.util.concurrent.Queues;
 @RunWith(Parameterized.class)
 public class OnDiscardShouldNotLeakTest {
 
-    //add DiscardScenarios here to test more operators
+    // add DiscardScenarios here to test more operators
     private static DiscardScenario[] SCENARIOS = new DiscardScenario[] {
                 DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
                 DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
