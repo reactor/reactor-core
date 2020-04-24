@@ -979,9 +979,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Iterable}.
-	 * A new iterator will be created for each subscriber.
+	 * The {@link Iterable#iterator()} method will be invoked at least once and at most twice
+	 * for each subscriber (see onDiscard information below).
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromIterable.svg" alt="">
+	 *
+	 * @reactor.discard Upon cancellation, this operator attempts to discard remainder of the
+	 * {@link Iterable} if it can safely ensure the iterator is not infinite (see {@link Spliterator#getExactSizeIfKnown()}).
+	 * Note that this means the {@link Iterable#iterator()} method could be invoked twice.
+	 * This second invocation is skipped on a {@link Collection} however, which is assumed to be finite.
 	 *
 	 * @param it the {@link Iterable} to read data from
 	 * @param <T> The type of values in the source {@link Iterable} and resulting Flux
@@ -1001,6 +1007,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromStream.svg" alt="">
 	 *
+	 * @reactor.discard Upon cancellation, this operator attempts to discard remainder of the
+	 * {@link Stream} through its open {@link Spliterator}, if it can safely ensure it is not infinite
+	 * (see {@link Spliterator#getExactSizeIfKnown()}).
+	 *
 	 * @param s the {@link Stream} to read data from
 	 * @param <T> The type of values in the source {@link Stream} and resulting Flux
 	 *
@@ -1018,6 +1028,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * or completion.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromStream.svg" alt="">
+	 *
+	 * @reactor.discard Upon cancellation, this operator attempts to discard remainder of the
+	 * {@link Stream} through its open {@link Spliterator}, if it can safely ensure it is not infinite
+	 * (see {@link Spliterator#getExactSizeIfKnown()}).
 	 *
 	 * @param streamSupplier the {@link Supplier} that generates the {@link Stream} from
 	 * which to read data
@@ -3790,7 +3804,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
-	 * safely assume the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
+	 * safely ensure the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
+	 * Note that this means each {@link Iterable}'s {@link Iterable#iterator()} method could be invoked twice.
+	 * This second invocation is skipped on a {@link Collection} however, which are assumed to be finite.
+	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
+	 * the {@link #onErrorContinue(BiConsumer)} error consumer (the value consumer
+	 * is not invoked, as the source element will be part of the sequence). The onNext
+	 * signal is then propagated as normal.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param <R> the merged output sequence type
@@ -3815,7 +3837,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
-	 * safely assume the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
+	 * safely ensure the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
+	 * Note that this means each {@link Iterable}'s {@link Iterable#iterator()} method could be invoked twice.
+	 * This second invocation is skipped on a {@link Collection} however, which are assumed to be finite.
+	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
+	 * the {@link #onErrorContinue(BiConsumer)} error consumer (the value consumer
+	 * is not invoked, as the source element will be part of the sequence). The onNext
+	 * signal is then propagated as normal.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
@@ -5071,10 +5101,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
-	 * safely assume iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
-	 *
-	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
-	 * @param <R> the merged output sequence type
+	 * safely ensure the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
+	 * Note that this means each {@link Iterable}'s {@link Iterable#iterator()} method could be invoked twice.
+	 * This second invocation is skipped on a {@link Collection} however, which are assumed to be finite.
 	 *
 	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
@@ -5082,6 +5111,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * is not invoked, as the source element will be part of the sequence). The onNext
 	 * signal is then propagated as normal.
 	 *
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
+	 * @param <R> the merged output sequence type
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
@@ -5103,11 +5135,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
-	 * safely assume the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
-	 *
-	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
-	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
-	 * @param <R> the merged output sequence type
+	 * safely ensure the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
+	 * Note that this means each {@link Iterable}'s {@link Iterable#iterator()} method could be invoked twice.
+	 * This second invocation is skipped on a {@link Collection} however, which are assumed to be finite.
 	 *
 	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
@@ -5115,6 +5145,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * is not invoked, as the source element will be part of the sequence). The onNext
 	 * signal is then propagated as normal.
 	 *
+	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
+	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
+	 * @param <R> the merged output sequence type
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
