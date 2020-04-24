@@ -169,6 +169,11 @@ public final class UnicastProcessor<T>
 	static final AtomicIntegerFieldUpdater<UnicastProcessor> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(UnicastProcessor.class, "wip");
 
+	volatile int discardGuard;
+	@SuppressWarnings("rawtypes")
+	static final AtomicIntegerFieldUpdater<UnicastProcessor> DISCARD_GUARD =
+			AtomicIntegerFieldUpdater.newUpdater(UnicastProcessor.class, "discardGuard");
+
 	volatile long requested;
 	@SuppressWarnings("rawtypes")
 	static final AtomicLongFieldUpdater<UnicastProcessor> REQUESTED =
@@ -269,7 +274,9 @@ public final class UnicastProcessor<T>
 		for (;;) {
 
 			if (cancelled) {
-				Operators.onDiscardQueueWithClear(q, a.currentContext(), null);
+				// We are the holder of the queue, but we still have to perform discarding under the guarded block
+				// to prevent any racing done by downstream
+				this.clear();
 				hasDownstream = false;
 				return;
 			}
@@ -459,7 +466,11 @@ public final class UnicastProcessor<T>
 		doTerminate();
 
 		if (WIP.getAndIncrement(this) == 0) {
-			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+			if (!outputFused) {
+				// discard MUST be happening only and only if there is no racing on elements consumption
+				// which is guaranteed by the WIP guard here in case non-fused output
+				Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+			}
 			hasDownstream = false;
 		}
 	}
@@ -482,7 +493,29 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void clear() {
-		Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+		// use guard on the queue instance as the best way to ensure there is no racing on draining
+		// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
+		// this should not be performance costly with the assumption the cancel is rare operation
+		if (DISCARD_GUARD.getAndIncrement(this) != 0) {
+			return;
+		}
+
+		int missed = 1;
+
+		for (;;) {
+			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+
+			int dg = discardGuard;
+			if (missed == dg) {
+				missed = DISCARD_GUARD.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+			else {
+				missed = dg;
+			}
+		}
 	}
 
 	@Override
