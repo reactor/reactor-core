@@ -169,6 +169,11 @@ public final class UnicastProcessor<T>
 	static final AtomicIntegerFieldUpdater<UnicastProcessor> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(UnicastProcessor.class, "wip");
 
+	volatile int discardGuard;
+	@SuppressWarnings("rawtypes")
+	static final AtomicIntegerFieldUpdater<UnicastProcessor> DISCARD_GUARD =
+			AtomicIntegerFieldUpdater.newUpdater(UnicastProcessor.class, "discardGuard");
+
 	volatile long requested;
 	@SuppressWarnings("rawtypes")
 	static final AtomicLongFieldUpdater<UnicastProcessor> REQUESTED =
@@ -269,7 +274,7 @@ public final class UnicastProcessor<T>
 		for (;;) {
 
 			if (cancelled) {
-				// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+				// We are the holder of the queue, but we still have to perform discarding under the guarded block
 				// to prevent any racing done by downstream
 				this.clear();
 				hasDownstream = false;
@@ -488,11 +493,28 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void clear() {
-		// use synchronization on the queue instance as the best way to ensure there is no racing on draining
+		// use guard on the queue instance as the best way to ensure there is no racing on draining
 		// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
 		// this should not ber performance costly with the assumption the cancel is rare operation
-		synchronized (this) {
+		if (DISCARD_GUARD.getAndIncrement(this) != 0) {
+			return;
+		}
+
+		int missed = 1;
+
+		for (;;) {
 			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+
+			int w = discardGuard;
+			if (missed == w) {
+				missed = DISCARD_GUARD.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+			else {
+				missed = w;
+			}
 		}
 	}
 

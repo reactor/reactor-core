@@ -146,6 +146,11 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		static final AtomicIntegerFieldUpdater<PublishOnSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class, "wip");
 
+		volatile int discardGuard;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<PublishOnSubscriber> DISCARD_GUARD =
+				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class, "discardGuard");
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<PublishOnSubscriber> REQUESTED =
@@ -318,7 +323,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 					queue.clear();
 				} else if (outputFused) {
-					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// We are the holder of the queue, but we still have to perform discarding under the guarded block
 					// to prevent any racing done by downstream
 					this.clear();
 				}
@@ -475,7 +480,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			for (; ; ) {
 
 				if (cancelled) {
-					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// We are the holder of the queue, but we still have to perform discarding under the guarded block
 					// to prevent any racing done by downstream
 					this.clear();
 					return;
@@ -604,11 +609,28 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void clear() {
-			// use synchronization on the operator instance as the best way to ensure there is no racing on draining
+			// use guard on the queue instance as the best way to ensure there is no racing on draining
 			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
 			// this should not ber performance costly with the assumption the cancel is rare operation
-			synchronized (this) {
+			if (DISCARD_GUARD.getAndIncrement(this) != 0) {
+				return;
+			}
+
+			int missed = 1;
+
+			for (;;) {
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+
+				int w = discardGuard;
+				if (missed == w) {
+					missed = DISCARD_GUARD.addAndGet(this, -missed);
+					if (missed == 0) {
+						break;
+					}
+				}
+				else {
+					missed = w;
+				}
 			}
 		}
 
@@ -681,6 +703,12 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		static final AtomicIntegerFieldUpdater<PublishOnConditionalSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(PublishOnConditionalSubscriber.class,
 						"wip");
+
+		volatile int discardGuard;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<PublishOnConditionalSubscriber> DISCARD_GUARD =
+				AtomicIntegerFieldUpdater.newUpdater(PublishOnConditionalSubscriber.class,
+						"discardGuard");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -854,7 +882,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					// delegates discarding to the queue holder to ensure there is no racing on draining from the SpScQueue
 					queue.clear();
 				} else if (outputFused) {
-					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// We are the holder of the queue, but we still have to perform discarding under the guarded block
 					// to prevent any racing done by downstream
 					this.clear();
 				}
@@ -1005,7 +1033,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			for (; ; ) {
 
 				if (cancelled) {
-					// We are the holder of the queue, but we still have to perform discarding under the synchronize block
+					// We are the holder of the queue, but we still have to perform discarding under the guarded block
 					// to prevent any racing done by downstream
 					this.clear();
 					return;
@@ -1134,11 +1162,28 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void clear() {
-			// use synchronization on the queue instance as the best way to ensure there is no racing on draining
+			// use guard on the queue instance as the best way to ensure there is no racing on draining
 			// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
 			// this should not ber performance costly with the assumption the cancel is rare operation
-			synchronized (this) {
+			if (DISCARD_GUARD.getAndIncrement(this) != 0) {
+				return;
+			}
+
+			int missed = 1;
+
+			for (;;) {
 				Operators.onDiscardQueueWithClear(queue, actual.currentContext(), null);
+
+				int w = discardGuard;
+				if (missed == w) {
+					missed = DISCARD_GUARD.addAndGet(this, -missed);
+					if (missed == 0) {
+						break;
+					}
+				}
+				else {
+					missed = w;
+				}
 			}
 		}
 
