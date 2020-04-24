@@ -495,7 +495,7 @@ public final class UnicastProcessor<T>
 	public void clear() {
 		// use guard on the queue instance as the best way to ensure there is no racing on draining
 		// the call to this method must be done only during the ASYNC fusion so all the callers will be waiting
-		// this should not ber performance costly with the assumption the cancel is rare operation
+		// this should not be performance costly with the assumption the cancel is rare operation
 		if (DISCARD_GUARD.getAndIncrement(this) != 0) {
 			return;
 		}
@@ -505,15 +505,15 @@ public final class UnicastProcessor<T>
 		for (;;) {
 			Operators.onDiscardQueueWithClear(queue, currentContext(), null);
 
-			int w = discardGuard;
-			if (missed == w) {
+			int dg = discardGuard;
+			if (missed == dg) {
 				missed = DISCARD_GUARD.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 			else {
-				missed = w;
+				missed = dg;
 			}
 		}
 	}
