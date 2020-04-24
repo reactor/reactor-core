@@ -17,11 +17,13 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -2787,13 +2789,21 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Transform the item emitted by this {@link Mono} into {@link Iterable}, then forward
 	 * its elements into the returned {@link Flux}. The prefetch argument allows to
 	 * give an arbitrary prefetch size to the inner {@link Iterable}.
+	 * The {@link Iterable#iterator()} method will be called at least once and at most twice.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/flatMapIterableForMono.svg" alt="">
+	 * <p>
+	 * This operator inspects each {@link Iterable}'s {@link Spliterator} to assess if the iteration
+	 * can be guaranteed to be finite (see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
+	 * Since the default Spliterator wraps the Iterator we can have two {@link Iterable#iterator()}
+	 * calls per iterable. This second invocation is skipped on a {@link Collection } however, a type which is
+	 * assumed to be always finite.
 	 *
-	 * @reactor.discard Upon cancellation in some cases, this operator attempts to discard remainder of
-	 * the currently processed {@link Iterable} (if it can safely assume the iterator is not infinite,
-	 * see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
+	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
+	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
+	 * safely ensure the iterator is finite). Note that this means each {@link Iterable}'s {@link Iterable#iterator()}
+	 * method could be invoked twice.
 	 *
 	 * @param mapper the {@link Function} to transform input item into a sequence {@link Iterable}
 	 * @param <R> the merged output sequence type

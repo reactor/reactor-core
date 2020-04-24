@@ -980,14 +980,19 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Iterable}.
 	 * The {@link Iterable#iterator()} method will be invoked at least once and at most twice
-	 * for each subscriber (see onDiscard information below).
+	 * for each subscriber.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromIterable.svg" alt="">
+	 * <p>
+	 * This operator inspects the {@link Iterable}'s {@link Spliterator} to assess if the iteration
+	 * can be guaranteed to be finite (see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
+	 * Since the default Spliterator wraps the Iterator we can have two {@link Iterable#iterator()}
+	 * calls. This second invocation is skipped on a {@link Collection} however, a type which is
+	 * assumed to be always finite.
 	 *
-	 * @reactor.discard Upon cancellation, this operator attempts to discard remainder of the
-	 * {@link Iterable} if it can safely ensure the iterator is not infinite (see {@link Spliterator#getExactSizeIfKnown()}).
+	 * @reactor.discard Upon cancellation, this operator attempts to discard the remainder of the
+	 * {@link Iterable} if it can safely ensure the iterator is finite.
 	 * Note that this means the {@link Iterable#iterator()} method could be invoked twice.
-	 * This second invocation is skipped on a {@link Collection} however, which is assumed to be finite.
 	 *
 	 * @param it the {@link Iterable} to read data from
 	 * @param <T> The type of values in the source {@link Iterable} and resulting Flux
@@ -1008,8 +1013,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/fromStream.svg" alt="">
 	 *
 	 * @reactor.discard Upon cancellation, this operator attempts to discard remainder of the
-	 * {@link Stream} through its open {@link Spliterator}, if it can safely ensure it is not infinite
-	 * (see {@link Spliterator#getExactSizeIfKnown()}).
+	 * {@link Stream} through its open {@link Spliterator}, if it can safely ensure it is finite
+	 * (see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
 	 *
 	 * @param s the {@link Stream} to read data from
 	 * @param <T> The type of values in the source {@link Stream} and resulting Flux
@@ -1030,8 +1035,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/fromStream.svg" alt="">
 	 *
 	 * @reactor.discard Upon cancellation, this operator attempts to discard remainder of the
-	 * {@link Stream} through its open {@link Spliterator}, if it can safely ensure it is not infinite
-	 * (see {@link Spliterator#getExactSizeIfKnown()}).
+	 * {@link Stream} through its open {@link Spliterator}, if it can safely ensure it is finite
+	 * (see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
 	 *
 	 * @param streamSupplier the {@link Supplier} that generates the {@link Stream} from
 	 * which to read data
@@ -3792,10 +3797,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the elements from those by
-	 * concatenating them into a single {@link Flux}.
+	 * concatenating them into a single {@link Flux}. For each iterable, {@link Iterable#iterator()} will be called
+	 * at least once and at most twice.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMapIterable.svg" alt="">
+	 * <p>
+	 * This operator inspects each {@link Iterable}'s {@link Spliterator} to assess if the iteration
+	 * can be guaranteed to be finite (see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
+	 * Since the default Spliterator wraps the Iterator we can have two {@link Iterable#iterator()}
+	 * calls per iterable. This second invocation is skipped on a {@link Collection} however, a type which is
+	 * assumed to be always finite.
 	 * <p>
 	 * Note that unlike {@link #flatMap(Function)} and {@link #concatMap(Function)}, with Iterable there is
 	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
@@ -3804,9 +3816,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
-	 * safely ensure the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
-	 * Note that this means each {@link Iterable}'s {@link Iterable#iterator()} method could be invoked twice.
-	 * This second invocation is skipped on a {@link Collection} however, which are assumed to be finite.
+	 * safely ensure the iterator is finite). Note that this means each {@link Iterable}'s {@link Iterable#iterator()}
+	 * method could be invoked twice.
 	 *
 	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
@@ -3826,9 +3837,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
 	 * concatenating them into a single {@link Flux}. The prefetch argument allows to give an arbitrary prefetch size to the merged {@link Iterable}.
+	 * For each iterable, {@link Iterable#iterator()} will be called at least once and at most twice.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/concatMapIterable.svg" alt="">
+	 * <p>
+	 * This operator inspects each {@link Iterable}'s {@link Spliterator} to assess if the iteration
+	 * can be guaranteed to be finite (see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
+	 * Since the default Spliterator wraps the Iterator we can have two {@link Iterable#iterator()}
+	 * calls per iterable. This second invocation is skipped on a {@link Collection} however, a type which is
+	 * assumed to be always finite.
 	 * <p>
 	 * Note that unlike {@link #flatMap(Function)} and {@link #concatMap(Function)}, with Iterable there is
 	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
@@ -3837,9 +3855,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
-	 * safely ensure the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
-	 * Note that this means each {@link Iterable}'s {@link Iterable#iterator()} method could be invoked twice.
-	 * This second invocation is skipped on a {@link Collection} however, which are assumed to be finite.
+	 * safely ensure the iterator is finite). Note that this means each {@link Iterable}'s {@link Iterable#iterator()}
+	 * method could be invoked twice.
 	 *
 	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
@@ -5089,10 +5106,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the elements from those by
-	 * merging them into a single {@link Flux}.
+	 * merging them into a single {@link Flux}. For each iterable, {@link Iterable#iterator()} will be called at least
+	 * once and at most twice.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/flatMapIterableForFlux.svg" alt="">
+	 * <p>
+	 * This operator inspects each {@link Iterable}'s {@link Spliterator} to assess if the iteration
+	 * can be guaranteed to be finite (see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
+	 * Since the default Spliterator wraps the Iterator we can have two {@link Iterable#iterator()}
+	 * calls per iterable. This second invocation is skipped on a {@link Collection} however, a type which is
+	 * assumed to be always finite.
 	 * <p>
 	 * Note that unlike {@link #flatMap(Function)} and {@link #concatMap(Function)}, with Iterable there is
 	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
@@ -5101,16 +5125,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
-	 * safely ensure the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
-	 * Note that this means each {@link Iterable}'s {@link Iterable#iterator()} method could be invoked twice.
-	 * This second invocation is skipped on a {@link Collection} however, which are assumed to be finite.
+	 * safely ensure the iterator is finite). Note that this means each {@link Iterable}'s {@link Iterable#iterator()}
+	 * method could be invoked twice.
 	 *
 	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
 	 * the {@link #onErrorContinue(BiConsumer)} error consumer (the value consumer
 	 * is not invoked, as the source element will be part of the sequence). The onNext
 	 * signal is then propagated as normal.
-	 *
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param <R> the merged output sequence type
@@ -5124,9 +5146,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
 	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 * For each iterable, {@link Iterable#iterator()} will be called at least once and at most twice.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/flatMapIterableForFlux.svg" alt="">
+	 * <p>
+	 * This operator inspects each {@link Iterable}'s {@link Spliterator} to assess if the iteration
+	 * can be guaranteed to be finite (see {@link Operators#onDiscardMultiple(Iterator, boolean, Context)}).
+	 * Since the default Spliterator wraps the Iterator we can have two {@link Iterable#iterator()}
+	 * calls per iterable. This second invocation is skipped on a {@link Collection} however, a type which is
+	 * assumed to be always finite.
 	 * <p>
 	 * Note that unlike {@link #flatMap(Function)} and {@link #concatMap(Function)}, with Iterable there is
 	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
@@ -5135,9 +5164,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
-	 * safely ensure the iterator is not infinite, see {@link Spliterator#getExactSizeIfKnown()}).
+	 * safely ensure the iterator is finite).
 	 * Note that this means each {@link Iterable}'s {@link Iterable#iterator()} method could be invoked twice.
-	 * This second invocation is skipped on a {@link Collection} however, which are assumed to be finite.
 	 *
 	 * @reactor.errorMode This operator supports {@link #onErrorContinue(BiConsumer) resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
