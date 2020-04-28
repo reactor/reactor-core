@@ -17,32 +17,31 @@ configure(rootProject) {
 	apply plugin: 'org.asciidoctor.convert'
 
 	asciidoctor {
-	  inputs.dir("docs/asciidoc/")
-			.withPropertyName("asciidocFiles")
-			.withPathSensitivity(PathSensitivity.RELATIVE)
+		inputs.dir("docs/asciidoc/")
+				.withPropertyName("asciidocFiles")
+				.withPathSensitivity(PathSensitivity.RELATIVE)
 
-	  if (isCiServer || !rootProject.version.toString().endsWith(".BUILD-SNAPSHOT")) {
-		backends = ["html5", "pdf"]
-	  }
-	  else {
-		backends = ["html5"]
-	  }
-
-	  sourceDir "$rootDir/docs/asciidoc/"
-	  sources {
-		include "index.asciidoc"
-	  }
-	  resources {
-		from(sourceDir) {
-		  include 'images/**'
-		  include 'highlight/**/*'
+		if (!isCiServer && (rootProject.version.toString().contains(".BUILD-SNAPSHOT") ||
+				rootProject.version.toString().contains("-SNAPSHOT"))) {
+			backends = ["html5"]
 		}
-	  }
-	  outputDir file("$buildDir/docs/asciidoc")
+		else {
+			backends = ["html5", "pdf"]
+		}
+
+		sourceDir "$rootDir/docs/asciidoc/"
+		sources {
+			include "index.asciidoc"
+		}
+		resources {
+			from(sourceDir) {
+				include 'images/**'
+				include 'highlight/**/*'
+			}
+		}
+		outputDir file("$buildDir/docs/asciidoc")
 		logDocuments = true
-		options = [
-				doctype: 'book'
-		]
+		options = [doctype: 'book']
 		attributes 'allow-uri-read': '',
 				imagesdir: "images/",
 				stylesdir: "stylesheets/",

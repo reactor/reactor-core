@@ -16,7 +16,6 @@
 
 package io.reactor.gradle;
 
-import io.reactor.gradle.CustomVersionPlugin;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
@@ -30,7 +29,7 @@ import static org.assertj.core.api.Assertions.*;
 public class CustomVersionPluginTest {
 
 	@Test
-	void noCustomVersionPropertyDoesNothing() {
+	void noCustomVersionPropertyDoesNothingLegacyScheme() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
 		project.setVersion("1.2.3.BUILD-SNAPSHOT");
@@ -41,7 +40,18 @@ public class CustomVersionPluginTest {
 	}
 
 	@Test
-	void acceptsEmptyStringAsNoCustomVersion() {
+	void noCustomVersionPropertyDoesNothing2020Scheme() {
+		CustomVersionPlugin plugin = new CustomVersionPlugin();
+		Project project = ProjectBuilder.builder().withName("foo").build();
+		project.setVersion("1.2.3-SNAPSHOT");
+
+		plugin.apply(project);
+
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT");
+	}
+
+	@Test
+	void acceptsEmptyStringAsNoCustomVersionLegacyScheme() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
 		project.setVersion("1.2.3.BUILD-SNAPSHOT");
@@ -49,6 +59,17 @@ public class CustomVersionPluginTest {
 
 		assertThatCode(() -> plugin.apply(project)).doesNotThrowAnyException();
 		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT");
+	}
+
+	@Test
+	void acceptsEmptyStringAsNoCustomVersion2020Scheme() {
+		CustomVersionPlugin plugin = new CustomVersionPlugin();
+		Project project = ProjectBuilder.builder().withName("foo").build();
+		project.setVersion("1.2.3-SNAPSHOT");
+		project.getExtensions().add("versionBranch", "");
+
+		assertThatCode(() -> plugin.apply(project)).doesNotThrowAnyException();
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT");
 	}
 
 	@Test
@@ -136,7 +157,7 @@ public class CustomVersionPluginTest {
 	}
 
 	@Test
-	void doNothingIfPropertyVersionBranchButNotSnapshot() {
+	void doNothingIfPropertyVersionBranchButNotSnapshotLegacyScheme() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
 		project.setVersion("1.2.3.M1");
@@ -148,7 +169,19 @@ public class CustomVersionPluginTest {
 	}
 
 	@Test
-	void changesVersionIfPropertyVersionBranchAndSnapshot() {
+	void doNothingIfPropertyVersionBranchButNotSnapshot2020Scheme() {
+		CustomVersionPlugin plugin = new CustomVersionPlugin();
+		Project project = ProjectBuilder.builder().withName("foo").build();
+		project.setVersion("1.2.3-M1");
+		project.getExtensions().add("versionBranch", "custom");
+
+		plugin.apply(project);
+
+		assertThat(project.getVersion()).hasToString("1.2.3-M1");
+	}
+
+	@Test
+	void changesVersionIfPropertyVersionBranchAndSnapshotLegacyScheme() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
 		project.setVersion("1.2.3.BUILD-SNAPSHOT");
@@ -156,7 +189,19 @@ public class CustomVersionPluginTest {
 
 		plugin.apply(project);
 
-		assertThat(project.getVersion()).hasToString("1.2.3.custom.BUILD-SNAPSHOT");
+		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT-custom");
+	}
+
+	@Test
+	void changesVersionIfPropertyVersionBranchAndSnapshot2020Scheme() {
+		CustomVersionPlugin plugin = new CustomVersionPlugin();
+		Project project = ProjectBuilder.builder().withName("foo").build();
+		project.setVersion("1.2.3-SNAPSHOT");
+		project.getExtensions().add("versionBranch", "custom");
+
+		plugin.apply(project);
+
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT-custom");
 	}
 
 }

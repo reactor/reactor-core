@@ -204,7 +204,7 @@ check {
   if (!detectedCiServers.contains("TRAVIS")) {
 	dependsOn testNG
   }
-  if (!version.endsWith('BUILD-SNAPSHOT')) {
+  if (!version.contains('.BUILD-SNAPSHOT') && !version.contains('-SNAPSHOT')) {
 	dependsOn loops
   }
 }

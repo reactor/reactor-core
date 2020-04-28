@@ -106,7 +106,7 @@ configure(subprojects) { p ->
 
   repositories {
 	mavenLocal()
-	if (version.endsWith('BUILD-SNAPSHOT')) {
+	if (version.contains('.BUILD-SNAPSHOT') || version.contains('-SNAPSHOT')) {
 	  maven { url 'https://repo.spring.io/libs-snapshot' }
 	}
 

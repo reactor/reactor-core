@@ -59,7 +59,7 @@ task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "r
   def oldVersion = rootProject.findProperty("oldVersion")
   def currentVersion = rootProject.findProperty("currentVersion")
   def nextVersion = rootProject.findProperty("nextVersion")
-  def oldSnapshot = currentVersion?.replace("RELEASE", "BUILD-SNAPSHOT")
+  def oldSnapshot = currentVersion + "-SNAPSHOT"
 
   onlyIf { oldVersion != null && currentVersion != null && nextVersion != null }
   dependsOn copyReadme
