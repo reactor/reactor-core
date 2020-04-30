@@ -24,17 +24,17 @@ import org.gradle.api.Project;
 
 /**
  * Looks for a {@code -PversionBranch=foo} type of property and uses that as an additional
- * suffix after the snapshot qualifier (either {@code .BUILD-SNAPSHOT} or {@code -SNAPSHOT}),
- * in order to generate branch-specific snapshots that can be used to eg. validate a PR.
+ * suffix after the snapshot qualifier ({@code -SNAPSHOT}), in order to generate branch-specific
+ * snapshots that can be used to eg. validate a PR.
  * <p>
- * The custom suffix must only contain alphanumeric characters.
+ * The custom suffix must only contain alphanumeric characters, and is appended to the version
+ * string, separated by a dash (eg. {@code 1.2.3-SNAPSHOT-foo}).
  *
  * @author Simon Baslé
  */
 public class CustomVersionPlugin implements Plugin<Project> {
 
 	private static final String CUSTOM_VERSION_PROPERTY = "versionBranch";
-	private static final String LEGACY_SNAPSHOT_SUFFIX  = ".BUILD-SNAPSHOT";
 	private static final String SNAPSHOT_SUFFIX         = "-SNAPSHOT";
 
 	private static final Pattern ONLY_ALPHANUMERIC_PATTERN = Pattern.compile("[A-Za-z0-9]+");
@@ -56,7 +56,7 @@ public class CustomVersionPlugin implements Plugin<Project> {
 			throw new InvalidUserDataException("Custom version for project passed through -PversionBranch must be alphanumeric chars only: " + versionBranch);
 		}
 
-		if (!version.endsWith(SNAPSHOT_SUFFIX) && !version.endsWith(LEGACY_SNAPSHOT_SUFFIX)) {
+		if (!version.endsWith(SNAPSHOT_SUFFIX)) {
 			return;
 		}
 

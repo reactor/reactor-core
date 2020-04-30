@@ -23,7 +23,7 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 ```groovy
     repositories {
-//      maven { url 'https://repo.spring.io/snapshot' }
+      maven { url 'https://repo.spring.io/snapshot' }
 //      maven { url 'https://repo.spring.io/milestone' }
       mavenCentral()
     }
@@ -31,7 +31,8 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     dependencies {
       //compile "io.projectreactor:reactor-core:3.4.1-SNAPSHOT"
       //testCompile("io.projectreactor:reactor-test:3.4.1-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.4.0"
+      //TODO change to the release artifact and comment snapshot repo above when GA
+      compile "io.projectreactor:reactor-core:3.4.0-SNAPSHOT"
       testCompile("io.projectreactor:reactor-test:3.4.0")
     }
 ```
