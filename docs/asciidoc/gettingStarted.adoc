@@ -55,12 +55,12 @@ Note the versioning scheme has changed between 3.3.x and 3.4.x (Dysprosium and E
 Artifacts follow a versioning scheme of `MAJOR.MINOR.PATCH-QUALIFIER` while the BOM is versioned using a CalVer inspired scheme of `YYYY.MINOR.PATCH-QUALIFIER`, where:
 
  * `MAJOR` is the current generation of Reactor, where each new generation can bring fundamental changes to the structure of the project (which might imply a more significant migration effort)
- * `YYYY` is the year of the first ga release in a given release cycle (like 3.4.0 for 3.4.x)
+ * `YYYY` is the year of the first GA release in a given release cycle (like 3.4.0 for 3.4.x)
  * `.MINOR` is a 0-based number incrementing with each new release cycle
  ** in the case of projects, it generally reflects wider changes and can indicate a moderate migration effort
  ** in the case of the BOM it allows discerning between release cycles in case two get first released the same year
  * `.PATCH` is a 0-based number incrementing with each service release
- * `-QUALIFIER` is a textual qualifier, which is omitted in the case of ga releases (see below)
+ * `-QUALIFIER` is a textual qualifier, which is omitted in the case of GA releases (see below)
 
 The first release cycle to follow that convention is thus `2020.0.x`, codename `Europium`.
 The scheme uses the following qualifiers (note the use of dash separator), in order:
@@ -68,13 +68,13 @@ The scheme uses the following qualifiers (note the use of dash separator), in or
  * `-M1`..`-M9`: milestones (we don't expect more than 9 per service release)
  * `-RC1`..`-RC9`: release candidates (we don't expect more than 9 per service release)
  * `-SNAPSHOT`: snapshots
- * _no qualifier_ for ga releases
+ * _no qualifier_ for GA releases
 
-NOTE: snapshots appear high in the order above because, conceptually, they're always "the freshest pre-release" of any given PATCH.
+NOTE: snapshots appear higher in the order above because, conceptually, they're always "the freshest pre-release" of any given PATCH.
 Even though the first deployed artifact of a PATCH cycle will always be a -SNAPSHOT, a similarly named but more up-to-date snapshot
 would also get released after eg. a milestone or between release candidates.
 
-Each release cycle is also given a codename, in continuity of the previous codename-based
+Each release cycle is also given a codename, in continuity with the previous codename-based
 scheme, which can be used to reference it more informally (like in discussions, blog posts, etc...).
 The codenames represent what would traditionally be the MAJOR.MINOR number. They (mostly)
 come from the https://en.wikipedia.org/wiki/Periodic_table#Overview[Periodic Table of
