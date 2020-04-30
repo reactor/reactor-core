@@ -16,7 +16,6 @@
 
 package io.reactor.gradle;
 
-import io.reactor.gradle.CustomVersionPlugin;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
@@ -33,130 +32,142 @@ public class CustomVersionPluginTest {
 	void noCustomVersionPropertyDoesNothing() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.BUILD-SNAPSHOT");
+		project.setVersion("1.2.3-SNAPSHOT");
 
 		plugin.apply(project);
 
-		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT");
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT");
 	}
 
 	@Test
 	void acceptsEmptyStringAsNoCustomVersion() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.BUILD-SNAPSHOT");
+		project.setVersion("1.2.3-SNAPSHOT");
 		project.getExtensions().add("versionBranch", "");
 
 		assertThatCode(() -> plugin.apply(project)).doesNotThrowAnyException();
-		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT");
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT");
 	}
 
 	@Test
 	void rejectSpace() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.BUILD-SNAPSHOT");
+		project.setVersion("1.2.3-SNAPSHOT");
 		project.getExtensions().add("versionBranch", "custom one");
 
 		assertThatExceptionOfType(InvalidUserDataException.class)
 				.isThrownBy(() -> plugin.apply(project))
 				.withMessage("Custom version for project passed through -PversionBranch must be alphanumeric chars only: custom one");
 
-		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT");
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT");
 	}
 
 	@Test
 	void rejectDash() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.BUILD-SNAPSHOT");
+		project.setVersion("1.2.3-SNAPSHOT");
 		project.getExtensions().add("versionBranch", "custom-one");
 
 		assertThatExceptionOfType(InvalidUserDataException.class)
 				.isThrownBy(() -> plugin.apply(project))
 				.withMessage("Custom version for project passed through -PversionBranch must be alphanumeric chars only: custom-one");
 
-		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT");
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT");
 	}
 
 	@Test
 	void rejectUnderscore() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.BUILD-SNAPSHOT");
+		project.setVersion("1.2.3-SNAPSHOT");
 		project.getExtensions().add("versionBranch", "custom_one");
 
 		assertThatExceptionOfType(InvalidUserDataException.class)
 				.isThrownBy(() -> plugin.apply(project))
 				.withMessage("Custom version for project passed through -PversionBranch must be alphanumeric chars only: custom_one");
 
-		assertThat(project.getVersion()).hasToString("1.2.3.BUILD-SNAPSHOT");
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT");
 	}
 
 	@Test
 	void rejectSpaceEvenIfNotSnapshot() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.RELEASE");
+		project.setVersion("1.2.3.SOMETHINGELSE");
 		project.getExtensions().add("versionBranch", "custom one");
 
 		assertThatExceptionOfType(InvalidUserDataException.class)
 				.isThrownBy(() -> plugin.apply(project))
 				.withMessage("Custom version for project passed through -PversionBranch must be alphanumeric chars only: custom one");
 
-		assertThat(project.getVersion()).hasToString("1.2.3.RELEASE");
+		assertThat(project.getVersion()).hasToString("1.2.3.SOMETHINGELSE");
 	}
 
 	@Test
 	void rejectDashEvenIfNotSnapshot() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.RELEASE");
+		project.setVersion("1.2.3.SOMETHINGELSE");
 		project.getExtensions().add("versionBranch", "custom-one");
 
 		assertThatExceptionOfType(InvalidUserDataException.class)
 				.isThrownBy(() -> plugin.apply(project))
 				.withMessage("Custom version for project passed through -PversionBranch must be alphanumeric chars only: custom-one");
 
-		assertThat(project.getVersion()).hasToString("1.2.3.RELEASE");
+		assertThat(project.getVersion()).hasToString("1.2.3.SOMETHINGELSE");
 	}
 
 	@Test
 	void rejectUnderscoreEvenIfNotSnapshot() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.RELEASE");
+		project.setVersion("1.2.3.SOMETHINGELSE");
 		project.getExtensions().add("versionBranch", "custom_one");
 
 		assertThatExceptionOfType(InvalidUserDataException.class)
 				.isThrownBy(() -> plugin.apply(project))
 				.withMessage("Custom version for project passed through -PversionBranch must be alphanumeric chars only: custom_one");
 
-		assertThat(project.getVersion()).hasToString("1.2.3.RELEASE");
+		assertThat(project.getVersion()).hasToString("1.2.3.SOMETHINGELSE");
 	}
 
 	@Test
-	void doNothingIfPropertyVersionBranchButNotSnapshot() {
+	void doNothingIfPropertyVersionBranchButNotSnapshotQualifier() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.M1");
+		project.setVersion("1.2.3-M1");
 		project.getExtensions().add("versionBranch", "custom");
 
 		plugin.apply(project);
 
-		assertThat(project.getVersion()).hasToString("1.2.3.M1");
+		assertThat(project.getVersion()).hasToString("1.2.3-M1");
+	}
+
+	@Test
+	void doNothingIfPropertyVersionBranchButNoQualifier() {
+		CustomVersionPlugin plugin = new CustomVersionPlugin();
+		Project project = ProjectBuilder.builder().withName("foo").build();
+		project.setVersion("1.2.3"); //this is the 2020 release scheme
+		project.getExtensions().add("versionBranch", "custom");
+
+		plugin.apply(project);
+
+		assertThat(project.getVersion()).hasToString("1.2.3");
 	}
 
 	@Test
 	void changesVersionIfPropertyVersionBranchAndSnapshot() {
 		CustomVersionPlugin plugin = new CustomVersionPlugin();
 		Project project = ProjectBuilder.builder().withName("foo").build();
-		project.setVersion("1.2.3.BUILD-SNAPSHOT");
+		project.setVersion("1.2.3-SNAPSHOT");
 		project.getExtensions().add("versionBranch", "custom");
 
 		plugin.apply(project);
 
-		assertThat(project.getVersion()).hasToString("1.2.3.custom.BUILD-SNAPSHOT");
+		assertThat(project.getVersion()).hasToString("1.2.3-SNAPSHOT-custom");
 	}
 
 }

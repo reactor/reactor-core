@@ -44,33 +44,46 @@ case-by-case basis.
 ====
 
 [[getting-started-understanding-bom]]
-== Understanding the BOM
+== Understanding the BOM and versioning scheme
 
 Reactor 3 uses a BOM (Bill of Materials) model (since `reactor-core 3.0.4`, with the `Aluminium` release train).
 This curated list groups artifacts that are meant to work well together, providing
 the relevant versions despite potentially divergent versioning schemes in these artifacts.
 
-The BOM is itself versioned, using a release train scheme
-with a codename followed by a qualifier. The following list shows a few examples:
+Note the versioning scheme has changed between 3.3.x and 3.4.x (Dysprosium and Europium).
 
-[verse]
-Aluminium-RELEASE
-Californium-BUILD-SNAPSHOT
-Aluminium-SR1
-Bismuth-RELEASE
-Californium-SR32
+Artifacts follow a versioning scheme of `MAJOR.MINOR.PATCH-QUALIFIER` while the BOM is versioned using a CalVer inspired scheme of `YYYY.MINOR.PATCH-QUALIFIER`, where:
 
+ * `MAJOR` is the current generation of Reactor, where each new generation can bring fundamental changes to the structure of the project (which might imply a more significant migration effort)
+ * `YYYY` is the year of the first GA release in a given release cycle (like 3.4.0 for 3.4.x)
+ * `.MINOR` is a 0-based number incrementing with each new release cycle
+ ** in the case of projects, it generally reflects wider changes and can indicate a moderate migration effort
+ ** in the case of the BOM it allows discerning between release cycles in case two get first released the same year
+ * `.PATCH` is a 0-based number incrementing with each service release
+ * `-QUALIFIER` is a textual qualifier, which is omitted in the case of GA releases (see below)
+
+The first release cycle to follow that convention is thus `2020.0.x`, codename `Europium`.
+The scheme uses the following qualifiers (note the use of dash separator), in order:
+
+ * `-M1`..`-M9`: milestones (we don't expect more than 9 per service release)
+ * `-RC1`..`-RC9`: release candidates (we don't expect more than 9 per service release)
+ * `-SNAPSHOT`: snapshots
+ * _no qualifier_ for GA releases
+
+NOTE: snapshots appear higher in the order above because, conceptually, they're always "the freshest pre-release" of any given PATCH.
+Even though the first deployed artifact of a PATCH cycle will always be a -SNAPSHOT, a similarly named but more up-to-date snapshot
+would also get released after eg. a milestone or between release candidates.
+
+Each release cycle is also given a codename, in continuity with the previous codename-based
+scheme, which can be used to reference it more informally (like in discussions, blog posts, etc...).
 The codenames represent what would traditionally be the MAJOR.MINOR number. They (mostly)
 come from the https://en.wikipedia.org/wiki/Periodic_table#Overview[Periodic Table of
 Elements], in increasing alphabetical order.
 
-The qualifiers are (in chronological order):
-
-* `BUILD-SNAPSHOT`: Builds for development and testing.
-* `M1`..`N`: Milestones or developer previews.
-* `RELEASE`: The first GA (General Availability) release in a codename series.
-* `SR1`..`N`: The subsequent GA releases in a codename series -- equivalent to a PATCH
-number. (SR stands for "`Service Release`").
+NOTE: Up until Dysprosium, the BOM was versioned using a release train scheme with a codename followed by a qualifier, and the qualifiers were slightly different.
+For example: Aluminium-RELEASE (first GA release, would now be something like YYYY.0.0), Bismuth-M1, Californium-SR1 (service release
+would now be something like YYYY.0.1), Dysprosium-RC1, Dysprosium-BUILD-SNAPSHOT (after each patch, we'd go back to the same snapshot version. would now be something
+like YYYY.0.X-SNAPSHOT so we get 1 snapshot per PATCH)
 
 [[getting]]
 == Getting Reactor
@@ -228,7 +241,7 @@ repositories {
 
 Similarly, snapshots are also available in a separate dedicated repository, as the following example show:
 
-.BUILD-SNAPSHOTs in Maven
+.-SNAPSHOTs in Maven
 ====
 [source,xml]
 ----
@@ -242,7 +255,7 @@ Similarly, snapshots are also available in a separate dedicated repository, as t
 ----
 ====
 
-.BUILD-SNAPSHOTs in Gradle
+.-SNAPSHOTs in Gradle
 ====
 [source,groovy]
 ----

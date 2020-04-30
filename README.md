@@ -23,16 +23,17 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 ```groovy
     repositories {
-//      maven { url 'https://repo.spring.io/snapshot' }
+      maven { url 'https://repo.spring.io/snapshot' }
 //      maven { url 'https://repo.spring.io/milestone' }
       mavenCentral()
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.3.6.BUILD-SNAPSHOT"
-      //testCompile("io.projectreactor:reactor-test:3.3.6.BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.3.5.RELEASE"
-      testCompile("io.projectreactor:reactor-test:3.3.5.RELEASE")
+      //compile "io.projectreactor:reactor-core:3.4.1-SNAPSHOT"
+      //testCompile("io.projectreactor:reactor-test:3.4.1-SNAPSHOT")
+      //TODO change to the release artifact and comment snapshot repo above when GA
+      compile "io.projectreactor:reactor-core:3.4.0-SNAPSHOT"
+      testCompile("io.projectreactor:reactor-test:3.4.0-SNAPSHOT")
     }
 ```
 
@@ -210,4 +211,3 @@ _Powered by [Reactive Streams Commons](https://github.com/reactor/reactive-strea
 _Licensed under [Apache Software License 2.0](www.apache.org/licenses/LICENSE-2.0)_
 
 _Sponsored by [Pivotal](https://pivotal.io)_
-
