@@ -21,8 +21,7 @@ configure(rootProject) {
 				.withPropertyName("asciidocFiles")
 				.withPathSensitivity(PathSensitivity.RELATIVE)
 
-		if (!isCiServer && (rootProject.version.toString().contains(".BUILD-SNAPSHOT") ||
-				rootProject.version.toString().contains("-SNAPSHOT"))) {
+		if (!isCiServer && rootProject.version.toString().endsWith("-SNAPSHOT")) {
 			backends = ["html5"]
 		}
 		else {

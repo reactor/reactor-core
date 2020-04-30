@@ -204,8 +204,8 @@ check {
   if (!detectedCiServers.contains("TRAVIS")) {
 	dependsOn testNG
   }
-  if (!version.contains('.BUILD-SNAPSHOT') && !version.contains('-SNAPSHOT')) {
-	dependsOn loops
+  if (!version.endsWith('-SNAPSHOT') && !version.contains('-SNAPSHOT-')) { //neither classic nor customized snapshots
+	  dependsOn loops
   }
 }
 
