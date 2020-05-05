@@ -109,7 +109,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 			AtomicReferenceFieldUpdater.newUpdater(BoundedElasticScheduler.class, ScheduledExecutorService.class, "evictor");
 
 	/**
-	 * This constructor lets define millisecond-grained TTLs and a custome {@link Clock},
+	 * This constructor lets define millisecond-grained TTLs and a custom {@link Clock},
 	 * which can be useful for tests.
 	 */
 	BoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread,
@@ -148,8 +148,8 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	 * @param ttlSeconds the time-to-live (TTL) of idle threads, in seconds
 	 */
 	BoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory, int ttlSeconds) {
-		this(maxThreads,
-				maxTaskQueuedPerThread, factory, ttlSeconds * 1000, Clock.tickSeconds(ZoneId.systemDefault()));
+		this(maxThreads, maxTaskQueuedPerThread, factory, ttlSeconds * 1000,
+				Clock.tickSeconds(BoundedServices.ZONE_UTC));
 	}
 
 	/**
@@ -331,6 +331,14 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		 */
 		static final int                          DISPOSED = -1;
 
+		/**
+		 * The {@link ZoneId} used for clocks. Since the {@link Clock} is only used to ensure
+		 * TTL cleanup is executed every N seconds, the zone doesn't really matter, hence UTC.
+		 * @implNote Note that {@link ZoneId#systemDefault()} isn't used since it triggers disk read,
+		 * contrary to {@link ZoneId#of(String)}.
+		 */
+		static final ZoneId                       ZONE_UTC = ZoneId.of("UTC");
+
 
 		final BoundedElasticScheduler             parent;
 		//duplicated Clock field from parent so that SHUTDOWN can be instantiated and partially used
@@ -341,7 +349,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 		//constructor for SHUTDOWN
 		private BoundedServices() {
 			this.parent = null;
-			this.clock = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault());
+			this.clock = Clock.fixed(Instant.EPOCH, ZONE_UTC);
 			this.busyQueue = new PriorityBlockingQueue<>();
 			this.idleQueue = new ConcurrentLinkedDeque<>();
 		}
