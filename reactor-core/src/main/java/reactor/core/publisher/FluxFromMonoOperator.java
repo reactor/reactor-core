@@ -80,7 +80,7 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable,
 					return;
 				}
 
-				subscriber = stacksafe.protect(subscriber);
+				subscriber = stacksafe.protect(subscriber, operator);
 
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {

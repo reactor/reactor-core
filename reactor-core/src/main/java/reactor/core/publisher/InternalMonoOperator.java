@@ -61,7 +61,7 @@ abstract class InternalMonoOperator<I, O> extends MonoOperator<I, O> implements 
 					return;
 				}
 
-				subscriber = stacksafe.protect(subscriber);
+				subscriber = stacksafe.protect(subscriber, operator);
 
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {

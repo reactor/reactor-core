@@ -23,7 +23,9 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Schedulers;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +46,46 @@ class StacksafeTest {
 	@AfterEach
 	void tearDown() {
 		Operators.setStacksafeMaxOperatorDepth(defaultDepth);
+	}
+
+	@Test
+	void stackSafeSubscriberHasMeaningfulToString() {
+		FluxMap<String, Integer> operator = new FluxMap<>(Flux.empty(), String::length);
+		FluxMap.MapSubscriber<String, Integer> subscriber = new FluxMap.MapSubscriber<>(Operators.emptySubscriber(), String::length);
+
+		@SuppressWarnings("ConstantConditions") //intentionally null worker
+		Operators.Stacksafe.StacksafeSubscriber<String> stackSafeSubscriber = new Operators.Stacksafe.StacksafeSubscriber<>(subscriber,
+				null, 1234, operator);
+
+		assertThat(stackSafeSubscriber).hasToString("StacksafeSubscriber(depth=1234, wrapping=FluxMap)");
+	}
+
+	@Test
+	void negativeMaxDepthIsNoOp() {
+		CoreSubscriber<Object> subscriber = Operators.emptySubscriber();
+		OptimizableOperator<Object, Object> fakeOptimizable = Mockito.mock(OptimizableOperator.class);
+		Operators.Stacksafe stacksafe = new Operators.Stacksafe(-1);
+
+		CoreSubscriber<Object> s = subscriber;
+		for (int i = 0; i < 10_000; i++) {
+			s = stacksafe.protect(s, fakeOptimizable);
+			assertThat(s).as("no wrapping in round #" + i)
+			             .isSameAs(subscriber);
+		}
+	}
+
+	@Test
+	void zeroMaxDepthIsNoOp() {
+		CoreSubscriber<Object> subscriber = Operators.emptySubscriber();
+		OptimizableOperator<Object, Object> fakeOptimizable = Mockito.mock(OptimizableOperator.class);
+		Operators.Stacksafe stacksafe = new Operators.Stacksafe(0);
+
+		CoreSubscriber<Object> s = subscriber;
+		for (int i = 0; i < 10_000; i++) {
+			s = stacksafe.protect(s, fakeOptimizable);
+			assertThat(s).as("no wrapping in round #" + i)
+			             .isSameAs(subscriber);
+		}
 	}
 
 	@Test

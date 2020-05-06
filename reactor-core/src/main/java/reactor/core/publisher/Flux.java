@@ -8315,7 +8315,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 						return;
 					}
 
-					subscriber = stacksafe.protect(subscriber);
+					subscriber = stacksafe.protect(subscriber, operator);
 
 					OptimizableOperator newSource = operator.nextOptimizableSource();
 					if (newSource == null) {

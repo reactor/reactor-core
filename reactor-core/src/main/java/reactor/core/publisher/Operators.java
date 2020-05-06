@@ -61,15 +61,16 @@ import static reactor.core.Fuseable.NONE;
  */
 public abstract class Operators {
 
-	//TODO put default to an actually useful value (to be determined empirically?)
 	/**
 	 * The maximum number of subsequent Reactor core operators (operator depth) that should be chained before an artificial
 	 * async boundary is introduced.
 	 * <p>
 	 * Stack safety is done in a best effort fashion and only guaranteed for vanilla core operators that are subject to the tail-call subscribe
 	 * optimization.
+	 * <p>
+	 * Note that any value below 1 is interpreted as globally opting out of this optimization.
 	 */
-	static volatile int stacksafeMaxOperatorDepth = Integer.parseInt(System.getProperty("reactor.max.operator.depth", "10000"));
+	static volatile int stacksafeMaxOperatorDepth = Integer.parseInt(System.getProperty("reactor.max.operator.depth", "-1"));
 
 	/**
 	 * Replace the {@link #stacksafeMaxOperatorDepth} and return the old value. Primarily intended for testing purposes.
@@ -128,7 +129,11 @@ public abstract class Operators {
 			this.depthSinceLastProtect = 0L;
 		}
 
-		<U> CoreSubscriber<U> protect(CoreSubscriber<U> actual) {
+		<U> CoreSubscriber<U> protect(CoreSubscriber<U> actual, OptimizableOperator<?, ?> operator) {
+			if (maxDepth <= 0) {
+				return actual;
+			}
+
 			totalDepth++;
 			depthSinceLastProtect++;
 			CoreSubscriber<U> result = actual;
@@ -142,14 +147,15 @@ public abstract class Operators {
 			}
 			if (depthSinceLastProtect == maxDepth) {
 				depthSinceLastProtect = 0;
+				Scheduler.Worker worker = createWorker();
 
 				if (actual instanceof QueueSubscription) {
 					//original was a QueueSubscription, emulate one (that always negotiate NONE)
 					result = new FluxHide.SuppressFuseableSubscriber<>(actual);
-					result = new StacksafeSubscriber<>(result, this);
+					result = new StacksafeSubscriber<>(result, worker, "depth=" + totalDepth + ", wrapping=" + operator);
 				}
 				else {
-					result = new StacksafeSubscriber<>(actual, this);
+					result = new StacksafeSubscriber<>(actual, worker, "depth=" + totalDepth + ", wrapping=" + operator);
 				}
 			}
 			return result;
@@ -157,16 +163,16 @@ public abstract class Operators {
 
 		static class StacksafeSubscriber<T> implements InnerOperator<T, T> {
 
-			final Stacksafe                 parent;
-			final Scheduler.Worker          worker;
 			final CoreSubscriber<? super T> downstream;
+			final Scheduler.Worker          worker;
+			final String                    stringRepresentation;
 
 			Subscription subscription;
 
-			StacksafeSubscriber(CoreSubscriber<? super T> downstream, Stacksafe stacksafe) {
-				this.parent = stacksafe;
-				this.worker = stacksafe.createWorker();
+			StacksafeSubscriber(CoreSubscriber<? super T> downstream, Scheduler.Worker worker, String message) {
+				this.worker = worker;
 				this.downstream = downstream;
+				this.stringRepresentation = "StacksafeSubscriber(" + message + ")";
 			}
 
 			@Override
@@ -245,6 +251,11 @@ public abstract class Operators {
 						worker.dispose();
 					}
 				});
+			}
+
+			@Override
+			public String toString() {
+				return stringRepresentation;
 			}
 		}
 	}

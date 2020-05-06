@@ -59,7 +59,7 @@ abstract class InternalConnectableFluxOperator<I, O> extends ConnectableFlux<O> 
 					return;
 				}
 
-				subscriber = stacksafe.protect(subscriber);
+				subscriber = stacksafe.protect(subscriber, operator);
 
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
