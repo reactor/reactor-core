@@ -733,9 +733,10 @@ public class OperatorsTest {
 		}
 	}
 
-	//TODO revert which test sets the threshold and which uses the default once the threshold is decided. for now, we only want to apply optimization in specific tests
 	@Test
-	public void largeOperatorChainDefaultNoTrampoliningBlowsUp() {
+	public void largeOperatorChainWithHighMaxDepthBlowsUp() {
+		int old = Operators.setStacksafeMaxOperatorDepth(10_000);
+		try {
 		Flux<Integer> tooDeep = Flux.just(0).hide();
 
 		for (int i = 0; i <= 5000; i++) {
@@ -745,6 +746,10 @@ public class OperatorsTest {
 
 		assertThatExceptionOfType(StackOverflowError.class)
 				.isThrownBy(tooDeep::blockLast);
+		}
+		finally {
+			Operators.setStacksafeMaxOperatorDepth(old);
+		}
 	}
 
 	@Test
@@ -864,19 +869,24 @@ public class OperatorsTest {
 
 	@Test
 	public void smallEnoughOperatorChainNoTrampolining() {
-		assertThat(Operators.stacksafeMaxOperatorDepth).isGreaterThan(1000);
-		Set<String> threadNames = new ConcurrentSkipListSet<>();
-		Flux<Integer> shallowEnough = Flux.just(0).hide();
+		int old = Operators.setStacksafeMaxOperatorDepth(1000);
+		try {
+			Set<String> threadNames = new ConcurrentSkipListSet<>();
+			Flux<Integer> shallowEnough = Flux.just(0).hide();
 
-		for (int i = 0; i < 500; i++) {
-			int currentI = i;
-			shallowEnough = shallowEnough
-					.map(previous -> currentI)
-					.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()));
+			for (int i = 0; i < 500; i++) {
+				int currentI = i;
+				shallowEnough = shallowEnough
+						.map(previous -> currentI)
+						.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()));
+			}
+
+			assertThat(shallowEnough.blockLast()).isEqualTo(499);
+			assertThat(threadNames).containsOnly(Thread.currentThread().getName());
 		}
-
-		assertThat(shallowEnough.blockLast()).isEqualTo(499);
-		assertThat(threadNames).containsOnly(Thread.currentThread().getName());
+		finally {
+			Operators.setStacksafeMaxOperatorDepth(old);
+		}
 	}
 
 	//TODO test with errors, debug mode, etc...
