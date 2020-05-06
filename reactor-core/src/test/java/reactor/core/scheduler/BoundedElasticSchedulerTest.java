@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -97,6 +96,8 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		LOGGER.debug("Remaining threads after test class:");
 		LOGGER.debug(dumpThreadNames().collect(Collectors.joining(", ")));
 	}
+
+	//note: blocking behavior is also tested in BoundedElasticSchedulerBlockhoundTest (separate sourceset)
 
 	@Override
 	protected BoundedElasticScheduler scheduler() {
