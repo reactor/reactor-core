@@ -20,10 +20,11 @@ import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import org.junit.Ignore;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import reactor.core.scheduler.Schedulers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -90,8 +91,48 @@ class StacksafeTest {
 		}
 
 		assertThat(tooDeep.blockLast(Duration.ofSeconds(5))).isEqualTo(500_000);
-		assertThat(threadNames).startsWith(Thread.currentThread().getName());
-		assertThat(threadNames.size()).as("number of threads").isGreaterThan(1);
+		assertThat(threadNames)
+				.startsWith(Thread.currentThread().getName())
+				.hasSize(Runtime.getRuntime().availableProcessors() + 1);
+	}
+
+	@Test
+	void hugeOperatorChainWithFlatmap() {
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+		Flux<Integer> tooDeep = Flux.just(0).hide();
+
+		for (int i = 0; i <= 500_000; i++) {
+			int currentI = i;
+			tooDeep = tooDeep
+					.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()))
+					.flatMap(previous -> Mono.just(currentI));
+		}
+
+		assertThat(tooDeep.blockLast(Duration.ofSeconds(5))).isEqualTo(500_000);
+		assertThat(threadNames)
+				.startsWith(Thread.currentThread().getName())
+				.hasSize(Runtime.getRuntime().availableProcessors() + 1);
+	}
+
+	@Test
+	void hugeOperatorChainWithFlatMapAndSparsePublishOn() {
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+		Flux<Integer> tooDeep = Flux.just(0).hide();
+
+		for (int i = 0; i <= 500_000; i++) {
+			int currentI = i;
+			tooDeep = tooDeep
+					.doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()))
+					.flatMap(previous -> Mono.just(currentI));
+			if (i % 5000 == 0) {
+				tooDeep = tooDeep.publishOn(Schedulers.single());
+			}
+		}
+
+		assertThat(tooDeep.blockLast(Duration.ofSeconds(5))).isEqualTo(500_000);
+		assertThat(threadNames)
+				.startsWith(Thread.currentThread().getName())
+				.hasSize(Runtime.getRuntime().availableProcessors() + 1);
 	}
 
 	@Test

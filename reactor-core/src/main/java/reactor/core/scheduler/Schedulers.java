@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -618,6 +619,23 @@ public abstract class Schedulers {
 	 */
 	public static boolean isNonBlockingThread(Thread t) {
 		return t instanceof NonBlocking;
+	}
+
+	/**
+	 * Utility method to create a {@link ThreadFactory} of non-blocking threads.
+	 * The threads are named with prefix and incremental id number generated via a provided {@link AtomicLong}.
+	 * They are marked as non-blocking (see {@link #isNonBlockingThread(Thread)}), and can also
+	 * be created as {@link Thread#setDaemon(boolean) daemon threads}.
+	 * <p>
+	 * Note that uncaught exceptions are logged by an internal default UncaughtExceptionHandler.
+	 *
+	 * @param namePrefix the prefix to apply as the name for created threads
+	 * @param workerCounter the counter that generates suffixes for created threads
+	 * @param isDaemon whether or not to create threads as daemon threads (as opposed to user threads)
+	 * @return the {@link ThreadFactory} of non blocking threads
+	 */
+	public static ThreadFactory createNonBlockingThreadFactory(String namePrefix, AtomicLong workerCounter, boolean isDaemon) {
+		return new ReactorThreadFactory(namePrefix, workerCounter, isDaemon, true, Schedulers::defaultUncaughtException);
 	}
 
 	/**

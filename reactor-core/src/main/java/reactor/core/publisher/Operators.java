@@ -21,9 +21,10 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Spliterator;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -90,81 +91,87 @@ public abstract class Operators {
 	 * The desired maximum stack depth (or rather the maximum desired operator chain depth) is
 	 * defined via the {@code reactor.max.operator.depth} system property.
 	 */
-	static class Stacksafe extends AtomicInteger {
+	static class Stacksafe {
 
-		static final AtomicInteger COUNTER = new AtomicInteger();
+		static final AtomicLong COUNTER = new AtomicLong();
+		static final AtomicReference<Scheduler> stacksafeSchedulerRef = new AtomicReference<>(null);
 
-		Scheduler stacksafeScheduler;
-		long      depth;
+		Scheduler.Worker createWorker() {
+			Scheduler s = stacksafeSchedulerRef.get();
+			if (s != null) return s.createWorker();
+
+			Scheduler stacksafeScheduler = Schedulers.newParallel(Schedulers.DEFAULT_POOL_SIZE,
+					Schedulers.createNonBlockingThreadFactory("stacksafe", COUNTER, true));
+
+			if (stacksafeSchedulerRef.compareAndSet(null, stacksafeScheduler)) {
+				s = stacksafeScheduler;
+			}
+			else {
+				stacksafeScheduler.dispose();
+				s = stacksafeSchedulerRef.get();
+			}
+			return s.createWorker();
+		}
+
+		final long maxDepth;
+
+		long totalDepth;
+		long depthSinceLastProtect;
 
 		Stacksafe() {
-			this.stacksafeScheduler = Schedulers.immediate(); //temporary, avoid creating anything until 1st trampolining
-			this.depth = 0L;
+			this(Operators.stacksafeMaxOperatorDepth);
+		}
+
+		Stacksafe(long maxDepth) {
+			this.maxDepth = maxDepth;
+			this.totalDepth = 0L;
+			this.depthSinceLastProtect = 0L;
 		}
 
 		<U> CoreSubscriber<U> protect(CoreSubscriber<U> actual) {
+			totalDepth++;
+			depthSinceLastProtect++;
 			CoreSubscriber<U> result = actual;
-			//TODO test the behavior with thread-hopping and blocking flatmaps
-			//TODO check that this is actually useful. if so, consider introducing marker interface instead
+			//reset the perceived stack depth when encountering thread-hopping operators
 			if (actual instanceof FluxPublishOn.PublishOnSubscriber
 					|| actual instanceof MonoPublishOn.PublishOnSubscriber
 					|| actual instanceof FluxSubscribeOn.SubscribeOnSubscriber
 					|| actual instanceof MonoSubscribeOn.SubscribeOnSubscriber) {
+				depthSinceLastProtect = 0;
 				return actual; //don't trampoline right before an explicit thread-hopping
 			}
-			if (depth % stacksafeMaxOperatorDepth == 0 && depth != 0) {
-				int protectedCount = incrementAndGet();
-				if (protectedCount == 1) {
-					//TODO should we try to capture an assembly backtrace here and reattach in case of errors?
-					//lazy creation of the actual scheduler
-					this.stacksafeScheduler = Schedulers.newElastic(
-							"operatorStacksafe-" + COUNTER.incrementAndGet(),
-							1, true);
-				}
+			if (depthSinceLastProtect == maxDepth) {
+				depthSinceLastProtect = 0;
 
 				if (actual instanceof QueueSubscription) {
 					//original was a QueueSubscription, emulate one (that always negotiate NONE)
 					result = new FluxHide.SuppressFuseableSubscriber<>(actual);
-					result = new StacksafeSubscriber<>(result, protectedCount, this);
+					result = new StacksafeSubscriber<>(result, this);
 				}
 				else {
-					result = new StacksafeSubscriber<>(actual, protectedCount, this);
+					result = new StacksafeSubscriber<>(actual, this);
 				}
 			}
-			depth++;
 			return result;
-		}
-
-		void markDone(int stacksafeIndex) {
-			if (this.decrementAndGet() == 0) {
-				stacksafeScheduler.dispose();
-			}
 		}
 
 		static class StacksafeSubscriber<T> implements InnerOperator<T, T> {
 
 			final Stacksafe                 parent;
-			final int                       index;
 			final Scheduler.Worker          worker;
 			final CoreSubscriber<? super T> downstream;
 
 			Subscription subscription;
 
-			StacksafeSubscriber(CoreSubscriber<? super T> downstream, int thisStacksafeIndex, Stacksafe stacksafe) {
+			StacksafeSubscriber(CoreSubscriber<? super T> downstream, Stacksafe stacksafe) {
 				this.parent = stacksafe;
-				this.worker = stacksafe.stacksafeScheduler.createWorker();
-				this.index = thisStacksafeIndex;
+				this.worker = stacksafe.createWorker();
 				this.downstream = downstream;
 			}
 
 			@Override
 			public CoreSubscriber<? super T> actual() {
 				return downstream;
-			}
-
-			private void done() {
-				worker.dispose();
-				parent.markDone(index);
 			}
 
 			@Override
@@ -175,7 +182,7 @@ public abstract class Operators {
 						downstream.onSubscribe(this);
 					}
 					catch (Throwable t) {
-						done();
+						worker.dispose();
 					}
 				});
 			}
@@ -187,7 +194,7 @@ public abstract class Operators {
 						downstream.onNext(t);
 					}
 					catch (Throwable e) {
-						done();
+						worker.dispose();
 					}
 				});
 			}
@@ -199,7 +206,7 @@ public abstract class Operators {
 						downstream.onError(t);
 					}
 					finally {
-						done();
+						worker.dispose();
 					}
 				});
 			}
@@ -211,7 +218,7 @@ public abstract class Operators {
 						downstream.onComplete();
 					}
 					finally {
-						done();
+						worker.dispose();
 					}
 				});
 			}
@@ -223,7 +230,7 @@ public abstract class Operators {
 						subscription.request(n);
 					}
 					catch (Throwable t) {
-						done();
+						worker.dispose();
 					}
 				});
 			}
@@ -235,7 +242,7 @@ public abstract class Operators {
 						subscription.cancel();
 					}
 					finally {
-						done();
+						worker.dispose();
 					}
 				});
 			}
