@@ -172,7 +172,7 @@ public abstract class Operators {
 			StacksafeSubscriber(CoreSubscriber<? super T> downstream, Scheduler.Worker worker, String message) {
 				this.worker = worker;
 				this.downstream = downstream;
-				this.stringRepresentation = "StacksafeSubscriber(" + message + ")";
+				this.stringRepresentation = "StacksafeSubscriber{" + message + "}";
 			}
 
 			@Override

@@ -50,14 +50,24 @@ class StacksafeTest {
 
 	@Test
 	void stackSafeSubscriberHasMeaningfulToString() {
-		FluxMap<String, Integer> operator = new FluxMap<>(Flux.empty(), String::length);
 		FluxMap.MapSubscriber<String, Integer> subscriber = new FluxMap.MapSubscriber<>(Operators.emptySubscriber(), String::length);
 
 		@SuppressWarnings("ConstantConditions") //intentionally null worker
 		Operators.Stacksafe.StacksafeSubscriber<String> stackSafeSubscriber = new Operators.Stacksafe.StacksafeSubscriber<>(subscriber,
-				null, 1234, operator);
+				null, "printsWhateverIsHere");
 
-		assertThat(stackSafeSubscriber).hasToString("StacksafeSubscriber(depth=1234, wrapping=FluxMap)");
+		assertThat(stackSafeSubscriber).hasToString("StacksafeSubscriber{printsWhateverIsHere}");
+	}
+
+	@Test
+	void stacksafeGeneratesMeaningfulToString() {
+		FluxMap<String, Integer> operator = new FluxMap<>(Flux.empty(), String::length);
+		FluxMap.MapSubscriber<String, Integer> subscriber = new FluxMap.MapSubscriber<>(Operators.emptySubscriber(), String::length);
+
+		Operators.Stacksafe stacksafe = new Operators.Stacksafe(1);
+		CoreSubscriber<String> stackSafeSubscriber = stacksafe.protect(subscriber, operator);
+
+		assertThat(stackSafeSubscriber).hasToString("StacksafeSubscriber{depth=1, wrapping=FluxMap}");
 	}
 
 	@Test
