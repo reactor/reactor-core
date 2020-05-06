@@ -59,5 +59,4 @@ interface OptimizableOperator<IN, OUT> extends CorePublisher<IN> {
 	 */
 	@Nullable
 	OptimizableOperator<?, ? extends OUT> nextOptimizableSource();
-
 }

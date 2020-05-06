@@ -77,187 +77,11 @@ public abstract class Operators {
 	 * @param newMaxDepth the new max operator depth before an async boundary  should be introduced to reset stacktraces
 	 * @return the old {@link #stacksafeMaxOperatorDepth}
 	 */
+	//TODO add to public API ?
 	static int setStacksafeMaxOperatorDepth(int newMaxDepth) {
 		int old = stacksafeMaxOperatorDepth;
 		stacksafeMaxOperatorDepth = newMaxDepth;
 		return old;
-	}
-
-	/**
-	 * A utility class to break stacks that are too deep and likely to cause {@link StackOverflowError}
-	 * either at subscription time or runtime, by injecting an async boundary {@link Subscriber} which
-	 * will submit onSubscribe/request/cancel/onNext/onComplete/onError signals on a dedicated
-	 * {@link Schedulers#newElastic(String) elastic Scheduler}.
-	 * <p>
-	 * The desired maximum stack depth (or rather the maximum desired operator chain depth) is
-	 * defined via the {@code reactor.max.operator.depth} system property.
-	 */
-	static class Stacksafe {
-
-		static final AtomicLong COUNTER = new AtomicLong();
-		static final AtomicReference<Scheduler> stacksafeSchedulerRef = new AtomicReference<>(null);
-
-		Scheduler.Worker createWorker() {
-			Scheduler s = stacksafeSchedulerRef.get();
-			if (s != null) return s.createWorker();
-
-			Scheduler stacksafeScheduler = Schedulers.newParallel(Schedulers.DEFAULT_POOL_SIZE,
-					Schedulers.createNonBlockingThreadFactory("stacksafe", COUNTER, true));
-
-			if (stacksafeSchedulerRef.compareAndSet(null, stacksafeScheduler)) {
-				s = stacksafeScheduler;
-			}
-			else {
-				stacksafeScheduler.dispose();
-				s = stacksafeSchedulerRef.get();
-			}
-			return s.createWorker();
-		}
-
-		final long maxDepth;
-
-		long totalDepth;
-		long depthSinceLastProtect;
-
-		Stacksafe() {
-			this(Operators.stacksafeMaxOperatorDepth);
-		}
-
-		Stacksafe(long maxDepth) {
-			this.maxDepth = maxDepth;
-			this.totalDepth = 0L;
-			this.depthSinceLastProtect = 0L;
-		}
-
-		<U> CoreSubscriber<U> protect(CoreSubscriber<U> actual, OptimizableOperator<?, ?> operator) {
-			if (maxDepth <= 0) {
-				return actual;
-			}
-
-			totalDepth++;
-			depthSinceLastProtect++;
-			CoreSubscriber<U> result = actual;
-			//reset the perceived stack depth when encountering thread-hopping operators
-			if (actual instanceof FluxPublishOn.PublishOnSubscriber
-					|| actual instanceof MonoPublishOn.PublishOnSubscriber
-					|| actual instanceof FluxSubscribeOn.SubscribeOnSubscriber
-					|| actual instanceof MonoSubscribeOn.SubscribeOnSubscriber) {
-				depthSinceLastProtect = 0;
-				return actual; //don't trampoline right before an explicit thread-hopping
-			}
-			if (depthSinceLastProtect == maxDepth) {
-				depthSinceLastProtect = 0;
-				Scheduler.Worker worker = createWorker();
-
-				if (actual instanceof QueueSubscription) {
-					//original was a QueueSubscription, emulate one (that always negotiate NONE)
-					result = new FluxHide.SuppressFuseableSubscriber<>(actual);
-					result = new StacksafeSubscriber<>(result, worker, "depth=" + totalDepth + ", wrapping=" + operator);
-				}
-				else {
-					result = new StacksafeSubscriber<>(actual, worker, "depth=" + totalDepth + ", wrapping=" + operator);
-				}
-			}
-			return result;
-		}
-
-		static class StacksafeSubscriber<T> implements InnerOperator<T, T> {
-
-			final CoreSubscriber<? super T> downstream;
-			final Scheduler.Worker          worker;
-			final String                    stringRepresentation;
-
-			Subscription subscription;
-
-			StacksafeSubscriber(CoreSubscriber<? super T> downstream, Scheduler.Worker worker, String message) {
-				this.worker = worker;
-				this.downstream = downstream;
-				this.stringRepresentation = "StacksafeSubscriber{" + message + "}";
-			}
-
-			@Override
-			public CoreSubscriber<? super T> actual() {
-				return downstream;
-			}
-
-			@Override
-			public void onSubscribe(Subscription s) {
-				this.subscription = s;
-				worker.schedule(() -> {
-					try {
-						downstream.onSubscribe(this);
-					}
-					catch (Throwable t) {
-						worker.dispose();
-					}
-				});
-			}
-
-			@Override
-			public void onNext(T t) {
-				worker.schedule(() -> {
-					try {
-						downstream.onNext(t);
-					}
-					catch (Throwable e) {
-						worker.dispose();
-					}
-				});
-			}
-
-			@Override
-			public void onError(Throwable t) {
-				worker.schedule(() -> {
-					try {
-						downstream.onError(t);
-					}
-					finally {
-						worker.dispose();
-					}
-				});
-			}
-
-			@Override
-			public void onComplete() {
-				worker.schedule(() -> {
-					try {
-						downstream.onComplete();
-					}
-					finally {
-						worker.dispose();
-					}
-				});
-			}
-
-			@Override
-			public void request(long n) {
-				worker.schedule(() -> {
-					try {
-						subscription.request(n);
-					}
-					catch (Throwable t) {
-						worker.dispose();
-					}
-				});
-			}
-
-			@Override
-			public void cancel() {
-				worker.schedule(() -> {
-					try {
-						subscription.cancel();
-					}
-					finally {
-						worker.dispose();
-					}
-				});
-			}
-
-			@Override
-			public String toString() {
-				return stringRepresentation;
-			}
-		}
 	}
 
 	/**
@@ -1682,7 +1506,190 @@ public abstract class Operators {
 			return Context.empty();
 		}
 	};
-	//
+
+	/**
+	 * A utility class to break stacks that are too deep and likely to cause {@link StackOverflowError}
+	 * either at subscription time or runtime, by injecting an async boundary {@link Subscriber} which
+	 * will submit onSubscribe/request/cancel/onNext/onComplete/onError signals on a dedicated
+	 * {@link Schedulers#newElastic(String) elastic Scheduler}.
+	 * <p>
+	 * The desired maximum stack depth (or rather the maximum desired operator chain depth) is
+	 * defined via the {@code reactor.max.operator.depth} system property.
+	 */
+	static final class Stacksafe {
+
+		final long maxDepth;
+		long totalDepth;
+		long depthSinceLastProtect;
+
+		Stacksafe() {
+			this(Operators.stacksafeMaxOperatorDepth);
+		}
+
+		Stacksafe(long maxDepth) {
+			this.maxDepth = maxDepth;
+			this.totalDepth = 0L;
+			this.depthSinceLastProtect = 0L;
+		}
+
+		Scheduler.Worker createWorker() {
+			Scheduler s = stacksafeSchedulerRef.get();
+			if (s != null) {
+				return s.createWorker();
+			}
+
+			Scheduler stacksafeScheduler =
+					Schedulers.newParallel(Schedulers.DEFAULT_POOL_SIZE,
+							Schedulers.createNonBlockingThreadFactory("stacksafe",
+									COUNTER,
+									true));
+
+			if (stacksafeSchedulerRef.compareAndSet(null, stacksafeScheduler)) {
+				s = stacksafeScheduler;
+			}
+			else {
+				stacksafeScheduler.dispose();
+				s = stacksafeSchedulerRef.get();
+			}
+			return s.createWorker();
+		}
+
+		<U> CoreSubscriber<U> protect(CoreSubscriber<U> actual,
+				OptimizableOperator<?, ?> operator) {
+			if (maxDepth <= 0) {
+				return actual;
+			}
+
+			totalDepth++;
+			depthSinceLastProtect++;
+			CoreSubscriber<U> result = actual;
+			//reset the perceived stack depth when encountering thread-hopping operators
+			if (actual instanceof FluxPublishOn.PublishOnSubscriber || actual instanceof MonoPublishOn.PublishOnSubscriber || actual instanceof FluxSubscribeOn.SubscribeOnSubscriber || actual instanceof MonoSubscribeOn.SubscribeOnSubscriber) {
+				depthSinceLastProtect = 0;
+				return actual; //don't trampoline right before an explicit thread-hopping
+			}
+			if (depthSinceLastProtect == maxDepth) {
+				depthSinceLastProtect = 0;
+				Scheduler.Worker worker = createWorker();
+
+				if (actual instanceof QueueSubscription) {
+					//original was a QueueSubscription, emulate one (that always negotiate NONE)
+					result = new FluxHide.SuppressFuseableSubscriber<>(actual);
+					result = new StacksafeSubscriber<>(result,
+							worker,
+							"depth=" + totalDepth + ", wrapping=" + operator);
+				}
+				else {
+					result = new StacksafeSubscriber<>(actual,
+							worker,
+							"depth=" + totalDepth + ", wrapping=" + operator);
+				}
+			}
+			return result;
+		}
+
+		static final class StacksafeSubscriber<T> implements InnerOperator<T, T> {
+
+			final CoreSubscriber<? super T> downstream;
+			final Scheduler.Worker          worker;
+			final String                    stringRepresentation;
+
+			Subscription subscription;
+
+			StacksafeSubscriber(CoreSubscriber<? super T> downstream,
+					Scheduler.Worker worker, String message) {
+				this.worker = worker;
+				this.downstream = downstream;
+				this.stringRepresentation = "StacksafeSubscriber{" + message + "}";
+			}
+
+			@Override
+			public CoreSubscriber<? super T> actual() {
+				return downstream;
+			}
+
+			@Override
+			public void cancel() {
+				worker.schedule(() -> {
+					try {
+						subscription.cancel();
+					}
+					finally {
+						worker.dispose();
+					}
+				});
+			}
+
+			@Override
+			public void onComplete() {
+				worker.schedule(() -> {
+					try {
+						downstream.onComplete();
+					}
+					finally {
+						worker.dispose();
+					}
+				});
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				worker.schedule(() -> {
+					try {
+						downstream.onError(t);
+					}
+					finally {
+						worker.dispose();
+					}
+				});
+			}
+
+			@Override
+			public void onNext(T t) {
+				worker.schedule(() -> {
+					try {
+						downstream.onNext(t);
+					}
+					catch (Throwable e) {
+						worker.dispose();
+					}
+				});
+			}
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				this.subscription = s;
+				worker.schedule(() -> {
+					try {
+						downstream.onSubscribe(this);
+					}
+					catch (Throwable t) {
+						worker.dispose();
+					}
+				});
+			}
+
+			@Override
+			public void request(long n) {
+				worker.schedule(() -> {
+					try {
+						subscription.request(n);
+					}
+					catch (Throwable t) {
+						worker.dispose();
+					}
+				});
+			}
+
+			@Override
+			public String toString() {
+				return stringRepresentation;
+			}
+		}
+		static final AtomicLong                 COUNTER               = new AtomicLong();
+		static final AtomicReference<Scheduler> stacksafeSchedulerRef =
+				new AtomicReference<>(null);
+	}
 
 	final static class CancelledSubscription implements Subscription, Scannable {
 		static final CancelledSubscription INSTANCE = new CancelledSubscription();
