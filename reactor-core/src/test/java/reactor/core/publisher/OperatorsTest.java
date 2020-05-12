@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,6 +52,8 @@ import reactor.core.publisher.Operators.EmptySubscription;
 import reactor.core.publisher.Operators.MonoSubscriber;
 import reactor.core.publisher.Operators.MultiSubscriptionSubscriber;
 import reactor.core.publisher.Operators.ScalarSubscription;
+import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
 
@@ -930,5 +933,19 @@ public class OperatorsTest {
 		Operators.onDiscardMultiple(failingIterator, true, hookContext);
 
 		assertThat(discardedCount).hasValue(2);
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/2152
+	@Test
+	public void reportThrowInSubscribeWithFuseableErrorResumed() {
+		AssertSubscriber<Integer> assertSubscriber = AssertSubscriber.create();
+		FluxOnErrorResume.ResumeSubscriber<Integer> resumeSubscriber = new FluxOnErrorResume.ResumeSubscriber<>(
+				assertSubscriber, t -> Mono.just(123));
+		FluxMapFuseable.MapFuseableSubscriber<String, Integer> fuseableSubscriber = new FluxMapFuseable.MapFuseableSubscriber<>(
+				resumeSubscriber, String::length);
+
+		Operators.reportThrowInSubscribe(fuseableSubscriber, new RuntimeException("boom"));
+
+		assertSubscriber.assertNoError().awaitAndAssertNextValues(123);
 	}
 }

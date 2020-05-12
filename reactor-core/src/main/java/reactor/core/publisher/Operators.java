@@ -181,7 +181,7 @@ public abstract class Operators {
 	 * @return true if passed subscription is a subscription created in {@link #reportThrowInSubscribe(CoreSubscriber, Throwable)}.
 	 */
 	public static boolean canAppearAfterOnSubscribe(Subscription subscription) {
-		return subscription instanceof OnErrorSubscription;
+		return subscription == EmptySubscription.FROM_SUBSCRIBE_INSTANCE;
 	}
 
 	/**
@@ -196,9 +196,32 @@ public abstract class Operators {
 		s.onError(e);
 	}
 
+	/**
+	 * Report a {@link Throwable} that was thrown from a call to {@link Publisher#subscribe(Subscriber)},
+	 * attempting to notify the {@link Subscriber} by:
+	 * <ol>
+	 *     <li>providing a special {@link Subscription} via {@link Subscriber#onSubscribe(Subscription)}</li>
+	 *     <li>immediately delivering an {@link Subscriber#onError(Throwable) onError} signal after that</li>
+	 * </ol>
+	 * <p>
+	 * As at that point the subscriber MAY have already been provided with a {@link Subscription}, we
+	 * assume most well formed subscribers will ignore this second {@link Subscription} per Reactive
+	 * Streams rule 1.9. Subscribers that don't usually ignore may recognize this special case and ignore
+	 * it by checking {@link #canAppearAfterOnSubscribe(Subscription)}.
+	 * <p>
+	 * Note that if the {@link Subscriber#onSubscribe(Subscription) onSubscribe} attempt throws,
+	 * {@link Exceptions#throwIfFatal(Throwable) fatal} exceptions are thrown. Other exceptions
+	 * are added as {@link Throwable#addSuppressed(Throwable) suppressed} on the original exception,
+	 * which is then directly notified as an {@link Subscriber#onError(Throwable) onError} signal
+	 * (again assuming that such exceptions occur because a {@link Subscription} is already set).
+	 *
+	 * @param subscriber the {@link Subscriber} being subscribed when the error happened
+	 * @param e the {@link Throwable} that was thrown from {@link Publisher#subscribe(Subscriber)}
+	 * @see #canAppearAfterOnSubscribe(Subscription)
+	 */
 	public static void reportThrowInSubscribe(CoreSubscriber<?> subscriber, Throwable e) {
 		try {
-			subscriber.onSubscribe(OnErrorSubscription.INSTANCE);
+			subscriber.onSubscribe(EmptySubscription.FROM_SUBSCRIBE_INSTANCE);
 		}
 		catch (Throwable onSubscribeError) {
 			Exceptions.throwIfFatal(onSubscribeError);
@@ -1502,13 +1525,11 @@ public abstract class Operators {
 		public void request(long n) {
 			// deliberately no op
 		}
-
-
-
 	}
 
 	final static class EmptySubscription implements QueueSubscription<Object>, Scannable {
 		static final EmptySubscription INSTANCE = new EmptySubscription();
+		static final EmptySubscription FROM_SUBSCRIBE_INSTANCE = new EmptySubscription();
 
 		@Override
 		public void cancel() {
@@ -1553,20 +1574,6 @@ public abstract class Operators {
 			return 0;
 		}
 
-	}
-
-	enum OnErrorSubscription implements Subscription {
-		INSTANCE;
-
-		@Override
-		public void request(long l) {
-			// deliberately no op
-		}
-
-		@Override
-		public void cancel() {
-			// deliberately no op
-		}
 	}
 
 	/**
