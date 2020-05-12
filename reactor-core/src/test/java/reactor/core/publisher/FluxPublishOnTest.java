@@ -1253,7 +1253,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-    public void scanSubscriber() {
+    public void scanSubscriber() throws InterruptedException {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxPublishOn.PublishOnSubscriber<Integer> test = new FluxPublishOn.PublishOnSubscriber<>(actual,
         		Schedulers.single(), Schedulers.single().createWorker(), true, 123, 123, Queues.unbounded());
@@ -1278,6 +1278,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
         //once cancelled, there shouldn't be any draining left
         // => better place to test that BUFFERED reflects the size of the queue
+		Thread.sleep(50); //"hiccup" to ensure cancellation / draining is done
         test.queue.add(1);
         test.queue.add(1);
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
