@@ -23,6 +23,7 @@ import java.util.Queue;
 
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Operators;
 import reactor.test.DefaultStepVerifierBuilder.DefaultVerifySubscriber;
 import reactor.test.DefaultStepVerifierBuilder.DescriptionEvent;
 import reactor.test.DefaultStepVerifierBuilder.Event;
@@ -55,6 +56,21 @@ public class DefaultStepVerifierBuilderTests {
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(s::verify)
 				.withMessageStartingWith("expectation failed (an unexpected Subscription has been received");
+	}
+
+	@Test
+	public void subscribedTwiceDetectsSpecialSubscription() {
+		Flux<String> flux = Flux.never();
+
+		DefaultVerifySubscriber<String> s =
+				new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create().initialRequest(Long.MAX_VALUE), null)
+						.expectErrorMessage("expected")
+				.toSubscriber();
+
+		flux.subscribe(s);
+		Operators.reportThrowInSubscribe(s, new RuntimeException("expected"));
+
+		s.verify(Duration.ofSeconds(1));
 	}
 
 	@Test(timeout = 4000)
