@@ -20,6 +20,8 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+
+import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 
 /**
@@ -29,31 +31,48 @@ import reactor.core.CoreSubscriber;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDefer<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxDefer<T> extends Flux<T> implements SourceProducer<T>, OptimizableOperator<T, T> {
 
 	final Supplier<? extends Publisher<? extends T>> supplier;
+	Publisher<? extends T> resolvedPublisher;
 
 	FluxDefer(Supplier<? extends Publisher<? extends T>> supplier) {
 		this.supplier = Objects.requireNonNull(supplier, "supplier");
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Publisher<? extends T> p;
-
 		try {
-			p = Objects.requireNonNull(supplier.get(),
-					"The Publisher returned by the supplier is null");
+			Objects.requireNonNull(resolvedPublisher, "The Publisher returned by the supplier is null");
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
-		from(p).subscribe(actual);
+		from(this.resolvedPublisher).subscribe(actual);
 	}
 
+	@Override
+	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual)
+			throws Throwable {
+		return actual;
+	}
+
+	@Override
+	public CorePublisher<? extends T> source() {
+		return this;
+	}
+
+	@Override
+	public OptimizableOperator<?, ? extends T> nextOptimizableSource() {
+		this.resolvedPublisher = supplier.get();
+		if (this.resolvedPublisher instanceof OptimizableOperator) {
+			//noinspection unchecked
+			return (OptimizableOperator<?, ? extends T>) this.resolvedPublisher;
+		}
+		return null;
+	}
 
 	@Override
 	public Object scanUnsafe(Attr key) {

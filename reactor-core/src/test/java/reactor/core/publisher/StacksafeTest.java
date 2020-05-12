@@ -271,5 +271,24 @@ class StacksafeTest {
 		assertThat(threadNames).containsOnly(Thread.currentThread().getName());
 	}
 
+	@Test
+	void hugeOperatorChainWithSwitchIfEmpty() {
+		Set<String> threadNames = new ConcurrentSkipListSet<>();
+
+		final int bound = 5000;
+		Flux<Integer> tooDeep = chain(0, bound, threadNames);
+
+		assertThat(tooDeep.blockLast(Duration.ofSeconds(5))).isEqualTo(bound);
+		assertThat(threadNames).startsWith(Thread.currentThread().getName());
+		assertThat(threadNames.size()).as("number of threads").isGreaterThan(1);
+	}
+
+	Flux<Integer> chain(int i, int bound, Set<String> threadNames) {
+		return Flux.defer(() -> i < bound
+				? Flux.<Integer>empty().switchIfEmpty(chain(i + 1, bound, threadNames))
+				: Flux.just(i).hide()
+		).doOnSubscribe(s -> threadNames.add(Thread.currentThread().getName()));
+	}
+
 	//TODO test with errors, debug mode, etc...
 }

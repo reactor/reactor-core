@@ -1591,6 +1591,7 @@ public abstract class Operators {
 		static final class StacksafeSubscriber<T> implements InnerOperator<T, T> {
 
 			final CoreSubscriber<? super T> downstream;
+			final Context                   downstreamContext;
 			final Scheduler.Worker          worker;
 			final String                    stringRepresentation;
 
@@ -1600,7 +1601,13 @@ public abstract class Operators {
 					Scheduler.Worker worker, String message) {
 				this.worker = worker;
 				this.downstream = downstream;
+				this.downstreamContext = downstream.currentContext();
 				this.stringRepresentation = "StacksafeSubscriber{" + message + "}";
+			}
+
+			@Override
+			public Context currentContext() {
+				return this.downstreamContext;
 			}
 
 			@Override
