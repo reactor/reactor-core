@@ -27,7 +27,6 @@ buildscript {
 
 
 plugins {
-	id "com.github.johnrengelman.shadow" version "4.0.2"
 	id 'org.asciidoctor.convert' version '1.5.11'
 	id "me.champeau.gradle.jmh" version "0.4.7" apply false
 	id "org.jetbrains.dokka" version "0.9.18" apply false
