@@ -17,20 +17,22 @@ import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'me.champeau.gradle.jmh'
-apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'biz.aQute.bnd.builder'
+apply plugin: 'kotlin'
+apply plugin: 'org.jetbrains.dokka'
 
 ext {
 	bndOptions = [
 			"Export-Package": [
 					"!*internal*",
-					"reactor.*;-noimport:=true"
+					"reactor.*"
 			].join(","),
 			"Import-Package": [
 					"!javax.annotation",
 					'org.slf4j;resolution:=optional;version="[1.5.4,2)"',
 					"kotlin.*;resolution:=optional",
-					"io.micrometer.*;resolution:=optional","*"
+					"io.micrometer.*;resolution:=optional",
+					"*"
 			].join(","),
 			"Bundle-Name" : "reactor-core",
 			"Bundle-SymbolicName" : "io.projectreactor.reactor-core"
@@ -55,11 +57,11 @@ configurations {
 
 dependencies {
   // Reactive Streams
-  compile "org.reactivestreams:reactive-streams:1.0.2"
-  testCompile "org.reactivestreams:reactive-streams-tck:1.0.2"
+  compile "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
+  testCompile "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
 
   // JSR-305 annotations
-  optional "com.google.code.findbugs:jsr305:3.0.2"
+  optional "com.google.code.findbugs:jsr305:$jsr305Version"
 
   //Optional Logging Operator
   optional "org.slf4j:slf4j-api:$slf4jVersion"
@@ -70,9 +72,9 @@ dependencies {
   optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
 
   //Optional JDK 9 Converter
-  jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
+  jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
-  testCompile 'junit:junit:4.12'
+  testCompile "junit:junit:$jUnitVersion"
 
   testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
   testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
@@ -81,13 +83,12 @@ dependencies {
 	exclude module: 'reactor-core'
   }
 
-  testCompile "org.hamcrest:hamcrest-library:1.3",
-		  "org.testng:testng:6.8.5",
-		  "org.assertj:assertj-core:$assertJVersion",
-		  "org.mockito:mockito-core:$mockitoVersion",
-		  "org.openjdk.jol:jol-core:0.9",
-		  "pl.pragmatists:JUnitParams:$jUnitParamsVersion",
-		  "org.awaitility:awaitility:3.1.2"
+  testCompile "org.assertj:assertj-core:$assertJVersion",
+    "org.testng:testng:$testNgVersion",
+    "org.mockito:mockito-core:$mockitoVersion",
+    "org.openjdk.jol:jol-core:$javaObjectLayoutVersion",
+    "pl.pragmatists:JUnitParams:$jUnitParamsVersion",
+    "org.awaitility:awaitility:$awaitilityVersion"
 
   noMicrometerTestCompile sourceSets.main.output
   noMicrometerTestCompile sourceSets.test.output
@@ -138,31 +139,10 @@ task japicmp(type: JapicmpTask) {
 //	methodExcludes = ["reactor.core.Scannable#operatorName()"]
 }
 
+//complements the javadoc.gradle common configuration
 javadoc {
-  dependsOn jar
-  group = "documentation"
-  description = "Generates aggregated Javadoc API documentation."
-  title = "Reactor Core $version"
-
-  options.addStringOption('charSet', 'UTF-8')
-
-  options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-  options.author = true
-  options.header = "$project.name"
+  options.addBooleanOption('nodeprecated', true)
   options.overview = "$rootDir/docs/api/overview.html"
-  options.stylesheetFile = file("$rootDir/docs/api/stylesheet.css")
-  options.links(rootProject.ext.javadocLinks )
-  options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-				   "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
-				   "reactor.discard:m:onDiscard Support"]
-
-  // In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
-  // And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
-  classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
-  classpath += sourceSets.main.compileClasspath
-
-  maxMemory = "1024m"
-  destinationDir = new File(project.buildDir, "docs/javadoc")
 
   doLast {
 	// work around https://github.com/gradle/gradle/issues/4046
@@ -241,9 +221,9 @@ task testNoMicrometer(type: Test, group: 'verification') {
 //inherit basic test task + common configuration in root
 //always depend on testNoMicrometer, skip testNG on Travis, skip loops when not releasing
 //note that this way the tasks can be run individually
-test {
+check {
   dependsOn testNoMicrometer
-  if (System.env.TRAVIS != "true") {
+  if (!detectedCiServers.contains("TRAVIS")) {
 	dependsOn testNG
   }
   if (!version.endsWith('BUILD-SNAPSHOT')) {
@@ -251,6 +231,7 @@ test {
   }
 }
 
+//TODO all java9 / stubs / java-specific stuff should go in a convention plugin ?
 if (!JavaVersion.current().isJava9Compatible()) {
   test {
 	jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
@@ -260,7 +241,8 @@ if (!JavaVersion.current().isJava9Compatible()) {
 jar {
   manifest {
 	attributes 'Implementation-Title': 'reactor-core',
-			'Implementation-Version': version
+			'Implementation-Version': project.version,
+			'Automatic-Module-Name': 'reactor.core'
   }
 	bnd(bndOptions)
 }

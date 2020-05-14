@@ -13,92 +13,95 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 buildscript {
+  //we define kotlin version for benefit of both core and test (see kotlin-gradle-plugin below)
   ext.kotlinVersion = '1.3.71'
   repositories {
 	maven { url "https://repo.spring.io/plugins-release" }
   }
   dependencies {
-	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
-	classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
-	classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.0'
+	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7' //still uses the old ways
 	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
   }
 }
 
 
 plugins {
-	id 'org.asciidoctor.convert' version '1.5.9.2'
+	id "com.github.johnrengelman.shadow" version "4.0.2"
+	id 'org.asciidoctor.convert' version '1.5.11'
 	id "me.champeau.gradle.jmh" version "0.4.7" apply false
 	id "org.jetbrains.dokka" version "0.9.18" apply false
 	id "me.champeau.gradle.japicmp" version "0.2.6"
 	id "de.undercouch.download" version "3.4.3"
+	//note: build scan plugin now must be applied in settings.gradle
 	id "com.jfrog.artifactory" version "4.9.8" apply false
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 }
 
-apply from: "gradle/doc.gradle"
+apply plugin: "io.reactor.gradle.detect-ci"
+apply from: "gradle/asciidoc.gradle" //asciidoc (which is generated from root dir)
 apply from: "gradle/releaser.gradle"
 
 ext {
-  //also set up the special version at root, for refguide
-  if (project.hasProperty('versionBranch') && version.toString().endsWith(".BUILD-SNAPSHOT")) {
-	versionBranch = versionBranch.replaceAll("\"", "").trim()
-	if (!versionBranch.isEmpty()) {
-	  realVersion = version.toString().replace("BUILD-SNAPSHOT", versionBranch + ".BUILD-SNAPSHOT")
-	  project.version = realVersion
+	jdk = JavaVersion.current().majorVersion
+	jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"
+	if (JavaVersion.current().isJava11Compatible()) {
+		jdkJavadoc = "https://docs.oracle.com/en/java/javase/$jdk/docs/api/"
 	}
-  }
+	println "JDK Javadoc link for this build is ${rootProject.jdkJavadoc}"
 
-  // Metrics
-  micrometerVersion = 'latest.release' //TODO specify a version of micrometer?
+  /*
+   * Note that some versions can be bumped by a script.
+   * These are found in `gradle.properties`...
+   *
+   * Versions not necessarily bumped by a script (testing, etc...) below:
+   */
+  // Misc not often upgraded
+  jsr305Version = '3.0.2'
+  jsr166BackportVersion = '1.0.0.RELEASE'
 
   // Logging
   slf4jVersion = '1.7.12'
   logbackVersion = '1.1.2'
 
   // Testing
+  jUnitVersion = '4.13'
   assertJVersion = '3.11.1'
   mockitoVersion = '2.23.0'
   jUnitParamsVersion = '1.1.1'
+  awaitilityVersion = '3.1.2'
+  javaObjectLayoutVersion = '0.9'
+  testNgVersion = '6.8.5'
+}
 
-  jdk = JavaVersion.current().majorVersion
-  jdkJavadoc = "https://docs.oracle.com/javase/$jdk/docs/api/"
-  if (JavaVersion.current().isJava11Compatible()) {
-	jdkJavadoc = "https://docs.oracle.com/en/java/javase/$jdk/docs/api/"
-  }
-
-  javadocLinks = [jdkJavadoc,
-				  "https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/"] as String[]
+//only publish scan if a specific gradle entreprise server is passed
+//typically, for local usage, you would temporarily set the env with:
+// `GRADLE_ENTERPRISE_URL=https://myge.example.com/ gradle foo`
+if (System.getenv('GRADLE_ENTERPRISE_URL')) {
+	gradleEnterprise {
+		buildScan {
+			captureTaskInputFiles = true
+			obfuscation {
+				ipAddresses { addresses -> addresses.collect { '0.0.0.0' } }
+			}
+			publishAlways()
+			server = System.getenv('GRADLE_ENTERPRISE_URL')
+		}
+	}
 }
 
 configure(subprojects) { p ->
 	apply plugin: 'java'
-	apply plugin: 'kotlin'
 	apply plugin: 'jacoco'
-	apply plugin: 'propdeps'
+	apply plugin: 'propdeps' //TODO replace with a simpler local plugin?
 	apply from: "${rootDir}/gradle/setup.gradle"
 
 	description = 'Non-Blocking Reactive Foundation for the JVM'
 	group = 'io.projectreactor'
 
-	ext {
-		//set up special version per sub-project
-		//(the root level configuration doesn't seem to propagate)
-		if (project.hasProperty('versionBranch') && version.toString().endsWith(".BUILD-SNAPSHOT")) {
-			versionBranch = versionBranch.replaceAll("\"", "").trim()
-			if (!versionBranch.isEmpty()) {
-				realVersion = p.version.toString().replace("BUILD-SNAPSHOT", versionBranch + ".BUILD-SNAPSHOT")
-				p.version = realVersion
-				println "Building special ${project} snapshot ${p.version}"
-			}
-		}
-	}
-
   repositories {
 	mavenLocal()
-	if (version.endsWith('BUILD-SNAPSHOT') || project.hasProperty('platformVersion')) {
+	if (version.endsWith('BUILD-SNAPSHOT')) {
 	  maven { url 'https://repo.spring.io/libs-snapshot' }
 	}
 
@@ -120,55 +123,6 @@ configure(subprojects) { p ->
 	}
   }
 
-  [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
-  [compileJava, compileTestJava]*.options*.compilerArgs =
-		  ["-Xlint:-varargs", // intentionally disabled
-		   "-Xlint:cast",
-		   "-Xlint:classfile",
-		   "-Xlint:dep-ann",
-		   "-Xlint:divzero",
-		   "-Xlint:empty",
-		   "-Xlint:finally",
-		   "-Xlint:overrides",
-		   "-Xlint:path",
-		   "-Xlint:processing",
-		   "-Xlint:static",
-		   "-Xlint:try",
-		   "-Xlint:deprecation",
-		   "-Xlint:unchecked",
-		   "-Xlint:-serial",      // intentionally disabled
-		   "-Xlint:-options",     // intentionally disabled
-		   "-Xlint:-fallthrough", // intentionally disabled
-		   "-Xlint:-rawtypes"     // TODO enable and fix warnings
-		  ]
-
-  compileJava {
-	sourceCompatibility = 1.8
-	targetCompatibility = 1.8
-  }
-
-  compileTestJava {
-	sourceCompatibility = 1.8
-	targetCompatibility = 1.8
-  }
-
-  compileKotlin {
-	kotlinOptions.jvmTarget = "1.8"
-	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
-  }
-
-  compileTestKotlin {
-	kotlinOptions.jvmTarget = "1.8"
-	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
-  }
-
-  if (JavaVersion.current().isJava8Compatible()) {
-	compileTestJava.options.compilerArgs += "-parameters"
-	p.tasks.withType(Javadoc) {
-	  options.addStringOption('Xdoclint:none', '-quiet')
-	}
-  }
-
   //includes for base test task (see below for additional common configurations)
   test {
 	include '**/*Tests.*'
@@ -187,14 +141,33 @@ configure(subprojects) { p ->
 	  maxGranularity 3
 	}
 
+	if (isCiServer) {
+	  def stdout = new LinkedList<TestOutputEvent>()
+	  beforeTest { TestDescriptor td ->
+		stdout.clear()
+	  }
+	  onOutput { TestDescriptor td, TestOutputEvent toe ->
+		stdout.add(toe)
+	  }
+	  afterTest { TestDescriptor td, TestResult tr ->
+		if (tr.resultType == TestResult.ResultType.FAILURE && stdout.size() > 0) {
+		  def stdOutput = stdout.collect {
+			it.getDestination().name() == "StdErr"
+					? "STD_ERR: ${it.getMessage()}"
+					: "STD_OUT: ${it.getMessage()}"
+		  }
+				  .join()
+		  println "This is the console output of the failing test below:\n$stdOutput"
+		}
+	  }
+	}
+
 	if (JavaVersion.current().isJava9Compatible()) {
 	  println "Java 9+: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
 	  jvmArgs = ["-XX:MaxGCPauseMillis=20"]
 	}
 
 	systemProperty("java.awt.headless", "true")
-	systemProperty("reactor.trace.cancel", "true")
-	systemProperty("reactor.trace.nocapacity", "true")
 	systemProperty("testGroups", p.properties.get("testGroups"))
 	scanForTestClasses = false
 	exclude '**/*Abstract*.*'
@@ -211,25 +184,31 @@ configure(subprojects) { p ->
 	  }
 	}
   }
-
-  // now that kotlin-gradle-plugin 1.1.60 is out with fix for https://youtrack.jetbrains.com/issue/KT-17564
-  // be wary and fail if the issue of source file duplication in jar comes up again
-  sourcesJar {
-	duplicatesStrategy = DuplicatesStrategy.FAIL
-  }
-
 }
 
-if (project.hasProperty('platformVersion')) {
-  apply plugin: 'spring-io'
+assemble.dependsOn docsZip
 
-  dependencyManagement {
-	springIoTestRuntime {
-	  imports {
-		mavenBom "io.spring.platform:platform-bom:$platformVersion"
+gradle.allprojects() { p ->
+  apply plugin: "io.reactor.gradle.custom-version"
+}
+
+configure(subprojects) { p ->
+  //these apply once the above configure is done, but before project-specific build.gradle have applied
+  apply plugin: "io.reactor.gradle.java-conventions"
+  apply from: "${rootDir}/gradle/javadoc.gradle"
+
+  //these apply AFTER project-specific build.gradle have applied
+  afterEvaluate {
+	if (p.plugins.hasPlugin("kotlin")) {
+	  println "Applying Kotlin conventions to ${p.name}"
+	  compileKotlin {
+		kotlinOptions.jvmTarget = "1.8"
+		kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
+	  }
+	  compileTestKotlin {
+		kotlinOptions.jvmTarget = "1.8"
+		kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
 	  }
 	}
   }
 }
-
-assemble.dependsOn docsZip
