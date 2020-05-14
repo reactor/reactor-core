@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 buildscript {
-  //we define kotlin version for benefit of both core and test (see kotlin-gradle-plugin below)
-  ext.kotlinVersion = '1.3.71'
-  repositories {
-	maven { url "https://repo.spring.io/plugins-release" }
-  }
-  dependencies {
-	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7' //still uses the old ways
-	classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
-  }
+	//we define kotlin version for benefit of both core and test (see kotlin-gradle-plugin below)
+	ext.kotlinVersion = '1.3.71'
+	repositories {
+		maven { url "https://repo.spring.io/plugins-release" }
+	}
+	dependencies {
+		classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7' //still uses the old ways
+		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+	}
 }
 
 
@@ -49,33 +49,33 @@ ext {
 	}
 	println "JDK Javadoc link for this build is ${rootProject.jdkJavadoc}"
 
-  /*
-   * Note that some versions can be bumped by a script.
-   * These are found in `gradle.properties`...
-   *
-   * Versions not necessarily bumped by a script (testing, etc...) below:
-   */
-  // Misc not often upgraded
-  jsr305Version = '3.0.2'
-  jsr166BackportVersion = '1.0.0.RELEASE'
+	/*
+	 * Note that some versions can be bumped by a script.
+	 * These are found in `gradle.properties`...
+	 *
+	 * Versions not necessarily bumped by a script (testing, etc...) below:
+	 */
+	// Misc not often upgraded
+	jsr305Version = '3.0.2'
+	jsr166BackportVersion = '1.0.0.RELEASE'
 
-  // Blockhound
-  blockhoundVersion = '1.0.3.RELEASE'
+	// Blockhound
+	blockhoundVersion = '1.0.3.RELEASE'
 
-  // Logging
-  slf4jVersion = '1.7.12'
-  logbackVersion = '1.1.2'
+	// Logging
+	slf4jVersion = '1.7.12'
+	logbackVersion = '1.1.2'
 
-  // Testing
-  jUnitVersion = '4.13'
-  jUnitJupiterVersion = '5.6.0'
-  assertJVersion = '3.11.1'
-  mockitoVersion = '2.23.0'
-  jUnitParamsVersion = '1.1.1'
-  awaitilityVersion = '3.1.2'
-  throwingFunctionVersion = '1.5.0'
-  javaObjectLayoutVersion = '0.9'
-  testNgVersion = '6.8.5'
+	// Testing
+	jUnitVersion = '4.13'
+	jUnitJupiterVersion = '5.6.0'
+	assertJVersion = '3.11.1'
+	mockitoVersion = '2.23.0'
+	jUnitParamsVersion = '1.1.1'
+	awaitilityVersion = '3.1.2'
+	throwingFunctionVersion = '1.5.0'
+	javaObjectLayoutVersion = '0.9'
+	testNgVersion = '6.8.5'
 }
 
 //only publish scan if a specific gradle entreprise server is passed
@@ -100,120 +100,119 @@ configure(subprojects) { p ->
 	apply plugin: 'propdeps' //TODO replace with a simpler local plugin?
 	apply from: "${rootDir}/gradle/setup.gradle"
 
-
 	description = 'Non-Blocking Reactive Foundation for the JVM'
 	group = 'io.projectreactor'
 
-  repositories {
-	mavenLocal()
-	if (version.endsWith('-SNAPSHOT') || version.contains('-SNAPSHOT-')) { //classic or customized snapshots
-	  maven { url 'https://repo.spring.io/libs-snapshot' }
-	}
-
-	mavenCentral()
-	jcenter()
-	maven { url 'https://repo.spring.io/libs-milestone' }
-	maven { url "https://oss.sonatype.org/content/repositories/releases/" }
-
-  }
-
-  jacoco {
-	toolVersion = '0.8.5'
-  }
-
-  jacocoTestReport {
-	reports {
-	  xml.enabled = true
-	  html.enabled = true
-	}
-  }
-
-  //includes for base test task (see below for additional common configurations)
-  test {
-	include '**/*Tests.*'
-	include '**/*Test.*'
-	include '**/*Spec.*'
-  }
-
-  //all test tasks will show FAILED for each test method,
-  // common exclusions, no scanning
-  p.tasks.withType(Test).all {
-	testLogging {
-	  events "FAILED"
-	  showExceptions true
-	  exceptionFormat "FULL"
-	  stackTraceFilters "ENTRY_POINT"
-	  maxGranularity 3
-	}
-
-	if (isCiServer) {
-	  def stdout = new LinkedList<TestOutputEvent>()
-	  beforeTest { TestDescriptor td ->
-		stdout.clear()
-	  }
-	  onOutput { TestDescriptor td, TestOutputEvent toe ->
-		stdout.add(toe)
-	  }
-	  afterTest { TestDescriptor td, TestResult tr ->
-		if (tr.resultType == TestResult.ResultType.FAILURE && stdout.size() > 0) {
-		  def stdOutput = stdout.collect {
-			it.getDestination().name() == "StdErr"
-					? "STD_ERR: ${it.getMessage()}"
-					: "STD_OUT: ${it.getMessage()}"
-		  }
-				  .join()
-		  println "This is the console output of the failing test below:\n$stdOutput"
+	repositories {
+		mavenLocal()
+		if (version.endsWith('-SNAPSHOT') || version.contains('-SNAPSHOT-')) { //classic or customized snapshots
+			maven { url 'https://repo.spring.io/libs-snapshot' }
 		}
-	  }
+
+		mavenCentral()
+		jcenter()
+		maven { url 'https://repo.spring.io/libs-milestone' }
+		maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+
 	}
 
-	if (JavaVersion.current().isJava9Compatible()) {
-	  println "Java 9+: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
-	  jvmArgs = ["-XX:MaxGCPauseMillis=20"]
+	jacoco {
+		toolVersion = '0.8.5'
 	}
 
-	systemProperty("java.awt.headless", "true")
-	systemProperty("testGroups", p.properties.get("testGroups"))
-	scanForTestClasses = false
-	exclude '**/*Abstract*.*'
-	exclude '**/*OperatorTest*.*'
-
-	//allow re-run of failed tests only without special test tasks failing
-	// because the filter is too restrictive
-	filter.setFailOnNoMatchingTests(false)
-
-	//display intermediate results for special test tasks
-	afterSuite { desc, result ->
-	  if (!desc.parent) { // will match the outermost suite
-		println('\n' + "${desc} Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)")
-	  }
+	jacocoTestReport {
+		reports {
+			xml.enabled = true
+			html.enabled = true
+		}
 	}
-  }
+
+	//includes for base test task (see below for additional common configurations)
+	test {
+		include '**/*Tests.*'
+		include '**/*Test.*'
+		include '**/*Spec.*'
+	}
+
+	//all test tasks will show FAILED for each test method,
+	// common exclusions, no scanning
+	p.tasks.withType(Test).all {
+		testLogging {
+			events "FAILED"
+			showExceptions true
+			exceptionFormat "FULL"
+			stackTraceFilters "ENTRY_POINT"
+			maxGranularity 3
+		}
+
+		if (isCiServer) {
+			def stdout = new LinkedList<TestOutputEvent>()
+			beforeTest { TestDescriptor td ->
+				stdout.clear()
+			}
+			onOutput { TestDescriptor td, TestOutputEvent toe ->
+				stdout.add(toe)
+			}
+			afterTest { TestDescriptor td, TestResult tr ->
+				if (tr.resultType == TestResult.ResultType.FAILURE && stdout.size() > 0) {
+					def stdOutput = stdout.collect {
+						it.getDestination().name() == "StdErr"
+							? "STD_ERR: ${it.getMessage()}"
+							: "STD_OUT: ${it.getMessage()}"
+					}
+						.join()
+					println "This is the console output of the failing test below:\n$stdOutput"
+				}
+			}
+		}
+
+		if (JavaVersion.current().isJava9Compatible()) {
+			println "Java 9+: lowering MaxGCPauseMillis to 20ms in ${project.name} ${name}"
+			jvmArgs = ["-XX:MaxGCPauseMillis=20"]
+		}
+
+		systemProperty("java.awt.headless", "true")
+		systemProperty("testGroups", p.properties.get("testGroups"))
+		scanForTestClasses = false
+		exclude '**/*Abstract*.*'
+		exclude '**/*OperatorTest*.*'
+
+		//allow re-run of failed tests only without special test tasks failing
+		// because the filter is too restrictive
+		filter.setFailOnNoMatchingTests(false)
+
+		//display intermediate results for special test tasks
+		afterSuite { desc, result ->
+			if (!desc.parent) { // will match the outermost suite
+				println('\n' + "${desc} Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)")
+			}
+		}
+	}
 }
 
 assemble.dependsOn docsZip
 
 gradle.allprojects() { p ->
-  apply plugin: "io.reactor.gradle.custom-version"
+	apply plugin: "io.reactor.gradle.custom-version"
 }
 
 configure(subprojects) { p ->
-  //these apply once the above configure is done, but before project-specific build.gradle have applied
-  apply plugin: "io.reactor.gradle.java-conventions"
-  apply from: "${rootDir}/gradle/javadoc.gradle"
+	//these apply once the above configure is done, but before project-specific build.gradle have applied
+	apply plugin: "io.reactor.gradle.java-conventions"
+	apply from: "${rootDir}/gradle/javadoc.gradle"
 
-  //these apply AFTER project-specific build.gradle have applied
-  afterEvaluate {
-	if (p.plugins.hasPlugin("kotlin")) {
-	  println "Applying Kotlin conventions to ${p.name}"
-	  compileKotlin {
-		kotlinOptions.jvmTarget = "1.8"
-		kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
-	  }
-	  compileTestKotlin {
-		kotlinOptions.jvmTarget = "1.8"
-		kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
-	  }
+	//these apply AFTER project-specific build.gradle have applied
+	afterEvaluate {
+		if (p.plugins.hasPlugin("kotlin")) {
+			println "Applying Kotlin conventions to ${p.name}"
+			compileKotlin {
+				kotlinOptions.jvmTarget = "1.8"
+				kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
+			}
+			compileTestKotlin {
+				kotlinOptions.jvmTarget = "1.8"
+				kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
+			}
+		}
 	}
-  }
 }

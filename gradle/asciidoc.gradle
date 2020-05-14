@@ -18,8 +18,8 @@ configure(rootProject) {
 
 	asciidoctor {
 		inputs.dir("docs/asciidoc/")
-				.withPropertyName("asciidocFiles")
-				.withPathSensitivity(PathSensitivity.RELATIVE)
+			.withPropertyName("asciidocFiles")
+			.withPathSensitivity(PathSensitivity.RELATIVE)
 
 		if (!isCiServer && rootProject.version.toString().endsWith("-SNAPSHOT")) {
 			backends = ["html5"]
@@ -42,17 +42,17 @@ configure(rootProject) {
 		logDocuments = true
 		options = [doctype: 'book']
 		attributes 'allow-uri-read': '',
-				imagesdir: "images/",
-				stylesdir: "stylesheets/",
-				stylesheet: 'reactor.css',
-				'source-highlighter': 'highlightjs',
-				'highlightjsdir': "./highlight",
-				'highlightjs-theme': 'railscasts'
+			imagesdir: "images/",
+			stylesdir: "stylesheets/",
+			stylesheet: 'reactor.css',
+			'source-highlighter': 'highlightjs',
+			'highlightjsdir': "./highlight",
+			'highlightjs-theme': 'railscasts'
 	}
 
 	dependencies {
-	  asciidoctor 'org.jruby:jruby-complete:9.2.5.0'
-	  asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
+		asciidoctor 'org.jruby:jruby-complete:9.2.5.0'
+		asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
 	}
 
 	task docsZip(type: Zip, dependsOn: asciidoctor) {

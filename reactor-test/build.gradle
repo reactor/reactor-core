@@ -21,68 +21,68 @@ apply plugin: 'kotlin'
 description = 'Reactor Test support'
 
 ext {
-  bndOptions = [
-          "Export-Package": [
-                  "!*internal*",
-                  "reactor.test*;-noimport:=true"
-          ].join(","),
-          "Import-Package": [
-                  "!javax.annotation",
-                  "kotlin.*;resolution:=optional,*"
-          ].join(","),
-          "Bundle-Name" : "reactor-test",
-          "Bundle-SymbolicName" : "io.projectreactor.reactor-test"
-  ]
+	bndOptions = [
+		"Export-Package": [
+			"!*internal*",
+			"reactor.test*;-noimport:=true"
+		].join(","),
+		"Import-Package": [
+			"!javax.annotation",
+			"kotlin.*;resolution:=optional,*"
+		].join(","),
+		"Bundle-Name" : "reactor-test",
+		"Bundle-SymbolicName" : "io.projectreactor.reactor-test"
+	]
 }
 
 dependencies {
-  compile project(":reactor-core")
+	compile project(":reactor-core")
 
-  testCompile "junit:junit:$jUnitVersion"
-  testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
-  testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
-  testRuntime "org.junit.vintage:junit-vintage-engine:${jUnitJupiterVersion}"
+	testCompile "junit:junit:$jUnitVersion"
+	testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
+	testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
+	testRuntime "org.junit.vintage:junit-vintage-engine:${jUnitJupiterVersion}"
 
-  testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
 
-  testCompile "org.assertj:assertj-core:$assertJVersion",
-          "org.mockito:mockito-core:$mockitoVersion"
+	testCompile "org.assertj:assertj-core:$assertJVersion"
+	testCompile "org.mockito:mockito-core:$mockitoVersion"
 }
 
 task downloadBaseline {
-  if (project.gradle.startParameter.isOffline()) {
-    println "Offline: skipping downloading of baseline and JAPICMP"
-  }
-  else if ("$compatibleVersion" == "SKIP") {
-    println "SKIP: Instructed to skip the baseline comparison"
-  }
-  else {
-    println "Will download and perform baseline comparison with ${compatibleVersion}"
-    finalizedBy { doDownloadBaseline }
-  }
+	if (project.gradle.startParameter.isOffline()) {
+		println "Offline: skipping downloading of baseline and JAPICMP"
+	}
+	else if ("$compatibleVersion" == "SKIP") {
+		println "SKIP: Instructed to skip the baseline comparison"
+	}
+	else {
+		println "Will download and perform baseline comparison with ${compatibleVersion}"
+		finalizedBy { doDownloadBaseline }
+	}
 }
 
 task doDownloadBaseline(type: Download) {
-  onlyIfNewer true
-  compress true
+	onlyIfNewer true
+	compress true
 
-  src "${repositories.jcenter().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
-  dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
+	src "${repositories.jcenter().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
+	dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
 
-  finalizedBy { japicmp }
+	finalizedBy { japicmp }
 }
 
 task japicmp(type: JapicmpTask) {
-  oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
-  newClasspath = files(jar.archivePath)
-  onlyBinaryIncompatibleModified = true
-  failOnModification = true
-  failOnSourceIncompatibility = true
-  txtOutputFile = file("${project.buildDir}/reports/japi.txt")
-  ignoreMissingClasses = true
-  includeSynthetic = true
+	oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
+	newClasspath = files(jar.archivePath)
+	onlyBinaryIncompatibleModified = true
+	failOnModification = true
+	failOnSourceIncompatibility = true
+	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	ignoreMissingClasses = true
+	includeSynthetic = true
 
-  //TODO after a release, remove the reactor-test exclusions below if any
+	//TODO after a release, remove the reactor-test exclusions below if any
 }
 
 tasks.withType(Test).all {
@@ -92,12 +92,12 @@ tasks.withType(Test).all {
 //javadoc is configured in gradle/javadoc.gradle
 
 jar {
-  manifest {
-    attributes 'Implementation-Title': 'reactor-test',
-            'Implementation-Version': version,
-            'Automatic-Module-Name': 'reactor.test'
-  }
-  bnd(bndOptions)
+	manifest {
+		attributes 'Implementation-Title': 'reactor-test',
+			'Implementation-Version': project.version,
+			'Automatic-Module-Name': 'reactor.test'
+	}
+	bnd(bndOptions)
 }
 
 jar.finalizedBy(downloadBaseline)

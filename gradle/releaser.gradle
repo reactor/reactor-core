@@ -49,32 +49,32 @@ task groupId(group: "releaser helpers", description: "output the group id of sub
 }
 
 task copyReadme(type: Copy, group: "releaser helpers", description: "copies the README in preparation for search and replace") {
-  from(rootProject.rootDir) {
-	include "README.md"
-  }
-  into rootProject.buildDir
+	from(rootProject.rootDir) {
+		include "README.md"
+	}
+	into rootProject.buildDir
 }
 
 task bumpVersionsInReadme(type: Copy, group: "releaser helpers", description: "replaces versions in README") {
-  def oldVersion = rootProject.findProperty("oldVersion")
-  def currentVersion = rootProject.findProperty("currentVersion")
-  def nextVersion = rootProject.findProperty("nextVersion")
-  def oldSnapshot = currentVersion + "-SNAPSHOT"
+	def oldVersion = rootProject.findProperty("oldVersion")
+	def currentVersion = rootProject.findProperty("currentVersion")
+	def nextVersion = rootProject.findProperty("nextVersion")
+	def oldSnapshot = currentVersion + "-SNAPSHOT"
 
-  onlyIf { oldVersion != null && currentVersion != null && nextVersion != null }
-  dependsOn copyReadme
+	onlyIf { oldVersion != null && currentVersion != null && nextVersion != null }
+	dependsOn copyReadme
 
-  doLast {
-	println "Will replace $oldVersion with $currentVersion and $oldSnapshot with $nextVersion"
-  }
-  from(rootProject.buildDir) {
-	include 'README.md'
-  }
-  into rootProject.rootDir
-  filter { line -> line
-		  .replace(oldVersion, currentVersion)
-		  .replace(oldSnapshot, nextVersion)
-  }
+	doLast {
+		println "Will replace $oldVersion with $currentVersion and $oldSnapshot with $nextVersion"
+	}
+	from(rootProject.buildDir) {
+		include 'README.md'
+	}
+	into rootProject.rootDir
+	filter { line -> line
+		.replace(oldVersion, currentVersion)
+		.replace(oldSnapshot, nextVersion)
+	}
 }
 
 String getOrGenerateBuildNumber() {
