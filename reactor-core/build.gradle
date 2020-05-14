@@ -23,227 +23,227 @@ apply plugin: 'org.jetbrains.dokka'
 
 ext {
 	bndOptions = [
-			"Export-Package": [
-					"!*internal*",
-					"reactor.*"
-			].join(","),
-			"Import-Package": [
-					"!javax.annotation",
-					'org.slf4j;resolution:=optional;version="[1.5.4,2)"',
-					"kotlin.*;resolution:=optional",
-					"io.micrometer.*;resolution:=optional",
-					"*"
-			].join(","),
-			"Bundle-Name" : "reactor-core",
-			"Bundle-SymbolicName" : "io.projectreactor.reactor-core"
+		"Export-Package": [
+			"!*internal*",
+			"reactor.*"
+		].join(","),
+		"Import-Package": [
+			"!javax.annotation",
+			'org.slf4j;resolution:=optional;version="[1.5.4,2)"',
+			"kotlin.*;resolution:=optional",
+			"io.micrometer.*;resolution:=optional",
+			"*"
+		].join(","),
+		"Bundle-Name" : "reactor-core",
+		"Bundle-SymbolicName" : "io.projectreactor.reactor-core"
 	]
 }
 
 sourceSets {
-  noMicrometerTest {
-	java.srcDir 'src/test/java'
-	resources.srcDir 'src/test/resources'
-  }
+	noMicrometerTest {
+		java.srcDir 'src/test/java'
+		resources.srcDir 'src/test/resources'
+	}
 }
 
 configurations {
-  compileOnly.extendsFrom jsr166backport
-  testCompile.extendsFrom jsr166backport
-  noMicrometerTestRuntime {
-	extendsFrom testRuntime
-	exclude group:"io.micrometer", module:"micrometer-core"
-  }
+	compileOnly.extendsFrom jsr166backport
+	testCompile.extendsFrom jsr166backport
+	noMicrometerTestRuntime {
+		extendsFrom testRuntime
+		exclude group:"io.micrometer", module:"micrometer-core"
+	}
 }
 
 dependencies {
-  // Reactive Streams
-  compile "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
-  testCompile "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
+	// Reactive Streams
+	compile "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
+	testCompile "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
 
-  // JSR-305 annotations
-  optional "com.google.code.findbugs:jsr305:$jsr305Version"
+	// JSR-305 annotations
+	optional "com.google.code.findbugs:jsr305:$jsr305Version"
 
-  //Optional Logging Operator
-  optional "org.slf4j:slf4j-api:$slf4jVersion"
+	//Optional Logging Operator
+	optional "org.slf4j:slf4j-api:$slf4jVersion"
 
-  //Optional Metrics
-  optional "io.micrometer:micrometer-core:$micrometerVersion"
+	//Optional Metrics
+	optional "io.micrometer:micrometer-core:$micrometerVersion"
 
-  optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
+	optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
 
-  //Optional JDK 9 Converter
-  jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
+	//Optional JDK 9 Converter
+	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
-  testCompile "junit:junit:$jUnitVersion"
+	testCompile "junit:junit:$jUnitVersion"
 
-  testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
-  testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
-  // Testing
-  testCompile(project(":reactor-test")) {
-	exclude module: 'reactor-core'
-  }
+	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
+	// Testing
+	testCompile(project(":reactor-test")) {
+		exclude module: 'reactor-core'
+	}
 
-  testCompile "org.assertj:assertj-core:$assertJVersion",
-    "org.testng:testng:$testNgVersion",
-    "org.mockito:mockito-core:$mockitoVersion",
-    "org.openjdk.jol:jol-core:$javaObjectLayoutVersion",
-    "pl.pragmatists:JUnitParams:$jUnitParamsVersion",
-    "org.awaitility:awaitility:$awaitilityVersion"
+	testCompile "org.assertj:assertj-core:$assertJVersion"
+	testCompile "org.testng:testng:$testNgVersion"
+	testCompile "org.mockito:mockito-core:$mockitoVersion"
+	testCompile "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
+	testCompile "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
+	testCompile "org.awaitility:awaitility:$awaitilityVersion"
 
-  noMicrometerTestCompile sourceSets.main.output
-  noMicrometerTestCompile sourceSets.test.output
-  noMicrometerTestCompile configurations.testCompile
+	noMicrometerTestCompile sourceSets.main.output
+	noMicrometerTestCompile sourceSets.test.output
+	noMicrometerTestCompile configurations.testCompile
 }
 
 jmh {
-  include = ["reactor.AssemblyTraceBenchmark.*"]
-  resultFormat = 'JSON'
+	include = ["reactor.AssemblyTraceBenchmark.*"]
+	resultFormat = 'JSON'
 }
 
 task downloadBaseline {
-  if (project.gradle.startParameter.isOffline()) {
-	println "Offline: skipping downloading of baseline and JAPICMP"
-  }
-  else if ("$compatibleVersion" == "SKIP") {
-	println "SKIP: Instructed to skip the baseline comparison"
-  }
-  else {
-	println "Will download and perform baseline comparison with ${compatibleVersion}"
-	finalizedBy { doDownloadBaseline }
-  }
+	if (project.gradle.startParameter.isOffline()) {
+		println "Offline: skipping downloading of baseline and JAPICMP"
+	}
+	else if ("$compatibleVersion" == "SKIP") {
+		println "SKIP: Instructed to skip the baseline comparison"
+	}
+	else {
+		println "Will download and perform baseline comparison with ${compatibleVersion}"
+		finalizedBy { doDownloadBaseline }
+	}
 }
 
 task doDownloadBaseline(type: Download) {
-  onlyIfNewer true
-  compress true
+	onlyIfNewer true
+	compress true
 
-  src "${repositories.jcenter().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
-  dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
+	src "${repositories.jcenter().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
+	dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
 
-  finalizedBy { japicmp }
+	finalizedBy { japicmp }
 }
 
 task japicmp(type: JapicmpTask) {
-  oldClasspath = files("${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar")
-  newClasspath = files(jar.archivePath)
-  onlyBinaryIncompatibleModified = true
-  failOnModification = true
-  failOnSourceIncompatibility = true
-  txtOutputFile = file("${project.buildDir}/reports/japi.txt")
-  ignoreMissingClasses = true
-  includeSynthetic = true
+	oldClasspath = files("${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar")
+	newClasspath = files(jar.archivePath)
+	onlyBinaryIncompatibleModified = true
+	failOnModification = true
+	failOnSourceIncompatibility = true
+	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	ignoreMissingClasses = true
+	includeSynthetic = true
 
-  //TODO after a release, bump the gradle.properties baseline
-  //TODO after a release, remove the reactor-core exclusions below if any
+	//TODO after a release, bump the gradle.properties baseline
+	//TODO after a release, remove the reactor-core exclusions below if any
 //	classExcludes = []
 //	methodExcludes = ["reactor.core.Scannable#operatorName()"]
 }
 
 //complements the javadoc.gradle common configuration
 javadoc {
-  options.addBooleanOption('nodeprecated', true)
-  options.overview = "$rootDir/docs/api/overview.html"
+	options.addBooleanOption('nodeprecated', true)
+	options.overview = "$rootDir/docs/api/overview.html"
 
-  doLast {
-	// work around https://github.com/gradle/gradle/issues/4046
-	copy {
-	  from('src/main/java')
-	  into "$project.buildDir/docs/javadoc/"
-	  include "**/doc-files/**/*"
+	doLast {
+		// work around https://github.com/gradle/gradle/issues/4046
+		copy {
+			from('src/main/java')
+			into "$project.buildDir/docs/javadoc/"
+			include "**/doc-files/**/*"
+		}
 	}
-  }
 }
 
 // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
 dokka {
-  dependsOn jar
-  group = "documentation"
-  description = "Generates Kotlin API documentation."
-  moduleName = "reactor-core"
-  jdkVersion = 8
+	dependsOn jar
+	group = "documentation"
+	description = "Generates Kotlin API documentation."
+	moduleName = "reactor-core"
+	jdkVersion = 8
 
-  outputFormat = "html"
-  outputDirectory = new File(project.buildDir, "docs/kdoc")
+	outputFormat = "html"
+	outputDirectory = new File(project.buildDir, "docs/kdoc")
 
-  //this is needed so that links to java classes are resolved
-  doFirst {
-	classpath += project.jar.outputs.files.getFiles()
-	classpath += project.sourceSets.main.compileClasspath
-  }
-  //this is needed so that the kdoc only generates for kotlin classes
-  //(default kotlinTasks sourceSet also includes java)
-  kotlinTasks {
+	//this is needed so that links to java classes are resolved
+	doFirst {
+		classpath += project.jar.outputs.files.getFiles()
+		classpath += project.sourceSets.main.compileClasspath
+	}
+	//this is needed so that the kdoc only generates for kotlin classes
+	//(default kotlinTasks sourceSet also includes java)
+	kotlinTasks {
 
-  }
-  processConfigurations = []
-  sourceDirs = files("src/main/kotlin")
+	}
+	processConfigurations = []
+	sourceDirs = files("src/main/kotlin")
 
-  externalDocumentationLink {
-	url = new URL("https://projectreactor.io/docs/core/release/api/")
-  }
-  externalDocumentationLink {
-	url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
-  }
+	externalDocumentationLink {
+		url = new URL("https://projectreactor.io/docs/core/release/api/")
+	}
+	externalDocumentationLink {
+		url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+	}
 }
 
 task kdocZip(type: Zip, dependsOn: dokka) {
-  //ends up similar to javadoc jar: reactor-core-xxxx.RELEASE-kdoc.zip
-  archiveClassifier.set('kdoc')
-  from("${project.buildDir}/docs/kdoc")
+	//ends up similar to javadoc jar: reactor-core-xxxx.RELEASE-kdoc.zip
+	archiveClassifier.set('kdoc')
+	from("${project.buildDir}/docs/kdoc")
 }
 
 
 task loops(type: Test, group: 'verification') {
-  include '**/*Loop.*'
-  doFirst {
-	println "Additional tests from `loops` ($includes)"
-  }
+	include '**/*Loop.*'
+	doFirst {
+		println "Additional tests from `loops` ($includes)"
+	}
 }
 
 task testNG(type: Test, group: 'verification') {
-  useTestNG()
-  include '**/*Verification.*'
-  doFirst {
-	println "Additional tests from `testNG` ($includes)"
-  }
+	useTestNG()
+	include '**/*Verification.*'
+	doFirst {
+		println "Additional tests from `testNG` ($includes)"
+	}
 }
 
 task testNoMicrometer(type: Test, group: 'verification') {
-  testClassesDirs = sourceSets.noMicrometerTest.output.classesDirs
-  classpath = sourceSets.noMicrometerTest.runtimeClasspath
-  include '**/*NoMicrometerTest.*'
+	testClassesDirs = sourceSets.noMicrometerTest.output.classesDirs
+	classpath = sourceSets.noMicrometerTest.runtimeClasspath
+	include '**/*NoMicrometerTest.*'
 
-  doFirst {
-	println "Additional tests without Micrometer ($includes)"
-  }
+	doFirst {
+		println "Additional tests without Micrometer ($includes)"
+	}
 }
 
 //inherit basic test task + common configuration in root
 //always depend on testNoMicrometer, skip testNG on Travis, skip loops when not releasing
 //note that this way the tasks can be run individually
 check {
-  dependsOn testNoMicrometer
-  if (!detectedCiServers.contains("TRAVIS")) {
-	dependsOn testNG
-  }
-  if (!version.endsWith('BUILD-SNAPSHOT')) {
-	dependsOn loops
-  }
+	dependsOn testNoMicrometer
+	if (!detectedCiServers.contains("TRAVIS")) {
+		dependsOn testNG
+	}
+	if (!version.endsWith('BUILD-SNAPSHOT')) {
+		dependsOn loops
+	}
 }
 
 //TODO all java9 / stubs / java-specific stuff should go in a convention plugin ?
 if (!JavaVersion.current().isJava9Compatible()) {
-  test {
-	jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
-  }
+	test {
+		jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
+	}
 }
 
 jar {
-  manifest {
-	attributes 'Implementation-Title': 'reactor-core',
+	manifest {
+		attributes 'Implementation-Title': 'reactor-core',
 			'Implementation-Version': project.version,
 			'Automatic-Module-Name': 'reactor.core'
-  }
+	}
 	bnd(bndOptions)
 }
 
@@ -252,30 +252,30 @@ check.dependsOn jacocoTestReport
 jar.finalizedBy(downloadBaseline)
 
 if (JavaVersion.current().java9Compatible) {
-  sourceSets {
-	java8stubs.java.srcDirs = ['src/main/java8stubs']
-  }
+	sourceSets {
+		java8stubs.java.srcDirs = ['src/main/java8stubs']
+	}
 
-  tasks.withType(JavaCompile).all {
-	  sourceCompatibility = targetCompatibility = 8
-  }
+	tasks.withType(JavaCompile).all {
+		sourceCompatibility = targetCompatibility = 8
+	}
 
-  tasks.withType(Javadoc).all {
-	excludes = ["reactor/core/publisher/Traces.java"]
-  }
+	tasks.withType(Javadoc).all {
+		excludes = ["reactor/core/publisher/Traces.java"]
+	}
 
-  dependencies {
-	compileOnly sourceSets.java8stubs.output
-  }
+	dependencies {
+		compileOnly sourceSets.java8stubs.output
+	}
 }
 else {
-  sourceSets {
-	java9stubs.java.srcDirs = ['src/main/java9stubs']
-  }
+	sourceSets {
+		java9stubs.java.srcDirs = ['src/main/java9stubs']
+	}
 
-  dependencies {
-	compileOnly sourceSets.java9stubs.output
-  }
+	dependencies {
+		compileOnly sourceSets.java9stubs.output
+	}
 }
 
 //add kdoc and docs.zip to the publication

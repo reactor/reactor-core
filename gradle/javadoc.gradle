@@ -28,17 +28,17 @@ javadoc {
 	options.memberLevel = JavadocMemberLevel.PROTECTED
 
 	if (project.name.contains("core")) {
-	  options.links([rootProject.jdkJavadoc, "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/"] as String[])
-	  options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-					   "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
-					   "reactor.discard:m:onDiscard Support"]
+		options.links([rootProject.jdkJavadoc, "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/"] as String[])
+		options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
+										 "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support",
+										 "reactor.discard:m:onDiscard Support"]
 	}
 	else {
-	  options.links([rootProject.jdkJavadoc,
-					 "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
-					 "https://projectreactor.io/docs/core/release/api/"] as String[]);
-	  options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-					   "implNote:a:Implementation Note:" ]
+		options.links([rootProject.jdkJavadoc,
+									 "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/",
+									 "https://projectreactor.io/docs/core/release/api/"] as String[]);
+		options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
+										 "implNote:a:Implementation Note:" ]
 	}
 
 	// In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
@@ -50,6 +50,6 @@ javadoc {
 	destinationDir = new File(project.buildDir, "docs/javadoc")
 
 	if (JavaVersion.current().isJava8Compatible()) {
-	  options.addStringOption("Xdoclint:none", "-quiet")
+		options.addStringOption("Xdoclint:none", "-quiet")
 	}
-  }
+}

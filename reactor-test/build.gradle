@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       https://www.apache.org/licenses/LICENSE-2.0
+ *			 https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,118 +22,118 @@ apply plugin: 'kotlin'
 description = 'Reactor Test support'
 
 ext {
-  bndOptions = [
-          "Export-Package": [
-                  "!*internal*",
-                  "reactor.test*;-noimport:=true"
-          ].join(","),
-          "Import-Package": [
-                  "!javax.annotation",
-                  "kotlin.*;resolution:=optional,*"
-          ].join(","),
-          "Bundle-Name" : "reactor-test",
-          "Bundle-SymbolicName" : "io.projectreactor.reactor-test"
-  ]
+	bndOptions = [
+		"Export-Package": [
+			"!*internal*",
+			"reactor.test*;-noimport:=true"
+		].join(","),
+		"Import-Package": [
+			"!javax.annotation",
+			"kotlin.*;resolution:=optional,*"
+		].join(","),
+		"Bundle-Name" : "reactor-test",
+		"Bundle-SymbolicName" : "io.projectreactor.reactor-test"
+	]
 }
 
 dependencies {
-  compile project(":reactor-core")
+	compile project(":reactor-core")
 
-  testCompile "junit:junit:$jUnitVersion"
+	testCompile "junit:junit:$jUnitVersion"
 
-  testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
 
-  testCompile "org.assertj:assertj-core:$assertJVersion",
-    "org.mockito:mockito-core:$mockitoVersion"
+	testCompile "org.assertj:assertj-core:$assertJVersion"
+	testCompile "org.mockito:mockito-core:$mockitoVersion"
 }
 
 task downloadBaseline {
-  if (project.gradle.startParameter.isOffline()) {
-    println "Offline: skipping downloading of baseline and JAPICMP"
-  }
-  else if ("$compatibleVersion" == "SKIP") {
-    println "SKIP: Instructed to skip the baseline comparison"
-  }
-  else {
-    println "Will download and perform baseline comparison with ${compatibleVersion}"
-    finalizedBy { doDownloadBaseline }
-  }
+	if (project.gradle.startParameter.isOffline()) {
+		println "Offline: skipping downloading of baseline and JAPICMP"
+	}
+	else if ("$compatibleVersion" == "SKIP") {
+		println "SKIP: Instructed to skip the baseline comparison"
+	}
+	else {
+		println "Will download and perform baseline comparison with ${compatibleVersion}"
+		finalizedBy { doDownloadBaseline }
+	}
 }
 
 task doDownloadBaseline(type: Download) {
-  onlyIfNewer true
-  compress true
+	onlyIfNewer true
+	compress true
 
-  src "${repositories.jcenter().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
-  dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
+	src "${repositories.jcenter().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
+	dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
 
-  finalizedBy { japicmp }
+	finalizedBy { japicmp }
 }
 
 task japicmp(type: JapicmpTask) {
-  oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
-  newClasspath = files(jar.archivePath)
-  onlyBinaryIncompatibleModified = true
-  failOnModification = true
-  failOnSourceIncompatibility = true
-  txtOutputFile = file("${project.buildDir}/reports/japi.txt")
-  ignoreMissingClasses = true
-  includeSynthetic = true
+	oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
+	newClasspath = files(jar.archivePath)
+	onlyBinaryIncompatibleModified = true
+	failOnModification = true
+	failOnSourceIncompatibility = true
+	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	ignoreMissingClasses = true
+	includeSynthetic = true
 
-  //TODO after a release, remove the reactor-test exclusions below if any
+	//TODO after a release, remove the reactor-test exclusions below if any
 }
 
 //javadoc is configured in gradle/javadoc.gradle
 
 // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
 dokka {
-  dependsOn jar
-  group = "documentation"
-  description = "Generates Kotlin API documentation."
-  moduleName = "reactor-test"
-  jdkVersion = 8
+	dependsOn jar
+	group = "documentation"
+	description = "Generates Kotlin API documentation."
+	moduleName = "reactor-test"
+	jdkVersion = 8
 
-  outputFormat = "html"
-  outputDirectory = new File(project.buildDir, "docs/kdoc")
+	outputFormat = "html"
+	outputDirectory = new File(project.buildDir, "docs/kdoc")
 
-  //this is needed so that links to java classes are resolved
-  doFirst {
-	classpath += project.jar.outputs.files.getFiles()
-	classpath += project.sourceSets.main.compileClasspath
-  }
-  //this is needed so that the kdoc only generates for kotlin classes
-  //(default kotlinTasks sourceSet also includes java)
-  kotlinTasks {
+	//this is needed so that links to java classes are resolved
+	doFirst {
+		classpath += project.jar.outputs.files.getFiles()
+		classpath += project.sourceSets.main.compileClasspath
+	}
+	//this is needed so that the kdoc only generates for kotlin classes
+	//(default kotlinTasks sourceSet also includes java)
+	kotlinTasks {
 
-  }
-  processConfigurations = []
-  sourceDirs = files("src/main/kotlin")
+	}
+	processConfigurations = []
+	sourceDirs = files("src/main/kotlin")
 
-  externalDocumentationLink {
-	url = new URL("https://projectreactor.io/docs/core/release/api/")
-  }
-  externalDocumentationLink {
-	url = new URL("https://projectreactor.io/docs/test/release/api/")
-  }
-  externalDocumentationLink {
-	url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
-  }
+	externalDocumentationLink {
+		url = new URL("https://projectreactor.io/docs/core/release/api/")
+	}
+	externalDocumentationLink {
+		url = new URL("https://projectreactor.io/docs/test/release/api/")
+	}
+	externalDocumentationLink {
+		url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+	}
 }
 
 task kdocZip(type: Zip, dependsOn: dokka) {
-  //ends up similar to javadoc jar: reactor-test-xxx.RELEASE-kdoc.zip
-  archiveClassifier.set('kdoc')
-  from("${project.buildDir}/docs/kdoc")
+	//ends up similar to javadoc jar: reactor-test-xxx.RELEASE-kdoc.zip
+	archiveClassifier.set('kdoc')
+	from("${project.buildDir}/docs/kdoc")
 }
 
 
 jar {
-  manifest {
-    attributes 'Implementation-Title': 'reactor-test',
-            'Implementation-Version': project.version,
-            'Automatic-Module-Name': 'reactor.test'
-  }
-  bnd(bndOptions)
+	manifest {
+		attributes 'Implementation-Title': 'reactor-test',
+			'Implementation-Version': project.version,
+			'Automatic-Module-Name': 'reactor.test'
+	}
+	bnd(bndOptions)
 }
 
 jar.finalizedBy(downloadBaseline)
