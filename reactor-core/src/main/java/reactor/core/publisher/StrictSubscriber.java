@@ -72,9 +72,22 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 			actual.onSubscribe(this);
 
 			if (Operators.setOnce(S, this, s)) {
-				long r = REQUESTED.getAndSet(this, 0L);
-				if (r != 0L) {
+				for (;;) {
+					long r = this.requested;
+
+					if (r == 0) {
+						return;
+					}
+
 					s.request(r);
+
+					if (r == Long.MAX_VALUE) {
+						return;
+					}
+
+					if (REQUESTED.addAndGet(this, -r) == 0) {
+						return;
+					}
 				}
 			}
 		}
@@ -135,7 +148,20 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 		}
 		Subscription a = s;
 		if (a != null) {
-			a.request(n);
+			for (;;) {
+				long r = this.requested;
+
+				if (r == 0) {
+					a.request(n);
+					return;
+				}
+
+				long u = Operators.addCap(r, n);
+				if (REQUESTED.compareAndSet(this, r, u)) {
+					// if there is racing between onSubscribe and request
+					return;
+				}
+			}
 		}
 		else {
 			Operators.addCap(REQUESTED, this, n);
