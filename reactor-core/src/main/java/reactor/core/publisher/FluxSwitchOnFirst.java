@@ -37,9 +37,6 @@ import reactor.util.annotation.Nullable;
 final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
 
-    static final int STATE_CANCELLED = -2;
-    static final int STATE_SUBSCRIBED = -1;
-
     final BiFunction<Signal<? extends T>, Flux<T>, Publisher<? extends R>> transformer;
     final boolean cancelSourceOnComplete;
 
@@ -435,18 +432,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         }
     }
 
-    static final class SwitchOnFirstControlSubscriber<T> implements InnerOperator<T, T>, ControlSubscriber<T> {
+    static final class SwitchOnFirstControlSubscriber<T> extends Operators.DeferredSubscription implements InnerOperator<T,
+            T>, ControlSubscriber<T> {
 
         final AbstractSwitchOnFirstMain<?, T> parent;
         final CoreSubscriber<? super T> delegate;
         final boolean cancelSourceOnComplete;
-
-        volatile long requested;
-        @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<SwitchOnFirstControlSubscriber> REQUESTED =
-                AtomicLongFieldUpdater.newUpdater(SwitchOnFirstControlSubscriber.class, "requested");
-
-        Subscription s;
 
         SwitchOnFirstControlSubscriber(
                 AbstractSwitchOnFirstMain<?, T> parent,
@@ -464,15 +455,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
         @Override
         public void onSubscribe(Subscription s) {
-            final long state = this.requested;
-            if (this.s == null && state != STATE_CANCELLED) {
-                this.s = s;
-
-                this.tryRequest();
-            }
-            else {
-                s.cancel();
-            }
+            set(s);
         }
 
         @Override
@@ -515,61 +498,6 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         }
 
         @Override
-        public void request(long n) {
-            long r = this.requested; // volatile read beforehand
-
-            if (r > STATE_SUBSCRIBED) { // works only in case onSubscribe has not happened
-                long u;
-                for (;;) { // normal CAS loop with overflow protection
-                    if (r == Long.MAX_VALUE) { // if r == Long.MAX_VALUE then we dont care and we can loose this request just in case of racing
-                        return;
-                    }
-                    u = Operators.addCap(r, n);
-                    if (REQUESTED.compareAndSet(this, r, u)) { // Means increment happened before onSubscribe
-                        return;
-                    }
-                    else { // Means increment happened after onSubscribe
-                        r = this.requested; // update new state to see what exactly happened (onSubscribe | cancel | requestN)
-
-                        if (r < 0) { // check state (expect -1 | -2 to exit, otherwise repeat)
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (r == STATE_CANCELLED) { // if canceled, just exit
-                return;
-            }
-
-            this.s.request(n); // if onSubscribe -> subscription exists (and we sure of that becuase volatile read after volatile write) so we can execute requestN on the subscription
-        }
-
-        void tryRequest() {
-            final Subscription s = this.s;
-
-            long r;
-
-            for (;;) {
-                r = this.requested;
-
-                // prevents cancelled state replacement
-                if (r == STATE_CANCELLED) {
-                    s.cancel();
-                    return;
-                }
-
-                if (REQUESTED.compareAndSet(this, r, STATE_SUBSCRIBED)) {
-                    break;
-                }
-            }
-
-            if (r > 0) { // if there is something,
-                s.request(r); // then we do a request on the given subscription
-            }
-        }
-
-        @Override
         public void cancel() {
             final long state = REQUESTED.getAndSet(this, STATE_CANCELLED);
             if (state == STATE_CANCELLED) {
@@ -577,11 +505,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
             }
 
             if (state == STATE_SUBSCRIBED) {
-                try {
-                    this.s.cancel();
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
+                this.s.cancel();
             }
 
             this.parent.cancel();
@@ -596,19 +520,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         }
     }
 
-    static final class SwitchOnFirstConditionalControlSubscriber<T> implements InnerOperator<T, T>, ControlSubscriber<T>,
+    static final class SwitchOnFirstConditionalControlSubscriber<T> extends Operators.DeferredSubscription implements InnerOperator<T, T>, ControlSubscriber<T>,
                                                                              Fuseable.ConditionalSubscriber<T> {
 
         final AbstractSwitchOnFirstMain<?, T> parent;
         final Fuseable.ConditionalSubscriber<? super T> delegate;
         final boolean terminateUpstreamOnComplete;
-
-        volatile long requested;
-        @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<SwitchOnFirstConditionalControlSubscriber> REQUESTED =
-                AtomicLongFieldUpdater.newUpdater(SwitchOnFirstConditionalControlSubscriber.class, "requested");
-
-        Subscription s;
 
         SwitchOnFirstConditionalControlSubscriber(
                 AbstractSwitchOnFirstMain<?, T> parent,
@@ -626,15 +543,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
         @Override
         public void onSubscribe(Subscription s) {
-            final long state = this.requested;
-            if (this.s == null && state != STATE_CANCELLED) {
-                this.s = s;
-
-                this.tryRequest();
-            }
-            else {
-                s.cancel();
-            }
+            set(s);
         }
 
         @Override
@@ -679,60 +588,6 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
             }
 
             this.delegate.onComplete();
-        }
-
-        @Override
-        public void request(long n) {
-            long r = this.requested; // volatile read beforehand
-
-            if (r > STATE_SUBSCRIBED) { // works only in case onSubscribe has not happened
-                long u;
-                for (;;) { // normal CAS loop with overflow protection
-                    if (r == Long.MAX_VALUE) { // if r == Long.MAX_VALUE then we dont care and we can loose this request just in case of racing
-                        return;
-                    }
-                    u = Operators.addCap(r, n);
-                    if (REQUESTED.compareAndSet(this, r, u)) { // Means increment happened before onSubscribe
-                        return;
-                    }
-                    else { // Means increment happened after onSubscribe
-                        r = this.requested; // update new state to see what exactly happened (onSubscribe | cancel | requestN)
-
-                        if (r < 0) { // check state (expect -1 | -2 to exit, otherwise repeat)
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (r == STATE_CANCELLED) { // if canceled, just exit
-                return;
-            }
-
-            this.s.request(n); // if onSubscribe -> subscription exists (and we sure of that becuase volatile read after volatile write) so we can execute requestN on the subscription
-        }
-
-        void tryRequest() {
-            final Subscription s = this.s;
-
-            long r;
-
-            for (;;) {
-                r = this.requested;
-
-                if (r == STATE_CANCELLED) {
-                    s.cancel();
-                    return;
-                }
-
-                if (REQUESTED.compareAndSet(this, r, STATE_SUBSCRIBED)) {
-                    break;
-                }
-            }
-
-            if (r > 0) { // if there is something,
-                s.request(r); // then we do a request on the given subscription
-            }
         }
 
         @Override
