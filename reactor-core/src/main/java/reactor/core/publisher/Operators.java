@@ -1548,7 +1548,7 @@ public abstract class Operators {
 				if (toRequest > 0) { // if there is something,
 					s.request(toRequest); // then we do a request on the given subscription
 				}
-				accumulated = r;
+				accumulated += toRequest;
 
 				if (REQUESTED.compareAndSet(this, r, STATE_SUBSCRIBED)) {
 					return true;
