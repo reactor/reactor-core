@@ -1444,29 +1444,38 @@ public abstract class Operators {
 	public static class DeferredSubscription
 			implements Subscription, Scannable {
 
-		volatile Subscription s;
+		static final int STATE_CANCELLED = -2;
+		static final int STATE_SUBSCRIBED = -1;
+
+		Subscription s;
 		volatile long requested;
 
 		protected boolean isCancelled(){
-			return s == cancelledSubscription();
+			return requested == STATE_CANCELLED;
 		}
 
 		@Override
 		public void cancel() {
-			Subscription a = s;
-			if (a != cancelledSubscription()) {
-				a = S.getAndSet(this, cancelledSubscription());
-				if (a != null && a != cancelledSubscription()) {
-					a.cancel();
-				}
+			final long state = REQUESTED.getAndSet(this, STATE_CANCELLED);
+			if (state == STATE_CANCELLED) {
+				return;
 			}
+
+			if (state == STATE_SUBSCRIBED) {
+				this.s.cancel();
+			}
+		}
+
+		protected void terminate() {
+			REQUESTED.getAndSet(this, STATE_CANCELLED);
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
+			long requested = this.requested; // volatile read to see subscription
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested < 0 ? 0 : requested;
 			if (key == Attr.CANCELLED) return isCancelled();
 
 			return null;
@@ -1474,23 +1483,33 @@ public abstract class Operators {
 
 		@Override
 		public void request(long n) {
-			Subscription a = s;
-			if (a != null) {
-				a.request(n);
-			}
-			else {
-				addCap(REQUESTED, this, n);
+			long r = this.requested; // volatile read beforehand
 
-				a = s;
+			if (r > STATE_SUBSCRIBED) { // works only in case onSubscribe has not happened
+				long u;
+				for (;;) { // normal CAS loop with overflow protection
+					if (r == Long.MAX_VALUE) { // if r == Long.MAX_VALUE then we dont care and we can loose this request just in case of racing
+						return;
+					}
+					u = Operators.addCap(r, n);
+					if (REQUESTED.compareAndSet(this, r, u)) { // Means increment happened before onSubscribe
+						return;
+					}
+					else { // Means increment happened after onSubscribe
+						r = this.requested; // update new state to see what exactly happened (onSubscribe | cancel | requestN)
 
-				if (a != null) {
-					long r = REQUESTED.getAndSet(this, 0L);
-
-					if (r != 0L) {
-						a.request(r);
+						if (r < 0) { // check state (expect -1 | -2 to exit, otherwise repeat)
+							break;
+						}
 					}
 				}
 			}
+
+			if (r == STATE_CANCELLED) { // if canceled, just exit
+				return;
+			}
+
+			this.s.request(n); // if onSubscribe -> subscription exists (and we sure of that because volatile read after volatile write) so we can execute requestN on the subscription
 		}
 
 		/**
@@ -1501,8 +1520,9 @@ public abstract class Operators {
 		 */
 		public final boolean set(Subscription s) {
 			Objects.requireNonNull(s, "s");
+			final long state = this.requested;
 			Subscription a = this.s;
-			if (a == cancelledSubscription()) {
+			if (state == STATE_CANCELLED) {
 				s.cancel();
 				return false;
 			}
@@ -1512,30 +1532,30 @@ public abstract class Operators {
 				return false;
 			}
 
-			if (S.compareAndSet(this, null, s)) {
+			long r;
+			long accumulated = 0;
+			for (;;) {
+				r = this.requested;
 
-				long r = REQUESTED.getAndSet(this, 0L);
-
-				if (r != 0L) {
-					s.request(r);
+				if (r == STATE_CANCELLED || r == STATE_SUBSCRIBED) {
+					s.cancel();
+					return false;
 				}
 
-				return true;
+				this.s = s;
+
+				long toRequest = r - accumulated;
+				if (toRequest > 0) { // if there is something,
+					s.request(toRequest); // then we do a request on the given subscription
+				}
+				accumulated += toRequest;
+
+				if (REQUESTED.compareAndSet(this, r, STATE_SUBSCRIBED)) {
+					return true;
+				}
 			}
-
-			a = this.s;
-
-			if (a != cancelledSubscription()) {
-				s.cancel();
-				reportSubscriptionSet();
-				return false;
-			}
-
-			return false;
 		}
 
-		static final AtomicReferenceFieldUpdater<DeferredSubscription, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(DeferredSubscription.class, Subscription.class, "s");
 		static final AtomicLongFieldUpdater<DeferredSubscription> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(DeferredSubscription.class, "requested");
 
