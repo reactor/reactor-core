@@ -161,8 +161,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         @Override
         public void onError(Throwable t) {
             // read of the first should occur before the read of inner since otherwise
-            // first may be nulled while the previous read shew that inner is still null
-            // hence double invocation of transformer occurs
+            // first may be nulled while the previous read has shown that inner is still
+            // null hence double invocation of transformer occurs
             final T f = this.first;
             final CoreSubscriber<? super T> i = this.inner;
             if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
@@ -198,8 +198,8 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         @Override
         public void onComplete() {
             // read of the first should occur before the read of inner since otherwise
-            // first may be nulled while the previous read shew that inner is still null
-            // hence double invocation of transformer occurs
+            // first may be nulled while the previous read has shown that inner is still
+            // null hence double invocation of transformer occurs
             final T f = this.first;
             final CoreSubscriber<? super T> i = this.inner;
             if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
