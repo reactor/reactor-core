@@ -318,22 +318,23 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldSendOnNextAsyncSignal() {
-        @SuppressWarnings("unchecked")
-        Signal<? extends Long>[] first = new Signal[1];
+        for (int i = 0; i < 10000; i++) {
+            @SuppressWarnings("unchecked") Signal<? extends Long>[] first = new Signal[1];
 
-        StepVerifier.create(Flux.just(1L)
-                                .switchOnFirst((s, f) -> {
-                                    first[0] = s;
+            StepVerifier.create(Flux.just(1L)
+                                    .switchOnFirst((s, f) -> {
+                                        first[0] = s;
 
-                                    return f.subscribeOn(Schedulers.elastic());
-                                }))
-                    .expectSubscription()
-                    .expectNext(1L)
-                    .expectComplete()
-                    .verify(Duration.ofSeconds(5));
+                                        return f.subscribeOn(Schedulers.elastic());
+                                    }))
+                        .expectSubscription()
+                        .expectNext(1L)
+                        .expectComplete()
+                        .verify(Duration.ofSeconds(5));
 
-
-        Assertions.assertThat((long) first[0].get()).isEqualTo(1L);
+            Assertions.assertThat((long) first[0].get())
+                      .isEqualTo(1L);
+        }
     }
 
     @Test

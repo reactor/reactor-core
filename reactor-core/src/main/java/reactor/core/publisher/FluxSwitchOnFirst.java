@@ -160,6 +160,10 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
         @Override
         public void onError(Throwable t) {
+            // read of the first should occur before the read of inner since otherwise
+            // first may be nulled while the previous read shew that inner is still null
+            // hence double invocation of transformer occurs
+            final T f = this.first;
             final CoreSubscriber<? super T> i = this.inner;
             if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
                 Operators.onErrorDropped(t, currentContext());
@@ -169,7 +173,6 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
             this.throwable = t;
             this.done = true;
 
-            final T f = this.first;
             if (f == null && i == null) {
                 final Publisher<? extends R> result;
                 final CoreSubscriber<? super R> o = this.outer;
@@ -194,6 +197,10 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
         @Override
         public void onComplete() {
+            // read of the first should occur before the read of inner since otherwise
+            // first may be nulled while the previous read shew that inner is still null
+            // hence double invocation of transformer occurs
+            final T f = this.first;
             final CoreSubscriber<? super T> i = this.inner;
             if (this.done || i == Operators.EMPTY_SUBSCRIBER) {
                 return;
@@ -201,7 +208,6 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
             this.done = true;
 
-            final T f = this.first;
             if (f == null && i == null) {
                 final Publisher<? extends R> result;
                 final CoreSubscriber<? super R> o = outer;
@@ -368,7 +374,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
         @Override
         public void subscribe(CoreSubscriber<? super T> actual) {
-            if (this.inner == null && INNER.compareAndSet(this, null, actual)) {
+            if (this.inner == null && INNER.compareAndSet(this, null, Operators.toConditionalSubscriber(actual))) {
                 if (this.first == null && this.done) {
                     final Throwable t = this.throwable;
                     if (t != null) {
@@ -379,7 +385,6 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
                     }
                     return;
                 }
-                this.inner = Operators.toConditionalSubscriber(actual);
                 actual.onSubscribe(this);
             }
             else if (this.inner != Operators.EMPTY_SUBSCRIBER) {
