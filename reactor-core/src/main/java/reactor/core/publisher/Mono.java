@@ -320,15 +320,16 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Pick the first available result coming from any of the given monos and populate a new {@literal Mono}.
-	 *
+	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
+	 * and replay that signal, effectively behaving like the fastest of these competing
+	 * sources.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/firstForMono.svg" alt="">
 	 * <p>
-	 * @param monos The monos to use.
+	 * @param monos The deferred monos to use.
 	 * @param <T> The type of the function result.
 	 *
-	 * @return a {@link Mono}.
+	 * @return a new {@link Mono} behaving like the fastest of its sources.
 	 */
 	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
 		return onAssembly(new MonoFirst<>(monos));
@@ -3119,12 +3120,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Emit the first available result from this mono or the other mono.
+	 * Emit the first available signal from this mono or the other mono.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/orForMono.svg" alt="">
 	 *
-	 * @param other the racing other {@link Mono} to compete with for the result
+	 * @param other the racing other {@link Mono} to compete with for the signal
 	 *
 	 * @return a new {@link Mono}
 	 * @see #first
