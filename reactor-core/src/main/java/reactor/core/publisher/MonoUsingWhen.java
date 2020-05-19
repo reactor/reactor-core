@@ -233,7 +233,7 @@ final class MonoUsingWhen<T, S> extends Mono<T> implements SourceProducer<T> {
 				super.cancel();
 			}
 			else {
-				Operators.terminate(S, this);
+				super.terminate();
 				if (closureSubscriber != null) {
 					closureSubscriber.cancel();
 				}
