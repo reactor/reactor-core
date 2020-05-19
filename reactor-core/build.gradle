@@ -69,7 +69,7 @@ dependencies {
 	//Optional Metrics
 	optional "io.micrometer:micrometer-core:$micrometerVersion"
 
-	optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
+	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
 	//Optional JDK 9 Converter
 	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"

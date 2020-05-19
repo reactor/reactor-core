@@ -39,6 +39,8 @@ ext {
 dependencies {
 	compile project(":reactor-core")
 
+	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+
 	testCompile "junit:junit:$jUnitVersion"
 
 	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
