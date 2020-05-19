@@ -1533,7 +1533,7 @@ public abstract class Operators {
 			}
 
 			long r;
-			long accomulated = 0;
+			long accumulated = 0;
 			for (;;) {
 				r = this.requested;
 
@@ -1544,11 +1544,11 @@ public abstract class Operators {
 
 				this.s = s;
 
-				long toRequest = r - accomulated;
+				long toRequest = r - accumulated;
 				if (toRequest > 0) { // if there is something,
 					s.request(toRequest); // then we do a request on the given subscription
 				}
-				accomulated = r;
+				accumulated = r;
 
 				if (REQUESTED.compareAndSet(this, r, STATE_SUBSCRIBED)) {
 					return true;
