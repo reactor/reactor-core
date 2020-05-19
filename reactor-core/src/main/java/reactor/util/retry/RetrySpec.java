@@ -160,7 +160,7 @@ public final class RetrySpec extends Retry {
 	 * <pre><code>
 	 * //given
 	 * RetrySpec retryTwiceIllegalArgument = Retry.max(2)
-	 *     .throwablePredicate(e -> e instanceof IllegalArgumentException);
+	 *     .filter(e -> e instanceof IllegalArgumentException);
 	 *
 	 * RetrySpec retryTwiceIllegalArgWithCause = retryTwiceIllegalArgument.modifyErrorFilter(old ->
 	 *     old.and(e -> e.getCause() != null));
