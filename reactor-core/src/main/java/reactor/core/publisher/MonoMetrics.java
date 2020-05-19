@@ -124,7 +124,7 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		final public void onNext(T t) {
+		public void onNext(T t) {
 			if (done) {
 				FluxMetrics.recordMalformed(commonTags, registry);
 				Operators.onNextDropped(t, actual.currentContext());

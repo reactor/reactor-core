@@ -17,9 +17,12 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
@@ -33,13 +36,16 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.MonoMetrics.MetricsSubscriber;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.FluxMetrics.*;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
@@ -389,4 +395,29 @@ public class MonoMetricsTest {
 		assertThat(uniqueTagKeySets).hasSize(1);
 	}
 
+	@Test
+	@Timeout(value = 1, unit = SECONDS)
+	public void this_hangs() {
+		StepVerifier.create(
+				Mono.fromSupplier(() -> Arrays.asList(1, 2, 3))
+				    .metrics()
+				    .flatMapIterable(Function.identity()))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
+	@Test
+	@Timeout(value = 1, unit = SECONDS)
+	public void this_throws_NPE() {
+		StepVerifier.create(
+				Mono.using(
+						() -> "irrelevant",
+						irrelevant -> Mono.fromSupplier(() -> Arrays.asList(1, 2, 3)),
+						irrelevant -> {})
+				    .metrics()
+				    .flatMapIterable(Function.identity()))
+		            .expectNext(1, 2, 3)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+	}
 }

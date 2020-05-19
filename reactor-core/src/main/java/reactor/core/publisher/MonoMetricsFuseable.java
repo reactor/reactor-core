@@ -103,6 +103,27 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		}
 
 		@Override
+		public void onNext(T t) {
+			if (mode == ASYNC) {
+				actual.onNext(null);
+			}
+			else {
+				if (done) {
+					FluxMetrics.recordMalformed(commonTags, registry);
+					Operators.onNextDropped(t, actual.currentContext());
+					return;
+				}
+				done = true;
+				//TODO looks like we don't count onNext: `Mono.empty()` vs `Mono.just("foo")`
+				FluxMetrics.recordOnComplete(commonTags,
+						registry,
+						subscribeToTerminateSample);
+				actual.onNext(t);
+				actual.onComplete();
+			}
+		}
+
+		@Override
 		public boolean isEmpty() {
 			return qs == null || qs.isEmpty();
 		}
