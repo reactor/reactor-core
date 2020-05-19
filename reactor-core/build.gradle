@@ -74,7 +74,7 @@ dependencies {
 	//Optional Metrics
 	optional "io.micrometer:micrometer-core:$micrometerVersion"
 
-	optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
+	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
 	//Optional BlockHound support
 	optional "io.projectreactor.tools:blockhound:$blockhoundVersion"

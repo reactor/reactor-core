@@ -38,6 +38,8 @@ ext {
 dependencies {
 	compile project(":reactor-core")
 
+	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+
 	testCompile "junit:junit:$jUnitVersion"
 	testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
 	testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
