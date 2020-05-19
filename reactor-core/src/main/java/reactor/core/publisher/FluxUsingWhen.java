@@ -247,7 +247,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 				super.cancel();
 			}
 			else {
-				Operators.terminate(S, this);
+				super.terminate();
 				if (closureSubscriber != null) {
 					closureSubscriber.cancel();
 				}

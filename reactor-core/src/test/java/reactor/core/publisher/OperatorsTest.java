@@ -200,6 +200,30 @@ public class OperatorsTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
+
+	@Test
+	public void shouldBeSerialIfRacy() {
+		for (int i = 0; i < 10000; i++) {
+			long[] requested = new long[] { 0 };
+			Subscription mockSubscription = Mockito.mock(Subscription.class);
+			Mockito.doAnswer(a -> requested[0] += (long) a.getArgument(0)).when(mockSubscription).request(Mockito.anyLong());
+			DeferredSubscription deferredSubscription = new DeferredSubscription();
+
+			deferredSubscription.request(5);
+
+			RaceTestUtils.race(() -> deferredSubscription.set(mockSubscription),
+					() -> {
+						deferredSubscription.request(10);
+						deferredSubscription.request(10);
+						deferredSubscription.request(10);
+					});
+
+			deferredSubscription.request(15);
+
+			Assertions.assertThat(requested[0]).isEqualTo(50L);
+		}
+	}
+
 	@Test
 	public void scanDeferredSubscription() {
 		DeferredSubscription test = new DeferredSubscription();
