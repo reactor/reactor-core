@@ -20,7 +20,6 @@ buildscript {
 		maven { url "https://repo.spring.io/plugins-release" }
 	}
 	dependencies {
-		classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7' //still uses the old ways
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
 	}
 }
@@ -33,7 +32,7 @@ plugins {
 	id "de.undercouch.download" version "3.4.3"
 	id "org.unbroken-dome.test-sets" version "3.0.0" apply false
 	//note: build scan plugin now must be applied in settings.gradle
-	id "com.jfrog.artifactory" version "4.9.8" apply false
+	id "com.jfrog.artifactory" version "4.15.2" apply false
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
 }
 
@@ -97,7 +96,6 @@ if (System.getenv('GRADLE_ENTERPRISE_URL')) {
 configure(subprojects) { p ->
 	apply plugin: 'java'
 	apply plugin: 'jacoco'
-	apply plugin: 'propdeps' //TODO replace with a simpler local plugin?
 	apply from: "${rootDir}/gradle/setup.gradle"
 
 	description = 'Non-Blocking Reactive Foundation for the JVM'
@@ -199,6 +197,7 @@ gradle.allprojects() { p ->
 configure(subprojects) { p ->
 	//these apply once the above configure is done, but before project-specific build.gradle have applied
 	apply plugin: "io.reactor.gradle.java-conventions"
+	apply plugin: "io.reactor.gradle.optional-dependencies"
 	apply from: "${rootDir}/gradle/javadoc.gradle"
 
 	//these apply AFTER project-specific build.gradle have applied
