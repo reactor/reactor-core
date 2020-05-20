@@ -1629,6 +1629,44 @@ public class FluxSwitchOnFirstTest {
 
     @SuppressWarnings("rawtypes")
     @Test
+    public void unitRequestsAreSerialTest() {
+        @SuppressWarnings("unchecked")
+        BiFunction<FluxSwitchOnFirst.AbstractSwitchOnFirstMain, CoreSubscriber, InnerOperator>[] factories = new BiFunction[] {
+                (parent, assertSubscriber) -> new FluxSwitchOnFirst.SwitchOnFirstControlSubscriber((FluxSwitchOnFirst.AbstractSwitchOnFirstMain) parent, (CoreSubscriber) assertSubscriber, true),
+                (parent, assertSubscriber) -> new FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber((FluxSwitchOnFirst.AbstractSwitchOnFirstMain) parent, (Fuseable.ConditionalSubscriber) assertSubscriber, true)
+        };
+        for (BiFunction<FluxSwitchOnFirst.AbstractSwitchOnFirstMain, CoreSubscriber, InnerOperator> factory : factories) {
+            for (int i = 0; i < 100000; i++) {
+                long[] valueHolder = new long[] { 0 };
+                FluxSwitchOnFirst.AbstractSwitchOnFirstMain mockParent = Mockito.mock(FluxSwitchOnFirst.AbstractSwitchOnFirstMain.class);
+                Mockito.doNothing().when(mockParent).request(Mockito.anyLong());
+                Mockito.doNothing().when(mockParent).cancel();
+                Subscription mockSubscription = Mockito.mock(Subscription.class);
+                Mockito.doAnswer((a) -> valueHolder[0] += (long) a.getArgument(0)).when(mockSubscription).request(Mockito.anyLong());
+                Mockito.doNothing().when(mockSubscription).cancel();
+                AssertSubscriber<Object> subscriber = AssertSubscriber.create(0);
+                InnerOperator switchOnFirstControlSubscriber = factory.apply(mockParent, Operators.toConditionalSubscriber(subscriber));
+
+                switchOnFirstControlSubscriber.request(10);
+                RaceTestUtils.race(() -> {
+                            switchOnFirstControlSubscriber.request(10);
+                            switchOnFirstControlSubscriber.request(10);
+                            switchOnFirstControlSubscriber.request(10);
+                            switchOnFirstControlSubscriber.request(10);
+                        },
+                        () -> switchOnFirstControlSubscriber.onSubscribe(mockSubscription),
+                        Schedulers.parallel());
+
+                switchOnFirstControlSubscriber.request(10);
+                Assertions.assertThat(valueHolder[0])
+                          .isEqualTo(60L);
+                mockSubscription.toString();
+            }
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
     public void unitCancelRacingTest() {
         @SuppressWarnings("unchecked")
         BiFunction<FluxSwitchOnFirst.AbstractSwitchOnFirstMain, CoreSubscriber, InnerOperator>[] factories = new BiFunction[] {
