@@ -103,6 +103,21 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		}
 
 		@Override
+		public void onComplete() {
+			if (mode == ASYNC) {
+				actual.onComplete();
+			}
+			else {
+				if (done) {
+					return;
+				}
+				done = true;
+				FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
+				actual.onComplete();
+			}
+		}
+
+		@Override
 		public void onNext(T t) {
 			if (mode == ASYNC) {
 				actual.onNext(null);

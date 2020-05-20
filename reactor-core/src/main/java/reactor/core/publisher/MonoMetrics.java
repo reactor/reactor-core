@@ -102,7 +102,7 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 		}
 
 		@Override
-		final public void onComplete() {
+		public void onComplete() {
 			if (done) {
 				return;
 			}
