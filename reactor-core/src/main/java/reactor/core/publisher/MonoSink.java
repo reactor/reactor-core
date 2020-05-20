@@ -86,8 +86,10 @@ public interface MonoSink<T> {
 
 	/**
 	 * Attach a {@link Disposable} as a callback for when this {@link MonoSink} is
-	 * cancelled. This happens only when the downstream {@link Subscription}
-	 * is {@link Subscription#cancel() cancelled}.
+	 * cancelled. At most one callback can be registered, and subsequent calls to this method
+	 * will result in the immediate disposal of the extraneous {@link Disposable}.
+	 * <p>
+	 * The callback is only relevant when the downstream {@link Subscription} is {@link Subscription#cancel() cancelled}.
 	 *
 	 * @param d the {@link Disposable} to use as a callback
 	 * @return the {@link MonoSink} with a cancellation callback
@@ -99,6 +101,8 @@ public interface MonoSink<T> {
 	 * Attach a {@link Disposable} as a callback for when this {@link MonoSink} is effectively
 	 * disposed, that is it cannot be used anymore. This includes both having played terminal
 	 * signals (onComplete, onError) and having been cancelled (see {@link #onCancel(Disposable)}).
+	 * At most one callback can be registered, and subsequent calls to this method will result in
+	 * the immediate disposal of the extraneous {@link Disposable}.
 	 * <p>
 	 * Note that the "dispose" term is used from the perspective of the sink. Not to
 	 * be confused with {@link Mono#subscribe()}'s {@link Disposable#dispose()} method, which
