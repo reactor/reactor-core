@@ -189,7 +189,7 @@ Compare the first example to the second example, shown in the following code:
 ====
 [source,java]
 ----
-DirectProcessor<String> hotSource = DirectProcessor.create();
+DirectProcessor<String> hotSource = DirectProcessor.<String>create();
 
 Flux<String> hotFlux = hotSource.map(String::toUpperCase);
 
