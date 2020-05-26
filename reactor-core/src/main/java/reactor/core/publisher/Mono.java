@@ -3763,7 +3763,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <blockquote>
 	 * <pre>
 	 * {@code
-	 * Retry customStrategy = Retry.fromFunction(companion -> companion.handle((retrySignal, sink) -> {
+	 * Retry customStrategy = Retry.from(companion -> companion.handle((retrySignal, sink) -> {
 	 * 	    Context ctx = sink.currentContext();
 	 * 	    int rl = ctx.getOrDefault("retriesLeft", 0);
 	 * 	    if (rl > 0) {
