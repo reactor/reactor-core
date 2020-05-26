@@ -20,7 +20,10 @@ import java.util.function.Consumer;
 
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoRetryTest {
 
@@ -116,5 +119,12 @@ public class MonoRetryTest {
 		    .retry(2)
 		    .subscribeWith(AssertSubscriber.create())
 		    .assertValues(1);
+	}
+
+	@Test
+	public void scanOperator(){
+	    MonoRetry test = new MonoRetry(Mono.just(1), 3L);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

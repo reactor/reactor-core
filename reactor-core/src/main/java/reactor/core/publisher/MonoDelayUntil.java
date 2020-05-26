@@ -186,6 +186,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done == n;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}
@@ -303,6 +304,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

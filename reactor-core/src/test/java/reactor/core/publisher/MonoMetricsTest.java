@@ -62,6 +62,13 @@ public class MonoMetricsTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		MonoMetrics<String> test = new MonoMetrics<>(Mono.just("foo"), registry);
+
+		assertThat(test.scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void sequenceNameFromScanUnavailable() {
 		Mono<String> delegate = Mono.just("foo");
 		Mono<String> source = new Mono<String>() {

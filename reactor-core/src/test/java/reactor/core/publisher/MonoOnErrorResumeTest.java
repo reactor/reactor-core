@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -280,5 +281,12 @@ public class MonoOnErrorResumeTest {
 		            .then(() -> assertThat(mp.isSuccess()).isFalse())
 		            .then(() -> assertThat(mp.isTerminated()).isTrue())
 		            .verifyError(TestException.class);
+	}
+
+	@Test
+	public void scanOperator(){
+	    MonoOnErrorResume<String> test = new MonoOnErrorResume(Mono.just("foo"), e -> Mono.just("bar"));
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

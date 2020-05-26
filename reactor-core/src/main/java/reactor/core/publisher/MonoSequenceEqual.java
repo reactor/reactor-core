@@ -62,6 +62,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return prefetch;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
 	}
 
@@ -109,6 +110,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -320,6 +322,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> implements SourceProducer
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.BUFFERED) return queue.size();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

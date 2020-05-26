@@ -24,6 +24,9 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an arbitrary {@link Publisher}
  * Useful to create operators which return a {@link Mono}, e.g. :
@@ -85,6 +88,9 @@ final class MonoSource<I> extends Mono<I> implements Scannable, SourceProducer<I
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
 				return source;
+		}
+		if (key == RUN_STYLE) {
+		    return SYNC;
 		}
 		return null;
 	}

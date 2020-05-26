@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import reactor.core.CoreSubscriber;
 
 /**
- * Detaches the both the child Subscriber and the Subscription on
+ * Detaches both the child Subscriber and the Subscription on
  * termination or cancellation.
  * <p>This should help with odd retention scenarios when running
  * wit non Rx mentality based Publishers.
@@ -35,5 +35,11 @@ final class MonoDetach<T> extends InternalMonoOperator<T, T> {
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new FluxDetach.DetachSubscriber<>(actual);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
 	}
 }

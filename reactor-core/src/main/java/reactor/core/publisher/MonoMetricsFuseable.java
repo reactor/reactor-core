@@ -73,6 +73,12 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		return new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.tags);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	/**
 	 * @param <T>
 	 *
@@ -189,5 +195,12 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		public int size() {
 			return qs == null ? 0 : qs.size();
 		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			return super.scanUnsafe(key);
+		}
 	}
+
 }

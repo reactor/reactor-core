@@ -18,11 +18,14 @@ package reactor.core.publisher;
 import java.time.Duration;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoDematerializeTest {
 
@@ -209,5 +212,12 @@ public class MonoDematerializeTest {
 	public void materializeDematerializeMonoError() {
 		StepVerifier.create(Mono.error(new IllegalStateException("boom")).materialize().dematerialize())
 		            .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void scanOperator(){
+	    MonoDematerialize test = new MonoDematerialize(Mono.just(Signal.next(1)));
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

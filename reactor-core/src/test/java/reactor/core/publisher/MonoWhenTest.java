@@ -143,5 +143,6 @@ public class MonoWhenTest {
 	public void scanOperator() {
 		MonoWhen s = new MonoWhen(true);
 		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).as("delayError").isTrue();
+		assertThat(s.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

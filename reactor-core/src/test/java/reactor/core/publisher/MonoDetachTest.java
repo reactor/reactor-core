@@ -24,7 +24,10 @@ import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoDetachTest {
 
@@ -155,5 +158,12 @@ public class MonoDetachTest {
 		ts.assertValues(1);
 		ts.assertComplete();
 		ts.assertNoError();
+	}
+
+	@Test
+	public void scanOperator(){
+	    MonoDetach<Integer> test = new MonoDetach<>(Mono.just(1));
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

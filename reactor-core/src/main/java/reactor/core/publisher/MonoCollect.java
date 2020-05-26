@@ -60,6 +60,12 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		return new CollectSubscriber<>(actual, action, container);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class CollectSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {
 
 		final BiConsumer<? super R, ? super T> action;
@@ -83,6 +89,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return super.scanUnsafe(key);
 		}
 

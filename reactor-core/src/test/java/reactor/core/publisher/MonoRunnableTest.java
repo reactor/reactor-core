@@ -27,10 +27,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -165,5 +165,12 @@ public class MonoRunnableTest {
 		            .verifyComplete();
 
 		assertThat(TimeUnit.NANOSECONDS.toMillis(subscribeTs.get())).isCloseTo(500L, Offset.offset(50L));
+	}
+
+	@Test
+	public void scanOperator(){
+		MonoRunnable<String> test = new MonoRunnable(() -> {});
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

@@ -20,8 +20,11 @@ import java.time.Duration;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoDelaySubscriptionTest {
 
@@ -170,5 +173,10 @@ public class MonoDelaySubscriptionTest {
 		  .assertNotComplete();
 	}
 
+	@Test
+	public void scanOperator(){
+		MonoDelaySubscription<Integer, Integer> test = new MonoDelaySubscription(Mono.just(1), Mono.just(2));
 
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
 }

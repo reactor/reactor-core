@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -129,5 +130,12 @@ public class MonoFirstTest {
 		            .thenAwait(Duration.ofSeconds(4))
 		            .expectNext(2)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanOperator(){
+		MonoFirst<Integer> test = new MonoFirst<>(Mono.just(1), Mono.just(2));
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

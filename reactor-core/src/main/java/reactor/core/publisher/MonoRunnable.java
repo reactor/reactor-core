@@ -76,7 +76,8 @@ final class MonoRunnable<T> extends Mono<T> implements Callable<Void>, SourcePro
 
     @Override
     public Object scanUnsafe(Attr key) {
-        return null; //no particular key to be represented, still useful in hooks
+        if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+        return null;
     }
 
     static final class MonoRunnableEagerSubscription extends AtomicBoolean implements Subscription {

@@ -75,7 +75,8 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
 
     @Override
     public Object scanUnsafe(Attr key) {
-        return null; //no particular key to be represented, still useful in hooks
+        if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+        return null;
     }
     
     static final class ThenIgnoreMain<T>
@@ -189,6 +190,12 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
             active = false;
             drain();
         }
+
+        @Override
+        public Object scanUnsafe(Attr key) {
+            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+            return super.scanUnsafe(key);
+        }
     }
     
     static final class ThenIgnoreInner implements InnerConsumer<Object> {
@@ -208,6 +215,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
             if (key == Attr.PARENT) return s;
             if (key == Attr.ACTUAL) return parent;
             if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		    return null;
 	    }
@@ -270,6 +278,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable, Scannable {
             if (key == Attr.ACTUAL) return parent;
             if (key == Attr.TERMINATED) return done;
             if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
             return null;
         }

@@ -66,6 +66,12 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 		return multicast;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class MonoPublishMulticaster<T> extends Mono<T>
 			implements InnerConsumer<T>, FluxPublishMulticast.PublishMulticasterParent {
 
@@ -126,6 +132,9 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 			}
 			if (key == Attr.BUFFERED) {
 				return value != null ? 1 : 0;
+			}
+			if (key == Attr.RUN_STYLE) {
+			    return Attr.RunStyle.SYNC;
 			}
 
 			return null;
@@ -350,6 +359,9 @@ final class MonoPublishMulticast<T, R> extends InternalMonoOperator<T, R> implem
 			}
 			if (key == Attr.CANCELLED) {
 				return cancelled == 1;
+			}
+			if (key == Attr.RUN_STYLE) {
+			    return Attr.RunStyle.SYNC;
 			}
 
 			return InnerProducer.super.scanUnsafe(key);

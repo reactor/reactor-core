@@ -264,20 +264,22 @@ public class MonoSourceTest {
 	@Test
 	public void scanSubscriber() {
 		Flux<String> source = Flux.just("foo").map(i -> i);
-		Mono<String> test = Mono.fromDirect(source);
+		MonoSource<String> test = new MonoSource(source);
 
-		assertThat(Scannable.from(test).scan(Scannable.Attr.PARENT)).isSameAs(source);
-		assertThat(Scannable.from(test).scan(Scannable.Attr.ACTUAL)).isNull();
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 
 	@Test
 	public void scanSubscriberHide() {
 		Flux<String> source = Flux.just("foo").hide();
-		Mono<String> test = Mono.fromDirect(source);
+		MonoSource<String> test = new MonoSource(source);
 
-		assertThat(Scannable.from(test).scan(Scannable.Attr.PARENT)).isSameAs(source);
-		assertThat(Scannable.from(test).scan(Scannable.Attr.ACTUAL)).isNull();
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -287,6 +289,7 @@ public class MonoSourceTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

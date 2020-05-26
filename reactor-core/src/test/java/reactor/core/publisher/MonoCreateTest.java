@@ -401,5 +401,13 @@ public class MonoCreateTest {
 		            .expectNext(1L)
 		            .verifyComplete();
 	}
+
+	@Test
+	public void scanOperator() {
+		MonoCreate<String> test = new MonoCreate(null);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+	}
 }
 

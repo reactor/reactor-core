@@ -51,6 +51,7 @@ public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.PARENT) return source;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.UNKNOWN;
 		return null;
 	}
 

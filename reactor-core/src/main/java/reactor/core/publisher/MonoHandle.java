@@ -42,4 +42,10 @@ final class MonoHandle<T, R> extends InternalMonoOperator<T, R> {
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super R> actual) {
 		return new FluxHandle.HandleSubscriber<>(actual, handler);
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

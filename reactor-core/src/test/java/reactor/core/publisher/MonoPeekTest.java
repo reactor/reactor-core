@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -170,4 +171,19 @@ public class MonoPeekTest {
 				.withCauseInstanceOf(NullPointerException.class)
 				.matches(Exceptions::isErrorCallbackNotImplemented, "ErrorCallbackNotImplemented");
 	}
+
+	@Test
+	public void scanOperator(){
+	    MonoPeek test = new MonoPeek(Mono.just(1), null, null, null, null);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanFuseableOperator(){
+		MonoPeekFuseable test = new MonoPeekFuseable(Mono.just(1), null, null, null, null);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
 }

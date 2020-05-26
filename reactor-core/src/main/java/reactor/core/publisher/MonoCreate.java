@@ -63,7 +63,8 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		return null; //no particular key to be represented, still useful in hooks
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return null;
 	}
 
 	static final class DefaultMonoSink<T> extends AtomicBoolean
@@ -114,6 +115,9 @@ final class MonoCreate<T> extends Mono<T> implements SourceProducer<T> {
 			}
 			if (key == Attr.CANCELLED) {
 				return disposable == CANCELLED;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
 			}
 
 			return InnerProducer.super.scanUnsafe(key);

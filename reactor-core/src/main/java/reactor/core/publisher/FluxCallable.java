@@ -62,6 +62,7 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable, So
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		return null; //no particular key to be represented, still useful in hooks
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return null;
 	}
 }

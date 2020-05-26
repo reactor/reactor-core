@@ -30,4 +30,10 @@ final class MonoDematerialize<T> extends InternalMonoOperator<Signal<T>, T> {
 	public CoreSubscriber<? super Signal<T>> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new FluxDematerialize.DematerializeSubscriber<>(actual, true);
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

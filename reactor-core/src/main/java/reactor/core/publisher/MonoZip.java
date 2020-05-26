@@ -132,6 +132,7 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
 	}
 
@@ -173,6 +174,9 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 			}
 			if (key == Attr.DELAY_ERROR) {
 				return delayError;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
 			}
 
 			return super.scanUnsafe(key);
@@ -302,6 +306,9 @@ final class MonoZip<T, R> extends Mono<R> implements SourceProducer<R>  {
 			}
 			if (key == Attr.ERROR) {
 				return error;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
 			}
 
 			return null;

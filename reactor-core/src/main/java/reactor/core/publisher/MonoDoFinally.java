@@ -46,4 +46,10 @@ final class MonoDoFinally<T> extends InternalMonoOperator<T, T> {
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return FluxDoFinally.createSubscriber(actual, onFinally, false);
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

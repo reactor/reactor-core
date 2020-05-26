@@ -25,9 +25,9 @@ import org.assertj.core.data.Offset;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -186,5 +186,12 @@ public class MonoCallableTest {
                     .verifyComplete();
 
         assertThat(TimeUnit.NANOSECONDS.toMillis(subscribeTs.get())).isCloseTo(500L, Offset.offset(50L));
+    }
+
+    @Test
+    public void scanOperator(){
+        MonoCallable<Integer> test = new MonoCallable<>(() -> 1);
+
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 }

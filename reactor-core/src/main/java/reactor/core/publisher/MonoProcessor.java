@@ -412,6 +412,8 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (key == Attr.ERROR) return error;
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.CANCELLED) return isCancelled();
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
 		return null;
 	}
 
@@ -532,6 +534,9 @@ public final class MonoProcessor<O> extends Mono<O>
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return parent;
+			}
+			if (key == Attr.RUN_STYLE) {
+			    return Attr.RunStyle.SYNC;
 			}
 			return super.scanUnsafe(key);
 		}

@@ -31,6 +31,12 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Boolean> actual) {
 		return new HasElementSubscriber<>(actual);
 	}
@@ -48,6 +54,9 @@ final class MonoHasElement<T> extends InternalMonoOperator<T, Boolean> implement
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
 			}
 			return super.scanUnsafe(key);
 		}

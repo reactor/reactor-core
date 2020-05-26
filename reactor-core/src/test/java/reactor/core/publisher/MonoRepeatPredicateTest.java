@@ -17,8 +17,10 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 public class MonoRepeatPredicateTest {
@@ -64,6 +66,13 @@ public class MonoRepeatPredicateTest {
 		            .expectNext(3)
 		            .expectNext(3)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanOperator(){
+	    MonoRepeatPredicate<Integer> test = new MonoRepeatPredicate(Mono.just(1), () -> true);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 }

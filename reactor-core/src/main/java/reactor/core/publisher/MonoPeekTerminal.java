@@ -61,6 +61,12 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 		return new MonoTerminalPeekSubscriber<>(actual, this);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	/*
 	The specificity of this operator's subscriber is that it is implemented as a single
 	class for all cases (fuseable or not, conditional or not). So subscription and actual
@@ -123,6 +129,7 @@ final class MonoPeekTerminal<T> extends InternalMonoOperator<T, T> implements Fu
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

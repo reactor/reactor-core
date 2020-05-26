@@ -56,5 +56,6 @@ public class MonoCancelOnTest {
 		MonoCancelOn<String> test = new MonoCancelOn<>(Mono.empty(), Schedulers.immediate());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 }

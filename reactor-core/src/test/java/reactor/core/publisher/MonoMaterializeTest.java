@@ -16,8 +16,11 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoMaterializeTest {
 
@@ -70,5 +73,10 @@ public class MonoMaterializeTest {
                     .verifyComplete();
     }
 
+    @Test
+    public void scanOperator(){
+        MonoMaterialize<String> test = new MonoMaterialize<>(Mono.just("foo"));
 
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+    }
 }

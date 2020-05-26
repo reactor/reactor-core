@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import org.junit.Test;
 import org.testng.Assert;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -39,7 +40,6 @@ public class MonoFilterTest {
 
 	@Test
 	public void normal() {
-
 		Mono.just(1)
 		    .filter(v -> v % 2 == 0)
 		    .subscribeWith(AssertSubscriber.create())
@@ -189,5 +189,19 @@ public class MonoFilterTest {
 		            .then(() -> assertThat(mp.peek()).isNull())
 		            .then(() -> assertThat(mp.isTerminated()).isTrue())
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanOperator() {
+		MonoFilter<Integer> test = new MonoFilter<>(Mono.just(1), (v -> v % 2 != 0));
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanFuseableOperator() {
+		MonoFilterFuseable<Integer> test = new MonoFilterFuseable<>(Mono.just(1), (v -> v % 2 != 0));
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

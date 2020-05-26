@@ -145,6 +145,7 @@ public class MonoPublishMulticastTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 		test.value = 1;
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
@@ -171,6 +172,7 @@ public class MonoPublishMulticastTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		test.request(789);
 		//does not track request in the Mono version
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0);

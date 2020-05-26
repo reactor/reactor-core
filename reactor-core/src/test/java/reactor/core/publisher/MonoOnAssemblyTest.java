@@ -46,6 +46,7 @@ public class MonoOnAssemblyTest {
 		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
