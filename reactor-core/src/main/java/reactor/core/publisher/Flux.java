@@ -7340,7 +7340,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * the previous Context:
 	 * <blockquote><pre>
 	 * {@code
-	 * Retry customStrategy = Retry.fromFunction(companion -> companion.handle((retrySignal, sink) -> {
+	 * Retry customStrategy = Retry.from(companion -> companion.handle((retrySignal, sink) -> {
 	 * 	    Context ctx = sink.currentContext();
 	 * 	    int rl = ctx.getOrDefault("retriesLeft", 0);
 	 * 	    if (rl > 0) {
