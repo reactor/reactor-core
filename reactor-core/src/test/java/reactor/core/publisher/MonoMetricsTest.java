@@ -400,7 +400,7 @@ public class MonoMetricsTest {
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)
 		    .expectComplete()
-		    .verify(Duration.ofMillis(1));
+		    .verify(Duration.ofMillis(500));
 	}
 
 	@Test
@@ -414,6 +414,6 @@ public class MonoMetricsTest {
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)
 		    .expectComplete()
-		    .verify(Duration.ofMillis(1));
+		    .verify(Duration.ofMillis(500));
 	}
 }
