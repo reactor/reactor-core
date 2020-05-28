@@ -80,6 +80,12 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 		}
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class BufferExactSubscriber<T, C extends Collection<? super T>>
 			implements InnerOperator<T, C> {
 
@@ -197,6 +203,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 			}
 			if (key == Attr.CAPACITY) return size;
 			if (key == Attr.PREFETCH) return size;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -361,6 +368,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 				return b != null ? b.size() : 0;
 			}
 			if (key == Attr.PREFETCH) return size;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -558,6 +566,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends InternalFluxO
 			if (key == Attr.BUFFERED) return stream().mapToInt(Collection::size).sum();
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

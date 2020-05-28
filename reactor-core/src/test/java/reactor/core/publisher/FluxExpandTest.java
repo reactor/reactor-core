@@ -544,6 +544,13 @@ public class FluxExpandTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    FluxExpand<Node> test = new FluxExpand<>(Flux.just(ROOT_A, ROOT_B), v -> Flux.fromIterable(v.children), false, 5);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanExpandBreathSubscriber() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null,
 				Throwable::printStackTrace, null,null);
@@ -555,6 +562,7 @@ public class FluxExpandTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isEqualTo(s);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isEqualTo(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		test.request(3);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3);
@@ -581,6 +589,7 @@ public class FluxExpandTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(s);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(parentActual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onComplete();

@@ -65,6 +65,12 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 		return Integer.MAX_VALUE;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class SampleFirstMain<T, U> implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
@@ -129,6 +135,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -258,6 +265,7 @@ final class FluxSampleFirst<T, U> extends InternalFluxOperator<T, T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) return main;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}
