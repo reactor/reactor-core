@@ -457,7 +457,7 @@ Flux.just(10)
 ----
 ====
 
-You also have the option of applying a `Predicate` on the exception to decided
+You also have the option of applying a `Predicate` on the exception to decide
 whether or not to recover, as the folloiwng example shows:
 
 ====
