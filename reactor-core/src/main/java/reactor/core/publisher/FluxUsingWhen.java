@@ -105,7 +105,8 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		return null; //no particular key to be represented, still useful in hooks
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return null;
 	}
 
 	private static <RESOURCE, T> Publisher<? extends T> deriveFluxFromResource(
@@ -260,6 +261,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			if (key == Attr.ACTUAL) return actual;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.TERMINATED) return resourceProvided;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -318,6 +320,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			if (key == Attr.ERROR) return (error == Exceptions.TERMINATED) ? null : error;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return UsingWhenParent.super.scanUnsafe(key);
 		}
@@ -491,6 +494,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.ERROR) return rollbackCause;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -541,6 +545,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -587,6 +592,7 @@ final class FluxUsingWhen<T, S> extends Flux<T> implements SourceProducer<T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return parent;
 			if (key == Attr.ACTUAL) return parent.actual();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

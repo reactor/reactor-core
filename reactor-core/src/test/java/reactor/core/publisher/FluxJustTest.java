@@ -92,6 +92,7 @@ public class FluxJustTest {
     public void scanOperator() {
     	FluxJust<String> s = new FluxJust<>("foo");
     	assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+    	assertThat(s.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 
 	@Test

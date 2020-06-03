@@ -103,6 +103,7 @@ final class FluxMerge<T> extends Flux<T> implements SourceProducer<T> {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
 		if (key == Attr.PREFETCH) return prefetch;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

@@ -16,10 +16,11 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -111,21 +112,52 @@ public class FluxSourceTest {
 	}
 
 	@Test
-	public void scanMain() {
+	public void scanOperatorWithSyncSource() {
 		Flux<Integer> parent = Flux.range(1,  10).map(i -> i);
-		FluxSource<Integer> test = new FluxSource<>(parent);
+		FluxSource<Integer> test = new FluxSource(parent);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
-	public void scanMainHide() {
+	public void scanOperatorWithAsyncSource(){
+		FluxDelaySequence<String> source = new FluxDelaySequence(Flux.just(1), Duration.ofMillis(50), Schedulers.immediate());
+		FluxSource<String> test = new FluxSource(source);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+	}
+
+	@Test
+	public void scanOperatorHide() {
 		Flux<Integer> parent = Flux.range(1,  10).hide();
 		FluxSource<Integer> test = new FluxSource<>(parent);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
+	@Test
+	public void scanFuseableOperatorWithSyncSource(){
+		Flux<Integer> source = Flux.just(1);
+		FluxSourceFuseable<Integer> test = new FluxSourceFuseable<>(source);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanFuseableOperatorWithAsyncSource(){
+		FluxDelaySequence<String> source = new FluxDelaySequence(Flux.just(1), Duration.ofMillis(50), Schedulers.immediate());
+		FluxSourceFuseable<String> test = new FluxSourceFuseable(source);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+	}
 }

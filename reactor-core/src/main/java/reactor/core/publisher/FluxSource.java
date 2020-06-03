@@ -21,6 +21,7 @@ import org.reactivestreams.Publisher;
 
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -85,6 +86,7 @@ final class FluxSource<I> extends Flux<I> implements SourceProducer<I>,
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
+		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
 		return null;
 	}
 

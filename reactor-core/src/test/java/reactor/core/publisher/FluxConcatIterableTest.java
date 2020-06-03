@@ -17,10 +17,16 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxConcatIterableTest {
 
@@ -93,4 +99,28 @@ public class FluxConcatIterableTest {
 		  .assertError(NullPointerException.class);
 	}
 
+	@Test
+	public void scanOperator(){
+	    FluxConcatIterable<Integer> test = new FluxConcatIterable(Arrays.asList(source, source, source));
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanSubscriber(){
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		List<Publisher<Integer>> publishers = Arrays.asList(source, source, source);
+		FluxConcatIterable.ConcatIterableSubscriber<Integer> test = new FluxConcatIterable.ConcatIterableSubscriber(actual, publishers.iterator());
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		test.missedRequested = 2;
+		test.requested = 3;
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5L);
+
+	}
 }

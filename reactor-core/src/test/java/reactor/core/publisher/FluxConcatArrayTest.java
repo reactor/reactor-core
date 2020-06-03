@@ -264,6 +264,27 @@ public class FluxConcatArrayTest {
 		@SuppressWarnings("unchecked") //vararg of Publisher<String>
 		FluxConcatArray<String> s = new FluxConcatArray<>(true, Flux.empty());
 		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).as("delayError").isTrue();
+		assertThat(s.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanSubscriber() {
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		Publisher<String>[] publishers = (Publisher<String>[]) new Publisher[0];
+		FluxConcatArray.ConcatArraySubscriber<String> test = new FluxConcatArray.ConcatArraySubscriber(actual, publishers);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		test.missedRequested = 2;
+		test.requested = 3;
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5L);
+
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -284,6 +305,7 @@ public class FluxConcatArrayTest {
 		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5L);
 
 		test.cancel();

@@ -35,6 +35,8 @@ import reactor.util.context.Context;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
 
 public class FluxIterableTest {
 
@@ -198,7 +200,9 @@ public class FluxIterableTest {
 
 		assertThat(collectionFlux.scan(Scannable.Attr.BUFFERED)).as("collection").isEqualTo(3);
 		assertThat(tupleFlux.scan(Scannable.Attr.BUFFERED)).as("tuple").isEqualTo(2);
+		assertThat(tupleFlux.scan(RUN_STYLE)).isSameAs(SYNC);
 		assertThat(otherFlux.scan(Scannable.Attr.BUFFERED)).as("other").isEqualTo(0);
+		assertThat(otherFlux.scan(RUN_STYLE)).isSameAs(SYNC);
 	}
 
 	@Test

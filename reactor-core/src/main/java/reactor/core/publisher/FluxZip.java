@@ -336,6 +336,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return prefetch;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
 	}
 
@@ -436,6 +437,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return wip == 0;
 			if (key == Attr.BUFFERED) return wip > 0 ? scalars.length : 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}
@@ -488,6 +490,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.BUFFERED) return parent.scalars[index] == null ? 0 : 1;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -941,6 +944,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
 			if (key == Attr.TERMINATED) return done && (queue == null || queue.isEmpty());
 			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

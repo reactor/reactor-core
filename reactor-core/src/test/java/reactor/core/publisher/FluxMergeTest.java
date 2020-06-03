@@ -154,5 +154,6 @@ public class FluxMergeTest {
 		FluxMerge<String> s = new FluxMerge<>(sources, true, 3, Queues.small(), 123, Queues.small());
 		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).as("delayError").isTrue();
 		assertThat(s.scan(Scannable.Attr.PREFETCH)).as("prefetch").isEqualTo(123);
+		assertThat(s.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

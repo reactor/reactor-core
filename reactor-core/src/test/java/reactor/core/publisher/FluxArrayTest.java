@@ -99,6 +99,7 @@ public class FluxArrayTest {
 	public void scanOperator() {
 		FluxArray s = new FluxArray<>("A", "B", "C");
 		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
+		assertThat(s.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

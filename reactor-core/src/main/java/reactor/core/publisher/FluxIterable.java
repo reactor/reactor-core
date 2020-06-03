@@ -29,6 +29,9 @@ import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * Emits the contents of an Iterable source. Attempt to discard remainder of a source
  * in case of error / cancellation, but uses the {@link Spliterator} API to try and detect
@@ -91,6 +94,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 		if (key == Attr.BUFFERED) {
 			if (iterable instanceof Collection) return ((Collection) iterable).size();
 			if (iterable instanceof Tuple2) return ((Tuple2) iterable).size();
+		}
+		if (key == RUN_STYLE) {
+		    return Attr.RunStyle.SYNC;
 		}
 		return null;
 	}

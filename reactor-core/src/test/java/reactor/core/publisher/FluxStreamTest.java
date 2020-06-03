@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -447,5 +448,12 @@ public class FluxStreamTest {
 		            .verifyComplete();
 
 		assertThat(closed.get()).isEqualTo(1); //no double close
+	}
+
+	@Test
+	public void scanOperator(){
+		FluxStream test = new FluxStream(() -> source.stream());
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

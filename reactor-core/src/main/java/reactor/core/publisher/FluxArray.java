@@ -63,6 +63,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable, SourceProducer<T> 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.BUFFERED) return array.length;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

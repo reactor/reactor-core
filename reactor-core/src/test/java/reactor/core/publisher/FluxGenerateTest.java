@@ -24,14 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxGenerateTest {
 
@@ -381,6 +379,15 @@ public class FluxGenerateTest {
 		  .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
 
+	@Test
+	public void scanOperator(){
+		FluxGenerate<Object, Object> test = new FluxGenerate<>(o -> {
+				o.next(1);
+				o.complete();
+			});
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
 
     @Test
     public void scanSubscription() {

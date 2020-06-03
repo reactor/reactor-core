@@ -36,10 +36,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.function.Supplier;
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static reactor.core.publisher.Flux.just;
 
 public class FluxErrorSuppliedTest {
 
@@ -92,5 +94,12 @@ public class FluxErrorSuppliedTest {
 
 	private Supplier<IllegalStateException> illegalStateExceptionSupplier() {
 		return () -> new IllegalStateException("boom");
+	}
+
+	@Test
+	public void scanOperator(){
+	    FluxErrorSupplied test = new FluxErrorSupplied(() -> new IllegalStateException());
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

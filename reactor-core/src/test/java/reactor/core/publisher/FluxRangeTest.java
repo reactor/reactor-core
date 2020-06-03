@@ -124,6 +124,13 @@ public class FluxRangeTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    FluxRange test = new FluxRange(0, 10);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscription() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxRange.RangeSubscription test = new FluxRange.RangeSubscription(actual, 1L, 10L);

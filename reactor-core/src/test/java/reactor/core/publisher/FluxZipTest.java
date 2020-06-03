@@ -1338,6 +1338,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	public void scanOperator() {
 		FluxZip s = new FluxZip<>(Flux.just(1), Flux.just(2), Tuples::of, Queues.small(), 123);
 		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(s.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -1371,6 +1372,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
         test.queue = new ConcurrentLinkedQueue<>();
         test.queue.offer(67);
         Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.queue.clear();
@@ -1391,6 +1393,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         test.wip = 1;
         Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
@@ -1414,6 +1417,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         test.onNext(7);
         Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();

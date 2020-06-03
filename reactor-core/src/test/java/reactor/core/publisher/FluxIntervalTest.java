@@ -32,6 +32,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.Scannable.from;
 
 public class FluxIntervalTest {
 
@@ -183,8 +184,8 @@ public class FluxIntervalTest {
 	    final Flux<Long> interval = Flux.interval(Duration.ofSeconds(1));
 
 	    assertThat(interval).isInstanceOf(Scannable.class);
-	    assertThat(((Scannable) interval).scan(Scannable.Attr.RUN_ON))
-			    .isSameAs(Schedulers.parallel());
+	    assertThat(from(interval).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.parallel());
+	    assertThat(from(interval).scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
     }
 
     @Test

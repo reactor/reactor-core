@@ -111,6 +111,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 		if (key == Attr.PARENT) return sources.length > 0 ? sources[0] : null;
 		if (key == Attr.PREFETCH) return prefetch;
 		if (key == Attr.DELAY_ERROR) return true;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -421,6 +422,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.BUFFERED) return queue.size();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
