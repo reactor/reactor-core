@@ -738,7 +738,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #create(Consumer)
 	 */
 	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter) {
-		return onAssembly(new FluxCreate<>(emitter, OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY));
+		return push(emitter, OverflowStrategy.BUFFER);
 	}
 
 	/**
