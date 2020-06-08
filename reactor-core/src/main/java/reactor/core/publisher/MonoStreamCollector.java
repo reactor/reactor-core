@@ -164,7 +164,11 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				return;
 			}
 
-			complete(r);
+			if (r != null) {
+				complete(r);
+			} else {
+				actual.onError(Operators.onOperatorError(new NullPointerException("Collector returned null"), actual.currentContext()));
+			}
 		}
 
 		@Override
