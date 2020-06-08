@@ -306,8 +306,15 @@ public final class UnicastProcessor<T>
 
 	void drain(@Nullable T dataSignalOfferedBeforeDrain) {
 		if (WIP.getAndIncrement(this) != 0) {
-			if (dataSignalOfferedBeforeDrain != null && cancelled) {
-				Operators.onDiscard(dataSignalOfferedBeforeDrain, actual.currentContext());
+			if (dataSignalOfferedBeforeDrain != null) {
+				if (cancelled) {
+					Operators.onDiscard(dataSignalOfferedBeforeDrain,
+							actual.currentContext());
+				}
+				else if (done) {
+					Operators.onNextDropped(dataSignalOfferedBeforeDrain,
+							currentContext());
+				}
 			}
 			return;
 		}
