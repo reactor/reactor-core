@@ -40,6 +40,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static java.util.stream.Collectors.reducing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoStreamCollectorTest {
@@ -298,6 +299,16 @@ public class MonoStreamCollectorTest {
 		@SuppressWarnings("unchecked")
 		Map<Object, Object> discardedMap = (Map<Object, Object>) discarded.get(0);
 		assertThat(discardedMap).containsOnlyKeys(1, 2, 3, 4);
+	}
+
+	/**
+	 * A collector producing null should be intercepted early instead of signaling onNext(null).
+	 * @see <a href="https://github.com/reactor/reactor-core/issues/2181" target="_top">issue 2181</a>
+	 */
+	@Test
+	public void collectHandlesNulls() {
+		StepVerifier.create(Flux.empty().collect(reducing(null, (a, b) -> a)))
+				.verifyError(NullPointerException.class);
 	}
 
 }
