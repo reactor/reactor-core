@@ -42,10 +42,12 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 	final Supplier<C>    bufferSupplier;
 	final Scheduler      timer;
 	final long           timespan;
+	final TimeUnit		 unit;
 
 	FluxBufferTimeout(Flux<T> source,
 			int maxSize,
 			long timespan,
+			TimeUnit unit,
 			Scheduler timer,
 			Supplier<C> bufferSupplier) {
 		super(source);
@@ -57,6 +59,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		}
 		this.timer = Objects.requireNonNull(timer, "Timer");
 		this.timespan = timespan;
+		this.unit = Objects.requireNonNull(unit, "unit");
 		this.batchSize = maxSize;
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
 	}
@@ -67,6 +70,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				Operators.serialize(actual),
 				batchSize,
 				timespan,
+				unit,
 				timer.createWorker(),
 				bufferSupplier
 		);
@@ -91,6 +95,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 		final int                        batchSize;
 		final long                       timespan;
+		final TimeUnit                   unit;
 		final Scheduler.Worker           timer;
 		final Runnable                   flushTask;
 
@@ -130,10 +135,12 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		BufferTimeoutSubscriber(CoreSubscriber<? super C> actual,
 				int maxSize,
 				long timespan,
+				TimeUnit unit,
 				Scheduler.Worker timer,
 				Supplier<C> bufferSupplier) {
 			this.actual = actual;
 			this.timespan = timespan;
+			this.unit = unit;
 			this.timer = timer;
 			this.flushTask = () -> {
 				if (terminated == NOT_TERMINATED) {
@@ -248,7 +255,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 
 			if (index == 1) {
 				try {
-					timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+					timespanRegistration = timer.schedule(flushTask, timespan, unit);
 				}
 				catch (RejectedExecutionException ree) {
 					Context ctx = actual.currentContext();

@@ -177,18 +177,7 @@ public class FluxDelaySequenceTest {
 	}
 
 	@Test
-	public void longDelayInMillis() {
-		Duration longDelay = Duration.ofMinutes(1);
-		long expected = longDelay.toMillis();
-
-		DelaySubscriber<String> subscriber = new DelaySubscriber<>(null, longDelay, null);
-
-		assertThat(subscriber.delay).isEqualTo(expected);
-		assertThat(subscriber.timeUnit).isSameAs(TimeUnit.MILLISECONDS);
-	}
-
-	@Test
-	public void smallDelayInNanos() {
+	public void allDelayInNanos() {
 		Duration longDelay = Duration.ofMillis(59_999);
 		long expected = longDelay.toNanos();
 

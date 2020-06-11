@@ -255,7 +255,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(Duration duration, Scheduler timer) {
-		return onAssembly(new MonoDelay(duration.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return onAssembly(new MonoDelay(duration.toNanos(), TimeUnit.NANOSECONDS, timer));
 	}
 
 	/**
@@ -1701,7 +1701,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
 		subscribe((Subscriber<T>) subscriber);
-		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
 	}
 
 	/**
@@ -1747,7 +1747,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public Optional<T> blockOptional(Duration timeout) {
 		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
 		subscribe((Subscriber<T>) subscriber);
-		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
 	}
 
 	/**
@@ -2050,7 +2050,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a delayed {@link Mono}
 	 */
 	public final Mono<T> delayElement(Duration delay, Scheduler timer) {
-		return onAssembly(new MonoDelayElement<>(this, delay.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return onAssembly(new MonoDelayElement<>(this, delay.toNanos(), TimeUnit.NANOSECONDS, timer));
 	}
 
 	/**
@@ -4634,11 +4634,16 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * T1 the current clock time in millis (as a {@link Long} measured by the
 	 * provided {@link Scheduler}) and T2 the emitted data (as a {@code T}).
 	 *
+	 * <p>The provider {@link Scheduler} will be asked to {@link Scheduler#now(TimeUnit) provide time}
+	 * with a granularity of {@link TimeUnit#MILLISECONDS}. In order for this operator to work as advertised, the
+	 * provided Scheduler should thus return results that can be interpreted as unix timestamps.</p>
 	 * <p>
+	 *
 	 * <img class="marble" src="doc-files/marbles/timestampForMono.svg" alt="">
 	 *
 	 * @param scheduler a {@link Scheduler} instance to read time from
 	 * @return a timestamped {@link Mono}
+	 * @see Scheduler#now(TimeUnit)
 	 */
 	public final Mono<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");

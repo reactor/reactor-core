@@ -158,7 +158,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		@Override
 		public boolean isExpired() {
 			long done = this.done;
-			return done != NOT_DONE && scheduler.now(TimeUnit.MILLISECONDS) - maxAge > done;
+			return done != NOT_DONE && scheduler.now(TimeUnit.NANOSECONDS) - maxAge > done;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -173,7 +173,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 					node = head;
 					if (done == NOT_DONE) {
 						// skip old entries
-						long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+						long limit = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 						TimedNode<T> next = node;
 						while (next != null) {
 							long ts = next.time;
@@ -294,7 +294,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onError(Throwable ex) {
-			done = scheduler.now(TimeUnit.MILLISECONDS);
+			done = scheduler.now(TimeUnit.NANOSECONDS);
 			error = ex;
 		}
 
@@ -306,7 +306,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onComplete() {
-			done = scheduler.now(TimeUnit.MILLISECONDS);
+			done = scheduler.now(TimeUnit.NANOSECONDS);
 		}
 
 		@Override
@@ -316,7 +316,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@SuppressWarnings("unchecked")
 		TimedNode<T> latestHead(ReplaySubscription<T> rs) {
-			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+			long now = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 
 			TimedNode<T> h = (TimedNode<T>) rs.node();
 			if (h == null) {
@@ -337,7 +337,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		public T poll(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			TimedNode<T> next;
-			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+			long now = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 			while ((next = node.get()) != null) {
 				if (next.time > now) {
 					node = next;
@@ -400,7 +400,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void add(T value) {
-			TimedNode<T> n = new TimedNode<>(value, scheduler.now(TimeUnit.MILLISECONDS));
+			TimedNode<T> n = new TimedNode<>(value, scheduler.now(TimeUnit.NANOSECONDS));
 			tail.set(n);
 			tail = n;
 			int s = size;
@@ -410,7 +410,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			else {
 				size = s + 1;
 			}
-			long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+			long limit = scheduler.now(TimeUnit.NANOSECONDS) - maxAge;
 
 			TimedNode<T> h = head;
 			TimedNode<T> next;

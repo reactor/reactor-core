@@ -1158,13 +1158,14 @@ public class SchedulersTest {
 		EmptyTimedScheduler.EmptyTimedWorker tw = ts.createWorker();
 		tw.dispose();
 
-		long before = System.currentTimeMillis();
+		long beforeInNanos = System.nanoTime();
+		long beforeInMillis = System.currentTimeMillis();
 
-		assertThat(ts.now(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(before)
-		                                         .isLessThanOrEqualTo(System.currentTimeMillis());
+		assertThat(ts.now(TimeUnit.NANOSECONDS)).isGreaterThanOrEqualTo(beforeInNanos)
+		                                         .isLessThanOrEqualTo(System.nanoTime());
 
-//		assertThat(tw.now(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(before)
-//		                                        .isLessThanOrEqualTo(System.currentTimeMillis());
+		assertThat(ts.now(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(beforeInMillis)
+		                                        .isLessThanOrEqualTo(System.currentTimeMillis());
 
 		//noop
 		new Schedulers(){

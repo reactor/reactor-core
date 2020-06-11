@@ -496,7 +496,8 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		AtomicInteger subCount = new AtomicInteger();
 		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet()));
 
-		Mono<Integer> cached = source.cache(Duration.ofMillis(100), vts)
+		// Note: use sub-millis duration after gh-1734
+		Mono<Integer> cached = source.cache(Duration.ofNanos(100), vts)
 		                             .hide();
 
 		StepVerifier.create(cached)
@@ -505,7 +506,15 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		            .as("first subscription caches 1")
 		            .verifyComplete();
 
-		vts.advanceTimeBy(Duration.ofMillis(110));
+		vts.advanceTimeBy(Duration.ofNanos(50));
+
+		StepVerifier.create(cached)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.as("cached value returned before ttl")
+				.verifyComplete();
+
+		vts.advanceTimeBy(Duration.ofNanos(60));
 
 		StepVerifier.create(cached)
 		            .expectNext(2)

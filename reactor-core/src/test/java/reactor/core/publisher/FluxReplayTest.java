@@ -228,6 +228,31 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	public void cacheFluxTTLNanos() {
+		Flux<Integer> source = Flux.just(1, 2, 3)
+		                                         .delayElements(Duration.ofNanos(1000))
+		                                         .replay(Duration.ofNanos(2000), vts)
+		                                         .hide()
+		                                         .autoConnect()
+												 .hide();
+
+		StepVerifier.create(source)
+		            .expectNoFusionSupport()
+		            .then(() -> vts.advanceTimeBy(Duration.ofNanos(3000)))
+		            .expectNext(1)
+		            .expectNext(2)
+		            .expectNext(3)
+		            .verifyComplete();
+
+		StepVerifier.create(source)
+		            .then(() -> vts.advanceTimeBy(Duration.ofNanos(3000)))
+		            .expectNext(2)
+		            .expectNext(3)
+		            .verifyComplete();
+
+	}
+
+	@Test
 	public void cacheFluxHistoryTTL() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)

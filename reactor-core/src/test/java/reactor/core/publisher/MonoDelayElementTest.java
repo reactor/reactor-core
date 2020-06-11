@@ -58,6 +58,17 @@ public class MonoDelayElementTest {
 	}
 
 	@Test
+	public void subMillisDelay() {
+		Mono<String> source = Mono.just("foo");
+
+		StepVerifier.withVirtualTime(() -> source.delayElement(Duration.ofNanos(5000L)).log())
+	                .expectSubscription()
+	                .expectNoEvent(Duration.ofNanos(5000L))
+	                .expectNext("foo")
+	                .verifyComplete();
+	}
+
+	@Test
 	public void cancelDuringDelay() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		AtomicBoolean emitted = new AtomicBoolean();

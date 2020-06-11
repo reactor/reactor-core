@@ -73,14 +73,8 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 			super();
 			this.actual = new SerializedSubscriber<>(actual);
 			this.w = w;
-			if (delay.compareTo(Duration.ofMinutes(1)) < 0) {
-				this.delay = delay.toNanos();
-				this.timeUnit = TimeUnit.NANOSECONDS;
-			}
-			else {
-				this.delay = delay.toMillis();
-				this.timeUnit = TimeUnit.MILLISECONDS;
-			}
+			this.delay = delay.toNanos();
+			this.timeUnit = TimeUnit.NANOSECONDS;
 		}
 
 		@Override

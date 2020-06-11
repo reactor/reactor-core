@@ -42,9 +42,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	final int            maxSize;
 	final long           timespan;
+	final TimeUnit       unit;
 	final Scheduler      timer;
 
-	FluxWindowTimeout(Flux<T> source, int maxSize, long timespan, Scheduler timer) {
+	FluxWindowTimeout(Flux<T> source, int maxSize, long timespan, TimeUnit unit, Scheduler timer) {
 		super(source);
 		if (timespan <= 0) {
 			throw new IllegalArgumentException("Timeout period must be strictly positive");
@@ -54,13 +55,14 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 		this.timer = Objects.requireNonNull(timer, "Timer");
 		this.timespan = timespan;
+		this.unit = Objects.requireNonNull(unit, "unit");
 		this.maxSize = maxSize;
 	}
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		return new WindowTimeoutSubscriber<>(actual, maxSize,
-				timespan,
+				timespan, unit,
 				timer);
 	}
 
@@ -75,6 +77,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		final CoreSubscriber<? super Flux<T>> actual;
 		final long                            timespan;
+		final TimeUnit                        unit;
 		final Scheduler                       scheduler;
 		final int                             maxSize;
 		final Scheduler.Worker                worker;
@@ -113,10 +116,12 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		WindowTimeoutSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int maxSize,
 				long timespan,
+				TimeUnit unit,
 				Scheduler scheduler) {
 			this.actual = actual;
 			this.queue = Queues.unboundedMultiproducer().get();
 			this.timespan = timespan;
+			this.unit = unit;
 			this.scheduler = scheduler;
 			this.maxSize = maxSize;
 			this.worker = scheduler.createWorker();
@@ -183,7 +188,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		Disposable newPeriod() {
 			try {
 				return worker.schedulePeriodically(new ConsumerIndexHolder(producerIndex,
-						this), timespan, timespan, TimeUnit.MILLISECONDS);
+						this), timespan, timespan, unit);
 			}
 			catch (Exception e) {
 				actual.onError(Operators.onRejectedExecution(e, s, null, null, actual.currentContext()));

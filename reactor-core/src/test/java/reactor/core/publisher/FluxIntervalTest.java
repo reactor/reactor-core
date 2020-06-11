@@ -136,10 +136,27 @@ public class FluxIntervalTest {
 		StepVerifier.withVirtualTime(this::scenario4)
 		            .thenAwait(Duration.ofMillis(1500))
 		            .expectNext(0L)
-		            .thenAwait(Duration.ofSeconds(4))
+		            .thenAwait(Duration.ofSeconds(3))
 		            .expectNextCount(4)
 		            .thenCancel()
 		            .verify();
+	}
+
+	Flux<Long> scenario5(){
+		return Flux.interval(Duration.ofNanos(0), Duration.ofNanos(1_000));
+	}
+
+	@Test
+	public void normal5() {
+		// Prior to gh-1734, sub millis period would round to 0 and this would fail.
+		Duration period = Duration.ofNanos(1_000);
+		Duration timespan = Duration.ofSeconds(1);
+		StepVerifier.withVirtualTime(() ->
+			Flux.interval(Duration.ofNanos(0), period).take(timespan).count()
+		)
+				.thenAwait(timespan)
+				.expectNext(timespan.toNanos() / period.toNanos())
+				.verifyComplete();
 	}
 
 	@Test

@@ -300,7 +300,7 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 						main.run();
 					}
 					else if (!ttl.equals(DURATION_INFINITE)) {
-						main.clock.schedule(main, ttl.toMillis(), TimeUnit.MILLISECONDS);
+						main.clock.schedule(main, ttl.toNanos(), TimeUnit.NANOSECONDS);
 					}
 					//else TTL is Long.MAX_VALUE, schedule nothing but still cache
 				}
