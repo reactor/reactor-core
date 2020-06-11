@@ -317,8 +317,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 	static class SerializeOnRequestSink<T> implements FluxSink<T>, Scannable {
 
 		final BaseSink<T> baseSink;
-		SerializedSink<T> serializedSink;
-		FluxSink<T>       sink;
+		SerializedSink<T>      serializedSink;
+		FluxSink<T> sink;
 
 		SerializeOnRequestSink(BaseSink<T> sink) {
 			this.baseSink = sink;

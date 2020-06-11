@@ -19,8 +19,8 @@ package reactor.core.publisher;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.util.context.Context;
@@ -31,101 +31,84 @@ import reactor.util.context.Context;
  * <p>
  * @param <T> the value type
  */
-public interface FluxSink<T> {
+public interface FluxSink<T> extends SinkFlux<T> {
 
-	/**
-     * @see Subscriber#onComplete()
-     */
-    void complete();
+		/**
+		 * Return the current subscriber {@link Context}.
+		 * <p>
+		 *   {@link Context} can be enriched via {@link Flux#subscriberContext(Function)}
+		 *   operator or directly by a child subscriber overriding
+		 *   {@link CoreSubscriber#currentContext()}
+		 *
+		 * @return the current subscriber {@link Context}.
+		 */
+		Context currentContext();
 
-	/**
-	 * Return the current subscriber {@link Context}.
-	 * <p>
-	 *   {@link Context} can be enriched via {@link Flux#subscriberContext(Function)}
-	 *   operator or directly by a child subscriber overriding
-	 *   {@link CoreSubscriber#currentContext()}
-	 *
-	 * @return the current subscriber {@link Context}.
-	 */
-	Context currentContext();
 
-    /**
-     * @see Subscriber#onError(Throwable)
-     * @param e the exception to signal, not null
-     */
-    void error(Throwable e);
+		/**
+		 * The current outstanding request amount.
+		 * @return the current outstanding request amount
+		 */
+		long requestedFromDownstream();
 
-    /**
-     * Try emitting, might throw an unchecked exception.
-     * @see Subscriber#onNext(Object)
-     * @param t the value to emit, not null
-     */
-    FluxSink<T> next(T t);
+		/**
+		 * Returns true if the downstream cancelled the sequence.
+		 * @return true if the downstream cancelled the sequence
+		 */
+		boolean isCancelled();
 
-	/**
-	 * The current outstanding request amount.
-	 * @return the current outstanding request amount
-	 */
-	long requestedFromDownstream();
+		/**
+		 * Attaches a {@link LongConsumer} to this {@link FluxSink} that will be notified of
+		 * any request to this sink.
+		 * <p>
+		 * For push/pull sinks created using {@link Flux#create(java.util.function.Consumer)}
+		 * or {@link Flux#create(java.util.function.Consumer, FluxSink.OverflowStrategy)},
+		 * the consumer
+		 * is invoked for every request to enable a hybrid backpressure-enabled push/pull model.
+		 * When bridging with asynchronous listener-based APIs, the {@code onRequest} callback
+		 * may be used to request more data from source if required and to manage backpressure
+		 * by delivering data to sink only when requests are pending.
+		 * <p>
+		 * For push-only sinks created using {@link Flux#push(java.util.function.Consumer)}
+		 * or {@link Flux#push(java.util.function.Consumer, FluxSink.OverflowStrategy)},
+		 * the consumer is invoked with an initial request of {@code Long.MAX_VALUE} when this method
+		 * is invoked.
+		 *
+		 * @param consumer the consumer to invoke on each request
+		 * @return {@link FluxSink} with a consumer that is notified of requests
+		 */
+		FluxSink<T> onRequest(LongConsumer consumer);
 
-	/**
-	 * Returns true if the downstream cancelled the sequence.
-	 * @return true if the downstream cancelled the sequence
-	 */
-	boolean isCancelled();
+		/**
+		 * Attach a {@link Disposable} as a callback for when this {@link FluxSink} is
+		 * cancelled. At most one callback can be registered, and subsequent calls to this method
+		 * will result in the immediate disposal of the extraneous {@link Disposable}.
+		 * <p>
+		 * The callback is only relevant when the downstream {@link Subscription} is {@link Subscription#cancel() cancelled}.
+		 *
+		 * @param d the {@link Disposable} to use as a callback
+		 * @return the {@link FluxSink} with a cancellation callback
+		 * @see #onCancel(Disposable) onDispose(Disposable) for a callback that covers cancellation AND terminal signals
+		 */
+		FluxSink<T> onCancel(Disposable d);
 
-	/**
-	 * Attaches a {@link LongConsumer} to this {@link FluxSink} that will be notified of
-	 * any request to this sink.
-	 * <p>
-	 * For push/pull sinks created using {@link Flux#create(java.util.function.Consumer)}
-	 * or {@link Flux#create(java.util.function.Consumer, FluxSink.OverflowStrategy)},
-	 * the consumer
-	 * is invoked for every request to enable a hybrid backpressure-enabled push/pull model.
-	 * When bridging with asynchronous listener-based APIs, the {@code onRequest} callback
-	 * may be used to request more data from source if required and to manage backpressure
-	 * by delivering data to sink only when requests are pending.
-	 * <p>
-	 * For push-only sinks created using {@link Flux#push(java.util.function.Consumer)}
-	 * or {@link Flux#push(java.util.function.Consumer, FluxSink.OverflowStrategy)},
-	 * the consumer is invoked with an initial request of {@code Long.MAX_VALUE} when this method
-	 * is invoked.
-	 *
-	 * @param consumer the consumer to invoke on each request
-	 * @return {@link FluxSink} with a consumer that is notified of requests
-	 */
-	FluxSink<T> onRequest(LongConsumer consumer);
-
-	/**
-	 * Attach a {@link Disposable} as a callback for when this {@link FluxSink} is
-	 * cancelled. At most one callback can be registered, and subsequent calls to this method
-	 * will result in the immediate disposal of the extraneous {@link Disposable}.
-	 * <p>
-	 * The callback is only relevant when the downstream {@link Subscription} is {@link Subscription#cancel() cancelled}.
-	 *
-	 * @param d the {@link Disposable} to use as a callback
-	 * @return the {@link FluxSink} with a cancellation callback
-	 * @see #onCancel(Disposable) onDispose(Disposable) for a callback that covers cancellation AND terminal signals
-	 */
-	FluxSink<T> onCancel(Disposable d);
-
-	/**
-	 * Attach a {@link Disposable} as a callback for when this {@link FluxSink} is effectively
-	 * disposed, that is it cannot be used anymore. This includes both having played terminal
-	 * signals (onComplete, onError) and having been cancelled (see {@link #onCancel(Disposable)}).
-	 * At most one callback can be registered, and subsequent calls to this method will result in
-	 * the immediate disposal of the extraneous {@link Disposable}.
-	 * <p>
-	 * Note that the "dispose" term is used from the perspective of the sink. Not to
-	 * be confused with {@link Flux#subscribe()}'s {@link Disposable#dispose()} method, which
-	 * maps to disposing the {@link Subscription} (effectively, a {@link Subscription#cancel()}
-	 * signal).
-	 *
-	 * @param d the {@link Disposable} to use as a callback
-	 * @return the {@link FluxSink} with a callback invoked on any terminal signal or on cancellation
-	 * @see #onCancel(Disposable) onCancel(Disposable) for a cancellation-only callback
-	 */
-	FluxSink<T> onDispose(Disposable d);
+		/**
+		 * Attach a {@link Disposable} as a callback for when this {@link FluxSink} is effectively
+		 * disposed, that is it cannot be used anymore. This includes both having played terminal
+		 * signals (onComplete, onError) and having been cancelled (see {@link #onCancel(Disposable)}).
+		 * At most one callback can be registered, and subsequent calls to this method will result in
+		 * the immediate disposal of the extraneous {@link Disposable}.
+		 * <p>
+		 * Note that the "dispose" term is used from the perspective of the sink. Not to
+		 * be confused with {@link Flux#subscribe()}'s {@link Disposable#dispose()} method, which
+		 * maps to disposing the {@link Subscription} (effectively, a {@link Subscription#cancel()}
+		 * signal).
+		 *
+		 * @param d the {@link Disposable} to use as a callback
+		 * @return the {@link FluxSink} with a callback invoked on any terminal signal or on cancellation
+		 * @see #onCancel(Disposable) onCancel(Disposable) for a cancellation-only callback
+		 */
+		FluxSink<T> onDispose(Disposable d);
 
 	/**
 	 * Enumeration for backpressure handling.

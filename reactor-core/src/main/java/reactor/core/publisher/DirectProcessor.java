@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -77,7 +78,9 @@ import reactor.util.annotation.Nullable;
  * </p>
  *
  * @param <T> the input and output value type
+ * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
  */
+@Deprecated
 public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
