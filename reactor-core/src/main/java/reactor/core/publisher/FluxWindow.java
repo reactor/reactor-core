@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -48,7 +49,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	final Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier;
+	final Supplier<? extends Queue<FluxProcessor<T, T>>> overflowQueueSupplier;
 
 	FluxWindow(Flux<? extends T> source,
 			int size,
@@ -68,7 +69,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			int size,
 			int skip,
 			Supplier<? extends Queue<T>> processorQueueSupplier,
-			Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier) {
+			Supplier<? extends Queue<FluxProcessor<T, T>>> overflowQueueSupplier) {
 		super(source);
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
@@ -125,7 +126,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		UnicastProcessor<T> window;
+		FluxProcessor<T, T> window;
 
 		boolean done;
 
@@ -155,11 +156,11 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			int i = index;
 
-			UnicastProcessor<T> w = window;
+			FluxProcessor<T, T> w = window;
 			if (cancelled == 0 && i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
+				w = Processors.more().unicast(processorQueueSupplier.get(), this);
 				window = w;
 
 				actual.onNext(w);
@@ -291,7 +292,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		UnicastProcessor<T> window;
+		FluxProcessor<T, T> window;
 
 		boolean done;
 
@@ -324,11 +325,11 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			int i = index;
 
-			UnicastProcessor<T> w = window;
+			FluxProcessor<T, T> w = window;
 			if (i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
+				w = Processors.more().unicast(processorQueueSupplier.get(), this);
 				window = w;
 
 				actual.onNext(w);
@@ -448,14 +449,14 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 	}
 
-	static final class WindowOverlapSubscriber<T> extends ArrayDeque<UnicastProcessor<T>>
+	static final class WindowOverlapSubscriber<T> extends ArrayDeque<FluxProcessor<T, T>>
 			implements Disposable, InnerOperator<T, Flux<T>> {
 
 		final CoreSubscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-		final Queue<UnicastProcessor<T>> queue;
+		final Queue<FluxProcessor<T, T>> queue;
 
 		final int size;
 
@@ -503,7 +504,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				int size,
 				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
-				Queue<UnicastProcessor<T>> overflowQueue) {
+				Queue<FluxProcessor<T, T>> overflowQueue) {
 			this.actual = actual;
 			this.size = size;
 			this.skip = skip;
@@ -533,7 +534,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				if (cancelled == 0) {
 					WINDOW_COUNT.getAndIncrement(this);
 
-					UnicastProcessor<T> w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
+					FluxProcessor<T, T> w = Processors.more().unicast(processorQueueSupplier.get(), this);
 
 					offer(w);
 
@@ -607,7 +608,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			final Subscriber<? super Flux<T>> a = actual;
-			final Queue<UnicastProcessor<T>> q = queue;
+			final Queue<FluxProcessor<T, T>> q = queue;
 			int missed = 1;
 
 			for (; ; ) {
@@ -618,7 +619,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				while (e != r) {
 					boolean d = done;
 
-					UnicastProcessor<T> t = q.poll();
+					FluxProcessor<T, T> t = q.poll();
 
 					boolean empty = t == null;
 

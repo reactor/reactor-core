@@ -55,6 +55,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	public static <T> FluxProcessor<Publisher<? extends T>, T> switchOnNext() {
+		@SuppressWarnings("deprecation")
 		UnicastProcessor<Publisher<? extends T>> emitter = UnicastProcessor.create();
 		FluxProcessor<Publisher<? extends T>, T> p = FluxProcessor.wrap(emitter, switchOnNext(emitter));
 		return p;

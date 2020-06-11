@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -100,7 +101,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		UnicastProcessor<T> window;
+		FluxProcessor<T, T> window;
 
 		volatile boolean terminated;
 
@@ -128,7 +129,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			UnicastProcessor<T> w = window;
+			FluxProcessor<T, T> w = window;
 			return w == null ? Stream.empty() : Stream.of(w);
 		}
 
@@ -157,7 +158,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				UnicastProcessor<T> w = UnicastProcessor.create();
+				FluxProcessor<T, T> w = Processors.unicast();
 				window = w;
 
 				long r = requested;
@@ -197,7 +198,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-				UnicastProcessor<T> w = window;
+				FluxProcessor<T, T> w = window;
 				w.onNext(t);
 
 				int c = count + 1;
@@ -211,7 +212,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					long r = requested;
 
 					if (r != 0L) {
-						w = UnicastProcessor.create();
+						w = Processors.unicast();
 						window = w;
 						actual.onNext(w);
 						if (r != Long.MAX_VALUE) {
@@ -295,7 +296,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		void drainLoop() {
 			final Queue<Object> q = queue;
 			final Subscriber<? super Flux<T>> a = actual;
-			UnicastProcessor<T> w = window;
+			FluxProcessor<T, T> w = window;
 
 			int missed = 1;
 			for (; ; ) {
@@ -338,7 +339,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					if (isHolder) {
 						w.onComplete();
 						count = 0;
-						w = UnicastProcessor.create();
+						w = Processors.unicast();
 						window = w;
 
 						long r = requested;
@@ -372,7 +373,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						long r = requested;
 
 						if (r != 0L) {
-							w = UnicastProcessor.create();
+							w = Processors.unicast();
 							window = w;
 							actual.onNext(w);
 							if (r != Long.MAX_VALUE) {

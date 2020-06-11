@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -70,6 +71,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 	}
 
 	@Override
+	@Nullable
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super Flux<T>> actual) {
 		WindowWhenMainSubscriber<T, U, V> main = new WindowWhenMainSubscriber<>(actual,
 				start, end, processorQueueSupplier);
@@ -104,7 +106,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 		static final AtomicReferenceFieldUpdater<WindowWhenMainSubscriber, Disposable> BOUNDARY =
 				AtomicReferenceFieldUpdater.newUpdater(WindowWhenMainSubscriber.class, Disposable.class, "boundary");
 
-		final List<UnicastProcessor<T>> windows;
+		final List<FluxProcessor<T, T>> windows;
 
 		volatile long openWindowCount;
 		static final AtomicLongFieldUpdater<WindowWhenMainSubscriber> OPEN_WINDOW_COUNT =
@@ -137,7 +139,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 				return;
 			}
 			if (fastEnter()) {
-				for (UnicastProcessor<T> w : windows) {
+				for (FluxProcessor<T, T> w : windows) {
 					w.onNext(t);
 				}
 				if (leave(-1) == 0) {
@@ -212,7 +214,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 		void drainLoop() {
 			final Queue<Object> q = queue;
 			final Subscriber<? super Flux<T>> a = actual;
-			final List<UnicastProcessor<T>> ws = this.windows;
+			final List<FluxProcessor<T, T>> ws = this.windows;
 			int missed = 1;
 
 			for (;;) {
@@ -228,12 +230,12 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						Throwable e = error;
 						if (e != null) {
 							actual.onError(e);
-							for (UnicastProcessor<T> w : ws) {
+							for (FluxProcessor<T, T> w : ws) {
 								w.onError(e);
 							}
 						} else {
 							actual.onComplete();
-							for (UnicastProcessor<T> w : ws) {
+							for (FluxProcessor<T, T> w : ws) {
 								w.onComplete();
 							}
 						}
@@ -249,7 +251,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						@SuppressWarnings("unchecked")
 						WindowOperation<T, U> wo = (WindowOperation<T, U>) o;
 
-						UnicastProcessor<T> w = wo.w;
+						FluxProcessor<T, T> w = wo.w;
 						if (w != null) {
 							if (ws.remove(wo.w)) {
 								wo.w.onComplete();
@@ -267,7 +269,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						}
 
 
-						w = UnicastProcessor.create(processorQueueSupplier.get());
+						w = Processors.more().unicast(processorQueueSupplier.get());
 
 						long r = requested();
 						if (r != 0L) {
@@ -303,7 +305,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						continue;
 					}
 
-					for (UnicastProcessor<T> w : ws) {
+					for (FluxProcessor<T, T> w : ws) {
 						@SuppressWarnings("unchecked")
 						T t = (T) o;
 						w.onNext(t);
@@ -334,9 +336,9 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 	}
 
 	static final class WindowOperation<T, U> {
-		final UnicastProcessor<T> w;
+		final FluxProcessor<T, T> w;
 		final U open;
-		WindowOperation(@Nullable UnicastProcessor<T> w, @Nullable U open) {
+		WindowOperation(@Nullable FluxProcessor<T, T> w, @Nullable U open) {
 			this.w = w;
 			this.open = open;
 		}
@@ -410,11 +412,11 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 				AtomicReferenceFieldUpdater.newUpdater(WindowWhenCloseSubscriber.class, Subscription.class, "subscription");
 
 		final WindowWhenMainSubscriber<T, ?, V> parent;
-		final UnicastProcessor<T>               w;
+		final FluxProcessor<T, T>               w;
 
 		boolean done;
 
-		WindowWhenCloseSubscriber(WindowWhenMainSubscriber<T, ?, V> parent, UnicastProcessor<T> w) {
+		WindowWhenCloseSubscriber(WindowWhenMainSubscriber<T, ?, V> parent, FluxProcessor<T, T> w) {
 			this.parent = parent;
 			this.w = w;
 		}

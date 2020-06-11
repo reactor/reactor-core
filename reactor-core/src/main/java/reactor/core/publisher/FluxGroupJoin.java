@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -129,7 +130,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final Disposable.Composite cancellations;
 
-		final Map<Integer, UnicastProcessor<TRight>> lefts;
+		final Map<Integer, FluxProcessor<TRight, TRight>> lefts;
 
 		final Map<Integer, TRight> rights;
 
@@ -244,7 +245,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		void errorAll(Subscriber<?> a) {
 			Throwable ex = Exceptions.terminate(ERROR, this);
 
-			for (UnicastProcessor<TRight> up : lefts.values()) {
+			for (FluxProcessor<TRight, TRight> up : lefts.values()) {
 				up.onError(ex);
 			}
 
@@ -285,7 +286,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					boolean empty = mode == null;
 
 					if (d && empty) {
-						for (UnicastProcessor<?> up : lefts.values()) {
+						for (FluxProcessor<?, ?> up : lefts.values()) {
 							up.onComplete();
 						}
 
@@ -306,8 +307,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					if (mode == LEFT_VALUE) {
 						@SuppressWarnings("unchecked") TLeft left = (TLeft) val;
 
-						UnicastProcessor<TRight> up =
-								new UnicastProcessor<>(processorQueueSupplier.get());
+						FluxProcessor<TRight, TRight> up =
+								Processors.more().unicast(processorQueueSupplier.get());
 						int idx = leftIndex++;
 						lefts.put(idx, up);
 
@@ -408,14 +409,14 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 							return;
 						}
 
-						for (UnicastProcessor<TRight> up : lefts.values()) {
+						for (FluxProcessor<TRight, TRight> up : lefts.values()) {
 							up.onNext(right);
 						}
 					}
 					else if (mode == LEFT_CLOSE) {
 						LeftRightEndSubscriber end = (LeftRightEndSubscriber) val;
 
-						UnicastProcessor<TRight> up = lefts.remove(end.index);
+						FluxProcessor<TRight, TRight> up = lefts.remove(end.index);
 						cancellations.remove(end);
 						if (up != null) {
 							up.onComplete();
