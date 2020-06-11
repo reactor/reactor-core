@@ -35,6 +35,12 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 		return new DematerializeSubscriber<>(actual, false);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class DematerializeSubscriber<T> implements InnerOperator<Signal<T>, T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -58,6 +64,7 @@ final class FluxDematerialize<T> extends InternalFluxOperator<Signal<T>, T> {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.PREFETCH) return 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

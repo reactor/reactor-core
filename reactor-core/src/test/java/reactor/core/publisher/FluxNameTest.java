@@ -42,6 +42,7 @@ public class FluxNameTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.NAME)).isEqualTo("foo");
 
@@ -52,8 +53,8 @@ public class FluxNameTest {
 
 	@Test
 	public void scanOperatorNullTags() throws Exception {
-		Flux<Integer> source = Flux.range(1, 4);
-		FluxName<Integer> test = new FluxName<>(source, "foo", null);
+		Flux<Integer> parent = Flux.range(1, 4);
+		FluxName<Integer> test = new FluxName<>(parent, "foo", null);
 
 		assertThat(test.scan(Scannable.Attr.TAGS)).isNull();
 	}

@@ -93,6 +93,12 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 		}
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			implements InnerOperator<T, BUFFER> {
 
@@ -423,6 +429,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.ERROR) return errors;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -487,6 +494,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Long.MAX_VALUE;
 			if (key == Attr.CANCELLED) return isDisposed();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -566,6 +574,7 @@ final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Long.MAX_VALUE;
 			if (key == Attr.CANCELLED) return isDisposed();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

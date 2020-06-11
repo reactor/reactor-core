@@ -27,6 +27,9 @@ import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * Peek into the lifecycle events and signals of a sequence
  *
@@ -62,6 +65,12 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return createSubscriber(actual, onSignal, false, false);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == RUN_STYLE) return SYNC;
+		return super.scanUnsafe(key);
 	}
 
 	static class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
@@ -124,6 +133,9 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			}
 			if (key == Attr.TERMINATED) {
 				return state == STATE_DONE;
+			}
+			if (key == RUN_STYLE) {
+			    return SYNC;
 			}
 
 			return InnerOperator.super.scanUnsafe(key);

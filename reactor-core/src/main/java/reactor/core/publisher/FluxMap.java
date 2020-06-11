@@ -62,6 +62,12 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 		return new MapSubscriber<>(actual, mapper);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class MapSubscriber<T, R>
 			implements InnerOperator<T, R> {
 
@@ -141,6 +147,7 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -267,6 +274,7 @@ final class FluxMap<T, R> extends InternalFluxOperator<T, R> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

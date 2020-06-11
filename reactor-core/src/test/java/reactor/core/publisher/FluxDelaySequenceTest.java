@@ -256,6 +256,7 @@ public class FluxDelaySequenceTest {
 		FluxDelaySequence<String> test = new FluxDelaySequence<>(Flux.empty(), Duration.ofSeconds(1), Schedulers.immediate());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	@Test
@@ -276,6 +277,7 @@ public class FluxDelaySequenceTest {
 				.satisfies(ser -> assertThat(ser.actual).isSameAs(actual));
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isEqualTo(worker);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();

@@ -27,6 +27,9 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * An operator that just bears a name or a set of tags, which can be retrieved via the
  * {@link reactor.core.Scannable.Attr#TAGS TAGS}
@@ -110,6 +113,10 @@ final class FluxName<T> extends InternalFluxOperator<T, T> {
 
 		if (key == Attr.TAGS && tags != null) {
 			return tags.stream();
+		}
+
+		if (key == RUN_STYLE) {
+		    return SYNC;
 		}
 
 		return super.scanUnsafe(key);

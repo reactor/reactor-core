@@ -169,6 +169,15 @@ public class FluxDefaultIfEmptyTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxDefaultIfEmpty<Integer> test = new FluxDefaultIfEmpty<>(parent, 2);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> { }, null, null);
 		FluxDefaultIfEmpty.DefaultIfEmptySubscriber<String> test =
@@ -180,6 +189,7 @@ public class FluxDefaultIfEmptyTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onComplete();

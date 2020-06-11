@@ -545,8 +545,10 @@ public class FluxExpandTest {
 
 	@Test
 	public void scanOperator(){
-	    FluxExpand<Node> test = new FluxExpand<>(Flux.just(ROOT_A, ROOT_B), v -> Flux.fromIterable(v.children), false, 5);
+		Flux<Node> parent = Flux.just(ROOT_A, ROOT_B);
+		FluxExpand<Node> test = new FluxExpand<>(parent, v -> Flux.fromIterable(v.children), false, 5);
 
+	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 

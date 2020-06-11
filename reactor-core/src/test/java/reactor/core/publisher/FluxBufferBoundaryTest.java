@@ -372,6 +372,14 @@ public class FluxBufferBoundaryTest
 		assertThat(ranges).isEmpty();
 	}
 
+	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxBufferBoundary<Integer, Object, ArrayList<Integer>> test = new FluxBufferBoundary<>(parent, Flux.empty(), ArrayList::new);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
 
 	@Test
 	public void scanMain() {
@@ -391,6 +399,7 @@ public class FluxBufferBoundaryTest
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
@@ -411,6 +420,7 @@ public class FluxBufferBoundaryTest
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();

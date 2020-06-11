@@ -27,6 +27,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.Scannable.from;
 
 public class FluxCancelOnTest {
 
@@ -58,7 +59,8 @@ public class FluxCancelOnTest {
 		final Flux<Integer> flux = Flux.just(1).cancelOn(Schedulers.boundedElastic());
 
 		assertThat(flux).isInstanceOf(Scannable.class);
-		assertThat(((Scannable) flux).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.boundedElastic());
+		assertThat(from(flux).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.elastic());
+		assertThat(from(flux).scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	@Test
@@ -71,6 +73,7 @@ public class FluxCancelOnTest {
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.cancel();

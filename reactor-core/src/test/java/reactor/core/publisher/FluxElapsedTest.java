@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -27,6 +26,7 @@ import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.Scannable.from;
 
 public class FluxElapsedTest {
 
@@ -49,7 +49,8 @@ public class FluxElapsedTest {
 		Flux<Tuple2<Long, Integer>> test = Flux.just(1).elapsed(Schedulers.single());
 
 		assertThat(test).isInstanceOf(Scannable.class);
-		assertThat(((Scannable) test).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
+		assertThat(from(test).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
+		assertThat(from(test).scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
     }
 
 	@Test
@@ -62,5 +63,6 @@ public class FluxElapsedTest {
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
     }
 }

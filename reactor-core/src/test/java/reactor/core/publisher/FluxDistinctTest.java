@@ -537,9 +537,21 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanOperator() {
-		FluxDistinct<Integer, Integer, HashSet<Integer>> test = new FluxDistinct<>(Flux.just(1), k -> k, HashSet::new, HashSet::add, HashSet::clear);
+		Flux<Integer> parent = Flux.just(1);
+		FluxDistinct<Integer, Integer, HashSet<Integer>> test = new FluxDistinct<>(parent, k -> k, HashSet::new, HashSet::add, HashSet::clear);
 
+	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanFuseableOperator() {
+		Flux<Integer> parent = Flux.just(1);
+		FluxDistinctFuseable<Integer, Integer, HashSet<Integer>> test
+				= new FluxDistinctFuseable<>(parent, k -> k, HashSet::new, HashSet::add, HashSet::clear);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

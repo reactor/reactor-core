@@ -371,6 +371,15 @@ public class FluxRepeatWhenTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxRepeatWhen<Integer> test = new FluxRepeatWhen(parent, v -> (Integer) v != 10);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> test =
@@ -380,6 +389,7 @@ public class FluxRepeatWhenTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         test.requested = 35;
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 
@@ -398,6 +408,7 @@ public class FluxRepeatWhenTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main.otherArbiter);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 
 	@Test
