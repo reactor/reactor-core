@@ -189,21 +189,21 @@ Compare the first example to the second example, shown in the following code:
 ====
 [source,java]
 ----
-DirectProcessor<String> hotSource = DirectProcessor.create();
+SinkFlux.Standalone<String> hotSource = Sinks.hotFlux();
 
-Flux<String> hotFlux = hotSource.map(String::toUpperCase);
+Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 
 
 hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
-hotSource.onNext("blue");
-hotSource.onNext("green");
+hotSource.next("blue")
+         .next("green");
 
 hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
 
-hotSource.onNext("orange");
-hotSource.onNext("purple");
-hotSource.onComplete();
+hotSource.next("orange")
+         .next("purple")
+         .complete();
 ----
 ====
 
