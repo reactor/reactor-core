@@ -99,6 +99,12 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 				queueSupplier);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class MergeSequentialMain<T, R> implements InnerOperator<T, R> {
 
 		/** the mapper giving the inner publisher for each source value */
@@ -177,6 +183,7 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 			if (key == Attr.PREFETCH) return maxConcurrency;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.BUFFERED) return subscribers.size();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -525,6 +532,7 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 			if (key == Attr.CANCELLED) return subscription == Operators.cancelledSubscription();
 			if (key == Attr.BUFFERED) return queue == null ? 0 : queue.size();
 			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

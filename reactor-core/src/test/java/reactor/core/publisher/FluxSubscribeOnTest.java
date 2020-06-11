@@ -169,6 +169,15 @@ public class FluxSubscribeOnTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    Flux<Integer> parent = Flux.just(1);
+		FluxSubscribeOn<Integer> test = new FluxSubscribeOn<>(parent, Schedulers.single(), false);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSubscribeOn.SubscribeOnSubscriber<Integer> test =
@@ -178,6 +187,7 @@ public class FluxSubscribeOnTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
         test.requested = 35;
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 

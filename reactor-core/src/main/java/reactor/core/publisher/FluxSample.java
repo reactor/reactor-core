@@ -71,6 +71,12 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 		return main;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class SampleMainSubscriber<T> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -121,6 +127,7 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 			if (key == Attr.PARENT) return main;
 			if (key == Attr.CANCELLED) return main == Operators.cancelledSubscription();
 			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -236,6 +243,7 @@ final class FluxSample<T, U> extends InternalFluxOperator<T, T> {
 			if (key == Attr.ACTUAL) return main;
 			if (key == Attr.CANCELLED) return main.other == Operators.cancelledSubscription();
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

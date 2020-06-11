@@ -290,6 +290,17 @@ public class FluxSwitchMapTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<String> parent = Flux.just("a", "bb", "ccc");
+		FluxSwitchMap<String, Integer> test = new FluxSwitchMap<>(
+				parent, s -> Flux.range(1, s.length()),
+				ConcurrentLinkedQueue::new, 128);
+
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanMain() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSwitchMap.SwitchMapMain<Integer, Integer> test =
@@ -299,6 +310,7 @@ public class FluxSwitchMapTest {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(234);
         test.requested = 35;
         Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
@@ -327,6 +339,7 @@ public class FluxSwitchMapTest {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(1);
 
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();

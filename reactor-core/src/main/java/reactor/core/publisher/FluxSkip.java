@@ -44,6 +44,12 @@ final class FluxSkip<T> extends InternalFluxOperator<T, T> {
 		return new SkipSubscriber<>(actual, n);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	//Fixme Does not implement ConditionalSubscriber until the full chain of operators
 	// supports fully conditional, requesting N onSubscribe cost is offset
 
@@ -99,6 +105,7 @@ final class FluxSkip<T> extends InternalFluxOperator<T, T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

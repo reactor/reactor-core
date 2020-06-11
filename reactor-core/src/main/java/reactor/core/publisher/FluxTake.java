@@ -61,6 +61,12 @@ final class FluxTake<T> extends InternalFluxOperator<T, T> {
 		return Integer.MAX_VALUE;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class TakeSubscriber<T>
 			implements InnerOperator<T, T> {
 
@@ -170,6 +176,7 @@ final class FluxTake<T> extends InternalFluxOperator<T, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -320,6 +327,7 @@ final class FluxTake<T> extends InternalFluxOperator<T, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -448,6 +456,7 @@ final class FluxTake<T> extends InternalFluxOperator<T, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return qs;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

@@ -108,6 +108,12 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 		}
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class TimeoutMainSubscriber<T, V>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
@@ -294,6 +300,12 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 				other.subscribe(new TimeoutOtherSubscriber<>(actual, this));
 			}
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			return super.scanUnsafe(key);
 		}
 	}
 
