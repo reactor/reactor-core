@@ -48,7 +48,6 @@ import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matcher;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -328,6 +327,7 @@ public class FluxTests extends AbstractReactorTest {
 		await(5, s, is(15));
 	}
 
+	//FIXME what does this test ?
 	@Test
 	public void simpleReactiveSubscriber() throws InterruptedException {
 		EmitterProcessor<String> str = EmitterProcessor.create();

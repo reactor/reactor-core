@@ -139,7 +139,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFused() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> up = Processors.unicast();
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);
@@ -159,7 +159,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedThreadBarrier() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Object, Object> up = Processors.unicast();
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);
@@ -281,7 +281,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedConditional() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Object, Object> up = Processors.unicast();
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);
@@ -302,7 +302,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedThreadBarrierConditional() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Object, Object> up = Processors.unicast();
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);

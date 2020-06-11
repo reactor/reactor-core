@@ -22,19 +22,21 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Before;
 import org.junit.Test;
 
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.GroupedFlux;
+import reactor.core.publisher.Processors;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.junit.Assert.assertEquals;
 
 public class FluxWindowConsistencyTest {
 
-	DirectProcessor<Integer> sourceProcessor = DirectProcessor.create();
+	FluxProcessor<Integer, Integer> sourceProcessor = Processors.more().multicastNoBackpressure();
 
 	Flux<Integer> source;
 
