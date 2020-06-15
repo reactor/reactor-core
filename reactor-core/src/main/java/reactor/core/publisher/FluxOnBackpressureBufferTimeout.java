@@ -224,12 +224,12 @@ final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O
 					this.poll();
 					evicted = (T) this.poll();
 				}
-				this.offer(ttlScheduler.now(TimeUnit.MILLISECONDS));
+				this.offer(ttlScheduler.now(TimeUnit.NANOSECONDS));
 				this.offer(t);
 			}
 			evict(evicted);
 			try {
-				worker.schedule(this, ttl.toMillis(), TimeUnit.MILLISECONDS);
+				worker.schedule(this, ttl.toNanos(), TimeUnit.NANOSECONDS);
 			}
 			catch (RejectedExecutionException re) {
 				done = true;
@@ -268,7 +268,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends InternalFluxOperator<O, O
 					Long ts = (Long) this.peek();
 					empty = ts == null;
 					if (!empty) {
-						if (ts <= ttlScheduler.now(TimeUnit.MILLISECONDS) - ttl.toMillis()) {
+						if (ts <= ttlScheduler.now(TimeUnit.NANOSECONDS) - ttl.toNanos()) {
 							this.poll();
 							evicted = (T) this.poll();
 						}
