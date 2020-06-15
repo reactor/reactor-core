@@ -1162,7 +1162,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} emitting increasing numbers at regular intervals
 	 */
 	public static Flux<Long> interval(Duration period, Scheduler timer) {
-		return onAssembly(new FluxInterval(period.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return interval(period, period, timer);
 	}
 
 	/**
@@ -1182,7 +1182,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} emitting increasing numbers at regular intervals
 	 */
 	public static Flux<Long> interval(Duration delay, Duration period, Scheduler timer) {
-		return onAssembly(new FluxInterval(delay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return onAssembly(new FluxInterval(delay.toNanos(), period.toNanos(), TimeUnit.NANOSECONDS, timer));
 	}
 
 	/**
