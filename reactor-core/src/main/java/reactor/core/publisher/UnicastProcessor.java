@@ -367,7 +367,7 @@ public final class UnicastProcessor<T>
 		if (done || cancelled) {
 			s.cancel();
 		} else {
-			s.request(REQUESTED.get(this));
+			s.request(Long.MAX_VALUE);
 		}
 	}
 
