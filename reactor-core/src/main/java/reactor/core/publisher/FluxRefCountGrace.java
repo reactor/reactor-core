@@ -124,7 +124,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		}
 
 		if (replaceTimer) {
-			sd.replace(scheduler.schedule(rc, gracePeriod.toMillis(), TimeUnit.MILLISECONDS));
+			sd.replace(scheduler.schedule(rc, gracePeriod.toNanos(), TimeUnit.NANOSECONDS));
 		} else if (dispose != null) {
 			dispose.dispose();
 		}
