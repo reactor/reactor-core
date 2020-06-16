@@ -209,6 +209,7 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public Object scanUnsafe(Attr key) {
+		if (Attr.ACTUAL == key) return actual();
 		if (Attr.BUFFERED == key) return queue.size();
 		if (Attr.PREFETCH == key) return Integer.MAX_VALUE;
 		return super.scanUnsafe(key);
