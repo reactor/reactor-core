@@ -22,6 +22,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -42,9 +43,9 @@ public class FluxSampleTest {
 	}
 
 	void sample(boolean complete, boolean which) {
-		DirectProcessor<Integer> main = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<String> other = DirectProcessor.create();
+		FluxProcessor<String, String> other = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -84,7 +85,7 @@ public class FluxSampleTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		DirectProcessor<?> p = which ? main : other;
+		FluxProcessor<?, ?> p = which ? main : other;
 
 		if (complete) {
 			p.onComplete();
@@ -128,9 +129,9 @@ public class FluxSampleTest {
 
 	@Test
 	public void subscriberCancels() {
-		DirectProcessor<Integer> main = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<String> other = DirectProcessor.create();
+		FluxProcessor<String, String> other = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -150,9 +151,9 @@ public class FluxSampleTest {
 	}
 
 	public void completeImmediately(boolean which) {
-		DirectProcessor<Integer> main = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<String> other = DirectProcessor.create();
+		FluxProcessor<String, String> other = Processors.more().multicastNoBackpressure();
 
 		if (which) {
 			main.onComplete();

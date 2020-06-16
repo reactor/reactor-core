@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -253,7 +254,7 @@ public class FluxFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final EmitterProcessor<Boolean> pp = EmitterProcessor.create();
+		final FluxProcessor<Boolean, Boolean> pp = Processors.multicast();
 
 		StepVerifier.create(Flux.range(1, 5)
 		                        .filterWhen(v -> pp, 16))

@@ -333,8 +333,8 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> source = Flux.range(1, 2).doOnNext(v -> emission.getAndIncrement());
 
-		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
-		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.multicast();
+		FluxProcessor<Integer, Integer> source2 = Processors.multicast();
 
 		source.flatMap(v -> v == 1 ? source1 : source2, 1, 32).subscribe(ts);
 
@@ -368,8 +368,8 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> source = Flux.range(1, 1000).doOnNext(v -> emission.getAndIncrement());
 
-		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
-		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.multicast();
+		FluxProcessor<Integer, Integer> source2 = Processors.multicast();
 
 		source.flatMap(v -> v == 1 ? source1 : source2, Integer.MAX_VALUE, 32).subscribe(ts);
 
@@ -608,9 +608,9 @@ public class FluxFlatMapTest {
 		            .verify();
 	}
 
-	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	@Test //TODO TestPublisher.actual cannot be accessed
 	public void failNextOnTerminated() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> up = Processors.unicast();
 
 		Hooks.onNextDropped(c -> {
 			assertThat(c).isEqualTo(2);
@@ -618,7 +618,7 @@ public class FluxFlatMapTest {
 		StepVerifier.create(up.flatMap(Flux::just))
 		            .then(() -> {
 			            up.onNext(1);
-			            CoreSubscriber<? super Integer> a = up.actual;
+			            CoreSubscriber<? super Integer> a = (CoreSubscriber<? super Integer>) up.scan(Scannable.Attr.ACTUAL);
 			            up.onComplete();
 			            a.onNext(2);
 		            })
@@ -1026,7 +1026,7 @@ public class FluxFlatMapTest {
 
 		fmm.onSubscribe(Operators.emptySubscription());
 
-		EmitterProcessor<Integer> ps = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> ps = Processors.multicast();
 
 		fmm.onNext(ps);
 
@@ -1152,7 +1152,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void asyncInnerFusion() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.just(1)
 		                        .hide()
 		                        .flatMap(f -> up, 1))
@@ -1167,7 +1167,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void failAsyncInnerFusion() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.just(1)
 		                        .hide()
 		                        .flatMap(f -> up, 1))

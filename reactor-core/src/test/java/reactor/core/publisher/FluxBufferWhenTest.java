@@ -164,10 +164,10 @@ public class FluxBufferWhenTest {
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
-		DirectProcessor<Integer> sp4 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp3 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp4 = Processors.more().multicastNoBackpressure();
 
 		sp1.bufferWhen(sp2, v -> v == 1 ? sp3 : sp4)
 		   .subscribe(ts);
@@ -221,9 +221,9 @@ public class FluxBufferWhenTest {
 	public void startCompletes() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
-		DirectProcessor<Integer> open = DirectProcessor.create();
-		DirectProcessor<Integer> close = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> open = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> close = Processors.more().multicastNoBackpressure();
 
 		source.bufferWhen(open, v -> close)
 		   .subscribe(ts);
@@ -263,11 +263,11 @@ public class FluxBufferWhenTest {
 	@Test
 	public void bufferWillAcumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
-		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> numbers = Processors.multicast();
+		FluxProcessor<Integer, Integer> bucketOpening = Processors.multicast();
 
 		//"overlapping buffers"
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> boundaryFlux = Processors.multicast();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.bufferWhen(bucketOpening, u -> boundaryFlux )
 		                                       .buffer()

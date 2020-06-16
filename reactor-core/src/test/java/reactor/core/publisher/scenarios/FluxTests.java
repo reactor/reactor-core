@@ -58,14 +58,13 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Operators;
-import reactor.core.publisher.ReplayProcessor;
+import reactor.core.publisher.Processors;
 import reactor.core.publisher.Signal;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -330,7 +329,7 @@ public class FluxTests extends AbstractReactorTest {
 	//FIXME what does this test ?
 	@Test
 	public void simpleReactiveSubscriber() throws InterruptedException {
-		EmitterProcessor<String> str = EmitterProcessor.create();
+		FluxProcessor<String, String> str = Processors.multicast();
 
 		str.publishOn(asyncGroup)
 		   .subscribe(new FooSubscriber());
@@ -532,7 +531,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void analyticsTest() throws Exception {
-		ReplayProcessor<Integer> source = ReplayProcessor.create();
+		FluxProcessor<Integer, Integer> source = Processors.replayUnbounded();
 
 		long avgTime = 50l;
 
@@ -579,7 +578,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		final CountDownLatch latch = new CountDownLatch(iterations);
 
-		EmitterProcessor<String> deferred = EmitterProcessor.create();
+		FluxProcessor<String, String> deferred = Processors.multicast();
 		deferred.publishOn(asyncGroup)
 		        .parallel(8)
 		        .groups()
@@ -622,10 +621,10 @@ public class FluxTests extends AbstractReactorTest {
 
 		int[] data;
 		CountDownLatch latch = new CountDownLatch(iterations);
-		EmitterProcessor<Integer> deferred;
+		FluxProcessor<Integer, Integer> deferred;
 		switch (dispatcher) {
 			case "partitioned":
-				deferred = EmitterProcessor.create();
+				deferred = Processors.multicast();
 				deferred.publishOn(asyncGroup)
 				        .parallel(2)
 				        .groups()
@@ -637,7 +636,7 @@ public class FluxTests extends AbstractReactorTest {
 				break;
 
 			default:
-				deferred = EmitterProcessor.create();
+				deferred = Processors.multicast();
 				deferred.publishOn(asyncGroup)
 				        .map(i -> i)
 				        .scan(1, (acc, next) -> acc + next)
@@ -676,17 +675,17 @@ public class FluxTests extends AbstractReactorTest {
 
 		int[] data;
 		CountDownLatch latch = new CountDownLatch(iterations);
-		EmitterProcessor<Integer> mapManydeferred;
+		FluxProcessor<Integer, Integer> mapManydeferred;
 		switch (dispatcher) {
 			case "partitioned":
-				mapManydeferred = EmitterProcessor.create();
+				mapManydeferred = Processors.multicast();
 				mapManydeferred.parallel(4)
 				               .groups()
 				               .subscribe(substream -> substream.publishOn(asyncGroup)
 				                                              .subscribe(i -> latch.countDown()));
 				break;
 			default:
-				mapManydeferred = EmitterProcessor.create();
+				mapManydeferred = Processors.multicast();
 				("sync".equals(dispatcher) ? mapManydeferred : mapManydeferred.publishOn(asyncGroup))
 				               .flatMap(Flux::just)
 				               .subscribe(i -> latch.countDown());
@@ -763,7 +762,7 @@ public class FluxTests extends AbstractReactorTest {
 		 */
 		final double TOLERANCE = 0.9;
 
-		FluxProcessor<Integer, Integer> batchingStreamDef = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> batchingStreamDef = Processors.multicast();
 
 		List<Integer> testDataset = createTestDataset(NUM_MESSAGES);
 
@@ -855,7 +854,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void shouldCorrectlyDispatchComplexFlow() throws InterruptedException {
-		EmitterProcessor<Integer> globalFeed = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> globalFeed = Processors.multicast();
 
 		CountDownLatch afterSubscribe = new CountDownLatch(1);
 		CountDownLatch latch = new CountDownLatch(4);
@@ -1075,7 +1074,7 @@ public class FluxTests extends AbstractReactorTest {
 		int parallelStreams = 16;
 		CountDownLatch latch = new CountDownLatch(1);
 
-		final EmitterProcessor<Integer> streamBatcher = EmitterProcessor.create();
+		final FluxProcessor<Integer, Integer> streamBatcher = Processors.multicast();
 		streamBatcher.publishOn(asyncGroup)
 		             .bufferTimeout(batchsize, Duration.ofSeconds(timeout))
 		             .log("batched")
@@ -1210,9 +1209,9 @@ public class FluxTests extends AbstractReactorTest {
 
 		Phaser phaser = new Phaser(2);
 
-		Flux<Object> s1 = ReplayProcessor.cacheLastOrDefault(new Object())
+		Flux<Object> s1 = Processors.more().replayLatestOrDefault(new Object())
 		                                 .publishOn(asyncGroup);
-		Flux<Object> s2 = ReplayProcessor.cacheLastOrDefault(new Object())
+		Flux<Object> s2 = Processors.more().replayLatestOrDefault(new Object())
 		                                .publishOn(asyncGroup);
 
 		// The following works:
@@ -1341,9 +1340,9 @@ public class FluxTests extends AbstractReactorTest {
 	@Test(timeout = TIMEOUT)
 	public void multiplexUsingDispatchersAndSplit() throws Exception {
 
-		final EmitterProcessor<Integer> forkEmitterProcessor = EmitterProcessor.create();
+		final FluxProcessor<Integer, Integer> forkEmitterProcessor = Processors.multicast();
 
-		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.create(false);
+		final FluxProcessor<Integer, Integer> computationEmitterProcessor = Processors.more().multicast(false);
 
 		Scheduler computation = Schedulers.newSingle("computation");
 		Scheduler persistence = Schedulers.newSingle("persistence");
@@ -1361,7 +1360,7 @@ public class FluxTests extends AbstractReactorTest {
 				                      .doOnNext(ls -> println("Computed: ", ls))
 				                      .log("computation");
 
-		final EmitterProcessor<Integer> persistenceEmitterProcessor = EmitterProcessor.create(false);
+		final FluxProcessor<Integer, Integer> persistenceEmitterProcessor = Processors.more().multicast(false);
 
 		final Flux<List<String>> persistenceStream =
 				persistenceEmitterProcessor.publishOn(persistence)

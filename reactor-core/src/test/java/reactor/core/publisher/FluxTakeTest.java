@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -185,7 +186,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressured() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
+		FluxProcessor<String, String> up = Processors.unicast();
 		StepVerifier.create(up.take(3), 0)
 		            .expectFusion()
 		            .then(() -> up.onNext("test"))
@@ -202,7 +203,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressuredCancelled() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
+		FluxProcessor<String, String> up = Processors.unicast();
 		StepVerifier.create(up.take(3).doOnSubscribe(s -> {
 			assertThat(((Fuseable.QueueSubscription)s).size()).isEqualTo(0);
 		}), 0)
@@ -299,11 +300,11 @@ public class FluxTakeTest {
 
 	@Test
 	public void failNextIfTerminatedTakeFused() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		TestPublisher<Integer> up = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 		Hooks.onNextDropped(t -> assertThat(t).isEqualTo(1));
-		StepVerifier.create(up.take(2))
-		            .then(() -> up.actual.onComplete())
-		            .then(() -> up.actual.onNext(1))
+		StepVerifier.create(up.flux().take(2))
+		            .then(up::complete)
+		            .then(() -> up.next(1))
 		            .verifyComplete();
 		Hooks.resetOnNextDropped();
 	}
@@ -375,7 +376,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
+		FluxProcessor<String, String> up = Processors.unicast();
 		StepVerifier.create(up.take(2))
 		            .expectFusion(Fuseable.ASYNC)
 		            .then(() -> {
@@ -484,7 +485,7 @@ public class FluxTakeTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void failFusedDoubleError() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> up = Processors.unicast();
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
 		StepVerifier.create(up
 		                        .take(2))
@@ -492,27 +493,29 @@ public class FluxTakeTest {
 			            assertTrackableBeforeOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            assertTrackableAfterOnSubscribe((InnerOperator)up.actual);
-			            up.actual.onError(new Exception("test"));
-			            assertTrackableAfterOnComplete((InnerOperator)up.actual);
-			            up.actual.onError(new Exception("test2"));
+		            	InnerOperator processorDownstream = (InnerOperator) up.scan(Scannable.Attr.ACTUAL);
+			            assertTrackableAfterOnSubscribe(processorDownstream);
+			            processorDownstream.onError(new Exception("test"));
+			            assertTrackableAfterOnComplete(processorDownstream);
+			            processorDownstream.onError(new Exception("test2"));
 		            })
 		            .verifyErrorMessage("test");
 	}
 
 	@Test
 	public void ignoreFusedDoubleComplete() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> up = Processors.unicast();
 		StepVerifier.create(up
 		                        .take(2).filter(d -> true))
 		            .consumeSubscriptionWith(s -> {
 			            assertTrackableAfterOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            assertTrackableAfterOnSubscribe((InnerOperator)up.actual);
-			            up.actual.onComplete();
-			            assertTrackableAfterOnComplete((InnerOperator)up.actual);
-			            up.actual.onComplete();
+			            InnerOperator processorDownstream = (InnerOperator) up.scan(Scannable.Attr.ACTUAL);
+			            assertTrackableAfterOnSubscribe(processorDownstream);
+			            processorDownstream.onComplete();
+			            assertTrackableAfterOnComplete(processorDownstream);
+			            processorDownstream.onComplete();
 		            })
 		            .verifyComplete();
 	}

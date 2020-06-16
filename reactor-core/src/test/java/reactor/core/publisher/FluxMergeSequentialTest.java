@@ -33,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
@@ -81,7 +82,7 @@ public class FluxMergeSequentialTest {
 	@Test
 	public void normalFusedAsync() {
 		StepVerifier.create(Flux.range(1, 5)
-		                        .subscribeWith(UnicastProcessor.create())
+		                        .subscribeWith(Processors.unicast())
 		                        .flatMapSequential(t -> Flux.range(t, 2)))
 		            .expectNext(1, 2, 2, 3, 3, 4, 4, 5, 5, 6)
 		            .verifyComplete();
@@ -141,8 +142,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsDelayEnd() {
-		DirectProcessor<Integer> main = DirectProcessor.create();
-		final DirectProcessor<Integer> inner = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
+		final FluxProcessor<Integer, Integer> inner = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = main.flatMapSequentialDelayError(t -> inner, 32, 32)
 		                                   .subscribeWith(AssertSubscriber.create());
@@ -167,8 +168,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsImmediate() {
-		DirectProcessor<Integer> main = DirectProcessor.create();
-		final DirectProcessor<Integer> inner = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
+		final FluxProcessor<Integer, Integer> inner = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = main.flatMapSequential(t -> inner)
 		                                   .subscribeWith(AssertSubscriber.create());
@@ -460,7 +461,7 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void testReentrantWork() {
-		final DirectProcessor<Integer> subject = DirectProcessor.create();
+		final FluxProcessor<Integer, Integer> subject = Processors.more().multicastNoBackpressure();
 
 		final AtomicBoolean once = new AtomicBoolean();
 

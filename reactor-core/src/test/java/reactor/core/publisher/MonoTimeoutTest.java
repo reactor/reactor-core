@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
+
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -70,7 +71,7 @@ public class MonoTimeoutTest {
 
 		MonoProcessor<Integer> source = MonoProcessor.create();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		source.timeout(tp)
 		      .subscribe(ts);

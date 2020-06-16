@@ -22,6 +22,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSampleTimeout.SampleTimeoutOther;
@@ -37,9 +38,9 @@ public class FluxSampleTimeoutTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp3 = Processors.more().multicastNoBackpressure();
 
 		sp1.sampleTimeout(v -> v == 1 ? sp2 : sp3)
 		   .subscribe(ts);
@@ -77,8 +78,8 @@ public class FluxSampleTimeoutTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.sampleTimeout(v -> sp2)
 		   .subscribe(ts);
@@ -99,8 +100,8 @@ public class FluxSampleTimeoutTest {
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.sampleTimeout(v -> sp2)
 		   .subscribe(ts);
@@ -121,7 +122,7 @@ public class FluxSampleTimeoutTest {
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
 
 		sp1.sampleTimeout(v -> null)
 		   .subscribe(ts);

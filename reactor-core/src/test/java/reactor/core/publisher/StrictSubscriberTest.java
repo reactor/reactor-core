@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 
@@ -72,7 +73,7 @@ public class StrictSubscriberTest {
 		AtomicBoolean state2 = new AtomicBoolean();
 		AtomicReference<Throwable> e = new AtomicReference<>();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp = Processors.more().multicastNoBackpressure();
 
 		sp.doOnCancel(() -> state2.set(state1.get()))
 		  .subscribe(new Subscriber<Integer>() {

@@ -25,11 +25,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.test.StepVerifier;
 import reactor.test.MockUtils;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -147,8 +148,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusion() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
+		FluxProcessor<Integer, Integer> up = Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		up.map(v -> v + 1)
 		  .subscribe(ts);
@@ -167,8 +167,8 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionBackpressured() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
+		FluxProcessor<Integer, Integer> up =
+				Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)
 		    .hide()

@@ -18,11 +18,10 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxOnErrorResumeTest {
 /*
@@ -155,7 +154,7 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void someFirst() {
-		EmitterProcessor<Integer> tp = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.multicast();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -176,7 +175,7 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void someFirstBackpressured() {
-		EmitterProcessor<Integer> tp = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.multicast();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 

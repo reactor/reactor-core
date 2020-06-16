@@ -22,6 +22,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -34,8 +35,8 @@ public class FluxSwitchMapTest {
 	public void noswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.switchMap(v -> sp2)
 		   .subscribe(ts);
@@ -64,8 +65,8 @@ public class FluxSwitchMapTest {
 	public void noswitchBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.switchMap(v -> sp2)
 		   .subscribe(ts);
@@ -106,9 +107,9 @@ public class FluxSwitchMapTest {
 	public void doswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp3 = Processors.more().multicastNoBackpressure();
 
 		sp1.switchMap(v -> v == 1 ? sp2 : sp3)
 		   .subscribe(ts);
@@ -156,8 +157,8 @@ public class FluxSwitchMapTest {
 	public void mainCompletesBefore() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.switchMap(v -> sp2)
 		   .subscribe(ts);
@@ -185,8 +186,8 @@ public class FluxSwitchMapTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.switchMap(v -> sp2)
 		   .subscribe(ts);
@@ -210,8 +211,8 @@ public class FluxSwitchMapTest {
 	public void innerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.switchMap(v -> sp2)
 		   .subscribe(ts);
@@ -237,7 +238,7 @@ public class FluxSwitchMapTest {
 	public void mapperThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
 
 		sp1.switchMap(v -> {
 			throw new RuntimeException("forced failure");
@@ -256,7 +257,7 @@ public class FluxSwitchMapTest {
 	public void mapperReturnsNull() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
 
 		sp1.switchMap(v -> null)
 		   .subscribe(ts);
@@ -278,7 +279,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void switchOnNextDynamicallyOnNext() {
-		UnicastProcessor<Flux<Integer>> up = UnicastProcessor.create();
+		FluxProcessor<Flux<Integer>, Flux<Integer>> up = Processors.unicast();
 		up.onNext(Flux.range(1, 3));
 		up.onNext(Flux.range(2, 3).concatWith(Mono.never()));
 		up.onNext(Flux.range(4, 3));

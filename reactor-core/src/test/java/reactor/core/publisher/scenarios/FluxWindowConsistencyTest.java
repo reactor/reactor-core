@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import org.junit.Before;
 import org.junit.Test;
 
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.GroupedFlux;
@@ -209,7 +208,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryComplete() throws Exception {
-		DirectProcessor<Integer> boundary = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> boundary = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.window(boundary);
 		subscribe(windows);
 		generate(0, 3);
@@ -220,9 +219,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndComplete() throws Exception {
-		DirectProcessor<Integer> start = DirectProcessor.create();
-		DirectProcessor<Integer> end1 = DirectProcessor.create();
-		DirectProcessor<Integer> end2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> start = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> end1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> end2 = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
@@ -307,7 +306,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryMainCancel() throws Exception {
-		DirectProcessor<Integer> boundary = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> boundary = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.window(boundary);
 
 		subscribe(windows);
@@ -323,9 +322,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndMainCancel() throws Exception {
-		DirectProcessor<Integer> start = DirectProcessor.create();
-		DirectProcessor<Integer> end1 = DirectProcessor.create();
-		DirectProcessor<Integer> end2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> start = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> end1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> end2 = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
@@ -415,7 +414,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryMainCancelNoNewWindow() throws Exception {
-		DirectProcessor<Integer> boundary = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> boundary = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.window(boundary);
 
 		subscribe(windows);
@@ -428,9 +427,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndMainCancelNoNewWindow() throws Exception {
-		DirectProcessor<Integer> start = DirectProcessor.create();
-		DirectProcessor<Integer> end1 = DirectProcessor.create();
-		DirectProcessor<Integer> end2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> start = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> end1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> end2 = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
@@ -508,7 +507,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryInnerCancel() throws Exception {
-		DirectProcessor<Integer> boundaryProcessor = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> boundaryProcessor = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.window(boundaryProcessor);
 		subscribe(windows);
 		generateWithCancel(0, 6, 1);
@@ -517,9 +516,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndInnerCancel() throws Exception {
-		DirectProcessor<Integer> start = DirectProcessor.create();
-		DirectProcessor<Integer> end1 = DirectProcessor.create();
-		DirectProcessor<Integer> end2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> start = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> end1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> end2 = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);

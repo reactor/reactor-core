@@ -20,10 +20,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.junit.Test;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,8 +39,8 @@ public class FluxJoinTest {
 	public void normal1() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		Flux<Integer> m =
 				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
@@ -66,10 +66,10 @@ public class FluxJoinTest {
 	@Test
 	public void normal1WithDuration() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> duration1 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> duration1 = Processors.more().multicastNoBackpressure();
 
 		Flux<Integer> m = source1.join(source2, just(duration1), just(Flux.never()), add);
 		m.subscribe(ts);
@@ -95,8 +95,8 @@ public class FluxJoinTest {
 	@Test
 	public void normal2() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		Flux<Integer> m =
 				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
@@ -121,8 +121,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		Flux<Integer> m =
 				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
@@ -140,8 +140,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		Flux<Integer> m =
 				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
@@ -159,8 +159,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftDurationThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -177,8 +177,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightDurationThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -195,8 +195,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftDurationSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -215,8 +215,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightDurationSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -235,8 +235,8 @@ public class FluxJoinTest {
 	@Test
 	public void resultSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		BiFunction<Integer, Integer, Integer> fail = (t1, t2) -> {
 			throw new RuntimeException("Forced failure");

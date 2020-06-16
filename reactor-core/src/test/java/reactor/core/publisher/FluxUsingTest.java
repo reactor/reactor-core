@@ -27,6 +27,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -262,7 +263,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		Flux.using(() -> 1, r -> tp, cleanup::set, true)
 		    .subscribe(ts);

@@ -16,14 +16,13 @@
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
-import java.util.function.Predicate;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
-import reactor.util.function.Tuple3;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -129,13 +128,12 @@ public class MonoTakeLastOneTest {
 
 	@Test
 	public void defaultUsingZip() {
-
-		UnicastProcessor<String> processor1 = UnicastProcessor.create();
-		FluxSink<String> sink1 = processor1.sink();
-		UnicastProcessor<String> processor2 = UnicastProcessor.create();
-		FluxSink<String> sink2 = processor2.sink();
-		UnicastProcessor<String> processor3 = UnicastProcessor.create();
-		FluxSink<String> sink3 = processor3.sink();
+		SinkFlux.Standalone<String> sink1 = Sinks.coldUnicastFlux();
+		Flux<String> processor1 = sink1.asFlux();
+		SinkFlux.Standalone<String> sink2 = Sinks.coldUnicastFlux();
+		Flux<String> processor2 = sink2.asFlux();
+		SinkFlux.Standalone<String> sink3 = Sinks.coldUnicastFlux();
+		Flux<String> processor3 = sink3.asFlux();
 
 		StepVerifier.create(
 						Flux.zip(

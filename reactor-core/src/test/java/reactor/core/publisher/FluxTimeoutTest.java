@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
 import org.junit.Test;
+
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -98,9 +99,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -122,9 +123,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -146,9 +147,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -231,9 +232,9 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		source.timeout(tp, v -> tp)
 		      .subscribe(ts);

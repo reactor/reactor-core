@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -186,8 +187,8 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusion() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
+		FluxProcessor<Integer, Integer> up = 
+				Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		up.filter(v -> (v & 1) == 0)
 		  .subscribe(ts);
@@ -206,8 +207,8 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionBackpressured() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
+		FluxProcessor<Integer, Integer> up = 
+				Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)
 		    .hide()
@@ -232,8 +233,8 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionBackpressured2() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
+		FluxProcessor<Integer, Integer> up = 
+				Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)
 		    .hide()

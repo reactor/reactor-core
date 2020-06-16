@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -67,7 +68,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressured() {
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
@@ -106,7 +107,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void error() {
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
@@ -122,7 +123,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressureWithDrop() {
-		DirectProcessor<Integer> tp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>(0) {
 			@Override

@@ -25,6 +25,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -53,8 +54,8 @@ public class FluxWindowBoundaryTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.window(sp2)
 		   .subscribe(ts);
@@ -88,8 +89,8 @@ public class FluxWindowBoundaryTest {
 	public void normalOtherCompletes() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.window(sp2)
 		   .subscribe(ts);
@@ -123,8 +124,8 @@ public class FluxWindowBoundaryTest {
 	public void mainError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.window(sp2)
 		   .subscribe(ts);
@@ -164,8 +165,8 @@ public class FluxWindowBoundaryTest {
 	public void otherError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.window(sp2)
 		   .subscribe(ts);
@@ -223,10 +224,10 @@ public class FluxWindowBoundaryTest {
 	@Test
 	public void windowWillAccumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> numbers = Processors.multicast();
 
 		//non overlapping buffers
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> boundaryFlux = Processors.multicast();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.window(boundaryFlux)
 		                                       .concatMap(Flux::buffer)

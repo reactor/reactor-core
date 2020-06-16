@@ -34,6 +34,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -52,6 +53,7 @@ import static reactor.core.Scannable.Attr.*;
 /**
  * @author Stephane Maldini
  */
+@SuppressWarnings("deprecation")
 public class EmitterProcessorTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1364

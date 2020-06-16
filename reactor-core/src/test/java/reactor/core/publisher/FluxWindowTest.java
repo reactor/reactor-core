@@ -429,7 +429,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void exactError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp = Processors.more().multicastNoBackpressure();
 
 		sp.window(2, 2)
 		  .subscribe(ts);
@@ -457,7 +457,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void skipError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp = Processors.more().multicastNoBackpressure();
 
 		sp.window(2, 3)
 		  .subscribe(ts);
@@ -485,7 +485,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void skipInGapError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp = Processors.more().multicastNoBackpressure();
 
 		sp.window(1, 3)
 		  .subscribe(ts);
@@ -510,7 +510,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void overlapError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp = Processors.more().multicastNoBackpressure();
 
 		sp.window(2, 1)
 		  .subscribe(ts);
@@ -638,7 +638,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
         when(mockQueue.size()).thenReturn(Integer.MAX_VALUE - 2);
         //size() is 1
-        test.offer(UnicastProcessor.create());
+        test.offer(Processors.unicast());
 
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1);
         assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1L);
@@ -655,11 +655,11 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
         when(mockQueue.size()).thenReturn(Integer.MAX_VALUE);
         //size() is 5
-        test.offer(UnicastProcessor.create());
-        test.offer(UnicastProcessor.create());
-        test.offer(UnicastProcessor.create());
-        test.offer(UnicastProcessor.create());
-        test.offer(UnicastProcessor.create());
+        test.offer(Processors.unicast());
+        test.offer(Processors.unicast());
+        test.offer(Processors.unicast());
+        test.offer(Processors.unicast());
+        test.offer(Processors.unicast());
 
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
         assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 5L);

@@ -33,8 +33,6 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -152,10 +150,10 @@ public class FluxWindowWhenTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
-		DirectProcessor<Integer> sp4 = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp3 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> sp4 = Processors.more().multicastNoBackpressure();
 
 		sp1.windowWhen(sp2, v -> v == 1 ? sp3 : sp4)
 		   .subscribe(ts);
@@ -195,10 +193,10 @@ public class FluxWindowWhenTest {
 	public void normalStarterEnds() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
-		DirectProcessor<Integer> openSelector = DirectProcessor.create();
-		DirectProcessor<Integer> closeSelectorFor1 = DirectProcessor.create();
-		DirectProcessor<Integer> closeSelectorForOthers = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> openSelector = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> closeSelectorFor1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> closeSelectorForOthers = Processors.more().multicastNoBackpressure();
 
 		source.windowWhen(openSelector, v -> v == 1 ? closeSelectorFor1 : closeSelectorForOthers)
 		   .subscribe(ts);
@@ -239,10 +237,10 @@ public class FluxWindowWhenTest {
 	public void oneWindowOnly() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
-		DirectProcessor<Integer> openSelector = DirectProcessor.create();
-		DirectProcessor<Integer> closeSelectorFor1 = DirectProcessor.create();
-		DirectProcessor<Integer> closeSelectorOthers = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> openSelector = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> closeSelectorFor1 = Processors.more().multicastNoBackpressure();
+		FluxProcessor<Integer, Integer> closeSelectorOthers = Processors.more().multicastNoBackpressure();
 
 		source.windowWhen(openSelector, v -> v == 1 ? closeSelectorFor1 : closeSelectorOthers)
 		   .subscribe(ts);
@@ -274,11 +272,11 @@ public class FluxWindowWhenTest {
 	@Test
 	public void windowWillAccumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
-		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> numbers = Processors.multicast();
+		FluxProcessor<Integer, Integer> bucketOpening = Processors.multicast();
 
 		//"overlapping buffers"
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> boundaryFlux = Processors.multicast();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.windowWhen(bucketOpening, u -> boundaryFlux )
 		                                       .flatMap(Flux::buffer)

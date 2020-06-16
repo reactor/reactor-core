@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -178,7 +179,7 @@ public class FluxRefCountTest {
 
 	@Test
 	public void normal() {
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> e = Processors.multicast();
 
 		Flux<Integer> p = e.publish().refCount();
 
@@ -218,7 +219,7 @@ public class FluxRefCountTest {
 
 	@Test
 	public void normalTwoSubscribers() {
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> e = Processors.multicast();
 
 		Flux<Integer> p = e.publish().refCount(2);
 
@@ -379,7 +380,7 @@ public class FluxRefCountTest {
 
 	@Test
 	public void delayElementShouldNotCancelTwice() throws Exception {
-		DirectProcessor<Long> p = DirectProcessor.create();
+		FluxProcessor<Long, Long> p = Processors.more().multicastNoBackpressure();
 		AtomicInteger cancellations = new AtomicInteger();
 
 		Flux<Long> publishedFlux = p
