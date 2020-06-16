@@ -7197,7 +7197,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final ConnectableFlux<T> replay(int history, Duration ttl, Scheduler timer) {
 		Objects.requireNonNull(timer, "timer");
-		return onAssembly(new FluxReplay<>(this, history, ttl.toMillis(), timer));
+		return onAssembly(new FluxReplay<>(this, history, ttl.toNanos(), timer));
 	}
 
 	/**
