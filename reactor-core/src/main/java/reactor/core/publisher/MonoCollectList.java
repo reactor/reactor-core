@@ -42,9 +42,9 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 
 	static final class MonoCollectListSubscriber<T> extends Operators.MonoSubscriber<T, List<T>> {
 
-		Subscription s;
-
 		List<T> list;
+
+		Subscription s;
 
 		boolean done;
 
@@ -92,7 +92,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 
 		@Override
 		public void onError(Throwable t) {
-			if(done) {
+			if (done) {
 				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
@@ -102,7 +102,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 				l = list;
 				list = null;
 			}
-			Operators.onDiscardMultiple(l, actual.currentContext());
+			discard(l);
 			actual.onError(t);
 		}
 
