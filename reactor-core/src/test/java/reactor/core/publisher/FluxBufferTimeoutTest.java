@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -206,8 +207,8 @@ public class FluxBufferTimeoutTest {
 
 	@Test
 	public void requestedFromUpstreamShouldNotExceedDownstreamDemand() {
-		EmitterProcessor<String> emitter = EmitterProcessor.create(1);
-		FluxSink<String> sink = emitter.sink();
+		SinkFlux.Standalone<String> sink = Sinks.coldFlux();
+		Flux<String> emitter = sink.asFlux();
 
 		AtomicLong requestedOutstanding = new AtomicLong(0);
 
