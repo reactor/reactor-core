@@ -255,7 +255,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(Duration duration, Scheduler timer) {
-		return onAssembly(new MonoDelay(duration.toMillis(), TimeUnit.MILLISECONDS, timer));
+		return onAssembly(new MonoDelay(duration.toNanos(), TimeUnit.NANOSECONDS, timer));
 	}
 
 	/**

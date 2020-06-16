@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,20 +36,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowTimeoutTest {
 
-	Flux<List<Integer>> scenario_windowWithTimeoutAccumulateOnTimeOrSize() {
-		return Flux.range(1, 6)
-		           .delayElements(Duration.ofMillis(300))
-		           .windowTimeout(5, Duration.ofMillis(2000))
-		           .concatMap(Flux::buffer);
-	}
-
 	@Test
-	public void windowWithTimeoutAccumulateOnTimeOrSize() {
-		StepVerifier.withVirtualTime(this::scenario_windowWithTimeoutAccumulateOnTimeOrSize)
+	public void windowWithTimeoutAccumulateOnSize() {
+		StepVerifier.withVirtualTime(() -> Flux.range(1, 6)
+						   .delayElements(Duration.ofMillis(300))
+						   .windowTimeout(5, Duration.ofMillis(2000))
+						   .concatMap(Flux::buffer))
 		            .thenAwait(Duration.ofMillis(1500))
 		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5))
 		            .thenAwait(Duration.ofMillis(2000))
 		            .assertNext(s -> assertThat(s).containsExactly(6))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void windowWithTimeoutAccumulateOnTime() {
+		StepVerifier.withVirtualTime(() -> Flux.range(1, 8)
+						   .delayElements(Duration.ofNanos(300))
+						   .windowTimeout(14, Duration.ofNanos(2000))
+						   .concatMap(Flux::buffer))
+		            .thenAwait(Duration.ofNanos(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5, 6))
+		            .thenAwait(Duration.ofNanos(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(7, 8))
 		            .verifyComplete();
 	}
 
@@ -221,7 +229,7 @@ public class FluxWindowTimeoutTest {
 
 	@Test
 	public void scanOperator() {
-		FluxWindowTimeout<Integer> test = new FluxWindowTimeout<>(Flux.just(1), 123, 100, Schedulers.immediate());
+		FluxWindowTimeout<Integer> test = new FluxWindowTimeout<>(Flux.just(1), 123, 100, TimeUnit.MILLISECONDS, Schedulers.immediate());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
 	}
@@ -264,7 +272,7 @@ public class FluxWindowTimeoutTest {
 		Scheduler scheduler = new MyScheduler();
 		CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxWindowTimeout.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeout.WindowTimeoutSubscriber<>(actual,
-				123, Long.MAX_VALUE, scheduler);
+				123, Long.MAX_VALUE, TimeUnit.MILLISECONDS, scheduler);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

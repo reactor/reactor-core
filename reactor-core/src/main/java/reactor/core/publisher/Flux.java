@@ -9444,7 +9444,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration maxTime, Scheduler timer) {
-		return onAssembly(new FluxWindowTimeout<>(this, maxSize, maxTime.toMillis(), timer));
+		return onAssembly(new FluxWindowTimeout<>(this, maxSize, maxTime.toNanos(), TimeUnit.NANOSECONDS, timer));
 	}
 
 	/**
