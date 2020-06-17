@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.assertj.core.api.Assertions;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -71,9 +72,17 @@ public class BlockingTests {
 	}
 
 	@Test
-	public void blockingFirstTimeout() {
+	public void blockingFirstEarlyComplete() {
 		assertThat(Flux.empty()
 		               .blockFirst(Duration.ofMillis(1))).isNull();
+	}
+
+	@Test
+	public void blockingFirstTimeout() {
+		Assertions.assertThatIllegalStateException().isThrownBy(() ->
+				Flux.just(1).delayElements(Duration.ofNanos(100))
+				.blockFirst(Duration.ofNanos(50)))
+			.withMessage("Timeout on blocking read for 50 NANOSECONDS");
 	}
 
 	@Test
