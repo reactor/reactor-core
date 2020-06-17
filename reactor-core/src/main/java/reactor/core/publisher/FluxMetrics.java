@@ -83,6 +83,12 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 		return new MetricsSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static class MetricsSubscriber<T> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -204,6 +210,12 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 				}
 				s.request(l);
 			}
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 

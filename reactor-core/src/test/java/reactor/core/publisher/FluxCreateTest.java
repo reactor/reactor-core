@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -1159,6 +1160,13 @@ class FluxCreateTest {
 				}
 			}
 		}
+	}
+
+	@Test
+	public void scanOperator(){
+		FluxCreate test = new FluxCreate(v -> Arrays.asList(1, 2, 3), OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

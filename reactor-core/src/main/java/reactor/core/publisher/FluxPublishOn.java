@@ -71,6 +71,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return scheduler;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 		return super.scanUnsafe(key);
 	}
@@ -590,6 +591,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			if (key == Attr.DELAY_ERROR) return delayError;
 			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.RUN_ON) return worker;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -1083,6 +1085,7 @@ final class FluxPublishOn<T> extends InternalFluxOperator<T, T> implements Fusea
 			if (key == Attr.DELAY_ERROR) return delayError;
 			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.RUN_ON) return worker;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

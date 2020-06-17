@@ -72,7 +72,13 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
                 mapperComplete);
     }
 
-    static final class FluxMapSignalSubscriber<T, R>
+	@Override
+	public Object scanUnsafe(Attr key) {
+    	if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
+	static final class FluxMapSignalSubscriber<T, R>
     extends AbstractQueue<R>
 		    implements InnerOperator<T, R>,
 		               BooleanSupplier {
@@ -251,6 +257,7 @@ final class FluxMapSignal<T, R> extends InternalFluxOperator<T, R> {
 		    if (key == Attr.CANCELLED) return getAsBoolean();
 		    if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 		    if (key == Attr.BUFFERED) return size();
+		    if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		    return InnerOperator.super.scanUnsafe(key);
 	    }

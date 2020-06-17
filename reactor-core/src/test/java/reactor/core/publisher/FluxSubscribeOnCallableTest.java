@@ -182,6 +182,7 @@ public class FluxSubscribeOnCallableTest {
 		FluxSubscribeOnCallable test = new FluxSubscribeOnCallable<>(() -> "foo", Schedulers.immediate());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	@Test
@@ -192,6 +193,7 @@ public class FluxSubscribeOnCallableTest {
 
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         Assertions.assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
         test.value = 1;
         Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 

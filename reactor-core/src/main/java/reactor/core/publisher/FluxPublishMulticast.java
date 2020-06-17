@@ -34,6 +34,9 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * Shares a sequence for the duration of a function that may transform it and consume it
  * as many times as necessary without causing multiple subscriptions to the upstream.
@@ -86,6 +89,12 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		}
 
 		return multicast;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
 	}
 
 	static final class FluxPublishMulticaster<T> extends Flux<T>
@@ -168,6 +177,9 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 			}
 			if (key == Attr.BUFFERED) {
 				return queue != null ? queue.size() : 0;
+			}
+			if (key == RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
 			}
 
 			return null;
@@ -700,6 +712,9 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 			if (key == Attr.PARENT) {
 				return s;
 			}
+			if (key == RUN_STYLE) {
+			    return Attr.RunStyle.SYNC;
+			}
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -795,6 +810,9 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
+			}
+			if (key == RUN_STYLE) {
+			    return Attr.RunStyle.SYNC;
 			}
 
 			return InnerOperator.super.scanUnsafe(key);

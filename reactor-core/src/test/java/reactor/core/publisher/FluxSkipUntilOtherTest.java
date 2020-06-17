@@ -254,6 +254,15 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxSkipUntilOther test = new FluxSkipUntilOther(parent, Flux.just(2));
+
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSkipUntilOther.SkipUntilMainSubscriber<Integer> test =
@@ -265,6 +274,7 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
         SerializedSubscriber<?> serialized = (SerializedSubscriber<?>) test.scan(Scannable.Attr.ACTUAL);
         Assertions.assertThat(serialized).isNotNull();
         Assertions.assertThat(serialized.actual()).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
@@ -283,6 +293,7 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         main.cancel();

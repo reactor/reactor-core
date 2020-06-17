@@ -45,6 +45,12 @@ final class FluxSkipUntil<T> extends InternalFluxOperator<T, T> {
 		return new SkipUntilSubscriber<>(actual, predicate);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class SkipUntilSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
@@ -161,6 +167,7 @@ final class FluxSkipUntil<T> extends InternalFluxOperator<T, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

@@ -54,6 +54,12 @@ final class FluxRetryPredicate<T> extends InternalFluxOperator<T, T> {
 		return null;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class RetryPredicateSubscriber<T>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
@@ -125,6 +131,12 @@ final class FluxRetryPredicate<T> extends InternalFluxOperator<T, T> {
 
 				} while (WIP.decrementAndGet(this) != 0);
 			}
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			return super.scanUnsafe(key);
 		}
 	}
 }

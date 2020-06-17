@@ -143,6 +143,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -552,6 +553,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
 			if (key == Attr.TERMINATED) return isTerminated();
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

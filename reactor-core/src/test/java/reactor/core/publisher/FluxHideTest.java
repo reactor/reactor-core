@@ -118,6 +118,15 @@ public class FluxHideTest {
 	}
 
 	@Test
+	public void scanOperatorWithSyncSource(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxHide test = new FluxHide(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxHide.HideSubscriber<String> test = new FluxHide.HideSubscriber<>(actual);
