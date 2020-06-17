@@ -36,6 +36,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.AssertionsForClassTypes.*;
 
 public class BlockingTests {
@@ -79,7 +80,7 @@ public class BlockingTests {
 
 	@Test
 	public void blockingFirstTimeout() {
-		Assertions.assertThatIllegalStateException().isThrownBy(() ->
+		assertThatIllegalStateException().isThrownBy(() ->
 				Flux.just(1).delayElements(Duration.ofNanos(100))
 				.blockFirst(Duration.ofNanos(50)))
 			.withMessage("Timeout on blocking read for 50 NANOSECONDS");
@@ -109,7 +110,7 @@ public class BlockingTests {
 
 	@Test
 	public void blockingLastTimeout() {
-		Assertions.assertThatIllegalStateException().isThrownBy(() ->
+		assertThatIllegalStateException().isThrownBy(() ->
 				Flux.just(1).delayElements(Duration.ofNanos(100))
 						.blockLast(Duration.ofNanos(50)))
 				.withMessage("Timeout on blocking read for 50 NANOSECONDS");
@@ -248,6 +249,12 @@ public class BlockingTests {
 	        .blockOptional();
 
 		assertThat(cancelCount.get()).isEqualTo(0);
+	}
+
+	@Test
+	public void monoBlockSupportsNanos() {
+		assertThatIllegalStateException().isThrownBy(() -> Mono.never().block(Duration.ofNanos(9_000L)))
+				.withMessage("Timeout on blocking read for 9000 NANOSECONDS");
 	}
 
 	@Test
