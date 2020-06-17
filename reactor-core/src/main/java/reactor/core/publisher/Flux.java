@@ -2518,7 +2518,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
 		subscribe((Subscriber<T>) subscriber);
-		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+		return subscriber.blockingGet(timeout.toNanos(), TimeUnit.NANOSECONDS);
 	}
 
 	/**

@@ -102,9 +102,17 @@ public class BlockingTests {
 	}
 
 	@Test
-	public void blockingLastTimeout() {
+	public void blockingLastEarlyComplete() {
 		assertThat(Flux.empty()
 		               .blockLast(Duration.ofMillis(1))).isNull();
+	}
+
+	@Test
+	public void blockingLastTimeout() {
+		Assertions.assertThatIllegalStateException().isThrownBy(() ->
+				Flux.just(1).delayElements(Duration.ofNanos(100))
+						.blockLast(Duration.ofNanos(50)))
+				.withMessage("Timeout on blocking read for 50 NANOSECONDS");
 	}
 
 	@Test(expected = RuntimeException.class)
