@@ -847,8 +847,8 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Specifies where each 'rail' will observe its incoming values with no work-stealing
-	 * and default prefetch amount.
+	 * Specifies where each 'rail' will observe its incoming values with possible
+	 * work-stealing and default prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
 	 * Queues.SMALL_BUFFER_SIZE}.
@@ -872,7 +872,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Specifies where each 'rail' will observe its incoming values with possibly
+	 * Specifies where each 'rail' will observe its incoming values with possible
 	 * work-stealing and a given prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
