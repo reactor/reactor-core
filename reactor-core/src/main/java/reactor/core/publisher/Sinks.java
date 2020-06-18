@@ -23,8 +23,8 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 /**
- * A collection of standalone sinks ({@link StandaloneFluxSink},
- * {@link StandaloneMonoSink} and {@link SequenceToMonoSink}).
+ * A collection of standalone sinks ({@link StandaloneFluxSink} and
+ * {@link StandaloneMonoSink}).
  *
  * @author Simon Baslé
  */
@@ -43,7 +43,8 @@ public final class Sinks {
 	 *     registered will simply discard these elements.</li>
 	 * </ul>
 	 */
-	public static final <T> StandaloneFluxSink<T> multicast() {
+	@SuppressWarnings("deprecation")
+	public static <T> StandaloneFluxSink<T> multicast() {
 		return new FluxProcessorSink<>(ReplayProcessor.create(0));
 	}
 
@@ -60,6 +61,7 @@ public final class Sinks {
 	 *     elements pushed before the first {@link Subscriber} is registered.</li>
 	 * </ul>
 	 */
+	@SuppressWarnings("deprecation")
 	public static <T> StandaloneFluxSink<T> multicastPreWarming() {
 		return new FluxProcessorSink<>(EmitterProcessor.create(Queues.SMALL_BUFFER_SIZE));
 	}
@@ -75,6 +77,7 @@ public final class Sinks {
 	 *     honor the {@code historySize}.</li>
 	 * </ul>
 	 */
+	@SuppressWarnings("deprecation")
 	public static <T> StandaloneFluxSink<T> multicastReplay(int historySize) {
 		return new FluxProcessorSink<>(ReplayProcessor.create(historySize));
 	}
@@ -89,6 +92,7 @@ public final class Sinks {
 	 *     even when there is no subscriber.</li>
 	 * </ul>
 	 */
+	@SuppressWarnings("deprecation")
 	public static <T> StandaloneFluxSink<T> multicastReplayAll() {
 		return new FluxProcessorSink<>(ReplayProcessor.create());
 	}
@@ -104,6 +108,7 @@ public final class Sinks {
 	 *     be replayed once the {@link Subscriber} subscribes.</li>
 	 * </ul>
 	 */
+	@SuppressWarnings("deprecation")
 	public static <T> StandaloneFluxSink<T> unicast() {
 		return new FluxProcessorSink<>(UnicastProcessor.create());
 	}
@@ -114,26 +119,9 @@ public final class Sinks {
 	 * {@link ScalarSink#success() empty completions} or {@link ScalarSink#error(Throwable) error}.
 	 * This completion is replayed to late subscribers.
 	 */
+	@SuppressWarnings("deprecation")
 	public static <T> StandaloneMonoSink<T> trigger() {
 		return new MonoProcessorSink<>(MonoProcessor.create());
-	}
-
-	/**
-	 * A {@link SequenceSink} that can be programmatically fed values like it
-	 * is representing a {@link Flux}, but instead is actually viewable as a {@link Mono}
-	 * by subscribers. New subscribers will see a {@link Mono} representation that depends
-	 * on the latest interaction with this sink:
-	 * <ul>
-	 *     <li>for an {@link SequenceSink#next(Object)}: the Mono view will immediately
-	 *     emit the element followed by an {@link Subscriber#onComplete() onComplete signal}.</li>
-	 *     <li>for an {@link SequenceSink#complete()}: the Mono view will immediately
-	 *     complete empty, with an {@link Subscriber#onComplete()} onComplete signal}.</li>
-	 *     <li>in case of {@link SequenceSink#error(Throwable)}: the Mono view will immediately
-	 *     terminate the {@link Subscriber} with an {@link Subscriber#onError(Throwable)} onError signal}.</li>
-	 * </ul>
-	 */
-	public static <T> SequenceToMonoSink<T> latest() {
-		return new LatestMonoSink<>();
 	}
 
 	// == interfaces ==
@@ -178,30 +166,6 @@ public final class Sinks {
 		 * All calls to this method return the same instance.
 		 *
 		 * @return the {@link Mono} view associated to this {@link StandaloneMonoSink}
-		 */
-		Mono<T> asMono();
-	}
-
-	/**
-	 * A flavor of {@link SequenceSink} that is not attached to a single {@link Subscriber},
-	 * is fed like a {@link Flux} but exposed downstream {@link #asMono() as a Mono}.
-	 * <p>
-	 * As a result, such a {@link SequenceSink} is capable of serving several subscribers,
-	 * as each input signal turns into a complete {@link Mono}.
-	 *
-	 * @param <T> the type of elements that can be emitted through this sink
-	 */
-	public interface SequenceToMonoSink<T> extends SequenceSink<T> {
-
-		@Override
-		SequenceToMonoSink<T> next(T t);
-
-		/**
-		 * Return the companion {@link Mono} instance that is backed by this sink.
-		 * All calls to this method return the same instance, but each subscription will
-		 * likely receive different signals.
-		 *
-		 * @return the {@link Mono} view associated to this {@link SequenceToMonoSink}
 		 */
 		Mono<T> asMono();
 	}
@@ -296,37 +260,4 @@ public final class Sinks {
 		}
 	}
 
-	static final class LatestMonoSink<T> implements SequenceToMonoSink<T> {
-
-		final FluxProcessor<T, T> processor;
-		final FluxSink<T> delegate;
-		final Mono<T> mono;
-
-		LatestMonoSink() {
-			this.processor = DirectProcessor.create();
-			this.delegate = processor.sink();
-			this.mono = Mono.defer(processor::next);
-		}
-
-		@Override
-		public Mono<T> asMono() {
-			return this.mono;
-		}
-
-		@Override
-		public void complete() {
-			delegate.complete();
-		}
-
-		@Override
-		public void error(Throwable e) {
-			delegate.error(e);
-		}
-
-		@Override
-		public SequenceToMonoSink<T> next(T t) {
-			delegate.next(t);
-			return this;
-		}
-	}
 }
