@@ -19,16 +19,17 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscriber;
 
 /**
+ * A base interface for a "sequence" sink, a construct through which Reactive Streams
+ * signals can be programmatically pushed with generic publisher (or {@link Flux})
+ * semantics.
+ * <p>
+ * Sinks can be used in the context of an operator that ties one sink per {@link Subscriber}
+ * (thus allowing pushing data to a specific {@link Subscriber}, see {@link FluxSink})
+ * or encourage fully standalone usage (see {@link reactor.core.publisher.Sinks.StandaloneFluxSink}).
+ *
  * @author Simon Baslé
  */
-public interface SinkFlux<T> {
-
-
-	interface Standalone<T> extends SinkFlux<T> {
-
-		Flux<T> asFlux();
-
-	}
+public interface SequenceSink<T> {
 
 	/**
 	 * @see Subscriber#onComplete()
@@ -47,7 +48,6 @@ public interface SinkFlux<T> {
 	 * @see Subscriber#onNext(Object)
 	 * @param t the value to emit, not null
 	 */
-	FluxSink<T> next(T t);
-
+	SequenceSink<T> next(T t);
 
 }

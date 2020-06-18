@@ -147,9 +147,13 @@ To transform `just` into a cold publisher, you can use `defer`. It defers the HT
 request in our example to subscription time (and would result in a separate network call
 for each new subscription).
 
-NOTE: Most other hot publishers in Reactor extend `Processor`.
+On the opposite, `share()` and `replay(...)` can be used to turn a cold publisher into
+a hot one (at least once a first subscription has happened). Both of these also have
+`StandaloneFluxSink` equivalents in the `Sinks` class, which allow programmatically
+feeding the sequence.
 
-Consider two other examples. The following code shows the first example:
+Consider two examples, one that demonstrates a cold Flux and the other that makes use of the
+`StandaloneFluxSink` to simulate a hot Flux. The following code shows the first example:
 
 ====
 [source,java]
@@ -189,7 +193,7 @@ Compare the first example to the second example, shown in the following code:
 ====
 [source,java]
 ----
-SinkFlux.Standalone<String> hotSource = Sinks.hotFlux();
+Sinks.StandaloneFluxSink<String> hotSource = Sinks.multicast();
 
 Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 

@@ -52,7 +52,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
-import reactor.core.publisher.SinkFlux;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -202,21 +201,21 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-SinkFlux.Standalone<String> hotSource = Sinks.hotFlux();
+		Sinks.StandaloneFluxSink<String> hotSource = Sinks.multicast();
 
-Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
+		Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 
 
-hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
+		hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
-hotSource.next("blue")
-         .next("green");
+		hotSource.next("blue")
+		         .next("green");
 
-hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
+		hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
 
-hotSource.next("orange")
-         .next("purple")
-         .complete();
+		hotSource.next("orange")
+		         .next("purple")
+		         .complete();
 	}
 
 	@Test

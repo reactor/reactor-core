@@ -16,18 +16,20 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import reactor.test.StepVerifier;
-import reactor.test.StepVerifierOptions;
+import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -38,122 +40,677 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class SinksTest {
 
 	@Nested
-	class FluxSinks {
+	class Multicast {
 
-		@Test
-		void coldAllowsSeveralSubscribers() {
-			final SinkFlux.Standalone<String> standaloneFluxSink = Sinks.coldFlux();
-			standaloneFluxSink.next("A")
-			                  .next("B")
-			                  .complete();
-			Flux<String> flux = standaloneFluxSink.asFlux();
+		private Sinks.StandaloneFluxSink<Integer> sink;
+		private Flux<Integer> flux;
 
-			StepVerifier.create(flux, StepVerifierOptions.create().scenarioName("first subscription"))
-			            .expectNext("A", "B")
-			            .verifyComplete();
-
-			StepVerifier.create(flux, StepVerifierOptions.create().scenarioName("second subscription"))
-			            .expectNext("A", "B")
-			            .verifyComplete();
+		@BeforeEach
+		void createInstance() {
+			sink = Sinks.multicast();
+			flux = sink.asFlux();
 		}
 
 		@Test
-		void hotIsMulticast() throws InterruptedException {
-			final SinkFlux.Standalone<Integer> standaloneFluxSink = Sinks.hotFlux();
-			Flux<Integer> flux = standaloneFluxSink.asFlux();
-
-			CountDownLatch latch = new CountDownLatch(2);
-			ExecutorService executorService = Executors.newFixedThreadPool(2);
-			Future<Duration> f1 = executorService.submit(() ->
-					StepVerifier.create(flux,
-							StepVerifierOptions.create().scenarioName("first subscription"))
-					            .expectSubscription()
-					            .then(latch::countDown)
-					            .expectNext(1, 2)
-					            .verifyComplete()
-			);
-			Future<Duration> f2 = executorService.submit(() ->
-					StepVerifier.create(flux,
-							StepVerifierOptions.create().scenarioName("first subscription"))
-					            .expectSubscription()
-					            .then(latch::countDown)
-					            .expectNext(1, 2)
-					            .verifyComplete()
-			);
-
-			//give subscribers a bit of time to arrive, lest elements be dropped
-			assertThat(latch.await(1, TimeUnit.SECONDS)).as("subscribers ready").isTrue();
-
-			//feed the hot sink
-			standaloneFluxSink.next(1).next(2).complete();
-
-			assertThatCode(f1::get).doesNotThrowAnyException();
-			assertThatCode(f2::get).doesNotThrowAnyException();
+		void fluxViewReturnsSameInstance() {
+			assertThat(flux).isSameAs(sink.asFlux());
 		}
 
 		@Test
-		void coldAccumulatesBeforeSubscriber() {
-			SinkFlux.Standalone<Integer> standaloneFluxSink = Sinks.coldFlux();
-			standaloneFluxSink.next(1)
-			         .next(2)
-			         .next(3)
-			         .complete();
-
-			StepVerifier.create(standaloneFluxSink.asFlux())
-			            .expectNext(1, 2, 3)
-			            .verifyComplete();
+		void isAcceptingMoreThatOneSubscriber() {
+			assertThatCode(() -> {
+				flux.subscribe();
+				flux.subscribe();
+			}).doesNotThrowAnyException();
 		}
 
 		@Test
-		void hotDropsBeforeSubscriber() {
-			SinkFlux.Standalone<Integer> standaloneFluxSink = Sinks.hotFlux();
-			standaloneFluxSink.next(1)
-			         .next(2)
-			         .next(3);
+		void honorsMultipleSubscribersBackpressure()
+				throws InterruptedException, ExecutionException {
+			ExecutorService es = Executors.newFixedThreadPool(2);
+			CountDownLatch requestLatch = new CountDownLatch(2);
+			final Future<?> f1 = es.submit(() -> {
+				AssertSubscriber<Integer> test1 = AssertSubscriber.create(2);
+				flux.subscribe(test1);
+				test1.assertNoValues();
+				requestLatch.countDown();
 
-			StepVerifier.create(standaloneFluxSink.asFlux())
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .then(() -> standaloneFluxSink.next(4).next(5))
-			            .expectNext(4, 5)
-			            .then(standaloneFluxSink::complete)
-			            .verifyComplete();
+				test1.awaitAndAssertNextValues(1, 2);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test1.assertValueCount(2));
+				}
+				finally {
+					test1.cancel();
+				}
+			});
+			final Future<?> f2 = es.submit(() -> {
+				AssertSubscriber<Integer> test2 = AssertSubscriber.create(1);
+				flux.subscribe(test2);
+				requestLatch.countDown();
+
+				test2.awaitAndAssertNextValues(1);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test2.assertValueCount(1));
+				}
+				finally {
+					test2.cancel();
+				}
+			});
+
+			requestLatch.await(1, TimeUnit.SECONDS);
+			sink.next(1)
+			    .next(2)
+			    .next(3)
+			    .next(4)
+			    .complete();
+
+			f1.get();
+			f2.get();
 		}
 
 		@Test
-		void coldHonorsSubscriberBackpressure() {
-			SinkFlux.Standalone<Integer> standaloneFluxSink = Sinks.coldFlux();
+		void doesNotReplayToLateSubscribers() {
+			AssertSubscriber<Integer> s1 = AssertSubscriber.create();
+			AssertSubscriber<Integer> s2 = AssertSubscriber.create();
 
-			StepVerifier.create(standaloneFluxSink.asFlux(), 0)
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .then(() -> standaloneFluxSink.next(1)
-			                                 .next(2)
-			                                 .next(3)
-			                                 .complete())
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .thenRequest(10)
-			            .expectNext(1, 2, 3)
-			            .verifyComplete();
+			flux.subscribe(s1);
+			sink.next(1).next(2).next(3);
+			s1.assertValues(1, 2, 3);
+
+			flux.subscribe(s2);
+			s2.assertNoValues().assertNotComplete();
+
+			sink.complete();
+			s1.assertValueCount(3).assertComplete();
+			s2.assertNoValues().assertComplete();
 		}
 
 		@Test
-		void hotHonorsSubscriberBackpressure() {
-			SinkFlux.Standalone<Integer> standaloneFluxSink = Sinks.hotFlux();
+		public void doesNotBufferBeforeFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-			StepVerifier.create(standaloneFluxSink.asFlux(), 0)
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .then(() -> standaloneFluxSink.next(1)
-			                                 .next(2)
-			                                 .next(3)
-			                                 .complete())
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .thenRequest(10)
-			            .expectNext(1, 2, 3)
-			            .verifyComplete();
+			sink.next(1).next(2).next(3);
+			flux.subscribe(first);
+
+			first.assertNoValues().assertNotComplete();
+
+			sink.complete();
+			first.assertNoValues().assertComplete();
 		}
 
+		@Test
+		public void immediatelyCompleteFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).complete();
+			flux.subscribe(first);
+
+			first.assertNoValues().assertComplete();
+		}
+
+		@Test
+		public void immediatelyErrorFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).error(new IllegalStateException("boom"));
+			flux.subscribe(first);
+
+			first.assertNoValues().assertErrorMessage("boom");
+		}
+
+		@Test
+		public void immediatelyCompleteLateSubscriber() {
+			flux.subscribe(); //first subscriber
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			sink.next(1).complete();
+			flux.subscribe(late);
+
+			late.assertNoValues().assertComplete();
+		}
+
+		@Test
+		public void immediatelyErrorLateSubscriber() {
+			flux.onErrorReturn(-1).subscribe(); //first subscriber, ignore errors
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			sink.next(1).error(new IllegalStateException("boom"));
+			flux.subscribe(late);
+
+			late.assertNoValues().assertErrorMessage("boom");
+		}
+	}
+
+	@Nested
+	class MulticastPreWarming {
+
+		private Sinks.StandaloneFluxSink<Integer> sink;
+		private Flux<Integer> flux;
+
+		@BeforeEach
+		void createInstance() {
+			sink = Sinks.multicastPreWarming();
+			flux = sink.asFlux();
+		}
+
+		@Test
+		void fluxViewReturnsSameInstance() {
+			assertThat(flux).isSameAs(sink.asFlux());
+		}
+
+		@Test
+		void isAcceptingMoreThatOneSubscriber() {
+			assertThatCode(() -> {
+				flux.subscribe();
+				flux.subscribe();
+			}).doesNotThrowAnyException();
+		}
+
+		@Test
+		void honorsMultipleSubscribersBackpressure()
+				throws InterruptedException, ExecutionException {
+			ExecutorService es = Executors.newFixedThreadPool(2);
+			CountDownLatch requestLatch = new CountDownLatch(2);
+			final Future<?> f1 = es.submit(() -> {
+				AssertSubscriber<Integer> test1 = AssertSubscriber.create(2);
+				flux.subscribe(test1);
+				test1.assertNoValues();
+				requestLatch.countDown();
+
+				test1.awaitAndAssertNextValues(1, 2);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test1.assertValueCount(2));
+				}
+				finally {
+					test1.cancel();
+				}
+			});
+			final Future<?> f2 = es.submit(() -> {
+				AssertSubscriber<Integer> test2 = AssertSubscriber.create(1);
+				flux.subscribe(test2);
+				requestLatch.countDown();
+
+				test2.awaitAndAssertNextValues(1);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test2.assertValueCount(1));
+				}
+				finally {
+					test2.cancel();
+				}
+			});
+
+			requestLatch.await(1, TimeUnit.SECONDS);
+			sink.next(1)
+			    .next(2)
+			    .next(3)
+			    .next(4)
+			    .complete();
+
+			f1.get();
+			f2.get();
+		}
+
+		@Test
+		void doesNotReplayToLateSubscribers() {
+			AssertSubscriber<Integer> s1 = AssertSubscriber.create();
+			AssertSubscriber<Integer> s2 = AssertSubscriber.create();
+
+			flux.subscribe(s1);
+			sink.next(1).next(2).next(3);
+			s1.assertValues(1, 2, 3);
+
+			flux.subscribe(s2);
+			s2.assertNoValues().assertNotComplete();
+
+			sink.complete();
+			s1.assertValueCount(3).assertComplete();
+			s2.assertNoValues().assertComplete();
+		}
+
+		@Test
+		public void doesBufferBeforeFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3);
+			flux.subscribe(first);
+
+			first.assertValues(1, 2, 3).assertNotComplete();
+
+			sink.complete();
+			first.assertComplete();
+		}
+
+		@Test
+		public void replayAndCompleteFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).complete();
+			flux.subscribe(first);
+
+			first.assertValues(1).assertComplete();
+		}
+
+		@Test //TODO is that acceptable that EmitterProcessor doesn't replay in case of errors?
+		public void noReplayBeforeFirstSubscriberIfEarlyError() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).error(new IllegalStateException("boom"));
+			flux.subscribe(first);
+
+			first.assertNoValues().assertErrorMessage("boom");
+		}
+
+		@Test
+		public void immediatelyCompleteLateSubscriber() {
+			flux.subscribe(); //first subscriber
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			sink.next(1).complete();
+			flux.subscribe(late);
+
+			late.assertNoValues().assertComplete();
+		}
+
+		@Test
+		public void immediatelyErrorLateSubscriber() {
+			flux.onErrorReturn(-1).subscribe(); //first subscriber, ignore errors
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			sink.next(1).error(new IllegalStateException("boom"));
+			flux.subscribe(late);
+
+			late.assertNoValues().assertErrorMessage("boom");
+		}
+	}
+
+	@Nested
+	class MulticastReplayAll {
+
+		private Sinks.StandaloneFluxSink<Integer> sink;
+		private Flux<Integer> flux;
+
+		@BeforeEach
+		void createInstance() {
+			sink = Sinks.multicastReplayAll();
+			flux = sink.asFlux();
+		}
+
+		@Test
+		void fluxViewReturnsSameInstance() {
+			assertThat(flux).isSameAs(sink.asFlux());
+		}
+
+		@Test
+		void isAcceptingMoreThatOneSubscriber() {
+			assertThatCode(() -> {
+				flux.subscribe();
+				flux.subscribe();
+			}).doesNotThrowAnyException();
+		}
+
+		@Test
+		void honorsMultipleSubscribersBackpressure()
+				throws InterruptedException, ExecutionException {
+			ExecutorService es = Executors.newFixedThreadPool(2);
+			CountDownLatch requestLatch = new CountDownLatch(2);
+			final Future<?> f1 = es.submit(() -> {
+				AssertSubscriber<Integer> test1 = AssertSubscriber.create(2);
+				flux.subscribe(test1);
+				test1.assertNoValues();
+				requestLatch.countDown();
+
+				test1.awaitAndAssertNextValues(1, 2);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test1.assertValueCount(2));
+				}
+				finally {
+					test1.cancel();
+				}
+			});
+			final Future<?> f2 = es.submit(() -> {
+				AssertSubscriber<Integer> test2 = AssertSubscriber.create(1);
+				flux.subscribe(test2);
+				requestLatch.countDown();
+
+				test2.awaitAndAssertNextValues(1);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test2.assertValueCount(1));
+				}
+				finally {
+					test2.cancel();
+				}
+			});
+
+			requestLatch.await(1, TimeUnit.SECONDS);
+			sink.next(1)
+			    .next(2)
+			    .next(3)
+			    .next(4)
+			    .complete();
+
+			f1.get();
+			f2.get();
+		}
+
+		@Test
+		void doesReplayAllToLateSubscribers() {
+			AssertSubscriber<Integer> s1 = AssertSubscriber.create();
+			AssertSubscriber<Integer> s2 = AssertSubscriber.create();
+
+			flux.subscribe(s1);
+			sink.next(1).next(2).next(3);
+			s1.assertValues(1, 2, 3);
+
+			flux.subscribe(s2);
+			s2.assertValues(1, 2, 3).assertNotComplete();
+
+			sink.complete();
+			s1.assertValueCount(3).assertComplete();
+			s2.assertValues(1, 2, 3).assertComplete();
+		}
+
+		@Test
+		public void doesBufferBeforeFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3);
+			flux.subscribe(first);
+
+			first.assertValues(1, 2, 3).assertNotComplete();
+
+			sink.complete();
+			first.assertComplete();
+		}
+
+		@Test
+		public void replayAndCompleteFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).complete();
+			flux.subscribe(first);
+
+			first.assertValues(1, 2, 3).assertComplete();
+		}
+
+		@Test
+		public void replayAndErrorFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).error(new IllegalStateException("boom"));
+			flux.subscribe(first);
+
+			first.assertValues(1, 2, 3).assertErrorMessage("boom");
+		}
+
+		@Test
+		public void replayAndCompleteLateSubscriber() {
+			flux.subscribe(); //first subscriber
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).complete();
+			flux.subscribe(late);
+
+			late.assertValues(1, 2, 3).assertComplete();
+		}
+
+		@Test
+		public void replayAndErrorLateSubscriber() {
+			flux.onErrorReturn(-1).subscribe(); //first subscriber, ignore errors
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).error(new IllegalStateException("boom"));
+			flux.subscribe(late);
+
+			late.assertValues(1, 2, 3).assertErrorMessage("boom");
+		}
+	}
+
+	@Nested
+	class MulticastReplayTwo {
+
+		private Sinks.StandaloneFluxSink<Integer> sink;
+		private Flux<Integer> flux;
+
+		@BeforeEach
+		void createInstance() {
+			sink = Sinks.multicastReplay(2);
+			flux = sink.asFlux();
+		}
+
+		@Test
+		void fluxViewReturnsSameInstance() {
+			assertThat(flux).isSameAs(sink.asFlux());
+		}
+
+		@Test
+		void isAcceptingMoreThatOneSubscriber() {
+			assertThatCode(() -> {
+				flux.subscribe();
+				flux.subscribe();
+			}).doesNotThrowAnyException();
+		}
+
+		@Test
+		void honorsMultipleSubscribersBackpressure()
+				throws InterruptedException, ExecutionException {
+			ExecutorService es = Executors.newFixedThreadPool(2);
+			CountDownLatch requestLatch = new CountDownLatch(2);
+			final Future<?> f1 = es.submit(() -> {
+				AssertSubscriber<Integer> test1 = AssertSubscriber.create(2);
+				flux.subscribe(test1);
+				test1.assertNoValues();
+				requestLatch.countDown();
+
+				test1.awaitAndAssertNextValues(1, 2);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test1.assertValueCount(2));
+				}
+				finally {
+					test1.cancel();
+				}
+			});
+			final Future<?> f2 = es.submit(() -> {
+				AssertSubscriber<Integer> test2 = AssertSubscriber.create(1);
+				flux.subscribe(test2);
+				requestLatch.countDown();
+
+				test2.awaitAndAssertNextValues(1);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test2.assertValueCount(1));
+				}
+				finally {
+					test2.cancel();
+				}
+			});
+
+			requestLatch.await(1, TimeUnit.SECONDS);
+			sink.next(1)
+			    .next(2)
+			    .next(3)
+			    .next(4)
+			    .complete();
+
+			f1.get();
+			f2.get();
+		}
+
+		@Test
+		void doesReplayLimitedHistoryToLateSubscribers() {
+			AssertSubscriber<Integer> s1 = AssertSubscriber.create();
+			AssertSubscriber<Integer> s2 = AssertSubscriber.create();
+
+			flux.subscribe(s1);
+			sink.next(1).next(2).next(3);
+			s1.assertValues(1, 2, 3);
+
+			flux.subscribe(s2);
+			s2.assertValues(2, 3).assertNotComplete();
+
+			sink.complete();
+			s1.assertValueCount(3).assertComplete();
+			s2.assertValues(2, 3).assertComplete();
+		}
+
+		@Test
+		public void doesBufferLimitedHistoryBeforeFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3);
+			flux.subscribe(first);
+
+			first.assertValues(2, 3).assertNotComplete();
+
+			sink.complete();
+			first.assertComplete();
+		}
+
+		@Test
+		public void replayLimitedHistoryAndCompleteFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).complete();
+			flux.subscribe(first);
+
+			first.assertValues(2, 3).assertComplete();
+		}
+
+		@Test
+		public void replayLimitedHistoryAndErrorFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).error(new IllegalStateException("boom"));
+			flux.subscribe(first);
+
+			first.assertValues(2, 3).assertErrorMessage("boom");
+		}
+
+		@Test
+		public void replayLimitedHistoryAndCompleteLateSubscriber() {
+			flux.subscribe(); //first subscriber
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).complete();
+			flux.subscribe(late);
+
+			late.assertValues(2, 3).assertComplete();
+		}
+
+		@Test
+		public void replayLimitedHistoryAndErrorLateSubscriber() {
+			flux.onErrorReturn(-1).subscribe(); //first subscriber, ignore errors
+			AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).error(new IllegalStateException("boom"));
+			flux.subscribe(late);
+
+			late.assertValues(2, 3).assertErrorMessage("boom");
+		}
+	}
+
+	@Nested
+	class Unicast {
+
+		private Sinks.StandaloneFluxSink<Integer> sink;
+		private Flux<Integer> flux;
+
+		@BeforeEach
+		void createInstance() {
+			sink = Sinks.unicast();
+			flux = sink.asFlux();
+		}
+
+		@Test
+		void fluxViewReturnsSameInstance() {
+			assertThat(flux).isSameAs(sink.asFlux());
+		}
+
+		@Test
+		void isRejectingMoreThatOneSubscriber() {
+			assertThatCode(() -> flux.subscribe()).doesNotThrowAnyException();
+			StepVerifier.create(flux, 0)
+			            .verifyErrorMessage("UnicastProcessor allows only a single Subscriber");
+		}
+
+		@Test
+		void honorsSubscriberBackpressure()
+				throws InterruptedException, ExecutionException {
+			ExecutorService es = Executors.newFixedThreadPool(2);
+			CountDownLatch requestLatch = new CountDownLatch(1);
+			final Future<?> future = es.submit(() -> {
+				AssertSubscriber<Integer> test = AssertSubscriber.create(2);
+				flux.subscribe(test);
+				test.assertNoValues();
+				requestLatch.countDown();
+
+				test.awaitAndAssertNextValues(1, 2);
+				try {
+					Awaitility.await().atMost(2, TimeUnit.SECONDS)
+					          .with().pollDelay(1, TimeUnit.SECONDS)
+					          .untilAsserted(() -> test.assertValueCount(2));
+				}
+				finally {
+					test.cancel();
+				}
+			});
+
+			requestLatch.await(1, TimeUnit.SECONDS);
+			sink.next(1)
+			    .next(2)
+			    .next(3)
+			    .next(4)
+			    .complete();
+
+			future.get();
+		}
+
+		@Test
+		public void doesBufferAllBeforeFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3);
+			flux.subscribe(first);
+
+			first.assertValues(1, 2, 3).assertNotComplete();
+
+			sink.complete();
+			first.assertComplete();
+		}
+
+		@Test
+		public void replayAllAndCompleteFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).complete();
+			flux.subscribe(first);
+
+			first.assertValues(1, 2, 3).assertComplete();
+		}
+
+		@Test
+		public void replayAllAndErrorFirstSubscriber() {
+			AssertSubscriber<Integer> first = AssertSubscriber.create();
+
+			sink.next(1).next(2).next(3).error(new IllegalStateException("boom"));
+			flux.subscribe(first);
+
+			first.assertValues(1, 2, 3).assertErrorMessage("boom");
+		}
 	}
 
 }

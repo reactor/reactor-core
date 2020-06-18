@@ -128,11 +128,11 @@ public class MonoTakeLastOneTest {
 
 	@Test
 	public void defaultUsingZip() {
-		SinkFlux.Standalone<String> sink1 = Sinks.coldUnicastFlux();
+		Sinks.StandaloneFluxSink<String> sink1 = Sinks.unicast();
 		Flux<String> processor1 = sink1.asFlux();
-		SinkFlux.Standalone<String> sink2 = Sinks.coldUnicastFlux();
+		Sinks.StandaloneFluxSink<String> sink2 = Sinks.unicast();
 		Flux<String> processor2 = sink2.asFlux();
-		SinkFlux.Standalone<String> sink3 = Sinks.coldUnicastFlux();
+		Sinks.StandaloneFluxSink<String> sink3 = Sinks.unicast();
 		Flux<String> processor3 = sink3.asFlux();
 
 		StepVerifier.create(
