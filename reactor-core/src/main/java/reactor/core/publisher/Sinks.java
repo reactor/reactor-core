@@ -119,7 +119,6 @@ public final class Sinks {
 	 * {@link ScalarSink#success() empty completions} or {@link ScalarSink#error(Throwable) error}.
 	 * This completion is replayed to late subscribers.
 	 */
-	@SuppressWarnings("deprecation")
 	public static <T> StandaloneMonoSink<T> trigger() {
 		return new MonoProcessorSink<>(MonoProcessor.create());
 	}

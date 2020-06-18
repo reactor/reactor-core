@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -683,10 +684,12 @@ class SinksTest {
 		public void doesBufferAllBeforeFirstSubscriber() {
 			AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-			sink.next(1).next(2).next(3);
+			for (int i = 0; i < Queues.SMALL_BUFFER_SIZE + 5; i++) {
+				sink.next(i);
+			}
 			flux.subscribe(first);
 
-			first.assertValues(1, 2, 3).assertNotComplete();
+			first.assertValueCount(Queues.SMALL_BUFFER_SIZE + 5).assertNotComplete();
 
 			sink.complete();
 			first.assertComplete();
