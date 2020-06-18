@@ -1,43 +1,44 @@
 Processors are a special kind of `Publisher` that are also a `Subscriber`.
 They were originally intended as a possible representation of an intermediate step that
 could then be shared between Reactive Streams implementations. In Reactor however, such
-steps are represented by operators that are `Publisher`s.
+steps are rather represented by operators that are `Publisher`.
 
 A common mistake when coming across a `Processor` for the first time is the temptation to
-use the exposed `onNext`, `onComplete` and `onError` methods from the `Subscriber` interface.
+directly call the exposed `onNext`, `onComplete` and `onError` methods from the `Subscriber` interface.
 
-Such manual calls should be made with care, especially regarding synchronization of calls
+Such manual calls should be made with care, especially regarding external synchronization of calls
 with respect to the Reactive Streams specification.
 Processors are actually probably marginally useful, unless one comes across a Reactive Streams
 based API that requires a `Subscriber` to be passed, rather than exposing a `Publisher`.
 
-Barring the possibility to directly use an operator (see first section below), sinks are
-usually a better alternative.
-
+Sinks are usually a better alternative.
 In Reactor a sink is a class that allows safe manual triggering of signals. It can either
 be associated to a subscription (from inside an operator) or completely standalone.
 
 Since `3.4.0`, an effort has been started to hide concrete processor implementations and
-advertise the standalone Sink pattern first and foremost:
- - concrete implementations are deprecated and slated for removal in 3.5.0
+advertise the standalone sink pattern first and foremost:
+
+ - concrete processor implementations are deprecated and slated for removal in 3.5.0
  - processors can still be constructed through the `Processors` utility class, which bears
  factory methods for the base case of each `Processor`, as well as access to `.more()` factory
  methods.
- - standalone sinks on the other hand are rather constructed through factory methods in the `Sinks` class.
+ - standalone sinks are constructed through factory methods in the `Sinks` class.
 
-But before using a sink or a `Processor`, one should always challenge the need for it.
+In the next section, we'll provide guidelines on how to choose whether or not to use a
+`Processor` or a sink.
 
 = Do I Need a `Processor` / a sink?
 
 Most of the time, you should try to avoid using a `Processor`. They are harder to use
 correctly and prone to some corner cases.
 
-If you think a `Processor` could be a good match for your use case, ask yourself if you
-have tried these three alternatives:
+If you think a `Processor` could be a good match for your use case, always try these
+three alternatives first (in order of preference):
 
 . Could an operator or combination of operators fit the bill? (See <<which-operator>>.)
 . Could a <<producing,"`generator`">> operator work instead? (Generally, these operators
-are made to bridge APIs that are not reactive, providing a sink per `Subscriber`).
+are made to bridge APIs that are not reactive, providing a sink per `Subscriber` for that
+purpose).
 . Could a <<sinks,"standalone sink">> from `Sinks` work?
 
 If, after exploring the above alternatives, you still think you need a `Processor`, read
@@ -84,7 +85,7 @@ fluxView
 
 The `Sinks` flavors that can be viewed as `Flux` are:
 
-. `multicast()`: a sink that will transmit pushed data live to all of its subscribers, honoring their backpressure.
+. `multicast()`: a sink that will transmit only newly pushed data to its subscribers, honoring their backpressure (newly pushed as in "after the subscriber's subscription").
 . `multicastPreWarming()`: same as above, with the twist that data pushed before the first subscriber registers is buffered.
 . `multicastReplayAll()`: a sink that will replay all the history of pushed data to new subscribers then continue pushing new data live.
 . `multicastReplay(int)`: same as above, except the history of replayed data is limited in size.
@@ -93,7 +94,7 @@ The `Sinks` flavors that can be viewed as `Flux` are:
 
 There is currently only one `Sinks` flavor that can be viewed as `Mono`:
 
-. `trigger()`: a sink that will wait for a `Mono`-like interaction, propagate it to current `Subscriber`s and additionally cache it for replaying to late `Subscriber`s.
+. `trigger()`: a sink that will wait for a `Mono`-like interaction, propagate it to current `Subscribers` and additionally cache it for replaying to any late `Subscriber`.
 
 [[processor-overview]]
 = Overview of Available Processors
@@ -107,7 +108,7 @@ subscribers if you push N elements through it but at least one of its subscriber
 requested less than N.
 
 This aspect makes it a bit niche, and so the (only) factory method to create a direct processor
-is hidden under `Processors.more()`, as the `multicastNoBackpressure()` method.
+is hidden a bit: it is created via `Processors.more().multicastNoBackpressure()`.
 
 Once the `Processor` has terminated (usually through its sink's `error(Throwable)` or
 `complete()` methods being called), it lets more subscribers subscribe but replays the
@@ -138,7 +139,7 @@ An multicast `Processor` (sometimes referred to as an "emitter" processor) can e
 subscribers while honoring backpressure for each of its subscribers.
 Subscribers receive only the signals pushed through the processor after they have subscribed.
 
-The basic emitter processor is created via `Processors.multicast()`.
+The basic multicast processor is created via `Processors.multicast()`.
 
 By default, if all of its subscribers are cancelled (which basically means they have all
 un-subscribed), it clears its internal buffer and stops accepting new subscribers.
