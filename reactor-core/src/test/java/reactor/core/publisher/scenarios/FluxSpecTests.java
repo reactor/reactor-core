@@ -803,7 +803,7 @@ public class FluxSpecTests {
 	public void whenProcessorIsStreamed() {
 //		"When a processor is streamed"
 //		given: "a source composable and a async downstream"
-		FluxProcessor<Integer, Integer> source = Processors.replayUnbounded();
+		FluxProcessor<Integer, Integer> source = Processors.replayAll();
 		Scheduler scheduler = Schedulers.newParallel("test", 2);
 
 		try {

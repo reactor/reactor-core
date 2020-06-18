@@ -391,7 +391,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	final Flux<I> fluxFuseableAsync(OperatorScenario<I, PI, O, PO> scenario) {
 		int p = scenario.producerCount();
-		FluxProcessor<I, I> rp = Processors.replayUnbounded();
+		FluxProcessor<I, I> rp = Processors.replayAll();
 
 		switch (p) {
 			case -1:

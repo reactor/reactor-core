@@ -531,7 +531,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void analyticsTest() throws Exception {
-		FluxProcessor<Integer, Integer> source = Processors.replayUnbounded();
+		FluxProcessor<Integer, Integer> source = Processors.replayAll();
 
 		long avgTime = 50l;
 

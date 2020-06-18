@@ -1091,7 +1091,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void checkHotSource() {
-        FluxProcessor<Long, Long> processor = Processors.replaySize(1);
+        FluxProcessor<Long, Long> processor = Processors.replay(1);
 
         processor.onNext(1L);
         processor.onNext(2L);

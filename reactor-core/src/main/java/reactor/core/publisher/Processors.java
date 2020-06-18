@@ -41,12 +41,12 @@ public final class Processors {
 	}
 
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessor<T, T> replayUnbounded() {
+	public static final <T> FluxProcessor<T, T> replayAll() {
 		return ReplayProcessor.create();
 	}
 
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessor<T, T> replaySize(int historySize) {
+	public static final <T> FluxProcessor<T, T> replay(int historySize) {
 		return ReplayProcessor.create(historySize);
 	}
 
@@ -124,7 +124,7 @@ public final class Processors {
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> replaySize(int historySize, boolean unbounded) {
+		public final <T> FluxProcessor<T, T> replay(int historySize, boolean unbounded) {
 			return ReplayProcessor.create(historySize, unbounded);
 		}
 
@@ -139,7 +139,5 @@ public final class Processors {
 		}
 
 	}
-
-
 
 }
