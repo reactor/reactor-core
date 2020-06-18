@@ -50,7 +50,7 @@ You can rewrite the preceding example as follows:
 ----
 .map(TupleUtils.function(Customer::new)); // <1>
 ----
-<1> (as `Customer` constructor conforms to `Consumer3` functional interface signature)
+<1> (as `Customer` constructor conforms to `Function3` functional interface signature)
 ====
 
 [[extra-math]]
