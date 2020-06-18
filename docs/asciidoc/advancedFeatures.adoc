@@ -193,7 +193,7 @@ Compare the first example to the second example, shown in the following code:
 ====
 [source,java]
 ----
-Sinks.StandaloneFluxSink<String> hotSource = Sinks.multicast();
+Sinks.StandaloneFluxSink<String> hotSource = Sinks.multicastNoWarmup();
 
 Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 

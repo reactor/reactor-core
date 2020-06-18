@@ -36,34 +36,34 @@ public final class Sinks {
 	 * A {@link StandaloneFluxSink} with the following characteristics:
 	 * <ul>
 	 *     <li>Multicast</li>
-	 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
+	 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
+	 *     of multiple subscribers.</li>
 	 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
-	 *     pushed to the sink AFTER this subscriber was subscribed.</li>
-	 *     <li>Without {@link Subscriber}: Discarding. Pushing elements while there are no {@link Subscriber}
-	 *     registered will simply discard these elements.</li>
+	 *     pushed to the sink AFTER this subscriber was subscribed. To the exception of the first
+	 *     subscriber (see below).</li>
+	 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@link Queues#SMALL_BUFFER_SIZE}
+	 *     elements pushed before the first {@link Subscriber} is registered.</li>
 	 * </ul>
 	 */
 	@SuppressWarnings("deprecation")
 	public static <T> StandaloneFluxSink<T> multicast() {
-		return new FluxProcessorSink<>(ReplayProcessor.create(0));
+		return new FluxProcessorSink<>(EmitterProcessor.create(Queues.SMALL_BUFFER_SIZE));
 	}
 
 	/**
 	 * A {@link StandaloneFluxSink} with the following characteristics:
 	 * <ul>
 	 *     <li>Multicast</li>
-	 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
-	 *     of multiple subscribers.</li>
+	 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
 	 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
-	 *     pushed to the sink AFTER this subscriber was subscribed. To the exception of the first
-	 *     subscriber (see below).</li>
-	 *     <li>Without {@link Subscriber}: pre-warming. Remembers up to {@link Queues#SMALL_BUFFER_SIZE}
-	 *     elements pushed before the first {@link Subscriber} is registered.</li>
+	 *     pushed to the sink AFTER this subscriber was subscribed.</li>
+	 *     <li>Without {@link Subscriber}: Discarding. Pushing elements while there are no {@link Subscriber}
+	 *     registered will simply discard these elements instead of "warming up" the sink.</li>
 	 * </ul>
 	 */
 	@SuppressWarnings("deprecation")
-	public static <T> StandaloneFluxSink<T> multicastPreWarming() {
-		return new FluxProcessorSink<>(EmitterProcessor.create(Queues.SMALL_BUFFER_SIZE));
+	public static <T> StandaloneFluxSink<T> multicastNoWarmup() {
+		return new FluxProcessorSink<>(ReplayProcessor.create(0));
 	}
 
 	/**

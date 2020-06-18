@@ -207,7 +207,7 @@ public class FluxBufferTimeoutTest {
 
 	@Test
 	public void requestedFromUpstreamShouldNotExceedDownstreamDemand() {
-		Sinks.StandaloneFluxSink<String> sink = Sinks.multicastPreWarming();
+		Sinks.StandaloneFluxSink<String> sink = Sinks.multicast();
 		Flux<String> emitter = sink.asFlux();
 
 		AtomicLong requestedOutstanding = new AtomicLong(0);

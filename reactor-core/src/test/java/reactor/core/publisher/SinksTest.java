@@ -41,14 +41,14 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class SinksTest {
 
 	@Nested
-	class Multicast {
+	class MulticastNoWarmup {
 
 		private Sinks.StandaloneFluxSink<Integer> sink;
 		private Flux<Integer> flux;
 
 		@BeforeEach
 		void createInstance() {
-			sink = Sinks.multicast();
+			sink = Sinks.multicastNoWarmup();
 			flux = sink.asFlux();
 		}
 
@@ -187,14 +187,14 @@ class SinksTest {
 	}
 
 	@Nested
-	class MulticastPreWarming {
+	class Multicast {
 
 		private Sinks.StandaloneFluxSink<Integer> sink;
 		private Flux<Integer> flux;
 
 		@BeforeEach
 		void createInstance() {
-			sink = Sinks.multicastPreWarming();
+			sink = Sinks.multicast();
 			flux = sink.asFlux();
 		}
 

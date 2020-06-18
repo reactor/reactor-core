@@ -201,7 +201,7 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		Sinks.StandaloneFluxSink<String> hotSource = Sinks.multicast();
+		Sinks.StandaloneFluxSink<String> hotSource = Sinks.multicastNoWarmup();
 
 		Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 
