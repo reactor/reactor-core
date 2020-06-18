@@ -340,7 +340,7 @@ class SinksTest {
 
 		@BeforeEach
 		void createInstance() {
-			sink = Sinks.multicastReplayAll();
+			sink = Sinks.replayAll();
 			flux = sink.asFlux();
 		}
 
@@ -486,7 +486,7 @@ class SinksTest {
 
 		@BeforeEach
 		void createInstance() {
-			sink = Sinks.multicastReplay(2);
+			sink = Sinks.replay(2);
 			flux = sink.asFlux();
 		}
 

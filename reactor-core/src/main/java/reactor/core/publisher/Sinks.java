@@ -78,7 +78,7 @@ public final class Sinks {
 	 * </ul>
 	 */
 	@SuppressWarnings("deprecation")
-	public static <T> StandaloneFluxSink<T> multicastReplay(int historySize) {
+	public static <T> StandaloneFluxSink<T> replay(int historySize) {
 		return new FluxProcessorSink<>(ReplayProcessor.create(historySize));
 	}
 
@@ -93,7 +93,7 @@ public final class Sinks {
 	 * </ul>
 	 */
 	@SuppressWarnings("deprecation")
-	public static <T> StandaloneFluxSink<T> multicastReplayAll() {
+	public static <T> StandaloneFluxSink<T> replayAll() {
 		return new FluxProcessorSink<>(ReplayProcessor.create());
 	}
 
