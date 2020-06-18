@@ -95,7 +95,7 @@ public interface Scheduler extends Disposable {
 	 * @return the current time value in the target unit of measure
 	 */
 	default long now(TimeUnit unit) {
-		return unit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+		return unit.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
 	}
 	
 	/**
