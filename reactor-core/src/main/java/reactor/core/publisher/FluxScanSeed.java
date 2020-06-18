@@ -26,6 +26,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * Aggregates the source values with the help of an accumulator function
  * and emits the intermediate results.
@@ -69,6 +72,12 @@ final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 			coordinator.onComplete();
 		}
 		return null;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == RUN_STYLE) return SYNC;
+		return super.scanUnsafe(key);
 	}
 
 	static final class ScanSeedCoordinator<T, R>
@@ -142,6 +151,12 @@ final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 		public void onNext(R r) {
 			produced++;
 			actual.onNext(r);
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == RUN_STYLE) return SYNC;
+			return super.scanUnsafe(key);
 		}
 
 		@SuppressWarnings("rawtypes")
@@ -243,6 +258,9 @@ final class FluxScanSeed<T, R> extends InternalFluxOperator<T, R> {
 			}
 			if (key == Attr.TERMINATED) {
 				return done;
+			}
+			if (key == RUN_STYLE) {
+			    return SYNC;
 			}
 			return InnerOperator.super.scanUnsafe(key);
 		}

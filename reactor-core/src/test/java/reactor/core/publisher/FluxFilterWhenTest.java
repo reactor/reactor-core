@@ -399,6 +399,15 @@ public class FluxFilterWhenTest {
 		assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(true);
 	}
 
+	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxFilterWhen test = new FluxFilterWhen(parent, v -> true, 123);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
     @Test
     public void scanSubscriber() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
@@ -415,6 +424,7 @@ public class FluxFilterWhenTest {
         assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(1024); // next power of 2 of 789
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
         assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(789);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         test.error = new IllegalStateException("boom");
         assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
@@ -455,6 +465,7 @@ public class FluxFilterWhenTest {
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(sub);
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onNext(false);

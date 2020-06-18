@@ -111,6 +111,12 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 				queueSupplier);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class FlattenIterableSubscriber<T, R>
 			implements InnerOperator<T, R>, QueueSubscription<R> {
 
@@ -181,6 +187,7 @@ final class FluxFlattenIterable<T, R> extends InternalFluxOperator<T, R> impleme
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

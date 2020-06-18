@@ -209,6 +209,12 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 		return false;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class FlatMapMain<T, R> extends FlatMapTracker<FlatMapInner<R>>
 			implements InnerOperator<T, R> {
 
@@ -300,6 +306,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 				if (realBuffered <= Integer.MAX_VALUE) return (int) realBuffered;
 				return Integer.MIN_VALUE;
 			}
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -1045,6 +1052,7 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.BUFFERED) return queue == null ? 0 : queue.size();
 			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
