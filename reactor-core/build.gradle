@@ -249,7 +249,7 @@ jar.finalizedBy(downloadBaseline)
 jcstress {
 	mode = 'quick'
 }
-tasks.check.dependsOn(jcstress)
+tasks.check.dependsOn(tasks.jcstress)
 
 if (JavaVersion.current().java9Compatible) {
 	sourceSets {
