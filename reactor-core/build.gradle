@@ -15,10 +15,21 @@
  */
 import me.champeau.gradle.japicmp.JapicmpTask
 
+buildscript {
+  repositories {
+	jcenter()
+  }
+
+  dependencies {
+	classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.3'
+  }
+}
+
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'org.unbroken-dome.test-sets'
 apply plugin: 'kotlin'
+apply plugin: 'jcstress'
 
 ext {
 	bndOptions = [
@@ -234,6 +245,11 @@ jar {
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
 jar.finalizedBy(downloadBaseline)
+
+jcstress {
+	mode = 'quick'
+}
+tasks.check.dependsOn(jcstress)
 
 if (JavaVersion.current().java9Compatible) {
 	sourceSets {

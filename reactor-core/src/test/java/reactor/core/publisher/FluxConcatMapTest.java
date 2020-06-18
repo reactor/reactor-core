@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -1225,5 +1226,47 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1);
+	}
+
+	@Test
+	public void noRequestBeforeOnCompleteWithZeroPrefetch() {
+		AtomicBoolean firstCompleted = new AtomicBoolean(false);
+		Flux
+				.<Integer, Integer>generate(() -> 0, (i, sink) -> {
+					switch (i) {
+						case 0:
+							sink.next(1);
+							return 1;
+						case 1:
+							assertThat(firstCompleted).isTrue();
+							sink.next(2);
+							return 2;
+						default:
+							sink.complete();
+							return -1;
+					}
+				})
+				.log("concatMap")
+				.concatMap(
+						it -> {
+							switch (it) {
+								case 1:
+									return Mono.delay(Duration.ofMillis(50))
+											.then(Mono.fromRunnable(() -> {
+												firstCompleted.set(true);
+											}))
+											.thenReturn(it);
+								default:
+									return Mono.just(it);
+							}
+						},
+						0
+				)
+				.as(StepVerifier::create)
+				.expectNext(1, 2)
+				.expectComplete()
+				.verify(Duration.ofSeconds(5));
+
+		assertThat(firstCompleted).isTrue();
 	}
 }

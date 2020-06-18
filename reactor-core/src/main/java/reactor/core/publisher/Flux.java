@@ -3663,13 +3663,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @reactor.discard This operator discards elements it internally queued for backpressure upon cancellation.
 	 *
 	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
-	 * @param prefetch the inner source produced demand
+	 * @param prefetch the inner source produced demand (set it to 0 if you don't want it to prefetch)
 	 * @param <V> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
 	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
 			mapper, int prefetch) {
+		if (prefetch == 0) {
+			return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper));
+		}
 		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
