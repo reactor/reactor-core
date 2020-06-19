@@ -241,8 +241,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void normalAsyncFused() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
+		FluxIdentityProcessor<Integer> up =
+				Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.onNext(i);
@@ -1133,8 +1133,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		final ConcurrentHashMap<Object, Long> seenInternal = new ConcurrentHashMap<>();
 		final ConcurrentHashMap<Object, Long> seenConsumer = new ConcurrentHashMap<>();
 
-		FluxIdentityProcessor<Integer> d = Processors.multicast();
-		FluxSink<Integer> s = d.sink();
+		Sinks.StandaloneFluxSink<Integer> s = Sinks.multicast();
+		Flux<Integer> d = s.asFlux();
 
 		/*Disposable c = */
 		d.publishOn(Schedulers.parallel())
@@ -1198,8 +1198,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		CountDownLatch latch = new CountDownLatch(items);
 		Random random = ThreadLocalRandom.current();
 
-		FluxIdentityProcessor<String> d = Processors.multicast();
-		FluxSink<String> s = d.sink();
+		Sinks.StandaloneFluxSink<String> s = Sinks.multicast();
+		Flux<String> d = Processors.multicast();
 
 		Flux<Integer> tasks = d.publishOn(Schedulers.parallel())
 		                       .parallel(8)

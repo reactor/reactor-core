@@ -26,7 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.FluxIdentityProcessor;
 import reactor.core.publisher.GroupedFlux;
 import reactor.core.publisher.Processors;
 import reactor.test.subscriber.AssertSubscriber;

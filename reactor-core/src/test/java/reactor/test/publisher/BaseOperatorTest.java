@@ -40,7 +40,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.FluxIdentityProcessor;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.Processors;

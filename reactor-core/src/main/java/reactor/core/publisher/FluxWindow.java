@@ -49,7 +49,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	final Supplier<? extends Queue<FluxProcessor<T, T>>> overflowQueueSupplier;
+	final Supplier<? extends Queue<FluxIdentityProcessor<T>>> overflowQueueSupplier;
 
 	FluxWindow(Flux<? extends T> source,
 			int size,
@@ -69,7 +69,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			int size,
 			int skip,
 			Supplier<? extends Queue<T>> processorQueueSupplier,
-			Supplier<? extends Queue<FluxProcessor<T, T>>> overflowQueueSupplier) {
+			Supplier<? extends Queue<FluxIdentityProcessor<T>>> overflowQueueSupplier) {
 		super(source);
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
@@ -456,7 +456,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-		final Queue<FluxProcessor<T, T>> queue;
+		final Queue<FluxIdentityProcessor<T>> queue;
 
 		final int size;
 
@@ -504,7 +504,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				int size,
 				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
-				Queue<FluxProcessor<T, T>> overflowQueue) {
+				Queue<FluxIdentityProcessor<T>> overflowQueue) {
 			this.actual = actual;
 			this.size = size;
 			this.skip = skip;
@@ -534,7 +534,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				if (cancelled == 0) {
 					WINDOW_COUNT.getAndIncrement(this);
 
-					FluxProcessor<T, T> w = Processors.more().unicast(processorQueueSupplier.get(), this);
+					FluxIdentityProcessor<T> w = Processors.more().unicast(processorQueueSupplier.get(), this);
 
 					offer(w);
 
@@ -608,7 +608,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			final Subscriber<? super Flux<T>> a = actual;
-			final Queue<FluxProcessor<T, T>> q = queue;
+			final Queue<FluxIdentityProcessor<T>> q = queue;
 			int missed = 1;
 
 			for (; ; ) {

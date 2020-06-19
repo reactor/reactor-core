@@ -32,6 +32,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("deprecation")
 public class FluxProcessorTest {
 
 	@Test(expected = NullPointerException.class)
@@ -62,7 +63,7 @@ public class FluxProcessorTest {
 	@SuppressWarnings("unchecked")
 	public void normalBlackboxProcessor(){
 		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
-		FluxIdentityProcessor<Integer> processor =
+		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream.map(i -> i + 1)
 				                                     .filter(i -> i % 2 == 0));
 
@@ -82,7 +83,7 @@ public class FluxProcessorTest {
 	@Test
 	public void disconnectedBlackboxProcessor(){
 		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
-		FluxIdentityProcessor<Integer> processor =
+		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, Flux.just(1));
 
 		StepVerifier.create(processor)
@@ -93,7 +94,7 @@ public class FluxProcessorTest {
 	@Test
 	public void symmetricBlackboxProcessor(){
 		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
-		FluxIdentityProcessor<Integer> processor =
+		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream);
 
 		StepVerifier.create(processor)
@@ -105,7 +106,7 @@ public class FluxProcessorTest {
 	@Test
 	public void errorSymmetricBlackboxProcessor(){
 		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
-		FluxIdentityProcessor<Integer> processor =
+		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream);
 
 		StepVerifier.create(processor)
@@ -204,7 +205,7 @@ public class FluxProcessorTest {
 		ref.set(Thread.currentThread());
 
 		DirectProcessor<String> rp = DirectProcessor.create();
-		FluxIdentityProcessor<String> serialized = rp.serialize();
+		FluxProcessor<String, String> serialized = rp.serialize();
 
 		try {
 			StepVerifier.create(serialized)
@@ -253,7 +254,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void scanProcessor() {
-		FluxIdentityProcessor<String> test = DirectProcessor.<String>create().serialize();
+		FluxProcessor<String, String> test = DirectProcessor.<String>create().serialize();
 
 		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(16);
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
