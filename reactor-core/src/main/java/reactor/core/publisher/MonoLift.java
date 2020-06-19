@@ -56,6 +56,7 @@ final class MonoLift<I, O> extends InternalMonoOperator<I, O> {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		return Scannable.from(source).scanUnsafe(key);
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
 	}
 }

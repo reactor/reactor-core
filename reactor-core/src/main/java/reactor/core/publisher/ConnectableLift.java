@@ -55,6 +55,7 @@ final class ConnectableLift<I, O> extends InternalConnectableFluxOperator<I, O> 
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return source.getPrefetch();
 		if (key == Attr.PARENT) return source;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
 	}
 
