@@ -89,7 +89,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 		final Queue<Object>                   queue;
 		final CoreSubscriber<? super Flux<T>> actual;
 
-		FluxProcessor<T, T> window;
+		FluxIdentityProcessor<T> window;
 
 		volatile Subscription s;
 
@@ -275,7 +275,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 
 			final Subscriber<? super Flux<T>> a = actual;
 			final Queue<Object> q = queue;
-			FluxProcessor<T, T> w = window;
+			FluxIdentityProcessor<T> w = window;
 
 			int missed = 1;
 
@@ -349,7 +349,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 			}
 		}
 
-		boolean emit(FluxProcessor<T, T> w) {
+		boolean emit(FluxIdentityProcessor<T> w) {
 			long r = requested;
 			if (r != 0L) {
 				actual.onNext(w);

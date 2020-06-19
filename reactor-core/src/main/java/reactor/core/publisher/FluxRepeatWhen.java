@@ -204,7 +204,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 		RepeatWhenMainSubscriber<?> main;
 
-		final FluxProcessor<Long, Long> completionSignal = Processors.more().multicastNoBackpressure();
+		final FluxIdentityProcessor<Long> completionSignal = Processors.more().multicastNoBackpressure();
 
 		@Override
 		public Context currentContext() {
@@ -251,7 +251,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public FluxProcessor<Long, Long> source() {
+		public FluxIdentityProcessor<Long> source() {
 			return completionSignal;
 		}
 

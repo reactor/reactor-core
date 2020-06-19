@@ -126,7 +126,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxProcessor<T, T> window;
+		FluxIdentityProcessor<T> window;
 
 		boolean done;
 
@@ -156,7 +156,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			int i = index;
 
-			FluxProcessor<T, T> w = window;
+			FluxIdentityProcessor<T> w = window;
 			if (cancelled == 0 && i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
@@ -292,7 +292,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxProcessor<T, T> window;
+		FluxIdentityProcessor<T> window;
 
 		boolean done;
 
@@ -325,7 +325,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			int i = index;
 
-			FluxProcessor<T, T> w = window;
+			FluxIdentityProcessor<T> w = window;
 			if (i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
@@ -449,7 +449,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 		}
 	}
 
-	static final class WindowOverlapSubscriber<T> extends ArrayDeque<FluxProcessor<T, T>>
+	static final class WindowOverlapSubscriber<T> extends ArrayDeque<FluxIdentityProcessor<T>>
 			implements Disposable, InnerOperator<T, Flux<T>> {
 
 		final CoreSubscriber<? super Flux<T>> actual;
@@ -619,7 +619,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				while (e != r) {
 					boolean d = done;
 
-					FluxProcessor<T, T> t = q.poll();
+					FluxIdentityProcessor<T> t = q.poll();
 
 					boolean empty = t == null;
 

@@ -224,7 +224,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 	implements InnerConsumer<Object>, OptimizableOperator<Retry.RetrySignal, Retry.RetrySignal> {
 		RetryWhenMainSubscriber<?> main;
 
-		final FluxProcessor<Retry.RetrySignal, Retry.RetrySignal> completionSignal = Processors.more().multicastNoBackpressure();
+		final FluxIdentityProcessor<Retry.RetrySignal> completionSignal = Processors.more().multicastNoBackpressure();
 
 		@Override
 		public Context currentContext() {

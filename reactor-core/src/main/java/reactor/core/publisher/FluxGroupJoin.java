@@ -130,7 +130,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final Disposable.Composite cancellations;
 
-		final Map<Integer, FluxProcessor<TRight, TRight>> lefts;
+		final Map<Integer, FluxIdentityProcessor<TRight>> lefts;
 
 		final Map<Integer, TRight> rights;
 
@@ -245,7 +245,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		void errorAll(Subscriber<?> a) {
 			Throwable ex = Exceptions.terminate(ERROR, this);
 
-			for (FluxProcessor<TRight, TRight> up : lefts.values()) {
+			for (FluxIdentityProcessor<TRight> up : lefts.values()) {
 				up.onError(ex);
 			}
 
@@ -286,7 +286,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					boolean empty = mode == null;
 
 					if (d && empty) {
-						for (FluxProcessor<?, ?> up : lefts.values()) {
+						for (FluxIdentityProcessor<?> up : lefts.values()) {
 							up.onComplete();
 						}
 
@@ -307,7 +307,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					if (mode == LEFT_VALUE) {
 						@SuppressWarnings("unchecked") TLeft left = (TLeft) val;
 
-						FluxProcessor<TRight, TRight> up =
+						FluxIdentityProcessor<TRight> up =
 								Processors.more().unicast(processorQueueSupplier.get());
 						int idx = leftIndex++;
 						lefts.put(idx, up);
@@ -409,14 +409,14 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 							return;
 						}
 
-						for (FluxProcessor<TRight, TRight> up : lefts.values()) {
+						for (FluxIdentityProcessor<TRight> up : lefts.values()) {
 							up.onNext(right);
 						}
 					}
 					else if (mode == LEFT_CLOSE) {
 						LeftRightEndSubscriber end = (LeftRightEndSubscriber) val;
 
-						FluxProcessor<TRight, TRight> up = lefts.remove(end.index);
+						FluxIdentityProcessor<TRight> up = lefts.remove(end.index);
 						cancellations.remove(end);
 						if (up != null) {
 							up.onComplete();
