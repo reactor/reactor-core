@@ -16,6 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,6 +30,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.Loggers;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -153,56 +157,80 @@ public class LambdaMonoSubscriberTest {
 	}
 
 	@Test
-	public void onNextConsumerExceptionBubblesUpDoesntTriggerCancellation() {
-		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
-
-		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
-				value -> { throw new IllegalArgumentException(); },
-				errorHolder::set,
-				() -> {},
-				null);
-
-		TestSubscription testSubscription = new TestSubscription();
-		tested.onSubscribe(testSubscription);
-
-		//as Mono is single-value, it cancels early on onNext. this leads to an exception
-		//during onNext to be bubbled up as a BubbledException, not propagated through onNext
+	public void onNextConsumerExceptionBubblesUpDoesntTriggerCancellation()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
-			tested.onNext("foo");
-			fail("Expected a bubbling Exception");
-		} catch (RuntimeException e) {
-			assertThat(e).matches(Exceptions::isBubbling, "Expected a bubbling Exception")
-			             .hasCauseInstanceOf(IllegalArgumentException.class);
-		}
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		assertThat(errorHolder.get()).as("onError").isNull();
-		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isFalse();
+			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(value -> {
+				throw new IllegalArgumentException();
+			}, errorHolder::set, () -> {
+			}, null);
+
+			TestSubscription testSubscription = new TestSubscription();
+			tested.onSubscribe(testSubscription);
+
+			//as Mono is single-value, it cancels early on onNext. this leads to an exception
+			//during onNext to be bubbled up as a BubbledException, not propagated through onNext
+			tested.onNext("foo");
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("IllegalArgumentException");
+
+			assertThat(errorHolder.get()).as("onError")
+			                             .isNull();
+			assertThat(testSubscription.isCancelled).as("subscription isCancelled")
+			                                        .isFalse();
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 	@Test
-	public void onNextConsumerFatalDoesntTriggerCancellation() {
-		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
-
-		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
-				value -> { throw new OutOfMemoryError(); },
-				errorHolder::set,
-				() -> {},
-				null);
-
-		TestSubscription testSubscription = new TestSubscription();
-		tested.onSubscribe(testSubscription);
-
-		//the error is expected to be thrown as it is fatal
+	public void onNextConsumerFatalDoesntTriggerCancellation()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
-			tested.onNext("foo");
-			fail("Expected OutOfMemoryError to be thrown");
-		}
-		catch (OutOfMemoryError e) {
-			//expected
-		}
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		assertThat(errorHolder.get()).as("onError").isNull();
-		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isFalse();
+			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(value -> {
+				throw new OutOfMemoryError();
+			}, errorHolder::set, () -> {
+			}, null);
+
+			TestSubscription testSubscription = new TestSubscription();
+			tested.onSubscribe(testSubscription);
+
+			//the error is expected to be thrown as it is fatal
+			tested.onNext("foo");
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("OutOfMemoryError");
+
+			assertThat(errorHolder.get()).as("onError")
+			                             .isNull();
+			assertThat(testSubscription.isCancelled).as("subscription isCancelled")
+			                                        .isFalse();
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 	@Test
@@ -253,12 +281,29 @@ public class LambdaMonoSubscriberTest {
 	}
 
 	@Test
-	public void noErrorHookThrowsCallbackNotImplemented() {
-		RuntimeException boom = new IllegalArgumentException("boom");
-		Assertions.assertThatExceptionOfType(RuntimeException.class)
-		          .isThrownBy(() -> Mono.error(boom).subscribe(v -> {}))
-	              .withCause(boom)
-	              .hasToString("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException: boom");
+	public void noErrorHookThrowsCallbackNotImplemented()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			RuntimeException boom = new IllegalArgumentException("boom");
+			Mono.error(boom)
+			    .subscribe(v -> {
+			    });
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains(
+					          "reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException: boom");
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 	@Test

@@ -15,6 +15,9 @@
  */
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.Date;
@@ -31,6 +34,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.Loggers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 
@@ -347,20 +351,53 @@ public class MonoProcessorTest {
 		            .verifyErrorMessage("test");
 	}
 
-	@Test(expected = Exception.class)
-	public void MonoProcessorDoubleError() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	@Test
+	public void MonoProcessorDoubleError() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			MonoProcessor<String> mp = MonoProcessor.create();
 
-		mp.onError(new Exception("test"));
-		mp.onError(new Exception("test"));
+			mp.onError(new Exception("test"));
+			mp.onError(new Exception("test2"));
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
-	@Test(expected = Exception.class)
-	public void MonoProcessorDoubleSignal() {
-		MonoProcessor<String> mp = MonoProcessor.create();
+	@Test
+	public void MonoProcessorDoubleSignal() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			MonoProcessor<String> mp = MonoProcessor.create();
 
-		mp.onNext("test");
-		mp.onError(new Exception("test"));
+			mp.onNext("test");
+			mp.onError(new Exception("test2"));
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 	@Test

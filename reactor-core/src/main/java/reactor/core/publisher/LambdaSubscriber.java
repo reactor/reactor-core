@@ -149,7 +149,7 @@ final class LambdaSubscriber<T>
 			errorConsumer.accept(t);
 		}
 		else {
-			throw Exceptions.errorCallbackNotImplemented(t);
+			Operators.onErrorDropped(Exceptions.errorCallbackNotImplemented(t), this.initialContext);
 		}
 	}
 

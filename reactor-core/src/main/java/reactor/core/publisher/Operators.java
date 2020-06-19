@@ -632,7 +632,7 @@ public abstract class Operators {
 		}
 		if (hook == null) {
 			log.error("Operator called default onErrorDropped", e);
-			throw Exceptions.bubble(e);
+			return;
 		}
 		hook.accept(e);
 	}

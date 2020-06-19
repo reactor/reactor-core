@@ -16,6 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -23,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,6 +39,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
@@ -708,24 +713,40 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleError() {
+	public void failDoubleError() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(new Exception("test"));
 				s.onError(new Exception("test2"));
 			}))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		} finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleError3() {
+	public void failDoubleError3() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
 					    .hide(),
@@ -736,10 +757,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 						s.onError(new Exception("test2"));
 					}))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		} finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 
@@ -756,8 +781,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleErrorHide() {
+	public void failDoubleErrorHide() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
 					    .hide(),
@@ -768,10 +799,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 						s.onError(new Exception("test2"));
 					}))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		} finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 
@@ -791,8 +826,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleError2() {
+	public void failDoubleError2() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
 					    .hide(),
@@ -803,10 +844,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 						s.onError(new Exception("test2"));
 					}))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		} finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 

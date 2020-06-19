@@ -16,6 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +46,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.Loggers;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -777,21 +781,18 @@ public class HooksTest {
 		};
 		List<Integer> seen = new ArrayList<>();
 
-		try {
-			Hooks.onNextDropped(dropHook::set);
-			Hooks.onNextDroppedFail();
+		Hooks.onNextDropped(dropHook::set);
+		Hooks.onNextDroppedFail();
 
-			assertThatExceptionOfType(RuntimeException.class)
-					.isThrownBy(() -> Flux.from(p).take(2).subscribe(seen::add))
-					.isInstanceOf(RuntimeException.class)
-					.matches(Exceptions::isCancel);
+		assertThatExceptionOfType(RuntimeException.class)
+				.isThrownBy(() -> Flux.from(p)
+				                      .take(2)
+				                      .subscribe(seen::add))
+				.isInstanceOf(RuntimeException.class)
+				.matches(Exceptions::isCancel);
 
-			assertThat(seen).containsExactly(1, 2);
-			assertThat(dropHook.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnNextDropped();
-		}
+		assertThat(seen).containsExactly(1, 2);
+		assertThat(dropHook.get()).isNull();
 	}
 
 	@Test

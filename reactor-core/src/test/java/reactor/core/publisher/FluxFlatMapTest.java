@@ -15,6 +15,9 @@
  */
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -40,6 +44,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
+import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -671,52 +676,87 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	public void failDoubleError() {
+	public void failDoubleError() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(new Exception("test"));
 				s.onError(new Exception("test2"));
-			}).flatMap(Flux::just))
+			})
+			                        .flatMap(Flux::just))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("java.lang.Exception: test2");
+		} finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleErrorTerminated() {
+	public void failDoubleErrorTerminated() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain) s);
+				((FluxFlatMap.FlatMapMain) s).done = true;
+				((FluxFlatMap.FlatMapMain) s).drain(null);
 				s.onError(new Exception("test"));
-			}).flatMap(Flux::just))
-			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test");
+			})
+			                        .flatMap(Flux::just))
+			            .verifyComplete();
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("java.lang.Exception: test");
+		} finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleErrorTerminatedInner() {
+	public void failDoubleErrorTerminatedInner() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
-			StepVerifier.create(Flux.just(1).hide().flatMap(f -> Flux.from(s -> {
-				s.onSubscribe(Operators.emptySubscription());
-				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,( (FluxFlatMap
-						.FlatMapInner) s).parent);
-				s.onError(new Exception("test"));
-			})))
-			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test");
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useConsoleLoggers();
+			StepVerifier.create(Flux.just(1)
+			                        .hide()
+			                        .flatMap(f -> Flux.from(s -> {
+				                        s.onSubscribe(Operators.emptySubscription());
+				                        Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,
+						                        ((FluxFlatMap.FlatMapInner) s).parent);
+				                        s.onError(new Exception("test"));
+			                        })))
+			            .verifyComplete();
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("java.lang.Exception: test");
+		} finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 

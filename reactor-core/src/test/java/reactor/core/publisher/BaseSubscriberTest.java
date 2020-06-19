@@ -16,17 +16,22 @@
 
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.util.Loggers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -79,10 +84,16 @@ public class BaseSubscriberTest {
 	}
 
 	@Test
-	public void onErrorCallbackNotImplemented() {
-		Flux<String> flux = Flux.error(new IllegalStateException());
-
+	public void onErrorCallbackNotImplemented() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			Flux<String> flux = Flux.error(new IllegalStateException());
+
 			flux.subscribe(new BaseSubscriber<String>() {
 				@Override
 				protected void hookOnSubscribe(Subscription subscription) {
@@ -94,11 +105,16 @@ public class BaseSubscriberTest {
 					//NO-OP
 				}
 			});
-			fail("expected UnsupportedOperationException");
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("ErrorCallbackNotImplemented")
+			          .contains("IllegalStateException");
 		}
-		catch (UnsupportedOperationException e) {
-			assertThat(e.getClass().getSimpleName()).isEqualTo("ErrorCallbackNotImplemented");
-			assertThat(e).hasCauseInstanceOf(IllegalStateException.class);
+		finally {
+			Hooks.resetOnNextDropped();
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 
@@ -269,17 +285,23 @@ public class BaseSubscriberTest {
 	}
 
 	@Test
-	public void finallyExecutesWhenHookOnErrorFails() {
-		RuntimeException err = new IllegalArgumentException("hookOnError");
-		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
-
+	public void finallyExecutesWhenHookOnErrorFails()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
-			Flux.<String>error(new IllegalStateException("someError"))
-					.subscribe(new BaseSubscriber<String>() {
-						@Override
-						protected void hookOnSubscribe(Subscription subscription) {
-							requestUnbounded();
-						}
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			RuntimeException error = new IllegalArgumentException("hookOnError");
+			AtomicReference<SignalType> checkFinally = new AtomicReference<>();
+
+			Flux.<String>error(new IllegalStateException("someError")).subscribe(new BaseSubscriber<String>() {
+				@Override
+				protected void hookOnSubscribe(Subscription subscription) {
+					requestUnbounded();
+				}
 
 				@Override
 				protected void hookOnNext(String value) {
@@ -287,7 +309,7 @@ public class BaseSubscriberTest {
 
 				@Override
 				protected void hookOnError(Throwable throwable) {
-					throw err;
+					throw error;
 				}
 
 				@Override
@@ -295,12 +317,16 @@ public class BaseSubscriberTest {
 					checkFinally.set(type);
 				}
 			});
-			fail("expected " + err);
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains(error.getMessage());
+			assertThat(checkFinally).hasValue(SignalType.ON_ERROR);
 		}
-		catch (Throwable e) {
-			assertThat(Exceptions.unwrap(e)).isSameAs(err);
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
-		assertThat(checkFinally).hasValue(SignalType.ON_ERROR);
 	}
 
 	@Test

@@ -16,11 +16,15 @@
 
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 import reactor.core.Exceptions;
@@ -445,49 +449,88 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void afterSuccessOrErrorCallbackFailureInterruptsOnNextAndThrows() {
-		LongAdder invoked = new LongAdder();
+	public void afterSuccessOrErrorCallbackFailureInterruptsOnNextAndThrows()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
-			@SuppressWarnings("deprecation")
-			Mono<String> mono = Mono.just("foo")
-			                        .doAfterSuccessOrError((v, t) -> {
-				                        invoked.increment();
-				                        throw new IllegalArgumentException(v);
-			                        });
-			StepVerifier.create(mono)
-			            .expectNext("bar") //irrelevant
-			            .expectErrorMessage("baz") //irrelevant
-			            .verify();
-		}
-		catch (Throwable t) {
-			Throwable e = Exceptions.unwrap(t);
-			assertEquals(IllegalArgumentException.class, e.getClass());
-			assertEquals("foo", e.getMessage());
-		}
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			LongAdder invoked = new LongAdder();
+			try {
+				@SuppressWarnings("deprecation")
+				Mono<String> mono = Mono.just("foo")
+				                        .doAfterSuccessOrError((v, t) -> {
+					                        invoked.increment();
+					                        throw new IllegalArgumentException(v);
+				                        });
+				StepVerifier.create(mono)
+				            .expectNext("bar") //irrelevant
+				            .expectErrorMessage("baz") //irrelevant
+				            .verify();
+			}
+			catch (Throwable t) {
+				Throwable e = Exceptions.unwrap(t);
+				assertEquals(AssertionError.class, e.getClass());
+				assertEquals("expectation \"expectNext(bar)\" failed (expected value: bar; actual value: foo)", e.getMessage());
+			}
 
-		assertEquals(1, invoked.intValue());
+			assertEquals(1, invoked.intValue());
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("IllegalArgumentException")
+			          .contains("foo");
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 	@Test
-	public void afterTerminateCallbackFailureInterruptsOnNextAndThrows() {
-		LongAdder invoked = new LongAdder();
+	public void afterTerminateCallbackFailureInterruptsOnNextAndThrows()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
-			StepVerifier.create(Mono.just("foo")
-			                        .doAfterTerminate(() -> {
-				                        invoked.increment();
-				                        throw new IllegalArgumentException("boom");
-			                        }))
-			            .expectNext("bar") //irrelevant
-			            .expectErrorMessage("baz") //irrelevant
-			            .verify();
-		}
-		catch (Throwable t) {
-			Throwable e = Exceptions.unwrap(t);
-			assertEquals(IllegalArgumentException.class, e.getClass());
-			assertEquals("boom", e.getMessage());
-		}
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			LongAdder invoked = new LongAdder();
+			try {
+				@SuppressWarnings("deprecation")
+				Mono<String> mono = Mono.just("foo")
+				                        .doAfterSuccessOrError((v, t) -> {
+					                        invoked.increment();
+					                        throw new IllegalArgumentException(v);
+				                        });
+				StepVerifier.create(mono)
+				            .expectNext("bar") //irrelevant
+				            .expectErrorMessage("baz") //irrelevant
+				            .verify();
+			}
+			catch (Throwable t) {
+				Throwable e = Exceptions.unwrap(t);
+				assertEquals(AssertionError.class, e.getClass());
+				assertEquals("expectation \"expectNext(bar)\" failed (expected value: bar; actual value: foo)", e.getMessage());
+			}
 
-		assertEquals(1, invoked.intValue());
+			assertEquals(1, invoked.intValue());
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("foo")
+			          .contains("IllegalArgumentException");
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 	@Test

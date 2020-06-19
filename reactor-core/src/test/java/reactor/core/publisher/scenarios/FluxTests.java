@@ -16,7 +16,10 @@
 
 package reactor.core.publisher.scenarios;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -1172,20 +1175,32 @@ public class FluxTests extends AbstractReactorTest {
 		assertThat("Not totally dispatched", latch.await(30, TimeUnit.SECONDS));
 	}
 	@Test
-	public void unimplementedErrorCallback() throws InterruptedException {
+	public void unimplementedErrorCallback()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
 
-		Flux.error(new Exception("forced"))
-		       .log("error")
-		       .subscribe();
-
-		try{
-			Flux.error(new Exception("forced"))
+			Flux.error(new Exception("forced1"))
+			    .log("error")
 			    .subscribe();
+
+			Flux.error(new Exception("forced2"))
+			    .subscribe();
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.Exception: forced2");
 		}
-		catch(Exception e){
-			return;
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
-		fail();
 	}
 
 	@Test
@@ -1406,34 +1421,55 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler() {
-		AtomicReference<String> failure = new AtomicReference<>(null);
-		AtomicBoolean handled = new AtomicBoolean(false);
-
-		Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set("unexpected call to default" +
-				" UncaughtExceptionHandler with " + e));
-		Schedulers.onHandleError((t, e) -> handled.set(true));
-
-		CountDownLatch latch = new CountDownLatch(1);
+	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
-			Flux.interval(Duration.ofMillis(100))
-			    .take(1)
-			    .publishOn(Schedulers.parallel())
-                .doOnTerminate(() -> latch.countDown())
-			    .subscribe(i -> {
-				    System.out.println("About to throw...");
-				    throw new IllegalArgumentException();
-			    });
-			latch.await(1, TimeUnit.SECONDS);
-		} catch (Throwable e) {
-			fail(e.toString());
-		} finally {
-			Thread.setDefaultUncaughtExceptionHandler(null);
-			Schedulers.resetOnHandleError();
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			AtomicReference<String> failure = new AtomicReference<>(null);
+			AtomicBoolean handled = new AtomicBoolean(false);
+
+			Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set(
+					"unexpected call to default" + " UncaughtExceptionHandler with " + e));
+			Schedulers.onHandleError((t, e) -> handled.set(true));
+
+			CountDownLatch latch = new CountDownLatch(1);
+			try {
+				Flux.interval(Duration.ofMillis(100))
+				    .take(1)
+				    .publishOn(Schedulers.parallel())
+				    .doOnTerminate(() -> latch.countDown())
+				    .doOnCancel(() -> latch.countDown())
+				    .subscribe(i -> {
+					    System.out.println("About to throw...");
+					    throw new IllegalArgumentException();
+				    });
+				assertTrue("Expect latch to be countDown", latch.await(1, TimeUnit.SECONDS));
+			}
+			catch (Throwable e) {
+				fail(e.toString());
+			}
+			finally {
+				Thread.setDefaultUncaughtExceptionHandler(null);
+				Schedulers.resetOnHandleError();
+			}
+			assertThat(handled).as("Uncaught error handler")
+			                   .isFalse();
+			assertThat(failure).as("Uncaught error handler")
+			                   .isNull();
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains(
+					          "reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException");
 		}
-		assertThat(handled).as("Uncaught error handler").isTrue();
-		if (failure.get() != null) {
-			fail(failure.get());
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 

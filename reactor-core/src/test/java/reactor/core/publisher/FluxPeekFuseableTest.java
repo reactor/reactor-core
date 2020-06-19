@@ -16,6 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -43,6 +47,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -352,28 +357,47 @@ public class FluxPeekFuseableTest {
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorDoesNotInvokeOnError() {
-		IllegalStateException err = new IllegalStateException("test");
-		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
-
-		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(
-				Flux.empty(), null, null, errorCallbackCapture::set, null,
-				() -> { throw err; }, null, null);
-
-		AssertSubscriber<String> ts = AssertSubscriber.create();
-
+	public void afterTerminateCallbackErrorDoesNotInvokeOnError()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
-			flux.subscribe(ts);
-			fail("expected thrown exception");
-		}
-		catch (Exception e) {
-			assertThat(e).hasCause(err);
-		}
-		ts.assertNoValues();
-		ts.assertComplete();
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			IllegalStateException error = new IllegalStateException("test");
+			AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
 
-		//the onError wasn't invoked:
-		assertThat(errorCallbackCapture.get()).isNull();
+			FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(Flux.empty(),
+					null,
+					null,
+					errorCallbackCapture::set,
+					null,
+					() -> {
+						throw error;
+					},
+					null,
+					null);
+
+			AssertSubscriber<String> ts = AssertSubscriber.create();
+
+			flux.subscribe(ts);
+			ts.assertNoValues();
+			ts.assertComplete();
+
+			//the onError wasn't invoked:
+			assertThat(errorCallbackCapture.get()).isNull();
+
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains(error.getMessage());
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 	@Test
@@ -421,61 +445,85 @@ public class FluxPeekFuseableTest {
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorAndErrorCallbackError() {
-		IllegalStateException err = new IllegalStateException("expected afterTerminate");
-		IllegalArgumentException err2 = new IllegalArgumentException("error");
-
-		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(
-				Flux.empty(), null, null, e -> { throw err2; },
-				null,
-				() -> { throw err; }, null, null);
-
-		AssertSubscriber<String> ts = AssertSubscriber.create();
-
+	public void afterTerminateCallbackErrorAndErrorCallbackError()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			IllegalStateException error = new IllegalStateException("expected afterTerminate");
+			IllegalArgumentException error2 = new IllegalArgumentException("error");
+
+			FluxPeekFuseable<String> flux =
+					new FluxPeekFuseable<>(Flux.empty(), null, null, e -> {
+						throw error2;
+					}, null, () -> {
+						throw error;
+					}, null, null);
+
+			AssertSubscriber<String> ts = AssertSubscriber.create();
+
 			flux.subscribe(ts);
-			fail("expected thrown exception");
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains(error.getMessage());
+			assertEquals(0, error2.getSuppressed().length);
+			//error2 is never thrown
+			ts.assertNoValues();
+			ts.assertComplete();
 		}
-		catch (Exception e) {
-			e.printStackTrace();
-			assertSame(e.toString(), err, e.getCause());
-			assertEquals(0, err2.getSuppressed().length);
-			//err2 is never thrown
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
-		ts.assertNoValues();
-		ts.assertComplete();
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
-		IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
-		IllegalArgumentException error = new IllegalArgumentException("error");
-		NullPointerException err = new NullPointerException();
-
-		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(
-				Flux.error(err),
-				null, null,
-				e -> { throw error; }, null, () -> { throw afterTerminate; },
-				null, null);
-
-		AssertSubscriber<String> ts = AssertSubscriber.create();
-
+	public void afterTerminateCallbackErrorAndErrorCallbackError2()
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
 		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
+			IllegalArgumentException error = new IllegalArgumentException("error");
+			NullPointerException error2 = new NullPointerException();
+
+			FluxPeekFuseable<String> flux =
+					new FluxPeekFuseable<>(Flux.error(error2), null, null, e -> {
+						throw error;
+					}, null, () -> {
+						throw afterTerminate;
+					}, null, null);
+
+			AssertSubscriber<String> ts = AssertSubscriber.create();
+
 			flux.subscribe(ts);
-			fail("expected thrown exception");
-		}
-		catch (Exception e) {
-			assertSame(afterTerminate, e.getCause());
-			//afterTerminate suppressed error which itself suppressed original err
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains(afterTerminate.getMessage());
+			//afterTerminate suppressed error which itself suppressed original error2
 			assertEquals(1, afterTerminate.getSuppressed().length);
 			assertEquals(error, afterTerminate.getSuppressed()[0]);
 
 			assertEquals(1, error.getSuppressed().length);
-			assertEquals(err, error.getSuppressed()[0]);
+			assertEquals(error2, error.getSuppressed()[0]);
+			ts.assertNoValues();
+			//the subscriber still sees the 'error' message since actual.onError is called before the afterTerminate callback
+			ts.assertErrorMessage("error");
 		}
-		ts.assertNoValues();
-		//the subscriber still sees the 'error' message since actual.onError is called before the afterTerminate callback
-		ts.assertErrorMessage("error");
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 

@@ -15,8 +15,12 @@
  */
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 
+import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -29,6 +33,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.Loggers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -547,57 +552,69 @@ public class ReplayProcessorTest {
 	}
 
 	@Test
-	public void timedAndBoundedOnSubscribeAndState(){
+	public void timedAndBoundedOnSubscribeAndState() throws UnsupportedEncodingException {
 		testReplayProcessorState(ReplayProcessor.createSizeAndTimeout(1, Duration.ofSeconds(1)));
 	}
 
 	@Test
-	public void timedOnSubscribeAndState(){
+	public void timedOnSubscribeAndState() throws UnsupportedEncodingException {
 		testReplayProcessorState(ReplayProcessor.createTimeout(Duration.ofSeconds(1)));
 	}
 
 	@Test
-	public void unboundedOnSubscribeAndState(){
+	public void unboundedOnSubscribeAndState() throws UnsupportedEncodingException {
 		testReplayProcessorState(ReplayProcessor.create(1, true));
 	}
 
 	@Test
-	public void boundedOnSubscribeAndState(){
+	public void boundedOnSubscribeAndState() throws UnsupportedEncodingException {
     	testReplayProcessorState(ReplayProcessor.cacheLast());
 	}
 
 	@SuppressWarnings("unchecked")
-	void testReplayProcessorState(ReplayProcessor<String> rp){
-		Disposable d1 = rp.subscribe();
+	void testReplayProcessorState(ReplayProcessor<String> rp)
+			throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			Disposable d1 = rp.subscribe();
 
-		rp.subscribe();
+			rp.subscribe();
 
-		ReplayProcessor.ReplayInner<String> s =
-				((ReplayProcessor.ReplayInner<String>) rp.inners().findFirst().get());
+			ReplayProcessor.ReplayInner<String> s = ((ReplayProcessor.ReplayInner<String>) rp.inners()
+			                                                                                 .findFirst()
+			                                                                                 .get());
 
-		assertThat(d1).isEqualTo(s.actual());
+			assertThat(d1).isEqualTo(s.actual());
 
-		assertThat(s.isEmpty()).isTrue();
-		assertThat(s.isCancelled()).isFalse();
-		assertThat(s.isCancelled()).isFalse();
+			assertThat(s.isEmpty()).isTrue();
+			assertThat(s.isCancelled()).isFalse();
+			assertThat(s.isCancelled()).isFalse();
 
-		assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
-		if(rp.getBufferSize() != Integer.MAX_VALUE) {
-			assertThat(rp.getBufferSize()).isEqualTo(1);
-		}
-		FluxSink<String> sink = rp.sink();
-		sink.next("test");
-		rp.onComplete();
+			assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
+			if (rp.getBufferSize() != Integer.MAX_VALUE) {
+				assertThat(rp.getBufferSize()).isEqualTo(1);
+			}
+			FluxSink<String> sink = rp.sink();
+			sink.next("test");
+			rp.onComplete();
 
-		rp.onComplete();
+			rp.onComplete();
 
-		Exception e = new RuntimeException("test");
-		try{
+			Exception e = new RuntimeException("test");
 			rp.onError(e);
-			Assert.fail();
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains(e.getMessage());
 		}
-		catch (Exception t){
-			assertThat(Exceptions.unwrap(t)).isEqualTo(e);
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
 		}
 	}
 

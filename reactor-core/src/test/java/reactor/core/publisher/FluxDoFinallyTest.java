@@ -16,6 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -31,6 +34,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.util.Loggers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -492,19 +496,33 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	//see https://github.com/reactor/reactor-core/issues/951
-	public void gh951_withoutDoOnError() {
-		List<String> events = new ArrayList<>();
+	public void gh951_withoutDoOnError() throws UnsupportedEncodingException {
+		PrintStream err = System.err;
+		PrintStream out = System.out;
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			System.setErr(new PrintStream(outputStream));
+			System.setOut(new PrintStream(outputStream));
+			Loggers.useVerboseConsoleLoggers();
+			List<String> events = new ArrayList<>();
 
-		Assertions.assertThatExceptionOfType(UnsupportedOperationException.class)
-		          .isThrownBy(Mono.just(true)
-		                          .map(this::throwError)
-		                          .doFinally(any -> events.add("doFinally " + any.toString()))
-		                          ::subscribe)
-		          .withMessage("java.lang.IllegalStateException: boom");
+			Mono.just(true)
+			    .map(this::throwError)
+			    .doFinally(any -> events.add("doFinally " + any.toString()))
+			    .subscribe();
 
-		Assertions.assertThat(events)
-		          .as("withoutDoOnError")
-		          .containsExactly("doFinally onError");
+			Assertions.assertThat(events)
+			          .as("withoutDoOnError")
+			          .containsExactly("doFinally onError");
+			Assertions.assertThat(outputStream.toString("utf-8"))
+			          .contains("Operator called default onErrorDropped")
+			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException: boom");
+		}
+		finally {
+			Loggers.resetLoggerFactory();
+			System.setErr(err);
+			System.setOut(out);
+		}
 	}
 
 	private Boolean throwError(Boolean x) {
