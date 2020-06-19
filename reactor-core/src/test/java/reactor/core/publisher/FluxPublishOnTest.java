@@ -1199,7 +1199,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Random random = ThreadLocalRandom.current();
 
 		Sinks.StandaloneFluxSink<String> s = Sinks.multicast();
-		Flux<String> d = Processors.multicast();
+		Flux<String> d = s.asFlux();
 
 		Flux<Integer> tasks = d.publishOn(Schedulers.parallel())
 		                       .parallel(8)
