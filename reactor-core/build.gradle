@@ -145,7 +145,7 @@ task japicmp(type: JapicmpTask) {
 
 	//TODO after a release, bump the gradle.properties baseline
 	//TODO after a release, remove the reactor-core exclusions below if any
-//	classExcludes = []
+	classExcludes = ["reactor.core.publisher.TopicProcessor", "reactor.core.publisher.WorkQueueProcessor", 'reactor.core.publisher.EventLoopProcessor$Slot']
 //	methodExcludes = ["reactor.core.Scannable#operatorName()"]
 }
 
