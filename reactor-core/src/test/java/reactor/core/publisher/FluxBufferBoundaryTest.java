@@ -77,8 +77,8 @@ public class FluxBufferBoundaryTest
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.buffer(sp2)
 		   .subscribe(ts);
@@ -128,8 +128,8 @@ public class FluxBufferBoundaryTest
 	public void mainError() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.buffer(sp2)
 		   .subscribe(ts);
@@ -174,8 +174,8 @@ public class FluxBufferBoundaryTest
 	public void otherError() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.buffer(sp2)
 		   .subscribe(ts);
@@ -220,8 +220,8 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierThrows() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.buffer(sp2, (Supplier<List<Integer>>) () -> {
 			throw new RuntimeException("forced failure");
@@ -241,8 +241,8 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierThrowsLater() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		int count[] = {1};
 
@@ -272,8 +272,8 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierReturnsNUll() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
 
 		sp1.buffer(sp2, (Supplier<List<Integer>>) () -> null)
 		   .subscribe(ts);
@@ -323,10 +323,10 @@ public class FluxBufferBoundaryTest
 	@Test
 	public void bufferWillAccumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
-		FluxProcessor<Integer, Integer> numbers = Processors.multicast();
+		FluxIdentityProcessor<Integer> numbers = Processors.multicast();
 
 		//non overlapping buffers
-		FluxProcessor<Integer, Integer> boundaryFlux = Processors.multicast();
+		FluxIdentityProcessor<Integer> boundaryFlux = Processors.multicast();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.buffer(boundaryFlux)
 		                                       .buffer()

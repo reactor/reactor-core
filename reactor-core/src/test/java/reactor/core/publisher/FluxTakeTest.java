@@ -186,7 +186,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressured() {
-		FluxProcessor<String, String> up = Processors.unicast();
+		FluxIdentityProcessor<String> up = Processors.unicast();
 		StepVerifier.create(up.take(3), 0)
 		            .expectFusion()
 		            .then(() -> up.onNext("test"))
@@ -203,7 +203,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressuredCancelled() {
-		FluxProcessor<String, String> up = Processors.unicast();
+		FluxIdentityProcessor<String> up = Processors.unicast();
 		StepVerifier.create(up.take(3).doOnSubscribe(s -> {
 			assertThat(((Fuseable.QueueSubscription)s).size()).isEqualTo(0);
 		}), 0)
@@ -376,7 +376,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedAsync() {
-		FluxProcessor<String, String> up = Processors.unicast();
+		FluxIdentityProcessor<String> up = Processors.unicast();
 		StepVerifier.create(up.take(2))
 		            .expectFusion(Fuseable.ASYNC)
 		            .then(() -> {
@@ -485,7 +485,7 @@ public class FluxTakeTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void failFusedDoubleError() {
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
 		StepVerifier.create(up
 		                        .take(2))
@@ -504,7 +504,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void ignoreFusedDoubleComplete() {
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		StepVerifier.create(up
 		                        .take(2).filter(d -> true))
 		            .consumeSubscriptionWith(s -> {

@@ -43,7 +43,7 @@ public class FluxAutoConnectTest {
 	
 	@Test
 	public void connectImmediately() {
-		FluxProcessor<Integer, Integer> e = Processors.multicast();
+		FluxIdentityProcessor<Integer> e = Processors.multicast();
 
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
@@ -58,7 +58,7 @@ public class FluxAutoConnectTest {
 
 	@Test
 	public void connectAfterMany() {
-		FluxProcessor<Integer, Integer> e = Processors.multicast();
+		FluxIdentityProcessor<Integer> e = Processors.multicast();
 
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		

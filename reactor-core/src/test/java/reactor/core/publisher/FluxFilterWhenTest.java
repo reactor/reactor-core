@@ -254,7 +254,7 @@ public class FluxFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final FluxProcessor<Boolean, Boolean> pp = Processors.multicast();
+		final FluxIdentityProcessor<Boolean> pp = Processors.multicast();
 
 		StepVerifier.create(Flux.range(1, 5)
 		                        .filterWhen(v -> pp, 16))

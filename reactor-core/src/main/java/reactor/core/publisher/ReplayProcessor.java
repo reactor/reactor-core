@@ -49,7 +49,7 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
  */
 @Deprecated
-public final class ReplayProcessor<T> extends FluxProcessor<T, T>
+public final class ReplayProcessor<T> extends FluxIdentityProcessor<T>
 		implements Fuseable {
 
 	/**

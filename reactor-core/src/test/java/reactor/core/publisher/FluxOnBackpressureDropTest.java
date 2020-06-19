@@ -90,7 +90,7 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void someDrops() {
-		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 

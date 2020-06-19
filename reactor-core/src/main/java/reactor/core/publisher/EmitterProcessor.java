@@ -54,7 +54,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
  */
 @Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
+public final class EmitterProcessor<T> extends FluxIdentityProcessor<T> {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];

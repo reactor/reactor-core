@@ -31,7 +31,7 @@ public class EmitterProcessorVerification extends AbstractProcessorVerification 
 	@Override
 	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
 		@SuppressWarnings("deprecation")
-		FluxProcessor<Long, Long> p = reactor.core.publisher.EmitterProcessor.create(bufferSize);
+		FluxIdentityProcessor<Long> p = reactor.core.publisher.EmitterProcessor.create(bufferSize);
 		return FluxProcessor.wrap(p, p.log("EmitterProcessorVerification", Level.FINE));
 	}
 

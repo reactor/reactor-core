@@ -333,8 +333,8 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> source = Flux.range(1, 2).doOnNext(v -> emission.getAndIncrement());
 
-		FluxProcessor<Integer, Integer> source1 = Processors.multicast();
-		FluxProcessor<Integer, Integer> source2 = Processors.multicast();
+		FluxIdentityProcessor<Integer> source1 = Processors.multicast();
+		FluxIdentityProcessor<Integer> source2 = Processors.multicast();
 
 		source.flatMap(v -> v == 1 ? source1 : source2, 1, 32).subscribe(ts);
 
@@ -368,8 +368,8 @@ public class FluxFlatMapTest {
 
 		Flux<Integer> source = Flux.range(1, 1000).doOnNext(v -> emission.getAndIncrement());
 
-		FluxProcessor<Integer, Integer> source1 = Processors.multicast();
-		FluxProcessor<Integer, Integer> source2 = Processors.multicast();
+		FluxIdentityProcessor<Integer> source1 = Processors.multicast();
+		FluxIdentityProcessor<Integer> source2 = Processors.multicast();
 
 		source.flatMap(v -> v == 1 ? source1 : source2, Integer.MAX_VALUE, 32).subscribe(ts);
 
@@ -610,7 +610,7 @@ public class FluxFlatMapTest {
 
 	@Test //TODO TestPublisher.actual cannot be accessed
 	public void failNextOnTerminated() {
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 
 		Hooks.onNextDropped(c -> {
 			assertThat(c).isEqualTo(2);
@@ -1026,7 +1026,7 @@ public class FluxFlatMapTest {
 
 		fmm.onSubscribe(Operators.emptySubscription());
 
-		FluxProcessor<Integer, Integer> ps = Processors.multicast();
+		FluxIdentityProcessor<Integer> ps = Processors.multicast();
 
 		fmm.onNext(ps);
 
@@ -1152,7 +1152,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void asyncInnerFusion() {
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.just(1)
 		                        .hide()
 		                        .flatMap(f -> up, 1))
@@ -1167,7 +1167,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void failAsyncInnerFusion() {
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.just(1)
 		                        .hide()
 		                        .flatMap(f -> up, 1))

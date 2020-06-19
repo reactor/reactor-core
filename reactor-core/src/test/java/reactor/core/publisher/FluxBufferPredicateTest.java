@@ -56,7 +56,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntil() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
 
@@ -120,7 +120,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntil() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
 
@@ -140,7 +140,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorUntil() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1,
 				i -> {
@@ -163,7 +163,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntilOther() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
 
@@ -194,7 +194,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntilOther() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther =
 				new FluxBufferPredicate<>(sp1, i -> i % 3 == 0, Flux.listSupplier(),
 						FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
@@ -215,7 +215,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorUntilOther() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther =
 				new FluxBufferPredicate<>(sp1,
 				i -> {
@@ -368,7 +368,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhile() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 != 0, Flux.listSupplier(),
 				FluxBufferPredicate.Mode.WHILE);
@@ -400,7 +400,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntInitiallyMatch() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -431,7 +431,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntMatch() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1, i -> i > 4, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -457,7 +457,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorWhile() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -477,7 +477,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorWhile() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1,
 				i -> {
@@ -502,7 +502,7 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void bufferSupplierThrows() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0,
 				() -> { throw new RuntimeException("supplier failure"); },
@@ -517,7 +517,7 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void bufferSupplierThrowsLater() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		int count[] = {1};
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0,
@@ -542,7 +542,7 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void bufferSupplierReturnsNull() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0,
 				() -> null,
@@ -561,7 +561,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void multipleTriggersOfEmptyBufferKeepInitialBuffer() {
 		//this is best demonstrated with bufferWhile:
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		LongAdder bufferCount = new LongAdder();
 		Supplier<List<Integer>> bufferSupplier = () -> {
 			bufferCount.increment();

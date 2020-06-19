@@ -71,7 +71,7 @@ public class MonoTimeoutTest {
 
 		MonoProcessor<Integer> source = MonoProcessor.create();
 
-		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
 
 		source.timeout(tp)
 		      .subscribe(ts);

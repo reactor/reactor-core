@@ -43,9 +43,9 @@ public class FluxSampleTest {
 	}
 
 	void sample(boolean complete, boolean which) {
-		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
 
-		FluxProcessor<String, String> other = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> other = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -85,7 +85,7 @@ public class FluxSampleTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		FluxProcessor<?, ?> p = which ? main : other;
+		FluxIdentityProcessor<?> p = which ? main : other;
 
 		if (complete) {
 			p.onComplete();
@@ -129,9 +129,9 @@ public class FluxSampleTest {
 
 	@Test
 	public void subscriberCancels() {
-		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
 
-		FluxProcessor<String, String> other = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> other = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -151,9 +151,9 @@ public class FluxSampleTest {
 	}
 
 	public void completeImmediately(boolean which) {
-		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
 
-		FluxProcessor<String, String> other = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> other = Processors.more().multicastNoBackpressure();
 
 		if (which) {
 			main.onComplete();

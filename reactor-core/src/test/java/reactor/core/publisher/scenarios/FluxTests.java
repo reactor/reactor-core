@@ -329,7 +329,7 @@ public class FluxTests extends AbstractReactorTest {
 	//FIXME what does this test ?
 	@Test
 	public void simpleReactiveSubscriber() throws InterruptedException {
-		FluxProcessor<String, String> str = Processors.multicast();
+		FluxIdentityProcessor<String> str = Processors.multicast();
 
 		str.publishOn(asyncGroup)
 		   .subscribe(new FooSubscriber());
@@ -531,7 +531,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void analyticsTest() throws Exception {
-		FluxProcessor<Integer, Integer> source = Processors.replayAll();
+		FluxIdentityProcessor<Integer> source = Processors.replayAll();
 
 		long avgTime = 50l;
 
@@ -578,7 +578,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		final CountDownLatch latch = new CountDownLatch(iterations);
 
-		FluxProcessor<String, String> deferred = Processors.multicast();
+		FluxIdentityProcessor<String> deferred = Processors.multicast();
 		deferred.publishOn(asyncGroup)
 		        .parallel(8)
 		        .groups()
@@ -621,7 +621,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		int[] data;
 		CountDownLatch latch = new CountDownLatch(iterations);
-		FluxProcessor<Integer, Integer> deferred;
+		FluxIdentityProcessor<Integer> deferred;
 		switch (dispatcher) {
 			case "partitioned":
 				deferred = Processors.multicast();
@@ -675,7 +675,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		int[] data;
 		CountDownLatch latch = new CountDownLatch(iterations);
-		FluxProcessor<Integer, Integer> mapManydeferred;
+		FluxIdentityProcessor<Integer> mapManydeferred;
 		switch (dispatcher) {
 			case "partitioned":
 				mapManydeferred = Processors.multicast();
@@ -762,7 +762,7 @@ public class FluxTests extends AbstractReactorTest {
 		 */
 		final double TOLERANCE = 0.9;
 
-		FluxProcessor<Integer, Integer> batchingStreamDef = Processors.multicast();
+		FluxIdentityProcessor<Integer> batchingStreamDef = Processors.multicast();
 
 		List<Integer> testDataset = createTestDataset(NUM_MESSAGES);
 
@@ -854,7 +854,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void shouldCorrectlyDispatchComplexFlow() throws InterruptedException {
-		FluxProcessor<Integer, Integer> globalFeed = Processors.multicast();
+		FluxIdentityProcessor<Integer> globalFeed = Processors.multicast();
 
 		CountDownLatch afterSubscribe = new CountDownLatch(1);
 		CountDownLatch latch = new CountDownLatch(4);
@@ -1074,7 +1074,7 @@ public class FluxTests extends AbstractReactorTest {
 		int parallelStreams = 16;
 		CountDownLatch latch = new CountDownLatch(1);
 
-		final FluxProcessor<Integer, Integer> streamBatcher = Processors.multicast();
+		final FluxIdentityProcessor<Integer> streamBatcher = Processors.multicast();
 		streamBatcher.publishOn(asyncGroup)
 		             .bufferTimeout(batchsize, Duration.ofSeconds(timeout))
 		             .log("batched")
@@ -1340,9 +1340,9 @@ public class FluxTests extends AbstractReactorTest {
 	@Test(timeout = TIMEOUT)
 	public void multiplexUsingDispatchersAndSplit() throws Exception {
 
-		final FluxProcessor<Integer, Integer> forkEmitterProcessor = Processors.multicast();
+		final FluxIdentityProcessor<Integer> forkEmitterProcessor = Processors.multicast();
 
-		final FluxProcessor<Integer, Integer> computationEmitterProcessor = Processors.more().multicast(false);
+		final FluxIdentityProcessor<Integer> computationEmitterProcessor = Processors.more().multicast(false);
 
 		Scheduler computation = Schedulers.newSingle("computation");
 		Scheduler persistence = Schedulers.newSingle("persistence");
@@ -1360,7 +1360,7 @@ public class FluxTests extends AbstractReactorTest {
 				                      .doOnNext(ls -> println("Computed: ", ls))
 				                      .log("computation");
 
-		final FluxProcessor<Integer, Integer> persistenceEmitterProcessor = Processors.more().multicast(false);
+		final FluxIdentityProcessor<Integer> persistenceEmitterProcessor = Processors.more().multicast(false);
 
 		final Flux<List<String>> persistenceStream =
 				persistenceEmitterProcessor.publishOn(persistence)

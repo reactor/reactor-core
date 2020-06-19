@@ -391,7 +391,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	final Flux<I> fluxFuseableAsync(OperatorScenario<I, PI, O, PO> scenario) {
 		int p = scenario.producerCount();
-		FluxProcessor<I, I> rp = Processors.replayAll();
+		FluxIdentityProcessor<I> rp = Processors.replayAll();
 
 		switch (p) {
 			case -1:
@@ -579,7 +579,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncOutputFusedAsync(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxProcessor<I, I> up = Processors.unicast();
+		FluxIdentityProcessor<I> up = Processors.unicast();
 		return StepVerifier.create(scenario.body()
 		                                   .apply(withFluxSource(up)))
 		                   .expectFusion(Fuseable.ASYNC)
@@ -587,7 +587,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncOutputFusedAsyncConditional(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxProcessor<I, I> up = Processors.unicast();
+		FluxIdentityProcessor<I> up = Processors.unicast();
 		return StepVerifier.create(scenario.body()
 		                                   .andThen(this::conditional)
 		                                   .apply(withFluxSource(up)))
@@ -598,7 +598,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	@SuppressWarnings("unchecked")
 	final void inputFusedAsyncOutputFusedAsyncCancel(OperatorScenario<I, PI, O, PO> scenario) {
 		if ((scenario.fusionMode() & Fuseable.ASYNC) != 0) {
-			FluxProcessor<I, I> up = Processors.unicast();
+			FluxIdentityProcessor<I> up = Processors.unicast();
 			testUnicastSource(scenario, up);
 			StepVerifier.create(scenario.body()
 			                            .apply(withFluxSource(up)), 0)
@@ -641,7 +641,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			            .thenCancel()
 			            .verify();
 
-			FluxProcessor<I, I> up2 = Processors.unicast();
+			FluxIdentityProcessor<I> up2 = Processors.unicast();
 			StepVerifier.create(scenario.body()
 			                            .apply(withFluxSource(up2)), 0)
 			            .consumeSubscriptionWith(s -> {
@@ -659,7 +659,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	@SuppressWarnings("unchecked")
 	final void inputFusedAsyncOutputFusedAsyncConditionalCancel(OperatorScenario<I, PI, O, PO> scenario) {
 		if ((scenario.fusionMode() & Fuseable.ASYNC) != 0) {
-			FluxProcessor<I, I> up = Processors.unicast();
+			FluxIdentityProcessor<I> up = Processors.unicast();
 			testUnicastSource(scenario, up);
 			StepVerifier.create(scenario.body()
 			                            .andThen(f -> doOnSubscribe(f, s -> {
@@ -696,7 +696,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			            .thenCancel()
 			            .verify();
 
-			FluxProcessor<I, I> up2 = Processors.unicast();
+			FluxIdentityProcessor<I> up2 = Processors.unicast();
 			StepVerifier.create(scenario.body()
 			                            .andThen(f -> doOnSubscribe(f, s -> {
 				                            if (s instanceof Fuseable.QueueSubscription) {
@@ -847,7 +847,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	@SuppressWarnings("unchecked")
 	final StepVerifier.Step<O> inputFusedError(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxProcessor<I, I> up = Processors.unicast();
+		FluxIdentityProcessor<I> up = Processors.unicast();
 
 		return StepVerifier.create(scenario.body()
 		                                   .apply(up.as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
@@ -907,7 +907,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncErrorOutputFusedAsync(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxProcessor<I, I> up = Processors.unicast();
+		FluxIdentityProcessor<I> up = Processors.unicast();
 		up.onNext(item(0));
 		return StepVerifier.create(scenario.body()
 		                                   .apply(up.as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
@@ -918,7 +918,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	@SuppressWarnings("unchecked")
 	final StepVerifier.Step<O> inputFusedErrorOutputFusedConditional(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxProcessor<I, I> up = Processors.unicast();
+		FluxIdentityProcessor<I> up = Processors.unicast();
 		return StepVerifier.create(scenario.body()
 		                                   .andThen(this::conditional)
 		                                   .apply(up.as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
@@ -928,7 +928,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final Runnable testUnicastDropPath(OperatorScenario<I, PI, O, PO> scenario,
-			FluxProcessor<I, I> up) {
+			FluxIdentityProcessor<I> up) {
 		return () -> {
 			//UnicastProcessor#actual()
 			@SuppressWarnings("unchecked")
@@ -985,7 +985,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final void testUnicastSource(OperatorScenario<I, PI, O, PO> scenario,
-			FluxProcessor<I, I> ts) {
+			FluxIdentityProcessor<I> ts) {
 		fluxFuseableAsync(scenario).subscribe(ts);
 	}
 

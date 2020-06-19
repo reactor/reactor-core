@@ -86,8 +86,7 @@ import reactor.util.context.Context;
  * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
  */
 @Deprecated
-public final class UnicastProcessor<T>
-		extends FluxProcessor<T, T>
+public final class UnicastProcessor<T> extends FluxIdentityProcessor<T>
 		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T> {
 
 	/**

@@ -81,7 +81,7 @@ import reactor.util.annotation.Nullable;
  * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
  */
 @Deprecated
-public final class DirectProcessor<T> extends FluxProcessor<T, T> {
+public final class DirectProcessor<T> extends FluxIdentityProcessor<T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}

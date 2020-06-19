@@ -431,7 +431,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalUntil() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(sp1,
 				Queues.small(),
 				Queues.unbounded(),
@@ -498,7 +498,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorUntilIsPropagatedToBothWindowAndMain() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
 				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL);
@@ -524,7 +524,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorUntil() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
 				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
@@ -552,7 +552,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalUntilCutBefore() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1,
 				Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
@@ -583,7 +583,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorUntilCutBeforeIsPropagatedToBothWindowAndMain() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
 				new FluxWindowPredicate<>(sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 						i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
@@ -610,7 +610,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorUntilCutBefore() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
 				new FluxWindowPredicate<>(sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
@@ -644,7 +644,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhile() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 != 0, Mode.WHILE);
@@ -675,7 +675,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhileDoesntInitiallyMatch() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.WHILE);
@@ -713,7 +713,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhileDoesntMatch() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i > 4, Mode.WHILE);
@@ -748,7 +748,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorWhileIsPropagatedToBothWindowAndMain() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.WHILE);
@@ -795,7 +795,7 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorWhile() {
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {

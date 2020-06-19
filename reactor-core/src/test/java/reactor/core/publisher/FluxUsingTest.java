@@ -263,7 +263,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
 
 		Flux.using(() -> 1, r -> tp, cleanup::set, true)
 		    .subscribe(ts);

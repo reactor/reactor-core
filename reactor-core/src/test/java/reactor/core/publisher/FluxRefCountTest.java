@@ -179,7 +179,7 @@ public class FluxRefCountTest {
 
 	@Test
 	public void normal() {
-		FluxProcessor<Integer, Integer> e = Processors.multicast();
+		FluxIdentityProcessor<Integer> e = Processors.multicast();
 
 		Flux<Integer> p = e.publish().refCount();
 
@@ -219,7 +219,7 @@ public class FluxRefCountTest {
 
 	@Test
 	public void normalTwoSubscribers() {
-		FluxProcessor<Integer, Integer> e = Processors.multicast();
+		FluxIdentityProcessor<Integer> e = Processors.multicast();
 
 		Flux<Integer> p = e.publish().refCount(2);
 
@@ -380,7 +380,7 @@ public class FluxRefCountTest {
 
 	@Test
 	public void delayElementShouldNotCancelTwice() throws Exception {
-		FluxProcessor<Long, Long> p = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Long> p = Processors.more().multicastNoBackpressure();
 		AtomicInteger cancellations = new AtomicInteger();
 
 		Flux<Long> publishedFlux = p

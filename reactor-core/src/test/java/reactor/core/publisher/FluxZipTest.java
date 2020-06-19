@@ -475,8 +475,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	public void multipleStreamValuesCanBeZipped() {
 //		"Multiple Stream"s values can be zipped"
 //		given: "source composables to merge, buffer and tap"
-		FluxProcessor<Integer, Integer> source1 = Processors.multicast();
-		FluxProcessor<Integer, Integer> source2 = Processors.multicast();
+		FluxIdentityProcessor<Integer> source1 = Processors.multicast();
+		FluxIdentityProcessor<Integer> source2 = Processors.multicast();
 		Flux<Integer> zippedFlux = Flux.zip(source1, source2, (t1, t2) -> t1 + t2);
 		AtomicReference<Integer> tap = new AtomicReference<>();
 		zippedFlux.subscribe(it -> tap.set(it));
@@ -778,7 +778,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void failDoubleTerminalPublisher() {
-		FluxProcessor<Integer, Integer> d1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> d1 = Processors.more().multicastNoBackpressure();
 		Hooks.onErrorDropped(e -> {
 		});
 		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1, s -> {
@@ -865,7 +865,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void backpressuredAsyncFusedCancelled() {
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
 				up,
@@ -882,7 +882,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void backpressuredAsyncFusedCancelled2() {
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
 				up,
@@ -902,7 +902,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		Hooks.onErrorDropped(c -> {
 			assertThat(c).hasMessage("test2");
 		});
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		FluxZip.ZipInner[] inner = new FluxZip.ZipInner[1];
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
@@ -927,7 +927,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		Hooks.onErrorDropped(c -> {
 			assertThat(c).hasMessage("test2");
 		});
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		FluxZip.ZipInner[] inner = new FluxZip.ZipInner[1];
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1], 1, up, s -> {
 			FluxZip.ZipInner zipInner = (FluxZip.ZipInner) Scannable.from(up).scan(Scannable.Attr.ACTUAL);
@@ -953,7 +953,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void backpressuredAsyncFusedComplete() {
-		FluxProcessor<Integer, Integer> up = Processors.unicast();
+		FluxIdentityProcessor<Integer> up = Processors.unicast();
 		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
 				up,
@@ -1066,7 +1066,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void prematureCompleteSourceEmptyDouble() {
-		FluxProcessor<Integer, Integer> d = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> d = Processors.more().multicastNoBackpressure();
 		StepVerifier.create(Flux.zip(obj -> 0, d, s -> {
 			Scannable directInner = d.inners().findFirst().get();
 			CoreSubscriber<?> directInnerDownstream = (CoreSubscriber<?>) directInner.scan(Scannable.Attr.ACTUAL);

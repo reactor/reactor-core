@@ -154,7 +154,7 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void someFirst() {
-		FluxProcessor<Integer, Integer> tp = Processors.multicast();
+		FluxIdentityProcessor<Integer> tp = Processors.multicast();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -175,7 +175,7 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void someFirstBackpressured() {
-		FluxProcessor<Integer, Integer> tp = Processors.multicast();
+		FluxIdentityProcessor<Integer> tp = Processors.multicast();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 

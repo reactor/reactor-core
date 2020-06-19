@@ -103,7 +103,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void drop() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, this, DROP_LATEST);
@@ -131,7 +131,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropOldest() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, this, DROP_OLDEST);
@@ -159,7 +159,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void error() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, this, ERROR);
@@ -264,7 +264,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropCallbackError() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
@@ -294,7 +294,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropOldestCallbackError() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
@@ -324,7 +324,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void errorCallbackError() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
@@ -354,7 +354,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithErrorStrategyOverflowsAfterDrain() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, null, ERROR);
@@ -384,7 +384,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithDropStrategyNoError() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, null, DROP_LATEST);
@@ -412,7 +412,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithDropOldestStrategyNoError() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
 				processor, 2, null, DROP_OLDEST);
@@ -440,7 +440,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void fluxOnBackpressureBufferStrategyNoCallback() {
-		FluxProcessor<String, String> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
 
 		StepVerifier.create(processor.onBackpressureBuffer(2, DROP_OLDEST), 0)
 		            .thenRequest(1)

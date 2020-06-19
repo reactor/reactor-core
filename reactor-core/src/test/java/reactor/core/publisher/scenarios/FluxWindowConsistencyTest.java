@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 
 public class FluxWindowConsistencyTest {
 
-	FluxProcessor<Integer, Integer> sourceProcessor = Processors.more().multicastNoBackpressure();
+	FluxIdentityProcessor<Integer> sourceProcessor = Processors.more().multicastNoBackpressure();
 
 	Flux<Integer> source;
 
@@ -208,7 +208,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryComplete() throws Exception {
-		FluxProcessor<Integer, Integer> boundary = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> boundary = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.window(boundary);
 		subscribe(windows);
 		generate(0, 3);
@@ -219,9 +219,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndComplete() throws Exception {
-		FluxProcessor<Integer, Integer> start = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> end1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> end2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> start = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> end1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> end2 = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
@@ -306,7 +306,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryMainCancel() throws Exception {
-		FluxProcessor<Integer, Integer> boundary = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> boundary = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.window(boundary);
 
 		subscribe(windows);
@@ -322,9 +322,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndMainCancel() throws Exception {
-		FluxProcessor<Integer, Integer> start = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> end1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> end2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> start = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> end1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> end2 = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
@@ -414,7 +414,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryMainCancelNoNewWindow() throws Exception {
-		FluxProcessor<Integer, Integer> boundary = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> boundary = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.window(boundary);
 
 		subscribe(windows);
@@ -427,9 +427,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndMainCancelNoNewWindow() throws Exception {
-		FluxProcessor<Integer, Integer> start = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> end1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> end2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> start = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> end1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> end2 = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
@@ -507,7 +507,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryInnerCancel() throws Exception {
-		FluxProcessor<Integer, Integer> boundaryProcessor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> boundaryProcessor = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.window(boundaryProcessor);
 		subscribe(windows);
 		generateWithCancel(0, 6, 1);
@@ -516,9 +516,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndInnerCancel() throws Exception {
-		FluxProcessor<Integer, Integer> start = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> end1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> end2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> start = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> end1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> end2 = Processors.more().multicastNoBackpressure();
 		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);

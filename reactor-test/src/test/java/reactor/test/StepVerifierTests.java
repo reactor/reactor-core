@@ -40,6 +40,7 @@ import org.junit.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxIdentityProcessor;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
@@ -624,7 +625,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyThenOnCompleteRange() {
-		FluxProcessor<Void, Void> p = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Void> p = Processors.more().multicastNoBackpressure();
 
 		Flux<String> flux = Flux.range(0, 3)
 		                        .map(d -> "t" + d)
@@ -1987,7 +1988,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void takeAsyncFusedBackpressured() {
-		FluxProcessor<String, String> up = Processors.unicast();
+		FluxIdentityProcessor<String> up = Processors.unicast();
 		StepVerifier.create(up.take(3), 0)
 		            .expectFusion()
 		            .then(() -> up.onNext("test"))
@@ -2002,7 +2003,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void cancelAsyncFusion() {
-		FluxProcessor<String, String> up = Processors.unicast();
+		FluxIdentityProcessor<String> up = Processors.unicast();
 		StepVerifier.create(up.take(3), 0)
 		            .expectFusion()
 		            .then(() -> up.onNext("test"))
@@ -2073,7 +2074,7 @@ public class StepVerifierTests {
 	@Test
 	public void assertNextWithSubscribeOnDirectProcessor() {
 		Scheduler scheduler = Schedulers.newBoundedElastic(1, 100, "test");
-		FluxProcessor<Integer, Integer> processor = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> processor = Processors.more().multicastNoBackpressure();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
 		                             .doOnNext(processor::onNext)
 		                             .subscribeOn(scheduler);
@@ -2331,7 +2332,7 @@ public class StepVerifierTests {
 	@Test
 	public void verifyDrainOnRequestInCaseOfFusion2() {
 		ArrayList<Long> requests = new ArrayList<>();
-		FluxProcessor<Integer, Integer> processor = Processors.unicast();
+		FluxIdentityProcessor<Integer> processor = Processors.unicast();
 		StepVerifier.create(processor.doOnRequest(requests::add), 0)
 				.expectFusion(Fuseable.ANY)
 				.then(() -> {
@@ -2355,7 +2356,7 @@ public class StepVerifierTests {
 
 
 		StepVerifier.withVirtualTime(() -> {
-			FluxProcessor<String, String> fluxEmitter = Processors.multicast();
+			FluxIdentityProcessor<String> fluxEmitter = Processors.multicast();
 
 			subscriptionWorker.schedulePeriodically(() -> {
 				if (source.size() > 0) {

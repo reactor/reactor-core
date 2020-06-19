@@ -73,7 +73,7 @@ public class StrictSubscriberTest {
 		AtomicBoolean state2 = new AtomicBoolean();
 		AtomicReference<Throwable> e = new AtomicReference<>();
 
-		FluxProcessor<Integer, Integer> sp = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp = Processors.more().multicastNoBackpressure();
 
 		sp.doOnCancel(() -> state2.set(state1.get()))
 		  .subscribe(new Subscriber<Integer>() {

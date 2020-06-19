@@ -150,10 +150,10 @@ public class FluxWindowWhenTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp2 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp3 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> sp4 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp3 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> sp4 = Processors.more().multicastNoBackpressure();
 
 		sp1.windowWhen(sp2, v -> v == 1 ? sp3 : sp4)
 		   .subscribe(ts);
@@ -193,10 +193,10 @@ public class FluxWindowWhenTest {
 	public void normalStarterEnds() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> openSelector = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> closeSelectorFor1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> closeSelectorForOthers = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> openSelector = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> closeSelectorFor1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> closeSelectorForOthers = Processors.more().multicastNoBackpressure();
 
 		source.windowWhen(openSelector, v -> v == 1 ? closeSelectorFor1 : closeSelectorForOthers)
 		   .subscribe(ts);
@@ -237,10 +237,10 @@ public class FluxWindowWhenTest {
 	public void oneWindowOnly() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> openSelector = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> closeSelectorFor1 = Processors.more().multicastNoBackpressure();
-		FluxProcessor<Integer, Integer> closeSelectorOthers = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> openSelector = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> closeSelectorFor1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> closeSelectorOthers = Processors.more().multicastNoBackpressure();
 
 		source.windowWhen(openSelector, v -> v == 1 ? closeSelectorFor1 : closeSelectorOthers)
 		   .subscribe(ts);
@@ -272,11 +272,11 @@ public class FluxWindowWhenTest {
 	@Test
 	public void windowWillAccumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		FluxProcessor<Integer, Integer> numbers = Processors.multicast();
-		FluxProcessor<Integer, Integer> bucketOpening = Processors.multicast();
+		FluxIdentityProcessor<Integer> numbers = Processors.multicast();
+		FluxIdentityProcessor<Integer> bucketOpening = Processors.multicast();
 
 		//"overlapping buffers"
-		FluxProcessor<Integer, Integer> boundaryFlux = Processors.multicast();
+		FluxIdentityProcessor<Integer> boundaryFlux = Processors.multicast();
 
 		MonoProcessor<List<List<Integer>>> res = numbers.windowWhen(bucketOpening, u -> boundaryFlux )
 		                                       .flatMap(Flux::buffer)

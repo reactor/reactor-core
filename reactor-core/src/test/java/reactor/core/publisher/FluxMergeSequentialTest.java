@@ -142,8 +142,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsDelayEnd() {
-		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
-		final FluxProcessor<Integer, Integer> inner = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
+		final FluxIdentityProcessor<Integer> inner = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = main.flatMapSequentialDelayError(t -> inner, 32, 32)
 		                                   .subscribeWith(AssertSubscriber.create());
@@ -168,8 +168,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsImmediate() {
-		FluxProcessor<Integer, Integer> main = Processors.more().multicastNoBackpressure();
-		final FluxProcessor<Integer, Integer> inner = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
+		final FluxIdentityProcessor<Integer> inner = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = main.flatMapSequential(t -> inner)
 		                                   .subscribeWith(AssertSubscriber.create());
@@ -461,7 +461,7 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void testReentrantWork() {
-		final FluxProcessor<Integer, Integer> subject = Processors.more().multicastNoBackpressure();
+		final FluxIdentityProcessor<Integer> subject = Processors.more().multicastNoBackpressure();
 
 		final AtomicBoolean once = new AtomicBoolean();
 

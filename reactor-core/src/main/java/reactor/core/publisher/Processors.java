@@ -25,42 +25,44 @@ import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 
 /**
+ * A class that bears factory methods for all flavors of Reactor {@link org.reactivestreams.Processor}.
+ * For manually pushing signals, see {@link Sinks} instead.
+ *
  * @author Simon Baslé
  */
 public final class Processors {
 
-
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessor<T, T> unicast() {
+	public static <T> FluxIdentityProcessor<T> unicast() {
 		return UnicastProcessor.create();
 	}
 
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessor<T, T> multicast() {
+	public static <T> FluxIdentityProcessor<T> multicast() {
 		return EmitterProcessor.create();
 	}
 
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessor<T, T> replayAll() {
+	public static <T> FluxIdentityProcessor<T> replayAll() {
 		return ReplayProcessor.create();
 	}
 
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessor<T, T> replay(int historySize) {
+	public static <T> FluxIdentityProcessor<T> replay(int historySize) {
 		return ReplayProcessor.create(historySize);
 	}
 
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessor<T, T> replayTimeout(Duration maxAge) {
+	public static  <T> FluxIdentityProcessor<T> replayTimeout(Duration maxAge) {
 		return ReplayProcessor.createTimeout(maxAge);
 	}
 
 	@SuppressWarnings("deprecation")
-	public static final <T> FluxProcessor<T, T> replaySizeAndTimeout(int historySize, Duration maxAge) {
+	public static <T> FluxIdentityProcessor<T> replaySizeAndTimeout(int historySize, Duration maxAge) {
 		return ReplayProcessor.createSizeAndTimeout(historySize, maxAge);
 	}
 
-	public static final MoreProcessors more() {
+	public static MoreProcessors more() {
 		return MoreProcessors.INSTANCE;
 	}
 
@@ -74,67 +76,67 @@ public final class Processors {
 		// == unicast ==
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> unicast(Queue<T> queue) {
+		public final <T> FluxIdentityProcessor<T> unicast(Queue<T> queue) {
 			return UnicastProcessor.create(queue);
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> unicast(Queue<T> queue, Disposable endCallback) {
+		public final <T> FluxIdentityProcessor<T> unicast(Queue<T> queue, Disposable endCallback) {
 			return UnicastProcessor.create(queue, endCallback);
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> unicast(Queue<T> queue, Consumer<? super T> onOverflow, Disposable endCallback) {
+		public final <T> FluxIdentityProcessor<T> unicast(Queue<T> queue, Consumer<? super T> onOverflow, Disposable endCallback) {
 			return UnicastProcessor.create(queue, onOverflow, endCallback);
 		}
 
 		// == direct (less used) ==
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> multicastNoBackpressure() {
+		public final <T> FluxIdentityProcessor<T> multicastNoBackpressure() {
 			return DirectProcessor.create();
 		}
 
 		// == emitter ==
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> multicast(boolean autoCancel) {
+		public final <T> FluxIdentityProcessor<T> multicast(boolean autoCancel) {
 			return EmitterProcessor.create(autoCancel);
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> multicast(int bufferSize) {
+		public final <T> FluxIdentityProcessor<T> multicast(int bufferSize) {
 			return EmitterProcessor.create(bufferSize);
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> multicast(int bufferSize, boolean autoCancel) {
+		public final <T> FluxIdentityProcessor<T> multicast(int bufferSize, boolean autoCancel) {
 			return EmitterProcessor.create(bufferSize, autoCancel);
 		}
 
 		// == replay ==
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> replayLatest() {
+		public final <T> FluxIdentityProcessor<T> replayLatest() {
 			return ReplayProcessor.cacheLast();
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> replayLatestOrDefault(@Nullable T value) {
+		public final <T> FluxIdentityProcessor<T> replayLatestOrDefault(@Nullable T value) {
 			return ReplayProcessor.cacheLastOrDefault(value);
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> replay(int historySize, boolean unbounded) {
+		public final <T> FluxIdentityProcessor<T> replay(int historySize, boolean unbounded) {
 			return ReplayProcessor.create(historySize, unbounded);
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> replayTimeout(Duration maxAge, Scheduler scheduler) {
+		public final <T> FluxIdentityProcessor<T> replayTimeout(Duration maxAge, Scheduler scheduler) {
 			return ReplayProcessor.createTimeout(maxAge, scheduler);
 		}
 
 		@SuppressWarnings("deprecation")
-		public final <T> FluxProcessor<T, T> replaySizeAndTimeout(int historySize, Duration maxAge, Scheduler scheduler) {
+		public final <T> FluxIdentityProcessor<T> replaySizeAndTimeout(int historySize, Duration maxAge, Scheduler scheduler) {
 			return ReplayProcessor.createSizeAndTimeout(historySize, maxAge, scheduler);
 		}
 

@@ -248,7 +248,7 @@ public class MonoFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final FluxProcessor<Boolean, Boolean> pp = Processors.multicast();
+		final FluxIdentityProcessor<Boolean> pp = Processors.multicast();
 
 		StepVerifier.create(Mono.just(1)
 		                        .filterWhen(v -> pp))

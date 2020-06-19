@@ -99,9 +99,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -123,9 +123,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -147,9 +147,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -232,9 +232,9 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> source = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		FluxProcessor<Integer, Integer> tp = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
 
 		source.timeout(tp, v -> tp)
 		      .subscribe(ts);

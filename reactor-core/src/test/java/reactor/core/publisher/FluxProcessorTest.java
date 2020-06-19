@@ -62,7 +62,7 @@ public class FluxProcessorTest {
 	@SuppressWarnings("unchecked")
 	public void normalBlackboxProcessor(){
 		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
-		FluxProcessor<Integer, Integer> processor =
+		FluxIdentityProcessor<Integer> processor =
 				FluxProcessor.wrap(upstream, upstream.map(i -> i + 1)
 				                                     .filter(i -> i % 2 == 0));
 
@@ -82,7 +82,7 @@ public class FluxProcessorTest {
 	@Test
 	public void disconnectedBlackboxProcessor(){
 		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
-		FluxProcessor<Integer, Integer> processor =
+		FluxIdentityProcessor<Integer> processor =
 				FluxProcessor.wrap(upstream, Flux.just(1));
 
 		StepVerifier.create(processor)
@@ -93,7 +93,7 @@ public class FluxProcessorTest {
 	@Test
 	public void symmetricBlackboxProcessor(){
 		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
-		FluxProcessor<Integer, Integer> processor =
+		FluxIdentityProcessor<Integer> processor =
 				FluxProcessor.wrap(upstream, upstream);
 
 		StepVerifier.create(processor)
@@ -105,7 +105,7 @@ public class FluxProcessorTest {
 	@Test
 	public void errorSymmetricBlackboxProcessor(){
 		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
-		FluxProcessor<Integer, Integer> processor =
+		FluxIdentityProcessor<Integer> processor =
 				FluxProcessor.wrap(upstream, upstream);
 
 		StepVerifier.create(processor)
@@ -115,7 +115,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void testSubmitSession() throws Exception {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
+		FluxIdentityProcessor<Integer> processor = EmitterProcessor.create();
 		AtomicInteger count = new AtomicInteger();
 		CountDownLatch latch = new CountDownLatch(1);
 		Scheduler scheduler = Schedulers.parallel();
@@ -139,7 +139,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void testEmitter() throws Throwable {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
+		FluxIdentityProcessor<Integer> processor = EmitterProcessor.create();
 
 		int n = 100_000;
 		int subs = 4;
@@ -166,7 +166,7 @@ public class FluxProcessorTest {
 	}
 	@Test
 	public void testEmitter2() throws Throwable {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
+		FluxIdentityProcessor<Integer> processor = EmitterProcessor.create();
 
 		int n = 100_000;
 		int subs = 4;
@@ -204,7 +204,7 @@ public class FluxProcessorTest {
 		ref.set(Thread.currentThread());
 
 		DirectProcessor<String> rp = DirectProcessor.create();
-		FluxProcessor<String, String> serialized = rp.serialize();
+		FluxIdentityProcessor<String> serialized = rp.serialize();
 
 		try {
 			StepVerifier.create(serialized)
@@ -253,7 +253,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void scanProcessor() {
-		FluxProcessor<String, String> test = DirectProcessor.<String>create().serialize();
+		FluxIdentityProcessor<String> test = DirectProcessor.<String>create().serialize();
 
 		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(16);
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();

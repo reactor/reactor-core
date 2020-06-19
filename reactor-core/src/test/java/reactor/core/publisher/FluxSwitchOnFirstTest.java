@@ -1091,7 +1091,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void checkHotSource() {
-        FluxProcessor<Long, Long> processor = Processors.replay(1);
+        FluxIdentityProcessor<Long> processor = Processors.replay(1);
 
         processor.onNext(1L);
         processor.onNext(2L);
@@ -1116,7 +1116,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherComplete() {
-        FluxProcessor<Long, Long> testPublisher = Processors.multicast();
+        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
 
         testPublisher.onNext(1L);
 
@@ -1130,7 +1130,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldNotCancelSourceOnUnrelatedPublisherComplete() {
-        FluxProcessor<Long, Long> testPublisher = Processors.multicast();
+        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
 
         testPublisher.onNext(1L);
 
@@ -1144,7 +1144,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherError() {
-        FluxProcessor<Long, Long> testPublisher = Processors.multicast();
+        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
 
         testPublisher.onNext(1L);
 
@@ -1174,7 +1174,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherCompleteConditional() {
-        FluxProcessor<Long, Long> testPublisher = Processors.multicast();
+        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
 
         testPublisher.onNext(1L);
 
@@ -1195,7 +1195,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldNotCancelSourceOnUnrelatedPublisherCompleteConditional() {
-        FluxProcessor<Long, Long> testPublisher = Processors.multicast();
+        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
 
         testPublisher.onNext(1L);
 
@@ -1291,7 +1291,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherErrorConditional() {
-        FluxProcessor<Long, Long> testPublisher = Processors.multicast();
+        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
 
         testPublisher.onNext(1L);
 
@@ -1316,7 +1316,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherCancelConditional() {
-        FluxProcessor<Long, Long> testPublisher = Processors.multicast();
+        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
 
         testPublisher.onNext(1L);
 
@@ -1338,7 +1338,7 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelUpstreamBeforeFirst() {
-        FluxProcessor<Long, Long> testPublisher = Processors.multicast();
+        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
 
         StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
                 .thenAwait(Duration.ofMillis(50))

@@ -187,7 +187,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusion() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxProcessor<Integer, Integer> up = 
+		FluxIdentityProcessor<Integer> up =
 				Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		up.filter(v -> (v & 1) == 0)
@@ -207,7 +207,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionBackpressured() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		FluxProcessor<Integer, Integer> up = 
+		FluxIdentityProcessor<Integer> up =
 				Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)
@@ -233,7 +233,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionBackpressured2() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		FluxProcessor<Integer, Integer> up = 
+		FluxIdentityProcessor<Integer> up =
 				Processors.more().unicast(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)

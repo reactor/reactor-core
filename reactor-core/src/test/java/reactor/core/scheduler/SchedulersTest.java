@@ -657,7 +657,7 @@ public class SchedulersTest {
 
 	public void assertRejectingScheduler(Scheduler scheduler) {
 		try {
-			FluxProcessor<String, String> p = Processors.more().multicastNoBackpressure();
+			FluxIdentityProcessor<String> p = Processors.more().multicastNoBackpressure();
 
 			AtomicReference<String> r = new AtomicReference<>();
 			CountDownLatch l = new CountDownLatch(1);
