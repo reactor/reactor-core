@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -27,12 +28,14 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -161,7 +164,199 @@ class SinksTest {
 		}
 	}
 
-	//FIXME trigger mono sink tests
+	@Nested
+	class Promise {
+
+		Sinks.StandaloneMonoSink<Integer> promise;
+		Mono<Integer> mono;
+
+		@BeforeEach
+		void createPromise() {
+			promise = Sinks.promise();
+			mono = promise.asMono();
+		}
+
+		//TODO racing dual completions ?
+
+		@Test
+		void promiseIsCompletableOnlyOnce_emptyVsValued() {
+			StepVerifier.create(mono)
+			            .then(() -> {
+			            	promise.success();
+			            	promise.success(-1);
+			            })
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDropped(-1);
+		}
+
+		@Test
+		void promiseIsCompletableOnlyOnce_emptyVsError() {
+			StepVerifier.create(mono)
+			            .then(() -> {
+				            promise.success();
+				            promise.error(new IllegalStateException("boom"));
+			            })
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedErrorWithMessage("boom");
+		}
+
+		@Test
+		void promiseIsCompletableOnlyOnce_valuedVsEmpty() {
+			StepVerifier.create(mono)
+			            .then(() -> {
+				            promise.success(1);
+				            promise.success();
+			            })
+			            .expectNext(1)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasNotDroppedElements();
+		}
+
+		@Test
+		void promiseIsCompletableOnlyOnce_valuedVsError() {
+			StepVerifier.create(mono)
+			            .then(() -> {
+				            promise.success(1);
+				            promise.error(new IllegalStateException("boom"));
+			            })
+			            .expectNext(1)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedErrorWithMessage("boom");
+		}
+
+		@Test
+		void promiseIsCompletableOnlyOnce_errorVsValued() {
+			StepVerifier.create(mono)
+			            .then(() -> {
+				            promise.error(new IllegalStateException("boom"));
+				            promise.success(-1);
+			            })
+			            .expectErrorMessage("boom")
+			            .verifyThenAssertThat()
+			            .hasDropped(-1);
+		}
+
+		@Test
+		void promiseIsCompletableOnlyOnce_errorVsEmpty() {
+			StepVerifier.create(mono)
+			            .then(() -> {
+			            	promise.error(new IllegalStateException("boom"));
+					        promise.success();
+			            })
+			            .expectErrorMessage("boom")
+			            .verifyThenAssertThat()
+			            .hasNotDroppedElements()
+			            .hasNotDroppedErrors();
+		}
+
+		@Test
+		void canBeValuedEarly() {
+			promise.success(1);
+
+			StepVerifier.create(mono)
+			            .expectNext(1)
+			            .verifyComplete();
+		}
+
+		@Test
+		void canBeCompletedEarly() {
+			promise.success();
+
+			StepVerifier.create(mono)
+			            .verifyComplete();
+		}
+
+		@Test
+		void canBeErroredEarly() {
+			promise.error(new IllegalStateException("boom"));
+
+			StepVerifier.create(mono)
+			            .verifyErrorMessage("boom");
+		}
+
+		@Test
+		void canBeValuedLate() {
+			StepVerifier.create(mono)
+			            .expectSubscription()
+			            .expectNoEvent(Duration.ofMillis(100))
+			            .then(() -> promise.success(1))
+			            .expectNext(1)
+			            .verifyComplete();
+		}
+
+		@Test
+		void canBeCompletedLate() {
+			StepVerifier.create(mono)
+			            .expectSubscription()
+			            .expectNoEvent(Duration.ofMillis(100))
+			            .then(() -> promise.success())
+			            .verifyComplete();
+		}
+
+		@Test
+		void canBeErroredLate() {
+			StepVerifier.create(mono)
+			            .expectSubscription()
+			            .expectNoEvent(Duration.ofMillis(100))
+			            .then(() -> promise.error(new IllegalStateException("boom")))
+			            .verifyErrorMessage("boom");
+		}
+
+		@Test
+		void replaysValuedCompletionToLateSubscribersWithBackpressure() {
+			promise.success(1);
+			mono.subscribe(); //first subscriber
+
+			StepVerifier.create(mono, StepVerifierOptions.create().scenarioName("second subscriber, no backpressure"))
+			            .expectNext(1)
+			            .verifyComplete();
+
+			StepVerifier.create(mono, StepVerifierOptions.create()
+			                                             .scenarioName("third subscriber, backpressure")
+			                                             .initialRequest(0))
+			            .expectSubscription()
+			            .expectNoEvent(Duration.ofMillis(100))
+			            .thenRequest(1)
+			            .expectNext(1)
+			            .verifyComplete();
+		}
+
+		@Test
+		void replaysEmptyCompletionToLateSubscribersEvenWithoutRequest() {
+			promise.success();
+			mono.subscribe(); //first subscriber
+
+			StepVerifier.create(mono, StepVerifierOptions.create().scenarioName("second subscriber, no backpressure"))
+			            .verifyComplete();
+
+			StepVerifier.create(mono, StepVerifierOptions.create()
+			                                             .scenarioName("third subscriber, 0 request")
+			                                             .initialRequest(0))
+			            .expectSubscription()
+			            //notice no expectNoEvent / request here
+			            .verifyComplete();
+		}
+
+		@Test
+		void replaysErrorCompletionToLateSubscribers() {
+			promise.error(new IllegalStateException("boom"));
+			mono.subscribe(); //first subscriber
+
+			StepVerifier.create(mono, StepVerifierOptions.create().scenarioName("second subscriber, no backpressure"))
+			            .verifyErrorMessage("boom");
+
+			StepVerifier.create(mono, StepVerifierOptions.create()
+			                                             .scenarioName("third subscriber, 0 request")
+			                                             .initialRequest(0))
+			            .expectSubscription()
+			            //notice no expectNoEvent / request here
+			            .verifyErrorMessage("boom");
+		}
+	}
 
 	private static final int NONE = 0;
 	private static final int ALL = Integer.MAX_VALUE;

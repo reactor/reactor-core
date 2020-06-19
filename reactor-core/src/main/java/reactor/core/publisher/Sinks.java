@@ -118,12 +118,12 @@ public final class Sinks {
 	}
 
 	/**
-	 * A {@link StandaloneMonoSink} that can be triggered at any time by either of
-	 * the three completions: {@link ScalarSink#success(Object) valued completion},
-	 * {@link ScalarSink#success() empty completions} or {@link ScalarSink#error(Throwable) error}.
-	 * This completion is replayed to late subscribers.
+	 * A {@link StandaloneMonoSink} that works like a conceptual Promise: it can be completed
+	 * at any time, but only once. This is done by invoking either of the three completions:
+	 * {@link ScalarSink#success(Object) valued completion}, {@link ScalarSink#success() empty completions}
+	 * or {@link ScalarSink#error(Throwable) error}. This completion is replayed to late subscribers.
 	 */
-	public static <T> StandaloneMonoSink<T> trigger() {
+	public static <T> StandaloneMonoSink<T> promise() {
 		return new MonoProcessorSink<>(MonoProcessor.create());
 	}
 
@@ -257,6 +257,7 @@ public final class Sinks {
 			synchronized (processor) {
 				if (done) {
 					Operators.onErrorDropped(e, Context.empty());
+					return;
 				}
 				done = true;
 			}
