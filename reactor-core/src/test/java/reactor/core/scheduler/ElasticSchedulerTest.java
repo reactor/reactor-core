@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.pivovarit.function.ThrowingRunnable;
@@ -40,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
+@SuppressWarnings("deprecation")
 public class ElasticSchedulerTest extends AbstractSchedulerTest {
 
 	private static final Logger LOGGER = Loggers.getLogger(ElasticSchedulerTest.class);
