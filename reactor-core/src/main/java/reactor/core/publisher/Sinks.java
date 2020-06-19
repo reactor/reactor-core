@@ -44,6 +44,8 @@ public final class Sinks {
 	 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@link Queues#SMALL_BUFFER_SIZE}
 	 *     elements pushed before the first {@link Subscriber} is registered.</li>
 	 * </ul>
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
 	 */
 	@SuppressWarnings("deprecation")
 	public static <T> StandaloneFluxSink<T> multicast() {
@@ -60,6 +62,8 @@ public final class Sinks {
 	 *     <li>Without {@link Subscriber}: Discarding. Pushing elements while there are no {@link Subscriber}
 	 *     registered will simply discard these elements instead of "warming up" the sink.</li>
 	 * </ul>
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/sinkNoWarmup.svg" alt="">
 	 */
 	@SuppressWarnings("deprecation")
 	public static <T> StandaloneFluxSink<T> multicastNoWarmup() {
@@ -205,6 +209,7 @@ public final class Sinks {
 		}
 	}
 
+	//TODO improve synchronization, prefer CAS ?
 	static final class MonoProcessorSink<T> implements StandaloneMonoSink<T> {
 
 		final MonoProcessor<T> processor;

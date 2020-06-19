@@ -32,21 +32,31 @@ import org.reactivestreams.Subscriber;
 public interface SequenceSink<T> {
 
 	/**
+	 * Terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
+	 * signal.
+	 *
 	 * @see Subscriber#onComplete()
 	 */
 	void complete();
 
-
 	/**
+	 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
+	 * signal.
+	 *
 	 * @see Subscriber#onError(Throwable)
 	 * @param e the exception to signal, not null
 	 */
 	void error(Throwable e);
 
 	/**
-	 * Try emitting, might throw an unchecked exception.
+	 * Emit a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal.
+	 * <p>
+	 * Might throw an unchecked exception in case of a fatal error downstream which cannot
+	 * be propagated to any asynchronous handler (aka a bubbling exception).
+	 *
 	 * @see Subscriber#onNext(Object)
 	 * @param t the value to emit, not null
+	 * @return this sink for chaining further signals
 	 */
 	SequenceSink<T> next(T t);
 
