@@ -34,6 +34,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -52,6 +53,7 @@ import static reactor.core.Scannable.Attr.*;
 /**
  * @author Stephane Maldini
  */
+@SuppressWarnings("deprecation")
 public class EmitterProcessorTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1364
@@ -445,7 +447,7 @@ public class EmitterProcessorTest {
 	@Ignore
 	public void test() {
 		Scheduler asyncGroup = Schedulers.single();
-		FluxProcessor<String, String> emitter = EmitterProcessor.create();
+		FluxIdentityProcessor<String> emitter = EmitterProcessor.create();
 
 		CountDownLatch requestReceived = new CountDownLatch(1);
 		AtomicLong demand = new AtomicLong(0);
@@ -483,7 +485,7 @@ public class EmitterProcessorTest {
 	@Test
 	@Ignore
 	public void testPerformance() {
-		FluxProcessor<String, String> emitter = EmitterProcessor.create();
+		FluxIdentityProcessor<String> emitter = EmitterProcessor.create();
 
 		CountDownLatch requestReceived = new CountDownLatch(1);
 
@@ -539,7 +541,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testRed() {
-		FluxProcessor<String, String> processor = EmitterProcessor.create();
+		FluxIdentityProcessor<String> processor = EmitterProcessor.create();
 		AssertSubscriber<String> subscriber = AssertSubscriber.create(1);
 		processor.subscribe(subscriber);
 
@@ -552,7 +554,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testGreen() {
-		FluxProcessor<String, String> processor = EmitterProcessor.create();
+		FluxIdentityProcessor<String> processor = EmitterProcessor.create();
 		AssertSubscriber<String> subscriber = AssertSubscriber.create(1);
 		processor.subscribe(subscriber);
 
@@ -566,7 +568,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testHanging() {
-		FluxProcessor<String, String> processor = EmitterProcessor.create(2);
+		FluxIdentityProcessor<String> processor = EmitterProcessor.create(2);
 
 		AssertSubscriber<String> first = AssertSubscriber.create(0);
 		processor.log("after-1").subscribe(first);
@@ -594,7 +596,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testNPE() {
-		FluxProcessor<String, String> processor = EmitterProcessor.create(8);
+		FluxIdentityProcessor<String> processor = EmitterProcessor.create(8);
 		AssertSubscriber<String> first = AssertSubscriber.create(1);
 		processor.log().take(1).subscribe(first);
 
@@ -631,7 +633,7 @@ public class EmitterProcessorTest {
 
 		}
 
-		public MyThread(FluxProcessor<String, String> processor, CyclicBarrier barrier, int n, int index) {
+		public MyThread(FluxIdentityProcessor<String> processor, CyclicBarrier barrier, int n, int index) {
 			this.processor = processor.log("consuming."+index);
 			this.barrier = barrier;
 			this.n = n;
@@ -675,7 +677,7 @@ public class EmitterProcessorTest {
 		int N_THREADS = 3;
 		int N_ITEMS = 8;
 
-		FluxProcessor<String, String> processor = EmitterProcessor.create(4);
+		FluxIdentityProcessor<String> processor = EmitterProcessor.create(4);
 		List<String> data = new ArrayList<>();
 		for (int i = 1; i <= N_ITEMS; i++) {
 			data.add(String.valueOf(i));

@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import javax.annotation.Nullable;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,6 +43,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
@@ -497,7 +497,7 @@ public class FluxPeekFuseableTest {
 	public void asyncFusionAvailable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor.create(Queues.<Integer>get(2).get())
+		Processors.more().unicast(Queues.<Integer>get(2).get())
 		                .doOnNext(v -> {
 		                })
 		                .subscribe(ts);

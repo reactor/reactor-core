@@ -735,7 +735,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionAvailable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor.create(Queues.<Integer>get(2).get())
+		Processors.more().unicast(Queues.<Integer>get(2).get())
 		                .doOnNext(v -> {
 		                })
 		                .subscribe(ts);
