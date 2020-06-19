@@ -186,5 +186,14 @@ tasks.withType(Test).all {
     useJUnitPlatform()
 }
 
-//add jar and original jar to the publication
-publishing.publications.mavenJava.artifact(shadowJar)
+// make the shadow jar the default artifact
+['apiElements', 'runtimeElements'].each {
+    configurations.getByName(it).outgoing {
+        artifacts.clear()
+        artifact(shadowJar)
+    }
+}
+configurations.runtime.outgoing.artifacts.clear()
+
+//add original jar to the publication
+publishing.publications.mavenJava.artifact(jar)
