@@ -50,7 +50,7 @@ public class FluxElapsedTest {
 
 		assertThat(test).isInstanceOf(Scannable.class);
 		assertThat(from(test).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
-		assertThat(from(test).scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+		assertThat(from(test).scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 
 	@Test
@@ -63,6 +63,6 @@ public class FluxElapsedTest {
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
-        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 }

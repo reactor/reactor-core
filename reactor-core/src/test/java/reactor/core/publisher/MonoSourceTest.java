@@ -271,6 +271,14 @@ public class MonoSourceTest {
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
+	@Test
+	public void scanFuseableSubscriber(){
+		Mono<String> source = Mono.just("foo");
+		MonoSourceFuseable<String> test = new MonoSourceFuseable(source);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
 
 	@Test
 	public void scanSubscriberHide() {
