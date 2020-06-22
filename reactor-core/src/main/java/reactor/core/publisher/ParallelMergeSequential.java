@@ -55,6 +55,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -130,6 +131,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return done == 0 ;
 			if (key == Attr.ERROR) return error;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -376,6 +378,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

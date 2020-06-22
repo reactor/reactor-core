@@ -41,6 +41,7 @@ public class ParallelSourceTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -57,6 +58,7 @@ public class ParallelSourceTest {
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isZero();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		test.queue.offer("foo");
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
@@ -89,6 +91,7 @@ public class ParallelSourceTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subs[test.index]);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 }

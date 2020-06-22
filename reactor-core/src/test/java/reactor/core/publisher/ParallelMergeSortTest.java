@@ -26,6 +26,8 @@ import reactor.core.publisher.ParallelMergeSort.MergeSortInner;
 import reactor.core.publisher.ParallelMergeSort.MergeSortMain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
 
 public class ParallelMergeSortTest {
 
@@ -36,6 +38,7 @@ public class ParallelMergeSortTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(RUN_STYLE)).isSameAs(SYNC);
 	}
 
 	@Test
@@ -49,7 +52,7 @@ public class ParallelMergeSortTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2);
-
+		assertThat(test.scan(RUN_STYLE)).isSameAs(SYNC);
 
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 		test.remaining = 3;
@@ -74,6 +77,7 @@ public class ParallelMergeSortTest {
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(RUN_STYLE)).isSameAs(SYNC);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();

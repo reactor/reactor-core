@@ -60,6 +60,7 @@ final class ParallelMergeOrdered<T> extends Flux<T> implements Scannable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return prefetch;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

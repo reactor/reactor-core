@@ -247,6 +247,7 @@ public class ParallelReduceSeedTest extends ParallelOperatorTest<String, String>
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -267,6 +268,7 @@ public class ParallelReduceSeedTest extends ParallelOperatorTest<String, String>
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		test.state = Operators.MonoSubscriber.HAS_REQUEST_HAS_VALUE;
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
