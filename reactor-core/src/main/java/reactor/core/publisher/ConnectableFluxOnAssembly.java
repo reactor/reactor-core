@@ -69,6 +69,7 @@ final class ConnectableFluxOnAssembly<T> extends InternalConnectableFluxOperator
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.ACTUAL_METADATA) return !stacktrace.checkpointed;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
