@@ -56,6 +56,7 @@ final class MonoDeferWithContext<T> extends Mono<T> implements SourceProducer<T>
 
 	@Override
 	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null; //no particular key to be represented, still useful in hooks
 	}
 }

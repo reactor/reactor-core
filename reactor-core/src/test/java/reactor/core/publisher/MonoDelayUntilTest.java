@@ -19,14 +19,12 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -202,6 +200,14 @@ public class MonoDelayUntilTest {
 		            .expectNoEvent(Duration.ofMillis(800))
 		            .expectNext("foo")
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanOperator(){
+	    Mono<Integer> source = Mono.just(1);
+		MonoDelayUntil test = new MonoDelayUntil(source, i -> Mono.just(1));
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

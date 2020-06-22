@@ -37,6 +37,12 @@ final class MonoIgnoreElements<T> extends MonoFromFluxOperator<T, T> {
 		return new IgnoreElementsSubscriber<>(actual);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class IgnoreElementsSubscriber<T> implements InnerOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 
@@ -50,6 +56,7 @@ final class MonoIgnoreElements<T> extends MonoFromFluxOperator<T, T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

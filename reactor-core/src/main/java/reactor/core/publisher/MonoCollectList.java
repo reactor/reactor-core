@@ -40,6 +40,12 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		return new MonoCollectListSubscriber<>(actual);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class MonoCollectListSubscriber<T> extends Operators.MonoSubscriber<T, List<T>> {
 
 		List<T> list;
@@ -59,6 +65,7 @@ final class MonoCollectList<T> extends MonoFromFluxOperator<T, List<T>> implemen
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return super.scanUnsafe(key);
 		}
 
