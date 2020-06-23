@@ -46,7 +46,7 @@ final class FluxLift<I, O> extends InternalFluxOperator<I, O> {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
 		return super.scanUnsafe(key);
 	}
 

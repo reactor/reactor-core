@@ -1166,7 +1166,7 @@ class FluxCreateTest {
 	public void scanOperator(){
 		FluxCreate test = new FluxCreate(v -> Arrays.asList(1, 2, 3), OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY);
 
-		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	@Test
@@ -1183,6 +1183,7 @@ class FluxCreateTest {
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -1254,6 +1255,7 @@ class FluxCreateTest {
 		decorated.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();

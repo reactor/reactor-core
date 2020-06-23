@@ -62,7 +62,7 @@ final class GroupedLiftFuseable<K, I, O> extends GroupedFlux<K, O>
 			return getPrefetch();
 		}
 		if (key == Attr.RUN_STYLE) {
-		    return Attr.RunStyle.SYNC;
+			return Scannable.from(source).scanUnsafe(key);
 		}
 
 		return null;

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -447,7 +446,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(25);
         assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
-        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 
 	@Test
@@ -488,7 +487,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(Integer.MAX_VALUE);
         test.buffer.add(1);
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
-		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         assertThat(test.scan(Scannable.Attr.ERROR)).isNull();

@@ -30,6 +30,7 @@ import org.reactivestreams.Publisher;
 
 import reactor.core.CorePublisher;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,10 +68,10 @@ public class LiftFunctionTest {
 				.doesNotThrowAnyException();
 	}
 
-	void scanOperator(CorePublisher source, int prefetch) {
+	void scanOperator(CorePublisher source, int prefetch, Attr.RunStyle runStyle) {
 		assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(source);
 		assertThat(from(liftOperator).scan(Attr.PREFETCH)).isEqualTo(prefetch);
-		assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
+		assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(runStyle);
 	}
 
 	@Nested
@@ -90,7 +91,7 @@ public class LiftFunctionTest {
 
 		@Test
 		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE);
+			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
 		}
 	}
 
@@ -111,7 +112,7 @@ public class LiftFunctionTest {
 
 		@Test
 		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, -1);
+			LiftFunctionTest.this.scanOperator(source, -1, Attr.RunStyle.SYNC);
 		}
 	}
 
@@ -132,7 +133,7 @@ public class LiftFunctionTest {
 
 		@Test
 		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE);
+			LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE, Attr.RunStyle.SYNC);
 		}
 	}
 
@@ -156,7 +157,7 @@ public class LiftFunctionTest {
 
 			@Test
 			void scanOperator() {
-				LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE);
+				LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE, Attr.RunStyle.SYNC);
 			}
 		}
 
@@ -225,7 +226,7 @@ public class LiftFunctionTest {
 
 		@Test
 		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE);
+			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
 		}
 
 	}
@@ -247,7 +248,7 @@ public class LiftFunctionTest {
 
 		@Test
 		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, -1);
+			LiftFunctionTest.this.scanOperator(source, -1, Attr.RunStyle.SYNC);
 		}
 	}
 
@@ -270,7 +271,7 @@ public class LiftFunctionTest {
 
 		@Test
 		void scanOperator() {
-			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE);
+			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
 		}
 	}
 
@@ -296,7 +297,7 @@ public class LiftFunctionTest {
 
 			@Test
 			void scanOperator() {
-				LiftFunctionTest.this.scanOperator(source, 2);
+				LiftFunctionTest.this.scanOperator(source, 2, Attr.RunStyle.SYNC);
 			}
 		}
 

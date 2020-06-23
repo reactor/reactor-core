@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Wraps another Publisher/Mono and hides its identity, including its
@@ -40,7 +41,7 @@ final class MonoHide<T> extends InternalMonoOperator<T, T> {
 
     @Override
     public Object scanUnsafe(Attr key) {
-        if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+        if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
         return super.scanUnsafe(key);
     }
 }
