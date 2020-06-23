@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -57,6 +56,7 @@ public class ParallelFluxNameTest {
 				.isEqualTo(source.getPrefetch());
 
 		assertThat(test.scan(Scannable.Attr.NAME)).isEqualTo("foo");
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		final Stream<Tuple2<String, String>> scannedTags = test.scan(Scannable.Attr.TAGS);
 		assertThat(scannedTags).isNotNull();

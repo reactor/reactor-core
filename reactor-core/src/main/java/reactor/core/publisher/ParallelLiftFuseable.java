@@ -62,7 +62,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 			return getPrefetch();
 		}
 		if (key == Attr.RUN_STYLE) {
-		    return Attr.RunStyle.SYNC;
+			return Scannable.from(source).scanUnsafe(key);
 		}
 
 		return null;

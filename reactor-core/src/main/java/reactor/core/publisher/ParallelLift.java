@@ -59,7 +59,7 @@ final class ParallelLift<I, O> extends ParallelFlux<O> implements Scannable {
 			return getPrefetch();
 		}
 		if (key == Attr.RUN_STYLE) {
-			return Attr.RunStyle.SYNC;
+			return Scannable.from(source).scanUnsafe(key);
 		}
 
 		return null;

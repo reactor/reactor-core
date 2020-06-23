@@ -48,6 +48,7 @@ public class ParallelFlatMapTest {
 				.isEqualTo(123)
 				.isNotEqualTo(source.getPrefetch());
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 }

@@ -67,6 +67,7 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> implements Scannable{
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.DELAY_ERROR) return delayError;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

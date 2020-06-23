@@ -21,6 +21,8 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
 
 public class ParallelFluxOnAssemblyTest {
 
@@ -33,14 +35,6 @@ public class ParallelFluxOnAssemblyTest {
 		assertThat(test.parallelism())
 				.isEqualTo(3)
 				.isEqualTo(source.parallelism());
-	}
-
-	@Test
-	public void scanUnsafe() {
-		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), stacktrace);
-
-		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 	}
 
 	@Test
@@ -66,6 +60,7 @@ public class ParallelFluxOnAssemblyTest {
 				.isEqualTo(source.getPrefetch());
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
+		assertThat(test.scan(RUN_STYLE)).isSameAs(SYNC);
 	}
 
 }

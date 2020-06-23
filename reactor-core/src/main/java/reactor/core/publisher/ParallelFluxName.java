@@ -27,6 +27,9 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * Hides the identities of the upstream Publisher object and its Subscription as well.
  *
@@ -101,6 +104,10 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
+
+		if (key == RUN_STYLE) {
+		    return SYNC;
+		}
 
 		return null;
 	}
