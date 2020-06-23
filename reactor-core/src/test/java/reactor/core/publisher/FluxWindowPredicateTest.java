@@ -431,8 +431,8 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalUntil() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(sp1,
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(sp1.asFlux(),
 				Queues.small(),
 				Queues.unbounded(),
 				Queues.SMALL_BUFFER_SIZE,
@@ -441,27 +441,27 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.emitNext(1))
 		            .expectNext(Signal.next(1))
-				    .then(() -> sp1.onNext(2))
+				    .then(() -> sp1.emitNext(2))
 		            .expectNext(Signal.next(2))
-				    .then(() -> sp1.onNext(3))
+				    .then(() -> sp1.emitNext(3))
 		            .expectNext(Signal.next(3), Signal.complete())
-				    .then(() -> sp1.onNext(4))
+				    .then(() -> sp1.emitNext(4))
 				    .expectNext(Signal.next(4))
-				    .then(() -> sp1.onNext(5))
+				    .then(() -> sp1.emitNext(5))
 				    .expectNext(Signal.next(5))
-				    .then(() -> sp1.onNext(6))
+				    .then(() -> sp1.emitNext(6))
 				    .expectNext(Signal.next(6), Signal.complete())
-				    .then(() -> sp1.onNext(7))
+				    .then(() -> sp1.emitNext(7))
 				    .expectNext(Signal.next(7))
-				    .then(() -> sp1.onNext(8))
+				    .then(() -> sp1.emitNext(8))
 				    .expectNext(Signal.next(8))
-				    .then(sp1::onComplete)
+				    .then(sp1::emitComplete)
 		            .expectNext(Signal.complete())
 				    .verifyComplete();
 
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
@@ -498,35 +498,35 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorUntilIsPropagatedToBothWindowAndMain() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL);
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.emitNext(1))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.emitNext(2))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.emitNext(3))
 		            .expectNext(Signal.next(3), Signal.complete())
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.emitNext(4))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
 		            //this is the error in the window:
 		            .expectNextMatches(signalErrorMessage("forced failure"))
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify();
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
 	public void predicateErrorUntil() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
@@ -534,85 +534,85 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.onNext(1))
+					.then(() -> sp1.emitNext(1))
 					.expectNext(Signal.next(1))
-					.then(() -> sp1.onNext(2))
+					.then(() -> sp1.emitNext(2))
 					.expectNext(Signal.next(2))
-					.then(() -> sp1.onNext(3))
+					.then(() -> sp1.emitNext(3))
 					.expectNext(Signal.next(3), Signal.complete())
-					.then(() -> sp1.onNext(4))
+					.then(() -> sp1.emitNext(4))
 					.expectNext(Signal.next(4))
-					.then(() -> sp1.onNext(5))
+					.then(() -> sp1.emitNext(5))
 					//error in the window:
 					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
 					.verify();
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
 	public void normalUntilCutBefore() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1,
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1.asFlux(),
 				Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 				.expectSubscription()
-				    .then(() -> sp1.onNext(1))
+				    .then(() -> sp1.emitNext(1))
 				    .expectNext(Signal.next(1))
-				    .then(() -> sp1.onNext(2))
+				    .then(() -> sp1.emitNext(2))
 				    .expectNext(Signal.next(2))
-				    .then(() -> sp1.onNext(3))
+				    .then(() -> sp1.emitNext(3))
 				    .expectNext(Signal.complete(), Signal.next(3))
-				    .then(() -> sp1.onNext(4))
+				    .then(() -> sp1.emitNext(4))
 				    .expectNext(Signal.next(4))
-				    .then(() -> sp1.onNext(5))
+				    .then(() -> sp1.emitNext(5))
 				    .expectNext(Signal.next(5))
-				    .then(() -> sp1.onNext(6))
+				    .then(() -> sp1.emitNext(6))
 				    .expectNext(Signal.complete(), Signal.next(6))
-				    .then(() -> sp1.onNext(7))
+				    .then(() -> sp1.emitNext(7))
 				    .expectNext(Signal.next(7))
-				    .then(() -> sp1.onNext(8))
+				    .then(() -> sp1.emitNext(8))
 				    .expectNext(Signal.next(8))
-				    .then(sp1::onComplete)
+				    .then(sp1::emitComplete)
 				    .expectNext(Signal.complete())
 				    .verifyComplete();
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
 	public void mainErrorUntilCutBeforeIsPropagatedToBothWindowAndMain() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
-				new FluxWindowPredicate<>(sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 						i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.emitNext(1))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.emitNext(2))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.emitNext(3))
 		            .expectNext(Signal.complete())
 		            .expectNext(Signal.next(3))
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.emitNext(4))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
 		            //this is the error in the window:
 		            .expectNextMatches(signalErrorMessage("forced failure"))
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify();
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
 	public void predicateErrorUntilCutBefore() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
-				new FluxWindowPredicate<>(sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
@@ -620,20 +620,20 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.onNext(1))
+					.then(() -> sp1.emitNext(1))
 					.expectNext(Signal.next(1))
-					.then(() -> sp1.onNext(2))
+					.then(() -> sp1.emitNext(2))
 					.expectNext(Signal.next(2))
-					.then(() -> sp1.onNext(3))
+					.then(() -> sp1.emitNext(3))
 					.expectNext(Signal.complete(), Signal.next(3))
-					.then(() -> sp1.onNext(4))
+					.then(() -> sp1.emitNext(4))
 					.expectNext(Signal.next(4))
-					.then(() -> sp1.onNext(5))
+					.then(() -> sp1.emitNext(5))
 					//error in the window:
 					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
 					.verify();
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	private <T> Predicate<? super Signal<T>> signalErrorMessage(String expectedMessage) {
@@ -644,129 +644,129 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhile() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 != 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.emitNext(1))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.emitNext(2))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.emitNext(3))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.emitNext(4))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.onNext(5))
+		            .then(() -> sp1.emitNext(5))
 		            .expectNext(Signal.next(5))
-		            .then(() -> sp1.onNext(6))
+		            .then(() -> sp1.emitNext(6))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(7))
+		            .then(() -> sp1.emitNext(7))
 		            .expectNext(Signal.next(7))
-		            .then(() -> sp1.onNext(8))
+		            .then(() -> sp1.emitNext(8))
 		            .expectNext(Signal.next(8))
-		            .then(sp1::onComplete)
+		            .then(sp1::emitComplete)
 		            .expectNext(Signal.complete())
 		            .verifyComplete();
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
 	public void normalWhileDoesntInitiallyMatch() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(1)) //closes initial, open 2nd
-		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(2)) //closes second, open 3rd
-		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(3)) //emits 3
-		            .expectNext(Signal.next(3))
-		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(4)) //closes 3rd, open 4th
-		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(5)) //closes 4th, open 5th
-		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(6)) //emits 6
-		            .expectNext(Signal.next(6))
-		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(7)) //closes 5th, open 6th
-		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(8)) //closes 6th, open 7th
-		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(9)) //emits 9
-		            .expectNext(Signal.next(9))
-		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::onComplete) // completion triggers completion of the last window (7th)
-		            .expectNext(Signal.complete())
-		            .expectComplete()
-		            .verify(Duration.ofSeconds(1));
-		assertThat(sp1.hasDownstreams()).isFalse();
+					.expectSubscription()
+					.expectNoEvent(Duration.ofMillis(10))
+					.then(() -> sp1.emitNext(1)) //closes initial, open 2nd
+					.expectNext(Signal.complete())
+					.then(() -> sp1.emitNext(2)) //closes second, open 3rd
+					.expectNext(Signal.complete())
+					.then(() -> sp1.emitNext(3)) //emits 3
+					.expectNext(Signal.next(3))
+					.expectNoEvent(Duration.ofMillis(10))
+					.then(() -> sp1.emitNext(4)) //closes 3rd, open 4th
+					.expectNext(Signal.complete())
+					.then(() -> sp1.emitNext(5)) //closes 4th, open 5th
+					.expectNext(Signal.complete())
+					.then(() -> sp1.emitNext(6)) //emits 6
+					.expectNext(Signal.next(6))
+					.expectNoEvent(Duration.ofMillis(10))
+					.then(() -> sp1.emitNext(7)) //closes 5th, open 6th
+					.expectNext(Signal.complete())
+					.then(() -> sp1.emitNext(8)) //closes 6th, open 7th
+					.expectNext(Signal.complete())
+					.then(() -> sp1.emitNext(9)) //emits 9
+					.expectNext(Signal.next(9))
+					.expectNoEvent(Duration.ofMillis(10))
+					.then(sp1::emitComplete) // completion triggers completion of the last window (7th)
+					.expectNext(Signal.complete())
+					.expectComplete()
+					.verify(Duration.ofSeconds(1));
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
 	public void normalWhileDoesntMatch() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i > 4, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.emitNext(1))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.emitNext(2))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.emitNext(3))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.emitNext(4))
 		            .expectNext(Signal.complete())
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(1))
+		            .then(() -> sp1.emitNext(1))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(2))
+		            .then(() -> sp1.emitNext(2))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(3))
+		            .then(() -> sp1.emitNext(3))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(4))
+		            .then(() -> sp1.emitNext(4))
 		            .expectNext(Signal.complete()) //closing window opened by 3
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::onComplete)
+		            .then(sp1::emitComplete)
 		            //remainder window, not emitted
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
 	public void mainErrorWhileIsPropagatedToBothWindowAndMain() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
-		            .expectSubscription()
-		            .then(() -> sp1.onNext(1))
-		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(2))
-		            .expectNext(Signal.complete())
-		            .then(() -> sp1.onNext(3)) //at this point, new window, need another data to close it
-		            .then(() -> sp1.onNext(4))
-		            .expectNext(Signal.next(3), Signal.complete())
-		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
-		            //this is the error in the main:
-		            .expectErrorMessage("forced failure")
-		            .verify(Duration.ofMillis(100));
-		assertThat(sp1.hasDownstreams()).isFalse();
+					.expectSubscription()
+					.then(() -> sp1.emitNext(1))
+					.expectNext(Signal.complete())
+					.then(() -> sp1.emitNext(2))
+					.expectNext(Signal.complete())
+					.then(() -> sp1.emitNext(3)) //at this point, new window, need another data to close it
+					.then(() -> sp1.emitNext(4))
+					.expectNext(Signal.next(3), Signal.complete())
+					.then(() -> sp1.emitError(new RuntimeException("forced failure")))
+					//this is the error in the main:
+					.expectErrorMessage("forced failure")
+					.verify(Duration.ofMillis(100));
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 	@Test
@@ -795,9 +795,9 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorWhile() {
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
+				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 3) return true;
 					if (i == 5) throw new IllegalStateException("predicate failure");
@@ -806,19 +806,19 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.onNext(1)) //empty window
+					.then(() -> sp1.emitNext(1)) //empty window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.onNext(2)) //empty window
+					.then(() -> sp1.emitNext(2)) //empty window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.onNext(3)) //window opens
+					.then(() -> sp1.emitNext(3)) //window opens
 					.expectNext(Signal.next(3))
-					.then(() -> sp1.onNext(4)) //previous window closes, new (empty) window
+					.then(() -> sp1.emitNext(4)) //previous window closes, new (empty) window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.onNext(5)) //fails, the empty window receives onError
+					.then(() -> sp1.emitNext(5)) //fails, the empty window receives onError
 					//error in the window:
 					.expectErrorMessage("predicate failure")
 					.verify(Duration.ofMillis(100));
-		assertThat(sp1.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
 	}
 
 

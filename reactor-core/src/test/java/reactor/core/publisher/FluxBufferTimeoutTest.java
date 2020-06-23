@@ -211,7 +211,7 @@ public class FluxBufferTimeoutTest {
 
 	@Test
 	public void requestedFromUpstreamShouldNotExceedDownstreamDemand() {
-		Sinks.StandaloneFluxSink<String> sink = Sinks.multicast();
+		Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
 		Flux<String> emitter = sink.asFlux();
 
 		AtomicLong requestedOutstanding = new AtomicLong(0);
@@ -227,7 +227,7 @@ public class FluxBufferTimeoutTest {
 		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(0))
 		            .thenRequest(2)
 		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
-		            .then(() -> sink.next("a"))
+		            .then(() -> sink.emitNext("a"))
 		            .thenAwait(Duration.ofMillis(100))
 		            .assertNext(s -> assertThat(s).containsExactly("a"))
 		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(9))

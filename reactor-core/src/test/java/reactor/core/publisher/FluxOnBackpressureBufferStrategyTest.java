@@ -103,19 +103,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void drop() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, this, DROP_LATEST);
+				processor.asFlux(), 2, this, DROP_LATEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -131,19 +131,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropOldest() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, this, DROP_OLDEST);
+				processor.asFlux(), 2, this, DROP_OLDEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -159,19 +159,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void error() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, this, ERROR);
+				processor.asFlux(), 2, this, ERROR);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -264,20 +264,20 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropCallbackError() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
+				processor.asFlux(), 2, v -> { throw new IllegalArgumentException("boom"); },
 				DROP_LATEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -294,20 +294,20 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropOldestCallbackError() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
+				processor.asFlux(), 2, v -> { throw new IllegalArgumentException("boom"); },
 				DROP_OLDEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -324,20 +324,20 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void errorCallbackError() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, v -> { throw new IllegalArgumentException("boom"); },
+				processor.asFlux(), 2, v -> { throw new IllegalArgumentException("boom"); },
 				ERROR);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -354,20 +354,20 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithErrorStrategyOverflowsAfterDrain() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, null, ERROR);
+				processor.asFlux(), 2, null, ERROR);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onNext("over4");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitNext("over4");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -384,19 +384,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithDropStrategyNoError() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, null, DROP_LATEST);
+				processor.asFlux(), 2, null, DROP_LATEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -412,19 +412,19 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithDropOldestStrategyNoError() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
-				processor, 2, null, DROP_OLDEST);
+				processor.asFlux(), 2, null, DROP_OLDEST);
 
 		StepVerifier.create(flux, 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()
@@ -440,16 +440,16 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void fluxOnBackpressureBufferStrategyNoCallback() {
-		FluxIdentityProcessor<String> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		StepVerifier.create(processor.onBackpressureBuffer(2, DROP_OLDEST), 0)
+		StepVerifier.create(processor.asFlux().onBackpressureBuffer(2, DROP_OLDEST), 0)
 		            .thenRequest(1)
 		            .then(() -> {
-			            processor.onNext("normal");
-			            processor.onNext("over1");
-			            processor.onNext("over2");
-			            processor.onNext("over3");
-			            processor.onComplete();
+			            processor.emitNext("normal");
+			            processor.emitNext("over1");
+			            processor.emitNext("over2");
+			            processor.emitNext("over3");
+			            processor.emitComplete();
 		            })
 		            .expectNext("normal")
 		            .thenAwait()

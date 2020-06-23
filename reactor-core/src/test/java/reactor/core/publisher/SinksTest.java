@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -51,7 +52,7 @@ class SinksTest {
 	@Nested
 	class MulticastNoWarmup {
 
-		final Supplier<Sinks.StandaloneFluxSink<Integer>> supplier = Sinks::multicastNoWarmup;
+		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(0);
 
 		@TestFactory
 		Stream<DynamicContainer> checkSemantics() {
@@ -69,7 +70,7 @@ class SinksTest {
 		//TODO Multicast has slightly different behavior with early onNext + onError : doesn't buffer elements for benefit of 1st subscriber
 		//(this is a behavioral difference in EmitterProcessor)
 
-		final Supplier<Sinks.StandaloneFluxSink<Integer>> supplier = Sinks::multicast;
+		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().multicast().onBackpressureBuffer();
 
 		@TestFactory
 		Stream<DynamicContainer> checkSemantics() {
@@ -77,28 +78,31 @@ class SinksTest {
 					expectMulticast(supplier),
 					expectReplay(supplier, NONE),
 					dynamicContainer("buffers all before 1st subscriber, except for errors",
-							expectBufferingBeforeFirstSubscriber(supplier, ALL)
-									.getChildren().filter(dn -> !dn.getDisplayName().equals("replayAndErrorFirstSubscriber")))
+									 expectBufferingBeforeFirstSubscriber(supplier, ALL).getChildren().filter(dn -> !dn.getDisplayName().equals("replayAndErrorFirstSubscriber")))
 			);
 		}
 
 		@Test
 		void noReplayBeforeFirstSubscriberIfEarlyError() {
-			Sinks.StandaloneFluxSink<Integer> sink = supplier.get();
+			Sinks.Many<Integer> sink = supplier.get();
 			Flux<Integer> flux = sink.asFlux();
 			AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-			sink.next(1).next(2).next(3).error(new IllegalStateException("boom"));
+			sink.emitNext(1);
+			sink.emitNext(2);
+			sink.emitNext(3);
+			sink.emitError(new IllegalStateException("boom"));
 			flux.subscribe(first);
 
-			first.assertNoValues().assertErrorMessage("boom");
+			first.assertNoValues()
+				 .assertErrorMessage("boom");
 		}
 	}
 
 	@Nested
 	class MulticastReplayAll {
 
-		final Supplier<Sinks.StandaloneFluxSink<Integer>> supplier = Sinks::replayAll;
+		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().all();
 
 		@TestFactory
 		Stream<DynamicContainer> checkSemantics() {
@@ -116,7 +120,7 @@ class SinksTest {
 		@TestFactory
 		Stream<DynamicContainer> checkSemanticsSize5() {
 			final int historySize = 5;
-			final Supplier<Sinks.StandaloneFluxSink<Integer>> supplier = () -> Sinks.replay(historySize);
+			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
 					expectMulticast(supplier),
@@ -128,7 +132,7 @@ class SinksTest {
 		@TestFactory
 		Stream<DynamicContainer> checkSemanticsSize0() {
 			final int historySize = 0;
-			final Supplier<Sinks.StandaloneFluxSink<Integer>> supplier = () -> Sinks.replay(historySize);
+			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
 					expectMulticast(supplier),
@@ -140,7 +144,7 @@ class SinksTest {
 		@TestFactory
 		Stream<DynamicContainer> checkSemanticsSize100() {
 			final int historySize = 100;
-			final Supplier<Sinks.StandaloneFluxSink<Integer>> supplier = () -> Sinks.replay(historySize);
+			final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().replay().limit(historySize);
 
 			return Stream.of(
 					expectMulticast(supplier),
@@ -153,7 +157,7 @@ class SinksTest {
 	@Nested
 	class Unicast {
 
-		final Supplier<Sinks.StandaloneFluxSink<Integer>> supplier = Sinks::unicast;
+		final Supplier<Sinks.Many<Integer>> supplier = () -> Sinks.many().unicast().onBackpressureBuffer();
 
 		@TestFactory
 		Stream<DynamicContainer> checkSemantics() {
@@ -165,214 +169,218 @@ class SinksTest {
 	}
 
 	@Nested
-	class Promise {
+	class SingleOrEmpty {
 
-		Sinks.StandaloneMonoSink<Integer> promise;
-		Mono<Integer> mono;
+		Sinks.One<Integer> singleOrEmpty;
+		Mono<Integer>      mono;
 
 		@BeforeEach
-		void createPromise() {
-			promise = Sinks.promise();
-			mono = promise.asMono();
+		void createSingleOrEmpty() {
+			singleOrEmpty = Sinks.one();
+			mono = singleOrEmpty.asMono();
 		}
 
 		//TODO racing dual completions ?
 
 		@Test
-		void promiseIsCompletableOnlyOnce_emptyVsValued() {
+		void singleOrEmptyIsCompletableOnlyOnce_emptyVsValued() {
 			StepVerifier.create(mono)
-			            .then(() -> {
-			            	promise.success();
-			            	promise.success(-1);
-			            })
-			            .expectComplete()
-			            .verifyThenAssertThat()
-			            .hasDropped(-1);
+						.then(() -> {
+							singleOrEmpty.emitValue(null);
+							singleOrEmpty.emitValue(-1);
+						})
+						.expectComplete()
+						.verifyThenAssertThat()
+						.hasDropped(-1);
 		}
 
 		@Test
-		void promiseIsCompletableOnlyOnce_emptyVsError() {
+		void singleOrEmptyIsCompletableOnlyOnce_emptyVsError() {
 			StepVerifier.create(mono)
-			            .then(() -> {
-				            promise.success();
-				            promise.error(new IllegalStateException("boom"));
-			            })
-			            .expectComplete()
-			            .verifyThenAssertThat()
-			            .hasDroppedErrorWithMessage("boom");
+						.then(() -> {
+							singleOrEmpty.emitEmpty();
+							singleOrEmpty.emitError(new IllegalStateException("boom"));
+						})
+						.expectComplete()
+						.verifyThenAssertThat()
+						.hasDroppedErrorWithMessage("boom");
 		}
 
 		@Test
-		void promiseIsCompletableOnlyOnce_valuedVsEmpty() {
+		void singleOrEmptyIsCompletableOnlyOnce_valuedVsEmpty() {
 			StepVerifier.create(mono)
-			            .then(() -> {
-				            promise.success(1);
-				            promise.success();
-			            })
-			            .expectNext(1)
-			            .expectComplete()
-			            .verifyThenAssertThat()
-			            .hasNotDroppedElements();
+						.then(() -> {
+							singleOrEmpty.emitValue(1);
+							singleOrEmpty.emitValue(null);
+						})
+						.expectNext(1)
+						.expectComplete()
+						.verifyThenAssertThat()
+						.hasNotDroppedElements();
 		}
 
 		@Test
-		void promiseIsCompletableOnlyOnce_valuedVsError() {
+		void singleOrEmptyIsCompletableOnlyOnce_valuedVsError() {
 			StepVerifier.create(mono)
-			            .then(() -> {
-				            promise.success(1);
-				            promise.error(new IllegalStateException("boom"));
-			            })
-			            .expectNext(1)
-			            .expectComplete()
-			            .verifyThenAssertThat()
-			            .hasDroppedErrorWithMessage("boom");
+						.then(() -> {
+							singleOrEmpty.emitValue(1);
+							singleOrEmpty.emitError(new IllegalStateException("boom"));
+						})
+						.expectNext(1)
+						.expectComplete()
+						.verifyThenAssertThat()
+						.hasDroppedErrorWithMessage("boom");
 		}
 
 		@Test
-		void promiseIsCompletableOnlyOnce_errorVsValued() {
+		void singleOrEmptyIsCompletableOnlyOnce_errorVsValued() {
 			StepVerifier.create(mono)
-			            .then(() -> {
-				            promise.error(new IllegalStateException("boom"));
-				            promise.success(-1);
-			            })
-			            .expectErrorMessage("boom")
-			            .verifyThenAssertThat()
-			            .hasDropped(-1);
+						.then(() -> {
+							singleOrEmpty.emitError(new IllegalStateException("boom"));
+							singleOrEmpty.emitValue(-1);
+						})
+						.expectErrorMessage("boom")
+						.verifyThenAssertThat()
+						.hasDropped(-1);
 		}
 
 		@Test
-		void promiseIsCompletableOnlyOnce_errorVsEmpty() {
+		void singleOrEmptyIsCompletableOnlyOnce_errorVsEmpty() {
 			StepVerifier.create(mono)
-			            .then(() -> {
-			            	promise.error(new IllegalStateException("boom"));
-					        promise.success();
-			            })
-			            .expectErrorMessage("boom")
-			            .verifyThenAssertThat()
-			            .hasNotDroppedElements()
-			            .hasNotDroppedErrors();
+						.then(() -> {
+							singleOrEmpty.emitError(new IllegalStateException("boom"));
+							singleOrEmpty.emitEmpty();
+						})
+						.expectErrorMessage("boom")
+						.verifyThenAssertThat()
+						.hasNotDroppedElements()
+						.hasNotDroppedErrors();
 		}
 
 		@Test
 		void canBeValuedEarly() {
-			promise.success(1);
+			singleOrEmpty.emitValue(1);
 
 			StepVerifier.create(mono)
-			            .expectNext(1)
-			            .verifyComplete();
+						.expectNext(1)
+						.verifyComplete();
 		}
 
 		@Test
 		void canBeCompletedEarly() {
-			promise.success();
+			singleOrEmpty.emitEmpty();
 
 			StepVerifier.create(mono)
-			            .verifyComplete();
+						.verifyComplete();
 		}
 
 		@Test
 		void canBeErroredEarly() {
-			promise.error(new IllegalStateException("boom"));
+			singleOrEmpty.emitError(new IllegalStateException("boom"));
 
 			StepVerifier.create(mono)
-			            .verifyErrorMessage("boom");
+						.verifyErrorMessage("boom");
 		}
 
 		@Test
 		void canBeValuedLate() {
 			StepVerifier.create(mono)
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .then(() -> promise.success(1))
-			            .expectNext(1)
-			            .verifyComplete();
+						.expectSubscription()
+						.expectNoEvent(Duration.ofMillis(100))
+						.then(() -> singleOrEmpty.emitValue(1))
+						.expectNext(1)
+						.verifyComplete();
 		}
 
 		@Test
 		void canBeCompletedLate() {
 			StepVerifier.create(mono)
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .then(() -> promise.success())
-			            .verifyComplete();
+						.expectSubscription()
+						.expectNoEvent(Duration.ofMillis(100))
+						.then(() -> singleOrEmpty.emitEmpty())
+						.verifyComplete();
 		}
 
 		@Test
 		void canBeErroredLate() {
 			StepVerifier.create(mono)
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .then(() -> promise.error(new IllegalStateException("boom")))
-			            .verifyErrorMessage("boom");
+						.expectSubscription()
+						.expectNoEvent(Duration.ofMillis(100))
+						.then(() -> singleOrEmpty.emitError(new IllegalStateException("boom")))
+						.verifyErrorMessage("boom");
 		}
 
 		@Test
 		void replaysValuedCompletionToLateSubscribersWithBackpressure() {
-			promise.success(1);
+			singleOrEmpty.emitValue(1);
 			mono.subscribe(); //first subscriber
 
-			StepVerifier.create(mono, StepVerifierOptions.create().scenarioName("second subscriber, no backpressure"))
-			            .expectNext(1)
-			            .verifyComplete();
+			StepVerifier.create(mono, StepVerifierOptions.create()
+														 .scenarioName("second subscriber, no backpressure"))
+						.expectNext(1)
+						.verifyComplete();
 
 			StepVerifier.create(mono, StepVerifierOptions.create()
-			                                             .scenarioName("third subscriber, backpressure")
-			                                             .initialRequest(0))
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofMillis(100))
-			            .thenRequest(1)
-			            .expectNext(1)
-			            .verifyComplete();
+														 .scenarioName("third subscriber, backpressure")
+														 .initialRequest(0))
+						.expectSubscription()
+						.expectNoEvent(Duration.ofMillis(100))
+						.thenRequest(1)
+						.expectNext(1)
+						.verifyComplete();
 		}
 
 		@Test
 		void replaysEmptyCompletionToLateSubscribersEvenWithoutRequest() {
-			promise.success();
+			singleOrEmpty.emitEmpty();
 			mono.subscribe(); //first subscriber
 
-			StepVerifier.create(mono, StepVerifierOptions.create().scenarioName("second subscriber, no backpressure"))
-			            .verifyComplete();
+			StepVerifier.create(mono, StepVerifierOptions.create()
+														 .scenarioName("second subscriber, no backpressure"))
+						.verifyComplete();
 
 			StepVerifier.create(mono, StepVerifierOptions.create()
-			                                             .scenarioName("third subscriber, 0 request")
-			                                             .initialRequest(0))
-			            .expectSubscription()
-			            //notice no expectNoEvent / request here
-			            .verifyComplete();
+														 .scenarioName("third subscriber, 0 request")
+														 .initialRequest(0))
+						.expectSubscription()
+						//notice no expectNoEvent / request here
+						.verifyComplete();
 		}
 
 		@Test
 		void replaysErrorCompletionToLateSubscribers() {
-			promise.error(new IllegalStateException("boom"));
+			singleOrEmpty.emitError(new IllegalStateException("boom"));
 			mono.subscribe(); //first subscriber
 
-			StepVerifier.create(mono, StepVerifierOptions.create().scenarioName("second subscriber, no backpressure"))
-			            .verifyErrorMessage("boom");
+			StepVerifier.create(mono, StepVerifierOptions.create()
+														 .scenarioName("second subscriber, no backpressure"))
+						.verifyErrorMessage("boom");
 
 			StepVerifier.create(mono, StepVerifierOptions.create()
-			                                             .scenarioName("third subscriber, 0 request")
-			                                             .initialRequest(0))
-			            .expectSubscription()
-			            //notice no expectNoEvent / request here
-			            .verifyErrorMessage("boom");
+														 .scenarioName("third subscriber, 0 request")
+														 .initialRequest(0))
+						.expectSubscription()
+						//notice no expectNoEvent / request here
+						.verifyErrorMessage("boom");
 		}
 	}
 
 	private static final int NONE = 0;
 	private static final int ALL = Integer.MAX_VALUE;
 
-	DynamicContainer expectMulticast(Supplier<Sinks.StandaloneFluxSink<Integer>> sinkSupplier) {
+	DynamicContainer expectMulticast(Supplier<Sinks.Many<Integer>> sinkSupplier) {
 		return dynamicContainer("multicast", Stream.of(
 
 				dynamicTest("fluxViewReturnsSameInstance", () -> {
-					Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
+					Sinks.Many<Integer> sink = sinkSupplier.get();
 					Flux<Integer> flux = sink.asFlux();
 
 					assertThat(flux).isSameAs(sink.asFlux());
 				}),
 
 				dynamicTest("acceptsMoreThanOneSubscriber", () -> {
-					Flux<Integer> flux = sinkSupplier.get().asFlux();
+					Flux<Integer> flux = sinkSupplier.get()
+													 .asFlux();
 					assertThatCode(() -> {
 						flux.subscribe();
 						flux.subscribe();
@@ -380,7 +388,7 @@ class SinksTest {
 				}),
 
 				dynamicTest("honorsMultipleSubscribersBackpressure", () -> {
-					Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
+					Sinks.Many<Integer> sink = sinkSupplier.get();
 					Flux<Integer> flux = sink.asFlux();
 					ExecutorService es = Executors.newFixedThreadPool(2);
 
@@ -394,9 +402,11 @@ class SinksTest {
 
 							test1.awaitAndAssertNextValues(1, 2);
 							try {
-								Awaitility.await().atMost(2, TimeUnit.SECONDS)
-								          .with().pollDelay(1, TimeUnit.SECONDS)
-								          .untilAsserted(() -> test1.assertValueCount(2));
+								Awaitility.await()
+										  .atMost(2, TimeUnit.SECONDS)
+										  .with()
+										  .pollDelay(1, TimeUnit.SECONDS)
+										  .untilAsserted(() -> test1.assertValueCount(2));
 							}
 							finally {
 								test1.cancel();
@@ -409,9 +419,11 @@ class SinksTest {
 
 							test2.awaitAndAssertNextValues(1);
 							try {
-								Awaitility.await().atMost(2, TimeUnit.SECONDS)
-								          .with().pollDelay(1, TimeUnit.SECONDS)
-								          .untilAsserted(() -> test2.assertValueCount(1));
+								Awaitility.await()
+										  .atMost(2, TimeUnit.SECONDS)
+										  .with()
+										  .pollDelay(1, TimeUnit.SECONDS)
+										  .untilAsserted(() -> test2.assertValueCount(1));
 							}
 							finally {
 								test2.cancel();
@@ -419,11 +431,11 @@ class SinksTest {
 						});
 
 						requestLatch.await(1, TimeUnit.SECONDS);
-						sink.next(1)
-						    .next(2)
-						    .next(3)
-						    .next(4)
-						    .complete();
+						sink.emitNext(1);
+						sink.emitNext(2);
+						sink.emitNext(3);
+						sink.emitNext(4);
+						sink.emitComplete();
 
 						f1.get();
 						f2.get();
@@ -431,32 +443,31 @@ class SinksTest {
 					finally {
 						es.shutdownNow();
 					}
-				})
-		));
+				})));
 	}
 
-	DynamicContainer expectUnicast(Supplier<Sinks.StandaloneFluxSink<Integer>> sinkSupplier) {
+	DynamicContainer expectUnicast(Supplier<Sinks.Many<Integer>> sinkSupplier) {
 		return dynamicContainer("unicast", Stream.of(
 
 				dynamicTest("fluxViewReturnsSameInstance", () -> {
-					Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
+					Sinks.Many<Integer> sink = sinkSupplier.get();
 					Flux<Integer> flux = sink.asFlux();
 
 					assertThat(flux).isSameAs(sink.asFlux());
 				}),
 
 				dynamicTest("acceptsOnlyOneSubscriber", () -> {
-					Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
+					Sinks.Many<Integer> sink = sinkSupplier.get();
 					Flux<Integer> flux = sink.asFlux();
-					sink.complete();
+					sink.emitComplete();
 
 					assertThatCode(flux::subscribe).doesNotThrowAnyException();
 					StepVerifier.create(flux)
-					            .verifyErrorSatisfies(e -> assertThat(e).hasMessageEndingWith("allows only a single Subscriber"));
+								.verifyErrorSatisfies(e -> assertThat(e).hasMessageEndingWith("allows only a single Subscriber"));
 				}),
 
 				dynamicTest("honorsSubscriberBackpressure", () -> {
-					Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
+					Sinks.Many<Integer> sink = sinkSupplier.get();
 					Flux<Integer> flux = sink.asFlux();
 					ExecutorService es = Executors.newFixedThreadPool(2);
 
@@ -470,9 +481,11 @@ class SinksTest {
 
 							test.awaitAndAssertNextValues(1, 2);
 							try {
-								Awaitility.await().atMost(2, TimeUnit.SECONDS)
-								          .with().pollDelay(1, TimeUnit.SECONDS)
-								          .untilAsserted(() -> test.assertValueCount(2));
+								Awaitility.await()
+										  .atMost(2, TimeUnit.SECONDS)
+										  .with()
+										  .pollDelay(1, TimeUnit.SECONDS)
+										  .untilAsserted(() -> test.assertValueCount(2));
 							}
 							finally {
 								test.cancel();
@@ -480,294 +493,337 @@ class SinksTest {
 						});
 
 						requestLatch.await(1, TimeUnit.SECONDS);
-						sink.next(1)
-						    .next(2)
-						    .next(3)
-						    .next(4)
-						    .complete();
+						sink.emitNext(1);
+						sink.emitNext(2);
+						sink.emitNext(3);
+						sink.emitNext(4);
+						sink.emitComplete();
 
 						future.get();
 					}
 					finally {
 						es.shutdownNow();
 					}
-				})
-		));
+				})));
 	}
 
-	DynamicContainer expectReplay(Supplier<Sinks.StandaloneFluxSink<Integer>> sinkSupplier, int expectedReplay) {
+	DynamicContainer expectReplay(Supplier<Sinks.Many<Integer>> sinkSupplier, int expectedReplay) {
 		if (expectedReplay == NONE) {
+			DynamicTest doesNotReplayToLateSubscribers = dynamicTest("doesNotReplayToLateSubscribers", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+				AssertSubscriber<Integer> s1 = AssertSubscriber.create();
+				AssertSubscriber<Integer> s2 = AssertSubscriber.create();
+
+				flux.subscribe(s1);
+				sink.emitNext(1);
+				sink.emitNext(2);
+				sink.emitNext(3);
+				s1.assertValues(1, 2, 3);
+
+				flux.subscribe(s2);
+				s2.assertNoValues()
+				  .assertNotComplete();
+
+				sink.emitComplete();
+				s1.assertValueCount(3)
+				  .assertComplete();
+				s2.assertNoValues()
+				  .assertComplete();
+			});
+
+			DynamicTest immediatelyCompleteLateSubscriber = dynamicTest("immediatelyCompleteLateSubscriber", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+
+				flux.subscribe(); //first subscriber
+				AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+				sink.emitNext(1);
+				sink.emitComplete();
+				flux.subscribe(late);
+
+				late.assertNoValues()
+					.assertComplete();
+			});
+
+			DynamicTest immediatelyErrorLateSubscriber = dynamicTest("immediatelyErrorLateSubscriber", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+
+				flux.onErrorReturn(-1)
+					.subscribe(); //first subscriber, ignore errors
+				AssertSubscriber<Integer> late = AssertSubscriber.create();
+
+				sink.emitNext(1);
+				sink.emitError(new IllegalStateException("boom"));
+				flux.subscribe(late);
+
+				late.assertNoValues()
+					.assertErrorMessage("boom");
+			});
+
 			return dynamicContainer("no replay", Stream.of(
-					dynamicTest("doesNotReplayToLateSubscribers", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> s1 = AssertSubscriber.create();
-						AssertSubscriber<Integer> s2 = AssertSubscriber.create();
-
-						flux.subscribe(s1);
-						sink.next(1).next(2).next(3);
-						s1.assertValues(1, 2, 3);
-
-						flux.subscribe(s2);
-						s2.assertNoValues().assertNotComplete();
-
-						sink.complete();
-						s1.assertValueCount(3).assertComplete();
-						s2.assertNoValues().assertComplete();
-					}),
-
-					dynamicTest("immediatelyCompleteLateSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-
-						flux.subscribe(); //first subscriber
-						AssertSubscriber<Integer> late = AssertSubscriber.create();
-
-						sink.next(1).complete();
-						flux.subscribe(late);
-
-						late.assertNoValues().assertComplete();
-					}),
-
-					dynamicTest("immediatelyErrorLateSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-
-						flux.onErrorReturn(-1).subscribe(); //first subscriber, ignore errors
-						AssertSubscriber<Integer> late = AssertSubscriber.create();
-
-						sink.next(1).error(new IllegalStateException("boom"));
-						flux.subscribe(late);
-
-						late.assertNoValues().assertErrorMessage("boom");
-					})
+					doesNotReplayToLateSubscribers,
+					immediatelyCompleteLateSubscriber,
+					immediatelyErrorLateSubscriber
 			));
 		}
 		else if (expectedReplay == ALL) {
-			return dynamicContainer("replays all", Stream.of(
-					dynamicTest("doesReplayAllToLateSubscribers", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> s1 = AssertSubscriber.create();
-						AssertSubscriber<Integer> s2 = AssertSubscriber.create();
+			return dynamicContainer("replays all", Stream.of(dynamicTest("doesReplayAllToLateSubscribers", () -> {
+																 Sinks.Many<Integer>
+																		 sink = sinkSupplier.get();
+																 Flux<Integer> flux = sink.asFlux();
+																 AssertSubscriber<Integer> s1 = AssertSubscriber.create();
+																 AssertSubscriber<Integer> s2 = AssertSubscriber.create();
 
-						flux.subscribe(s1);
-						sink.next(1).next(2).next(3);
-						s1.assertValues(1, 2, 3);
+																 flux.subscribe(s1);
+																 sink.emitNext(1);
+																 sink.emitNext(2);
+																 sink.emitNext(3);
+																 s1.assertValues(1, 2, 3);
 
-						flux.subscribe(s2);
-						s2.assertValues(1, 2, 3).assertNotComplete();
+																 flux.subscribe(s2);
+																 s2.assertValues(1, 2, 3)
+																   .assertNotComplete();
 
-						sink.complete();
-						s1.assertValueCount(3).assertComplete();
-						s2.assertValues(1, 2, 3).assertComplete();
-					}),
+																 sink.emitComplete();
+																 s1.assertValueCount(3)
+																   .assertComplete();
+																 s2.assertValues(1, 2, 3)
+																   .assertComplete();
+															 }),
 
-					dynamicTest("immediatelyCompleteLateSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-					}),
+															 dynamicTest("immediatelyCompleteLateSubscriber", () -> {
+																 Sinks.Many<Integer>
+																		 sink = sinkSupplier.get();
+																 Flux<Integer> flux = sink.asFlux();
+															 }),
 
-					dynamicTest("immediatelyErrorLateSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-					})
-			));
+															 dynamicTest("immediatelyErrorLateSubscriber", () -> {
+																 Sinks.Many<Integer>
+																		 sink = sinkSupplier.get();
+																 Flux<Integer> flux = sink.asFlux();
+															 })));
 		}
 		else {
-			return dynamicContainer("replays " + expectedReplay, Stream.of(
-					dynamicTest("doesReplay" + expectedReplay + "ToLateSubscribers", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> s1 = AssertSubscriber.create();
-						AssertSubscriber<Integer> s2 = AssertSubscriber.create();
+			return dynamicContainer("replays " + expectedReplay, Stream.of(dynamicTest("doesReplay" + expectedReplay + "ToLateSubscribers", () -> {
+																			   Sinks.Many<Integer>
+																					   sink = sinkSupplier.get();
+																			   Flux<Integer> flux = sink.asFlux();
+																			   AssertSubscriber<Integer> s1 = AssertSubscriber.create();
+																			   AssertSubscriber<Integer> s2 = AssertSubscriber.create();
 
-						flux.subscribe(s1);
-						List<Integer> expected = new ArrayList<>();
-						for (int i = 0; i < expectedReplay + 10; i++) {
-							sink.next(i);
-							if (i >= 10) expected.add(i);
-						}
-						s1.assertValueCount(expectedReplay + 10);
+																			   flux.subscribe(s1);
+																			   List<Integer> expected = new ArrayList<>();
+																			   for (int i = 0; i < expectedReplay + 10; i++) {
+																				   sink.emitNext(i);
+																				   if (i >= 10)
+																					   expected.add(i);
+																			   }
+																			   s1.assertValueCount(expectedReplay + 10);
 
-						flux.subscribe(s2);
-						s2.assertValueSequence(expected).assertNotComplete();
+																			   flux.subscribe(s2);
+																			   s2.assertValueSequence(expected)
+																				 .assertNotComplete();
 
-						sink.complete();
-						s1.assertValueCount(expectedReplay + 10).assertComplete();
-						s2.assertValueSequence(expected).assertComplete();
-					}),
+																			   sink.emitComplete();
+																			   s1.assertValueCount(expectedReplay + 10)
+																				 .assertComplete();
+																			   s2.assertValueSequence(expected)
+																				 .assertComplete();
+																		   }),
 
-					dynamicTest("replay" + expectedReplay + "AndCompleteLateSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						flux.subscribe(); //first
-						AssertSubscriber<Integer> late = AssertSubscriber.create();
+																		   dynamicTest("replay" + expectedReplay + "AndCompleteLateSubscriber", () -> {
+																			   Sinks.Many<Integer>
+																					   sink = sinkSupplier.get();
+																			   Flux<Integer> flux = sink.asFlux();
+																			   flux.subscribe(); //first
+																			   AssertSubscriber<Integer> late = AssertSubscriber.create();
 
-						List<Integer> expected = new ArrayList<>();
-						for (int i = 0; i < expectedReplay + 10; i++) {
-							sink.next(i);
-							if (i >= 10) expected.add(i);
-						}
-						sink.complete();
-						flux.subscribe(late);
+																			   List<Integer> expected = new ArrayList<>();
+																			   for (int i = 0; i < expectedReplay + 10; i++) {
+																				   sink.emitNext(i);
+																				   if (i >= 10)
+																					   expected.add(i);
+																			   }
+																			   sink.emitComplete();
+																			   flux.subscribe(late);
 
-						late.assertValueSequence(expected).assertComplete();
-					}),
+																			   late.assertValueSequence(expected)
+																				   .assertComplete();
+																		   }),
 
-					dynamicTest("replay" + expectedReplay + "AndErrorLateSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						flux.onErrorReturn(-1).subscribe(); //first subscriber, ignore errors
-						AssertSubscriber<Integer> late = AssertSubscriber.create();
+																		   dynamicTest("replay" + expectedReplay + "AndErrorLateSubscriber", () -> {
+																			   Sinks.Many<Integer>
+																					   sink = sinkSupplier.get();
+																			   Flux<Integer> flux = sink.asFlux();
+																			   flux.onErrorReturn(-1)
+																				   .subscribe(); //first subscriber, ignore errors
+																			   AssertSubscriber<Integer> late = AssertSubscriber.create();
 
-						List<Integer> expected = new ArrayList<>();
-						for (int i = 0; i < expectedReplay + 10; i++) {
-							sink.next(i);
-							if (i >= 10) expected.add(i);
-						}
-						sink.error(new IllegalStateException("boom"));
-						flux.subscribe(late);
+																			   List<Integer> expected = new ArrayList<>();
+																			   for (int i = 0; i < expectedReplay + 10; i++) {
+																				   sink.emitNext(i);
+																				   if (i >= 10)
+																					   expected.add(i);
+																			   }
+																			   sink.emitError(new IllegalStateException("boom"));
+																			   flux.subscribe(late);
 
-						late.assertValueSequence(expected).assertErrorMessage("boom");
-					})
-			));
+																			   late.assertValueSequence(expected)
+																				   .assertErrorMessage("boom");
+																		   })));
 		}
 	}
 
-	DynamicContainer expectBufferingBeforeFirstSubscriber(Supplier<Sinks.StandaloneFluxSink<Integer>> sinkSupplier, int expectedBuffering) {
+	DynamicContainer expectBufferingBeforeFirstSubscriber(Supplier<Sinks.Many<Integer>> sinkSupplier, int expectedBuffering) {
 		if (expectedBuffering == NONE) {
-			return dynamicContainer("no buffering before 1st subscriber", Stream.of(
-					dynamicTest("doesNotBufferBeforeFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+			return dynamicContainer("no buffering before 1st subscriber", Stream.of(dynamicTest("doesNotBufferBeforeFirstSubscriber", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						sink.next(1).next(2).next(3);
-						flux.subscribe(first);
+				sink.emitNext(1);
+				sink.emitNext(2);
+				sink.emitNext(3);
+				flux.subscribe(first);
 
-						first.assertNoValues().assertNotComplete();
+				first.assertNoValues()
+					 .assertNotComplete();
 
-						sink.complete();
-						first.assertNoValues().assertComplete();
-					}),
-					dynamicTest("immediatelyCompleteFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+				sink.emitComplete();
+				first.assertNoValues()
+					 .assertComplete();
+			}), dynamicTest("immediatelyCompleteFirstSubscriber", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						sink.next(1).complete();
-						flux.subscribe(first);
+				sink.emitNext(1);
+				sink.emitComplete();
+				flux.subscribe(first);
 
-						first.assertNoValues().assertComplete();
-					}),
-					dynamicTest("immediatelyErrorFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+				first.assertNoValues()
+					 .assertComplete();
+			}), dynamicTest("immediatelyErrorFirstSubscriber", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						sink.next(1).error(new IllegalStateException("boom"));
-						flux.subscribe(first);
+				sink.emitNext(1);
+				sink.emitError(new IllegalStateException("boom"));
+				flux.subscribe(first);
 
-						first.assertNoValues().assertErrorMessage("boom");
-					})
-			));
+				first.assertNoValues()
+					 .assertErrorMessage("boom");
+			})));
 		}
 		else if (expectedBuffering == ALL) {
-			return dynamicContainer("buffers all before 1st subscriber", Stream.of(
-					dynamicTest("doesBufferBeforeFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+			return dynamicContainer("buffers all before 1st subscriber", Stream.of(dynamicTest("doesBufferBeforeFirstSubscriber", () -> {
+																					   Sinks.Many<Integer>
+																							   sink = sinkSupplier.get();
+																					   Flux<Integer> flux = sink.asFlux();
+																					   AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						sink.next(1).next(2).next(3);
-						flux.subscribe(first);
+																					   sink.emitNext(1);
+																					   sink.emitNext(2);
+																					   sink.emitNext(3);
+																					   flux.subscribe(first);
 
-						first.assertValues(1, 2, 3).assertNotComplete();
+																					   first.assertValues(1, 2, 3)
+																							.assertNotComplete();
 
-						sink.complete();
-						first.assertComplete();
-					}),
+																					   sink.emitComplete();
+																					   first.assertComplete();
+																				   }),
 
-					dynamicTest("replayAndCompleteFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+																				   dynamicTest("replayAndCompleteFirstSubscriber", () -> {
+																					   Sinks.Many<Integer>
+																							   sink = sinkSupplier.get();
+																					   Flux<Integer> flux = sink.asFlux();
+																					   AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						sink.next(1).complete();
-						flux.subscribe(first);
+																					   sink.emitNext(1);
+																					   sink.emitComplete();
+																					   flux.subscribe(first);
 
-						first.assertValues(1).assertComplete();
-					}),
+																					   first.assertValues(1)
+																							.assertComplete();
+																				   }),
 
-					dynamicTest("replayAndErrorFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+																				   dynamicTest("replayAndErrorFirstSubscriber", () -> {
+																					   Sinks.Many<Integer>
+																							   sink = sinkSupplier.get();
+																					   Flux<Integer> flux = sink.asFlux();
+																					   AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						sink.next(1).next(2).next(3).error(new IllegalStateException("boom"));
-						flux.subscribe(first);
+																					   sink.emitNext(1);
+																					   sink.emitNext(2);
+																					   sink.emitNext(3);
+																					   sink.emitError(new IllegalStateException("boom"));
+																					   flux.subscribe(first);
 
-						first.assertValues(1, 2, 3).assertErrorMessage("boom");
-					})
-			));
+																					   first.assertValues(1, 2, 3)
+																							.assertErrorMessage("boom");
+																				   })));
 		}
 		else {
-			return dynamicContainer("buffers " + expectedBuffering + " before 1st subscriber", Stream.of(
-					dynamicTest("doesBuffer" + expectedBuffering + "BeforeFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+			return dynamicContainer("buffers " + expectedBuffering + " before 1st subscriber", Stream.of(dynamicTest("doesBuffer" + expectedBuffering + "BeforeFirstSubscriber", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						List<Integer> expected = new ArrayList<>();
-						for (int i = 0; i < 10 + expectedBuffering; i++) {
-							sink.next(i);
-							if (i >= 10) {
-								expected.add(i);
-							}
-						}
-						flux.subscribe(first);
+				List<Integer> expected = new ArrayList<>();
+				for (int i = 0; i < 10 + expectedBuffering; i++) {
+					sink.emitNext(i);
+					if (i >= 10) {
+						expected.add(i);
+					}
+				}
+				flux.subscribe(first);
 
-						first.assertValueSequence(expected).assertNotComplete();
+				first.assertValueSequence(expected)
+					 .assertNotComplete();
 
-						sink.complete();
-						first.assertValueSequence(expected).assertComplete();
-					}),
-					dynamicTest("replayLimitedHistoryAndCompleteFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+				sink.emitComplete();
+				first.assertValueSequence(expected)
+					 .assertComplete();
+			}), dynamicTest("replayLimitedHistoryAndCompleteFirstSubscriber", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						List<Integer> expected = new ArrayList<>();
-						for (int i = 0; i < 10 + expectedBuffering; i++) {
-							sink.next(i);
-							if (i >= 10) {
-								expected.add(i);
-							}
-						}
-						sink.complete();
-						flux.subscribe(first);
+				List<Integer> expected = new ArrayList<>();
+				for (int i = 0; i < 10 + expectedBuffering; i++) {
+					sink.emitNext(i);
+					if (i >= 10) {
+						expected.add(i);
+					}
+				}
+				sink.emitComplete();
+				flux.subscribe(first);
 
-						first.assertValueSequence(expected).assertComplete();
-					}),
-					dynamicTest("replayLimitedHistoryAndErrorFirstSubscriber", () -> {
-						Sinks.StandaloneFluxSink<Integer> sink = sinkSupplier.get();
-						Flux<Integer> flux = sink.asFlux();
-						AssertSubscriber<Integer> first = AssertSubscriber.create();
+				first.assertValueSequence(expected)
+					 .assertComplete();
+			}), dynamicTest("replayLimitedHistoryAndErrorFirstSubscriber", () -> {
+				Sinks.Many<Integer> sink = sinkSupplier.get();
+				Flux<Integer> flux = sink.asFlux();
+				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-						List<Integer> expected = new ArrayList<>();
-						for (int i = 0; i < 10 + expectedBuffering; i++) {
-							sink.next(i);
-							if (i >= 10) {
-								expected.add(i);
-							}
-						}
-						sink.error(new IllegalStateException("boom"));
-						flux.subscribe(first);
+				List<Integer> expected = new ArrayList<>();
+				for (int i = 0; i < 10 + expectedBuffering; i++) {
+					sink.emitNext(i);
+					if (i >= 10) {
+						expected.add(i);
+					}
+				}
+				sink.emitError(new IllegalStateException("boom"));
+				flux.subscribe(first);
 
-						first.assertValueSequence(expected).assertErrorMessage("boom");
-					})
-			));
+				first.assertValueSequence(expected)
+					 .assertErrorMessage("boom");
+			})));
 		}
 	}
 

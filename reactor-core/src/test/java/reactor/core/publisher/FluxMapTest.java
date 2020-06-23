@@ -148,15 +148,16 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusion() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> up = Processors.more().unicast(new ConcurrentLinkedQueue<>());
+		Sinks.Many<Integer> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
-		up.map(v -> v + 1)
+		up.asFlux()
+		  .map(v -> v + 1)
 		  .subscribe(ts);
 
 		for (int i = 1; i < 11; i++) {
-			up.onNext(i);
+			up.emitNext(i);
 		}
-		up.onComplete();
+		up.emitComplete();
 
 		ts.assertValues(2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 		  .assertNoError()
@@ -167,21 +168,21 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionBackpressured() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(new ConcurrentLinkedQueue<>());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)
 		    .hide()
-		    .flatMap(w -> up.map(v -> v + 1))
+		    .flatMap(w -> up.asFlux().map(v -> v + 1))
 		    .subscribe(ts);
 
-		up.onNext(1);
+		up.emitNext(1);
 
 		ts.assertValues(2)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		up.onComplete();
+		up.emitComplete();
 
 		ts.assertValues(2)
 		  .assertNoError()

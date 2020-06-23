@@ -218,7 +218,7 @@ public class MonoUsingTest {
 		Mono.using(() -> 1, r -> tp, cleanup::set, true)
 		    .subscribe(ts);
 
-		Assert.assertTrue("No subscriber?", tp.hasDownstreams());
+		Assert.assertTrue("No subscriber?", Scannable.from(tp).inners().count() != 0);
 
 		tp.onNext(1);
 

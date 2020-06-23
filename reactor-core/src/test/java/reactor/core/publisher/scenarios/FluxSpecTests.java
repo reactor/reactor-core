@@ -16,6 +16,17 @@
 
 package reactor.core.publisher.scenarios;
 
+import org.junit.Assert;
+import org.junit.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoProcessor;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,21 +41,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxIdentityProcessor;
-import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.Processors;
-import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
-import reactor.test.StepVerifier;
-import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -403,20 +399,19 @@ public class FluxSpecTests {
 	public void acceptedValuesArePassedToRegisteredConsumer() {
 //		"Accepted values are passed to a registered Consumer"
 //		given: "a composable with a registered consumer"
-		FluxIdentityProcessor<Integer> composable =
-				Processors.multicast();
+		Sinks.Many<Integer> composable = Sinks.many().multicast().onBackpressureBuffer();
 		AtomicReference<Integer> value = new AtomicReference<>();
 
-		composable.subscribe(value::set);
+		composable.asFlux().subscribe(value::set);
 
 //		when: "a value is accepted"
-		composable.onNext(1);
+		composable.emitNext(1);
 
 //		then: "it is passed to the consumer"
 		assertThat(value.get()).isEqualTo(1);
 
 //		when: "another value is accepted"
-		composable.onNext(2);
+		composable.emitNext(2);
 
 //		then: "it too is passed to the consumer"
 		assertThat(value.get()).isEqualTo(2);
@@ -426,13 +421,13 @@ public class FluxSpecTests {
 	public void acceptedErrorsArePassedToRegisteredConsumer() {
 //		"Accepted errors are passed to a registered Consumer"
 //		given: "a composable with a registered consumer of RuntimeExceptions"
-		FluxIdentityProcessor<Integer> composable =
-				Processors.multicast();
+		Sinks.Many<Integer> composable =
+				Sinks.many().multicast().onBackpressureBuffer();
 		LongAdder errors = new LongAdder();
-		composable.doOnError(e -> errors.increment()).subscribe();
+		composable.asFlux().doOnError(e -> errors.increment()).subscribe();
 
 //		when: "A RuntimeException is accepted"
-		composable.onError(new RuntimeException());
+		composable.emitError(new RuntimeException());
 
 //		then: "it is passed to the consumer"
 		assertThat(errors.intValue()).isEqualTo(1);
@@ -448,13 +443,13 @@ public class FluxSpecTests {
 	public void whenAcceptedEventIsIterableSplitCanIterateOverValues() {
 //		"When the accepted event is Iterable, split can iterate over values"
 //		given: "a composable with a known number of values"
-		FluxIdentityProcessor<Iterable<String>> d = Processors.multicast();
-		Flux<String> composable = d.flatMap(Flux::fromIterable);
+		Sinks.Many<Iterable<String>> d = Sinks.many().multicast().onBackpressureBuffer();
+		Flux<String> composable = d.asFlux().flatMap(Flux::fromIterable);
 
 //		when: "accept list of Strings"
 		AtomicReference<String> tap = new AtomicReference<>();
 		composable.subscribe(tap::set);
-		d.onNext(Arrays.asList("a", "b", "c"));
+		d.emitNext(Arrays.asList("a", "b", "c"));
 
 //		then: "its value is the last of the initial values"
 		assertThat(tap.get()).isEqualTo("c");
@@ -464,13 +459,13 @@ public class FluxSpecTests {
 	public void fluxValuesCanBeMapped() {
 //		"A Flux"s values can be mapped"
 //		given: "a source composable with a mapping function"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		Flux<Integer> mapped = source.map(it -> it * 2);
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		Flux<Integer> mapped = source.asFlux().map(it -> it * 2);
 
 //		when: "the source accepts a value"
 		AtomicReference<Integer> value = new AtomicReference<>();
 		mapped.subscribe(value::set);
-		source.onNext(1);
+		source.emitNext(1);
 
 //		then: "the value is mapped"
 		assertThat(value.get()).isEqualTo(2);
@@ -480,8 +475,9 @@ public class FluxSpecTests {
 	public void streamValuesCanBeExploded() {
 //		Stream"s values can be exploded
 //			given: "a source composable with a mapMany function"
-		Sinks.StandaloneFluxSink<Integer> sink = Sinks.multicast();
-		Flux<Integer> mapped = sink.asFlux()
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		Flux<Integer> mapped = source
+				.asFlux()
 				.log()
 				.publishOn(Schedulers.parallel())
 				.log()
@@ -492,7 +488,7 @@ public class FluxSpecTests {
 		MonoProcessor<Integer> value = mapped.next()
 		                                     .toProcessor();
 		value.subscribe();
-		sink.next(1);
+		source.emitNext(1);
 
 //		then: "the value is mapped"
 		int result = value.block(Duration.ofSeconds(5));
@@ -503,22 +499,23 @@ public class FluxSpecTests {
 	public void multipleStreamValuesCanBeMerged() {
 //		"Multiple Stream"s values can be merged"
 //		given: "source composables to merge, buffer and tap"
-		FluxIdentityProcessor<Integer> source1 = Processors.multicast();
+		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureBuffer();
 
-		FluxIdentityProcessor<Integer> source2 = Processors.multicast();
-		source2.map(it -> it)
+		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureBuffer();
+		source2.asFlux()
+			   .map(it -> it)
 		       .map(it -> it);
 
-		FluxIdentityProcessor<Integer> source3 = Processors.multicast();
+		Sinks.Many<Integer> source3 = Sinks.many().multicast().onBackpressureBuffer();
 
 		AtomicReference<List<Integer>> tap = new AtomicReference<>();
-		Flux.merge(source1, source2, source3).log().buffer(3)
+		Flux.merge(source1.asFlux(), source2.asFlux(), source3.asFlux()).log().buffer(3)
 		    .log().subscribe(tap::set);
 
 //		when: "the sources accept a value"
-		source1.onNext(1);
-		source2.onNext(2);
-		source3.onNext(3);
+		source1.emitNext(1);
+		source2.emitNext(2);
+		source3.emitNext(3);
 
 //		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).containsExactly(1, 2, 3);
@@ -557,13 +554,13 @@ public class FluxSpecTests {
 	public void combineLatestStreamData() {
 //		"Combine latest stream data"
 //		given: "source composables to combine, buffer and tap"
-		FluxIdentityProcessor<String> w1 = Processors.multicast();
-		FluxIdentityProcessor<String> w2 = Processors.multicast();
-		FluxIdentityProcessor<String> w3 = Processors.multicast();
+		Sinks.Many<String> w1 = Sinks.many().multicast().onBackpressureBuffer();
+		Sinks.Many<String> w2 = Sinks.many().multicast().onBackpressureBuffer();
+		Sinks.Many<String> w3 = Sinks.many().multicast().onBackpressureBuffer();
 
 //		when: "the sources are combined"
 		Flux<String> mergedFlux =
-				Flux.combineLatest(w1, w2, w3, t -> "" + t[0] + t[1] + t[2]);
+				Flux.combineLatest(w1.asFlux(), w2.asFlux(), w3.asFlux(), t -> "" + t[0] + t[1] + t[2]);
 		List<String> res = new ArrayList<>();
 
 		mergedFlux.subscribe(
@@ -577,18 +574,18 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-		w1.onNext("1a");
-		w2.onNext("2a");
-		w3.onNext("3a");
-		w1.onComplete();
+		w1.emitNext("1a");
+		w2.emitNext("2a");
+		w3.emitNext("3a");
+		w1.emitComplete();
 		// twice for w2
-		w2.onNext("2b");
-		w2.onComplete();
+		w2.emitNext("2b");
+		w2.emitComplete();
 		// 4 times for w3
-		w3.onNext("3b");
-		w3.onNext("3c");
-		w3.onNext("3d");
-		w3.onComplete();
+		w3.emitNext("3b");
+		w3.emitNext("3c");
+		w3.emitNext("3d");
+		w3.emitComplete();
 
 
 //		then: "the values are all collected from source1 and source2 flux"
@@ -676,15 +673,16 @@ public class FluxSpecTests {
 	public void streamCanBeCounted() {
 //		"Stream can be counted"
 //		given: "source composables to count and tap"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		MonoProcessor<Long> tap = source.count()
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		MonoProcessor<Long> tap = source.asFlux()
+										.count()
 		                                .subscribeWith(MonoProcessor.create());
 
 //		when: "the sources accept a value"
-		source.onNext(1);
-		source.onNext(2);
-		source.onNext(3);
-		source.onComplete();
+		source.emitNext(1);
+		source.emitNext(2);
+		source.emitNext(3);
+		source.emitComplete();
 
 //		then: "the count value matches the number of accept"
 		assertThat(tap.peek()).isEqualTo(3);
@@ -741,36 +739,36 @@ public class FluxSpecTests {
 	public void fluxValuesCanBeFiltered() {
 //		"A Flux"s values can be filtered"
 //		given: "a source composable with a filter that rejects odd values"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		Flux<Integer> filtered = source.filter(it -> it % 2 == 0);
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		Flux<Integer> filtered = source.asFlux().filter(it -> it % 2 == 0);
 
 //		when: "the source accepts an even value"
 		AtomicReference<Integer> value = new AtomicReference<>();
 		filtered.subscribe(value::set);
-		source.onNext(2);
+		source.emitNext(2);
 
 //		then: "it passes through"
 		assertThat(value.get()).isEqualTo(2);
 
 //		when: "the source accepts an odd value"
-		source.onNext(3);
+		source.emitNext(3);
 
 //		then: "it is blocked by the filter"
 		assertThat(value.get()).isEqualTo(2);
 
 //		when: "simple filter"
-		FluxIdentityProcessor<Boolean> anotherSource = Processors.multicast();
+		Sinks.Many<Boolean> anotherSource = Sinks.many().multicast().onBackpressureBuffer();
 		AtomicBoolean tap = new AtomicBoolean();
-		anotherSource.filter(it -> it).subscribe(tap::set);
-		anotherSource.onNext(true);
+		anotherSource.asFlux().filter(it -> it).subscribe(tap::set);
+		anotherSource.emitNext(true);
 
 //		then: "it is accepted by the filter"
 		assertThat(tap.get()).isTrue();
 
 //		when: "simple filter nominal case"
-		anotherSource = Processors.multicast();
-		anotherSource.filter(it -> it).subscribe(tap::set);
-		anotherSource.onNext(false);
+		anotherSource = Sinks.many().multicast().onBackpressureBuffer();
+		anotherSource.asFlux().filter(it -> it).subscribe(tap::set);
+		anotherSource.emitNext(false);
 
 //		then: "it is not accepted by the filter (previous value held)"
 		assertThat(tap.get()).isTrue();
@@ -780,8 +778,8 @@ public class FluxSpecTests {
 	public void whenMappingFunctionThrowsMappedComposableAcceptsError() {
 //		"When a mapping function throws an exception, the mapped composable accepts the error"
 //		given: "a source composable with a mapping function that throws an error"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		Flux<String> mapped = source.map(it -> {
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		Flux<String> mapped = source.asFlux().map(it -> {
 					if (it == 1) {
 						throw new RuntimeException();
 					}
@@ -795,7 +793,7 @@ public class FluxSpecTests {
 		      .subscribe();
 
 //		when: "the source accepts a value"
-		source.onNext(1);
+		source.emitNext(1);
 
 //		then: "the error is passed on"
 		assertThat(errors.intValue()).isEqualTo(1);
@@ -805,11 +803,12 @@ public class FluxSpecTests {
 	public void whenProcessorIsStreamed() {
 //		"When a processor is streamed"
 //		given: "a source composable and a async downstream"
-		FluxIdentityProcessor<Integer> source = Processors.replayAll();
+		Sinks.Many<Integer> source = Sinks.many().replay().all();
 		Scheduler scheduler = Schedulers.newParallel("test", 2);
 
 		try {
-			Mono<List<Integer>> res = source.subscribeOn(scheduler)
+			Mono<List<Integer>> res = source.asFlux()
+											.subscribeOn(scheduler)
 			                                .delaySubscription(Duration.ofMillis(1L))
 			                                .log("streamed")
 			                                .map(it -> it * 2)
@@ -819,11 +818,11 @@ public class FluxSpecTests {
 			res.subscribe();
 
 //		when: "the source accepts a value"
-			source.onNext(1);
-			source.onNext(2);
-			source.onNext(3);
-			source.onNext(4);
-			source.onComplete();
+			source.emitNext(1);
+			source.emitNext(2);
+			source.emitNext(3);
+			source.emitNext(4);
+			source.emitComplete();
 
 //		then: "the res is passed on"
 			assertThat(res.block()).containsExactly(2, 4, 6, 8);
@@ -837,8 +836,8 @@ public class FluxSpecTests {
 	public void whenFilterFunctionThrowsFilteredComposableAcceptsError() {
 //		"When a filter function throws an exception, the filtered composable accepts the error"
 //		given: "a source composable with a filter function that throws an error"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		Flux<Integer> filtered = source.filter(it -> {
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		Flux<Integer> filtered = source.asFlux().filter(it -> {
 			if (it == 1) {
 				throw new RuntimeException();
 			}
@@ -850,7 +849,7 @@ public class FluxSpecTests {
 		filtered.doOnError(e -> errors.increment()).subscribe();
 
 //		when: "the source accepts a value"
-		source.onNext(1);
+		source.emitNext(1);
 
 //		then: "the error is passed on"
 		assertThat(errors.intValue()).isEqualTo(1);
@@ -893,18 +892,18 @@ public class FluxSpecTests {
 	public void whenReducingKnownNumberOfValuesOnlyFinalValueIsPassedToConsumers() {
 //		"When reducing a known number of values, only the final value is passed to consumers"
 //		given: "a composable with a known number of values and a reduce function"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		Mono<Integer> reduced = source.reduce(new Reduction());
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		Mono<Integer> reduced = source.asFlux().reduce(new Reduction());
 		List<Integer> values = new ArrayList<>();
 		reduced.doOnSuccess(values::add).subscribe();
 
 //		when: "the expected number of values is accepted"
-		source.onNext(1);
-		source.onNext(2);
-		source.onNext(3);
-		source.onNext(4);
-		source.onNext(5);
-		source.onComplete();
+		source.emitNext(1);
+		source.emitNext(2);
+		source.emitNext(3);
+		source.emitNext(4);
+		source.emitNext(5);
+		source.emitComplete();
 
 //		then: "the consumer only receives the final value"
 		assertThat(values).containsExactly(120);
@@ -914,17 +913,17 @@ public class FluxSpecTests {
 	public void knownNumberOfValuesCanBeReduced() {
 //		"A known number of values can be reduced"
 //		given: "a composable that will accept 5 values and a reduce function"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		Mono<Integer> reduced = source.reduce(new Reduction());
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		Mono<Integer> reduced = source.asFlux().reduce(new Reduction());
 		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
 
 //		when: "the expected number of values is accepted"
-		source.onNext(1);
-		source.onNext(2);
-		source.onNext(3);
-		source.onNext(4);
-		source.onNext(5);
-		source.onComplete();
+		source.emitNext(1);
+		source.emitNext(2);
+		source.emitNext(3);
+		source.emitNext(4);
+		source.emitNext(5);
+		source.emitComplete();
 
 //		then: "the reduced composable holds the reduced value"
 		assertThat(value.peek()).isEqualTo(120);
@@ -934,19 +933,19 @@ public class FluxSpecTests {
 	public void whenKnownNumberOfValuesIsReducedOnlyFinalValueMadeAvailable() {
 //		"When a known number of values is being reduced, only the final value is made available"
 //		given: "a composable that will accept 2 values and a reduce function"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		MonoProcessor<Integer> value = source.reduce(new Reduction())
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
+		MonoProcessor<Integer> value = source.asFlux().reduce(new Reduction())
 		                                     .subscribeWith(MonoProcessor.create());
 
 //		when: "the first value is accepted"
-		source.onNext(1);
+		source.emitNext(1);
 
 //		then: "the reduced value is unknown"
 		assertThat(value.peek()).isNull();
 
 //		when: "the second value is accepted"
-		source.onNext(2);
-		source.onComplete();
+		source.emitNext(2);
+		source.emitComplete();
 
 //		then: "the reduced value is known"
 		assertThat(value.peek()).isEqualTo(2);
@@ -958,27 +957,27 @@ public class FluxSpecTests {
 	public void whenUnknownNumberOfValueScannedEachReductionPassedToConsumer() {
 //		"When an unknown number of values is being scanned, each reduction is passed to a consumer"
 //		given: "a composable with a reduce function"
-		FluxIdentityProcessor<Integer> source =
-				Processors.multicast();
-		Flux<Integer> reduced = source.scan(new Reduction());
+		Sinks.Many<Integer> source =
+				Sinks.many().multicast().onBackpressureBuffer();
+		Flux<Integer> reduced = source.asFlux().scan(new Reduction());
 		AtomicReference<Integer> value = new AtomicReference<>();
 		reduced.subscribe(value::set);
 
 //		when: "the first value is accepted"
-		source.onNext(1);
+		source.emitNext(1);
 
 //		then: "the reduction is available"
 		assertThat(value.get()).isEqualTo(1);
 
 //		when: "the second value is accepted"
-		source.onNext(2);
+		source.emitNext(2);
 
 //		then: "the updated reduction is available"
 		assertThat(value.get()).isEqualTo(2);
 
 //		when: "use an initial value"
-		source.scan(4, new Reduction()).subscribe(value::set);
-		source.onNext(1);
+		source.asFlux().scan(4, new Reduction()).subscribe(value::set);
+		source.emitNext(1);
 
 //		then: "the updated reduction is available"
 		assertThat(value.get()).isEqualTo(4);
@@ -988,15 +987,15 @@ public class FluxSpecTests {
 	public void reduceWillAccumulateListOfAcceptedValues() {
 //		"Reduce will accumulate a list of accepted values"
 //		given: "a composable"
-		FluxIdentityProcessor<Integer> source =
-				Processors.multicast();
-		Mono<List<Integer>> reduced = source.collectList();
+		Sinks.Many<Integer> source =
+				Sinks.many().multicast().onBackpressureBuffer();
+		Mono<List<Integer>> reduced = source.asFlux().collectList();
 		MonoProcessor<List<Integer>> value = reduced.toProcessor();
 		value.subscribe();
 
 //		when: "the first value is accepted"
-		source.onNext(1);
-		source.onComplete();
+		source.emitNext(1);
+		source.emitComplete();
 
 //		then: "the list contains the first element"
 		assertThat(value.block()).containsExactly(1);
@@ -1006,22 +1005,23 @@ public class FluxSpecTests {
 	public void whenUnknownNumberOfValuesReducedEachReductionPassedToConsumerOnWindow() {
 //		"When an unknown number of values is being reduced, each reduction is passed to a consumer on window"
 //		given: "a composable with a reduce function"
-		FluxIdentityProcessor<Integer> source =
-				Processors.multicast();
-		Flux<Integer> reduced = source.window(2)
+		Sinks.Many<Integer> source =
+				Sinks.many().multicast().onBackpressureBuffer();
+		Flux<Integer> reduced = source.asFlux()
+									  .window(2)
 		                              .log()
 		                              .flatMap(it -> it.log("lol")
 		                                               .reduce(new Reduction()));
 		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
 
 //		when: "the first value is accepted"
-		source.onNext(1);
+		source.emitNext(1);
 
 //		then: "the reduction is not available"
 		assertThat(value.peek()).isNull();
 
 //		when: "the second value is accepted and flushed"
-		source.onNext(2);
+		source.emitNext(2);
 
 //		then: "the updated reduction is available"
 		assertThat(value.peek()).isEqualTo(2);
@@ -1093,7 +1093,7 @@ public class FluxSpecTests {
 
 	@Test(timeout = 10000L)
 	public void collectFromMultipleThread1() throws Exception {
-		FluxIdentityProcessor<Integer> head = Processors.multicast();
+		Sinks.Many<Integer> head = Sinks.many().multicast().onBackpressureBuffer();
 		AtomicInteger sum = new AtomicInteger();
 
 		int length = 1000;
@@ -1102,6 +1102,7 @@ public class FluxSpecTests {
 		CountDownLatch latch = new CountDownLatch(latchCount);
 
 		head
+				.asFlux()
 				.publishOn(Schedulers.parallel())
 				.parallel(3)
 				.runOn(Schedulers.parallel())
@@ -1111,7 +1112,9 @@ public class FluxSpecTests {
 					latch.countDown();
 				});
 
-		Flux.range(1, 1000).subscribe(head);
+		Flux.range(1, 1000).subscribe(data -> {
+			while(head.emitNext(data).hasFailed());
+		}, head::emitError, head::emitComplete);
 		latch.await();
 		Assert.assertTrue(sum.get() == length);
 	}

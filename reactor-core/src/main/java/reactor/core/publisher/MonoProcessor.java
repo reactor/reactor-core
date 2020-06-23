@@ -31,6 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -49,7 +50,7 @@ import reactor.util.context.Context;
  */
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
-		           Scannable {
+		           Scannable, Sinks.One<O> {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -81,9 +82,12 @@ public final class MonoProcessor<O> extends Mono<O>
 	@SuppressWarnings("rawtypes")
 	static final NextInner[] EMPTY_WITH_SOURCE = new NextInner[0];
 
+	@Nullable
 	CorePublisher<? extends O> source;
 
+	@Nullable
 	Throwable    error;
+	@Nullable
 	O            value;
 
 
@@ -95,6 +99,73 @@ public final class MonoProcessor<O> extends Mono<O>
 	MonoProcessor(@Nullable CorePublisher<? extends O> source) {
 		this.source = source;
 		SUBSCRIBERS.lazySet(this, source != null ? EMPTY_WITH_SOURCE : EMPTY);
+	}
+
+	@Override
+	public Emission emitEmpty() {
+		return emitValue(null);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public Emission emitError(Throwable cause) {
+		Objects.requireNonNull(cause, "onError cannot be null");
+
+		if (UPSTREAM.getAndSet(this, Operators.cancelledSubscription())
+				== Operators.cancelledSubscription()) {
+			Operators.onErrorDroppedMulticast(cause);
+			return Sinks.Emission.FAIL_TERMINATED;
+		}
+
+		error = cause;
+		value = null;
+		source = null;
+
+		//no need to double check since UPSTREAM.getAndSet gates the completion already
+		for (NextInner<O> as : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
+			as.onError(cause);
+		}
+		return Sinks.Emission.OK;
+	}
+
+	@Override
+	public Emission emitValue(@Nullable O value) {
+		Subscription s;
+		if ((s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription()))
+				== Operators.cancelledSubscription()) {
+			if (value != null) {
+				Operators.onNextDroppedMulticast(value);
+			}
+			return Sinks.Emission.FAIL_TERMINATED;
+		}
+
+		this.value = value;
+		Publisher<? extends O> parent = source;
+		source = null;
+
+		@SuppressWarnings("unchecked")
+		NextInner<O>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
+
+		if (value == null) {
+			for (NextInner<O> as : array) {
+				as.onComplete();
+			}
+		}
+		else {
+			if (s != null && !(parent instanceof Mono)) {
+				s.cancel();
+			}
+
+			for (NextInner<O> as : array) {
+				as.complete(value);
+			}
+		}
+		return Sinks.Emission.OK;
+	}
+
+	@Override
+	public Mono<O> asMono() {
+		return this;
 	}
 
 	@Override
@@ -262,61 +333,19 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	@Override
 	public final void onComplete() {
-		onNext(null);
+		emitValue(null);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void onError(Throwable cause) {
-		Objects.requireNonNull(cause, "onError cannot be null");
-
-		if (UPSTREAM.getAndSet(this, Operators.cancelledSubscription())
-				== Operators.cancelledSubscription()) {
-			Operators.onErrorDroppedMulticast(cause);
-			return;
-		}
-
-		error = cause;
-		value = null;
-		source = null;
-
-		for (NextInner<O> as : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
-			as.onError(cause);
-		}
+		emitError(cause);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void onNext(@Nullable O value) {
-		Subscription s;
-		if ((s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription()))
-				== Operators.cancelledSubscription()) {
-			if (value != null) {
-				Operators.onNextDroppedMulticast(value);
-			}
-			return;
-		}
-
-		this.value = value;
-		Publisher<? extends O> parent = source;
-		source = null;
-
-		NextInner<O>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
-
-		if (value == null) {
-			for (NextInner<O> as : array) {
-				as.onComplete();
-			}
-		}
-		else {
-			if (s != null && !(parent instanceof Mono)) {
-				s.cancel();
-			}
-
-			for (NextInner<O> as : array) {
-				as.complete(value);
-			}
-		}
+		emitValue(value);
 	}
 
 	@Override

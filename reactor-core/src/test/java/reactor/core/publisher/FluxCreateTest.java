@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -38,7 +37,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxCreate.BufferAsyncSink;
 import reactor.core.publisher.FluxCreate.LatestAsyncSink;
-import reactor.core.publisher.FluxCreate.SerializedSink;
+import reactor.core.publisher.FluxCreate.SerializedFluxSink;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -1007,8 +1006,8 @@ class FluxCreateTest {
 	private void testFluxCreateOnRequestSingleThread(OverflowStrategy overflowStrategy) {
 		RequestTrackingTestQueue queue = new RequestTrackingTestQueue();
 		Flux<Integer> created = Flux.create(pushPullSink -> {
-			assertThat(pushPullSink instanceof SerializedSink).isTrue();
-			SerializedSink<Integer> s = (SerializedSink<Integer>)pushPullSink;
+			assertThat(pushPullSink).isInstanceOf(SerializedFluxSink.class);
+			SerializedFluxSink<Integer> s = (SerializedFluxSink<Integer>)pushPullSink;
 			FluxSink<Integer> s1 = s.onRequest(n -> {
 				if (queue.sink == null) {
 					queue.initialize(s);
@@ -1022,9 +1021,9 @@ class FluxCreateTest {
 				}
 				queue.pushToSink();
 			});
-			assertThat(s1 instanceof SerializedSink).isTrue();
-			assertThat(s.onDispose(() -> {}) instanceof SerializedSink).isTrue();
-			assertThat(s.onCancel(() -> {}) instanceof SerializedSink).isTrue();
+			assertThat(s1).isInstanceOf(SerializedFluxSink.class);
+			assertThat(s.onDispose(() -> {})).isInstanceOf(SerializedFluxSink.class);
+			assertThat(s.onCancel(() -> {})).isInstanceOf(SerializedFluxSink.class);
 		}, overflowStrategy);
 
 		Step<Integer> step = StepVerifier.create(created, 0);
@@ -1244,7 +1243,7 @@ class FluxCreateTest {
 	void scanSerializedSink() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxCreate.BaseSink<String> decorated = new LatestAsyncSink<>(actual);
-		SerializedSink<String> test = new SerializedSink<>(decorated);
+		SerializedFluxSink<String> test = new SerializedFluxSink<>(decorated);
 
 		test.mpscQueue.offer("foo");
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
@@ -1295,12 +1294,12 @@ class FluxCreateTest {
 	void bufferSinkToString() {
 		StepVerifier.create(Flux.create(sink -> {
 			sink.next(sink.toString());
-			if (sink instanceof  SerializedSink) {
-				sink.next(((SerializedSink) sink).sink.toString());
+			if (sink instanceof  SerializedFluxSink) {
+				sink.next(((SerializedFluxSink) sink).sink.toString());
 				sink.complete();
 			}
 			else {
-				sink.error(new IllegalArgumentException("expected SerializedSink"));
+				sink.error(new IllegalArgumentException("expected SerializedFluxSink"));
 			}
 		}, OverflowStrategy.BUFFER))
 		            .expectNext("FluxSink(BUFFER)")
@@ -1312,12 +1311,12 @@ class FluxCreateTest {
 	void dropSinkToString() {
 		StepVerifier.create(Flux.create(sink -> {
 			sink.next(sink.toString());
-			if (sink instanceof  SerializedSink) {
-				sink.next(((SerializedSink) sink).sink.toString());
+			if (sink instanceof  SerializedFluxSink) {
+				sink.next(((SerializedFluxSink) sink).sink.toString());
 				sink.complete();
 			}
 			else {
-				sink.error(new IllegalArgumentException("expected SerializedSink"));
+				sink.error(new IllegalArgumentException("expected SerializedFluxSink"));
 			}
 		}, OverflowStrategy.DROP))
 		            .expectNext("FluxSink(DROP)")
@@ -1329,12 +1328,12 @@ class FluxCreateTest {
 	void ignoreSinkToString() {
 		StepVerifier.create(Flux.create(sink -> {
 			sink.next(sink.toString());
-			if (sink instanceof  SerializedSink) {
-				sink.next(((SerializedSink) sink).sink.toString());
+			if (sink instanceof  SerializedFluxSink) {
+				sink.next(((SerializedFluxSink) sink).sink.toString());
 				sink.complete();
 			}
 			else {
-				sink.error(new IllegalArgumentException("expected SerializedSink"));
+				sink.error(new IllegalArgumentException("expected SerializedFluxSink"));
 			}
 		}, OverflowStrategy.IGNORE))
 		            .expectNext("FluxSink(IGNORE)")
@@ -1346,12 +1345,12 @@ class FluxCreateTest {
 	void errorSinkToString() {
 		StepVerifier.create(Flux.create(sink -> {
 			sink.next(sink.toString());
-			if (sink instanceof  SerializedSink) {
-				sink.next(((SerializedSink) sink).sink.toString());
+			if (sink instanceof  SerializedFluxSink) {
+				sink.next(((SerializedFluxSink) sink).sink.toString());
 				sink.complete();
 			}
 			else {
-				sink.error(new IllegalArgumentException("expected SerializedSink"));
+				sink.error(new IllegalArgumentException("expected SerializedFluxSink"));
 			}
 		}, OverflowStrategy.ERROR))
 		            .expectNext("FluxSink(ERROR)")
@@ -1363,12 +1362,12 @@ class FluxCreateTest {
 	void latestSinkToString() {
 		StepVerifier.create(Flux.create(sink -> {
 			sink.next(sink.toString());
-			if (sink instanceof  SerializedSink) {
-				sink.next(((SerializedSink) sink).sink.toString());
+			if (sink instanceof  SerializedFluxSink) {
+				sink.next(((SerializedFluxSink) sink).sink.toString());
 				sink.complete();
 			}
 			else {
-				sink.error(new IllegalArgumentException("expected SerializedSink"));
+				sink.error(new IllegalArgumentException("expected SerializedFluxSink"));
 			}
 		}, OverflowStrategy.LATEST))
 		            .expectNext("FluxSink(LATEST)")
@@ -1468,7 +1467,7 @@ class FluxCreateTest {
 				return context;
 			}
 		}, 10);
-		SerializedSink<String> serializedSink = new SerializedSink<>(baseSink);
+		SerializedFluxSink<String> serializedSink = new SerializedFluxSink<>(baseSink);
 
 		RaceTestUtils.race(baseSink::cancel,
 				() -> serializedSink.next("foo"));

@@ -246,7 +246,7 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 		StepVerifier.create(tp)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+			            Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
 			            Assert.assertFalse("Completed?", tp.isTerminated());
 			            Assert.assertNull("Has error?", tp.getError());
 		            })
@@ -263,7 +263,7 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+		Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
 		Assert.assertTrue("Not completed?", tp.isTerminated());
 		Assert.assertNull("Has error?", tp.getError());
 	}
@@ -273,7 +273,7 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 		StepVerifier.create(tp, 0L)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+			            Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
 			            Assert.assertFalse("Completed?", tp.isTerminated());
 			            Assert.assertNull("Has error?", tp.getError());
 		            })
@@ -287,7 +287,7 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+		Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
 		Assert.assertTrue("Not completed?", tp.isTerminated());
 		Assert.assertNull("Has error?", tp.getError());
 	}
@@ -297,7 +297,7 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create(100);
 		StepVerifier.create(tp, 0L)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+			            Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
 			            Assert.assertFalse("Completed?", tp.isTerminated());
 			            Assert.assertNull("Has error?", tp.getError());
 		            })
@@ -311,7 +311,7 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+		Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
 		Assert.assertTrue("Not completed?", tp.isTerminated());
 		Assert.assertNull("Has error?", tp.getError());
 	}
@@ -444,104 +444,8 @@ public class EmitterProcessorTest {
 	}
 
 	@Test
-	@Ignore
-	public void test() {
-		Scheduler asyncGroup = Schedulers.single();
-		FluxIdentityProcessor<String> emitter = EmitterProcessor.create();
-
-		CountDownLatch requestReceived = new CountDownLatch(1);
-		AtomicLong demand = new AtomicLong(0);
-		Publisher<String> publisher = s -> s.onSubscribe(new Subscription() {
-			@Override
-			public void request(long n) {
-				System.out.println("request: " + n + " " + s);
-				demand.addAndGet(n);
-				requestReceived.countDown();
-			}
-
-			@Override
-			public void cancel() {
-				System.out.println("cancel");
-			}
-		});
-
-		Flux.from(publisher).subscribeOn(asyncGroup).subscribe(emitter);
-
-		AssertSubscriber<String> subscriber = AssertSubscriber.create();
-		emitter.subscribe(subscriber);
-
-		int i = 0;
-		for (; ; ) {
-			if (getAndSub(demand, 1) != 0) {
-				emitter.onNext("" + (i++));
-			}
-			else {
-				System.out.println("NO REQUESTED: " + emitter);
-				LockSupport.parkNanos(100_000_000);
-			}
-		}
-	}
-
-	@Test
-	@Ignore
-	public void testPerformance() {
-		FluxIdentityProcessor<String> emitter = EmitterProcessor.create();
-
-		CountDownLatch requestReceived = new CountDownLatch(1);
-
-		AtomicLong maxDelay = new AtomicLong(0);
-		AtomicLong demand = new AtomicLong(0);
-		Publisher<String> publisher = new Publisher<String>() {
-
-			long lastTimeRequestReceivedNs = -1;
-
-			@Override
-			public void subscribe(Subscriber<? super String> s) {
-				s.onSubscribe(new Subscription() {
-					@Override
-					public void request(long n) {
-						requestReceived.countDown();
-
-						long now = System.nanoTime();
-
-						if (lastTimeRequestReceivedNs > 0) {
-							maxDelay.set(now - lastTimeRequestReceivedNs);
-						}
-
-						lastTimeRequestReceivedNs = now;
-
-						demand.addAndGet(n);
-					}
-
-					@Override
-					public void cancel() {
-						System.out.println("cancel");
-					}
-				});
-			}
-		};
-
-		publisher.subscribe(emitter);
-
-		AssertSubscriber<String> subscriber = AssertSubscriber.create();
-		emitter.subscribe(subscriber);
-
-		String buffer = "Hello";
-		int i = 0;
-		for (; ; ) {
-			if (getAndSub(demand, 1) > 0) {
-				emitter.onNext(buffer);
-			}
-
-			if (i++ % 1000000 == 0) {
-				System.out.println("maxDelay: " + TimeUnit.MICROSECONDS.toMillis(maxDelay.get()) + " µs");
-			}
-		}
-	}
-
-	@Test
 	public void testRed() {
-		FluxIdentityProcessor<String> processor = EmitterProcessor.create();
+		EmitterProcessor<String> processor = EmitterProcessor.create();
 		AssertSubscriber<String> subscriber = AssertSubscriber.create(1);
 		processor.subscribe(subscriber);
 
@@ -554,7 +458,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testGreen() {
-		FluxIdentityProcessor<String> processor = EmitterProcessor.create();
+		EmitterProcessor<String> processor = EmitterProcessor.create();
 		AssertSubscriber<String> subscriber = AssertSubscriber.create(1);
 		processor.subscribe(subscriber);
 
@@ -568,7 +472,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testHanging() {
-		FluxIdentityProcessor<String> processor = EmitterProcessor.create(2);
+		EmitterProcessor<String> processor = EmitterProcessor.create(2);
 
 		AssertSubscriber<String> first = AssertSubscriber.create(0);
 		processor.log("after-1").subscribe(first);
@@ -596,7 +500,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testNPE() {
-		FluxIdentityProcessor<String> processor = EmitterProcessor.create(8);
+		EmitterProcessor<String> processor = EmitterProcessor.create(8);
 		AssertSubscriber<String> first = AssertSubscriber.create(1);
 		processor.log().take(1).subscribe(first);
 
@@ -633,7 +537,7 @@ public class EmitterProcessorTest {
 
 		}
 
-		public MyThread(FluxIdentityProcessor<String> processor, CyclicBarrier barrier, int n, int index) {
+		public MyThread(EmitterProcessor<String> processor, CyclicBarrier barrier, int n, int index) {
 			this.processor = processor.log("consuming."+index);
 			this.barrier = barrier;
 			this.n = n;
@@ -677,7 +581,7 @@ public class EmitterProcessorTest {
 		int N_THREADS = 3;
 		int N_ITEMS = 8;
 
-		FluxIdentityProcessor<String> processor = EmitterProcessor.create(4);
+		EmitterProcessor<String> processor = EmitterProcessor.create(4);
 		List<String> data = new ArrayList<>();
 		for (int i = 1; i <= N_ITEMS; i++) {
 			data.add(String.valueOf(i));

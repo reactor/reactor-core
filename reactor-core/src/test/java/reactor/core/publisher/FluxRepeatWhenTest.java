@@ -415,7 +415,7 @@ public class FluxRepeatWhenTest {
 	@Test
 	public void inners() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		CoreSubscriber<Long> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
+		Sinks.Many<Long> signaller = Sinks.many().unsafe().multicast().onBackpressureError();
 		Flux<Integer> when = Flux.empty();
 		FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> main = new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, signaller, when);
 

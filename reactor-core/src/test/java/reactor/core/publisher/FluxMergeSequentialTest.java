@@ -80,9 +80,10 @@ public class FluxMergeSequentialTest {
 	}
 
 	@Test
+	@SuppressWarnings("dreprecated")
 	public void normalFusedAsync() {
 		StepVerifier.create(Flux.range(1, 5)
-		                        .subscribeWith(Processors.unicast())
+		                        .subscribeWith(FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer()))
 		                        .flatMapSequential(t -> Flux.range(t, 2)))
 		            .expectNext(1, 2, 2, 3, 3, 4, 4, 5, 5, 6)
 		            .verifyComplete();
@@ -142,25 +143,26 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsDelayEnd() {
-		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
-		final FluxIdentityProcessor<Integer> inner = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().onBackpressureError();
+		final Sinks.Many<Integer> inner = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		AssertSubscriber<Integer> ts = main.flatMapSequentialDelayError(t -> inner, 32, 32)
+		AssertSubscriber<Integer> ts = main.asFlux()
+										   .flatMapSequentialDelayError(t -> inner.asFlux(), 32, 32)
 		                                   .subscribeWith(AssertSubscriber.create());
 
-		main.onNext(1);
-		main.onNext(2);
+		main.emitNext(1);
+		main.emitNext(2);
 
-		inner.onNext(2);
+		inner.emitNext(2);
 
 		ts.assertValues(2);
 
-		main.onError(new RuntimeException("Forced failure"));
+		main.emitError(new RuntimeException("Forced failure"));
 
 		ts.assertNoError();
 
-		inner.onNext(3);
-		inner.onComplete();
+		inner.emitNext(3);
+		inner.emitComplete();
 
 		ts.assertValues(2, 3, 2, 3)
 		  .assertErrorMessage("Forced failure");
@@ -168,25 +170,25 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsImmediate() {
-		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
-		final FluxIdentityProcessor<Integer> inner = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().onBackpressureError();
+		final Sinks.Many<Integer> inner = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		AssertSubscriber<Integer> ts = main.flatMapSequential(t -> inner)
+		AssertSubscriber<Integer> ts = main.asFlux().flatMapSequential(t -> inner.asFlux())
 		                                   .subscribeWith(AssertSubscriber.create());
 
-		main.onNext(1);
-		main.onNext(2);
+		main.emitNext(1);
+		main.emitNext(2);
 
-		inner.onNext(2);
+		inner.emitNext(2);
 
 		ts.assertValues(2);
 
-		main.onError(new RuntimeException("Forced failure"));
+		main.emitError(new RuntimeException("Forced failure"));
 
-		assertFalse("inner has subscribers?", inner.hasDownstreams());
+		assertFalse("inner has subscribers?", Scannable.from(inner).inners().count() != 0);
 
-		inner.onNext(3);
-		inner.onComplete();
+		inner.emitNext(3);
+		inner.emitComplete();
 
 		ts.assertValues(2).assertErrorMessage("Forced failure");
 	}
@@ -461,19 +463,20 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void testReentrantWork() {
-		final FluxIdentityProcessor<Integer> subject = Processors.more().multicastNoBackpressure();
+		final Sinks.Many<Integer> subject = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		final AtomicBoolean once = new AtomicBoolean();
 
-		subject.flatMapSequential(Flux::just)
+		subject.asFlux()
+			   .flatMapSequential(Flux::just)
 		       .doOnNext(t -> {
 			       if (once.compareAndSet(false, true)) {
-				       subject.onNext(2);
+				       subject.emitNext(2);
 			       }
 		       })
 		       .subscribe(ts);
 
-		subject.onNext(1);
+		subject.emitNext(1);
 
 		ts.assertNoError();
 		ts.assertNotComplete();

@@ -35,25 +35,26 @@ public class FluxSwitchMapTest {
 	public void noswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux()
+		   .switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onComplete();
+		sp2.emitNext(10);
+		sp2.emitNext(20);
+		sp2.emitNext(30);
+		sp2.emitNext(40);
+		sp2.emitComplete();
 
 		ts.assertValues(10, 20, 30, 40)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.emitComplete();
 
 		ts.assertValues(10, 20, 30, 40)
 		  .assertNoError()
@@ -65,19 +66,20 @@ public class FluxSwitchMapTest {
 	public void noswitchBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux()
+		   .switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onComplete();
+		sp2.emitNext(10);
+		sp2.emitNext(20);
+		sp2.emitNext(30);
+		sp2.emitNext(40);
+		sp2.emitComplete();
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -89,7 +91,7 @@ public class FluxSwitchMapTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.emitComplete();
 
 		ts.assertValues(10, 20)
 		  .assertNoError()
@@ -107,34 +109,35 @@ public class FluxSwitchMapTest {
 	public void doswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp3 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.switchMap(v -> v == 1 ? sp2 : sp3)
+		sp1.asFlux()
+		   .switchMap(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
-		sp2.onNext(10);
-		sp2.onNext(20);
+		sp2.emitNext(10);
+		sp2.emitNext(20);
 
-		sp1.onNext(2);
+		sp1.emitNext(2);
 
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
+		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
 
-		sp2.onNext(30);
-		sp3.onNext(300);
-		sp2.onNext(40);
-		sp3.onNext(400);
-		sp2.onComplete();
-		sp3.onComplete();
+		sp2.emitNext(30);
+		sp3.emitNext(300);
+		sp2.emitNext(40);
+		sp3.emitNext(400);
+		sp2.emitComplete();
+		sp3.emitComplete();
 
 		ts.assertValues(10, 20, 300, 400)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.emitComplete();
 
 		ts.assertValues(10, 20, 300, 400)
 		  .assertNoError()
@@ -157,24 +160,24 @@ public class FluxSwitchMapTest {
 	public void mainCompletesBefore() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp1.onComplete();
+		sp1.emitNext(1);
+		sp1.emitComplete();
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onComplete();
+		sp2.emitNext(10);
+		sp2.emitNext(20);
+		sp2.emitNext(30);
+		sp2.emitNext(40);
+		sp2.emitComplete();
 
 		ts.assertValues(10, 20, 30, 40)
 		  .assertNoError()
@@ -186,20 +189,20 @@ public class FluxSwitchMapTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp1.onError(new RuntimeException("forced failure"));
+		sp1.emitNext(1);
+		sp1.emitError(new RuntimeException("forced failure"));
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onComplete();
+		sp2.emitNext(10);
+		sp2.emitNext(20);
+		sp2.emitNext(30);
+		sp2.emitNext(40);
+		sp2.emitComplete();
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -211,41 +214,42 @@ public class FluxSwitchMapTest {
 	public void innerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.switchMap(v -> sp2)
+		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
-		sp2.onNext(10);
-		sp2.onNext(20);
-		sp2.onNext(30);
-		sp2.onNext(40);
-		sp2.onError(new RuntimeException("forced failure"));
+		sp2.emitNext(10);
+		sp2.emitNext(20);
+		sp2.emitNext(30);
+		sp2.emitNext(40);
+		sp2.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValues(10, 20, 30, 40)
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
 	}
 
 	@Test
 	public void mapperThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.switchMap(v -> {
+		sp1.asFlux()
+		   .switchMap(v -> {
 			throw new RuntimeException("forced failure");
 		})
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -257,12 +261,13 @@ public class FluxSwitchMapTest {
 	public void mapperReturnsNull() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.switchMap(v -> null)
+		sp1.asFlux()
+		   .switchMap(v -> null)
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
@@ -279,12 +284,12 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void switchOnNextDynamicallyOnNext() {
-		FluxIdentityProcessor<Flux<Integer>> up = Processors.unicast();
-		up.onNext(Flux.range(1, 3));
-		up.onNext(Flux.range(2, 3).concatWith(Mono.never()));
-		up.onNext(Flux.range(4, 3));
-		up.onComplete();
-		StepVerifier.create(Flux.switchOnNext(up))
+		Sinks.Many<Flux<Integer>> up = Sinks.many().unicast().onBackpressureBuffer();
+		up.emitNext(Flux.range(1, 3));
+		up.emitNext(Flux.range(2, 3).concatWith(Mono.never()));
+		up.emitNext(Flux.range(4, 3));
+		up.emitComplete();
+		StepVerifier.create(Flux.switchOnNext(up.asFlux()))
 		            .expectNext(1, 2, 3, 2, 3, 4, 4, 5, 6)
 		            .verifyComplete();
 	}

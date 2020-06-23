@@ -24,14 +24,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.LongAssert;
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -575,7 +573,7 @@ public class FluxRetryWhenTest {
 	@Test
 	public void inners() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		CoreSubscriber<Retry.RetrySignal> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
+		Sinks.Many<Retry.RetrySignal> signaller = Sinks.many().multicast().onBackpressureError();
 		Flux<Integer> when = Flux.empty();
 		FluxRetryWhen.RetryWhenMainSubscriber<Integer> main = new FluxRetryWhen
 				.RetryWhenMainSubscriber<>(actual, signaller, when);

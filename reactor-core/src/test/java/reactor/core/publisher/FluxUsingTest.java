@@ -263,14 +263,14 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		Flux.using(() -> 1, r -> tp, cleanup::set, true)
+		Flux.using(() -> 1, r -> tp.asFlux(), cleanup::set, true)
 		    .subscribe(ts);
 
-		Assert.assertTrue("No subscriber?", tp.hasDownstreams());
+		Assert.assertTrue("No subscriber?", Scannable.from(tp).inners().count() != 0);
 
-		tp.onNext(1);
+		tp.emitNext(1);
 
 		ts.assertValues(1)
 		  .assertNotComplete()
@@ -278,13 +278,13 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		ts.cancel();
 
-		tp.onNext(2);
+		tp.emitNext(2);
 
 		ts.assertValues(1)
 		  .assertNotComplete()
 		  .assertNoError();
 
-		Assert.assertFalse("Has subscriber?", tp.hasDownstreams());
+		Assert.assertFalse("Has subscriber?", Scannable.from(tp).inners().count() != 0);
 
 		Assert.assertEquals(1, cleanup.get());
 	}

@@ -78,7 +78,7 @@ public class MonoPublishMulticastTest {
 		sp.publish(o -> Mono.<Integer>never())
 		  .subscribe(ts);
 
-		Assert.assertTrue("Not subscribed?", sp.downstreamCount() != 0);
+		Assert.assertTrue("Not subscribed?", Scannable.from(sp).inners().count() != 0);
 
 		ts.cancel();
 

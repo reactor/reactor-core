@@ -28,6 +28,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -63,7 +64,7 @@ import reactor.util.context.Context;
  *
  *      In the case when upstream's signals overflow the bound of internal Queue,
  *      UnicastProcessor will fail with signaling onError(
- *      {@link reactor.core.Exceptions.OverflowException}).
+ *      {@literal reactor.core.Exceptions.OverflowException}).
  *
  *      <p>
  *         <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.2.0.M2/src/docs/marble/unicastprocessoroverflow.png" alt="">
@@ -83,11 +84,12 @@ import reactor.util.context.Context;
  * </p>
  *
  * @param <T> the input and output type
- * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
+ * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
  */
 @Deprecated
-public final class UnicastProcessor<T> extends FluxIdentityProcessor<T>
-		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T> {
+public final class UnicastProcessor<T> extends FluxProcessor<T, T>
+		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>,
+		           Sinks.Many<T> {
 
 	/**
 	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
@@ -136,7 +138,9 @@ public final class UnicastProcessor<T> extends FluxIdentityProcessor<T>
 	 * @param <E> the relayed type
 	 *
 	 * @return a unicast {@link FluxProcessor}
+	 * @deprecated should not expose onOverflow / remove in a future reactor version
 	 */
+	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue,
 			Consumer<? super E> onOverflow,
 			Disposable endcallback) {
@@ -193,6 +197,7 @@ public final class UnicastProcessor<T> extends FluxIdentityProcessor<T>
 		this.onOverflow = null;
 	}
 
+	@Deprecated
 	public UnicastProcessor(Queue<T> queue,
 			Consumer<? super T> onOverflow,
 			Disposable onTerminate) {
@@ -212,6 +217,85 @@ public final class UnicastProcessor<T> extends FluxIdentityProcessor<T>
 		if (Attr.BUFFERED == key) return queue.size();
 		if (Attr.PREFETCH == key) return Integer.MAX_VALUE;
 		return super.scanUnsafe(key);
+	}
+
+	@Override
+	public Emission emitComplete() {
+		if (done) {
+			return Emission.FAIL_TERMINATED;
+		}
+		if (cancelled) {
+			return Emission.FAIL_CANCELLED;
+		}
+
+		done = true;
+
+		doTerminate();
+
+		drain(null);
+		return Emission.OK;
+	}
+
+	@Override
+	public Emission emitError(Throwable t) {
+		if (done) {
+			Operators.onErrorDropped(t, currentContext());
+			return Emission.FAIL_TERMINATED;
+		}
+		if (cancelled) {
+			Operators.onErrorDropped(t, currentContext());
+			return Emission.FAIL_CANCELLED;
+		}
+
+		error = t;
+		done = true;
+
+		doTerminate();
+
+		drain(null);
+		return Emission.OK;
+	}
+
+	@Override
+	public Emission emitNext(T t) {
+		if (done) {
+			Operators.onNextDropped(t, currentContext());
+			return Emission.FAIL_TERMINATED;
+		}
+		if (cancelled) {
+			Operators.onNextDropped(t, currentContext());
+			return Emission.FAIL_CANCELLED;
+		}
+
+		if (!queue.offer(t)) {
+			Context ctx = actual.currentContext();
+			Throwable ex = Operators.onOperatorError(null,
+													 Exceptions.failWithOverflow(), t, ctx);
+			if (onOverflow != null) {
+				try {
+					onOverflow.accept(t);
+				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					ex.initCause(e);
+				}
+			}
+			Operators.onDiscard(t, ctx);
+			onError(ex);
+			return Emission.FAIL_OVERFLOW;
+		}
+		drain(t);
+		return Emission.OK;
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
+	protected boolean isIdentityProcessor() {
+		return true;
 	}
 
 	void doTerminate() {
@@ -269,8 +353,6 @@ public final class UnicastProcessor<T> extends FluxIdentityProcessor<T>
 
 	void drainFused(CoreSubscriber<? super T> a) {
 		int missed = 1;
-
-		final Queue<T> q = queue;
 
 		for (;;) {
 
@@ -384,57 +466,17 @@ public final class UnicastProcessor<T> extends FluxIdentityProcessor<T>
 
 	@Override
 	public void onNext(T t) {
-		if (done || cancelled) {
-			Operators.onNextDropped(t, currentContext());
-			return;
-		}
-
-		if (!queue.offer(t)) {
-			Context ctx = actual.currentContext();
-			Throwable ex = Operators.onOperatorError(null,
-					Exceptions.failWithOverflow(), t, ctx);
-			if (onOverflow != null) {
-				try {
-					onOverflow.accept(t);
-				}
-				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					ex.initCause(e);
-				}
-			}
-			Operators.onDiscard(t, ctx);
-			onError(ex);
-			return;
-		}
-		drain(t);
+		emitNext(t);
 	}
 
 	@Override
 	public void onError(Throwable t) {
-		if (done || cancelled) {
-			Operators.onErrorDropped(t, currentContext());
-			return;
-		}
-
-		error = t;
-		done = true;
-
-		doTerminate();
-
-		drain(null);
+		emitError(t);
 	}
 
 	@Override
 	public void onComplete() {
-		if (done || cancelled) {
-			return;
-		}
-
-		done = true;
-
-		doTerminate();
-
-		drain(null);
+		emitComplete();
 	}
 
 	@Override

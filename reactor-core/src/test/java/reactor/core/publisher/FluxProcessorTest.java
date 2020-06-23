@@ -35,34 +35,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("deprecation")
 public class FluxProcessorTest {
 
+	final FluxProcessor<?, ?> processor = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+
 	@Test(expected = NullPointerException.class)
 	@SuppressWarnings("unchecked")
 	public void failNullSubscriber(){
-		FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor.create())
+		FluxProcessor.wrap(processor, processor)
 	                 .subscribe((Subscriber)null);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void failNullUpstream(){
-		FluxProcessor.wrap(null, UnicastProcessor.create());
+		FluxProcessor.wrap(null, processor);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void failNullDownstream(){
-		FluxProcessor.wrap(UnicastProcessor.create(), null);
+		FluxProcessor.wrap(processor, null);
 	}
 
 	@Test
 	public void testCapacity(){
-		assertThat(FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor
-				.create()).getBufferSize())
+		assertThat(FluxProcessor.wrap(processor, processor).getBufferSize())
 				.isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalBlackboxProcessor(){
-		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
 		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream.map(i -> i + 1)
 				                                     .filter(i -> i % 2 == 0));
@@ -82,7 +83,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void disconnectedBlackboxProcessor(){
-		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
 		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, Flux.just(1));
 
@@ -93,7 +94,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void symmetricBlackboxProcessor(){
-		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
 		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream);
 
@@ -105,7 +106,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void errorSymmetricBlackboxProcessor(){
-		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
 		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream);
 
@@ -116,7 +117,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void testSubmitSession() throws Exception {
-		FluxIdentityProcessor<Integer> processor = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 		AtomicInteger count = new AtomicInteger();
 		CountDownLatch latch = new CountDownLatch(1);
 		Scheduler scheduler = Schedulers.parallel();
@@ -140,7 +141,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void testEmitter() throws Throwable {
-		FluxIdentityProcessor<Integer> processor = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 
 		int n = 100_000;
 		int subs = 4;
@@ -167,7 +168,7 @@ public class FluxProcessorTest {
 	}
 	@Test
 	public void testEmitter2() throws Throwable {
-		FluxIdentityProcessor<Integer> processor = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 
 		int n = 100_000;
 		int subs = 4;

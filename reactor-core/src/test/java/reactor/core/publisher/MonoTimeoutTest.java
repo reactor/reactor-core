@@ -84,12 +84,12 @@ public class MonoTimeoutTest {
 
 		MonoProcessor<Integer> source = MonoProcessor.create();
 
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		source.timeout(tp)
+		source.timeout(tp.asFlux())
 		      .subscribe(ts);
 
-		tp.onNext(1);
+		tp.emitNext(1);
 
 		source.onNext(2);
 		source.onComplete();

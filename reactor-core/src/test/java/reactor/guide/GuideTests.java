@@ -16,6 +16,31 @@
 
 package reactor.guide;
 
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
+import reactor.core.Exceptions;
+import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.ConnectableFlux;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+import reactor.test.publisher.PublisherProbe;
+import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.context.Context;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
+import reactor.util.retry.Retry;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -35,32 +60,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
-
-import reactor.core.Disposable;
-import reactor.core.Exceptions;
-import reactor.core.publisher.BaseSubscriber;
-import reactor.core.publisher.ConnectableFlux;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Hooks;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.SignalType;
-import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
-import reactor.test.StepVerifier;
-import reactor.test.publisher.PublisherProbe;
-import reactor.test.scheduler.VirtualTimeScheduler;
-import reactor.util.context.Context;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
-import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -201,21 +200,20 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		Sinks.StandaloneFluxSink<String> hotSource = Sinks.multicastNoWarmup();
+		Sinks.Many<String> hotSource = Sinks.many().multicast().onBackpressureError();
 
 		Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 
-
 		hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
-		hotSource.next("blue")
-		         .next("green");
+		hotSource.emitNext("blue");
+		hotSource.emitNext("green");
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
 
-		hotSource.next("orange")
-		         .next("purple")
-		         .complete();
+		hotSource.emitNext("orange");
+		hotSource.emitNext("purple");
+		hotSource.emitComplete();
 	}
 
 	@Test

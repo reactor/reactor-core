@@ -54,24 +54,25 @@ public class FluxWindowBoundaryTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.window(sp2)
+		sp1.asFlux()
+		   .window(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertValueCount(1);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
-		sp1.onNext(3);
+		sp1.emitNext(1);
+		sp1.emitNext(2);
+		sp1.emitNext(3);
 
-		sp2.onNext(1);
+		sp2.emitNext(1);
 
-		sp1.onNext(4);
-		sp1.onNext(5);
+		sp1.emitNext(4);
+		sp1.emitNext(5);
 
-		sp1.onComplete();
+		sp1.emitComplete();
 
 		ts.assertValueCount(2);
 
@@ -81,32 +82,33 @@ public class FluxWindowBoundaryTest {
 		ts.assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
 	}
 
 	@Test
 	public void normalOtherCompletes() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.window(sp2)
+		sp1.asFlux()
+		   .window(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertValueCount(1);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
-		sp1.onNext(3);
+		sp1.emitNext(1);
+		sp1.emitNext(2);
+		sp1.emitNext(3);
 
-		sp2.onNext(1);
+		sp2.emitNext(1);
 
-		sp1.onNext(4);
-		sp1.onNext(5);
+		sp1.emitNext(4);
+		sp1.emitNext(5);
 
-		sp2.onComplete();
+		sp2.emitComplete();
 
 		ts.assertValueCount(2);
 
@@ -116,32 +118,33 @@ public class FluxWindowBoundaryTest {
 		ts.assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
 	}
 
 	@Test
 	public void mainError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.window(sp2)
+		sp1.asFlux()
+		   .window(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertValueCount(1);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
-		sp1.onNext(3);
+		sp1.emitNext(1);
+		sp1.emitNext(2);
+		sp1.emitNext(3);
 
-		sp2.onNext(1);
+		sp2.emitNext(1);
 
-		sp1.onNext(4);
-		sp1.onNext(5);
+		sp1.emitNext(4);
+		sp1.emitNext(5);
 
-		sp1.onError(new RuntimeException("forced failure"));
+		sp1.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(2);
 
@@ -157,32 +160,33 @@ public class FluxWindowBoundaryTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
 	}
 
 	@Test
 	public void otherError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.window(sp2)
+		sp1.asFlux()
+		   .window(sp2.asFlux())
 		   .subscribe(ts);
 
 		ts.assertValueCount(1);
 
-		sp1.onNext(1);
-		sp1.onNext(2);
-		sp1.onNext(3);
+		sp1.emitNext(1);
+		sp1.emitNext(2);
+		sp1.emitNext(3);
 
-		sp2.onNext(1);
+		sp2.emitNext(1);
 
-		sp1.onNext(4);
-		sp1.onNext(5);
+		sp1.emitNext(4);
+		sp1.emitNext(5);
 
-		sp2.onError(new RuntimeException("forced failure"));
+		sp2.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValueCount(2);
 
@@ -198,8 +202,8 @@ public class FluxWindowBoundaryTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
 	}
 
 
@@ -224,25 +228,25 @@ public class FluxWindowBoundaryTest {
 	@Test
 	public void windowWillAccumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
-		FluxIdentityProcessor<Integer> numbers = Processors.multicast();
+		Sinks.Many<Integer> numbers = Sinks.many().multicast().onBackpressureBuffer();
 
 		//non overlapping buffers
-		FluxIdentityProcessor<Integer> boundaryFlux = Processors.multicast();
+		Sinks.Many<Integer> boundaryFlux = Sinks.many().multicast().onBackpressureBuffer();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.window(boundaryFlux)
-		                                       .concatMap(Flux::buffer)
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		MonoProcessor<List<List<Integer>>> res = numbers.asFlux().window(boundaryFlux.asFlux())
+		                                                .concatMap(Flux::buffer)
+		                                                .buffer()
+		                                                .publishNext()
+		                                                .toProcessor();
 		res.subscribe();
 
-		numbers.onNext(1);
-		numbers.onNext(2);
-		numbers.onNext(3);
-		boundaryFlux.onNext(1);
-		numbers.onNext(5);
-		numbers.onNext(6);
-		numbers.onComplete();
+		numbers.emitNext(1);
+		numbers.emitNext(2);
+		numbers.emitNext(3);
+		boundaryFlux.emitNext(1);
+		numbers.emitNext(5);
+		numbers.emitNext(6);
+		numbers.emitComplete();
 
 		//"the collected lists are available"
 		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));

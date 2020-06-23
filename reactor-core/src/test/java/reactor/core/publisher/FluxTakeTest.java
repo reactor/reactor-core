@@ -186,15 +186,16 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressured() {
-		FluxIdentityProcessor<String> up = Processors.unicast();
-		StepVerifier.create(up.take(3), 0)
+		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
+		StepVerifier.create(up.asFlux()
+							  .take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test2"))
+		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test2"))
 		            .thenRequest(2)
 		            .expectNext("test", "test2")
-		            .then(() -> up.onNext("test3"))
-		            .then(() -> up.onNext("test4"))
+		            .then(() -> up.emitNext("test3"))
+		            .then(() -> up.emitNext("test4"))
 		            .thenRequest(1)
 		            .expectNext("test3")
 		            .thenRequest(1)
@@ -203,14 +204,15 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedBackpressuredCancelled() {
-		FluxIdentityProcessor<String> up = Processors.unicast();
-		StepVerifier.create(up.take(3).doOnSubscribe(s -> {
+		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
+		StepVerifier.create(up.asFlux()
+							  .take(3).doOnSubscribe(s -> {
 			assertThat(((Fuseable.QueueSubscription)s).size()).isEqualTo(0);
 		}), 0)
 		            .expectFusion()
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
+		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test"))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenCancel()
@@ -376,12 +378,13 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeFusedAsync() {
-		FluxIdentityProcessor<String> up = Processors.unicast();
-		StepVerifier.create(up.take(2))
+		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
+		StepVerifier.create(up.asFlux()
+							  .take(2))
 		            .expectFusion(Fuseable.ASYNC)
 		            .then(() -> {
-			            up.onNext("test");
-			            up.onNext("test2");
+			            up.emitNext("test");
+			            up.emitNext("test2");
 		            })
 		            .expectNext("test", "test2")
 		            .verifyComplete();
@@ -485,15 +488,15 @@ public class FluxTakeTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void failFusedDoubleError() {
-		FluxIdentityProcessor<Integer> up = Processors.unicast();
+		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer();
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
-		StepVerifier.create(up
-		                        .take(2))
+		StepVerifier.create(up.asFlux()
+							  .take(2))
 		            .consumeSubscriptionWith(s -> {
 			            assertTrackableBeforeOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-		            	InnerOperator processorDownstream = (InnerOperator) up.scan(Scannable.Attr.ACTUAL);
+		            	InnerOperator processorDownstream = (InnerOperator) Scannable.from(up).scan(Scannable.Attr.ACTUAL);
 			            assertTrackableAfterOnSubscribe(processorDownstream);
 			            processorDownstream.onError(new Exception("test"));
 			            assertTrackableAfterOnComplete(processorDownstream);
@@ -504,14 +507,14 @@ public class FluxTakeTest {
 
 	@Test
 	public void ignoreFusedDoubleComplete() {
-		FluxIdentityProcessor<Integer> up = Processors.unicast();
-		StepVerifier.create(up
-		                        .take(2).filter(d -> true))
+		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer();
+		StepVerifier.create(up.asFlux()
+							  .take(2).filter(d -> true))
 		            .consumeSubscriptionWith(s -> {
 			            assertTrackableAfterOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            InnerOperator processorDownstream = (InnerOperator) up.scan(Scannable.Attr.ACTUAL);
+			            InnerOperator processorDownstream = (InnerOperator) Scannable.from(up).scan(Scannable.Attr.ACTUAL);
 			            assertTrackableAfterOnSubscribe(processorDownstream);
 			            processorDownstream.onComplete();
 			            assertTrackableAfterOnComplete(processorDownstream);

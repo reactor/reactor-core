@@ -105,7 +105,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxIdentityProcessor<T> window;
+		Sinks.Many<T> window;
 
 		volatile boolean terminated;
 
@@ -135,8 +135,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			FluxIdentityProcessor<T> w = window;
-			return w == null ? Stream.empty() : Stream.of(w);
+			Sinks.Many<T> w = window;
+			return w == null ? Stream.empty() : Stream.of(Scannable.from(w));
 		}
 
 		@Override
@@ -165,12 +165,12 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				FluxIdentityProcessor<T> w = Processors.unicast();
+				Sinks.Many<T> w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 				window = w;
 
 				long r = requested;
 				if (r != 0L) {
-					a.onNext(w);
+					a.onNext(w.asFlux());
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
 					}
@@ -205,8 +205,8 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-				FluxIdentityProcessor<T> w = window;
-				w.onNext(t);
+				Sinks.Many<T> w = window;
+				w.emitNext(t);
 
 				int c = count + 1;
 
@@ -214,14 +214,14 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					producerIndex++;
 					count = 0;
 
-					w.onComplete();
+					w.emitComplete();
 
 					long r = requested;
 
 					if (r != 0L) {
-						w = Processors.unicast();
+						w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 						window = w;
-						actual.onNext(w);
+						actual.onNext(w.asFlux());
 						if (r != Long.MAX_VALUE) {
 							REQUESTED.decrementAndGet(this);
 						}
@@ -303,7 +303,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 		void drainLoop() {
 			final Queue<Object> q = queue;
 			final Subscriber<? super Flux<T>> a = actual;
-			FluxIdentityProcessor<T> w = window;
+			Sinks.Many<T> w = window;
 
 			int missed = 1;
 			for (; ; ) {
@@ -329,10 +329,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable err = error;
 						if (err != null) {
-							w.onError(err);
+							w.emitError(err);
 						}
 						else {
-							w.onComplete();
+							w.emitComplete();
 						}
 						timer.dispose();
 						worker.dispose();
@@ -344,14 +344,14 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					}
 
 					if (isHolder) {
-						w.onComplete();
+						w.emitComplete();
 						count = 0;
-						w = Processors.unicast();
+						w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 						window = w;
 
 						long r = requested;
 						if (r != 0L) {
-							a.onNext(w);
+							a.onNext(w.asFlux());
 							if (r != Long.MAX_VALUE) {
 								REQUESTED.decrementAndGet(this);
 							}
@@ -368,21 +368,21 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						continue;
 					}
 
-					w.onNext((T) o);
+					w.emitNext((T) o);
 					int c = count + 1;
 
 					if (c >= maxSize) {
 						producerIndex++;
 						count = 0;
 
-						w.onComplete();
+						w.emitComplete();
 
 						long r = requested;
 
 						if (r != 0L) {
-							w = Processors.unicast();
+							w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 							window = w;
-							actual.onNext(w);
+							actual.onNext(w.asFlux());
 							if (r != Long.MAX_VALUE) {
 								REQUESTED.decrementAndGet(this);
 							}

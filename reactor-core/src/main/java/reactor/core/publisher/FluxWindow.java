@@ -16,6 +16,14 @@
 
 package reactor.core.publisher;
 
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
+
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
@@ -23,16 +31,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import org.reactivestreams.Processor;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
-import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
-import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
@@ -49,7 +47,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	final Supplier<? extends Queue<FluxIdentityProcessor<T>>> overflowQueueSupplier;
+	final Supplier<? extends Queue<Sinks.Many<T>>> overflowQueueSupplier;
 
 	FluxWindow(Flux<? extends T> source,
 			int size,
@@ -69,7 +67,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			int size,
 			int skip,
 			Supplier<? extends Queue<T>> processorQueueSupplier,
-			Supplier<? extends Queue<FluxIdentityProcessor<T>>> overflowQueueSupplier) {
+			Supplier<? extends Queue<Sinks.Many<T>>> overflowQueueSupplier) {
 		super(source);
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
@@ -132,7 +130,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxIdentityProcessor<T> window;
+		Sinks.Many<T> window;
 
 		boolean done;
 
@@ -162,24 +160,24 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			int i = index;
 
-			FluxIdentityProcessor<T> w = window;
+			Sinks.Many<T> w = window;
 			if (cancelled == 0 && i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = Processors.more().unicast(processorQueueSupplier.get(), this);
+				w = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
 				window = w;
 
-				actual.onNext(w);
+				actual.onNext(w.asFlux());
 			}
 
 			i++;
 
-			w.onNext(t);
+			w.emitNext(t);
 
 			if (i == size) {
 				index = 0;
 				window = null;
-				w.onComplete();
+				w.emitComplete();
 			}
 			else {
 				index = i;
@@ -193,10 +191,10 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				return;
 			}
 			done = true;
-			Processor<T, T> w = window;
+			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.onError(t);
+				w.emitError(t);
 			}
 
 			actual.onError(t);
@@ -208,10 +206,10 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				return;
 			}
 			done = true;
-			Processor<T, T> w = window;
+			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.onComplete();
+				w.emitComplete();
 			}
 
 			actual.onComplete();
@@ -263,7 +261,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(window);
+			return Stream.of(Scannable.from(window));
 		}
 	}
 
@@ -299,7 +297,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		Subscription s;
 
-		FluxIdentityProcessor<T> window;
+		Sinks.Many<T> window;
 
 		boolean done;
 
@@ -332,20 +330,20 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			int i = index;
 
-			FluxIdentityProcessor<T> w = window;
+			Sinks.Many<T> w = window;
 			if (i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = Processors.more().unicast(processorQueueSupplier.get(), this);
+				w = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
 				window = w;
 
-				actual.onNext(w);
+				actual.onNext(w.asFlux());
 			}
 
 			i++;
 
 			if (w != null) {
-				w.onNext(t);
+				w.emitNext(t);
 			}
 			else {
 				Operators.onDiscard(t, ctx);
@@ -354,7 +352,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			if (i == size) {
 				window = null;
 				if (w != null) {
-					w.onComplete();
+					w.emitComplete();
 				}
 			}
 
@@ -374,10 +372,10 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 			done = true;
 
-			Processor<T, T> w = window;
+			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.onError(t);
+				w.emitError(t);
 			}
 
 			actual.onError(t);
@@ -390,10 +388,10 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 			done = true;
 
-			Processor<T, T> w = window;
+			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.onComplete();
+				w.emitComplete();
 			}
 
 			actual.onComplete();
@@ -453,18 +451,18 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(window);
+			return Stream.of(Scannable.from(window));
 		}
 	}
 
-	static final class WindowOverlapSubscriber<T> extends ArrayDeque<FluxIdentityProcessor<T>>
+	static final class WindowOverlapSubscriber<T> extends ArrayDeque<Sinks.Many<T>>
 			implements Disposable, InnerOperator<T, Flux<T>> {
 
 		final CoreSubscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-		final Queue<FluxIdentityProcessor<T>> queue;
+		final Queue<Sinks.Many<T>> queue;
 
 		final int size;
 
@@ -512,7 +510,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				int size,
 				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
-				Queue<FluxIdentityProcessor<T>> overflowQueue) {
+				Queue<Sinks.Many<T>> overflowQueue) {
 			this.actual = actual;
 			this.size = size;
 			this.skip = skip;
@@ -542,7 +540,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				if (cancelled == 0) {
 					WINDOW_COUNT.getAndIncrement(this);
 
-					FluxIdentityProcessor<T> w = Processors.more().unicast(processorQueueSupplier.get(), this);
+					Sinks.Many<T> w = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
 
 					offer(w);
 
@@ -553,17 +551,17 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			i++;
 
-			for (Processor<T, T> w : this) {
-				w.onNext(t);
+			for (Sinks.Many<T> w : this) {
+				w.emitNext(t);
 			}
 
 			int p = produced + 1;
 			if (p == size) {
 				produced = p - skip;
 
-				Processor<T, T> w = poll();
+				Sinks.Many<T> w = poll();
 				if (w != null) {
-					w.onComplete();
+					w.emitComplete();
 				}
 			}
 			else {
@@ -586,8 +584,8 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 			done = true;
 
-			for (Processor<T, T> w : this) {
-				w.onError(t);
+			for (Sinks.Many<T> w : this) {
+				w.emitError(t);
 			}
 			clear();
 
@@ -602,8 +600,8 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 			done = true;
 
-			for (Processor<T, T> w : this) {
-				w.onComplete();
+			for (Sinks.Many<T> w : this) {
+				w.emitComplete();
 			}
 			clear();
 
@@ -616,7 +614,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			}
 
 			final Subscriber<? super Flux<T>> a = actual;
-			final Queue<FluxIdentityProcessor<T>> q = queue;
+			final Queue<Sinks.Many<T>> q = queue;
 			int missed = 1;
 
 			for (; ; ) {
@@ -627,7 +625,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				while (e != r) {
 					boolean d = done;
 
-					FluxIdentityProcessor<T> t = q.poll();
+					Sinks.Many<T> t = q.poll();
 
 					boolean empty = t == null;
 
@@ -639,7 +637,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 						break;
 					}
 
-					a.onNext(t);
+					a.onNext(t.asFlux());
 
 					e++;
 				}

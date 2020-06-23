@@ -30,6 +30,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
@@ -51,10 +52,10 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
- * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
+ * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
  */
 @Deprecated
-public final class EmitterProcessor<T> extends FluxIdentityProcessor<T> {
+public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
@@ -192,6 +193,85 @@ public final class EmitterProcessor<T> extends FluxIdentityProcessor<T> {
 		}
 	}
 
+	@Override
+	public Emission emitComplete() {
+		if (done) {
+			return Emission.FAIL_TERMINATED;
+		}
+		done = true;
+		drain();
+		return Emission.OK;
+	}
+
+	@Override
+	public Emission emitError(Throwable t) {
+		Objects.requireNonNull(t, "onError");
+		if (done) {
+			Operators.onErrorDroppedMulticast(t);
+			return Emission.FAIL_TERMINATED;
+		}
+		if (Exceptions.addThrowable(ERROR, this, t)) {
+			done = true;
+			drain();
+			return Emission.OK;
+		}
+		else {
+			Operators.onErrorDroppedMulticast(t);
+			return Emission.FAIL_TERMINATED;
+		}
+	}
+
+	@Override
+	public Emission emitNext(T t) {
+		if (done) {
+			Operators.onNextDropped(t, currentContext());
+			return Emission.FAIL_TERMINATED;
+		}
+
+		if (sourceMode == Fuseable.ASYNC) {
+			drain();
+			return Emission.OK;
+		}
+
+		Objects.requireNonNull(t, "onNext");
+
+		Queue<T> q = queue;
+
+		if (q == null) {
+			if (Operators.setOnce(S, this, Operators.emptySubscription())) {
+				q = Queues.<T>get(prefetch).get();
+				queue = q;
+			}
+			else {
+				for (; ; ) {
+					if (isCancelled()) {
+						return Emission.FAIL_CANCELLED;
+					}
+					q = queue;
+					if (q != null) {
+						break;
+					}
+				}
+			}
+		}
+
+		while (!q.offer(t)) {
+			LockSupport.parkNanos(10);
+		}
+		drain();
+		return Emission.OK;
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
+	protected boolean isIdentityProcessor() {
+		return true;
+	}
+
 	/**
 	 * Return the number of parked elements in the emitter backlog.
 	 *
@@ -200,6 +280,11 @@ public final class EmitterProcessor<T> extends FluxIdentityProcessor<T> {
 	public int getPending() {
 		Queue<T> q = queue;
 		return q != null ? q.size() : 0;
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return isTerminated() || isCancelled();
 	}
 
 	@Override
@@ -233,67 +318,17 @@ public final class EmitterProcessor<T> extends FluxIdentityProcessor<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
-		if (done) {
-			Operators.onNextDropped(t, currentContext());
-			return;
-		}
-
-		if (sourceMode == Fuseable.ASYNC) {
-			drain();
-			return;
-		}
-
-		Objects.requireNonNull(t, "onNext");
-
-		Queue<T> q = queue;
-
-		if (q == null) {
-			if (Operators.setOnce(S, this, Operators.emptySubscription())) {
-				q = Queues.<T>get(prefetch).get();
-				queue = q;
-			}
-			else {
-				for (; ; ) {
-					if (isDisposed()) {
-						return;
-					}
-					q = queue;
-					if (q != null) {
-						break;
-					}
-				}
-			}
-		}
-
-		while (!q.offer(t)) {
-			LockSupport.parkNanos(10);
-		}
-		drain();
+		emitNext(t);
 	}
 
 	@Override
 	public void onError(Throwable t) {
-		Objects.requireNonNull(t, "onError");
-		if (done) {
-			Operators.onErrorDropped(t, currentContext());
-			return;
-		}
-		if (Exceptions.addThrowable(ERROR, this, t)) {
-			done = true;
-			drain();
-		}
-		else {
-			Operators.onErrorDroppedMulticast(t);
-		}
+		emitError(t);
 	}
 
 	@Override
 	public void onComplete() {
-		if (done) {
-			return;
-		}
-		done = true;
-		drain();
+		emitComplete();
 	}
 
 	@Override

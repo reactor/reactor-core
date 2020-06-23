@@ -50,14 +50,11 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		FluxRepeatWhen.RepeatWhenOtherSubscriber other =
 				new FluxRepeatWhen.RepeatWhenOtherSubscriber();
-		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
-
-		signaller.onSubscribe(Operators.emptySubscription());
 
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		FluxRepeatWhen.RepeatWhenMainSubscriber<T> main =
-				new FluxRepeatWhen.RepeatWhenMainSubscriber<>(serial, signaller, source);
+				new FluxRepeatWhen.RepeatWhenMainSubscriber<>(serial, other.completionSignal, source);
 		other.main = main;
 
 		serial.onSubscribe(main);

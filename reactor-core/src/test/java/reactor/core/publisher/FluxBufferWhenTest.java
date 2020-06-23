@@ -63,17 +63,20 @@ public class FluxBufferWhenTest {
 	public void bufferedCanCompleteIfOpenNeverCompletesDropping() {
 		//this test ensures that dropping buffers will complete if the source is exhausted before the open publisher finishes
 		Mono<Integer> buffered = Flux.range(1, 200)
-		                             .delayElements(Duration.ofMillis(25))
-		                             .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(200)),
-				                             open -> Mono.delay(Duration.ofMillis(100)))
-		                             .log(LOGGER, Level.FINE, false)
-		                             .reduce(new HashSet<Integer>(), (set, buffer) -> { set.addAll(buffer); return set;})
-		                             .map(HashSet::size);
+									 .delayElements(Duration.ofMillis(25))
+									 .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(200)), open -> Mono.delay(Duration.ofMillis(100)))
+									 .log(LOGGER, Level.FINE, false)
+									 .reduce(new HashSet<Integer>(), (set, buffer) -> {
+										 set.addAll(buffer);
+										 return set;
+									 })
+									 .map(HashSet::size);
 
 		StepVerifier.create(buffered)
-		            .assertNext(size -> assertThat(size).as("approximate size with drops").isBetween(80, 110))
-		            .expectComplete()
-		            .verify(Duration.ofSeconds(10));
+					.assertNext(size -> assertThat(size).as("approximate size with drops")
+														.isBetween(80, 110))
+					.expectComplete()
+					.verify(Duration.ofSeconds(10));
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/969
@@ -81,17 +84,19 @@ public class FluxBufferWhenTest {
 	public void bufferedCanCompleteIfOpenNeverCompletesOverlapping() {
 		//this test ensures that overlapping buffers will complete if the source is exhausted before the open publisher finishes
 		Mono<Integer> buffered = Flux.range(1, 200)
-		                             .delayElements(Duration.ofMillis(25))
-		                             .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)),
-				                             open -> Mono.delay(Duration.ofMillis(200)))
-		                             .log(LOGGER, Level.FINE, false)
-		                             .reduce(new HashSet<Integer>(), (set, buffer) -> { set.addAll(buffer); return set;})
-		                             .map(HashSet::size);
+									 .delayElements(Duration.ofMillis(25))
+									 .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)), open -> Mono.delay(Duration.ofMillis(200)))
+									 .log(LOGGER, Level.FINE, false)
+									 .reduce(new HashSet<Integer>(), (set, buffer) -> {
+										 set.addAll(buffer);
+										 return set;
+									 })
+									 .map(HashSet::size);
 
 		StepVerifier.create(buffered)
-		            .expectNext(200)
-		            .expectComplete()
-		            .verify(Duration.ofSeconds(10));
+					.expectNext(200)
+					.expectComplete()
+					.verify(Duration.ofSeconds(10));
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/969
@@ -117,100 +122,110 @@ public class FluxBufferWhenTest {
 		final CountDownLatch latch = new CountDownLatch(1);
 
 		Flux<Wrapper> emitter = Flux.range(1, 400)
-		                            .delayElements(Duration.ofMillis(10))
-		                            .map(i -> retainedDetector.tracked(new Wrapper(i)));
+									.delayElements(Duration.ofMillis(10))
+									.map(i -> retainedDetector.tracked(new Wrapper(i)));
 
-		Mono<List<Tuple3<Long, String, Long>>> buffers =
-				emitter.buffer(Duration.ofMillis(1000), Duration.ofMillis(500))
-				       .filter(b -> b.size() > 0)
-				       .index()
-				       .elapsed()
-				       .doOnNext(it -> System.gc())
-				       //index, bounds of buffer, finalized
-				       .map(elapsed -> {
-					       long millis = elapsed.getT1();
-					       Tuple2<Long, List<Wrapper>> t2 = elapsed.getT2();
-					       Tuple3<Long, String, Long> stat = Tuples.of(t2.getT1(),
-							       String.format("from %s to %s",
-									       t2.getT2().get(0),
-									       t2.getT2().get(t2.getT2().size() - 1)),
-							       retainedDetector.finalizedCount());
+		Mono<List<Tuple3<Long, String, Long>>> buffers = emitter.buffer(Duration.ofMillis(1000), Duration.ofMillis(500))
+																.filter(b -> b.size() > 0)
+																.index()
+																.elapsed()
+																.doOnNext(it -> System.gc())
+																//index, bounds of buffer, finalized
+																.map(elapsed -> {
+																	long millis = elapsed.getT1();
+																	Tuple2<Long, List<Wrapper>> t2 = elapsed.getT2();
+																	Tuple3<Long, String, Long> stat = Tuples.of(t2.getT1(), String.format("from %s to %s", t2.getT2()
+																																							 .get(0), t2.getT2()
+																																										.get(t2.getT2()
+																																											   .size() - 1)), retainedDetector.finalizedCount());
 
-					       LOGGER.info("{}ms : {}", millis, stat);
-					       return stat;
-				       })
-				       .doOnComplete(latch::countDown)
-				       .collectList();
+																	LOGGER.info("{}ms : {}", millis, stat);
+																	return stat;
+																})
+																.doOnComplete(latch::countDown)
+																.collectList();
 
 		List<Tuple3<Long, String, Long>> finalizeStats = buffers.block(Duration.ofSeconds(50));
 
-		Condition<? super Tuple3<Long, String, Long>> hasFinalized = new Condition<>(
-				t3 -> t3.getT3() > 0, "has finalized");
+		Condition<? super Tuple3<Long, String, Long>> hasFinalized = new Condition<>(t3 -> t3.getT3() > 0, "has finalized");
 
 		//at least 5 intermediate finalize
 		assertThat(finalizeStats).areAtLeast(5, hasFinalized);
 
-		assertThat(latch.await(1, TimeUnit.SECONDS)).as("buffers already blocked").isTrue();
+		assertThat(latch.await(1, TimeUnit.SECONDS)).as("buffers already blocked")
+													.isTrue();
 		LOGGER.debug("final GC");
 		System.gc();
 		Thread.sleep(500);
 
-		assertThat(retainedDetector.finalizedCount())
-				.as("final GC collects all")
-				.isEqualTo(created.longValue());
+		assertThat(retainedDetector.finalizedCount()).as("final GC collects all")
+													 .isEqualTo(created.longValue());
 	}
 
 	@Test
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp3 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp4 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe()
+		                               .multicast()
+		                               .onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe()
+		                               .multicast()
+		                               .onBackpressureError();
+		Sinks.Many<Integer> sp3 = Sinks.many().unsafe()
+		                               .multicast()
+		                               .onBackpressureError();
+		Sinks.Many<Integer> sp4 = Sinks.many().unsafe()
+		                               .multicast()
+		                               .onBackpressureError();
 
-		sp1.bufferWhen(sp2, v -> v == 1 ? sp3 : sp4)
+		sp1.asFlux()
+		   .bufferWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
 		   .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(1);
+		sp2.emitNext(1);
 
-		Assert.assertTrue("sp3 has no subscribers?", sp3.hasDownstreams());
+		Assert.assertTrue("sp3 has no subscribers?", Scannable.from(sp3)
+															  .inners()
+															  .count() != 0);
 
-		sp1.onNext(2);
-		sp1.onNext(3);
-		sp1.onNext(4);
+		sp1.emitNext(2);
+		sp1.emitNext(3);
+		sp1.emitNext(4);
 
-		sp3.onComplete();
+		sp3.emitComplete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(5);
+		sp1.emitNext(5);
 
-		sp2.onNext(2);
+		sp2.emitNext(2);
 
-		Assert.assertTrue("sp4 has no subscribers?", sp4.hasDownstreams());
+		Assert.assertTrue("sp4 has no subscribers?", Scannable.from(sp4)
+															  .inners()
+															  .count() != 0);
 
-		sp1.onNext(6);
+		sp1.emitNext(6);
 
-		sp4.onComplete();
+		sp4.emitComplete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4), Collections.singletonList(6))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onComplete();
+		sp1.emitComplete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4), Collections.singletonList(6))
 		  .assertNoError()
@@ -221,41 +236,52 @@ public class FluxBufferWhenTest {
 	public void startCompletes() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> open = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> close = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> open = Sinks.many().unsafe()
+		                                .multicast()
+		                                .onBackpressureError();
+		Sinks.Many<Integer> close = Sinks.many().unsafe()
+		                                 .multicast()
+		                                 .onBackpressureError();
 
-		source.bufferWhen(open, v -> close)
-		   .subscribe(ts);
+		source.asFlux()
+			  .bufferWhen(open.asFlux(), v -> close.asFlux())
+			  .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.emitNext(1);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		open.onNext(1);
-		open.onComplete();
+		open.emitNext(1);
+		open.emitComplete();
 
-		Assert.assertTrue("close has no subscribers?", close.hasDownstreams());
+		Assert.assertTrue("close has no subscribers?", Scannable.from(close)
+																.inners()
+																.count() != 0);
 
-		source.onNext(2);
-		source.onNext(3);
-		source.onNext(4);
+		source.emitNext(2);
+		source.emitNext(3);
+		source.emitNext(4);
 
-		close.onComplete();
+		close.emitComplete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4))
 		  .assertNoError()
 		  .assertComplete();
 
-//		Assert.assertFalse("source has subscribers?", source.hasDownstreams()); //FIXME
-		Assert.assertFalse("open has subscribers?", open.hasDownstreams());
-		Assert.assertFalse("close has subscribers?", close.hasDownstreams());
+		//		Assert.assertFalse("source has subscribers?", Scannable.from(source).inners().count() != 0); //FIXME
+		Assert.assertFalse("open has subscribers?", Scannable.from(open)
+															 .inners()
+															 .count() != 0);
+		Assert.assertFalse("close has subscribers?", Scannable.from(close)
+															  .inners()
+															  .count() != 0);
 
 	}
 
@@ -263,98 +289,98 @@ public class FluxBufferWhenTest {
 	@Test
 	public void bufferWillAcumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		FluxIdentityProcessor<Integer> numbers = Processors.multicast();
-		FluxIdentityProcessor<Integer> bucketOpening = Processors.multicast();
+		Sinks.Many<Integer> numbers = Sinks.many().multicast().onBackpressureBuffer();
+		Sinks.Many<Integer> bucketOpening = Sinks.many().multicast().onBackpressureBuffer();
 
 		//"overlapping buffers"
-		FluxIdentityProcessor<Integer> boundaryFlux = Processors.multicast();
+		Sinks.Many<Integer> boundaryFlux = Sinks.many().multicast().onBackpressureBuffer();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.bufferWhen(bucketOpening, u -> boundaryFlux )
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
+														.bufferWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())
+														.buffer()
+														.publishNext()
+														.toProcessor();
 		res.subscribe();
 
-		numbers.onNext(1);
-		numbers.onNext(2);
-		bucketOpening.onNext(1);
-		numbers.onNext(3);
-		bucketOpening.onNext(1);
-		numbers.onNext(5);
-		boundaryFlux.onNext(1);
-		bucketOpening.onNext(1);
-		boundaryFlux.onComplete();
-		numbers.onComplete();
+		numbers.emitNext(1);
+		numbers.emitNext(2);
+		bucketOpening.emitNext(1);
+		numbers.emitNext(3);
+		bucketOpening.emitNext(1);
+		numbers.emitNext(5);
+		boundaryFlux.emitNext(1);
+		bucketOpening.emitNext(1);
+		boundaryFlux.emitComplete();
+		numbers.emitComplete();
 
 		//"the collected overlapping lists are available"
-		assertThat(res.block()).containsExactly(Arrays.asList(3, 5),
-				Collections.singletonList(5), Collections.emptyList());
+		assertThat(res.block()).containsExactly(Arrays.asList(3, 5), Collections.singletonList(5), Collections.emptyList());
 	}
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delayElements(Duration.ofMillis(99))
-		           .buffer(Duration.ofMillis(300), Duration.ofMillis(200));
+				   .delayElements(Duration.ofMillis(99))
+				   .buffer(Duration.ofMillis(300), Duration.ofMillis(200));
 	}
 
 	@Test
 	public void bufferWillSubdivideAnInputFluxOverlapTime() {
 		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxOverlapTime)
-		            .thenAwait(Duration.ofSeconds(10))
-		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
-		            .assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
-		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
-		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
-		            .verifyComplete();
+					.thenAwait(Duration.ofSeconds(10))
+					.assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+					.assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
+					.assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
+					.assertNext(t -> assertThat(t).containsExactly(7, 8))
+					.verifyComplete();
 	}
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime2() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delayElements(Duration.ofMillis(99))
-		           .buffer(Duration.ofMillis(300L), Duration.ofMillis(200L));
+				   .delayElements(Duration.ofMillis(99))
+				   .buffer(Duration.ofMillis(300L), Duration.ofMillis(200L));
 	}
 
 	@Test
 	public void bufferWillSubdivideAnInputFluxOverlapTime2() {
 		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxOverlapTime2)
-		            .thenAwait(Duration.ofSeconds(10))
-		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
-		            .assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
-		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
-		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
-		            .verifyComplete();
+					.thenAwait(Duration.ofSeconds(10))
+					.assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+					.assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
+					.assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
+					.assertNext(t -> assertThat(t).containsExactly(7, 8))
+					.verifyComplete();
 	}
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxSameTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delayElements(Duration.ofMillis(99))
-		           .buffer(Duration.ofMillis(300L), Duration.ofMillis(300L));
+				   .delayElements(Duration.ofMillis(99))
+				   .buffer(Duration.ofMillis(300L), Duration.ofMillis(300L));
 	}
 
 	@Test
 	public void bufferWillSubdivideAnInputFluxSameTime() {
 		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxSameTime)
-		            .thenAwait(Duration.ofSeconds(10))
-		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
-		            .assertNext(t -> assertThat(t).containsExactly(4, 5, 6))
-		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
-		            .verifyComplete();
+					.thenAwait(Duration.ofSeconds(10))
+					.assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+					.assertNext(t -> assertThat(t).containsExactly(4, 5, 6))
+					.assertNext(t -> assertThat(t).containsExactly(7, 8))
+					.verifyComplete();
 	}
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxGapTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delayElements(Duration.ofMillis(99))
-		           .buffer(Duration.ofMillis(200), Duration.ofMillis(300));
+				   .delayElements(Duration.ofMillis(99))
+				   .buffer(Duration.ofMillis(200), Duration.ofMillis(300));
 	}
 
 	@Test
 	public void bufferWillSubdivideAnInputFluxGapTime() {
 		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxGapTime)
-		            .thenAwait(Duration.ofSeconds(10))
-		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
-		            .assertNext(t -> assertThat(t).containsExactly(4, 5))
-		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
-		            .verifyComplete();
+					.thenAwait(Duration.ofSeconds(10))
+					.assertNext(t -> assertThat(t).containsExactly(1, 2))
+					.assertNext(t -> assertThat(t).containsExactly(4, 5))
+					.assertNext(t -> assertThat(t).containsExactly(7, 8))
+					.verifyComplete();
 	}
 
 	@Test
@@ -372,11 +398,10 @@ public class FluxBufferWhenTest {
 
 	@Test
 	public void scanStartEndMain() {
-		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {
+		}, null, null);
 
-		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
-				new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
-						actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test = new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.request(100L);
@@ -396,11 +421,10 @@ public class FluxBufferWhenTest {
 
 	@Test
 	public void scanStartEndMainCancelled() {
-		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {
+		}, null, null);
 
-		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
-				new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
-				actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test = new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.cancel();
@@ -409,11 +433,10 @@ public class FluxBufferWhenTest {
 
 	@Test
 	public void scanStartEndMainCompleted() {
-		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {
+		}, null, null);
 
-		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
-				new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
-				actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> test = new BufferWhenMainSubscriber<String, Integer, Long, List<String>>(actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -427,8 +450,7 @@ public class FluxBufferWhenTest {
 	public void scanWhenCloseSubscriber() {
 		CoreSubscriber<Object> actual = new LambdaSubscriber<>(null, null, null, null);
 
-		BufferWhenMainSubscriber<String, Integer, Long, List<String>> main =
-				new BufferWhenMainSubscriber<>(actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> main = new BufferWhenMainSubscriber<>(actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 
 		FluxBufferWhen.BufferWhenCloseSubscriber test = new FluxBufferWhen.BufferWhenCloseSubscriber<>(main, 5);
 
@@ -451,8 +473,7 @@ public class FluxBufferWhenTest {
 	public void scanWhenOpenSubscriber() {
 		CoreSubscriber<Object> actual = new LambdaSubscriber<>(null, null, null, null);
 
-		BufferWhenMainSubscriber<String, Integer, Long, List<String>> main = new BufferWhenMainSubscriber<>(
-				actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
+		BufferWhenMainSubscriber<String, Integer, Long, List<String>> main = new BufferWhenMainSubscriber<>(actual, ArrayList::new, Queues.small(), Mono.just(1), u -> Mono.just(1L));
 
 		FluxBufferWhen.BufferWhenOpenSubscriber test = new FluxBufferWhen.BufferWhenOpenSubscriber<>(main);
 
@@ -477,22 +498,21 @@ public class FluxBufferWhenTest {
 		TestPublisher<Integer> open = TestPublisher.create();
 		TestPublisher<Integer> close = TestPublisher.create();
 
-		StepVerifier.create(source
-				.flux()
-				.bufferWhen(open, o -> close))
-		            .then(() -> {
-			            source.assertSubscribers();
-			            open.assertSubscribers();
-			            close.assertNoSubscribers();
-			            open.next(1);
-		            })
-		            .then(() -> {
+		StepVerifier.create(source.flux()
+								  .bufferWhen(open, o -> close))
+					.then(() -> {
+						source.assertSubscribers();
+						open.assertSubscribers();
+						close.assertNoSubscribers();
+						open.next(1);
+					})
+					.then(() -> {
 						open.assertSubscribers();
 						close.assertSubscribers();
 						source.complete();
-		            })
-		            .expectNextMatches(List::isEmpty)
-		            .verifyComplete();
+					})
+					.expectNextMatches(List::isEmpty)
+					.verifyComplete();
 
 		open.assertNoSubscribers();
 		close.assertNoSubscribers();
@@ -501,27 +521,25 @@ public class FluxBufferWhenTest {
 	@Test
 	public void openCloseMainError() {
 		StepVerifier.create(Flux.error(new IllegalStateException("boom"))
-				.bufferWhen(Flux.never(), a -> Flux.never())
-		)
-		            .verifyErrorMessage("boom");
+								.bufferWhen(Flux.never(), a -> Flux.never()))
+					.verifyErrorMessage("boom");
 	}
 
 	@Test
 	public void openCloseBadSource() {
-		TestPublisher<Object> badSource =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+		TestPublisher<Object> badSource = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 		StepVerifier.create(badSource.flux()
-				.bufferWhen(Flux.never(), a -> Flux.never()))
-		            .then(() -> {
-		            	badSource.error(new IOException("ioboom"));
-		            	badSource.complete();
-		            	badSource.next(1);
-		            	badSource.error(new IllegalStateException("boom"));
-		            })
-		            .expectErrorMessage("ioboom")
-		            .verifyThenAssertThat()
-		            .hasNotDroppedElements()
-		            .hasDroppedErrorWithMessage("boom");
+									 .bufferWhen(Flux.never(), a -> Flux.never()))
+					.then(() -> {
+						badSource.error(new IOException("ioboom"));
+						badSource.complete();
+						badSource.next(1);
+						badSource.error(new IllegalStateException("boom"));
+					})
+					.expectErrorMessage("ioboom")
+					.verifyThenAssertThat()
+					.hasNotDroppedElements()
+					.hasDroppedErrorWithMessage("boom");
 	}
 
 	@Test
@@ -531,23 +549,22 @@ public class FluxBufferWhenTest {
 		TestPublisher<Integer> close = TestPublisher.create();
 
 		StepVerifier.create(source.flux()
-		                          .bufferWhen(open, o -> close)
-		)
-		            .then(() -> {
-		            	open.next(1);
-		            	close.assertSubscribers();
-		            })
-		            .then(() -> {
-		            	open.complete();
-		            	source.assertSubscribers();
-		            	close.assertSubscribers();
-		            })
-		            .then(() -> {
-		            	close.complete();
-		            	source.assertNoSubscribers();
-		            })
-		            .expectNextMatches(List::isEmpty)
-		            .verifyComplete();
+								  .bufferWhen(open, o -> close))
+					.then(() -> {
+						open.next(1);
+						close.assertSubscribers();
+					})
+					.then(() -> {
+						open.complete();
+						source.assertSubscribers();
+						close.assertSubscribers();
+					})
+					.then(() -> {
+						close.complete();
+						source.assertNoSubscribers();
+					})
+					.expectNextMatches(List::isEmpty)
+					.verifyComplete();
 	}
 
 	@Test
@@ -557,22 +574,22 @@ public class FluxBufferWhenTest {
 		TestPublisher<Integer> close = TestPublisher.create();
 
 		StepVerifier.create(source.flux()
-		                          .bufferWhen(open, o -> close))
-		            .then(() -> {
-			            open.next(1);
-			            close.assertSubscribers();
-		            })
-		            .then(() -> {
-			            close.complete();
-			            source.assertSubscribers();
-			            open.assertSubscribers();
-		            })
-		            .then(() -> {
-			            open.complete();
-			            source.assertNoSubscribers();
-		            })
-		            .expectNextMatches(List::isEmpty)
-		            .verifyComplete();
+								  .bufferWhen(open, o -> close))
+					.then(() -> {
+						open.next(1);
+						close.assertSubscribers();
+					})
+					.then(() -> {
+						close.complete();
+						source.assertSubscribers();
+						open.assertSubscribers();
+					})
+					.then(() -> {
+						open.complete();
+						source.assertNoSubscribers();
+					})
+					.expectNextMatches(List::isEmpty)
+					.verifyComplete();
 	}
 
 	@Test
@@ -582,19 +599,19 @@ public class FluxBufferWhenTest {
 		TestPublisher<Integer> close = TestPublisher.create();
 
 		StepVerifier.create(source.flux()
-		                          .bufferWhen(open, o -> close)
-		                          .take(1), 2)
-		            .then(() -> {
-			            open.next(1);
-			            close.complete();
-		            })
-		            .then(() -> {
-			            source.assertNoSubscribers();
-			            open.assertNoSubscribers();
-			            close.assertNoSubscribers();
-		            })
-		            .expectNextMatches(List::isEmpty)
-		            .verifyComplete();
+								  .bufferWhen(open, o -> close)
+								  .take(1), 2)
+					.then(() -> {
+						open.next(1);
+						close.complete();
+					})
+					.then(() -> {
+						source.assertNoSubscribers();
+						open.assertNoSubscribers();
+						close.assertNoSubscribers();
+					})
+					.expectNextMatches(List::isEmpty)
+					.verifyComplete();
 	}
 
 	@Test
@@ -604,19 +621,19 @@ public class FluxBufferWhenTest {
 		TestPublisher<Integer> close = TestPublisher.create();
 
 		StepVerifier.create(source.flux()
-		                          .bufferWhen(open, o -> close)
-		                          .limitRequest(1))
-		            .then(() -> {
-			            open.next(1);
-			            close.complete();
-		            })
-		            .then(() -> {
-			            source.assertNoSubscribers();
-			            open.assertNoSubscribers();
-			            close.assertNoSubscribers();
-		            })
-		            .expectNextMatches(List::isEmpty)
-		            .verifyComplete();
+								  .bufferWhen(open, o -> close)
+								  .limitRequest(1))
+					.then(() -> {
+						open.next(1);
+						close.complete();
+					})
+					.then(() -> {
+						source.assertNoSubscribers();
+						open.assertNoSubscribers();
+						close.assertNoSubscribers();
+					})
+					.expectNextMatches(List::isEmpty)
+					.verifyComplete();
 	}
 
 	@Test
@@ -626,14 +643,14 @@ public class FluxBufferWhenTest {
 		TestPublisher<Integer> close = TestPublisher.create();
 
 		StepVerifier.create(source.flux()
-				.bufferWhen(open, o -> close), 0)
-		            .then(() -> {
-		            	source.complete();
-		            	open.assertNoSubscribers();
-		            	close.assertNoSubscribers();
-		            })
-		            .verifyComplete();
-//		ts.assertResult();
+								  .bufferWhen(open, o -> close), 0)
+					.then(() -> {
+						source.complete();
+						open.assertNoSubscribers();
+						close.assertNoSubscribers();
+					})
+					.verifyComplete();
+		//		ts.assertResult();
 	}
 
 	@Test
@@ -643,14 +660,14 @@ public class FluxBufferWhenTest {
 		TestPublisher<Integer> close = TestPublisher.create();
 
 		StepVerifier.create(source.flux()
-		                          .bufferWhen(open, o -> close), 0)
-		            .then(() -> {
-			            source.error(new IllegalStateException("boom"));
+								  .bufferWhen(open, o -> close), 0)
+					.then(() -> {
+						source.error(new IllegalStateException("boom"));
 
-			            open.assertNoSubscribers();
-			            close.assertNoSubscribers();
-		            })
-		            .verifyErrorMessage("boom");
+						open.assertNoSubscribers();
+						close.assertNoSubscribers();
+					})
+					.verifyErrorMessage("boom");
 	}
 
 	@Test
@@ -658,18 +675,18 @@ public class FluxBufferWhenTest {
 		TestPublisher<Object> badOpen = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 
 		StepVerifier.create(Flux.never()
-		                        .bufferWhen(badOpen, o -> Flux.never()))
-		            .then(() -> {
-			            badOpen.error(new IOException("ioboom"));
-			            badOpen.complete();
-			            badOpen.next(1);
-			            badOpen.error(new IllegalStateException("boom"));
-		            })
+								.bufferWhen(badOpen, o -> Flux.never()))
+					.then(() -> {
+						badOpen.error(new IOException("ioboom"));
+						badOpen.complete();
+						badOpen.next(1);
+						badOpen.error(new IllegalStateException("boom"));
+					})
 
-		            .expectErrorMessage("ioboom")
-		            .verifyThenAssertThat()
-		            .hasNotDroppedElements()
-		            .hasDroppedErrorWithMessage("boom");
+					.expectErrorMessage("ioboom")
+					.verifyThenAssertThat()
+					.hasNotDroppedElements()
+					.hasDroppedErrorWithMessage("boom");
 	}
 
 	@Test
@@ -677,27 +694,27 @@ public class FluxBufferWhenTest {
 		TestPublisher<Object> badClose = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 
 		StepVerifier.create(Flux.never()
-		                        .bufferWhen(Flux.just(1).concatWith(Flux.never()), o -> badClose)
-		)
-		            .then(() -> {
-		            	badClose.error(new IOException("ioboom"));
-		            	badClose.complete();
-		            	badClose.next(1);
-		            	badClose.error(new IllegalStateException("boom"));
-		            })
-		            .expectErrorMessage("ioboom")
-		            .verifyThenAssertThat()
-		            .hasNotDroppedElements()
-		            .hasDroppedErrorWithMessage("boom");
+								.bufferWhen(Flux.just(1)
+												.concatWith(Flux.never()), o -> badClose))
+					.then(() -> {
+						badClose.error(new IOException("ioboom"));
+						badClose.complete();
+						badClose.next(1);
+						badClose.error(new IllegalStateException("boom"));
+					})
+					.expectErrorMessage("ioboom")
+					.verifyThenAssertThat()
+					.hasNotDroppedElements()
+					.hasDroppedErrorWithMessage("boom");
 	}
 
 	@Test
 	public void immediateOpen() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .bufferWhen(Mono.just("OPEN"), u -> Mono.delay(Duration.ofMillis(100)))
-		                        .flatMapIterable(Function.identity()))
-		            .expectNext(1, 2, 3)
-		            .verifyComplete();
+								.bufferWhen(Mono.just("OPEN"), u -> Mono.delay(Duration.ofMillis(100)))
+								.flatMapIterable(Function.identity()))
+					.expectNext(1, 2, 3)
+					.verifyComplete();
 	}
 
 	@Test(timeout = 5000)
@@ -707,56 +724,45 @@ public class FluxBufferWhenTest {
 
 		AssertSubscriber<List<Integer>> actual = AssertSubscriber.create();
 
-		BufferWhenMainSubscriber<Integer, String, Void, List<Integer>> main =
-				new BufferWhenMainSubscriber<>(actual,
-						ArrayList::new,
-						() -> queue,
-						Mono.just("open"),
-						i -> Mono.never());
+		BufferWhenMainSubscriber<Integer, String, Void, List<Integer>> main = new BufferWhenMainSubscriber<>(actual, ArrayList::new, () -> queue, Mono.just("open"), i -> Mono.never());
 		main.onSubscribe(Operators.emptySubscription());
 
-		RaceTestUtils.race(main,
-				m -> {
-					m.cancel();
-					m.drain();
-					return m;
-				},
-				m -> m.cancelled,
-				(m1, m2) -> /* ignored */ true);
+		RaceTestUtils.race(main, m -> {
+			m.cancel();
+			m.drain();
+			return m;
+		}, m -> m.cancelled, (m1, m2) -> /* ignored */ true);
 
-		assertThat(main.cancelled).as("cancelled").isTrue();
+		assertThat(main.cancelled).as("cancelled")
+								  .isTrue();
 		//TODO windows went as far up as 3, verify if that is indeed concurrent cancels
-		assertThat(main.windows).as("windows").isLessThan(4);
-		assertThat(queue).as("queue was cleared").isEmpty();
+		assertThat(main.windows).as("windows")
+								.isLessThan(4);
+		assertThat(queue).as("queue was cleared")
+						 .isEmpty();
 
 		//we also check no values were drained to the actual
-		assertThat(actual.values())
-				.as("no buffer should be drained")
-				.isEmpty();
+		assertThat(actual.values()).as("no buffer should be drained")
+								   .isEmpty();
 	}
 
 	@Test
 	public void discardOnCancel() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .concatWith(Mono.never())
-		                        .bufferWhen(Flux.just(1), u -> Mono.never()))
-				.thenAwait(Duration.ofMillis(100))
-				.thenCancel()
-				.verifyThenAssertThat()
-				.hasDiscardedExactly(1, 2, 3);
+								.concatWith(Mono.never())
+								.bufferWhen(Flux.just(1), u -> Mono.never()))
+					.thenAwait(Duration.ofMillis(100))
+					.thenCancel()
+					.verifyThenAssertThat()
+					.hasDiscardedExactly(1, 2, 3);
 	}
 
 	@Test
 	public void discardOnCancelPostQueueing() {
 		List<Object> discarded = new ArrayList<>();
 
-		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(
-				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
-		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator =
-				new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual,
-						ArrayList::new,
-						Queues.small(),
-						Flux.just(1), i -> Flux.never());
+		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator = new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual, ArrayList::new, Queues.small(), Flux.just(1), i -> Flux.never());
 		operator.onSubscribe(new Operators.EmptySubscription());
 
 		operator.buffers.put(0L, Arrays.asList(4, 5));
@@ -769,34 +775,29 @@ public class FluxBufferWhenTest {
 	@Test
 	public void discardOnNextWhenNoBuffers() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        //buffer don't open in time
-		                        .bufferWhen(Mono.delay(Duration.ofSeconds(2)), u -> Mono.never()))
-		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1, 2, 3);
+								//buffer don't open in time
+								.bufferWhen(Mono.delay(Duration.ofSeconds(2)), u -> Mono.never()))
+					.expectComplete()
+					.verifyThenAssertThat()
+					.hasDiscardedExactly(1, 2, 3);
 	}
 
 	@Test
 	public void discardOnError() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .concatWith(Mono.error(new IllegalStateException("boom")))
-		                        .bufferWhen(Mono.delay(Duration.ofSeconds(2)), u -> Mono.never()))
-		            .expectErrorMessage("boom")
-		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(1, 2, 3);
+								.concatWith(Mono.error(new IllegalStateException("boom")))
+								.bufferWhen(Mono.delay(Duration.ofSeconds(2)), u -> Mono.never()))
+					.expectErrorMessage("boom")
+					.verifyThenAssertThat()
+					.hasDiscardedExactly(1, 2, 3);
 	}
 
 	@Test
 	public void discardOnDrainCancelled() {
 		List<Object> discarded = new ArrayList<>();
 
-		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(
-				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
-		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator =
-				new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual,
-						ArrayList::new,
-						Queues.small(),
-						Flux.just(1), i -> Flux.never());
+		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator = new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual, ArrayList::new, Queues.small(), Flux.just(1), i -> Flux.never());
 		operator.onSubscribe(new Operators.EmptySubscription());
 		operator.request(1);
 
@@ -813,13 +814,8 @@ public class FluxBufferWhenTest {
 	public void discardOnDrainDoneWithErrors() {
 		List<Object> discarded = new ArrayList<>();
 
-		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(
-				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
-		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator =
-				new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual,
-						ArrayList::new,
-						Queues.small(),
-						Flux.just(1), i -> Flux.never());
+		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator = new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual, ArrayList::new, Queues.small(), Flux.just(1), i -> Flux.never());
 		operator.onSubscribe(new Operators.EmptySubscription());
 		operator.request(1);
 
@@ -834,13 +830,8 @@ public class FluxBufferWhenTest {
 	public void discardOnDrainEmittedAllCancelled() {
 		List<Object> discarded = new ArrayList<>();
 
-		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(
-				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
-		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator =
-				new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual,
-						ArrayList::new,
-						Queues.small(),
-						Flux.just(1), i -> Flux.never());
+		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator = new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual, ArrayList::new, Queues.small(), Flux.just(1), i -> Flux.never());
 		operator.onSubscribe(new Operators.EmptySubscription());
 
 		operator.buffers.put(0L, Arrays.asList(4, 5));
@@ -856,13 +847,8 @@ public class FluxBufferWhenTest {
 	public void discardOnDrainEmittedAllWithErrors() {
 		List<Object> discarded = new ArrayList<>();
 
-		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(
-				Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
-		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator =
-				new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual,
-						ArrayList::new,
-						Queues.small(),
-						Flux.just(1), i -> Flux.never());
+		CoreSubscriber<List<Integer>> actual = new AssertSubscriber<>(Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) discarded::add));
+		FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>> operator = new FluxBufferWhen.BufferWhenMainSubscriber<Integer, Integer, Integer, List<Integer>>(actual, ArrayList::new, Queues.small(), Flux.just(1), i -> Flux.never());
 		operator.onSubscribe(new Operators.EmptySubscription());
 
 		operator.buffers.put(0L, Arrays.asList(4, 5));
@@ -875,28 +861,25 @@ public class FluxBufferWhenTest {
 	@Test
 	public void discardOnOpenError() {
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ZERO, Duration.ofMillis(100)) // 0, 1, 2
-		                                       .map(Long::intValue)
-		                                       .take(3)
-		                                       .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)),
-				                                       u -> (u == 2) ? null : Mono.never()))
-		            .thenAwait(Duration.ofSeconds(2))
-		            .expectErrorMessage("The bufferClose returned a null Publisher")
-		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(0, 1, 1);
+											   .map(Long::intValue)
+											   .take(3)
+											   .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)), u -> (u == 2) ? null : Mono.never()))
+					.thenAwait(Duration.ofSeconds(2))
+					.expectErrorMessage("The bufferClose returned a null Publisher")
+					.verifyThenAssertThat()
+					.hasDiscardedExactly(0, 1, 1);
 	}
 
 	@Test
 	public void discardOnBoundaryError() {
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ZERO, Duration.ofMillis(100)) // 0, 1, 2
-		                                       .map(Long::intValue)
-		                                       .take(3)
-		                                       .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)),
-				                                       u -> (u == 2) ? Mono.error(new IllegalStateException("boom"))
-						                                       : Mono.never()))
-		            .thenAwait(Duration.ofSeconds(2))
-		            .expectErrorMessage("boom")
-		            .verifyThenAssertThat()
-		            .hasDiscardedExactly(0, 1, 1);
+											   .map(Long::intValue)
+											   .take(3)
+											   .bufferWhen(Flux.interval(Duration.ZERO, Duration.ofMillis(100)), u -> (u == 2) ? Mono.error(new IllegalStateException("boom")) : Mono.never()))
+					.thenAwait(Duration.ofSeconds(2))
+					.expectErrorMessage("boom")
+					.verifyThenAssertThat()
+					.hasDiscardedExactly(0, 1, 1);
 
 	}
 }

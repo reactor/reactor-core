@@ -39,24 +39,24 @@ public class FluxJoinTest {
 	public void normal1() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		Flux<Integer> m =
-				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
+				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), add);
 
 		m.subscribe(ts);
 
-		source1.onNext(1);
-		source1.onNext(2);
-		source1.onNext(4);
+		source1.emitNext(1);
+		source1.emitNext(2);
+		source1.emitNext(4);
 
-		source2.onNext(16);
-		source2.onNext(32);
-		source2.onNext(64);
+		source2.emitNext(16);
+		source2.emitNext(32);
+		source2.emitNext(64);
 
-		source1.onComplete();
-		source2.onComplete();
+		source1.emitComplete();
+		source2.emitComplete();
 
 		ts.assertValues(17, 18, 20, 33, 34, 36, 65, 66, 68)
 		  .assertComplete()
@@ -66,25 +66,25 @@ public class FluxJoinTest {
 	@Test
 	public void normal1WithDuration() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> duration1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> duration1 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		Flux<Integer> m = source1.join(source2, just(duration1), just(Flux.never()), add);
+		Flux<Integer> m = source1.asFlux().join(source2.asFlux(), just(duration1.asFlux()), just(Flux.never()), add);
 		m.subscribe(ts);
 
-		source1.onNext(1);
-		source1.onNext(2);
-		source2.onNext(16);
+		source1.emitNext(1);
+		source1.emitNext(2);
+		source2.emitNext(16);
 
-		duration1.onNext(1);
+		duration1.emitNext(1);
 
-		source1.onNext(4);
-		source1.onNext(8);
+		source1.emitNext(4);
+		source1.emitNext(8);
 
-		source1.onComplete();
-		source2.onComplete();
+		source1.emitComplete();
+		source2.emitComplete();
 
 		ts.assertValues(17, 18, 20, 24)
 		  .assertComplete()
@@ -95,23 +95,23 @@ public class FluxJoinTest {
 	@Test
 	public void normal2() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		Flux<Integer> m =
-				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
+				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), add);
 
 		m.subscribe(ts);
 
-		source1.onNext(1);
-		source1.onNext(2);
-		source1.onComplete();
+		source1.emitNext(1);
+		source1.emitNext(2);
+		source1.emitComplete();
 
-		source2.onNext(16);
-		source2.onNext(32);
-		source2.onNext(64);
+		source2.emitNext(16);
+		source2.emitNext(32);
+		source2.emitNext(64);
 
-		source2.onComplete();
+		source2.emitComplete();
 
 		ts.assertValues(17, 18, 33, 34, 65, 66)
 		  .assertComplete()
@@ -121,16 +121,16 @@ public class FluxJoinTest {
 	@Test
 	public void leftThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		Flux<Integer> m =
-				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
+				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), add);
 
 		m.subscribe(ts);
 
-		source2.onNext(1);
-		source1.onError(new RuntimeException("Forced failure"));
+		source2.emitNext(1);
+		source1.emitError(new RuntimeException("Forced failure"));
 
 		ts.assertErrorMessage("Forced failure")
 		  .assertNotComplete()
@@ -140,16 +140,16 @@ public class FluxJoinTest {
 	@Test
 	public void rightThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		Flux<Integer> m =
-				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
+				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), add);
 
 		m.subscribe(ts);
 
-		source1.onNext(1);
-		source2.onError(new RuntimeException("Forced failure"));
+		source1.emitNext(1);
+		source2.emitError(new RuntimeException("Forced failure"));
 
 		ts.assertErrorMessage("Forced failure")
 		  .assertNotComplete()
@@ -159,15 +159,15 @@ public class FluxJoinTest {
 	@Test
 	public void leftDurationThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
-		Flux<Integer> m = source1.join(source2, just(duration1), just(Flux.never()), add);
+		Flux<Integer> m = source1.asFlux().join(source2.asFlux(), just(duration1), just(Flux.never()), add);
 		m.subscribe(ts);
 
-		source1.onNext(1);
+		source1.emitNext(1);
 
 		ts.assertErrorMessage("Forced failure")
 		  .assertNotComplete()
@@ -177,15 +177,15 @@ public class FluxJoinTest {
 	@Test
 	public void rightDurationThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
-		Flux<Integer> m = source1.join(source2, just(Flux.never()), just(duration1), add);
+		Flux<Integer> m = source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(duration1), add);
 		m.subscribe(ts);
 
-		source2.onNext(1);
+		source2.emitNext(1);
 
 		ts.assertErrorMessage("Forced failure")
 		  .assertNotComplete()
@@ -195,17 +195,17 @@ public class FluxJoinTest {
 	@Test
 	public void leftDurationSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
 		};
 
-		Flux<Integer> m = source1.join(source2, fail, just(Flux.never()), add);
+		Flux<Integer> m = source1.asFlux().join(source2.asFlux(), fail, just(Flux.never()), add);
 		m.subscribe(ts);
 
-		source1.onNext(1);
+		source1.emitNext(1);
 
 		ts.assertErrorMessage("Forced failure")
 		  .assertNotComplete()
@@ -215,17 +215,17 @@ public class FluxJoinTest {
 	@Test
 	public void rightDurationSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
 		};
 
-		Flux<Integer> m = source1.join(source2, just(Flux.never()), fail, add);
+		Flux<Integer> m = source1.asFlux().join(source2.asFlux(), just(Flux.never()), fail, add);
 		m.subscribe(ts);
 
-		source2.onNext(1);
+		source2.emitNext(1);
 
 		ts.assertErrorMessage("Forced failure")
 		  .assertNotComplete()
@@ -235,19 +235,19 @@ public class FluxJoinTest {
 	@Test
 	public void resultSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		BiFunction<Integer, Integer, Integer> fail = (t1, t2) -> {
 			throw new RuntimeException("Forced failure");
 		};
 
 		Flux<Integer> m =
-				source1.join(source2, just(Flux.never()), just(Flux.never()), fail);
+				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), fail);
 		m.subscribe(ts);
 
-		source1.onNext(1);
-		source2.onNext(2);
+		source1.emitNext(1);
+		source2.emitNext(2);
 
 		ts.assertErrorMessage("Forced failure")
 		  .assertNotComplete()

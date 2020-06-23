@@ -15,6 +15,23 @@
  */
 package reactor.test;
 
+import org.assertj.core.api.Assertions;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoProcessor;
+import reactor.core.publisher.Operators;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.publisher.TestPublisher;
+import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.context.Context;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,26 +48,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxIdentityProcessor;
-import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.Operators;
-import reactor.core.publisher.Processors;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
-import reactor.test.publisher.TestPublisher;
-import reactor.test.scheduler.VirtualTimeScheduler;
-import reactor.util.context.Context;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.*;
@@ -625,15 +622,15 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyThenOnCompleteRange() {
-		FluxIdentityProcessor<Void> p = Processors.more().multicastNoBackpressure();
+		Sinks.Empty<Void> p = Sinks.empty();
 
 		Flux<String> flux = Flux.range(0, 3)
 		                        .map(d -> "t" + d)
-		                        .takeUntilOther(p);
+		                        .takeUntilOther(p.asMono());
 
 		StepVerifier.create(flux, 2)
 		            .expectNext("t0", "t1")
-		            .then(p::onComplete)
+		            .then(p::emitEmpty)
 		            .expectComplete()
 		            .verify();
 
@@ -1988,12 +1985,12 @@ public class StepVerifierTests {
 
 	@Test
 	public void takeAsyncFusedBackpressured() {
-		FluxIdentityProcessor<String> up = Processors.unicast();
-		StepVerifier.create(up.take(3), 0)
+		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
+		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
+		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test"))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenRequest(1)
@@ -2003,12 +2000,12 @@ public class StepVerifierTests {
 
 	@Test
 	public void cancelAsyncFusion() {
-		FluxIdentityProcessor<String> up = Processors.unicast();
-		StepVerifier.create(up.take(3), 0)
+		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
+		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
-		            .then(() -> up.onNext("test"))
+		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test"))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenCancel()
@@ -2074,14 +2071,14 @@ public class StepVerifierTests {
 	@Test
 	public void assertNextWithSubscribeOnDirectProcessor() {
 		Scheduler scheduler = Schedulers.newBoundedElastic(1, 100, "test");
-		FluxIdentityProcessor<Integer> processor = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> processor = Sinks.many().unsafe().multicast().onBackpressureError();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
-		                             .doOnNext(processor::onNext)
+		                             .doOnNext(processor::emitNext)
 		                             .subscribeOn(scheduler);
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(
-						StepVerifier.create(processor)
+						StepVerifier.create(processor.asFlux())
 						            .then(doAction::subscribe)
 						            .assertNext(v -> assertThat(v).isEqualTo(23))
 						            .thenCancel()
@@ -2332,12 +2329,12 @@ public class StepVerifierTests {
 	@Test
 	public void verifyDrainOnRequestInCaseOfFusion2() {
 		ArrayList<Long> requests = new ArrayList<>();
-		FluxIdentityProcessor<Integer> processor = Processors.unicast();
-		StepVerifier.create(processor.doOnRequest(requests::add), 0)
+		Sinks.Many<Integer> processor = Sinks.many().unicast().onBackpressureBuffer();
+		StepVerifier.create(processor.asFlux().doOnRequest(requests::add), 0)
 				.expectFusion(Fuseable.ANY)
 				.then(() -> {
-					processor.onNext(1);
-					processor.onComplete();
+					processor.emitNext(1);
+					processor.emitComplete();
 				})
 				.thenRequest(1)
 				.thenRequest(1)
@@ -2356,17 +2353,17 @@ public class StepVerifierTests {
 
 
 		StepVerifier.withVirtualTime(() -> {
-			FluxIdentityProcessor<String> fluxEmitter = Processors.multicast();
+			Sinks.Many<String> fluxEmitter = Sinks.many().multicast().onBackpressureBuffer();
 
 			subscriptionWorker.schedulePeriodically(() -> {
 				if (source.size() > 0) {
-					fluxEmitter.onNext(source.remove(0));
+					fluxEmitter.emitNext(source.remove(0));
 				}
 				else {
-					fluxEmitter.onComplete();
+					fluxEmitter.emitComplete();
 				}
 			}, 0, 10, TimeUnit.MILLISECONDS);
-			return fluxEmitter;
+			return fluxEmitter.asFlux();
 		})
 		            .expectNext("first")
 		            .expectNoEvent(Duration.ofMillis(10))

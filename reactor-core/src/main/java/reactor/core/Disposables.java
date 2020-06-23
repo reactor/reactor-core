@@ -286,7 +286,7 @@ public final class Disposables {
 		public Stream<? extends Scannable> inners() {
 			return this.asStream()
 			           .filter(Scannable.class::isInstance)
-			           .map(Scannable.class::cast);
+			           .map(Scannable::from);
 		}
 
 		@Nullable

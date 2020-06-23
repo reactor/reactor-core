@@ -16,14 +16,6 @@
 
 package reactor.test.publisher;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
 import org.junit.Before;
 import org.junit.function.ThrowingRunnable;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,21 +25,28 @@ import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.ReactorTestExecutionListener;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxIdentityProcessor;
+import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
-import reactor.core.publisher.Processors;
+import reactor.core.publisher.Sinks;
 import reactor.test.StepVerifier;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.*;
@@ -391,30 +390,32 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	final Flux<I> fluxFuseableAsync(OperatorScenario<I, PI, O, PO> scenario) {
 		int p = scenario.producerCount();
-		FluxIdentityProcessor<I> rp = Processors.replayAll();
+		Sinks.Many<I> rp = Sinks.many().unsafe()
+		                        .replay()
+		                        .all();
 
 		switch (p) {
 			case -1:
 				break;
 			case 0:
-				rp.onComplete();
+				rp.emitComplete();
 				break;
 			case 1:
-				rp.onNext(scenario.producingMapper
+				rp.emitNext(scenario.producingMapper
 				                  .apply(0));
-				rp.onComplete();
+				rp.emitComplete();
 				break;
 			default:
 				if (p > 10_000) {
 					throw new IllegalArgumentException("Should not preload async source" + " " + "more than 10000," + " was " + p);
 				}
 				for (int i = 0; i < scenario.producerCount(); i++) {
-					rp.onNext(scenario.producingMapper
+					rp.emitNext(scenario.producingMapper
 					                  .apply(i));
 				}
-				rp.onComplete();
+				rp.emitComplete();
 		}
-		return rp;
+		return rp.asFlux();
 	}
 
 	final Flux<I> fluxFuseableSync(OperatorScenario<I, PI, O, PO> scenario) {
@@ -579,7 +580,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncOutputFusedAsync(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxIdentityProcessor<I> up = Processors.unicast();
+		FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
 		return StepVerifier.create(scenario.body()
 		                                   .apply(withFluxSource(up)))
 		                   .expectFusion(Fuseable.ASYNC)
@@ -587,7 +588,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncOutputFusedAsyncConditional(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxIdentityProcessor<I> up = Processors.unicast();
+		FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
 		return StepVerifier.create(scenario.body()
 		                                   .andThen(this::conditional)
 		                                   .apply(withFluxSource(up)))
@@ -595,23 +596,23 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		                   .then(() -> testUnicastSource(scenario, up));
 	}
 
-	@SuppressWarnings("unchecked")
 	final void inputFusedAsyncOutputFusedAsyncCancel(OperatorScenario<I, PI, O, PO> scenario) {
 		if ((scenario.fusionMode() & Fuseable.ASYNC) != 0) {
-			FluxIdentityProcessor<I> up = Processors.unicast();
+			FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
 			testUnicastSource(scenario, up);
 			StepVerifier.create(scenario.body()
 			                            .apply(withFluxSource(up)), 0)
 			            .consumeSubscriptionWith(s -> {
 				            if (s instanceof Fuseable.QueueSubscription) {
+					            @SuppressWarnings("unchecked")
 					            Fuseable.QueueSubscription<O> qs = ((Fuseable.QueueSubscription<O>) s);
 					            qs.requestFusion(ASYNC);
 					            //UnicastProcessor#actual
-					            if (up.scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
+					            if (Scannable.from(up).scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
 						            qs.size(); //touch undeterministic
 					            }
 					            else {
-						            assertThat(qs.size()).isEqualTo(up.scan(Attr.BUFFERED)); //UnicastProcessor#size
+						            assertThat(qs.size()).isEqualTo(Scannable.from(up).scan(Attr.BUFFERED)); //UnicastProcessor#size
 					            }
 					            try {
 						            qs.poll();
@@ -627,11 +628,11 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 									            .hasMessage(scenario.producerError.getMessage());
 						            }
 						            //UnicastProcessor#actual
-						            if (up.scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
+						            if (Scannable.from(up).scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
 							            qs.size(); //touch undeterministic
 						            }
 						            else {
-							            assertThat(qs.size()).isEqualTo(up.scan(Attr.BUFFERED)); //UnicastProcessor#size
+							            assertThat(qs.size()).isEqualTo(Scannable.from(up).scan(Attr.BUFFERED)); //UnicastProcessor#size
 						            }
 					            }
 					            qs.clear();
@@ -641,11 +642,12 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			            .thenCancel()
 			            .verify();
 
-			FluxIdentityProcessor<I> up2 = Processors.unicast();
+			Sinks.Many<I> up2 = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 			StepVerifier.create(scenario.body()
-			                            .apply(withFluxSource(up2)), 0)
+			                            .apply(withFluxSource(up2.asFlux())), 0)
 			            .consumeSubscriptionWith(s -> {
 				            if (s instanceof Fuseable.QueueSubscription) {
+					            @SuppressWarnings("unchecked")
 					            Fuseable.QueueSubscription<O> qs = ((Fuseable.QueueSubscription<O>) s);
 					            assertThat(qs.requestFusion(ASYNC | THREAD_BARRIER)).isEqualTo(
 							            scenario.fusionModeThreadBarrier & ASYNC);
@@ -656,10 +658,10 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "deprecated"})
 	final void inputFusedAsyncOutputFusedAsyncConditionalCancel(OperatorScenario<I, PI, O, PO> scenario) {
 		if ((scenario.fusionMode() & Fuseable.ASYNC) != 0) {
-			FluxIdentityProcessor<I> up = Processors.unicast();
+			FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
 			testUnicastSource(scenario, up);
 			StepVerifier.create(scenario.body()
 			                            .andThen(f -> doOnSubscribe(f, s -> {
@@ -668,11 +670,11 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 							                            (Fuseable.QueueSubscription<O>) s;
 					                            qs.requestFusion(ASYNC);
 					                            //UnicastProcessor#actual()
-					                            if (up.scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
+					                            if (Scannable.from(up).scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
 						                            qs.size(); //touch undeterministic
 					                            }
 					                            else {
-						                            assertThat(qs.size()).isEqualTo(up.scan(Attr.BUFFERED)); //UnicastProcessor#size()
+						                            assertThat(qs.size()).isEqualTo(Scannable.from(up).scan(Attr.BUFFERED)); //UnicastProcessor#size()
 					                            }
 					                            if (Scannable.from(qs).scan(Attr.ERROR) != null) {
 						                            if (scenario.producerError != null) {
@@ -680,11 +682,11 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 									                            .hasMessage(scenario.producerError.getMessage());
 						                            }
 						                            //UnicastProcessor#actual()
-						                            if (up.scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
+						                            if (Scannable.from(up).scan(Attr.ACTUAL) != qs || scenario.prefetch() == -1) {
 							                            qs.size(); //touch undeterministic
 						                            }
 						                            else {
-							                            assertThat(qs.size()).isEqualTo(up.scan(Attr.BUFFERED)); //UnicastProcessor#size()
+							                            assertThat(qs.size()).isEqualTo(Scannable.from(up).scan(Attr.BUFFERED)); //UnicastProcessor#size()
 						                            }
 					                            }
 					                            qs.clear();
@@ -696,7 +698,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			            .thenCancel()
 			            .verify();
 
-			FluxIdentityProcessor<I> up2 = Processors.unicast();
+			Sinks.Many<I> up2 = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 			StepVerifier.create(scenario.body()
 			                            .andThen(f -> doOnSubscribe(f, s -> {
 				                            if (s instanceof Fuseable.QueueSubscription) {
@@ -707,13 +709,12 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 				                            }
 			                            }))
 			                            .andThen(this::conditional)
-			                            .apply(withFluxSource(up2)), 0)
+			                            .apply(withFluxSource(up2.asFlux())), 0)
 			            .thenCancel()
 			            .verify();
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	final StepVerifier.Step<O> inputFusedSyncOutputFusedSync(OperatorScenario<I, PI, O, PO> scenario) {
 		return StepVerifier.create(scenario.body()
 		                                   .apply(withFluxSource(fluxFuseableSync(scenario))))
@@ -847,10 +848,10 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	@SuppressWarnings("unchecked")
 	final StepVerifier.Step<O> inputFusedError(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxIdentityProcessor<I> up = Processors.unicast();
+		Sinks.Many<I> up = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 
 		return StepVerifier.create(scenario.body()
-		                                   .apply(up.as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
+		                                   .apply(up.asFlux().as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
 				                                   f,
 				                                   exception())))))
 		                   .then(testUnicastDropPath(scenario, up));
@@ -907,10 +908,10 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncErrorOutputFusedAsync(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxIdentityProcessor<I> up = Processors.unicast();
-		up.onNext(item(0));
+		Sinks.Many<I> up = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+		up.emitNext(item(0));
 		return StepVerifier.create(scenario.body()
-		                                   .apply(up.as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
+		                                   .apply(up.asFlux().as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
 				                                   f,
 				                                   exception())))))
 		                   .expectFusion(scenario.fusionMode() & ASYNC);
@@ -918,21 +919,21 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	@SuppressWarnings("unchecked")
 	final StepVerifier.Step<O> inputFusedErrorOutputFusedConditional(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxIdentityProcessor<I> up = Processors.unicast();
+		Sinks.Many<I> up = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 		return StepVerifier.create(scenario.body()
 		                                   .andThen(this::conditional)
-		                                   .apply(up.as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
+		                                   .apply(up.asFlux().as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
 				                                   f,
 				                                   exception())))))
 		                   .then(testUnicastDropPath(scenario, up));
 	}
 
 	final Runnable testUnicastDropPath(OperatorScenario<I, PI, O, PO> scenario,
-			FluxIdentityProcessor<I> up) {
+			Sinks.Many<I> up) {
 		return () -> {
 			//UnicastProcessor#actual()
 			@SuppressWarnings("unchecked")
-			Subscriber<I> unicastDownstream = (Subscriber<I>) up.scanUnsafe(Attr.ACTUAL);
+			Subscriber<I> unicastDownstream = (Subscriber<I>) Scannable.from(up).scanUnsafe(Attr.ACTUAL);
 			if (unicastDownstream != null ) {
 				unicastDownstream.onError(exception());
 
@@ -985,7 +986,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final void testUnicastSource(OperatorScenario<I, PI, O, PO> scenario,
-			FluxIdentityProcessor<I> ts) {
+			FluxProcessor<I, I> ts) {
 		fluxFuseableAsync(scenario).subscribe(ts);
 	}
 

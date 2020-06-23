@@ -73,9 +73,9 @@ public class StrictSubscriberTest {
 		AtomicBoolean state2 = new AtomicBoolean();
 		AtomicReference<Throwable> e = new AtomicReference<>();
 
-		FluxIdentityProcessor<Integer> sp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp.doOnCancel(() -> state2.set(state1.get()))
+		sp.asFlux().doOnCancel(() -> state2.set(state1.get()))
 		  .subscribe(new Subscriber<Integer>() {
 			  @Override
 			  public void onSubscribe(Subscription s) {
@@ -101,7 +101,7 @@ public class StrictSubscriberTest {
 		Assert.assertNull("Error: " + e.get(), e.get());
 
 		Assert.assertTrue("Cancel executed before onSubscribe finished", state2.get());
-		Assert.assertFalse("Has subscribers?!", sp.hasDownstreams());
+		Assert.assertFalse("Has subscribers?!", Scannable.from(sp).inners().count() != 0);
 	}
 
 	@Test

@@ -159,26 +159,26 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void fused() {
-		FluxIdentityProcessor<Integer> dp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> dp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> dp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> dp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY);
 
-		Flux.combineLatest(dp1, dp2, (a, b) -> a + b)
+		Flux.combineLatest(dp1.asFlux(), dp2.asFlux(), (a, b) -> a + b)
 		    .subscribe(ts);
 
-		dp1.onNext(1);
-		dp1.onNext(2);
+		dp1.emitNext(1);
+		dp1.emitNext(2);
 
-		dp2.onNext(10);
-		dp2.onNext(20);
-		dp2.onNext(30);
+		dp2.emitNext(10);
+		dp2.emitNext(20);
+		dp2.emitNext(30);
 
-		dp1.onNext(3);
+		dp1.emitNext(3);
 
-		dp1.onComplete();
-		dp2.onComplete();
+		dp1.emitComplete();
+		dp2.emitComplete();
 
 		ts.assertFuseableSource()
 		  .assertFusionMode(Fuseable.ASYNC)

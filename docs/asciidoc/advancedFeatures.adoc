@@ -149,11 +149,11 @@ for each new subscription).
 
 On the opposite, `share()` and `replay(...)` can be used to turn a cold publisher into
 a hot one (at least once a first subscription has happened). Both of these also have
-`StandaloneFluxSink` equivalents in the `Sinks` class, which allow programmatically
+`Sink` equivalents in the `Sinks` class, which allow programmatically
 feeding the sequence.
 
 Consider two examples, one that demonstrates a cold Flux and the other that makes use of the
-`StandaloneFluxSink` to simulate a hot Flux. The following code shows the first example:
+`Sink` to simulate a hot Flux. The following code shows the first example:
 
 ====
 [source,java]
@@ -193,7 +193,7 @@ Compare the first example to the second example, shown in the following code:
 ====
 [source,java]
 ----
-Sinks.StandaloneFluxSink<String> hotSource = Sinks.multicastNoWarmup();
+Sink<String> hotSource = Sinks.many().multicast().onBackpressureError();
 
 Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 
