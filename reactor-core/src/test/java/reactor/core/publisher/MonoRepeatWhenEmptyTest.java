@@ -18,8 +18,10 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -91,4 +93,13 @@ public class MonoRepeatWhenEmptyTest {
         Assert.assertEquals(Arrays.asList(0L, 1L), iterations);
     }
 
+    @Test(timeout = 1000L)
+    public void gh2196_discardHandlerHang() {
+        StepVerifier.create(Mono.empty()
+                .repeatWhenEmpty(f -> f.next())
+                .doOnDiscard(Object.class, System.out::println))
+                .thenAwait()
+                .thenCancel()
+                .verify();
+    }
 }
