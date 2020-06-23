@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -133,9 +134,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *             }
 	 *         }
 	 *     };
-	 *     
+	 *
 	 *     client.addListener(listener);
-	 *     
+	 *
 	 *     sink.onDispose(() -&gt; client.removeListener(listener));
 	 * });
 	 * </code></pre>
@@ -2675,7 +2676,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Hides the identity of this {@link Mono} instance.
-	 * 
+	 *
 	 * <p>The main purpose of this operator is to prevent certain identity-based
 	 * optimizations from happening, mostly for diagnostic purposes.
 	 *
@@ -2684,7 +2685,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Mono<T> hide() {
 	    return onAssembly(new MonoHide<>(this));
 	}
-	
+
 	/**
 	 * Ignores onNext signal (dropping it) and only propagates termination events.
 	 *
@@ -3416,23 +3417,16 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * as long as the companion {@link Publisher} produces an onNext signal and the maximum number of repeats isn't exceeded.
 	 */
 	public final Mono<T> repeatWhenEmpty(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
-		return Mono.defer(() -> {
-			Flux<Long> iterations;
-
-			if(maxRepeat == Integer.MAX_VALUE) {
-				iterations = Flux.fromStream(LongStream.range(0, Long.MAX_VALUE).boxed());
+		return Mono.defer(() -> this.repeatWhen(o -> {
+			if (maxRepeat == Integer.MAX_VALUE) {
+				return repeatFactory.apply(o.index().map(Tuple2::getT1));
 			}
 			else {
-				iterations = Flux
-					.range(0, maxRepeat)
-					.map(Integer::longValue)
-					.concatWith(Flux.error(new IllegalStateException("Exceeded maximum number of repeats"), true));
+				return repeatFactory.apply(o.index().map(Tuple2::getT1)
+						.take(maxRepeat)
+						.concatWith(Flux.error(new IllegalStateException("Exceeded maximum number of repeats"), true)));
 			}
-
-			return this.repeatWhen(o -> repeatFactory.apply(o
-						.zipWith(iterations, 1, (c, i) -> i)))
-			           .next();
-		});
+		}).next());
 	}
 
 
