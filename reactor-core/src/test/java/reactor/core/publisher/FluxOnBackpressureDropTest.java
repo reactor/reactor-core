@@ -90,27 +90,28 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void someDrops() {
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		List<Integer> drops = new ArrayList<>();
 
-		tp.onBackpressureDrop(drops::add)
+		tp.asFlux()
+		  .onBackpressureDrop(drops::add)
 		  .subscribe(ts);
 
-		tp.onNext(1);
+		tp.emitNext(1);
 
 		ts.request(2);
 
-		tp.onNext(2);
-		tp.onNext(3);
-		tp.onNext(4);
+		tp.emitNext(2);
+		tp.emitNext(3);
+		tp.emitNext(4);
 
 		ts.request(1);
 
-		tp.onNext(5);
-		tp.onComplete();
+		tp.emitNext(5);
+		tp.emitComplete();
 
 		ts.assertValues(2, 3, 5)
 		  .assertComplete()

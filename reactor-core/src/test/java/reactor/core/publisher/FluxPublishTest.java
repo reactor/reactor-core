@@ -63,7 +63,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void prematureOnComplete() {
-		FluxIdentityProcessor<Flux<String>> incomingProcessor = Processors.more().multicast(false);
+		@SuppressWarnings("deprecation")
+		EmitterProcessor<Flux<String>> incomingProcessor = EmitterProcessor.create(false);
 
 		Flux.just("ALPHA", "BRAVO", "CHARLIE", "DELTA", "ALPHA", "BRAVO", "CHARLIE", "DELTA", "ALPHA", "BRAVO", "CHARLIE", "DELTA")
 		    .log("stream.incoming")
@@ -207,15 +208,15 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> up = Processors.more().unicast(Queues.<Integer>get(8).get());
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		Sinks.Many<Integer> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(8).get());
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitNext(3);
+		up.emitNext(4);
+		up.emitNext(5);
+		up.emitComplete();
 
-		ConnectableFlux<Integer> p = up.publish();
+		ConnectableFlux<Integer> p = up.asFlux().publish();
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -246,15 +247,15 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
-		FluxIdentityProcessor<Integer> up = Processors.more().unicast(Queues.<Integer>get(8).get());
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		Sinks.Many<Integer> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(8).get());
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitNext(3);
+		up.emitNext(4);
+		up.emitNext(5);
+		up.emitComplete();
 
-		ConnectableFlux<Integer> p = up.publish();
+		ConnectableFlux<Integer> p = up.asFlux().publish();
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -410,16 +411,16 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	public void disconnect() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> e = Processors.multicast();
+		Sinks.Many<Integer> e = Sinks.many().multicast().onBackpressureBuffer();
 
-		ConnectableFlux<Integer> p = e.publish();
+		ConnectableFlux<Integer> p = e.asFlux().publish();
 
 		p.subscribe(ts);
 
 		Disposable r = p.connect();
 
-		e.onNext(1);
-		e.onNext(2);
+		e.emitNext(1);
+		e.emitNext(2);
 
 		r.dispose();
 
@@ -427,16 +428,16 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertError(CancellationException.class)
 		.assertNotComplete();
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
 	}
 
 	@Test
 	public void disconnectBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		FluxIdentityProcessor<Integer> e = Processors.multicast();
+		Sinks.Many<Integer> e = Sinks.many().multicast().onBackpressureBuffer();
 
-		ConnectableFlux<Integer> p = e.publish();
+		ConnectableFlux<Integer> p = e.asFlux().publish();
 
 		p.subscribe(ts);
 
@@ -448,24 +449,24 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertError(CancellationException.class)
 		.assertNotComplete();
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
 	}
 
 	@Test
 	public void error() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> e = Processors.multicast();
+		Sinks.Many<Integer> e = Sinks.many().multicast().onBackpressureBuffer();
 
-		ConnectableFlux<Integer> p = e.publish();
+		ConnectableFlux<Integer> p = e.asFlux().publish();
 
 		p.subscribe(ts);
 
 		p.connect();
 
-		e.onNext(1);
-		e.onNext(2);
-		e.onError(new RuntimeException("forced failure"));
+		e.emitNext(1);
+		e.emitNext(2);
+		e.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValues(1, 2)
 		.assertError(RuntimeException.class)
@@ -491,9 +492,10 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retry() {
-		FluxIdentityProcessor<Integer> dp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> dp = Sinks.many().unsafe().multicast().onBackpressureError();
 		StepVerifier.create(
-				dp.publish()
+				dp.asFlux()
+				  .publish()
 				  .autoConnect().<Integer>handle((s1, sink) -> {
 					if (s1 == 1) {
 						sink.error(new RuntimeException());
@@ -503,23 +505,24 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 					}
 				}).retry())
 		            .then(() -> {
-			            dp.onNext(1);
-			            dp.onNext(2);
-			            dp.onNext(3);
+			            dp.emitNext(1);
+			            dp.emitNext(2);
+			            dp.emitNext(3);
 		            })
 		            .expectNext(2, 3)
 		            .thenCancel()
 		            .verify();
 
 		// Need to explicitly complete processor due to use of publish()
-		dp.onComplete();
+		dp.emitComplete();
 	}
 
 	@Test
 	public void retryWithPublishOn() {
-		FluxIdentityProcessor<Integer> dp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> dp = Sinks.many().unsafe().multicast().onBackpressureError();
 		StepVerifier.create(
-				dp.publishOn(Schedulers.parallel()).publish()
+				dp.asFlux()
+				  .publishOn(Schedulers.parallel()).publish()
 				  .autoConnect().<Integer>handle((s1, sink) -> {
 					if (s1 == 1) {
 						sink.error(new RuntimeException());
@@ -529,16 +532,16 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 					}
 				}).retry())
 		            .then(() -> {
-			            dp.onNext(1);
-			            dp.onNext(2);
-			            dp.onNext(3);
+			            dp.emitNext(1);
+			            dp.emitNext(2);
+			            dp.emitNext(3);
 		            })
 		            .expectNext(2, 3)
 		            .thenCancel()
 		            .verify();
 
 		// Need to explicitly complete processor due to use of publish()
-		dp.onComplete();
+		dp.emitComplete();
 	}
 
 	@Test

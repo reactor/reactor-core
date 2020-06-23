@@ -187,16 +187,17 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusion() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(new ConcurrentLinkedQueue<>());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
-		up.filter(v -> (v & 1) == 0)
+		up.asFlux()
+		  .filter(v -> (v & 1) == 0)
 		  .subscribe(ts);
 
 		for (int i = 1; i < 11; i++) {
-			up.onNext(i);
+			up.emitNext(i);
 		}
-		up.onComplete();
+		up.emitComplete();
 
 		ts.assertValues(2, 4, 6, 8, 10)
 		  .assertNoError()
@@ -207,22 +208,22 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionBackpressured() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(new ConcurrentLinkedQueue<>());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)
 		    .hide()
-		    .flatMap(w -> up.filter(v -> (v & 1) == 0))
+		    .flatMap(w -> up.asFlux().filter(v -> (v & 1) == 0))
 		    .subscribe(ts);
 
-		up.onNext(1);
-		up.onNext(2);
+		up.emitNext(1);
+		up.emitNext(2);
 
 		ts.assertValues(2)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		up.onComplete();
+		up.emitComplete();
 
 		ts.assertValues(2)
 		  .assertNoError()
@@ -233,22 +234,22 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionBackpressured2() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(new ConcurrentLinkedQueue<>());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)
 		    .hide()
-		    .flatMap(w -> up.filter(v -> (v & 1) == 0), false, 1, 1)
+		    .flatMap(w -> up.asFlux().filter(v -> (v & 1) == 0), false, 1, 1)
 		    .subscribe(ts);
 
-		up.onNext(1);
-		up.onNext(2);
+		up.emitNext(1);
+		up.emitNext(2);
 
 		ts.assertValues(2)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		up.onComplete();
+		up.emitComplete();
 
 		ts.assertValues(2)
 		  .assertNoError()

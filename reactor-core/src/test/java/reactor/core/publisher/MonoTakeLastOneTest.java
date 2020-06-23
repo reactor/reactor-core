@@ -128,11 +128,11 @@ public class MonoTakeLastOneTest {
 
 	@Test
 	public void defaultUsingZip() {
-		Sinks.StandaloneFluxSink<String> sink1 = Sinks.unicast();
+		Sinks.Many<String> sink1 = Sinks.many().unicast().onBackpressureBuffer();
 		Flux<String> processor1 = sink1.asFlux();
-		Sinks.StandaloneFluxSink<String> sink2 = Sinks.unicast();
+		Sinks.Many<String> sink2 = Sinks.many().unicast().onBackpressureBuffer();
 		Flux<String> processor2 = sink2.asFlux();
-		Sinks.StandaloneFluxSink<String> sink3 = Sinks.unicast();
+		Sinks.Many<String> sink3 = Sinks.many().unicast().onBackpressureBuffer();
 		Flux<String> processor3 = sink3.asFlux();
 
 		StepVerifier.create(
@@ -143,11 +143,11 @@ public class MonoTakeLastOneTest {
 						)
 				)
 				.then(() -> {
-					sink2.next("3");
-					sink3.next("1");
-					sink1.complete();
-					sink2.complete();
-					sink3.complete();
+					sink2.emitNext("3");
+					sink3.emitNext("1");
+					sink1.emitComplete();
+					sink2.emitComplete();
+					sink3.emitComplete();
 				})
 				.expectNextMatches(objects -> objects.getT1().equals("Missing Value1") && objects.getT2().equals("3") && objects.getT3().equals("1"))
 				.verifyComplete();

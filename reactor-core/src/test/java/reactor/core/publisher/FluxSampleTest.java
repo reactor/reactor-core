@@ -43,59 +43,59 @@ public class FluxSampleTest {
 	}
 
 	void sample(boolean complete, boolean which) {
-		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<String> other = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> other = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		main.sample(other).subscribe(ts);
+		main.asFlux().sample(other.asFlux()).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertNoError();
 
-		main.onNext(1);
+		main.emitNext(1);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertNoError();
 
-		other.onNext("first");
+		other.emitNext("first");
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		other.onNext("second");
+		other.emitNext("second");
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		main.onNext(2);
+		main.emitNext(2);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		other.onNext("third");
+		other.emitNext("third");
 
 		ts.assertValues(1, 2)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		FluxIdentityProcessor<?> p = which ? main : other;
+		Sinks.Many<?> p = which ? main : other;
 
 		if (complete) {
-			p.onComplete();
+			p.emitComplete();
 
 			ts.assertValues(1, 2)
 			  .assertComplete()
 			  .assertNoError();
 		}
 		else {
-			p.onError(new RuntimeException("forced failure"));
+			p.emitError(new RuntimeException("forced failure"));
 
 			ts.assertValues(1, 2)
 			  .assertNotComplete()
@@ -103,8 +103,8 @@ public class FluxSampleTest {
 			  .assertErrorMessage("forced failure");
 		}
 
-		Assert.assertFalse("Main has subscribers?", main.hasDownstreams());
-		Assert.assertFalse("Other has subscribers?", other.hasDownstreams());
+		Assert.assertFalse("Main has subscribers?", Scannable.from(main).inners().count() != 0);
+		Assert.assertFalse("Other has subscribers?", Scannable.from(other).inners().count() != 0);
 	}
 
 	@Test
@@ -129,21 +129,21 @@ public class FluxSampleTest {
 
 	@Test
 	public void subscriberCancels() {
-		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<String> other = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> other = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		main.sample(other).subscribe(ts);
+		main.asFlux().sample(other.asFlux()).subscribe(ts);
 
-		Assert.assertTrue("Main no subscriber?", main.hasDownstreams());
-		Assert.assertTrue("Other no subscriber?", other.hasDownstreams());
+		Assert.assertTrue("Main no subscriber?", Scannable.from(main).inners().count() != 0);
+		Assert.assertTrue("Other no subscriber?", Scannable.from(other).inners().count() != 0);
 
 		ts.cancel();
 
-		Assert.assertFalse("Main no subscriber?", main.hasDownstreams());
-		Assert.assertFalse("Other no subscriber?", other.hasDownstreams());
+		Assert.assertFalse("Main no subscriber?", Scannable.from(main).inners().count() != 0);
+		Assert.assertFalse("Other no subscriber?", Scannable.from(other).inners().count() != 0);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -151,23 +151,23 @@ public class FluxSampleTest {
 	}
 
 	public void completeImmediately(boolean which) {
-		FluxIdentityProcessor<Integer> main = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<String> other = Processors.more().multicastNoBackpressure();
+		Sinks.Many<String> other = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		if (which) {
-			main.onComplete();
+			main.emitComplete();
 		}
 		else {
-			other.onComplete();
+			other.emitComplete();
 		}
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		main.sample(other).subscribe(ts);
+		main.asFlux().sample(other.asFlux()).subscribe(ts);
 
-		Assert.assertFalse("Main subscriber?", main.hasDownstreams());
-		Assert.assertFalse("Other subscriber?", other.hasDownstreams());
+		Assert.assertFalse("Main subscriber?", Scannable.from(main).inners().count() != 0);
+		Assert.assertFalse("Other subscriber?", Scannable.from(other).inners().count() != 0);
 
 		ts.assertNoValues()
 		  .assertNoError()

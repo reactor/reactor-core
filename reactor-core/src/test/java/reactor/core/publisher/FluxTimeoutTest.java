@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,9 +25,6 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.publisher.FluxTimeout.TimeoutMainSubscriber;
-import reactor.core.publisher.FluxTimeout.TimeoutOtherSubscriber;
-import reactor.core.publisher.FluxTimeout.TimeoutTimeoutSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -113,22 +109,23 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
+		source.asFlux()
+			  .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.onNext(0);
+		source.emitNext(0);
 
-		tp.onNext(1);
+		tp.emitNext(1);
 
-		source.onComplete();
+		source.emitComplete();
 
-		Assert.assertFalse("Timeout has subscribers?", tp.hasDownstreams());
+		Assert.assertFalse("Timeout has subscribers?", Scannable.from(tp).inners().count() != 0);
 
 		ts.assertValues(0)
 		  .assertComplete()
@@ -137,22 +134,23 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
+		source.asFlux()
+			  .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.onNext(0);
+		source.emitNext(0);
 
-		tp.onComplete();
+		tp.emitComplete();
 
-		source.onComplete();
+		source.emitComplete();
 
-		Assert.assertFalse("Timeout has subscribers?", tp.hasDownstreams());
+		Assert.assertFalse("Timeout has subscribers?", Scannable.from(tp).inners().count() != 0);
 
 		ts.assertValues(0)
 		  .assertComplete()
@@ -161,22 +159,23 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
+		source.asFlux()
+			  .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.onNext(0);
+		source.emitNext(0);
 
-		tp.onError(new RuntimeException("forced failure"));
+		tp.emitError(new RuntimeException("forced failure"));
 
-		source.onComplete();
+		source.emitComplete();
 
-		Assert.assertFalse("Timeout has subscribers?", tp.hasDownstreams());
+		Assert.assertFalse("Timeout has subscribers?", Scannable.from(tp).inners().count() != 0);
 
 		ts.assertValues(0)
 		  .assertComplete()
@@ -250,17 +249,18 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		source.timeout(tp, v -> tp)
+		source.asFlux()
+			  .timeout(tp.asFlux(), v -> tp.asFlux())
 		      .subscribe(ts);
 
-		tp.onNext(1);
+		tp.emitNext(1);
 
-		source.onNext(2);
-		source.onComplete();
+		source.emitNext(2);
+		source.emitComplete();
 
 		ts.assertNoValues()
 		  .assertError(TimeoutException.class)

@@ -162,19 +162,20 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void someFirst() {
-		FluxIdentityProcessor<Integer> tp = Processors.multicast();
+		Sinks.Many<Integer> tp = Sinks.many().multicast().onBackpressureBuffer();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		tp.onErrorResume(v -> Flux.range(11, 10))
+		tp.asFlux()
+		  .onErrorResume(v -> Flux.range(11, 10))
 		  .subscribe(ts);
 
-		tp.onNext(1);
-		tp.onNext(2);
-		tp.onNext(3);
-		tp.onNext(4);
-		tp.onNext(5);
-		tp.onError(new RuntimeException("forced failure"));
+		tp.emitNext(1);
+		tp.emitNext(2);
+		tp.emitNext(3);
+		tp.emitNext(4);
+		tp.emitNext(5);
+		tp.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
 		  .assertNoError()
@@ -183,19 +184,20 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void someFirstBackpressured() {
-		FluxIdentityProcessor<Integer> tp = Processors.multicast();
+		Sinks.Many<Integer> tp = Sinks.many().multicast().onBackpressureBuffer();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 
-		tp.onErrorResume(v -> Flux.range(11, 10))
+		tp.asFlux()
+		  .onErrorResume(v -> Flux.range(11, 10))
 		  .subscribe(ts);
 
-		tp.onNext(1);
-		tp.onNext(2);
-		tp.onNext(3);
-		tp.onNext(4);
-		tp.onNext(5);
-		tp.onError(new RuntimeException("forced failure"));
+		tp.emitNext(1);
+		tp.emitNext(2);
+		tp.emitNext(3);
+		tp.emitNext(4);
+		tp.emitNext(5);
+		tp.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15)
 		  .assertNotComplete()

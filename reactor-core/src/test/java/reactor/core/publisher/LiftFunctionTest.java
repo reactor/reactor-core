@@ -335,7 +335,7 @@ public class LiftFunctionTest {
 			Operators.LiftFunction<Integer, Integer> liftFunction =
 					Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
 
-			sourceGroups.map(g -> liftFunction.apply(g))
+			sourceGroups.map(liftFunction)
 					.doOnNext(liftOperator -> assertThat(liftOperator)
 							.isInstanceOf(GroupedFlux.class)
 							.isInstanceOf(Fuseable.class)

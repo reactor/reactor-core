@@ -43,42 +43,42 @@ public class FluxAutoConnectTest {
 	
 	@Test
 	public void connectImmediately() {
-		FluxIdentityProcessor<Integer> e = Processors.multicast();
+		Sinks.Many<Integer> e = Sinks.many().multicast().onBackpressureBuffer();
 
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
-		e.publish().autoConnect(0, cancel::set);
+		e.asFlux().publish().autoConnect(0, cancel::set);
 		
 		Assert.assertNotNull(cancel.get());
-		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
+		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
 
 		cancel.get().dispose();
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
 	}
 
 	@Test
 	public void connectAfterMany() {
-		FluxIdentityProcessor<Integer> e = Processors.multicast();
+		Sinks.Many<Integer> e = Sinks.many().multicast().onBackpressureBuffer();
 
 		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
-		Flux<Integer> p = e.publish().autoConnect(2, cancel::set);
+		Flux<Integer> p = e.asFlux().publish().autoConnect(2, cancel::set);
 		
 		Assert.assertNull(cancel.get());
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
 		
 		p.subscribe(AssertSubscriber.create());
 		
 		Assert.assertNull(cancel.get());
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
 
 		p.subscribe(AssertSubscriber.create());
 
 		Assert.assertNotNull(cancel.get());
-		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
+		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
 		
 		cancel.get().dispose();
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
 	}
 
 	@Test

@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CorePublisher;
@@ -54,14 +53,11 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 			Retry whenSourceFactory,
 			CorePublisher<? extends T> source) {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
-		Subscriber<Retry.RetrySignal> signaller = Operators.serialize(other.completionSignal);
-
-		signaller.onSubscribe(Operators.emptySubscription());
 
 		CoreSubscriber<T> serial = Operators.serialize(s);
 
 		RetryWhenMainSubscriber<T> main =
-				new RetryWhenMainSubscriber<>(serial, signaller, source);
+				new RetryWhenMainSubscriber<>(serial, other.completionSignal, source);
 
 		other.main = main;
 		serial.onSubscribe(main);
@@ -98,7 +94,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		final Operators.DeferredSubscription otherArbiter;
 
-		final Subscriber<Retry.RetrySignal> signaller;
+		final Sinks.Many<Retry.RetrySignal> signaller;
 
 		final CorePublisher<? extends T> source;
 
@@ -116,7 +112,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		long produced;
 		
 		RetryWhenMainSubscriber(CoreSubscriber<? super T> actual,
-				Subscriber<Retry.RetrySignal> signaller,
+				Sinks.Many<Retry.RetrySignal> signaller,
 				CorePublisher<? extends T> source) {
 			super(actual);
 			this.signaller = signaller;
@@ -184,7 +180,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 			otherArbiter.request(1);
 
-			signaller.onNext(this);
+			signaller.emitNext(this);
 		}
 
 		@Override
@@ -237,7 +233,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 	implements InnerConsumer<Object>, OptimizableOperator<Retry.RetrySignal, Retry.RetrySignal> {
 		RetryWhenMainSubscriber<?> main;
 
-		final FluxIdentityProcessor<Retry.RetrySignal> completionSignal = Processors.more().multicastNoBackpressure();
+		final Sinks.Many<Retry.RetrySignal> completionSignal = Sinks.many().multicast().onBackpressureError();
 
 		@Override
 		public Context currentContext() {
@@ -276,7 +272,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void subscribe(CoreSubscriber<? super Retry.RetrySignal> actual) {
-			completionSignal.subscribe(actual);
+			completionSignal.asFlux().subscribe(actual);
 		}
 
 		@Override
@@ -286,7 +282,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public CorePublisher<Retry.RetrySignal> source() {
-			return completionSignal;
+			return completionSignal.asFlux();
 		}
 
 		@Override

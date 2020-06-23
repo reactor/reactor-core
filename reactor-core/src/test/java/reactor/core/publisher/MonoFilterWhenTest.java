@@ -248,13 +248,13 @@ public class MonoFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final FluxIdentityProcessor<Boolean> pp = Processors.multicast();
+		final Sinks.Many<Boolean> pp = Sinks.many().multicast().onBackpressureBuffer();
 
 		StepVerifier.create(Mono.just(1)
-		                        .filterWhen(v -> pp))
+		                        .filterWhen(v -> pp.asFlux()))
 		            .thenCancel();
 
-		assertThat(pp.hasDownstreams()).isFalse();
+		assertThat(Scannable.from(pp).inners().count() != 0).isFalse();
 	}
 
 	@Test

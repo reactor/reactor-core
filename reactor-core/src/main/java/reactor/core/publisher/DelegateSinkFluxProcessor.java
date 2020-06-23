@@ -15,85 +15,77 @@
  */
 package reactor.core.publisher;
 
-import java.util.Objects;
-import java.util.stream.Stream;
-
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
 /**
  * @author Stephane Maldini
  */
-final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
+final class DelegateSinkFluxProcessor<IN> extends FluxProcessor<IN, IN> {
 
-	final Publisher<OUT> downstream;
-	final Subscriber<IN> upstream;
+	final Flux<IN>       flux;
+	final Sinks.Many<IN> sink;
 
-	DelegateProcessor(Publisher<OUT> downstream,
-			Subscriber<IN> upstream) {
-		this.downstream = Objects.requireNonNull(downstream, "Downstream must not be null");
-		this.upstream = Objects.requireNonNull(upstream, "Upstream must not be null");
+	DelegateSinkFluxProcessor(Flux<IN> flux,
+							  Sinks.Many<IN> sink) {
+		this.flux = Objects.requireNonNull(flux, "Downstream must not be null");
+		this.sink = Objects.requireNonNull(sink, "Upstream must not be null");
 	}
 
 	@Override
 	public Context currentContext() {
-		if(upstream instanceof CoreSubscriber){
-			return ((CoreSubscriber<?>)upstream).currentContext();
+		if(sink instanceof CoreSubscriber){
+			return ((CoreSubscriber<?>) sink).currentContext();
 		}
 		return Context.empty();
 	}
 
 	@Override
 	public void onComplete() {
-		upstream.onComplete();
+		sink.emitComplete();
 	}
 
 	@Override
 	public void onError(Throwable t) {
-		upstream.onError(t);
+		sink.emitError(t);
 	}
 
 	@Override
 	public void onNext(IN in) {
-		upstream.onNext(in);
+		sink.emitNext(in);
 	}
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		upstream.onSubscribe(s);
+		s.request(Long.MAX_VALUE);
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super OUT> actual) {
+	public void subscribe(CoreSubscriber<? super IN> actual) {
 		Objects.requireNonNull(actual, "subscribe");
-		downstream.subscribe(actual);
+		flux.subscribe(actual);
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean isSerialized() {
-		return upstream instanceof SerializedSubscriber ||
-				(upstream instanceof FluxProcessor &&
-						((FluxProcessor<?, ?>)upstream).isSerialized());
+		return sink instanceof SerializedManySink;
 	}
 
 	@Override
 	public Stream<? extends Scannable> inners() {
-		//noinspection ConstantConditions
-		return Scannable.from(upstream)
+		return Scannable.from(sink)
 		                .inners();
 	}
 
 	@Override
 	public int getBufferSize() {
-		//noinspection ConstantConditions
-		return Scannable.from(upstream)
+		return Scannable.from(sink)
 		                .scanOrDefault(Attr.CAPACITY, super.getBufferSize());
 	}
 
@@ -101,14 +93,13 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	@Nullable
 	public Throwable getError() {
 		//noinspection ConstantConditions
-		return Scannable.from(upstream)
+		return Scannable.from(sink)
 		                .scanOrDefault(Attr.ERROR, super.getError());
 	}
 
 	@Override
 	public boolean isTerminated() {
-		//noinspection ConstantConditions
-		return Scannable.from(upstream)
+		return Scannable.from(sink)
 		                .scanOrDefault(Attr.TERMINATED, super.isTerminated());
 	}
 
@@ -116,10 +107,9 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
-			return downstream;
+			return flux;
 		}
-		//noinspection ConstantConditions
-		return Scannable.from(upstream)
+		return Scannable.from(sink)
 		                .scanUnsafe(key);
 	}
 }

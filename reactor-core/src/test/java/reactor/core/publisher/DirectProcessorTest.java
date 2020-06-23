@@ -54,7 +54,7 @@ public class DirectProcessorTest {
 
 	    StepVerifier.create(tp)
 	                .then(() -> {
-		                Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+		                Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
 		                Assert.assertFalse("Completed?", tp.hasCompleted());
 		                Assert.assertNull("Has error?", tp.getError());
 		                Assert.assertFalse("Has error?", tp.hasError());
@@ -72,7 +72,7 @@ public class DirectProcessorTest {
 	                .expectComplete()
 	                .verify();
 
-	    Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+	    Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
 	    Assert.assertTrue("Not completed?", tp.hasCompleted());
 	    Assert.assertNull("Has error?", tp.getError());
 	    Assert.assertFalse("Has error?", tp.hasError());
@@ -84,7 +84,7 @@ public class DirectProcessorTest {
 
 	    StepVerifier.create(tp, 0L)
 	                .then(() -> {
-		                Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+		                Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
 		                Assert.assertFalse("Completed?", tp.hasCompleted());
 		                Assert.assertNull("Has error?", tp.getError());
 		                Assert.assertFalse("Has error?", tp.hasError());
@@ -99,7 +99,7 @@ public class DirectProcessorTest {
 	                .expectComplete()
 	                .verify();
 
-	    Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+	    Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
 	    Assert.assertTrue("Not completed?", tp.hasCompleted());
 	    Assert.assertNull("Has error?", tp.getError());
 	    Assert.assertFalse("Has error?", tp.hasError());
@@ -128,7 +128,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-        Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+        Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
         Assert.assertFalse("Completed?", tp.hasCompleted());
         Assert.assertNull("Has error?", tp.getError());
         Assert.assertFalse("Has error?", tp.hasError());
@@ -147,7 +147,7 @@ public class DirectProcessorTest {
         tp.onNext(3);
         tp.onError(new RuntimeException("forced failure"));
 
-        Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+        Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
         Assert.assertFalse("Completed?", tp.hasCompleted());
         Assert.assertNotNull("Has error?", tp.getError());
         Assert.assertTrue("No error?", tp.hasError());
@@ -171,7 +171,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-        Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+        Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
         Assert.assertFalse("Completed?", tp.hasCompleted());
         Assert.assertNotNull("No error?", tp.getError());
         Assert.assertTrue("No error?", tp.hasError());
@@ -195,7 +195,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-        Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+        Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
         Assert.assertTrue("Not completed?", tp.hasCompleted());
         Assert.assertNull("Has error?", tp.getError());
         Assert.assertFalse("Has error?", tp.hasError());
@@ -214,7 +214,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-        Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+        Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
 
         tp.onNext(1);
 
@@ -232,7 +232,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-        Assert.assertTrue("No Subscribers present?", tp.hasDownstreams());
+        Assert.assertTrue("No Subscribers present?", Scannable.from(tp).inners().count() != 0);
 
         tp.onNext(1);
 
@@ -242,7 +242,7 @@ public class DirectProcessorTest {
 
         ts.cancel();
 
-        Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+        Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
 
         tp.onNext(2);
 

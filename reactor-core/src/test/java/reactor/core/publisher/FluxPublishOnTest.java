@@ -61,10 +61,6 @@ import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.*;
 import static reactor.core.Scannable.Attr.PREFETCH;
 import static reactor.core.Scannable.Attr.RUN_ON;
 import static reactor.core.Scannable.Attr.RunStyle;
@@ -248,15 +244,16 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void normalAsyncFused() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(new ConcurrentLinkedQueue<>());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
 		for (int i = 0; i < 1_000_000; i++) {
-			up.onNext(i);
+			up.emitNext(i);
 		}
-		up.onComplete();
+		up.emitComplete();
 
-		up.publishOn(Schedulers.fromExecutorService(exec))
+		up.asFlux()
+		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
@@ -268,15 +265,15 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void normalAsyncFusedBackpressured() throws Exception {
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(Queues.<Integer>unbounded(1024).get());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>unbounded(1024).get());
 
 		for (int i = 0; i < 1_000_000; i++) {
-			up.onNext(0);
+			up.emitNext(0);
 		}
-		up.onComplete();
+		up.emitComplete();
 
-		StepVerifier.create(up.publishOn(Schedulers.fromExecutorService(exec)), 0)
+		StepVerifier.create(up.asFlux().publishOn(Schedulers.fromExecutorService(exec)), 0)
 		            .expectSubscription()
 		            .thenRequest(500_000)
 		            .expectNextCount(500_000)
@@ -455,8 +452,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	}
 
 	public void diamond() {
-
-		FluxIdentityProcessor<Integer> sp = Processors.more().multicastNoBackpressure();
+		@SuppressWarnings("deprecation")
+		DirectProcessor<Integer> sp = DirectProcessor.create();
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux<Integer> fork1 = sp.map(d -> d)
@@ -699,13 +696,13 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void mappedAsyncSourceWithNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(Queues.<Integer>get(2).get());
-		up.onNext(1);
-		up.onNext(2);
-		up.onComplete();
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitComplete();
 
-		up.map(v -> v == 2 ? null : v)
+		up.asFlux().map(v -> v == 2 ? null : v)
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
@@ -719,13 +716,13 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void mappedAsyncSourceWithNullPostFilter() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(Queues.<Integer>get(2).get());
-		up.onNext(1);
-		up.onNext(2);
-		up.onComplete();
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitComplete();
 
-		up.map(v -> v == 2 ? null : v)
+		up.asFlux().map(v -> v == 2 ? null : v)
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .filter(v -> true)
 		  .subscribe(ts);
@@ -801,18 +798,18 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void threadBoundaryPreventsInvalidFusionMap() {
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(Queues.<Integer>get(2).get());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
-		up.map(v -> Thread.currentThread()
-		                  .getName())
+		up.asFlux().map(v -> Thread.currentThread()
+		                           .getName())
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
-		up.onNext(1);
-		up.onComplete();
+		up.emitNext(1);
+		up.emitComplete();
 
 		ts.await(Duration.ofSeconds(5));
 
@@ -824,21 +821,21 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void threadBoundaryPreventsInvalidFusionFilter() {
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(Queues.<Integer>get(2).get());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
 
 		String s = Thread.currentThread()
 		                 .getName();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		up.filter(v -> s.equals(Thread.currentThread()
-		                              .getName()))
+		up.asFlux().filter(v -> s.equals(Thread.currentThread()
+		                                       .getName()))
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
-		up.onNext(1);
-		up.onComplete();
+		up.emitNext(1);
+		up.emitComplete();
 
 		ts.await(Duration.ofSeconds(5));
 
@@ -1140,7 +1137,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		final ConcurrentHashMap<Object, Long> seenInternal = new ConcurrentHashMap<>();
 		final ConcurrentHashMap<Object, Long> seenConsumer = new ConcurrentHashMap<>();
 
-		Sinks.StandaloneFluxSink<Integer> s = Sinks.multicast();
+		Sinks.Many<Integer> s = Sinks.many().multicast().onBackpressureBuffer();
 		Flux<Integer> d = s.asFlux();
 
 		/*Disposable c = */
@@ -1190,7 +1187,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		                            }));
 
 		for (int i = 0; i < COUNT; i++) {
-			s.next(i);
+			while (s.emitNext(i).hasFailed() );
 		}
 
 		internalLatch.await(5, TimeUnit.SECONDS);
@@ -1205,7 +1202,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		CountDownLatch latch = new CountDownLatch(items);
 		Random random = ThreadLocalRandom.current();
 
-		Sinks.StandaloneFluxSink<String> s = Sinks.multicast();
+		Sinks.Many<String> s = Sinks.many().multicast().onBackpressureBuffer();
 		Flux<String> d = s.asFlux();
 
 		Flux<Integer> tasks = d.publishOn(Schedulers.parallel())
@@ -1230,7 +1227,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		});
 
 		for (int i = 1; i <= items; i++) {
-			s.next(String.valueOf(i));
+			while (s.emitNext(String.valueOf(i)).hasFailed() );
 		}
 		latch.await(15, TimeUnit.SECONDS);
 		assertThat(latch.getCount())

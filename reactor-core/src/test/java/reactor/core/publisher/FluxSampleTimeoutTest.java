@@ -37,102 +37,106 @@ public class FluxSampleTimeoutTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp3 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.sampleTimeout(v -> v == 1 ? sp2 : sp3)
+		sp1.asFlux()
+		   .sampleTimeout(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp2.onNext(1);
+		sp1.emitNext(1);
+		sp2.emitNext(1);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(2);
-		sp1.onNext(3);
-		sp1.onNext(4);
+		sp1.emitNext(2);
+		sp1.emitNext(3);
+		sp1.emitNext(4);
 
-		sp3.onNext(2);
+		sp3.emitNext(2);
 
 		ts.assertValues(1, 4)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(5);
-		sp1.onComplete();
+		sp1.emitNext(5);
+		sp1.emitComplete();
 
 		ts.assertValues(1, 4, 5)
 		  .assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
-		Assert.assertFalse("sp3 has subscribers?", sp3.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
+		Assert.assertFalse("sp3 has subscribers?", Scannable.from(sp3).inners().findAny().isPresent());
 	}
 
 	@Test
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.sampleTimeout(v -> sp2)
+		sp1.asFlux()
+		   .sampleTimeout(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp1.onError(new RuntimeException("forced failure"));
+		sp1.emitNext(1);
+		sp1.emitError(new RuntimeException("forced failure"));
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
 	}
 
 	@Test
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.sampleTimeout(v -> sp2)
+		sp1.asFlux()
+		   .sampleTimeout(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
-		sp2.onError(new RuntimeException("forced failure"));
+		sp1.emitNext(1);
+		sp2.emitError(new RuntimeException("forced failure"));
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
 	}
 
 	@Test
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.sampleTimeout(v -> null)
+		sp1.asFlux()
+		   .sampleTimeout(v -> null)
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
 	}
 
 	@Test

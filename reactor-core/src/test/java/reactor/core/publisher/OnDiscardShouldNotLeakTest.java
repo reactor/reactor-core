@@ -43,10 +43,11 @@ import reactor.test.util.RaceTestUtils;
 import reactor.util.concurrent.Queues;
 
 @RunWith(Parameterized.class)
+@SuppressWarnings("deprecated")
 public class OnDiscardShouldNotLeakTest {
 
 	// add DiscardScenarios here to test more operators
-	private static DiscardScenario[] SCENARIOS = new DiscardScenario[] {
+	private static final DiscardScenario[] SCENARIOS = new DiscardScenario[] {
 			DiscardScenario.allFluxSourceArray("merge", 4, Flux::merge),
 			DiscardScenario.fluxSource("onBackpressureBuffer", 1, Flux::onBackpressureBuffer),
 			DiscardScenario.fluxSource("onBackpressureBufferAndPublishOn", 1, f -> f
@@ -72,13 +73,13 @@ public class OnDiscardShouldNotLeakTest {
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(Processors.unicast())),
+			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer()))),
 			DiscardScenario.fluxSource("unicastProcessorAndPublishOn", 1, f -> f
-					.subscribeWith(Processors.unicast())
+					.subscribeWith(FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer()))
 					.publishOn(Schedulers.immediate())),
 	};
 
-	private static boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
+	private static final boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
 			{ false, false },
 			{ true, false },
 			{ false, true },
@@ -436,7 +437,6 @@ public class OnDiscardShouldNotLeakTest {
 			TestPublisher<Tracked> testPublisher = TestPublisher.createNoncompliant(
 					TestPublisher.Violation.DEFER_CANCELLATION,
 					TestPublisher.Violation.REQUEST_OVERFLOW);
-			@SuppressWarnings("unchecked")
 			Publisher<Tracked> source = discardScenario.producePublisherFromSources(testPublisher, null);
 
 			if (conditional) {

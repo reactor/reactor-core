@@ -68,19 +68,19 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressured() {
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		tp.onBackpressureLatest().subscribe(ts);
+		tp.asFlux().onBackpressureLatest().subscribe(ts);
 
-		tp.onNext(1);
+		tp.emitNext(1);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.onNext(2);
+		tp.emitNext(2);
 
 		ts.request(1);
 
@@ -88,8 +88,8 @@ public class FluxOnBackpressureLatestTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.onNext(3);
-		tp.onNext(4);
+		tp.emitNext(3);
+		tp.emitNext(4);
 
 		ts.request(2);
 
@@ -97,8 +97,8 @@ public class FluxOnBackpressureLatestTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.onNext(5);
-		tp.onComplete();
+		tp.emitNext(5);
+		tp.emitComplete();
 
 		ts.assertValues(2, 4, 5)
 		  .assertNoError()
@@ -107,13 +107,13 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void error() {
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		tp.onBackpressureLatest().subscribe(ts);
+		tp.asFlux().onBackpressureLatest().subscribe(ts);
 
-		tp.onError(new RuntimeException("forced failure"));
+		tp.emitError(new RuntimeException("forced failure"));
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -123,23 +123,24 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressureWithDrop() {
-		FluxIdentityProcessor<Integer> tp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>(0) {
 			@Override
 			public void onNext(Integer t) {
 				super.onNext(t);
 				if (t == 2) {
-					tp.onNext(3);
+					tp.emitNext(3);
 				}
 			}
 		};
 
-		tp.onBackpressureLatest()
+		tp.asFlux()
+		  .onBackpressureLatest()
 		  .subscribe(ts);
 
-		tp.onNext(1);
-		tp.onNext(2);
+		tp.emitNext(1);
+		tp.emitNext(2);
 
 		ts.request(1);
 

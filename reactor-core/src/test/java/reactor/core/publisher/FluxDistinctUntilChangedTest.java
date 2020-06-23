@@ -227,16 +227,17 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test
 	public void allDistinctConditional() {
-		FluxIdentityProcessor<Integer> dp = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> dp = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		AssertSubscriber<Integer> ts = dp.distinctUntilChanged()
+		AssertSubscriber<Integer> ts = dp.asFlux()
+										 .distinctUntilChanged()
 		                                 .filter(v -> true)
 		                                 .subscribeWith(AssertSubscriber.create());
 
-		dp.onNext(1);
-		dp.onNext(2);
-		dp.onNext(3);
-		dp.onComplete();
+		dp.emitNext(1);
+		dp.emitNext(2);
+		dp.emitNext(3);
+		dp.emitComplete();
 
 		ts.assertValues(1, 2, 3).assertComplete();
 	}

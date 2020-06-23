@@ -77,7 +77,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 				scenario(f -> f.publish(p -> Flux.just("test", "test1", "test2")))
 						.fusionMode(Fuseable.SYNC),
 
-				scenario(f -> f.publish(p -> p.subscribeWith(Processors.unicast()), 256))
+				scenario(f -> f.publish(p -> p.subscribeWith(FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer())), 256))
 						.fusionMode(Fuseable.ASYNC),
 
 
@@ -96,7 +96,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		return Arrays.asList(scenario(f -> f.publish(p -> p)),
 
 				scenario(f -> f.publish(p ->
-						p.subscribeWith(Processors.unicast())))
+						p.subscribeWith(FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer()))))
 						.fusionMode(Fuseable.ASYNC),
 
 				scenario(f -> f.publish(p -> p))
@@ -154,18 +154,19 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(Queues.<Integer>get(16).get());
+		Sinks.Many<Integer> up =
+				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(16).get());
 
-		up.publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
+		up.asFlux()
+		  .publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
 		  .subscribe(ts);
 
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitNext(3);
+		up.emitNext(4);
+		up.emitNext(5);
+		up.emitComplete();
 
 		ts.assertValues(1 + 2, 2 + 3, 3 + 4, 4 + 5)
 		  .assertNoError()
@@ -176,28 +177,30 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 	public void cancelComposes() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp = Processors.multicast();
+		Sinks.Many<Integer> sp = Sinks.many().multicast().onBackpressureBuffer();
 
-		sp.publish(o -> Flux.<Integer>never())
+		sp.asFlux()
+		  .publish(o -> Flux.<Integer>never())
 		  .subscribe(ts);
 
-		Assert.assertTrue("Not subscribed?", sp.downstreamCount() != 0);
+		Assert.assertTrue("Not subscribed?", Scannable.from(sp).inners().count() != 0);
 
 		ts.cancel();
 
-		Assert.assertTrue("Still subscribed?", sp.downstreamCount() == 0);
+		Assert.assertTrue("Still subscribed?", Scannable.from(sp).inners().count() == 0);
 	}
 
 	@Test
 	public void cancelComposes2() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp = Processors.multicast();
+		Sinks.Many<Integer> sp = Sinks.many().multicast().onBackpressureBuffer();
 
-		sp.publish(o -> Flux.<Integer>empty())
+		sp.asFlux()
+		  .publish(o -> Flux.<Integer>empty())
 		  .subscribe(ts);
 
-		Assert.assertFalse("Still subscribed?", sp.downstreamCount() == 1);
+		Assert.assertFalse("Still subscribed?", Scannable.from(sp).inners().count() == 1);
 	}
 
 	@Test

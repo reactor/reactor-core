@@ -29,6 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.Sinks.Emission;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
@@ -46,11 +47,11 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * <p>
  *
  * @param <T> the value type
- * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
+ * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
  */
 @Deprecated
-public final class ReplayProcessor<T> extends FluxIdentityProcessor<T>
-		implements Fuseable {
+public final class ReplayProcessor<T> extends FluxProcessor<T, T>
+		implements Fuseable, Sinks.Many<T> {
 
 	/**
 	 * Create a {@link ReplayProcessor} that caches the last element it has pushed,
@@ -434,50 +435,80 @@ public final class ReplayProcessor<T> extends FluxIdentityProcessor<T>
 	}
 
 	@Override
-	public void onNext(T t) {
+	public Emission emitComplete() {
+		FluxReplay.ReplayBuffer<T> b = buffer;
+		if (b.isDone()) {
+			return Emission.FAIL_TERMINATED;
+		}
+
+		b.onComplete();
+
+		@SuppressWarnings("unchecked") FluxReplay.ReplaySubscription<T>[] a =
+				SUBSCRIBERS.getAndSet(this, TERMINATED);
+
+		for (FluxReplay.ReplaySubscription<T> rs : a) {
+			b.replay(rs);
+		}
+		return Emission.OK;
+	}
+
+	@Override
+	public Emission emitError(Throwable t) {
+		FluxReplay.ReplayBuffer<T> b = buffer;
+		if (b.isDone()) {
+			Operators.onErrorDroppedMulticast(t);
+			return Emission.FAIL_TERMINATED;
+		}
+
+		b.onError(t);
+
+		@SuppressWarnings("unchecked") FluxReplay.ReplaySubscription<T>[] a =
+					SUBSCRIBERS.getAndSet(this, TERMINATED);
+
+		for (FluxReplay.ReplaySubscription<T> rs : a) {
+			b.replay(rs);
+		}
+		return Emission.OK;
+	}
+
+	@Override
+	public Emission emitNext(T t) {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
 			Operators.onNextDropped(t, currentContext());
+			return Emission.FAIL_TERMINATED;
 		}
-		else {
-			b.add(t);
-			for (FluxReplay.ReplaySubscription<T> rs : subscribers) {
-				b.replay(rs);
-			}
+
+		b.add(t);
+		for (FluxReplay.ReplaySubscription<T> rs : subscribers) {
+			b.replay(rs);
 		}
+		return Emission.OK;
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
+	protected boolean isIdentityProcessor() {
+		return true;
+	}
+
+	@Override
+	public void onNext(T t) {
+		emitNext(t);
 	}
 
 	@Override
 	public void onError(Throwable t) {
-		FluxReplay.ReplayBuffer<T> b = buffer;
-		if (b.isDone()) {
-			Operators.onErrorDroppedMulticast(t);
-		}
-		else {
-			b.onError(t);
-
-			@SuppressWarnings("unchecked") FluxReplay.ReplaySubscription<T>[] a =
-					SUBSCRIBERS.getAndSet(this, TERMINATED);
-
-			for (FluxReplay.ReplaySubscription<T> rs : a) {
-				b.replay(rs);
-			}
-		}
+		emitError(t);
 	}
 
 	@Override
 	public void onComplete() {
-		FluxReplay.ReplayBuffer<T> b = buffer;
-		if (!b.isDone()) {
-			b.onComplete();
-
-			@SuppressWarnings("unchecked") FluxReplay.ReplaySubscription<T>[] a =
-					SUBSCRIBERS.getAndSet(this, TERMINATED);
-
-			for (FluxReplay.ReplaySubscription<T> rs : a) {
-				b.replay(rs);
-			}
-		}
+		emitComplete();
 	}
 
 	static final class ReplayInner<T>

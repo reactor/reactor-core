@@ -110,32 +110,70 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	public void singleSubscriberOnly() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		source.concatMap(v -> v == 1 ? source1 : source2)
+		source.asFlux()
+			  .concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
-		source.onNext(2);
+		source.emitNext(1);
+		source.emitNext(2);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 
-		source1.onNext(1);
-		source2.onNext(10);
+		source1.emitNext(1);
+		source2.emitNext(10);
 
-		source1.onComplete();
-		source.onComplete();
+		source1.emitComplete();
+		source.emitComplete();
 
-		source2.onNext(2);
-		source2.onComplete();
+		source2.emitNext(2);
+		source2.emitComplete();
+
+		ts.assertValues(1, 2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void singleSubscriberOnlyBoundary() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
+
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
+
+		source.asFlux()
+			  .concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux())
+		      .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		source.emitNext(1);
+
+		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+
+		source1.emitNext(1);
+		source2.emitNext(10);
+
+		source1.emitComplete();
+		source.emitNext(2);
+		source.emitComplete();
+
+		source2.emitNext(2);
+		source2.emitComplete();
 
 		ts.assertValues(1, 2)
 		  .assertNoError()

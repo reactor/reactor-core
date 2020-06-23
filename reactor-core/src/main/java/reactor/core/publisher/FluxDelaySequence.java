@@ -72,7 +72,7 @@ final class FluxDelaySequence<T> extends InternalFluxOperator<T, T> {
 
 		DelaySubscriber(CoreSubscriber<? super T> actual, Duration delay, Scheduler.Worker w) {
 			super();
-			this.actual = new SerializedSubscriber<>(actual);
+			this.actual = Operators.serialize(actual);
 			this.w = w;
 			this.delay = delay.toNanos();
 			this.timeUnit = TimeUnit.NANOSECONDS;

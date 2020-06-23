@@ -141,15 +141,15 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFused() {
-		FluxIdentityProcessor<Integer> up = Processors.unicast();
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer();
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitNext(3);
+		up.emitNext(4);
+		up.emitNext(5);
+		up.emitComplete();
 
-		StepVerifier.create(up.doFinally(this))
+		StepVerifier.create(up.asFlux().doFinally(this))
 		            .expectFusion(ASYNC)
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
@@ -161,15 +161,15 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedThreadBarrier() {
-		FluxIdentityProcessor<Object> up = Processors.unicast();
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitNext(3);
+		up.emitNext(4);
+		up.emitNext(5);
+		up.emitComplete();
 
-		StepVerifier.create(up.doFinally(this))
+		StepVerifier.create(up.asFlux().doFinally(this))
 		            .expectFusion(ASYNC | THREAD_BARRIER, NONE)
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
@@ -283,15 +283,15 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedConditional() {
-		FluxIdentityProcessor<Object> up = Processors.unicast();
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitNext(3);
+		up.emitNext(4);
+		up.emitNext(5);
+		up.emitComplete();
 
-		StepVerifier.create(up.doFinally(this)
+		StepVerifier.create(up.asFlux().doFinally(this)
 		                      .filter(i -> true))
 		            .expectFusion(ASYNC)
 		            .expectNext(1, 2, 3, 4, 5)
@@ -304,15 +304,15 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void asyncFusedThreadBarrierConditional() {
-		FluxIdentityProcessor<Object> up = Processors.unicast();
-		up.onNext(1);
-		up.onNext(2);
-		up.onNext(3);
-		up.onNext(4);
-		up.onNext(5);
-		up.onComplete();
+		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitNext(3);
+		up.emitNext(4);
+		up.emitNext(5);
+		up.emitComplete();
 
-		StepVerifier.create(up.doFinally(this)
+		StepVerifier.create(up.asFlux().doFinally(this)
 		                      .filter(i -> true))
 		            .expectFusion(ASYNC | THREAD_BARRIER, NONE)
 		            .expectNext(1, 2, 3, 4, 5)

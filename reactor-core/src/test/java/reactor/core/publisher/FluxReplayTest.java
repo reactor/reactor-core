@@ -422,7 +422,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void cancel() {
-		ConnectableFlux<Integer> replay = Processors.<Integer>unicast().replay(2);
+		ConnectableFlux<Integer> replay = Sinks.many().unicast().<Integer>onBackpressureBuffer().asFlux().replay(2);
 
 		replay.subscribe(v -> {}, e -> { throw Exceptions.propagate(e); });
 

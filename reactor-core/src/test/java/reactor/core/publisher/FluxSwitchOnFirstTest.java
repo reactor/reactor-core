@@ -1092,23 +1092,23 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void checkHotSource() {
-        FluxIdentityProcessor<Long> processor = Processors.replay(1);
+        Sinks.Many<Long> processor = Sinks.many().replay().limit(1);
 
-        processor.onNext(1L);
-        processor.onNext(2L);
-        processor.onNext(3L);
+        processor.emitNext(1L);
+        processor.emitNext(2L);
+        processor.emitNext(3L);
 
 
-        StepVerifier.create(processor.switchOnFirst((s, f) -> f.filter(v -> v % s.get() == 0)))
+        StepVerifier.create(processor.asFlux().switchOnFirst((s, f) -> f.filter(v -> v % s.get() == 0)))
                     .expectNext(3L)
                     .then(() -> {
-                        processor.onNext(4L);
-                        processor.onNext(5L);
-                        processor.onNext(6L);
-                        processor.onNext(7L);
-                        processor.onNext(8L);
-                        processor.onNext(9L);
-                        processor.onComplete();
+                        processor.emitNext(4L);
+                        processor.emitNext(5L);
+                        processor.emitNext(6L);
+                        processor.emitNext(7L);
+                        processor.emitNext(8L);
+                        processor.emitNext(9L);
+                        processor.emitComplete();
                     })
                     .expectNext(6L, 9L)
                     .expectComplete()
@@ -1117,39 +1117,39 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherComplete() {
-        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
+        Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.onNext(1L);
+        testPublisher.emitNext(1L);
 
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty()))
+        StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.empty()))
                     .expectSubscription()
                     .expectComplete()
                     .verify(Duration.ofSeconds(5));
 
-        Assertions.assertThat(testPublisher.scan(Attr.CANCELLED)).isTrue();
+        Assertions.assertThat(Scannable.from(testPublisher).scan(Attr.CANCELLED)).isTrue();
     }
 
     @Test
     public void shouldNotCancelSourceOnUnrelatedPublisherComplete() {
-        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
+        Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.onNext(1L);
+        testPublisher.emitNext(1L);
 
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty(), false))
+        StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.empty(), false))
                 .expectSubscription()
                 .expectComplete()
                 .verify(Duration.ofSeconds(5));
 
-        Assertions.assertThat(testPublisher.scan(Attr.CANCELLED)).isFalse();
+        Assertions.assertThat(Scannable.from(testPublisher).scan(Attr.CANCELLED)).isFalse();
     }
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherError() {
-        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
+        Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.onNext(1L);
+        testPublisher.emitNext(1L);
 
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
+        StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
                     .expectSubscription()
                     .expectErrorSatisfies(t ->
                         Assertions.assertThat(t)
@@ -1158,7 +1158,7 @@ public class FluxSwitchOnFirstTest {
                     )
                     .verify(Duration.ofSeconds(5));
 
-        Assertions.assertThat(testPublisher.scan(Attr.CANCELLED)).isTrue();
+        Assertions.assertThat(Scannable.from(testPublisher).scan(Attr.CANCELLED)).isTrue();
     }
 
     @Test
@@ -1175,13 +1175,13 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherCompleteConditional() {
-        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
+        Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.onNext(1L);
+        testPublisher.emitNext(1L);
 
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+        StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
                     .then(() -> {
-                        List<? extends Scannable> subs = testPublisher.inners().collect(Collectors.toList());
+                        List<? extends Scannable> subs = Scannable.from(testPublisher).inners().collect(Collectors.toList());
                         Assertions.assertThat(subs)
                                   .hasSize(1)
                                   .first()
@@ -1191,18 +1191,18 @@ public class FluxSwitchOnFirstTest {
                     .expectComplete()
                     .verify(Duration.ofSeconds(5));
 
-        Assertions.assertThat(testPublisher.scan(Attr.CANCELLED)).isTrue();
+        Assertions.assertThat(Scannable.from(testPublisher).scan(Attr.CANCELLED)).isTrue();
     }
 
     @Test
     public void shouldNotCancelSourceOnUnrelatedPublisherCompleteConditional() {
-        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
+        Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.onNext(1L);
+        testPublisher.emitNext(1L);
 
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10)), false).filter(__ -> true))
+        StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10)), false).filter(__ -> true))
                 .then(() -> {
-                    List<? extends Scannable> subs = testPublisher.inners().collect(Collectors.toList());
+                    List<? extends Scannable> subs = Scannable.from(testPublisher).inners().collect(Collectors.toList());
                     Assertions.assertThat(subs)
                               .hasSize(1)
                               .first()
@@ -1212,7 +1212,7 @@ public class FluxSwitchOnFirstTest {
                 .expectComplete()
                 .verify(Duration.ofSeconds(5));
 
-        Assertions.assertThat(testPublisher.scan(Attr.CANCELLED)).isFalse();
+        Assertions.assertThat(Scannable.from(testPublisher).scan(Attr.CANCELLED)).isFalse();
     }
 
     @Test
@@ -1292,13 +1292,13 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherErrorConditional() {
-        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
+        Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.onNext(1L);
+        testPublisher.emitNext(1L);
 
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+        StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
                     .then(() -> {
-                        List<? extends Scannable> subs = testPublisher.inners().collect(Collectors.toList());
+                        List<? extends Scannable> subs = Scannable.from(testPublisher).inners().collect(Collectors.toList());
                         Assertions.assertThat(subs)
                                   .hasSize(1)
                                   .first()
@@ -1312,18 +1312,18 @@ public class FluxSwitchOnFirstTest {
                     )
                     .verify(Duration.ofSeconds(5));
 
-        Assertions.assertThat(testPublisher.scan(Attr.CANCELLED)).isTrue();
+        Assertions.assertThat(Scannable.from(testPublisher).scan(Attr.CANCELLED)).isTrue();
     }
 
     @Test
     public void shouldCancelSourceOnUnrelatedPublisherCancelConditional() {
-        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
+        Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.onNext(1L);
+        testPublisher.emitNext(1L);
 
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
+        StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
                     .then(() -> {
-                        List<? extends Scannable> subs = testPublisher.inners().collect(Collectors.toList());
+                        List<? extends Scannable> subs = Scannable.from(testPublisher).inners().collect(Collectors.toList());
                         Assertions.assertThat(subs)
                                   .hasSize(1)
                                   .first()
@@ -1334,19 +1334,19 @@ public class FluxSwitchOnFirstTest {
                     .thenCancel()
                     .verify();
 
-        Assertions.assertThat(testPublisher.scan(Attr.CANCELLED)).isTrue();
+        Assertions.assertThat(Scannable.from(testPublisher).scan(Attr.CANCELLED)).isTrue();
     }
 
     @Test
     public void shouldCancelUpstreamBeforeFirst() {
-        FluxIdentityProcessor<Long> testPublisher = Processors.multicast();
+        Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        StepVerifier.create(testPublisher.switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
+        StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
                 .thenAwait(Duration.ofMillis(50))
                 .thenCancel()
                 .verify(Duration.ofSeconds(2));
 
-        Assertions.assertThat(testPublisher.scan(Attr.CANCELLED)).isTrue();
+        Assertions.assertThat(Scannable.from(testPublisher).scan(Attr.CANCELLED)).isTrue();
     }
 
     @Test

@@ -150,31 +150,31 @@ public class FluxWindowWhenTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> sp1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp2 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp3 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> sp4 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp4 = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		sp1.windowWhen(sp2, v -> v == 1 ? sp3 : sp4)
+		sp1.asFlux().windowWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
 		   .subscribe(ts);
 
-		sp1.onNext(1);
+		sp1.emitNext(1);
 
-		sp2.onNext(1);
+		sp2.emitNext(1);
 
-		sp1.onNext(2);
+		sp1.emitNext(2);
 
-		sp2.onNext(2);
+		sp2.emitNext(2);
 
-		sp1.onNext(3);
+		sp1.emitNext(3);
 
-		sp3.onNext(1);
+		sp3.emitNext(1);
 
-		sp1.onNext(4);
+		sp1.emitNext(4);
 
-		sp4.onNext(1);
+		sp4.emitNext(1);
 
-		sp1.onComplete();
+		sp1.emitComplete();
 
 		ts.assertValueCount(2)
 		  .assertNoError()
@@ -183,42 +183,42 @@ public class FluxWindowWhenTest {
 		expect(ts, 0, 2, 3);
 		expect(ts, 1, 3, 4);
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
-		Assert.assertFalse("sp3 has subscribers?", sp3.hasDownstreams());
-		Assert.assertFalse("sp4 has subscribers?", sp4.hasDownstreams());
+		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
+		Assert.assertFalse("sp3 has subscribers?", Scannable.from(sp3).inners().count() != 0);
+		Assert.assertFalse("sp4 has subscribers?", Scannable.from(sp4).inners().count() != 0);
 	}
 
 	@Test
 	public void normalStarterEnds() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> openSelector = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> closeSelectorFor1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> closeSelectorForOthers = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> openSelector = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> closeSelectorFor1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> closeSelectorForOthers = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		source.windowWhen(openSelector, v -> v == 1 ? closeSelectorFor1 : closeSelectorForOthers)
-		   .subscribe(ts);
+		source.asFlux().windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorForOthers.asFlux())
+		      .subscribe(ts);
 
-		source.onNext(1);
+		source.emitNext(1);
 
-		openSelector.onNext(1);
+		openSelector.emitNext(1);
 
-		source.onNext(2);
+		source.emitNext(2);
 
-		openSelector.onNext(2);
+		openSelector.emitNext(2);
 
-		source.onNext(3);
+		source.emitNext(3);
 
-		closeSelectorFor1.onNext(1);
+		closeSelectorFor1.emitNext(1);
 
-		source.onNext(4);
+		source.emitNext(4);
 
-		closeSelectorForOthers.onNext(1);
+		closeSelectorForOthers.emitNext(1);
 
-		openSelector.onComplete();
-		source.onComplete(); //TODO evaluate, should the open completing cause the source to lose subscriber?
+		openSelector.emitComplete();
+		source.emitComplete(); //TODO evaluate, should the open completing cause the source to lose subscriber?
 
 		ts.assertValueCount(2)
 		  .assertNoError()
@@ -227,34 +227,34 @@ public class FluxWindowWhenTest {
 		expect(ts, 0, 2, 3);
 		expect(ts, 1, 3, 4);
 
-		Assert.assertFalse("openSelector has subscribers?", openSelector.hasDownstreams());
-		Assert.assertFalse("closeSelectorFor1 has subscribers?", closeSelectorFor1.hasDownstreams());
-		Assert.assertFalse("closeSelectorForOthers has subscribers?", closeSelectorForOthers.hasDownstreams());
-		Assert.assertFalse("source has subscribers?", source.hasDownstreams());
+		Assert.assertFalse("openSelector has subscribers?", Scannable.from(openSelector).inners().count() != 0);
+		Assert.assertFalse("closeSelectorFor1 has subscribers?", Scannable.from(closeSelectorFor1).inners().count() != 0);
+		Assert.assertFalse("closeSelectorForOthers has subscribers?", Scannable.from(closeSelectorForOthers).inners().count() != 0);
+		Assert.assertFalse("source has subscribers?", Scannable.from(source).inners().count() != 0);
 	}
 
 	@Test
 	public void oneWindowOnly() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> openSelector = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> closeSelectorFor1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> closeSelectorOthers = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> openSelector = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> closeSelectorFor1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> closeSelectorOthers = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		source.windowWhen(openSelector, v -> v == 1 ? closeSelectorFor1 : closeSelectorOthers)
-		   .subscribe(ts);
+		source.asFlux().windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorOthers.asFlux())
+		      .subscribe(ts);
 
-		openSelector.onNext(1);
+		openSelector.emitNext(1);
 
-		source.onNext(1);
-		source.onNext(2);
-		source.onNext(3);
+		source.emitNext(1);
+		source.emitNext(2);
+		source.emitNext(3);
 
-		closeSelectorFor1.onComplete();
+		closeSelectorFor1.emitComplete();
 
-		source.onNext(4);
-		source.onComplete();
+		source.emitNext(4);
+		source.emitComplete();
 
 		ts.assertValueCount(1)
 		  .assertNoError()
@@ -262,39 +262,39 @@ public class FluxWindowWhenTest {
 
 		expect(ts, 0, 1, 2, 3);
 
-		Assert.assertFalse("source has subscribers?", source.hasDownstreams());
-		Assert.assertFalse("openSelector has subscribers?", openSelector.hasDownstreams());
-		Assert.assertFalse("closeSelectorFor1 has subscribers?", closeSelectorFor1.hasDownstreams());
-		Assert.assertFalse("closeSelectorOthers has subscribers?", closeSelectorOthers.hasDownstreams());
+		Assert.assertFalse("source has subscribers?", Scannable.from(source).inners().count() != 0);
+		Assert.assertFalse("openSelector has subscribers?", Scannable.from(openSelector).inners().count() != 0);
+		Assert.assertFalse("closeSelectorFor1 has subscribers?", Scannable.from(closeSelectorFor1).inners().count() != 0);
+		Assert.assertFalse("closeSelectorOthers has subscribers?", Scannable.from(closeSelectorOthers).inners().count() != 0);
 	}
 
 
 	@Test
 	public void windowWillAccumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		FluxIdentityProcessor<Integer> numbers = Processors.multicast();
-		FluxIdentityProcessor<Integer> bucketOpening = Processors.multicast();
+		Sinks.Many<Integer> numbers = Sinks.many().multicast().onBackpressureBuffer();
+		Sinks.Many<Integer> bucketOpening = Sinks.many().multicast().onBackpressureBuffer();
 
 		//"overlapping buffers"
-		FluxIdentityProcessor<Integer> boundaryFlux = Processors.multicast();
+		Sinks.Many<Integer> boundaryFlux = Sinks.many().multicast().onBackpressureBuffer();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.windowWhen(bucketOpening, u -> boundaryFlux )
-		                                       .flatMap(Flux::buffer)
-		                                       .buffer()
-		                                       .publishNext()
-		                                       .toProcessor();
+		MonoProcessor<List<List<Integer>>> res = numbers.asFlux().windowWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux() )
+		                                                .flatMap(Flux::buffer)
+		                                                .buffer()
+		                                                .publishNext()
+		                                                .toProcessor();
 		res.subscribe();
 
-		numbers.onNext(1);
-		numbers.onNext(2);
-		bucketOpening.onNext(1);
-		numbers.onNext(3);
-		bucketOpening.onNext(1);
-		numbers.onNext(5);
-		boundaryFlux.onNext(1);
-		bucketOpening.onNext(1);
-		boundaryFlux.onComplete();
-		numbers.onComplete();
+		numbers.emitNext(1);
+		numbers.emitNext(2);
+		bucketOpening.emitNext(1);
+		numbers.emitNext(3);
+		bucketOpening.emitNext(1);
+		numbers.emitNext(5);
+		boundaryFlux.emitNext(1);
+		bucketOpening.emitNext(1);
+		boundaryFlux.emitComplete();
+		numbers.emitComplete();
 
 		//"the collected overlapping lists are available"
 		assertThat(res.block()).containsExactly(

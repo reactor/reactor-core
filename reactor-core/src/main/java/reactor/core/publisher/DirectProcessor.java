@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -78,10 +79,10 @@ import reactor.util.annotation.Nullable;
  * </p>
  *
  * @param <T> the input and output value type
- * @deprecated Prefer clear cut usage of either {@link Processors} or {@link Sinks}, to be removed in 3.5
+ * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
  */
 @Deprecated
-public final class DirectProcessor<T> extends FluxIdentityProcessor<T> {
+public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -131,43 +132,79 @@ public final class DirectProcessor<T> extends FluxIdentityProcessor<T> {
 	}
 
 	@Override
-	public void onNext(T t) {
+	public Emission emitComplete() {
+		@SuppressWarnings("unchecked")
+		DirectInner<T>[] inners = SUBSCRIBERS.getAndSet(this, TERMINATED);
+
+		if (inners == TERMINATED) {
+			return Emission.FAIL_TERMINATED;
+		}
+
+		for (DirectInner<?> s : inners) {
+			s.onComplete();
+		}
+		return Emission.OK;
+	}
+
+	@Override
+	public Emission emitError(Throwable t) {
+		Objects.requireNonNull(t, "t");
+
+		@SuppressWarnings("unchecked")
+		DirectInner<T>[] inners = SUBSCRIBERS.getAndSet(this, TERMINATED);
+
+		if (inners == TERMINATED) {
+			Operators.onErrorDroppedMulticast(t);
+			return Emission.FAIL_TERMINATED;
+		}
+
+		error = t;
+		for (DirectInner<?> s : inners) {
+			s.onError(t);
+		}
+		return Emission.OK;
+	}
+
+	@Override
+	public Emission emitNext(T t) {
 		Objects.requireNonNull(t, "t");
 
 		DirectInner<T>[] inners = subscribers;
 
 		if (inners == TERMINATED) {
 			Operators.onNextDropped(t, currentContext());
-			return;
+			return Emission.FAIL_TERMINATED;
 		}
 
 		for (DirectInner<T> s : inners) {
 			s.onNext(t);
 		}
+		return Emission.OK;
+	}
+
+	@Override
+	public Flux<T> asFlux() {
+		return this;
+	}
+
+	@Override
+	protected boolean isIdentityProcessor() {
+		return true;
+	}
+
+	@Override
+	public void onNext(T t) {
+		emitNext(t);
 	}
 
 	@Override
 	public void onError(Throwable t) {
-		Objects.requireNonNull(t, "t");
-
-		DirectInner<T>[] inners = subscribers;
-
-		if (inners == TERMINATED) {
-			Operators.onErrorDropped(t, currentContext());
-			return;
-		}
-
-		error = t;
-		for (DirectInner<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
-			s.onError(t);
-		}
+		emitError(t);
 	}
 
 	@Override
 	public void onComplete() {
-		for (DirectInner<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
-			s.onComplete();
-		}
+		emitComplete();
 	}
 
 	@Override

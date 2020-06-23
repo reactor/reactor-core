@@ -27,6 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -254,13 +255,13 @@ public class FluxFilterWhenTest {
 
 	@Test
 	public void cancel() {
-		final FluxIdentityProcessor<Boolean> pp = Processors.multicast();
+		TestPublisher<Boolean> assertCompanion = TestPublisher.create();
 
 		StepVerifier.create(Flux.range(1, 5)
-		                        .filterWhen(v -> pp, 16))
+		                        .filterWhen(v -> assertCompanion.flux(), 16))
 		            .thenCancel();
 
-		assertThat(pp.hasDownstreams()).isFalse();
+		assertCompanion.assertNoSubscribers();
 	}
 
 	@Test

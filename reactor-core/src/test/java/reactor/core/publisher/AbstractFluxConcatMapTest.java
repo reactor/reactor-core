@@ -28,6 +28,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.reactivestreams.Publisher;
 import reactor.core.CorePublisher;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -274,148 +275,148 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
 
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2, implicitPrefetchValue())
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 
-		source1.onNext(1);
-		source2.onNext(10);
+		source1.emitNext(1);
+		source2.emitNext(10);
 
-		source1.onComplete();
-		source.onNext(2);
-		source.onComplete();
+		source1.emitComplete();
+		source.emitNext(2);
+		source.emitComplete();
 
-		source2.onNext(2);
-		source2.onComplete();
+		source2.emitNext(2);
+		source2.emitComplete();
 
 		ts.assertValues(1, 2)
 		  .assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 	}
 
 	@Test
 	public void mainErrorsImmediate() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
 
-		source.concatMap(v -> v == 1 ? source1 : source2, implicitPrefetchValue())
+		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 
-		source1.onNext(1);
+		source1.emitNext(1);
 
-		source.onError(new RuntimeException("forced failure"));
+		source.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 	}
 
 	@Test
 	public void mainErrorsBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
 
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2, implicitPrefetchValue())
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 
-		source1.onNext(1);
+		source1.emitNext(1);
 
-		source.onError(new RuntimeException("forced failure"));
+		source.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source1.onNext(2);
-		source1.onComplete();
+		source1.emitNext(2);
+		source1.emitComplete();
 
 		ts.assertValues(1, 2)
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 	}
 
 	@Test
 	public void innerErrorsImmediate() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
 
-		source.concatMap(v -> v == 1 ? source1 : source2, implicitPrefetchValue())
+		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 
-		source1.onNext(1);
+		source1.emitNext(1);
 
-		source1.onError(new RuntimeException("forced failure"));
+		source1.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 	}
 
 	@Test
@@ -451,12 +452,13 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void asyncFusionMapToNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> up = Processors.more().unicast(Queues.<Integer>get(2).get());
-		up.onNext(1);
-		up.onNext(2);
-		up.onComplete();
+		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitComplete();
 
-		up.map(v -> v == 2 ? null : v)
+		up.asFlux()
+		  .map(v -> v == 2 ? null : v)
 		  .concatMap(Flux::just, implicitPrefetchValue())
 		  .subscribe(ts);
 
@@ -469,13 +471,14 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void asyncFusionMapToNullFilter() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> up =
-				Processors.more().unicast(Queues.<Integer>get(2).get());
-		up.onNext(1);
-		up.onNext(2);
-		up.onComplete();
+		Sinks.Many<Integer> up =
+				Sinks.many().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
+		up.emitNext(1);
+		up.emitNext(2);
+		up.emitComplete();
 
-		up.map(v -> v == 2 ? null : v)
+		up.asFlux()
+		  .map(v -> v == 2 ? null : v)
 		  .filter(v -> true)
 		  .concatMap(Flux::just, implicitPrefetchValue())
 		  .subscribe(ts);
@@ -842,78 +845,78 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void innerErrorsBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
 
 		//gh-1101: default changed from BOUNDARY to END
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2, false, implicitPrefetchValue())
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), false, implicitPrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 
-		source1.onNext(1);
+		source1.emitNext(1);
 
-		source1.onError(new RuntimeException("forced failure"));
+		source1.emitError(new RuntimeException("forced failure"));
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 	}
 
 	@Test
 	public void innerErrorsEnd() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
 
-		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
-		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
+		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
 
-		source.concatMapDelayError(v -> v == 1 ? source1 : source2, true, implicitPrefetchValue())
+		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), true, implicitPrefetchValue())
 		      .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.onNext(1);
+		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 
-		source1.onNext(1);
+		source1.emitNext(1);
 
-		source1.onError(new RuntimeException("forced failure"));
+		source1.emitError(new RuntimeException("forced failure"));
 
-		source.onNext(2);
+		source.emitNext(2);
 
-		Assert.assertTrue("source2 no subscribers?", source2.hasDownstreams());
+		Assert.assertTrue("source2 no subscribers?", Scannable.from(source2).inners().count() != 0);
 
-		source2.onNext(2);
-		source2.onComplete();
+		source2.emitNext(2);
+		source2.emitComplete();
 
-		source.onComplete();
+		source.emitComplete();
 
 		ts.assertValues(1, 2)
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", source1.hasDownstreams());
-		Assert.assertFalse("source2 has subscribers?", source2.hasDownstreams());
+		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
+		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
 	}
 
 	@Test

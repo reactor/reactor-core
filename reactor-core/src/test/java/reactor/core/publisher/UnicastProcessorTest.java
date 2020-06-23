@@ -25,12 +25,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
-import org.assertj.core.api.Assumptions;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
-import reactor.core.CoreSubscriber;
+
 import reactor.core.Disposable;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
@@ -65,20 +62,19 @@ public class UnicastProcessorTest {
 
 	@Test
 	public void multiThreadedProducer() {
-		UnicastProcessor<Integer> processor = UnicastProcessor.create();
-		FluxSink<Integer> sink = processor.sink();
+		Sinks.Many<Integer> sink = Sinks.many().unicast().onBackpressureBuffer();
 		int nThreads = 5;
 		int countPerThread = 10000;
 		ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 		for (int i = 0; i < 5; i++) {
 			Runnable generator = () -> {
 				for (int j = 0; j < countPerThread; j++) {
-					sink.next(j);
+					sink.emitNext(j);
 				}
 			};
 			executor.submit(generator);
 		}
-		StepVerifier.create(processor)
+		StepVerifier.create(sink.asFlux())
 					.expectNextCount(nThreads * countPerThread)
 					.thenCancel()
 					.verify();
@@ -171,10 +167,10 @@ public class UnicastProcessorTest {
 
 	@Test
 	public void bufferSizeOtherQueue() {
-		UnicastProcessor processor = UnicastProcessor.create(
+		Sinks.Many<?> processor = Sinks.many().unicast().onBackpressureBuffer(
 				new PriorityQueue<>(10));
 
-		assertThat(processor.getBufferSize())
+		assertThat(Scannable.from(processor).scan(Scannable.Attr.CAPACITY))
 				.isEqualTo(Integer.MIN_VALUE)
 	            .isEqualTo(Queues.CAPACITY_UNSURE);
 	}
