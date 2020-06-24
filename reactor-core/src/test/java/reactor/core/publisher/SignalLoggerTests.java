@@ -339,7 +339,7 @@ public class SignalLoggerTests {
 
 		assertThat(logger.getOutContent())
 				.startsWith("[DEBUG] (")
-				.endsWith(") currentContext(Context1{foo=bar})");
+				.endsWith(") currentContext(Context1{foo=bar})\n");
 	}
 
 	@Test
@@ -356,7 +356,7 @@ public class SignalLoggerTests {
 
 		assertThat(logger.getOutContent())
 				.startsWith("[TRACE] (")
-				.endsWith(") currentContext(Context1{foo=bar})");
+				.endsWith(") currentContext(Context1{foo=bar})\n");
 	}
 
 	private void demonstrateLogError() {
