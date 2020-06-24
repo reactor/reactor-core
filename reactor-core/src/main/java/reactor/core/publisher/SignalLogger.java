@@ -257,9 +257,10 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Nullable
 	@Override
 	public Consumer<? super Context> onCurrentContextCall() {
-		if ((options & CONTEXT_PARENT) == CONTEXT_PARENT && (level != Level.INFO || log
-				.isInfoEnabled())) {
-			return c -> log(SignalType.ON_CONTEXT, c);
+		if ((options & CONTEXT_PARENT) == CONTEXT_PARENT && (
+				(level == Level.FINE && log.isDebugEnabled())
+						|| (level == Level.FINEST && log.isTraceEnabled()))) {
+			return c -> log(SignalType.CURRENT_CONTEXT, c);
 		}
 		return null;
 	}
