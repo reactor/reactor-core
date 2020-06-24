@@ -35,6 +35,7 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.stats.Stats;
 
 /**
  * A set of overridable lifecycle hooks that can be used for cross-cutting
@@ -516,6 +517,27 @@ public abstract class Hooks {
 		DETECT_CONTEXT_LOSS = false;
 	}
 
+	/**
+	 * Globally enables the {@link Context} loss detection in operators like
+	 * {@link Flux#transform} or {@link Mono#transformDeferred} when non-Reactor types are used.
+	 *
+	 * An exception will be thrown upon applying the transformation if the original {@link Context} isn't reachable
+	 * (ie. it has been replaced by a totally different {@link Context}, or no {@link Context} at all)
+	 */
+	public static void enableStatsTracking() {
+		log.debug("Enabling stacktrace debugging with statistic via onOperatorDebug");
+		GLOBAL_STATS_TRACE = true;
+	}
+
+	/**
+	 * Globally disables the {@link Context} loss detection that was previously
+	 * enabled by {@link #enableContextLossTracking()}.
+	 *
+	 */
+	public static void disableStatsTracking() {
+		GLOBAL_STATS_TRACE = false;
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -610,6 +632,7 @@ public abstract class Hooks {
 
 	static boolean GLOBAL_TRACE = initStaticGlobalTrace();
 
+	static boolean GLOBAL_STATS_TRACE = initStaticGlobalStatsTrace();
 
 	static boolean DETECT_CONTEXT_LOSS = false;
 
@@ -622,6 +645,12 @@ public abstract class Hooks {
 	//isolated on static method for testing purpose
 	static boolean initStaticGlobalTrace() {
 		return Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
+				"false"));
+	}
+
+	//isolated on static method for testing purpose
+	static boolean initStaticGlobalStatsTrace() {
+		return Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStats",
 				"false"));
 	}
 
@@ -655,21 +684,37 @@ public abstract class Hooks {
 	}
 
 	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
-		if (publisher instanceof Callable) {
+		if (GLOBAL_STATS_TRACE) {
 			if (publisher instanceof Mono) {
-				return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
+				return new MonoStats<>((Mono<T>) publisher, stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
 			}
-			return new FluxCallableOnAssembly<>((Flux<T>) publisher, stacktrace);
+			if (publisher instanceof ParallelFlux) {
+				return new ParallelFluxStats<>((ParallelFlux<T>) publisher, stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+			}
+			if (publisher instanceof ConnectableFlux) {
+				return new ConnectableFluxStats<>((ConnectableFlux<T>) publisher, stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+			}
+			return new FluxStats<>((Flux<T>) publisher, stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
 		}
-		if (publisher instanceof Mono) {
-			return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace);
+		else {
+			if (publisher instanceof Callable) {
+				if (publisher instanceof Mono) {
+					return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
+				}
+				return new FluxCallableOnAssembly<>((Flux<T>) publisher, stacktrace);
+			}
+			if (publisher instanceof Mono) {
+				return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace);
+			}
+			if (publisher instanceof ParallelFlux) {
+				return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher,
+						stacktrace);
+			}
+			if (publisher instanceof ConnectableFlux) {
+				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
+						stacktrace);
+			}
+			return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
 		}
-		if (publisher instanceof ParallelFlux) {
-			return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher, stacktrace);
-		}
-		if (publisher instanceof ConnectableFlux) {
-			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher, stacktrace);
-		}
-		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
 	}
 }
