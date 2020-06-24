@@ -47,15 +47,22 @@ final class ConnectableFluxOnAssembly<T> extends InternalConnectableFluxOperator
                                                                     Scannable {
 
 	final AssemblySnapshot stacktrace;
+	final boolean          withDebugStats;
 
-	ConnectableFluxOnAssembly(ConnectableFlux<T> source, AssemblySnapshot stacktrace) {
+	ConnectableFluxOnAssembly(ConnectableFlux<T> source,
+			AssemblySnapshot stacktrace,
+			boolean withDebugStats) {
 		super(source);
 		this.stacktrace = stacktrace;
+		this.withDebugStats = withDebugStats;
 	}
 
 	@Override
 	public final CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return FluxOnAssembly.wrapSubscriber(actual, source, stacktrace);
+		return FluxOnAssembly.wrapSubscriber(actual,
+				source,
+				stacktrace,
+				withDebugStats ? new FluxOnAssembly.DefaultDebugStats() : null);
 	}
 
 	@Override

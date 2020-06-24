@@ -283,7 +283,7 @@ public class FluxOnAssemblyTest {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		AssemblySnapshot snapshot = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 		FluxOnAssembly.OnAssemblySubscriber<Integer> test =
-        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, snapshot, Flux.just(1));
+        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, snapshot, null, Flux.just(1));
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -295,7 +295,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		Flux<?> source = Flux.empty();
-		FluxOnAssembly<?> test = new FluxOnAssembly<>(source, new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()));
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(source, new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()), false);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
@@ -306,7 +306,7 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stepNameAndToString() {
 		int baseline = getBaseline();
-		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()));
+		FluxOnAssembly<?> test = new FluxOnAssembly<>(Flux.empty(), new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get()), false);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())

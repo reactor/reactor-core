@@ -176,7 +176,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 */
 	public final ParallelFlux<T> checkpoint() {
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		return new ParallelFluxOnAssembly<>(this, stacktrace);
+		return new ParallelFluxOnAssembly<>(this, stacktrace, false);
 	}
 
 	/**
@@ -201,7 +201,9 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @return the assembly marked {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint(String description) {
-		return new ParallelFluxOnAssembly<>(this, new AssemblyLightSnapshot(description));
+		return new ParallelFluxOnAssembly<>(this,
+				new AssemblyLightSnapshot(description),
+				false);
 	}
 
 	/**
@@ -244,7 +246,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			stacktrace = new AssemblySnapshot(description, Traces.callSiteSupplierFactory.get());
 		}
 
-		return new ParallelFluxOnAssembly<>(this, stacktrace);
+		return new ParallelFluxOnAssembly<>(this, stacktrace, false);
 	}
 
 	/**
@@ -1265,7 +1267,8 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			source = (ParallelFlux<T>) hook.apply(source);
 		}
 		if (Hooks.GLOBAL_TRACE) {
-			AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
+			AssemblySnapshot stacktrace =
+					new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 			source = (ParallelFlux<T>) Hooks.addAssemblyInfo(source, stacktrace);
 		}
 		return source;

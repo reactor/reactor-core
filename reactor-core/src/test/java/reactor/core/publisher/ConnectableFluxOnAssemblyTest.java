@@ -28,7 +28,7 @@ public class ConnectableFluxOnAssemblyTest {
 	public void scanMain() {
 		ConnectableFlux<String> source = Flux.just("foo").publish();
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source, stacktrace);
+		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source, stacktrace, false);
 
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
@@ -39,7 +39,7 @@ public class ConnectableFluxOnAssemblyTest {
 	public void scanOperator() {
 		ConnectableFlux<String> source = Flux.just("foo").publish();
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source, stacktrace);
+		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source, stacktrace, false);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
@@ -50,11 +50,10 @@ public class ConnectableFluxOnAssemblyTest {
 	@Test
 	public void stepNameAndToString() {
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		ConnectableFluxOnAssembly<?> test = new ConnectableFluxOnAssembly<>(Flux.empty().publish(), stacktrace);
+		ConnectableFluxOnAssembly<?> test = new ConnectableFluxOnAssembly<>(Flux.empty().publish(), stacktrace, false);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())
 				.startsWith("reactor.core.publisher.ConnectableFluxOnAssemblyTest.stepNameAndToString(ConnectableFluxOnAssemblyTest.java:");
 	}
-
 }

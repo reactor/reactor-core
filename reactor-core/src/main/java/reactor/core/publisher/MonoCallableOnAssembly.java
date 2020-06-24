@@ -76,10 +76,14 @@ final class MonoCallableOnAssembly<T> extends InternalMonoOperator<T, T>
 					cs = (Fuseable.ConditionalSubscriber<? super T>) actual;
 			return new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
 					stacktrace,
+					null,
 					source);
 		}
 		else {
-			return new FluxOnAssembly.OnAssemblySubscriber<>(actual, stacktrace, source);
+			return new FluxOnAssembly.OnAssemblySubscriber<>(actual,
+					stacktrace,
+					null,
+					source);
 		}
 	}
 

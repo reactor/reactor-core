@@ -43,7 +43,7 @@ public class MonoOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), stacktrace);
+		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), stacktrace, false);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -52,7 +52,7 @@ public class MonoOnAssemblyTest {
 	@Test
 	public void stepNameAndToString() {
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), stacktrace);
+		MonoOnAssembly<?> test = new MonoOnAssembly<>(Mono.empty(), stacktrace, false);
 
 		assertThat(test.toString())
 				.isEqualTo(test.stepName())

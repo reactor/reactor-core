@@ -516,6 +516,26 @@ public abstract class Hooks {
 		DETECT_CONTEXT_LOSS = false;
 	}
 
+	/**
+	 * Enable operator stats recorder that captures all signals that goes through each
+	 * operator.
+	 *
+	 * When the terminal signal is observed later on, the last operator in the chain
+	 * will invoke stats reporting for the whole pipeline.
+	 */
+	public static void enableStatsRecording() {
+		GLOBAL_STATS_TRACE = true;
+	}
+
+	/**
+	 * Globally disables the {@link Context} loss detection that was previously
+	 * enabled by {@link #enableContextLossTracking()}.
+	 *
+	 */
+	public static void disableStatsRecording() {
+		GLOBAL_STATS_TRACE = false;
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -610,6 +630,7 @@ public abstract class Hooks {
 
 	static boolean GLOBAL_TRACE = initStaticGlobalTrace();
 
+	static boolean GLOBAL_STATS_TRACE = initStaticGlobalStatsTrace();
 
 	static boolean DETECT_CONTEXT_LOSS = false;
 
@@ -622,6 +643,12 @@ public abstract class Hooks {
 	//isolated on static method for testing purpose
 	static boolean initStaticGlobalTrace() {
 		return Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
+				"false"));
+	}
+
+	//isolated on static method for testing purpose
+	static boolean initStaticGlobalStatsTrace() {
+		return Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStats",
 				"false"));
 	}
 
@@ -655,6 +682,12 @@ public abstract class Hooks {
 	}
 
 	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
+		return addOperatorStacktraceInfo(publisher, stacktrace);
+	}
+
+	static <T, P extends Publisher<T>> Publisher<T> addOperatorStacktraceInfo(P publisher,
+			AssemblySnapshot stacktrace) {
+
 		if (publisher instanceof Callable) {
 			if (publisher instanceof Mono) {
 				return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
@@ -662,14 +695,15 @@ public abstract class Hooks {
 			return new FluxCallableOnAssembly<>((Flux<T>) publisher, stacktrace);
 		}
 		if (publisher instanceof Mono) {
-			return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace);
+			return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace, GLOBAL_STATS_TRACE);
 		}
 		if (publisher instanceof ParallelFlux) {
-			return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher, stacktrace);
+			return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher, stacktrace, GLOBAL_STATS_TRACE);
 		}
 		if (publisher instanceof ConnectableFlux) {
-			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher, stacktrace);
+			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
+					stacktrace, GLOBAL_STATS_TRACE);
 		}
-		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
+		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace, GLOBAL_STATS_TRACE);
 	}
 }

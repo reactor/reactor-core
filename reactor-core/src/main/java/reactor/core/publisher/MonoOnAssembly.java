@@ -20,7 +20,6 @@ package reactor.core.publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshot;
-import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -39,13 +38,17 @@ final class MonoOnAssembly<T> extends InternalMonoOperator<T, T> implements Fuse
                                                                     AssemblyOp {
 
 	final AssemblySnapshot stacktrace;
+	final boolean          withDebugStats;
 
 	/**
 	 * Create an assembly trace exposed as a {@link Mono}.
 	 */
-	MonoOnAssembly(Mono<? extends T> source, AssemblySnapshot stacktrace) {
+	MonoOnAssembly(Mono<? extends T> source,
+			AssemblySnapshot stacktrace,
+			boolean withDebugStats) {
 		super(source);
 		this.stacktrace = stacktrace;
+		this.withDebugStats = withDebugStats;
 	}
 
 	@Override
@@ -53,10 +56,16 @@ final class MonoOnAssembly<T> extends InternalMonoOperator<T, T> implements Fuse
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super T> cs =
 					(ConditionalSubscriber<? super T>) actual;
-			return new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs, stacktrace, source);
+			return new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
+					stacktrace,
+					withDebugStats ? new FluxOnAssembly.DefaultDebugStats() : null,
+					source);
 		}
 		else {
-			return new FluxOnAssembly.OnAssemblySubscriber<>(actual, stacktrace, source);
+			return new FluxOnAssembly.OnAssemblySubscriber<>(actual,
+					stacktrace,
+					withDebugStats ? new FluxOnAssembly.DefaultDebugStats() : null,
+					source);
 		}
 	}
 
