@@ -3424,7 +3424,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			else {
 				return repeatFactory.apply(o.index().map(Tuple2::getT1)
 						.take(maxRepeat)
-						.concatWith(Flux.error(new IllegalStateException("Exceeded maximum number of repeats"), true)));
+						.concatWith(Flux.error(() -> new IllegalStateException("Exceeded maximum number of repeats"))));
 			}
 		}).next());
 	}
