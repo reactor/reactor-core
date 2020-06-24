@@ -10,13 +10,13 @@ import reactor.core.Scannable;
 import reactor.util.stats.StatsMarker;
 import reactor.util.stats.StatsReporter;
 
-public class ConnectableFluxStats<T> extends InternalConnectableFluxOperator<T, T> {
+final class ConnectableFluxStats<T> extends InternalConnectableFluxOperator<T, T> {
 
 	final FluxOnAssembly.AssemblySnapshot assemblySnapshot;
 	final StatsReporter                   statsReporter;
 	final StatsMarker[]                   statsMarkers;
 
-	protected ConnectableFluxStats(ConnectableFlux<T> source,
+	ConnectableFluxStats(ConnectableFlux<T> source,
 			FluxOnAssembly.AssemblySnapshot assemblySnapshot,
 			StatsReporter statsReporter,
 			StatsMarker[] statsMarkers) {
@@ -50,7 +50,7 @@ public class ConnectableFluxStats<T> extends InternalConnectableFluxOperator<T, 
 		}
 	}
 
-	static class ConnectableStatsInner<T> extends FluxStats.StatsOperator<T>
+	static final class ConnectableStatsInner<T> extends FluxStats.StatsOperator<T>
 			implements InnerOperator<T, T>, Fuseable.QueueSubscription<T> {
 
 		ConnectableStatsInner(CoreSubscriber<? super T> actual,

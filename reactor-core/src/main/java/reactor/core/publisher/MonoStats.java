@@ -5,13 +5,13 @@ import reactor.core.CoreSubscriber;
 import reactor.util.stats.StatsMarker;
 import reactor.util.stats.StatsReporter;
 
-public class MonoStats<T> extends InternalMonoOperator<T, T> {
+final class MonoStats<T> extends InternalMonoOperator<T, T> {
 
 	final FluxOnAssembly.AssemblySnapshot assemblySnapshot;
 	final StatsReporter                   statsReporter;
 	final StatsMarker[]                   statsMarkers;
 
-	protected MonoStats(Mono<? extends T> source,
+	MonoStats(Mono<? extends T> source,
 			FluxOnAssembly.AssemblySnapshot assemblySnapshot,
 			StatsReporter statsReporter,
 			StatsMarker[] statsMarkers) {
@@ -30,7 +30,7 @@ public class MonoStats<T> extends InternalMonoOperator<T, T> {
 				statsMarkers);
 	}
 
-	static class MonoStatsOperator<T> extends FluxStats.StatsOperator<T> {
+	static final class MonoStatsOperator<T> extends FluxStats.StatsOperator<T> {
 
 		MonoStatsOperator(CoreSubscriber<? super T> actual,
 				FluxOnAssembly.AssemblySnapshot snapshotStack,

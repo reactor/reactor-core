@@ -8,7 +8,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.stats.StatsMarker;
 import reactor.util.stats.StatsReporter;
 
-public class ParallelFluxStats<T> extends ParallelFlux<T> implements Scannable {
+final class ParallelFluxStats<T> extends ParallelFlux<T> implements Scannable {
 
 	final ParallelFlux<T>                 source;
 	final FluxOnAssembly.AssemblySnapshot assemblySnapshot;
@@ -66,7 +66,7 @@ public class ParallelFluxStats<T> extends ParallelFlux<T> implements Scannable {
 		source.subscribe(parents);
 	}
 
-	static class ParallelStatsInner<T> extends FluxStats.StatsOperator<T>
+	static final class ParallelStatsInner<T> extends FluxStats.StatsOperator<T>
 			implements InnerOperator<T, T>, Fuseable.QueueSubscription<T> {
 
 		FluxStats.StatsOperator<?> serialDownstreamNode;

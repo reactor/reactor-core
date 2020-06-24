@@ -15,13 +15,13 @@ import reactor.util.stats.StatsReporter;
 
 import static reactor.core.Fuseable.SYNC;
 
-public class FluxStats<T> extends InternalFluxOperator<T, T> {
+final class FluxStats<T> extends InternalFluxOperator<T, T> {
 
 	final FluxOnAssembly.AssemblySnapshot assemblySnapshot;
 	final StatsReporter        statsReporter;
 	final StatsMarker[]        statsMarkers;
 
-	protected FluxStats(Flux<? extends T> source,
+	FluxStats(Flux<? extends T> source,
 			FluxOnAssembly.AssemblySnapshot assemblySnapshot,
 			StatsReporter statsReporter,
 			StatsMarker[] statsMarkers) {
@@ -328,7 +328,7 @@ public class FluxStats<T> extends InternalFluxOperator<T, T> {
 		}
 	}
 
-	static class MultiConsumersStatsOperator<T> extends StatsOperator<T>
+	static final class MultiConsumersStatsOperator<T> extends StatsOperator<T>
 			implements InnerOperator<T, T>, Fuseable.QueueSubscription<T> {
 
 		volatile int consumers;
