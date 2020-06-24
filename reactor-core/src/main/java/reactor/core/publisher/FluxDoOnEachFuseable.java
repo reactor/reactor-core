@@ -17,10 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle events and signals of a sequence, {@link Fuseable} version of
@@ -32,16 +35,23 @@ import reactor.core.Fuseable;
  */
 final class FluxDoOnEachFuseable<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
-	final Consumer<? super Signal<T>> onSignal;
+	final Consumer<? super Signal<T>>     onSignal;
+	@Nullable
+	final BiConsumer<SignalType, Context> onSubscriptionSignal;
 
-	FluxDoOnEachFuseable(Flux<? extends T> source, Consumer<? super Signal<T>> onSignal) {
+	FluxDoOnEachFuseable(Flux<? extends T> source, Consumer<? super Signal<T>> onSignal,
+			@Nullable BiConsumer<SignalType, Context> signal) {
 		super(source);
 		this.onSignal = Objects.requireNonNull(onSignal, "onSignal");
+		onSubscriptionSignal = signal;
 	}
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return FluxDoOnEach.createSubscriber(actual, this.onSignal, true, false);
+		if (onSubscriptionSignal != null) {
+			onSubscriptionSignal.accept(SignalType.SUBSCRIBE, actual.currentContext());
+		}
+		return FluxDoOnEach.createSubscriber(actual, this.onSignal, this.onSubscriptionSignal,true, false);
 	}
 
 	@Override

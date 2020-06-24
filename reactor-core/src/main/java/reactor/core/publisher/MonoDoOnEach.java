@@ -17,9 +17,12 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle events and signals of a sequence
@@ -30,16 +33,23 @@ import reactor.core.CoreSubscriber;
  */
 final class MonoDoOnEach<T> extends InternalMonoOperator<T, T> {
 
-	final Consumer<? super Signal<T>> onSignal;
+	final   Consumer<? super Signal<T>>     onSignal;
+	@Nullable
+	final BiConsumer<SignalType, Context> onSubscriptionSignal;
 
-	MonoDoOnEach(Mono<? extends T> source, Consumer<? super Signal<T>> onSignal) {
+	MonoDoOnEach(Mono<? extends T> source, Consumer<? super Signal<T>> onSignal,
+			@Nullable BiConsumer<SignalType, Context> signal) {
 		super(source);
 		this.onSignal = Objects.requireNonNull(onSignal, "onSignal");
+		this.onSubscriptionSignal = signal;
 	}
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return FluxDoOnEach.createSubscriber(actual, onSignal, false, true);
+		if (onSubscriptionSignal != null) {
+			onSubscriptionSignal.accept(SignalType.SUBSCRIBE, actual.currentContext());
+		}
+		return FluxDoOnEach.createSubscriber(actual, onSignal, onSubscriptionSignal,false, true);
 	}
 
 	@Override

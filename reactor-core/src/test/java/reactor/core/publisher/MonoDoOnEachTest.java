@@ -48,14 +48,14 @@ public class MonoDoOnEachTest {
 	@Test
 	public void nullSource() {
 		Assertions.assertThatNullPointerException()
-		          .isThrownBy(() -> new MonoDoOnEach<>(null, s -> {}))
+		          .isThrownBy(() -> new MonoDoOnEach<>(null, s -> {}, null))
 		          .withMessage(null);
 	}
 
 	@Test
 	public void nullConsumer() {
 		Assertions.assertThatNullPointerException()
-		          .isThrownBy(() -> new MonoDoOnEach<>(Mono.just("foo"), null))
+		          .isThrownBy(() -> new MonoDoOnEach<>(Mono.just("foo"), null, null))
 		          .withMessage("onSignal");
 	}
 
@@ -68,7 +68,7 @@ public class MonoDoOnEachTest {
 		Mono<String> source = Mockito.mock(Mono.class);
 
 		final MonoDoOnEach<String> test =
-				new MonoDoOnEach<>(source, s -> { });
+				new MonoDoOnEach<>(source, s -> { }, null);
 
 		test.subscribe();
 		Mockito.verify(source).subscribe(argumentCaptor.capture());
@@ -85,7 +85,7 @@ public class MonoDoOnEachTest {
 		                          .filter(t -> true);
 
 		final MonoDoOnEach<String> test =
-				new MonoDoOnEach<>(source, s -> { });
+				new MonoDoOnEach<>(source, s -> { }, null);
 
 		test.filter(t -> true)
 		    .subscribe();

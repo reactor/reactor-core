@@ -18,7 +18,10 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +35,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
@@ -46,6 +50,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.fail;
 
 @RunWith(JUnitParamsRunner.class)
@@ -53,7 +58,7 @@ public class FluxDoOnEachTest {
 
 	@Test(expected = NullPointerException.class)
 	public void nullSource() {
-		new FluxDoOnEach<>(null, null);
+		new FluxDoOnEach<>(null, s -> {}, (st, c) -> {});
 	}
 
 	private static final String sourceErrorMessage = "boomSource";
@@ -507,7 +512,7 @@ public class FluxDoOnEachTest {
 				return v;
 			}
 		};
-		DoOnEachConditionalSubscriber<Boolean> test = new DoOnEachConditionalSubscriber<>(actual, signals::add, false);
+		DoOnEachConditionalSubscriber<Boolean> test = new DoOnEachConditionalSubscriber<>(actual, signals::add, null,false);
 		AssertQueueSubscription<Boolean> qs = new AssertQueueSubscription<>();
 
 		test.onSubscribe(qs);
@@ -537,7 +542,7 @@ public class FluxDoOnEachTest {
 				return v;
 			}
 		};
-		DoOnEachFuseableConditionalSubscriber<Boolean> test = new DoOnEachFuseableConditionalSubscriber<>(actual, signals::add, false);
+		DoOnEachFuseableConditionalSubscriber<Boolean> test = new DoOnEachFuseableConditionalSubscriber<>(actual, signals::add, null, false);
 		AssertQueueSubscription<Boolean> qs = new AssertQueueSubscription<>();
 
 		test.onSubscribe(qs);
@@ -596,9 +601,9 @@ public class FluxDoOnEachTest {
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDoOnEach<Integer> peek =
-				new FluxDoOnEach<>(Flux.just(1), s -> { });
+				new FluxDoOnEach<>(Flux.just(1), s -> { }, null);
 		FluxDoOnEach.DoOnEachSubscriber<Integer> test =
-				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignal, false);
+				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignal, null,false);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -625,4 +630,73 @@ public class FluxDoOnEachTest {
 		StepVerifier.create(result).expectError().verify();
 	}
 
+	@Test
+	public void smokeTestDoOnEachSubscriptionSignal() {
+		Flux.range(1, 10)
+		    .hide()
+		    .doOnEachSubscriptionLifecyle((st, ctx) -> {
+			    if (st == SignalType.SUBSCRIBE) {
+				    System.out.println("Publisher subscribed with requestId =" + ctx.getOrDefault("requestId", "NONE"));
+			    }
+			    if (st == SignalType.ON_SUBSCRIBE) {
+				    System.out.println("Publisher ready to produce to Subscriber for requestId =" + ctx.getOrDefault("requestId", "NONE"));
+			    }
+			    if (st == SignalType.CANCEL) {
+				    System.out.println("Subscriber cancelled for requestId =" + ctx.getOrDefault("requestId", "NONE"));
+			    }
+		    })
+		    .take(3)
+		    .subscriberContext(Context.of("ignored", "value", "requestId", "123ab4"))
+		    .subscribe();
+	}
+	@Test
+	public void doOnEachSubscriptionLifecyleExposesContext_normal() {
+		Map<SignalType, String> seen = new HashMap<>();
+
+		final Flux<Object> flux = Flux
+				.never()
+				.doOnEachSubscriptionLifecyle((type, context) -> seen.put(type, context.toString()));
+
+		Disposable d = flux.subscribe(v -> {}, e -> {}, () -> {}, Context.of("testKey", "testValue"));
+
+		await().atMost(200, TimeUnit.MILLISECONDS)
+		       .untilAsserted(() -> assertThat(seen)
+				       .containsEntry(SignalType.SUBSCRIBE, "Context1{testKey=testValue}")
+				       .containsEntry(SignalType.ON_SUBSCRIBE, "Context1{testKey=testValue}")
+		       );
+
+		d.dispose();
+
+		assertThat(seen)
+				.containsEntry(SignalType.SUBSCRIBE, "Context1{testKey=testValue}")
+				.containsEntry(SignalType.ON_SUBSCRIBE, "Context1{testKey=testValue}")
+				.containsEntry(SignalType.CANCEL, "Context1{testKey=testValue}")
+				.hasSize(3);
+	}
+
+	@Test
+	public void doOnEachSubscriptionLifecyleExposesContext_fused() {
+		Map<SignalType, String> seen = new HashMap<>();
+
+		final Flux<Object> flux = Flux
+				.just(1)
+				.flatMap(i -> Flux.never())
+				.doOnEachSubscriptionLifecyle((type, context) -> seen.put(type, context.toString()));
+
+		Disposable d = flux.subscribe(v -> {}, e -> {}, () -> {}, Context.of("testKey", "testValue"));
+
+		await().atMost(200, TimeUnit.MILLISECONDS)
+		       .untilAsserted(() -> assertThat(seen)
+				       .containsEntry(SignalType.SUBSCRIBE, "Context1{testKey=testValue}")
+				       .containsEntry(SignalType.ON_SUBSCRIBE, "Context1{testKey=testValue}")
+		       );
+
+		d.dispose();
+
+		assertThat(seen)
+				.containsEntry(SignalType.SUBSCRIBE, "Context1{testKey=testValue}")
+				.containsEntry(SignalType.ON_SUBSCRIBE, "Context1{testKey=testValue}")
+				.containsEntry(SignalType.CANCEL, "Context1{testKey=testValue}")
+				.hasSize(3);
+	}
 }

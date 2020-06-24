@@ -103,10 +103,13 @@ final class ParallelDoOnEach<T> extends ParallelFlux<T> implements Scannable {
 
 	private class DoOnEachSignalPeek implements SignalPeek<T> {
 
+		@Nullable
 		Consumer<? super T> onNextCall;
 
+		@Nullable
 		Consumer<? super Throwable> onErrorCall;
 
+		@Nullable
 		Runnable onCompleteCall;
 
 		public DoOnEachSignalPeek(Context ctx) {

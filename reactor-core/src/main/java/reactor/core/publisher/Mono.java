@@ -2357,10 +2357,41 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Mono<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
 		if (this instanceof Fuseable) {
-			return onAssembly(new MonoDoOnEachFuseable<>(this, signalConsumer));
+			return onAssembly(new MonoDoOnEachFuseable<>(this, signalConsumer, null));
 		}
-		return onAssembly(new MonoDoOnEach<>(this, signalConsumer));
+		return onAssembly(new MonoDoOnEach<>(this, signalConsumer, null));
+	}
 
+	/**
+	 * Add behavior triggered around events relative to subscriptions to this {@link Mono}:
+	 * <ol>
+	 *     <li>
+	 *         when the {@link Mono} is subscribed to ({@link SignalType#SUBSCRIBE},
+	 *         see {@link #doFirst(Runnable)})
+	 *     </li>
+	 *     <li>
+	 *         when it establishes the {@link Subscription} with said {@link Subscriber} ({@link SignalType#ON_SUBSCRIBE},
+	 *         see {@link #doOnSubscribe(Consumer)})</li>
+	 *     <li>
+	 *         when said {@link Subscriber} cancels its {@link Subscription} ({@link SignalType#CANCEL},
+	 *         see {@link #doOnCancel(Runnable)})
+	 *     </li>
+	 * </ol>
+	 * <p>
+	 * In each event, only the type of signal is notified, along with the {@link Context} attached to the {@link Subscriber}.
+	 *
+	 * @return a {@link Mono} with the {@link Subscription}-relative events observed within a single lambda
+	 * @see #doOnSubscribe(Consumer)
+	 * @see #doFinally(Consumer)
+	 * @see #doFirst(Runnable)
+	 * @see #doOnEach(Consumer)
+	 * @see SignalType
+	 */
+	public final Mono<T> doOnEachSubscriptionLifecyle(BiConsumer<SignalType, Context> subscriptionLifecycleListener) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoDoOnEachFuseable<>(this, ignored -> {}, subscriptionLifecycleListener));
+		}
+		return onAssembly(new MonoDoOnEach<>(this, ignored -> {}, subscriptionLifecycleListener));
 	}
 
 	/**

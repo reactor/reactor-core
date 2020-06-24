@@ -17,9 +17,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -39,32 +41,41 @@ import static reactor.core.Scannable.Attr.RunStyle.SYNC;
  */
 final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 
-	final Consumer<? super Signal<T>> onSignal;
+	final Consumer<? super Signal<T>>     onSignal;
+	@Nullable
+	final BiConsumer<SignalType, Context> onSubscriptionSignal;
 
-	FluxDoOnEach(Flux<? extends T> source, Consumer<? super Signal<T>> onSignal) {
+	FluxDoOnEach(Flux<? extends T> source, Consumer<? super Signal<T>> onSignal,
+			@Nullable BiConsumer<SignalType, Context> onSubscriptionSignal) {
 		super(source);
 		this.onSignal = Objects.requireNonNull(onSignal, "onSignal");
+		this.onSubscriptionSignal = onSubscriptionSignal;
 	}
 
 	@SuppressWarnings("unchecked")
 	static <T> DoOnEachSubscriber<T> createSubscriber(CoreSubscriber<? super T> actual,
-			Consumer<? super Signal<T>> onSignal, boolean fuseable, boolean isMono) {
+			Consumer<? super Signal<T>> onSignal,
+			@Nullable BiConsumer<SignalType, Context> onSubscriptionSignal,
+			boolean fuseable, boolean isMono) {
 		if (fuseable) {
 			if(actual instanceof ConditionalSubscriber) {
-				return new DoOnEachFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal, isMono);
+				return new DoOnEachFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal, onSubscriptionSignal, isMono);
 			}
-			return new DoOnEachFuseableSubscriber<>(actual, onSignal, isMono);
+			return new DoOnEachFuseableSubscriber<>(actual, onSignal, onSubscriptionSignal, isMono);
 		}
 
 		if (actual instanceof ConditionalSubscriber) {
-			return new DoOnEachConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal, isMono);
+			return new DoOnEachConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, onSignal, onSubscriptionSignal, isMono);
 		}
-		return new DoOnEachSubscriber<>(actual, onSignal, isMono);
+		return new DoOnEachSubscriber<>(actual, onSignal, onSubscriptionSignal, isMono);
 	}
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return createSubscriber(actual, onSignal, false, false);
+		if (onSubscriptionSignal != null) {
+			onSubscriptionSignal.accept(SignalType.SUBSCRIBE, actual.currentContext());
+		}
+		return createSubscriber(actual, onSignal, onSubscriptionSignal,false, false);
 	}
 
 	@Override
@@ -75,14 +86,16 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 
 	static class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
 
-		static final short STATE_FLUX_START   = (short) 0;
+		static final short STATE_FLUX_START = (short) 0;
 		static final short STATE_MONO_START   = (short) 1;
 		static final short STATE_SKIP_HANDLER = (short) 2;
 		static final short STATE_DONE         = (short) 3;
 
-		final CoreSubscriber<? super T>   actual;
-		final Context                     cachedContext;
-		final Consumer<? super Signal<T>> onSignal;
+		final CoreSubscriber<? super T>       actual;
+		final Context                         cachedContext;
+		final Consumer<? super Signal<T>>     onSignal;
+		@Nullable
+		final BiConsumer<SignalType, Context> onSubscriptionSignal;
 
 		T t;
 
@@ -94,10 +107,12 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 
 		DoOnEachSubscriber(CoreSubscriber<? super T> actual,
 				Consumer<? super Signal<T>> onSignal,
+				@Nullable BiConsumer<SignalType, Context> onSubscriptionSignal,
 				boolean monoFlavor) {
 			this.actual = actual;
 			this.cachedContext = actual.currentContext();
 			this.onSignal = onSignal;
+			this.onSubscriptionSignal = onSubscriptionSignal;
 			this.state = monoFlavor ? STATE_MONO_START : STATE_FLUX_START;
 		}
 
@@ -109,6 +124,9 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			s.cancel();
+			if (onSubscriptionSignal != null) {
+				onSubscriptionSignal.accept(SignalType.CANCEL, cachedContext);
+			}
 		}
 
 		@Override
@@ -116,6 +134,9 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				this.qs = Operators.as(s);
+				if (onSubscriptionSignal != null) {
+					onSubscriptionSignal.accept(SignalType.ON_SUBSCRIBE, cachedContext);
+				}
 				actual.onSubscribe(this);
 			}
 		}
@@ -266,8 +287,10 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		boolean syncFused;
 
 		DoOnEachFuseableSubscriber(CoreSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal, boolean isMono) {
-			super(actual, onSignal, isMono);
+				Consumer<? super Signal<T>> onSignal,
+				@Nullable BiConsumer<SignalType, Context> onSubscriptionSignal,
+				boolean isMono) {
+			super(actual, onSignal, onSubscriptionSignal, isMono);
 		}
 
 		@Override
@@ -325,8 +348,10 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			implements ConditionalSubscriber<T> {
 
 		DoOnEachConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal, boolean isMono) {
-			super(actual, onSignal, isMono);
+				Consumer<? super Signal<T>> onSignal,
+				@Nullable BiConsumer<SignalType, Context> onSubscriptionSignal,
+				boolean isMono) {
+			super(actual, onSignal, onSubscriptionSignal, isMono);
 		}
 
 		@Override
@@ -347,8 +372,10 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 			implements ConditionalSubscriber<T> {
 
 		DoOnEachFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal, boolean isMono) {
-			super(actual, onSignal, isMono);
+				Consumer<? super Signal<T>> onSignal,
+				@Nullable BiConsumer<SignalType, Context> onSubscriptionSignal,
+				boolean isMono) {
+			super(actual, onSignal, onSubscriptionSignal, isMono);
 		}
 
 		@Override
