@@ -111,32 +111,30 @@ dependencies {
 	noMicrometerTestCompile configurations.testCompile
 }
 
-task downloadBaseline {
-	if (project.gradle.startParameter.isOffline()) {
-		println "Offline: skipping downloading of baseline and JAPICMP"
-	}
-	else if ("$compatibleVersion" == "SKIP") {
-		println "SKIP: Instructed to skip the baseline comparison"
-	}
-	else {
-		println "Will download and perform baseline comparison with ${compatibleVersion}"
-		finalizedBy { doDownloadBaseline }
-	}
-}
-
-task doDownloadBaseline(type: Download) {
+task downloadBaseline(type: Download) {
 	onlyIfNewer true
 	compress true
 
 	src "${repositories.jcenter().url}io/projectreactor/reactor-core/$compatibleVersion/reactor-core-${compatibleVersion}.jar"
 	dest "${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar"
-
-	finalizedBy { japicmp }
 }
 
 task japicmp(type: JapicmpTask) {
+	if (project.gradle.startParameter.isOffline()) {
+		println "Offline: skipping downloading of baseline and JAPICMP"
+	  	enabled = false
+	}
+	else if ("$compatibleVersion" == "SKIP") {
+		println "SKIP: Instructed to skip the baseline comparison"
+	  	enabled = false
+	}
+	else {
+		println "Will download and perform baseline comparison with ${compatibleVersion}"
+	  	dependsOn(downloadBaseline)
+	}
+
 	oldClasspath = files("${buildDir}/baselineLibs/reactor-core-${compatibleVersion}.jar")
-	newClasspath = files(jar.archivePath)
+	newClasspath = files(jar.archiveFile)
 	onlyBinaryIncompatibleModified = true
 	failOnModification = true
 	failOnSourceIncompatibility = true
@@ -234,7 +232,7 @@ jar {
 
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
-jar.finalizedBy(downloadBaseline)
+check.dependsOn japicmp
 
 if (JavaVersion.current().java9Compatible) {
 	sourceSets {
