@@ -518,14 +518,13 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Globally enables the {@link Context} loss detection in operators like
-	 * {@link Flux#transform} or {@link Mono#transformDeferred} when non-Reactor types are used.
+	 * Enable operator stats recorder that captures all signals that goes through each
+	 * operator.
 	 *
-	 * An exception will be thrown upon applying the transformation if the original {@link Context} isn't reachable
-	 * (ie. it has been replaced by a totally different {@link Context}, or no {@link Context} at all)
+	 * When the terminal signal is observed later on, the last operator in the chain
+	 * will invoke stats reporting for the whole pipeline.
 	 */
-	public static void enableStatsTracking() {
-		log.debug("Enabling stacktrace debugging with statistic via onOperatorDebug");
+	public static void enableStatsRecording() {
 		GLOBAL_STATS_TRACE = true;
 	}
 
@@ -534,7 +533,7 @@ public abstract class Hooks {
 	 * enabled by {@link #enableContextLossTracking()}.
 	 *
 	 */
-	public static void disableStatsTracking() {
+	public static void disableStatsRecording() {
 		GLOBAL_STATS_TRACE = false;
 	}
 
