@@ -125,7 +125,14 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (!STATE.compareAndSet(this, State.REQUESTED, State.ACTIVE)) {
-				// TODO discard, drop and all of that
+				switch (state) {
+					case CANCELED:
+						Operators.onDiscard(t, currentContext());
+						break;
+					case TERMINATED:
+						Operators.onNextDropped(t, currentContext());
+						break;
+				}
 				return;
 			}
 
@@ -175,7 +182,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				switch (previousState) {
 					case CANCELED:
 					case TERMINATED:
-						// TODO drop or whatever
+						Operators.onErrorDropped(t, currentContext());
 						return;
 					default:
 						if (!STATE.compareAndSet(this, previousState, State.TERMINATED)) {
@@ -219,6 +226,9 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				case LAST_ACTIVE:
 					actual.onNext(value);
 					break;
+				default:
+					Operators.onDiscard(value, currentContext());
+					break;
 			}
 		}
 
@@ -258,6 +268,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 						actual.onError(e);
 						return;
 					default:
+						Operators.onErrorDropped(e, currentContext());
 						return;
 				}
 			}
