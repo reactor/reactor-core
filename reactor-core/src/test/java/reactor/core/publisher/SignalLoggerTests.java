@@ -31,6 +31,7 @@ import reactor.test.StepVerifier;
 import reactor.test.util.TestLogger;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -313,6 +314,49 @@ public class SignalLoggerTests {
 		verify(mockLogger, only()).warn(anyString(), eq(SignalType.ON_NEXT),
 				eq("foo"));
 		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void noCurrentContextLogWhenInfo() {
+		SignalLogger<?> signalLogger = new SignalLogger<>(Mono.empty(), null,
+				Level.INFO, false);
+
+		assertThat(signalLogger.onCurrentContextCall()).isNull();
+
+	}
+
+	@Test
+	public void currentContextLogWhenDebug() {
+		TestLogger logger = new TestLogger();
+
+		SignalLogger<?> signalLogger = new SignalLogger<>(Mono.empty(), null,
+				Level.FINE,false, name -> logger);
+
+		assertThat(logger.getOutContent()).as("before currentContext()").isEmpty();
+
+		Context context = Context.of("foo", "bar");
+		signalLogger.onCurrentContextCall().accept(context);
+
+		assertThat(logger.getOutContent())
+				.startsWith("[DEBUG] (")
+				.endsWith(") currentContext(Context1{foo=bar})\n");
+	}
+
+	@Test
+	public void currentContextLogWhenTrace() {
+		TestLogger logger = new TestLogger();
+
+		SignalLogger<?> signalLogger = new SignalLogger<>(Mono.empty(), null,
+				Level.FINEST,false, name -> logger);
+
+		assertThat(logger.getOutContent()).as("before currentContext()").isEmpty();
+
+		Context context = Context.of("foo", "bar");
+		signalLogger.onCurrentContextCall().accept(context);
+
+		assertThat(logger.getOutContent())
+				.startsWith("[TRACE] (")
+				.endsWith(") currentContext(Context1{foo=bar})\n");
 	}
 
 	private void demonstrateLogError() {
