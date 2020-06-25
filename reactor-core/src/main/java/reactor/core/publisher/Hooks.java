@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 
 import reactor.core.Exceptions;
@@ -684,36 +685,51 @@ public abstract class Hooks {
 
 	static <T, P extends Publisher<T>> Publisher<T> addAssemblyInfo(P publisher, AssemblySnapshot stacktrace) {
 		if (GLOBAL_STATS_TRACE) {
-			if (publisher instanceof Mono) {
-				return new MonoStats<>((Mono<T>) publisher, stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
-			}
-			if (publisher instanceof ParallelFlux) {
-				return new ParallelFluxStats<>((ParallelFlux<T>) publisher, stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
-			}
-			if (publisher instanceof ConnectableFlux) {
-				return new ConnectableFluxStats<>((ConnectableFlux<T>) publisher, stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
-			}
-			return new FluxStats<>((Flux<T>) publisher, stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+			return addOperatorStatsInfo(publisher, stacktrace);
 		}
 		else {
-			if (publisher instanceof Callable) {
-				if (publisher instanceof Mono) {
-					return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
-				}
-				return new FluxCallableOnAssembly<>((Flux<T>) publisher, stacktrace);
-			}
-			if (publisher instanceof Mono) {
-				return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace);
-			}
-			if (publisher instanceof ParallelFlux) {
-				return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher,
-						stacktrace);
-			}
-			if (publisher instanceof ConnectableFlux) {
-				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
-						stacktrace);
-			}
-			return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
+			return addOperatorStacktraceInfo(publisher, stacktrace);
 		}
+	}
+
+	static <T, P extends Publisher<T>> Publisher<T> addOperatorStacktraceInfo(P publisher,
+			AssemblySnapshot stacktrace) {
+
+		if (publisher instanceof Callable) {
+			if (publisher instanceof Mono) {
+				return new MonoCallableOnAssembly<>((Mono<T>) publisher, stacktrace);
+			}
+			return new FluxCallableOnAssembly<>((Flux<T>) publisher, stacktrace);
+		}
+		if (publisher instanceof Mono) {
+			return new MonoOnAssembly<>((Mono<T>) publisher, stacktrace);
+		}
+		if (publisher instanceof ParallelFlux) {
+			return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher, stacktrace);
+		}
+		if (publisher instanceof ConnectableFlux) {
+			return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
+					stacktrace);
+		}
+		return new FluxOnAssembly<>((Flux<T>) publisher, stacktrace);
+	}
+
+	static <T, P extends Publisher<T>> Publisher<T> addOperatorStatsInfo(P publisher,
+			AssemblySnapshot stacktrace) {
+
+		if (publisher instanceof Mono) {
+			return new MonoStats<>((Mono<T>) publisher,
+					stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+		}
+		if (publisher instanceof ParallelFlux) {
+			return new ParallelFluxStats<>((ParallelFlux<T>) publisher,
+					stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+		}
+		if (publisher instanceof ConnectableFlux) {
+			return new ConnectableFluxStats<>((ConnectableFlux<T>) publisher,
+					stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
+		}
+		return new FluxStats<>((Flux<T>) publisher,
+				stacktrace, Stats.getStatsReporter(), Stats.getStatsMarkers());
 	}
 }
