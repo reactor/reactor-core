@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -203,7 +204,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 		RepeatWhenMainSubscriber<?> main;
 
-		final DirectProcessor<Long> completionSignal = new DirectProcessor<>();
+		final FluxIdentityProcessor<Long> completionSignal = Processors.more().multicastNoBackpressure();
 
 		@Override
 		public Context currentContext() {
@@ -250,7 +251,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public DirectProcessor<Long> source() {
+		public FluxIdentityProcessor<Long> source() {
 			return completionSignal;
 		}
 

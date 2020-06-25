@@ -1,93 +1,114 @@
-Processors are a special kind of `Publisher` that are also a `Subscriber`. That means
-that you can `subscribe` to a `Processor` (generally, they implement `Flux`), but you can
-also call methods to manually inject data into the sequence or terminate it.
+Processors are a special kind of `Publisher` that are also a `Subscriber`.
+They were originally intended as a possible representation of an intermediate step that
+could then be shared between Reactive Streams implementations. In Reactor however, such
+steps are rather represented by operators that are `Publisher`.
 
-There are several kinds of Processors, each with a few particular semantics, but before
-you start looking into these, you need to ask yourself the following question:
+A common mistake when coming across a `Processor` for the first time is the temptation to
+directly call the exposed `onNext`, `onComplete` and `onError` methods from the `Subscriber` interface.
 
-= Do I Need a Processor?
+Such manual calls should be made with care, especially regarding external synchronization of calls
+with respect to the Reactive Streams specification.
+Processors are actually probably marginally useful, unless one comes across a Reactive Streams
+based API that requires a `Subscriber` to be passed, rather than exposing a `Publisher`.
+
+Sinks are usually a better alternative.
+In Reactor a sink is a class that allows safe manual triggering of signals. It can either
+be associated to a subscription (from inside an operator) or completely standalone.
+
+Since `3.4.0`, an effort has been started to hide concrete processor implementations and
+advertise the standalone sink pattern first and foremost:
+
+ - concrete processor implementations are deprecated and slated for removal in 3.5.0
+ - processors can still be constructed through the `Processors` utility class, which bears
+ factory methods for the base case of each `Processor`, as well as access to `.more()` factory
+ methods.
+ - standalone sinks are constructed through factory methods in the `Sinks` class.
+
+In the next section, we'll provide guidelines on how to choose whether or not to use a
+`Processor` or a sink.
+
+= Do I Need a `Processor` / a sink?
 
 Most of the time, you should try to avoid using a `Processor`. They are harder to use
 correctly and prone to some corner cases.
 
-If you think a `Processor` could be a good match for your use case, ask yourself if you
-have tried these two alternatives:
+If you think a `Processor` could be a good match for your use case, always try these
+three alternatives first (in order of preference):
 
 . Could an operator or combination of operators fit the bill? (See <<which-operator>>.)
 . Could a <<producing,"`generator`">> operator work instead? (Generally, these operators
-are made to bridge APIs that are not reactive, providing a "`sink`" that is similar in
-concept to a `Processor`, in the sense that it lets you manually populate the sequence
-with data or terminate it).
+are made to bridge APIs that are not reactive, providing a sink per `Subscriber` for that
+purpose).
+. Could a <<sinks,"standalone sink">> from `Sinks` work?
 
 If, after exploring the above alternatives, you still think you need a `Processor`, read
 the <<processor-overview>> section to learn about the different implementations.
 
-= Safely Produce from Multiple Threads by Using the `Sink` Facade
+[[sinks]]
+= Safely Produce from Multiple Threads by Using `StandaloneFluxSink` and `StandaloneMonoSink`
 
-Rather than directly using Reactor `Processors`, it is a good practice to obtain a `Sink`
-for the `Processor` by calling `sink()` *once*.
+Rather than directly using Reactor `Processors`, it is a good practice to use `Sinks` to
+manually produce signals, with thread safety.
 
-`FluxProcessor` sinks safely gate multi-threaded producers and can be used by
-applications that generate data from multiple threads concurrently. For example, you can create a
-thread-safe serialized sink for `UnicastProcessor` by doing the following:
-
-====
-[source,java]
-----
-UnicastProcessor<Integer> processor = UnicastProcessor.create();
-FluxSink<Integer> sink = processor.sink(overflowStrategy);
-----
-====
-
-Multiple producer threads may concurrently generate data on the following serialized
-sink by doing the following:
+Most `Processors` flavors have an equivalent in `Sinks`. For example, `Processors.replayAll()`:
 
 ====
 [source,java]
 ----
-sink.next(n);
+StandaloneFluxSink<Integer> replaySink = Sinks.replayAll();
 ----
 ====
 
-WARNING: Despite the `FluxSink` being adapted for multi-threaded *manual* feeding
-of the `Processor`, it is not possible to mix the subscriber approach with the
-sink approach: You have to either subscribe your `FluxProcessor` to a source
-`Publisher` or feed it manually though its `FluxSink`.
+Multiple producer threads may concurrently generate data on the sink by doing the following:
 
-Overflow from `next` behaves in two possible ways, depending on the `Processor` and its
-configuration:
+====
+[source,java]
+----
+sink.next(1).next(2).next(3);
+----
+====
 
-* An unbounded processor handles the overflow itself by dropping or buffering.
-* A bounded processor blocks or "`spins`" on the `IGNORE` strategy or applies the
-`overflowStrategy` behavior specified for the `sink`.
+Parallel to that, the sink can be presented to downstream consumers as a `Publisher` (a `Flux`
+or a `Mono`), like in the below example:
+
+====
+[source,java]
+----
+Flux<Integer> fluxView = replaySink.asFlux();
+fluxView
+	.takeWhile(i -> i < 10)
+	.log()
+	.blockLast();
+----
+====
+
+
+The `Sinks` flavors that can be viewed as `Flux` are:
+
+. `multicast()`: a sink that will transmit only newly pushed data to its subscribers, honoring their backpressure (newly pushed as in "after the subscriber's subscription").
+. `multicastPreWarming()`: same as above, with the twist that data pushed before the first subscriber registers is buffered.
+. `multicastReplayAll()`: a sink that will replay all the history of pushed data to new subscribers then continue pushing new data live.
+. `multicastReplay(int)`: same as above, except the history of replayed data is limited in size.
+. `unicast()`: the only sink that won't accept more than one `Subscriber`, but honors their backpressure
+(and replays elements pushed to it before the Subscriber arrives)
+
+There is currently only one `Sinks` flavor that can be viewed as `Mono`:
+
+. `trigger()`: a sink that will wait for a `Mono`-like interaction, propagate it to current `Subscribers` and additionally cache it for replaying to any late `Subscriber`.
 
 [[processor-overview]]
 = Overview of Available Processors
 
-Reactor Core comes with several flavors of `Processor`. Not all processors have the same
-semantics, but they are roughly split into three categories. The following list briefly
-describes the three kinds of processors:
-
-* *direct* (`DirectProcessor` and `UnicastProcessor`): These processors can push
-data only through direct user action (calling their methods of their `Sink` directly).
-* *synchronous* (`EmitterProcessor` and `ReplayProcessor`): These processors can either push data
-through user interaction or by subscribing to an upstream `Publisher` and synchronously
-draining it.
-
-TIP: One way of publishing events onto different threads is to use the `EmitterProcessor`
-combined with `publishOn(Scheduler)`. This can for example replace the former `TopicProcessor`,
-which was using `Unsafe` operations and has been moved to
-https://github.com/reactor/reactor-addons/tree/master/reactor-extra/src/main/java/reactor/extra/processor[reactor-extra]
-in 3.3.0.
-
 == Direct Processor
 
-A direct `Processor` is a processor that can dispatch signals to zero or more
-`Subscribers`. It is the simplest one to instantiate, with a single `DirectProcessor#create()` static
-factory method. On the other hand, *it has the limitation of not handling backpressure*.
+A direct `Processor` is a very simple processor that can dispatch signals to zero or more
+`Subscribers`. On the other hand, *it has the limitation of not handling backpressure*.
 As a consequence, a `DirectProcessor` signals an `IllegalStateException` to its
 subscribers if you push N elements through it but at least one of its subscribers has
 requested less than N.
+
+This aspect makes it a bit niche, and so the (only) factory method to create a direct processor
+is hidden a bit: it is created via `Processors.more().multicastNoBackpressure()`.
 
 Once the `Processor` has terminated (usually through its sink's `error(Throwable)` or
 `complete()` methods being called), it lets more subscribers subscribe but replays the
@@ -98,51 +119,45 @@ termination signal to them immediately.
 A unicast `Processor` can deal with backpressure by using an internal buffer. The trade-off
 is that it can have _at most one_ `Subscriber`.
 
-A `UnicastProcessor` has a few more options than a direct processor, reflected by the existence of a few `create` static factory
-methods. For instance, by default, it is unbounded: If you push any amount of
-data through it while its `Subscriber` has not yet requested data, it buffers all of
-the data.
+The basic unicast processor is created via `Processors.unicast()`.
+But since it has a few more options than a direct processor, there are a few additional
+`unicast` static factory methods in `Processors#more()`.
 
+For instance, by default, it is unbounded: If you push any amount of data through it while
+its `Subscriber` has not yet requested data, it buffers all of the data.
 You can change this by providing a custom `Queue` implementation for the internal
-buffering in the `create` factory method. If that queue is bounded, the processor could
-reject the push of a value when the buffer is full and not enough requests from
-downstream have been received.
+buffering in the `Processors.more().unicast(Queue)` factory method.
+If that queue is bounded, the processor could reject the push of a value when the buffer
+is full and not enough requests from downstream have been received.
 
 In that _bounded_ case, you can also build the processor with a callback that is invoked
 on each rejected element, allowing for cleanup of these rejected elements.
 
-== Emitter Processor
+== Multicast Processor
 
-An emitter `Processor` can emit to several subscribers while honoring
-backpressure for each of its subscribers. It can also subscribe to a `Publisher` and
-relay its signals synchronously.
+An multicast `Processor` (sometimes referred to as an "emitter" processor) can emit to several
+subscribers while honoring backpressure for each of its subscribers.
+Subscribers receive only the signals pushed through the processor after they have subscribed.
 
-Initially, when it has no subscriber, it can still accept a few data pushes up to a
-configurable `bufferSize`. After that point, if no `Subscriber` has come in and consumed
-the data, calls to `onNext` block until the processor is drained (which can happen only
-concurrently by then).
-
-Thus, the first `Subscriber` to subscribe receives up to `bufferSize` elements upon
-subscribing. However, after that, the processor stops replaying signals to additional
-subscribers. These subsequent subscribers instead receive only the signals pushed through
-the processor after they have subscribed. The internal buffer is still used for
-backpressure purposes.
+The basic multicast processor is created via `Processors.multicast()`.
 
 By default, if all of its subscribers are cancelled (which basically means they have all
 un-subscribed), it clears its internal buffer and stops accepting new subscribers.
-You can tune this by using the `autoCancel` parameter in the `create` static factory methods.
+You can tune this by using the `autoCancel` parameter in the `multicast` static factory methods
+under `Processor.more()`.
 
 == Replay Processor
 
-A replay `Processor` caches elements that are either pushed directly through its `sink()`
-or elements from an upstream `Publisher` and replays them to late subscribers.
+A replay `Processor` caches elements from its upstream `Publisher` and replays them to late subscribers.
 
 It can be created in multiple configurations:
 
-* Caching a single element (`cacheLast`).
-* Caching a limited history (`create(int)`) or an unbounded history (`create()`).
-* Caching a time-based replay window (`createTimeout(Duration)`).
-* Caching a combination of history size and time window
-(`createSizeOrTimeout(int, Duration)`).
+* Caching a limited history (`Processors.replay(int)`) or an unbounded history (`Processors.replayAll()`).
+* Caching a time-based replay window (`Processors.replayTimeout(Duration)`).
+* Caching a combination of history size and time window (`Processors.replaySizeOrTimeout(int, Duration)`).
+
+Additional overloads for fine tuning of the above can also be found under `Processors.more()`, as well
+as a variant that allows caching of a single element (`replayLatest()` and `replayLatestOrDefault(T)`).
+
 
 //TODO == MonoProcessor

@@ -183,7 +183,9 @@ public abstract class Schedulers {
 	 * @return default instance of a {@link Scheduler} that dynamically creates ExecutorService-based
 	 * Workers and caches the threads, reusing them once the Workers have been shut
 	 * down
+	 * @deprecated use {@link #boundedElastic()}, to be removed in 3.5.0
 	 */
+	@Deprecated
 	public static Scheduler elastic() {
 		return cache(CACHED_ELASTIC, ELASTIC, ELASTIC_SUPPLIER);
 	}
@@ -259,7 +261,9 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
 	 * Workers and caches the thread pools, reusing them once the Workers have been shut
 	 * down
+	 * @deprecated use {@link #newBoundedElastic(int, int, String)}, to be removed in 3.5.0
 	 */
+	@Deprecated
 	public static Scheduler newElastic(String name) {
 		return newElastic(name, ElasticScheduler.DEFAULT_TTL_SECONDS);
 	}
@@ -278,7 +282,9 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
 	 * Workers and caches the thread pools, reusing them once the Workers have been shut
 	 * down
+	 * @deprecated use {@link #newBoundedElastic(int, int, String, int)}, to be removed in 3.5.0
 	 */
+	@Deprecated
 	public static Scheduler newElastic(String name, int ttlSeconds) {
 		return newElastic(name, ttlSeconds, false);
 	}
@@ -299,7 +305,9 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
 	 * Workers and caches the thread pools, reusing them once the Workers have been shut
 	 * down
+	 * @deprecated use {@link #newBoundedElastic(int, int, String, int, boolean)}, to be removed in 3.5.0
 	 */
+	@Deprecated
 	public static Scheduler newElastic(String name, int ttlSeconds, boolean daemon) {
 		return newElastic(ttlSeconds,
 				new ReactorThreadFactory(name, ElasticScheduler.COUNTER, daemon, false,
@@ -320,7 +328,9 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
 	 * Workers and caches the thread pools, reusing them once the Workers have been shut
 	 * down
+	 * @deprecated use {@link #newBoundedElastic(int, int, ThreadFactory, int)}, to be removed in 3.5.0
 	 */
+	@Deprecated
 	public static Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 		return factory.newElastic(ttlSeconds, threadFactory);
 	}
@@ -662,8 +672,8 @@ public abstract class Schedulers {
 
 	/**
 	 * Replace {@link Schedulers} factories ({@link #newParallel(String) newParallel},
-	 * {@link #newSingle(String) newSingle} and {@link #newElastic(String) newElastic}). Also
-	 * shutdown Schedulers from the cached factories (like {@link #single()}) in order to
+	 * {@link #newSingle(String) newSingle} and {@link #newBoundedElastic(int, int, String) newBoundedElastic}).
+	 * Also shutdown Schedulers from the cached factories (like {@link #single()}) in order to
 	 * also use these replacements, re-creating the shared schedulers from the new factory
 	 * upon next use.
 	 * <p>
@@ -915,7 +925,9 @@ public abstract class Schedulers {
 		 *
 		 * @return a new {@link Scheduler} that dynamically creates Workers resources and
 		 * caches eventually, reusing them once the Workers have been shut down
+		 * @deprecated use {@link Factory#newBoundedElastic(int, int, ThreadFactory, int)}, to be removed in 3.5.0
 		 */
+		@Deprecated
 		default Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 			return new ElasticScheduler(threadFactory, ttlSeconds);
 		}

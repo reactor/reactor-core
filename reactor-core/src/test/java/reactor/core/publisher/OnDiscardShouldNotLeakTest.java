@@ -72,9 +72,9 @@ public class OnDiscardShouldNotLeakTest {
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(UnicastProcessor.create())),
+			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(Processors.unicast())),
 			DiscardScenario.fluxSource("unicastProcessorAndPublishOn", 1, f -> f
-					.subscribeWith(UnicastProcessor.create())
+					.subscribeWith(Processors.unicast())
 					.publishOn(Schedulers.immediate())),
 	};
 

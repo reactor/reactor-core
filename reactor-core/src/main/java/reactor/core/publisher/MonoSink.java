@@ -16,14 +16,13 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -32,7 +31,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type emitted
  */
-public interface MonoSink<T> {
+public interface MonoSink<T> extends ScalarSink<T> {
 
 	/**
 	 * Return the current subscriber {@link Context}.
@@ -44,35 +43,6 @@ public interface MonoSink<T> {
 	 * @return the current subscriber {@link Context}.
 	 */
 	Context currentContext();
-
-	/**
-	 * Complete without any value. <p>Calling this method multiple times or after the
-	 * other terminating methods has no effect.
-	 */
-	void success();
-
-    /**
-	 * Complete with the given value.
-	 * <p>Calling this method multiple times or after the other
-	 * terminating methods has no effect (the value is purely ignored). Calling this method with
-	 * a {@code null} value will be silently accepted as a call to
-	 * {@link #success()} by standard implementations.
-	 *
-	 * @param value the value to complete with
-	 */
-	void success(@Nullable T value);
-
-	/**
-	 * Terminate with the give exception
-	 * <p>Calling this method multiple times or after the other terminating methods is
-	 * an unsupported operation. It will discard the exception through the
-	 * {@link Hooks#onErrorDropped(Consumer)} hook (which by default throws the exception
-	 * wrapped via {@link reactor.core.Exceptions#bubble(Throwable)}). This is to avoid
-	 * complete and silent swallowing of the exception.
-	 *
-	 * @param e the exception to complete with
-	 */
-	void error(Throwable e);
 
 	/**
 	 * Attaches a {@link LongConsumer} to this {@link MonoSink} that will be notified of

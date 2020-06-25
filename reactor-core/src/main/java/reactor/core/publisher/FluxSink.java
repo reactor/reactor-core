@@ -19,8 +19,8 @@ package reactor.core.publisher;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.util.context.Context;
@@ -31,12 +31,10 @@ import reactor.util.context.Context;
  * <p>
  * @param <T> the value type
  */
-public interface FluxSink<T> {
+public interface FluxSink<T> extends SequenceSink<T> {
 
-	/**
-     * @see Subscriber#onComplete()
-     */
-    void complete();
+	@Override
+	FluxSink<T> next(T t);
 
 	/**
 	 * Return the current subscriber {@link Context}.
@@ -49,18 +47,6 @@ public interface FluxSink<T> {
 	 */
 	Context currentContext();
 
-    /**
-     * @see Subscriber#onError(Throwable)
-     * @param e the exception to signal, not null
-     */
-    void error(Throwable e);
-
-    /**
-     * Try emitting, might throw an unchecked exception.
-     * @see Subscriber#onNext(Object)
-     * @param t the value to emit, not null
-     */
-    FluxSink<T> next(T t);
 
 	/**
 	 * The current outstanding request amount.

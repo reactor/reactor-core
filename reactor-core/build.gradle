@@ -40,6 +40,7 @@ ext {
 		].join(","),
 		"Import-Package": [
 			"!javax.annotation",
+			"!javax.annotation.meta",
 			'org.slf4j;resolution:=optional;version="[1.5.4,2)"',
 			"kotlin.*;resolution:=optional",
 			"reactor.blockhound.*;resolution:=optional",
@@ -154,7 +155,7 @@ task japicmp(type: JapicmpTask) {
 
 	//TODO after a release, bump the gradle.properties baseline
 	//TODO after a release, remove the reactor-core exclusions below if any
-//	classExcludes = []
+	classExcludes = ["reactor.core.publisher.TopicProcessor", "reactor.core.publisher.WorkQueueProcessor", 'reactor.core.publisher.EventLoopProcessor$Slot']
 //	methodExcludes = ["reactor.core.Scannable#operatorName()"]
 }
 

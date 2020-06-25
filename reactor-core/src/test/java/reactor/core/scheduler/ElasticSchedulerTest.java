@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.pivovarit.function.ThrowingRunnable;
@@ -40,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
+@SuppressWarnings("deprecation")
 public class ElasticSchedulerTest extends AbstractSchedulerTest {
 
 	private static final Logger LOGGER = Loggers.getLogger(ElasticSchedulerTest.class);
@@ -254,16 +254,16 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 				    .subscribe();
 
 				if (i == 0) {
-					activeAtBeginning = Thread.activeCount() - otherThreads;
+					activeAtBeginning = Math.max(0, Thread.activeCount() - otherThreads);
 					oldActive = activeAtBeginning;
 					LOGGER.info("{} threads active in round 1/{}", activeAtBeginning, fastCount);
 				}
 				else if (i == fastCount - 1) {
-					activeAtEnd = Thread.activeCount() - otherThreads;
+					activeAtEnd = Math.max(0, Thread.activeCount() - otherThreads);
 					LOGGER.info("{} threads active in round {}/{}", activeAtEnd, i + 1, fastCount);
 				}
 				else {
-					int newActive = Thread.activeCount() - otherThreads;
+					int newActive = Math.max(0, Thread.activeCount() - otherThreads);
 					if (oldActive != newActive) {
 						oldActive = newActive;
 						LOGGER.info("{} threads active in round {}/{}", oldActive, i + 1, fastCount);

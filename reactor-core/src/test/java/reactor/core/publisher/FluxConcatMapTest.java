@@ -29,6 +29,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -314,10 +315,10 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void singleSubscriberOnly() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		source.concatMap(v -> v == 1 ? source1 : source2)
 		      .subscribe(ts);
@@ -350,10 +351,10 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		source.concatMapDelayError(v -> v == 1 ? source1 : source2)
 		      .subscribe(ts);
@@ -389,10 +390,10 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void mainErrorsImmediate() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		source.concatMap(v -> v == 1 ? source1 : source2)
 		      .subscribe(ts);
@@ -423,10 +424,10 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void mainErrorsBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		source.concatMapDelayError(v -> v == 1 ? source1 : source2)
 		      .subscribe(ts);
@@ -464,10 +465,10 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void innerErrorsImmediate() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		source.concatMap(v -> v == 1 ? source1 : source2)
 		      .subscribe(ts);
@@ -498,10 +499,10 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void innerErrorsBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		//gh-1101: default changed from BOUNDARY to END
 		source.concatMapDelayError(v -> v == 1 ? source1 : source2, false, Queues.XS_BUFFER_SIZE)
@@ -533,10 +534,10 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void innerErrorsEnd() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> source = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source = Processors.more().multicastNoBackpressure();
 
-		DirectProcessor<Integer> source1 = DirectProcessor.create();
-		DirectProcessor<Integer> source2 = DirectProcessor.create();
+		FluxIdentityProcessor<Integer> source1 = Processors.more().multicastNoBackpressure();
+		FluxIdentityProcessor<Integer> source2 = Processors.more().multicastNoBackpressure();
 
 		source.concatMapDelayError(v -> v == 1 ? source1 : source2, true, 32)
 		      .subscribe(ts);
@@ -605,7 +606,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionMapToNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up = UnicastProcessor.create(Queues.<Integer>get(2).get());
+		FluxIdentityProcessor<Integer> up = Processors.more().unicast(Queues.<Integer>get(2).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onComplete();
@@ -623,8 +624,8 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionMapToNullFilter() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(Queues.<Integer>get(2).get());
+		FluxIdentityProcessor<Integer> up =
+				Processors.more().unicast(Queues.<Integer>get(2).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onComplete();

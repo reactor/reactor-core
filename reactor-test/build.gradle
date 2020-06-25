@@ -57,6 +57,8 @@ task downloadBaseline(type: Download) {
 
 	src "${repositories.jcenter().url}io/projectreactor/reactor-test/$compatibleVersion/reactor-test-${compatibleVersion}.jar"
 	dest "${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar"
+
+	finalizedBy { japicmp }
 }
 
 task japicmp(type: JapicmpTask) {

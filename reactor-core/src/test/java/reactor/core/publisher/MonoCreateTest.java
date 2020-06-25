@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -347,6 +348,7 @@ public class MonoCreateTest {
 			Hooks.onNextDropped(collector::add);
 			AssertSubscriber<Object> assertSubscriber = new AssertSubscriber<>(Operators.enableOnDiscard(null, collector::add), 1);
 
+			@SuppressWarnings("unchecked")
 			MonoSink<Object>[] sinks = new MonoSink[1];
 
 			Mono.create(sink -> sinks[0] = sink)

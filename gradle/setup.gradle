@@ -37,6 +37,12 @@ task javadocJar(type: Jar) {
 }
 
 publishing {
+    repositories {
+        maven {
+           name = "mock"
+           url = "${rootProject.buildDir}/repo"
+        }
+    }
 	publications {
 		mavenJava(MavenPublication) {
 			from components.java

@@ -444,13 +444,13 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 				    .subscribe();
 
 				if (i == 0) {
-					activeAtBeginning = Thread.activeCount() - otherThreads;
+					activeAtBeginning = Math.max(0, Thread.activeCount() - otherThreads);
 					threadCountTrend[0] = activeAtBeginning;
 					oldActive = activeAtBeginning;
 					LOGGER.debug("{} threads active in round 1/{}", activeAtBeginning, fastCount);
 				}
 				else {
-					int newActive = Thread.activeCount() - otherThreads;
+					int newActive = Math.max(0, Thread.activeCount() - otherThreads);
 					if (oldActive != newActive) {
 						threadCountTrend[threadCountChange++] = newActive;
 						oldActive = newActive;
