@@ -242,7 +242,7 @@ jar {
 
 jacocoTestReport.dependsOn test
 check.dependsOn jacocoTestReport
-jar.finalizedBy(japicmp)
+check.dependsOn japicmp
 
 jcstress {
 	mode = 'quick'

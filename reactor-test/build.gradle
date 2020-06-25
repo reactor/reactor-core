@@ -100,4 +100,4 @@ jar {
 	bnd(bndOptions)
 }
 
-jar.finalizedBy(japicmp)
+check.dependsOn japicmp
