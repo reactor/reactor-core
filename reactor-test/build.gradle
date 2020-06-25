@@ -49,20 +49,7 @@ dependencies {
 	testCompile "org.mockito:mockito-core:$mockitoVersion"
 }
 
-task downloadBaseline {
-	if (project.gradle.startParameter.isOffline()) {
-		println "Offline: skipping downloading of baseline and JAPICMP"
-	}
-	else if ("$compatibleVersion" == "SKIP") {
-		println "SKIP: Instructed to skip the baseline comparison"
-	}
-	else {
-		println "Will download and perform baseline comparison with ${compatibleVersion}"
-		finalizedBy { doDownloadBaseline }
-	}
-}
-
-task doDownloadBaseline(type: Download) {
+task downloadBaseline(type: Download) {
 	onlyIfNewer true
 	compress true
 
@@ -73,8 +60,21 @@ task doDownloadBaseline(type: Download) {
 }
 
 task japicmp(type: JapicmpTask) {
+	if (project.gradle.startParameter.isOffline()) {
+		println "Offline: skipping downloading of baseline and JAPICMP"
+	  	enabled = false
+	}
+	else if ("$compatibleVersion" == "SKIP") {
+		println "SKIP: Instructed to skip the baseline comparison"
+	  	enabled = false
+	}
+	else {
+		println "Will download and perform baseline comparison with ${compatibleVersion}"
+	  	dependsOn(downloadBaseline)
+	}
+
 	oldClasspath = files("${buildDir}/baselineLibs/reactor-test-${compatibleVersion}.jar")
-	newClasspath = files(jar.archivePath)
+	newClasspath = files(jar.archiveFile)
 	onlyBinaryIncompatibleModified = true
 	failOnModification = true
 	failOnSourceIncompatibility = true
@@ -138,7 +138,7 @@ jar {
 	bnd(bndOptions)
 }
 
-jar.finalizedBy(downloadBaseline)
+check.dependsOn japicmp
 
 //add kdoc to the publication
 publishing.publications.mavenJava.artifact(kdocZip)
