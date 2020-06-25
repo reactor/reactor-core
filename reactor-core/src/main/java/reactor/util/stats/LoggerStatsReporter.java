@@ -10,7 +10,7 @@ import reactor.util.Loggers;
 import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 
-class LoggerStatsReporter implements StatsReporter {
+final class LoggerStatsReporter implements StatsReporter {
 
 	static final LoggerStatsReporter INSTANCE = new LoggerStatsReporter();
 

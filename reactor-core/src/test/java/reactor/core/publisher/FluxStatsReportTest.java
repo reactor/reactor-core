@@ -34,28 +34,22 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class FluxStatsReportTest {
 
-	static final ByteArrayOutputStream overriddenOut   = new ByteArrayOutputStream();
-	static final PrintStream           overriddenPrint = new PrintStream(overriddenOut);
-
 	@BeforeAll
 	public static void initLoggerOnce() {
-		PrintStream originalOut = System.out;
-		System.setOut(overriddenPrint);
-		Loggers.useConsoleLoggers();
-		Stats.useLoggerStatsReporter();
-		System.setOut(originalOut);
+		Hooks.enableStatsRecording();
 	}
 
 	@AfterAll
 	public static void resetLoggerOnce() {
 		Loggers.resetLoggerFactory();
+		Hooks.resetOnOperatorDebug();
+		Hooks.disableStatsRecording();
 	}
 
 	@BeforeEach
 	public void resetOut() {
-		overriddenOut.reset();
+		StatsTestSupport.overriddenOut.reset();
 		Hooks.onOperatorDebug();
-		Hooks.enableStatsTracking();
 	}
 
 	@Test
@@ -66,7 +60,7 @@ public class FluxStatsReportTest {
 		    .as(this::methodReturningFlux)
 		    .blockLast();
 
-		String debugStack = overriddenOut.toString();
+		String debugStack = StatsTestSupport.overriddenOut.toString();
 
 		Iterator<String> lines = Stream.of(debugStack.split("\n"))
 		                               .iterator();
@@ -112,7 +106,7 @@ public class FluxStatsReportTest {
 		    .as(this::methodReturningFlux)
 		    .blockLast();
 
-		String debugStack = overriddenOut.toString();
+		String debugStack = StatsTestSupport.overriddenOut.toString();
 
 		Iterator<String> lines = Stream.of(debugStack.split("\n"))
 		                               .iterator();
@@ -164,7 +158,7 @@ public class FluxStatsReportTest {
 			// ignored
 		}
 
-		String debugStack = overriddenOut.toString();
+		String debugStack = StatsTestSupport.overriddenOut.toString();
 
 		Iterator<String> lines = Stream.of(debugStack.split("\n"))
 		                               .iterator();
@@ -216,7 +210,7 @@ public class FluxStatsReportTest {
 			// ignored
 		}
 
-		String debugStack = overriddenOut.toString();
+		String debugStack = StatsTestSupport.overriddenOut.toString();
 
 		Iterator<String> lines = Stream.of(debugStack.split("\n"))
 		                               .iterator();
@@ -290,6 +284,21 @@ public class FluxStatsReportTest {
 
 	private static int getBaseline() {
 		return new Exception().getStackTrace()[1].getLineNumber();
+	}
+
+
+	static class StatsTestSupport {
+
+		static final ByteArrayOutputStream overriddenOut   = new ByteArrayOutputStream();
+		static final PrintStream           overriddenPrint = new PrintStream(overriddenOut);
+
+		static {
+			PrintStream originalOut = System.out;
+			System.setOut(overriddenPrint);
+			Loggers.useConsoleLoggers();
+			Stats.useLoggerStatsReporter();
+			System.setOut(originalOut);
+		}
 	}
 
 }

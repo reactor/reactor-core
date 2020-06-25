@@ -26,6 +26,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.FluxStatsReportTest.StatsTestSupport;
 import reactor.util.Loggers;
 import reactor.util.stats.Stats;
 
@@ -34,31 +35,22 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class MonoStatsReportTest {
 
-	static final ByteArrayOutputStream overriddenOut   = new ByteArrayOutputStream();
-	static final PrintStream           overriddenPrint = new PrintStream(overriddenOut);
-
 	@BeforeAll
 	public static void initLoggerOnce() {
-		PrintStream originalOut = System.out;
-		System.setOut(overriddenPrint);
-		Loggers.useConsoleLoggers();
-		Stats.useLoggerStatsReporter();
-		System.setOut(originalOut);
+		Hooks.enableStatsRecording();
 	}
 
 	@AfterAll
 	public static void resetLoggerOnce() {
 		Loggers.resetLoggerFactory();
-
 		Hooks.resetOnOperatorDebug();
-		Hooks.disableStatsTracking();
+		Hooks.disableStatsRecording();
 	}
 
 	@BeforeEach
 	public void resetOut() {
-		overriddenOut.reset();
+		StatsTestSupport.overriddenOut.reset();
 		Hooks.onOperatorDebug();
-		Hooks.enableStatsTracking();
 	}
 
 	@Test
@@ -69,7 +61,7 @@ public class MonoStatsReportTest {
 		    .as(this::methodReturningMono)
 		    .block();
 
-		String debugStack = overriddenOut.toString();
+		String debugStack = StatsTestSupport.overriddenOut.toString();
 
 		Iterator<String> lines = Stream.of(debugStack.split("\n"))
 		                               .iterator();
@@ -115,7 +107,7 @@ public class MonoStatsReportTest {
 		    .as(this::methodReturningMono)
 		    .block();
 
-		String debugStack = overriddenOut.toString();
+		String debugStack = StatsTestSupport.overriddenOut.toString();
 
 		Iterator<String> lines = Stream.of(debugStack.split("\n"))
 		                               .iterator();
@@ -166,7 +158,7 @@ public class MonoStatsReportTest {
 			// ignored
 		}
 
-		String debugStack = overriddenOut.toString();
+		String debugStack = StatsTestSupport.overriddenOut.toString();
 
 		Iterator<String> lines = Stream.of(debugStack.split("\n"))
 		                               .iterator();
@@ -218,7 +210,7 @@ public class MonoStatsReportTest {
 			// ignored
 		}
 
-		String debugStack = overriddenOut.toString();
+		String debugStack = StatsTestSupport.overriddenOut.toString();
 
 		Iterator<String> lines = Stream.of(debugStack.split("\n"))
 		                               .iterator();
