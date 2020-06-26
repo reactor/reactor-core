@@ -60,6 +60,7 @@ public class SchedulersTest {
 
 	final static class TestSchedulers implements Schedulers.Factory {
 
+		@SuppressWarnings("deprecation")
 		final Scheduler elastic        = Schedulers.Factory.super.newElastic(60, Thread::new);
 		final Scheduler boundedElastic = Schedulers.Factory.super.newBoundedElastic(2, Integer.MAX_VALUE, Thread::new, 60);
 		final Scheduler single         = Schedulers.Factory.super.newSingle(Thread::new);
@@ -75,6 +76,7 @@ public class SchedulersTest {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 			assertThat(((ReactorThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return elastic;
@@ -329,6 +331,7 @@ public class SchedulersTest {
 
 	@Test
 	public void elasticSchedulerDefaultBlockingOk() throws InterruptedException {
+		@SuppressWarnings("deprecation")
 		Scheduler scheduler = Schedulers.newElastic("elasticSchedulerDefaultNonBlocking");
 		CountDownLatch latch = new CountDownLatch(1);
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
@@ -536,7 +539,9 @@ public class SchedulersTest {
 		Schedulers.setFactory(ts);
 
 		Assert.assertEquals(ts.single, Schedulers.newSingle("unused"));
-		Assert.assertEquals(ts.elastic, Schedulers.newElastic("unused"));
+		@SuppressWarnings("deprecation")
+		Scheduler elastic = Schedulers.newElastic("unused");
+		Assert.assertEquals(ts.elastic, elastic);
 		Assert.assertEquals(ts.boundedElastic, Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "unused"));
 		Assert.assertEquals(ts.parallel, Schedulers.newParallel("unused"));
 
@@ -578,6 +583,7 @@ public class SchedulersTest {
 	@Test
 	public void shutdownNowClosesAllCachedSchedulers() {
 		Scheduler oldSingle = Schedulers.single();
+		@SuppressWarnings("deprecation")
 		Scheduler oldElastic = Schedulers.elastic();
 		Scheduler oldBoundedElastic = Schedulers.boundedElastic();
 		Scheduler oldParallel = Schedulers.parallel();
@@ -912,6 +918,7 @@ public class SchedulersTest {
 
 	@Test(timeout = 5000)
 	public void elasticSchedulerThreadCheck() throws Exception{
+		@SuppressWarnings("deprecation")
 		Scheduler s = Schedulers.newElastic("work");
 		try {
 			Scheduler.Worker w = s.createWorker();
@@ -1164,7 +1171,7 @@ public class SchedulersTest {
 		};
 
 		//noop
-		Schedulers.elastic().dispose();
+		Schedulers.boundedElastic().dispose();
 	}
 
 	@Test

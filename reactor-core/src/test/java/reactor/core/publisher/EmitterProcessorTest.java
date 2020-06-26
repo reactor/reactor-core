@@ -103,7 +103,7 @@ public class EmitterProcessorTest {
 		Processor<Integer, Integer> processor = EmitterProcessor.create(16);
 
 		StepVerifier.create(processor)
-		            .then(() -> Flux.range(1, 5).publishOn(Schedulers.elastic()).subscribe(processor))
+		            .then(() -> Flux.range(1, 5).publishOn(Schedulers.boundedElastic()).subscribe(processor))
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));

@@ -187,7 +187,7 @@ public class FluxWindowTimeoutTest {
 			public Worker createWorker() {
 				return new Worker() {
 
-					Worker delegate = Schedulers.elastic().createWorker();
+					Worker delegate = Schedulers.boundedElastic().createWorker();
 
 					@Override
 					public Disposable schedule(Runnable task) {

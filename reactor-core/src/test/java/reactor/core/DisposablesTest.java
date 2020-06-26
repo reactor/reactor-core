@@ -105,7 +105,7 @@ public class DisposablesTest {
 				}
 			};
 
-			RaceTestUtils.race(r, r, Schedulers.elastic());
+			RaceTestUtils.race(r, r, Schedulers.boundedElastic());
 		}
 	}
 
@@ -120,7 +120,7 @@ public class DisposablesTest {
 				}
 			};
 
-			RaceTestUtils.race(r, r, Schedulers.elastic());
+			RaceTestUtils.race(r, r, Schedulers.boundedElastic());
 		}
 	}
 
@@ -134,7 +134,7 @@ public class DisposablesTest {
 				}
 			};
 
-			RaceTestUtils.race(r, r, Schedulers.elastic());
+			RaceTestUtils.race(r, r, Schedulers.boundedElastic());
 		}
 	}
 

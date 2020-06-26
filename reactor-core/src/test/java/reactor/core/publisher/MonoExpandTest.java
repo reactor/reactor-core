@@ -297,7 +297,7 @@ public class MonoExpandTest {
 
 		StepVerifier.create(Mono.just(root)
 		                        .expandDeep(v -> Flux.fromIterable(v.children)
-		                                         .subscribeOn(Schedulers.elastic()))
+		                                         .subscribeOn(Schedulers.boundedElastic()))
 		                        .map(v -> v.name))
 		            .expectNext(
 				            "root",
@@ -333,7 +333,7 @@ public class MonoExpandTest {
 		FluxExpandTest.Node root = createTest();
 
 		StepVerifier.create(Mono.just(root)
-		                        .expand(v -> Flux.fromIterable(v.children).subscribeOn(Schedulers.elastic()))
+		                        .expand(v -> Flux.fromIterable(v.children).subscribeOn(Schedulers.boundedElastic()))
 		                        .map(v -> v.name))
 		            .expectNext(
 				            "root",

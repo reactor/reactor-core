@@ -544,16 +544,16 @@ public class StepVerifierTests {
 				.log();
 
 		Duration took = StepVerifier.create(source,  1)
-		                            .then(() -> Schedulers.elastic().schedule(() -> publisher.next(0L)))
+		                            .then(() -> Schedulers.boundedElastic().schedule(() -> publisher.next(0L)))
 		                            .assertNext(next -> {
 			                            LockSupport.parkNanos(Duration.ofMillis(500)
 			                                                          .toNanos());
 			                            asserted.set(true);
 			                            assertThat(next).isEqualTo(0L);
 		                            })
-		                            .then(() -> Schedulers.elastic().schedule(() ->
+		                            .then(() -> Schedulers.boundedElastic().schedule(() ->
 				                            publisher.next(1L)))
-		                            .then(() -> Schedulers.elastic().schedule(() ->
+		                            .then(() -> Schedulers.boundedElastic().schedule(() ->
 				                            publisher.next(2L), 50, TimeUnit.MILLISECONDS))
 		                            .expectNoEvent(Duration.ofMillis(100))
 		                            .thenRequest(1)
@@ -590,12 +590,12 @@ public class StepVerifierTests {
 				.doOnCancel(() -> downStreamCancelled.set(true));
 
 		Duration took = StepVerifier.create(source)
-		                            .then(() -> Schedulers.elastic().schedule(() -> publisher.next(0L)))
+		                            .then(() -> Schedulers.boundedElastic().schedule(() -> publisher.next(0L)))
 		                            .assertNext(next -> {
 			                            asserted.set(true);
 			                            assertThat(next).isEqualTo(0L);
 		                            })
-		                            .then(() -> Schedulers.elastic().schedule(() ->
+		                            .then(() -> Schedulers.boundedElastic().schedule(() ->
 				                            publisher.next(1L)))
 		                            .thenCancel()
 		                            .verify(Duration.ofSeconds(5));

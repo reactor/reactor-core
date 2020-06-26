@@ -397,7 +397,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		    .publishOn(Schedulers.single())
 		    .map(v -> Thread.currentThread().getName().contains("single-") ? "single" : ("BAD-" + v + Thread.currentThread().getName()))
 		    .share()
-		    .publishOn(Schedulers.elastic())
+		    .publishOn(Schedulers.boundedElastic())
 		    .distinct()
 		    .as(StepVerifier::create)
 		    .expectFusion()

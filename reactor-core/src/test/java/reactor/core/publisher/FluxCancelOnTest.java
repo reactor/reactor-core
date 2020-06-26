@@ -55,10 +55,10 @@ public class FluxCancelOnTest {
 
 	@Test
 	public void scanOperator() {
-		final Flux<Integer> flux = Flux.just(1).cancelOn(Schedulers.elastic());
+		final Flux<Integer> flux = Flux.just(1).cancelOn(Schedulers.boundedElastic());
 
 		assertThat(flux).isInstanceOf(Scannable.class);
-		assertThat(((Scannable) flux).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.elastic());
+		assertThat(((Scannable) flux).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.boundedElastic());
 	}
 
 	@Test
