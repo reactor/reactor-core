@@ -72,6 +72,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
+		//this is protected by the call to subscribeOrReturn doing its own error handling
 		if (onSubscriptionSignal != null) {
 			onSubscriptionSignal.accept(SignalType.SUBSCRIBE, actual.currentContext());
 		}
@@ -103,7 +104,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		@Nullable
 		Fuseable.QueueSubscription<T> qs;
 
-		short state;
+		volatile short state;
 
 		DoOnEachSubscriber(CoreSubscriber<? super T> actual,
 				Consumer<? super Signal<T>> onSignal,
@@ -125,7 +126,16 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		public void cancel() {
 			s.cancel();
 			if (onSubscriptionSignal != null) {
-				onSubscriptionSignal.accept(SignalType.CANCEL, cachedContext);
+				try {
+					onSubscriptionSignal.accept(SignalType.CANCEL, cachedContext);
+				}
+				catch (Throwable errorInCancelHandler) {
+					//at this point the data is flowing so onComplete/onError may switch/read the state
+					if (state != STATE_DONE) {
+						state = STATE_DONE;
+						actual.onError(Operators.onOperatorError(errorInCancelHandler, cachedContext));
+					}
+				}
 			}
 		}
 
@@ -135,7 +145,19 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 				this.s = s;
 				this.qs = Operators.as(s);
 				if (onSubscriptionSignal != null) {
-					onSubscriptionSignal.accept(SignalType.ON_SUBSCRIBE, cachedContext);
+					try {
+						onSubscriptionSignal.accept(SignalType.ON_SUBSCRIBE, cachedContext);
+					}
+					//the Operators.reportThrowInSubscribe should take care of it, but here we better be explicit
+					catch (Throwable subscriptionCallbackError) {
+						// we mark as done, just in case the subscription fails/completes fast
+						state = STATE_DONE;
+						// we propagate a terminated subscription
+						// we make sure to cancel the parent subscription too (s passed to onOperatorError)
+						Throwable decorated = Operators.onOperatorError(s, subscriptionCallbackError, null, cachedContext);
+						Operators.error(actual, decorated);
+						return;
+					}
 				}
 				actual.onSubscribe(this);
 			}

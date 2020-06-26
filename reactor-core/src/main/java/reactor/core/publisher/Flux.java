@@ -4386,14 +4386,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <ol>
 	 *     <li>
 	 *         when the {@link Flux} is subscribed to ({@link SignalType#SUBSCRIBE},
-	 *         see {@link #doFirst(Runnable)})
+	 *         see {@link #doFirst(Runnable)}).
+	 *         <br/>Executed BEFORE the previous operator in the chain is subscribed.
 	 *     </li>
 	 *     <li>
 	 *         when it establishes the {@link Subscription} with said {@link Subscriber} ({@link SignalType#ON_SUBSCRIBE},
-	 *         see {@link #doOnSubscribe(Consumer)})</li>
+	 *         see {@link #doOnSubscribe(Consumer)}).
+	 * 	       <br/>Executed BEFORE a similar onSubscribe signal is passed downstream.
+	 * 	   </li>
 	 *     <li>
 	 *         when said {@link Subscriber} cancels its {@link Subscription} ({@link SignalType#CANCEL},
-	 *         see {@link #doOnCancel(Runnable)})
+	 *         see {@link #doOnCancel(Runnable)}).
+	 *         <br/>Executed AFTER the upstream has been cancelled.
 	 *     </li>
 	 * </ol>
 	 * <p>

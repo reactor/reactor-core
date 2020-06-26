@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,10 +31,12 @@ import java.util.function.Function;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -698,5 +701,75 @@ public class FluxDoOnEachTest {
 				.containsEntry(SignalType.ON_SUBSCRIBE, "Context1{testKey=testValue}")
 				.containsEntry(SignalType.CANCEL, "Context1{testKey=testValue}")
 				.hasSize(3);
+	}
+
+	@Test
+	public void subscriptionLifecycleSubscribeHandlerError() {
+		AtomicBoolean sourceSubscribed = new AtomicBoolean();
+
+		Flux.never()
+		    .doFirst(() -> sourceSubscribed.set(true))
+		    .doOnEachSubscriptionLifecyle((st, ctx) -> {
+		    	if (st == SignalType.SUBSCRIBE) {
+		    		throw new IllegalStateException("boom");
+			    }
+		    })
+		    .as(StepVerifier::create)
+		    .expectSubscription()
+		    .verifyErrorMessage("boom");
+
+		assertThat(sourceSubscribed).as("source subscribed").isFalse();
+	}
+
+	@Test
+	public void subscriptionLifecycleOnSubscribeHandlerError() {
+		AtomicBoolean sourceCancelled = new AtomicBoolean();
+
+		Flux.never()
+		    .doOnCancel(() -> sourceCancelled.set(true))
+		    .doOnEachSubscriptionLifecyle((st, ctx) -> {
+			    if (st == SignalType.ON_SUBSCRIBE) {
+				    throw new IllegalStateException("boom");
+			    }
+		    })
+		    .as(StepVerifier::create)
+		    .expectSubscription()
+		    .verifyErrorMessage("boom");
+
+		assertThat(sourceCancelled).as("source cancelled").isTrue();
+	}
+
+	@Test
+	public void subscriptionLifecycleCancelHandlerError() throws InterruptedException {
+		AtomicBoolean sourceCancelled = new AtomicBoolean();
+
+		Flux<Long> f = Flux
+				.interval(Duration.ofMillis(500))
+				.take(10) //security to always shortcircuit the test in case of an issue linked to downstream cancel
+				.doOnCancel(() -> sourceCancelled.set(true))
+				.doOnEachSubscriptionLifecyle((st, ctx) -> {
+					if (st == SignalType.CANCEL) {
+						throw new IllegalStateException("boom");
+					}
+				})
+				.cancelOn(Schedulers.single());//important to not mix with reportThrowInSubscribe
+
+		//take is not a good option here, because it propagates the complete signal
+		//we'll subscribe and cancel manually
+		AssertSubscriber<Long> assertSubscriber = AssertSubscriber.create();
+		f.subscribe(assertSubscriber);
+
+		//wait for max s for the first element to come in
+		Awaitility.await().atMost(1000, TimeUnit.SECONDS).untilAsserted(() -> assertSubscriber.assertValues(0L));
+		//then cancel
+		assertSubscriber.cancel();
+
+		//we expect cancel() to trigger an `onError`, which should trip the countdownlatch in the assertSubscriber
+		assertSubscriber.await(Duration.ofSeconds(5)); //5s timeout in case the cancel doesn't propagate an error
+
+
+		//we check that an error was propagated downstream and that the upstream was correctly cancelled
+		assertSubscriber.assertErrorMessage("boom");
+		assertThat(sourceCancelled).as("source cancelled").isTrue();
 	}
 }
