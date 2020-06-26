@@ -154,7 +154,7 @@ final class Context5 implements CoreContext {
 	public Context putAllInto(Context base) {
 		return base
 				.put(this.key1, this.value1)
-		        .put(this.key2, this.value2)
+				.put(this.key2, this.value2)
 				.put(this.key3, this.value3)
 				.put(this.key4, this.value4)
 				.put(this.key5, this.value5);
