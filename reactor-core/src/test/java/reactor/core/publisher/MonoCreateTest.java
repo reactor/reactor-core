@@ -317,11 +317,20 @@ public class MonoCreateTest {
 	}
 
 	@Test
+	public void scanOperator() {
+		MonoCreate<String> test = new MonoCreate(null);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+	}
+
+	@Test
 	public void scanDefaultMonoSink() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoCreate.DefaultMonoSink<String> test = new MonoCreate.DefaultMonoSink<>(actual);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.success();
@@ -402,12 +411,5 @@ public class MonoCreateTest {
 		            .verifyComplete();
 	}
 
-	@Test
-	public void scanOperator() {
-		MonoCreate<String> test = new MonoCreate(null);
-
-		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
-	}
 }
 

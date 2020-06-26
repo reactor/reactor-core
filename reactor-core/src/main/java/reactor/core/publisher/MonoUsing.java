@@ -162,6 +162,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable, SourceProducer<
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return wip == 1;
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

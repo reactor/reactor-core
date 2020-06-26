@@ -633,6 +633,7 @@ final class FluxZip<T, R> extends Flux<R> implements SourceProducer<R> {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

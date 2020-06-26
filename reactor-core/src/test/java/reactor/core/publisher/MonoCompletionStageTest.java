@@ -28,7 +28,8 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MonoCompletionStageTest {
+public class
+MonoCompletionStageTest {
 
 	@Test
 	public void cancelThenFutureFails() {
@@ -152,7 +153,8 @@ public class MonoCompletionStageTest {
 		CompletionStage<String> completionStage = CompletableFuture.supplyAsync(() -> "helloFuture");
 		MonoCompletionStage<String> test = new MonoCompletionStage(completionStage);
 
-		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
 	}
 
 	@Test

@@ -94,7 +94,7 @@ final class MonoCompletionStage<T> extends Mono<T>
 
     @Override
     public Object scanUnsafe(Attr key) {
-        if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+        if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
         return null;
     }
 }
