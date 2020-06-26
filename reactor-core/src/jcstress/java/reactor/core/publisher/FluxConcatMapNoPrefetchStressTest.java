@@ -30,8 +30,11 @@ public abstract class FluxConcatMapNoPrefetchStressTest {
 
 	final StressSubscriber stressSubscriber = new StressSubscriber();
 
-	final FluxConcatMapNoPrefetchSubscriber<Object, Object>
-			concatMapImmediate = new FluxConcatMapNoPrefetchSubscriber<>(stressSubscriber, Mono::just);
+	final FluxConcatMapNoPrefetchSubscriber<Object, Object> concatMapImmediate = new FluxConcatMapNoPrefetchSubscriber<>(
+			stressSubscriber,
+			Mono::just,
+			FluxConcatMap.ErrorMode.IMMEDIATE
+	);
 
 	@JCStressTest
 	@Outcome(id = {"false, false"}, expect = ACCEPTABLE,  desc = "No concurrent invocations")

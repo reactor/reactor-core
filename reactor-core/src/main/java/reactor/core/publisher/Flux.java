@@ -472,10 +472,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} concatenating all inner sources sequences
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(from(sources),
-				identityFunction(),
-				Queues.get(prefetch), prefetch,
-				FluxConcatMap.ErrorMode.IMMEDIATE));
+		return wrap(sources).concatMap(identityFunction(), prefetch);
 	}
 
 	/**
@@ -542,10 +539,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(from(sources),
-				identityFunction(),
-				Queues.get(prefetch), prefetch,
-				FluxConcatMap.ErrorMode.END));
+		return wrap(sources).concatMapDelayError(identityFunction(), prefetch);
 	}
 
 	/**
@@ -575,10 +569,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends
 			T>> sources, boolean delayUntilEnd, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(from(sources),
-				identityFunction(),
-				Queues.get(prefetch), prefetch,
-				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.BOUNDARY));
+		return wrap(sources).concatMapDelayError(identityFunction(), delayUntilEnd, prefetch);
 	}
 
 	/**
@@ -3671,7 +3662,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
 			mapper, int prefetch) {
 		if (prefetch == 0) {
-			return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper));
+			return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper, FluxConcatMap.ErrorMode.IMMEDIATE));
 		}
 		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE));
@@ -3751,8 +3742,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
 			extends V>> mapper, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch,
-				FluxConcatMap.ErrorMode.END));
+		return concatMapDelayError(mapper, true, prefetch);
 	}
 
 	/**
@@ -3793,9 +3783,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
 			extends V>> mapper, boolean delayUntilEnd, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch,
-				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode
-						.BOUNDARY));
+		FluxConcatMap.ErrorMode errorMode = delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.BOUNDARY;
+		if (prefetch == 0) {
+			return onAssembly(new FluxConcatMapNoPrefetch<>(this, mapper, errorMode));
+		}
+		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch, errorMode));
 	}
 
 	/**

@@ -24,6 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.FluxConcatMap.ConcatMapInner;
+import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.publisher.FluxConcatMap.FluxConcatMapSupport;
 import reactor.core.publisher.FluxConcatMap.WeakScalarSubscription;
 import reactor.util.annotation.Nullable;
@@ -42,12 +43,16 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
+	final ErrorMode errorMode;
+
 	FluxConcatMapNoPrefetch(
 			Flux<? extends T> source,
-			Function<? super T, ? extends Publisher<? extends R>> mapper
+			Function<? super T, ? extends Publisher<? extends R>> mapper,
+			ErrorMode errorMode
 	) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
+		this.errorMode = errorMode;
 	}
 
 	@Override
@@ -56,7 +61,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			return null;
 		}
 
-		return new FluxConcatMapNoPrefetchSubscriber<>(actual, mapper);
+		return new FluxConcatMapNoPrefetchSubscriber<>(actual, mapper, errorMode);
 	}
 
 	static final class FluxConcatMapNoPrefetchSubscriber<T, R> implements FluxConcatMapSupport<T, R> {
@@ -79,20 +84,33 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				"state"
 		);
 
+		volatile Throwable error;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<FluxConcatMapNoPrefetchSubscriber, Throwable> ERROR = AtomicReferenceFieldUpdater.newUpdater(
+				FluxConcatMapNoPrefetchSubscriber.class,
+				Throwable.class,
+				"error"
+		);
+
 		final CoreSubscriber<? super R> actual;
 
 		final ConcatMapInner<R> inner;
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
+		final ErrorMode errorMode;
+
 		Subscription upstream;
 
 		FluxConcatMapNoPrefetchSubscriber(
 				CoreSubscriber<? super R> actual,
-				Function<? super T, ? extends Publisher<? extends R>> mapper
+				Function<? super T, ? extends Publisher<? extends R>> mapper,
+				ErrorMode errorMode
 		) {
 			this.actual = actual;
 			this.mapper = mapper;
+			this.errorMode = errorMode;
 			this.inner = new ConcatMapInner<>(this);
 			STATE.lazySet(this, State.INITIAL);
 		}
@@ -164,19 +182,38 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				Context ctx = actual.currentContext();
 				Operators.onDiscard(t, ctx);
 
-				Throwable e_ = Operators.onNextError(t, e, ctx, upstream);
+				Throwable e_ = Operators.onNextError(t, e, ctx);
 				if (e_ == null) {
 					innerComplete();
 					return;
 				}
+
+				if (!ERROR.compareAndSet(this, null, e_)) {
+					Operators.onErrorDropped(e_, ctx);
+				}
+
+				if (errorMode == ErrorMode.END) {
+					innerComplete();
+					return;
+				}
+
+				upstream.cancel();
 				STATE.lazySet(this, State.TERMINATED);
-				actual.onError(Operators.onOperatorError(upstream, e, t, ctx));
+				actual.onError(Operators.onOperatorError(upstream, error, t, ctx));
 				return;
 			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
+			if (!ERROR.compareAndSet(this, null, t)) {
+				Operators.onErrorDropped(t, currentContext());
+			}
+
+			if (errorMode == ErrorMode.END) {
+				onComplete();
+				return;
+			}
 			for (State previousState = this.state; ; previousState = this.state) {
 				switch (previousState) {
 					case CANCELED:
@@ -204,6 +241,12 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 					case REQUESTED:
 						if (!STATE.compareAndSet(this, previousState, State.TERMINATED)) {
 							continue;
+						}
+
+						Throwable ex = error;
+						if (ex != null) {
+							actual.onError(ex);
+							return;
 						}
 						actual.onComplete();
 						return;
@@ -245,6 +288,12 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 						if (!STATE.compareAndSet(this, previousState, State.TERMINATED)) {
 							continue;
 						}
+
+						Throwable ex = error;
+						if (ex != null) {
+							actual.onError(ex);
+							return;
+						}
 						actual.onComplete();
 						return;
 					default:
@@ -255,6 +304,21 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void innerError(Throwable e) {
+			e = Operators.onNextInnerError(e, currentContext(), upstream);
+			if (e == null) {
+				innerComplete();
+				return;
+			}
+
+			if (!ERROR.compareAndSet(this, null, e)) {
+				Operators.onErrorDropped(e, currentContext());
+			}
+
+			if (errorMode == ErrorMode.END) {
+				innerComplete();
+				return;
+			}
+
 			for (State previousState = this.state; ; previousState = this.state) {
 				switch (previousState) {
 					case ACTIVE:
@@ -264,7 +328,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 						}
 						upstream.cancel();
 						inner.cancel();
-						actual.onError(e);
+						actual.onError(error);
 						return;
 					default:
 						Operators.onErrorDropped(e, currentContext());
