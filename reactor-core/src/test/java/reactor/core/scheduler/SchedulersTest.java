@@ -1140,6 +1140,7 @@ public class SchedulersTest {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void testDefaultMethods(){
 		EmptyScheduler s = new EmptyScheduler();
 
@@ -1171,7 +1172,7 @@ public class SchedulersTest {
 		};
 
 		//noop
-		Schedulers.boundedElastic().dispose();
+		Schedulers.elastic().dispose();
 	}
 
 	@Test
