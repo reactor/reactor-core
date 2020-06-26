@@ -62,6 +62,12 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
@@ -143,6 +149,7 @@ final class FluxOnBackpressureBuffer<O> extends InternalFluxOperator<O, O> imple
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.DELAY_ERROR) return true;
 			if (key == Attr.CAPACITY) return capacityOrSkip == Integer.MAX_VALUE ? Queues.capacity(queue) : capacityOrSkip;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

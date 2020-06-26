@@ -167,8 +167,11 @@ public class FluxRetryTest {
 
 	@Test
 	public void scanOperator(){
-	    FluxRetry<Integer> test = new FluxRetry(Flux.just(1), 3L);
+		Flux<Integer> parent = Flux.just(1);
+		FluxRetry<Integer> test = new FluxRetry(parent, 3L);
 
+	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+	    assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 

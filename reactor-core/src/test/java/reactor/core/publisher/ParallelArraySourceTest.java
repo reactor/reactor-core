@@ -18,8 +18,10 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.core.Scannable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Flux.just;
 
 public class ParallelArraySourceTest {
 
@@ -28,10 +30,20 @@ public class ParallelArraySourceTest {
 		@SuppressWarnings("unchecked")
 		Publisher<Integer>[] sources = new Publisher[2];
 		sources[0] = Flux.range(1, 4);
-		sources[1] = Flux.just(10);
+		sources[1] = just(10);
 		ParallelArraySource<Integer> test = new ParallelArraySource<>(sources);
 
 		assertThat(test.parallelism()).isEqualTo(2);
+	}
+
+	@Test
+	public void scanOperator(){
+		Publisher<Integer>[] sources = new Publisher[2];
+		sources[0] = Flux.range(1, 4);
+		sources[1] = just(10);
+		ParallelArraySource<Integer> test = new ParallelArraySource<>(sources);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 }

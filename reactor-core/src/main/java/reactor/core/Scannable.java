@@ -210,10 +210,21 @@ public interface Scannable {
 		 */
 		public static final Attr<Stream<Tuple2<String, String>>> TAGS = new Attr<>(null);
 
+		/**
+		 * An {@link Enum} attribute indicating whether or not an operator is guaranteed to be synchronous.
+		 *
+		 * Defaults to {@RunStyle UNKNOWN}.
+		 */
 		public static final Attr<RunStyle> RUN_STYLE = new Attr<>(RunStyle.UNKNOWN);
 
+		/**
+		 * An {@link Enum} enumerating the different style an operator can execute its request:
+		 * - UNKNOWN: no guarantees can be given on the running mode (default value)
+		 * - ASYNC: the operator may change threads during execution
+		 * - SYNC: guarantees the operator doesn't change threads
+		 */
 		public enum RunStyle {
-			UNKNOWN, SYNC, ASYNC;
+			UNKNOWN, ASYNC, SYNC;
 		}
 
 		/**

@@ -139,6 +139,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.ERROR) return generatedError;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

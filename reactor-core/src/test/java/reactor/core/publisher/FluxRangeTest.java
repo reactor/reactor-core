@@ -128,6 +128,7 @@ public class FluxRangeTest {
 	    FluxRange test = new FluxRange(0, 10);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	    assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
 	}
 
 	@Test
@@ -138,6 +139,7 @@ public class FluxRangeTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.clear();

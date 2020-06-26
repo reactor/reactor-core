@@ -590,6 +590,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         test.request(35);
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         parent.terminate();
@@ -609,6 +610,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
         FluxPublish.PubSubInner<Integer> test = new FluxPublish.PublishInner<>(parent);
 
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         test.request(35);
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 

@@ -42,7 +42,7 @@ final class FluxHide<T> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-	    if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
+	    if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 	    return super.scanUnsafe(key);
 	}
 
@@ -95,6 +95,7 @@ final class FluxHide<T> extends InternalFluxOperator<T, T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -125,6 +126,7 @@ final class FluxHide<T> extends InternalFluxOperator<T, T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

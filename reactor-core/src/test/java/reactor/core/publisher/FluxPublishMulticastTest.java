@@ -329,6 +329,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         test.request(789);
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(789);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();

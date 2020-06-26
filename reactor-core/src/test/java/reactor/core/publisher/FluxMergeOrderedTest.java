@@ -313,6 +313,7 @@ public class FluxMergeOrderedTest {
 				.isSameAs(actual)
 				.isSameAs(test.actual());
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		test.emitted = 2;
 		test.requested = 10;

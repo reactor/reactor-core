@@ -26,7 +26,7 @@ public class ParallelFluxHideTest {
 	@Test
 	public void parallelism() {
 		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
-		ParallelFluxHide<Integer> test = new ParallelFluxHide<>(source);
+	 	ParallelFluxHide<Integer> test = new ParallelFluxHide<>(source);
 
 		assertThat(test.parallelism())
 				.isEqualTo(3)

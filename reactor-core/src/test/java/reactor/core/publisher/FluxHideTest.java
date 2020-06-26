@@ -118,7 +118,7 @@ public class FluxHideTest {
 	}
 
 	@Test
-	public void scanOperatorWithSyncSource(){
+	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
 		FluxHide test = new FluxHide(parent);
 
@@ -135,6 +135,7 @@ public class FluxHideTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 
 	@Test
@@ -146,5 +147,6 @@ public class FluxHideTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 }

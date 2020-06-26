@@ -331,6 +331,7 @@ final class FluxMergeOrdered<T> extends Flux<T> implements SourceProducer<T> {
 			if (key == Attr.ERROR) return this.error;
 			if (key == Attr.DELAY_ERROR) return true;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested - emitted;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

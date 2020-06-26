@@ -171,22 +171,26 @@ public class FluxSubscribeOnTest {
 	@Test
 	public void scanOperator(){
 	    Flux<Integer> parent = Flux.just(1);
-		FluxSubscribeOn<Integer> test = new FluxSubscribeOn<>(parent, Schedulers.single(), false);
+		Scheduler scheduler = Schedulers.single();
+		FluxSubscribeOn<Integer> test = new FluxSubscribeOn<>(parent, scheduler, false);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(scheduler);
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxSubscribeOn.SubscribeOnSubscriber<Integer> test =
-        		new FluxSubscribeOn.SubscribeOnSubscriber<>(Flux.just(1), actual, Schedulers.single().createWorker(), true);
+		Scheduler.Worker worker = Schedulers.single().createWorker();
+		FluxSubscribeOn.SubscribeOnSubscriber<Integer> test =
+        		new FluxSubscribeOn.SubscribeOnSubscriber<>(Flux.just(1), actual, worker, true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(worker);
         assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
         test.requested = 35;
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);

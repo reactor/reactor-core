@@ -650,6 +650,7 @@ final class FluxPublishMulticast<T, R> extends InternalFluxOperator<T, R> implem
 			if (key == Attr.CANCELLED) {
 				return Long.MIN_VALUE == requested;
 			}
+			if (key == RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

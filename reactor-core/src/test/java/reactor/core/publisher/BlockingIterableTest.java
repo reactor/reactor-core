@@ -139,6 +139,7 @@ public class BlockingIterableTest {
 		BlockingIterable<Integer> test = new BlockingIterable<>(source, 35, Queues.one());
 
 		assertThat(test.scanUnsafe(Scannable.Attr.PARENT)).describedAs("PARENT").isSameAs(source);
+		assertThat(test.scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
 
 		//type safe attributes
 		assertThat(test.scanUnsafe(Attr.PREFETCH)).describedAs("PREFETCH unsafe").isEqualTo(35);
@@ -167,6 +168,7 @@ public class BlockingIterableTest {
 		assertThat(subscriberIterator.scan(Scannable.Attr.TERMINATED)).describedAs("TERMINATED").isFalse();
 		assertThat(subscriberIterator.scan(Scannable.Attr.CANCELLED)).describedAs("CANCELLED").isFalse();
 		assertThat(subscriberIterator.scan(Scannable.Attr.ERROR)).describedAs("ERROR").isNull();
+		assertThat(subscriberIterator.scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
 
 		assertThat(subscriberIterator.scan(Attr.PREFETCH)).describedAs("PREFETCH").isEqualTo(123); //FIXME
 	}

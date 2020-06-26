@@ -112,6 +112,7 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.RUN_ON) return worker;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
