@@ -734,7 +734,7 @@ Since version `3.1.0`, Reactor comes with an advanced feature that is somewhat c
 to `ThreadLocal` but can be applied to a `Flux` or a `Mono` instead of a `Thread`.
 This feature is called `Context`.
 
-As an illustration of what it looks like, the following example both writes from and
+As an illustration of what it looks like, the following example both reads from and
 writes to `Context`:
 
 ====
