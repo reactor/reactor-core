@@ -37,6 +37,7 @@ ext {
 
 dependencies {
 	compile project(":reactor-core")
+	compileOnly "com.google.code.findbugs:jsr305:${jsr305Version}"
 
 	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
