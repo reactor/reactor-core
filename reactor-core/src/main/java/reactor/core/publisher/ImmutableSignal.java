@@ -82,38 +82,49 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (o == null || !(o instanceof Signal)) {
 			return false;
 		}
 
-		ImmutableSignal<?> signal = (ImmutableSignal<?>) o;
+		Signal<?> signal = (Signal<?>) o;
 
 		if (getType() != signal.getType()) {
 			return false;
 		}
-		if (getThrowable() != null ? !getThrowable().equals(signal.getThrowable()) :
-				signal.getThrowable() != null) {
-			return false;
+		if (isOnComplete()) {
+			return true;
 		}
-		if (value != null ? !value.equals(signal.value) : signal.value != null) {
-			return false;
+		if (isOnSubscribe()) {
+			return Objects.equals(this.getSubscription(), signal.getSubscription());
 		}
-		return getSubscription() != null ?
-				getSubscription().equals(signal.getSubscription()) :
-				signal.getSubscription() == null;
+		if (isOnError()) {
+			return Objects.equals(this.getThrowable(), signal.getThrowable());
+		}
+		if (isOnNext()) {
+			return Objects.equals(this.get(), signal.get());
+		}
+		return false;
 	}
 
 	@Override
 	public int hashCode() {
 		int result = getType().hashCode();
-		result = 31 * result + (getThrowable() != null ? getThrowable().hashCode() : 0);
-		result = 31 * result + (value != null ? value.hashCode() : 0);
-		result = 31 * result + (getSubscription() != null ? getSubscription().hashCode() :
-				0);
+		if (isOnError()) {
+			return  31 * result + (getThrowable() != null ? getThrowable().hashCode() :
+					0);
+		}
+		if (isOnNext()) {
+			//noinspection ConstantConditions
+			return  31 * result + (get() != null ? get().hashCode() : 0);
+		}
+		if (isOnSubscribe()) {
+			return  31 * result + (getSubscription() != null ?
+					getSubscription().hashCode() : 0);
+		}
 		return result;
 	}
 
