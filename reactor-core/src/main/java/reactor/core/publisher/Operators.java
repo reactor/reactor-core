@@ -873,13 +873,13 @@ public abstract class Operators {
 	 * @return a {@link Throwable} to propagate through onError if the strategy is
 	 * terminal and cancelled the subscription, null if not.
 	 */
-	public static <T> Throwable onNextInnerError(Throwable error, Context context, Subscription subscriptionForCancel) {
+	public static <T> Throwable onNextInnerError(Throwable error, Context context, @Nullable Subscription subscriptionForCancel) {
 		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, null)) {
 			//some strategies could still return an exception, eg. if the consumer throws
 			Throwable t = strategy.process(error, null, context);
-			if (t != null) {
+			if (t != null && subscriptionForCancel != null) {
 				subscriptionForCancel.cancel();
 			}
 			return t;

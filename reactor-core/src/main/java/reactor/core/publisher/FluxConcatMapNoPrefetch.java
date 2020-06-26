@@ -68,9 +68,21 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		enum State {
 			INITIAL,
+			/**
+			 * Requested from {@link #upstream}, waiting for {@link #onNext(Object)}
+			 */
 			REQUESTED,
+			/**
+			 * {@link #onNext(Object)} received, listening on {@link #inner}
+			 */
 			ACTIVE,
+			/**
+			 * Received outer {@link #onComplete()}, waiting for {@link #inner} to complete
+			 */
 			LAST_ACTIVE,
+			/**
+			 * Terminated either successfully or after an error
+			 */
 			TERMINATED,
 			CANCELED,
 		}
@@ -181,55 +193,17 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			catch (Throwable e) {
 				Context ctx = actual.currentContext();
 				Operators.onDiscard(t, ctx);
-
-				Throwable e_ = Operators.onNextError(t, e, ctx);
-				if (e_ == null) {
+				if (!maybeOnError(Operators.onNextError(t, e, ctx), ctx, upstream)) {
 					innerComplete();
-					return;
 				}
-
-				if (!ERROR.compareAndSet(this, null, e_)) {
-					Operators.onErrorDropped(e_, ctx);
-				}
-
-				if (errorMode == ErrorMode.END) {
-					innerComplete();
-					return;
-				}
-
-				upstream.cancel();
-				STATE.lazySet(this, State.TERMINATED);
-				actual.onError(Operators.onOperatorError(upstream, error, t, ctx));
-				return;
 			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			if (!ERROR.compareAndSet(this, null, t)) {
-				Operators.onErrorDropped(t, currentContext());
-			}
-
-			if (errorMode == ErrorMode.END) {
+			Context ctx = currentContext();
+			if (!maybeOnError(t, ctx, inner)) {
 				onComplete();
-				return;
-			}
-			for (State previousState = this.state; ; previousState = this.state) {
-				switch (previousState) {
-					case CANCELED:
-					case TERMINATED:
-						Operators.onErrorDropped(t, currentContext());
-						return;
-					default:
-						if (!STATE.compareAndSet(this, previousState, State.TERMINATED)) {
-							continue;
-						}
-						inner.cancel();
-						synchronized (this) {
-							actual.onError(t);
-						}
-						return;
-				}
 			}
 		}
 
@@ -304,35 +278,39 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void innerError(Throwable e) {
-			e = Operators.onNextInnerError(e, currentContext(), upstream);
-			if (e == null) {
+			Context ctx = currentContext();
+			if (!maybeOnError(Operators.onNextInnerError(e, ctx, null), ctx, upstream)) {
 				innerComplete();
-				return;
+			}
+		}
+
+		private boolean maybeOnError(@Nullable Throwable e, Context ctx, Subscription subscriptionToCancel) {
+			if (e == null) {
+				return false;
 			}
 
 			if (!ERROR.compareAndSet(this, null, e)) {
-				Operators.onErrorDropped(e, currentContext());
+				Operators.onErrorDropped(e, ctx);
 			}
 
 			if (errorMode == ErrorMode.END) {
-				innerComplete();
-				return;
+				return false;
 			}
 
 			for (State previousState = this.state; ; previousState = this.state) {
 				switch (previousState) {
-					case ACTIVE:
-					case LAST_ACTIVE:
+					case CANCELED:
+					case TERMINATED:
+						return true;
+					default:
 						if (!STATE.compareAndSet(this, previousState, State.TERMINATED)) {
 							continue;
 						}
-						upstream.cancel();
-						inner.cancel();
-						actual.onError(error);
-						return;
-					default:
-						Operators.onErrorDropped(e, currentContext());
-						return;
+						subscriptionToCancel.cancel();
+						synchronized (this) {
+							actual.onError(error);
+						}
+						return true;
 				}
 			}
 		}
