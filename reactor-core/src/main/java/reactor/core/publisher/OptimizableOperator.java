@@ -35,7 +35,13 @@ interface OptimizableOperator<IN, OUT> extends CorePublisher<IN> {
 
 	/**
 	 * Allow delegation of the subscription by returning a {@link CoreSubscriber}, or force
-	 * subscription encapsulation by returning null. This can be used in conjunction with {@link #nextOptimizableSource()}
+	 * subscription encapsulation by returning null.
+	 * <br/>
+	 * Caller MUST catch exceptions and report them to the most relevant {@link org.reactivestreams.Subscriber},
+	 * generally using {@link Operators#reportThrowInSubscribe(CoreSubscriber, Throwable)},
+	 * rather than letting them bubble up the call stack.
+	 * <p>
+	 * This can be used in conjunction with {@link #nextOptimizableSource()}
 	 * to perform subscription in a loop instead of by recursion.
 	 *
 	 * @return next {@link CoreSubscriber} or "null" if the subscription was already done inside the method
