@@ -1150,7 +1150,7 @@ public class FluxTests extends AbstractReactorTest {
 					sink.complete();
 				}).
 				    subscribeOn(Schedulers.newSingle("production")).
-				    publishOn(Schedulers.elastic()).
+				    publishOn(Schedulers.boundedElastic()).
 				    subscribe(i -> {
 					    LockSupport.parkNanos(100L);
 					    latch.countDown();

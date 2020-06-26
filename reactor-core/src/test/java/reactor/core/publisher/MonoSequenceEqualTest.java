@@ -136,7 +136,7 @@ public class MonoSequenceEqualTest {
 
 	@Test
 	public void largeSequence() {
-		Flux<Integer> source = Flux.range(1, Queues.SMALL_BUFFER_SIZE * 4).subscribeOn(Schedulers.elastic());
+		Flux<Integer> source = Flux.range(1, Queues.SMALL_BUFFER_SIZE * 4).subscribeOn(Schedulers.boundedElastic());
 
 		StepVerifier.create(Mono.sequenceEqual(source, source))
 		            .expectNext(Boolean.TRUE)

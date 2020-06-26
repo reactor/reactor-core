@@ -76,7 +76,7 @@ public class OperatorDisposablesTest {
 				}
 			};
 
-			RaceTestUtils.race(r, r, Schedulers.elastic());
+			RaceTestUtils.race(r, r, Schedulers.boundedElastic());
 		}
 	}
 
@@ -91,7 +91,7 @@ public class OperatorDisposablesTest {
 				}
 			};
 
-			RaceTestUtils.race(r, r, Schedulers.elastic());
+			RaceTestUtils.race(r, r, Schedulers.boundedElastic());
 		}
 	}
 
@@ -105,7 +105,7 @@ public class OperatorDisposablesTest {
 				}
 			};
 
-			RaceTestUtils.race(r, r, Schedulers.elastic());
+			RaceTestUtils.race(r, r, Schedulers.boundedElastic());
 		}
 	}
 

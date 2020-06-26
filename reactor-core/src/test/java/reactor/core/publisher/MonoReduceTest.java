@@ -181,7 +181,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 		Flux.range(0, 10).flatMap(x ->
 				Flux.range(0, 2)
 				    .map(y -> blockingOp(x, y))
-				    .subscribeOn(Schedulers.elastic())
+				    .subscribeOn(Schedulers.boundedElastic())
 				    .reduce((l, r) -> l + "_" + r)
 //				    .log("reduced."+x)
 				    .doOnSuccess(s -> {

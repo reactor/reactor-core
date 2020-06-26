@@ -183,7 +183,7 @@ public class MonoSubscriberTest {
 			Map<String, Mono<Integer>> input = new HashMap<>();
 			input.put("one", Mono.just(1));
 			input.put("two", Mono.create(
-					(sink) -> Schedulers.elastic().schedule(() -> sink.success(2))));
+					(sink) -> Schedulers.boundedElastic().schedule(() -> sink.success(2))));
 			input.put("three", Mono.just(3));
 			int sum = Flux.fromIterable(input.entrySet())
 			              .flatMap((entry) -> Mono.zip(Mono.just(entry.getKey()), entry.getValue()))
