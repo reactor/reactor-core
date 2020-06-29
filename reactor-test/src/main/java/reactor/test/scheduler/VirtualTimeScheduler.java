@@ -418,6 +418,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
 			return s;
 		}
