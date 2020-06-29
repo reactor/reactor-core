@@ -370,7 +370,9 @@ public abstract class Operators {
 	/**
 	 * Create an adapter for local onDiscard hooks that check the element
 	 * being discarded is of a given {@link Class}. The resulting {@link Function} adds the
-	 * hook to the {@link Context}, potentially chaining it to an existing hook in the {@link Context}.
+	 * hook to the {@link Context}, potentially chaining it to an existing hook in the {@link Context}
+	 * by executing the newly provided hook first {@link Consumer#andThen(Consumer) andThen} the
+	 * existing one.
 	 *
 	 * @param type the type of elements to take into account
 	 * @param discardHook the discarding handler for this type of elements
@@ -400,13 +402,36 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Utility method to activate the onDiscard feature (see {@link Flux#doOnDiscard(Class, Consumer)})
-	 * in a target {@link Context}. Prefer using the {@link Flux} API, and reserve this for
-	 * testing purposes.
+	 * Utility method to activate the onDiscard feature, potentially chaining consumers
+	 * by executing the newly provided consumer first {@link Consumer#andThen(Consumer) andThen}
+	 * the existing one. Prefer using the {@link Flux} API, and reserve this for custom operator purposes.
+	 *
+	 * @param target the original {@link Context}
+	 * @param discardConsumer the additional consumer that will be used to cleanup discarded elements
+	 * @return a new {@link Context} that holds (potentially combined) cleanup {@link Consumer}
+	 */
+	public static final Context addOnDiscard(@Nullable Context target, Consumer<?> discardConsumer) {
+		Objects.requireNonNull(discardConsumer, "discardConsumer must be provided");
+		if (target == null) {
+			return Context.of(Hooks.KEY_ON_DISCARD, discardConsumer);
+		}
+		Consumer<Object> consumer = target.getOrDefault(Hooks.KEY_ON_DISCARD, null);
+		if (consumer == null) {
+			return target.put(Hooks.KEY_ON_DISCARD, discardConsumer);
+		}
+		else {
+			return target.put(Hooks.KEY_ON_DISCARD, discardConsumer.andThen(consumer));
+		}
+	}
+
+	/**
+	 * Utility method to enable the onDiscard feature (see {@link Flux#doOnDiscard(Class, Consumer)})
+	 * in a target {@link Context}. Prefer using the {@link Flux} API or {@link #addOnDiscard(Context, Consumer)},
+	 * and reserve this for testing purposes.
 	 *
 	 * @param target the original {@link Context}
 	 * @param discardConsumer the consumer that will be used to cleanup discarded elements
-	 * @return a new {@link Context} that holds (potentially combined) cleanup {@link Consumer}
+	 * @return a new {@link Context} that holds the provided cleanup {@link Consumer}
 	 */
 	public static final Context enableOnDiscard(@Nullable Context target, Consumer<?> discardConsumer) {
 		Objects.requireNonNull(discardConsumer, "discardConsumer must be provided");

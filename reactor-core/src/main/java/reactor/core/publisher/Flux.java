@@ -7365,6 +7365,24 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return onAssembly(new FluxScanSeed<>(this, initial, accumulator));
 	}
 
+	//TODO javadoc
+	public final <R> Flux<R> scope(Consumer<ScopeMutableSpec> specMutator, BiFunction<ScopeContext, Flux<T>, Flux<R>> transform) {
+		return Flux.deferWithContext(original -> {
+			final ScopeMutableSpec mutableOptions = ScopeMutableSpec.mutableSpec(original);
+
+			//FIXME implement the other side of context loss detection for scope (fail if key disappeared)
+			if (Hooks.DETECT_CONTEXT_LOSS) {
+				mutableOptions.putInContext(ContextTrackingFunctionWrapper.generateKey(this), true);
+			}
+
+			specMutator.accept(mutableOptions);
+
+			Flux<T> sourceWithContextRestoration = this.subscriberContext(mutableOptions::restore);
+			return transform.apply(mutableOptions.readOnly(), sourceWithContextRestoration)
+			                .subscriberContext(mutableOptions.fullContextInScope());
+		});
+	}
+
 	/**
 	 * Returns a new {@link Flux} that multicasts (shares) the original {@link Flux}.
 	 * As long as there is at least one {@link Subscriber} this {@link Flux} will be subscribed and

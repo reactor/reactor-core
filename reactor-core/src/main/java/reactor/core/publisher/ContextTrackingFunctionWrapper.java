@@ -33,6 +33,10 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<CorePublisher<T>,
 
 	static final String CONTEXT_MARKER_PREFIX = "reactor.core.context.marker.";
 
+	static final String generateKey(CorePublisher<?> target) {
+		return CONTEXT_MARKER_PREFIX + System.identityHashCode(target);
+	}
+
 	final Function<? super Publisher<T>, ? extends Publisher<V>> transformer;
 
 	ContextTrackingFunctionWrapper(Function<? super Publisher<T>, ? extends Publisher<V>> transformer) {
@@ -41,7 +45,7 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<CorePublisher<T>,
 
 	@Override
 	public CorePublisher<V> apply(CorePublisher<T> self) {
-		String key = CONTEXT_MARKER_PREFIX + System.identityHashCode(self);
+		String key = generateKey(self);
 
 		Publisher<V> newSource = Operators.<T, T>liftPublisher((p, actual) -> {
 			Context ctx = actual.currentContext();
