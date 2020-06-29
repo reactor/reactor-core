@@ -96,6 +96,7 @@ public class ContextLossDetectionTest {
 						return Mono.<ContextView>empty().transformDeferredContextual(f.adaptToBiFunction());
 					}
 				}
+				//TODO test scope?
 		);
 	}
 

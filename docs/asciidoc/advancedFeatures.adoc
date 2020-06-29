@@ -833,10 +833,15 @@ its `ContextView`:
  can be materialized using `Mono.deferContextual(Mono::just)`. Usually though, you might want
  to perform meaningful work directly within the defer's lambda, eg. `Mono.deferContextual(ctx -> doSomethingAsyncWithContextData(v, ctx.get(key)))`
  where `v` is the value being flatMapped.
+ - to change the context of a subset of the operator chain and restore the original upstream of that subset,
+   use `scope`.
 
 TIP: In order to read from the `Context` without misleading users into thinking one can write to it
 while data is running through the pipeline, only the `ContextView` is exposed by the operators above.
 
+TIP: `scope` can also be used to locally tune the behavior of the sequence (discard hooks, continuing
+on errors, etc...). These are advanced configurations that go around the Reactive Streams spec a bit and
+only work on core Reactor operators (because they are based on storing a flag in the `Context`).
 
 === Simple `Context` Examples
 
