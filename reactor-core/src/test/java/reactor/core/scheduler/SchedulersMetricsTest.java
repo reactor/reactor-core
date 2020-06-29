@@ -179,6 +179,7 @@ public class SchedulersMetricsTest {
 				.containsExactly("foo");
 	}
 
+	@SuppressWarnings("deprecation")
 	private Object[] metricsSchedulers() {
 		return new Object[] {
 				new Object[] {
@@ -263,6 +264,7 @@ public class SchedulersMetricsTest {
 	@Test
 	public void shouldRemoveOnShutdown() throws Exception {
 		int ttl = 1;
+		@SuppressWarnings("deprecation")
 		Scheduler scheduler = afterTest.autoDispose(Schedulers.newElastic("A", ttl));
 		String schedulerName = scheduler.toString();
 

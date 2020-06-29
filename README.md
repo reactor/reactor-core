@@ -41,7 +41,7 @@ See the [reference documentation](https://projectreactor.io/docs/core/release/re
 for more information on getting it (eg. using Maven, or on how to get milestones and snapshots).
 
 > **Note about Android support**: Reactor 3 doesn't officially support nor target Android.
-However it should work fine with Android SDK 26 (Android O) and above. See the
+However it should work fine with Android SDK 21 (Android 5.0) and above. See the
 [complete note](https://projectreactor.io/docs/core/release/reference/docs/index.html#prerequisites)
 in the reference guide.
 

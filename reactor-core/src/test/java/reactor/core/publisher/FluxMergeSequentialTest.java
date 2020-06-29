@@ -452,7 +452,7 @@ public class FluxMergeSequentialTest {
 	public void testAsynchronousRun() {
 		Flux.range(1, 2).flatMapSequential(t -> Flux.range(1, 1000)
 		                                            .subscribeOn(Schedulers.single())
-		).publishOn(Schedulers.elastic()).subscribe(ts);
+		).publishOn(Schedulers.boundedElastic()).subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
 		ts.assertNoError();
@@ -656,7 +656,7 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mergeSequentialLargeUnorderedEach100() {
-		Scheduler scheduler = Schedulers.elastic();
+		Scheduler scheduler = Schedulers.boundedElastic();
 		AtomicBoolean comparisonFailure = new AtomicBoolean();
 		long count = Flux.range(0, 500)
 		                 .flatMapSequential(i -> {

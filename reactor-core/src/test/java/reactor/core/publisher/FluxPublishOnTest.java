@@ -1055,7 +1055,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			ExecutorService executor = newCachedThreadPool();
 			StepVerifier.create(Flux.range(0, 5)
 			                        .log()
-			                        .publishOn(Schedulers.elastic())
+			                        .publishOn(Schedulers.boundedElastic())
 			                        .doOnRequest(n -> executor.shutdownNow())
 			                        .publishOn(fromExecutorService(executor))
 			                        .doOnNext(this::infiniteBlock))
@@ -1455,7 +1455,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void scanRunOn() {
 		Scannable publishOnScannable = Scannable.from(
 				Flux.just(1).hide()
-				    .publishOn(Schedulers.elastic())
+				    .publishOn(Schedulers.boundedElastic())
 		);
 		Scannable runOnScannable = publishOnScannable.scan(Scannable.Attr.RUN_ON);
 

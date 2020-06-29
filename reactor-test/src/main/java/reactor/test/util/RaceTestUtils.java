@@ -51,10 +51,8 @@ public class RaceTestUtils {
 			Predicate<? super T> stopRace,
 			BiPredicate<? super T, ? super T> terminate) {
 
-		Scheduler.Worker w1 = Schedulers.elastic()
-		                                .createWorker();
-		Scheduler.Worker w2 = Schedulers.elastic()
-		                                .createWorker();
+		Scheduler w1 = Schedulers.newSingle("w1");
+		Scheduler w2 = Schedulers.newSingle("w2");
 
 		try {
 

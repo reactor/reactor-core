@@ -135,7 +135,7 @@ public class FluxDoOnEachTest {
 		AtomicInteger invocationCount = new AtomicInteger();
 
 		Flux<String> sourceWithFusionAsync = Flux.just("foo")
-		                                         .publishOn(Schedulers.elastic())
+		                                         .publishOn(Schedulers.boundedElastic())
 		                                         .flatMap(v -> Flux.just("flatMap_" + v)
 		                                                           .doOnEach(sig -> invocationCount.incrementAndGet())
 		                                         );

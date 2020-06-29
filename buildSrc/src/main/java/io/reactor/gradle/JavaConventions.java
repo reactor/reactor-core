@@ -56,7 +56,7 @@ public class JavaConventions implements Plugin<Project> {
 					       "-Xlint:finally",
 					       "-Xlint:overrides",
 					       "-Xlint:path",
-					       "-Xlint:processing",
+					       "-Xlint:-processing",
 					       "-Xlint:static",
 					       "-Xlint:try",
 					       "-Xlint:deprecation",

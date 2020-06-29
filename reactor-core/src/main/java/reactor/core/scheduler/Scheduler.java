@@ -61,7 +61,7 @@ public interface Scheduler extends Disposable {
 	 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
-	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
+	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling with delay.
 	 */
 	default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		throw Exceptions.failWithRejectedNotTimeCapable();

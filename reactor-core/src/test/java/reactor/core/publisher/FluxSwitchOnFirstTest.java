@@ -134,8 +134,7 @@ public class FluxSwitchOnFirstTest {
                                 .doOnCancel(latch::countDown)
                                 .switchOnFirst((s, f) -> f)
                                 .doOnSubscribe(s ->
-                                    Schedulers
-                                            .elastic()
+                                    Schedulers.boundedElastic()
                                             .schedule(() -> {
                                                 try {
                                                     nextLatch.await();
@@ -175,8 +174,7 @@ public class FluxSwitchOnFirstTest {
                                 .switchOnFirst((s, f) -> f)
                                 .filter(e -> true)
                                 .doOnSubscribe(s ->
-                                    Schedulers
-                                        .elastic()
+                                    Schedulers.boundedElastic()
                                         .schedule(() -> {
                                             try {
                                                 nextLatch.await();
@@ -329,7 +327,7 @@ public class FluxSwitchOnFirstTest {
                                     .switchOnFirst((s, f) -> {
                                         first[0] = s;
 
-                                        return f.subscribeOn(Schedulers.elastic());
+                                        return f.subscribeOn(Schedulers.boundedElastic());
                                     }))
                         .expectSubscription()
                         .expectNext(1L)
@@ -350,7 +348,7 @@ public class FluxSwitchOnFirstTest {
                                 .switchOnFirst((s, f) -> {
                                     first[0] = s;
 
-                                    return f.subscribeOn(Schedulers.elastic());
+                                    return f.subscribeOn(Schedulers.boundedElastic());
                                 })
                                 .filter(p -> true)
                     )
@@ -770,7 +768,7 @@ public class FluxSwitchOnFirstTest {
                         e.printStackTrace();
                     }
                 })
-                .cancelOn(Schedulers.elastic());
+                .cancelOn(Schedulers.boundedElastic());
 
         publisher.next(1);
 
@@ -879,7 +877,7 @@ public class FluxSwitchOnFirstTest {
                         e.printStackTrace();
                     }
                 })
-                .cancelOn(Schedulers.elastic());
+                .cancelOn(Schedulers.boundedElastic());
 
         StepVerifier stepVerifier = StepVerifier.create(switchTransformed, 0)
                 .expectSubscription()
