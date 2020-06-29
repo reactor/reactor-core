@@ -38,6 +38,8 @@ It has a transitive dependency on `org.reactivestreams:reactive-streams:1.0.3`.
 * Reactor 3 does not officially support or target Android (consider using RxJava 2 if
 such support is a strong requirement).
 * However, it should work fine with Android SDK 26 (Android O) and above.
+* It will likely work fine with Android SDK 21 (Android 5.0) and above when desugaring 
+is enabled. See https://developer.android.com/studio/write/java8-support#library-desugaring
 * We are open to evaluating changes that benefit Android support in a best-effort
 fashion. However, we cannot make guarantees. Each decision must be made on a
 case-by-case basis.
