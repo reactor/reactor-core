@@ -9051,11 +9051,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * millis (as a {@link Long} measured by the provided {@link Scheduler}) and T2
 	 * the emitted data (as a {@code T}), for each item from this {@link Flux}.
 	 *
+	 * <p>The provider {@link Scheduler} will be asked to {@link Scheduler#now(TimeUnit) provide time}
+	 * with a granularity of {@link TimeUnit#MILLISECONDS} and, should return results that can be
+	 * interpreted as unix timestamps.</p>
+	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/timestampForFlux.svg" alt="">
 	 *
 	 * @param scheduler the {@link Scheduler} to read time from
 	 * @return a timestamped {@link Flux}
+	 * @see Scheduler#now(TimeUnit)
 	 */
 	public final Flux<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");

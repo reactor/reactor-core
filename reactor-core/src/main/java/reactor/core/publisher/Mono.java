@@ -4634,11 +4634,16 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * T1 the current clock time in millis (as a {@link Long} measured by the
 	 * provided {@link Scheduler}) and T2 the emitted data (as a {@code T}).
 	 *
+	 * <p>The provider {@link Scheduler} will be asked to {@link Scheduler#now(TimeUnit) provide time}
+	 * with a granularity of {@link TimeUnit#MILLISECONDS} and, should return results that can be
+	 * interpreted as unix timestamps.</p>
 	 * <p>
+	 *
 	 * <img class="marble" src="doc-files/marbles/timestampForMono.svg" alt="">
 	 *
 	 * @param scheduler a {@link Scheduler} instance to read time from
 	 * @return a timestamped {@link Mono}
+	 * @see Scheduler#now(TimeUnit)
 	 */
 	public final Mono<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");
