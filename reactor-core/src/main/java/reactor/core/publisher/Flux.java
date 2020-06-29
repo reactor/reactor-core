@@ -9052,10 +9052,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * the emitted data (as a {@code T}), for each item from this {@link Flux}.
 	 *
 	 * <p>The provider {@link Scheduler} will be asked to {@link Scheduler#now(TimeUnit) provide time}
-	 * with a granularity of {@link TimeUnit#MILLISECONDS} and, should return results that can be
-	 * interpreted as unix timestamps.</p>
-	 *
+	 * with a granularity of {@link TimeUnit#MILLISECONDS}. In order for this operator to work as advertised, the
+	 * provided Scheduler should thus return results that can be interpreted as unix timestamps.</p>
 	 * <p>
+	 *
 	 * <img class="marble" src="doc-files/marbles/timestampForFlux.svg" alt="">
 	 *
 	 * @param scheduler the {@link Scheduler} to read time from

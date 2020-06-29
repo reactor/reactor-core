@@ -4635,8 +4635,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * provided {@link Scheduler}) and T2 the emitted data (as a {@code T}).
 	 *
 	 * <p>The provider {@link Scheduler} will be asked to {@link Scheduler#now(TimeUnit) provide time}
-	 * with a granularity of {@link TimeUnit#MILLISECONDS} and, should return results that can be
-	 * interpreted as unix timestamps.</p>
+	 * with a granularity of {@link TimeUnit#MILLISECONDS}. In order for this operator to work as advertised, the
+	 * provided Scheduler should thus return results that can be interpreted as unix timestamps.</p>
 	 * <p>
 	 *
 	 * <img class="marble" src="doc-files/marbles/timestampForMono.svg" alt="">
