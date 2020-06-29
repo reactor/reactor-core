@@ -91,11 +91,22 @@ public interface Scheduler extends Disposable {
 
 	/**
 	 * Returns the "current time" notion of this scheduler.
+	 *
+	 * <p>
+	 *     <strong>Implementation Note:</strong> The default implementation uses {@link System#currentTimeMillis()}
+	 *     when requested with a {@code TimeUnit} of {@link TimeUnit#MILLISECONDS milliseconds} or coarser, and
+	 *     {@link System#nanoTime()} otherwise. As a consequence, results should not be interpreted as absolute timestamps
+	 *     in the latter case, only monotonicity inside the current JVM can be expected.
+	 * </p>
 	 * @param unit the target unit of the current time
 	 * @return the current time value in the target unit of measure
 	 */
 	default long now(TimeUnit unit) {
-		return unit.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+		if (unit.compareTo(TimeUnit.MILLISECONDS) >= 0) {
+			return unit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+		} else {
+			return unit.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+		}
 	}
 	
 	/**
