@@ -16,13 +16,13 @@
 import me.champeau.gradle.japicmp.JapicmpTask
 
 buildscript {
-  repositories {
-	jcenter()
-  }
+	repositories {
+		jcenter()
+	}
 
-  dependencies {
-	classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.3'
-  }
+	dependencies {
+		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.3'
+	}
 }
 
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
