@@ -4930,9 +4930,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		}
 		if (source instanceof FluxSourceMono
 				|| source instanceof FluxSourceMonoFuseable) {
-			FluxFromMonoOperator<T, T> wrapper = (FluxFromMonoOperator<T,T>) source;
 			@SuppressWarnings("unchecked")
-			Mono<T> extracted = (Mono<T>) wrapper.source;
+			Mono<T> extracted = (Mono<T>) ((FluxFromMonoOperator<T,T>) source).source;
 			return extracted;
 		}
 

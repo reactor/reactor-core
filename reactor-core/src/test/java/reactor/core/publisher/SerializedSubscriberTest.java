@@ -30,6 +30,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
+import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.with;
@@ -103,7 +104,7 @@ public class SerializedSubscriberTest {
 			.doFinally(sig -> latch.countDown())
 		    .publishOn(Schedulers.single())
 			.doFinally(sig -> latch.countDown())
-		    .retryWhen(p -> p.take(3))
+		    .retryWhen(Retry.from(p -> p.take(3)))
 			.doFinally(sig -> latch.countDown())
 		    .cancelOn(Schedulers.parallel())
 		    .doOnDiscard(Integer.class, i -> discarded.incrementAndGet())

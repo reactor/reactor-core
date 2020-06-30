@@ -618,6 +618,7 @@ public class FluxFlatMapTest {
 		StepVerifier.create(up.flatMap(Flux::just))
 		            .then(() -> {
 			            up.onNext(1);
+			            @SuppressWarnings("unchecked")
 			            CoreSubscriber<? super Integer> a = (CoreSubscriber<? super Integer>) up.scan(Scannable.Attr.ACTUAL);
 			            up.onComplete();
 			            a.onNext(2);
@@ -1576,21 +1577,20 @@ public class FluxFlatMapTest {
 	public void errorModeContinueInternalErrorStopStrategy() {
 		for (int iterations = 0; iterations < 1000; iterations++) {
 			AtomicInteger i = new AtomicInteger();
-			TestPublisher<Integer>[] inners = new TestPublisher[]{
-					TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE),
-					TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE)
-			};
+			List<TestPublisher<Integer>> inners = new ArrayList<>();
+			inners.add(TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE));
+			inners.add(TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE));
 			Flux<Integer> test = Flux
 					.just(0, 1)
 					.hide()
-					.flatMap(f -> inners[i.getAndIncrement()].flux().map(n -> n / f).onErrorStop())
+					.flatMap(f -> inners.get(i.getAndIncrement()).flux().map(n -> n / f).onErrorStop())
 					.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 			StepVerifier.create(test)
 					.expectNoFusionSupport()
 					.then(() -> {
-						inners[0].next(1).complete();
-						inners[1].next(1).complete();
+						inners.get(0).next(1).complete();
+						inners.get(1).next(1).complete();
 					})
 					.expectNext(1)
 					.expectComplete()
@@ -1604,20 +1604,19 @@ public class FluxFlatMapTest {
 	public void errorModeContinueInternalErrorStopStrategyAsync() {
 		for (int iterations = 0; iterations < 1000; iterations++) {
 			AtomicInteger i = new AtomicInteger();
-			TestPublisher<Integer>[] inners = new TestPublisher[]{
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE),
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE)
-			};
+			List<TestPublisher<Integer>> inners = new ArrayList<>();
+			inners.add(TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE));
+			inners.add(TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE));
 			Flux<Integer> test = Flux
 					.just(0, 1)
 					.hide()
-					.flatMap(f -> inners[i.getAndIncrement()].flux().map(n -> n / f).onErrorStop())
+					.flatMap(f -> inners.get(i.getAndIncrement()).flux().map(n -> n / f).onErrorStop())
 					.onErrorContinue(OnNextFailureStrategyTest::drop);
 
 			StepVerifier.Assertions assertions = StepVerifier
 					.create(test)
 					.expectNoFusionSupport()
-					.then(() -> RaceTestUtils.race(() -> inners[0].next(1).complete(), () -> inners[1].next(1).complete()))
+					.then(() -> RaceTestUtils.race(() -> inners.get(0).next(1).complete(), () -> inners.get(1).next(1).complete()))
 					.expectNext(1)
 					.expectComplete()
 					.verifyThenAssertThat();

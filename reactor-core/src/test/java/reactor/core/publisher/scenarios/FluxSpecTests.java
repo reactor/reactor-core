@@ -40,6 +40,7 @@ import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Processors;
+import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -479,8 +480,8 @@ public class FluxSpecTests {
 	public void streamValuesCanBeExploded() {
 //		Stream"s values can be exploded
 //			given: "a source composable with a mapMany function"
-		FluxIdentityProcessor<Integer> source = Processors.multicast();
-		Flux<Integer> mapped = source
+		Sinks.StandaloneFluxSink<Integer> sink = Sinks.multicast();
+		Flux<Integer> mapped = sink.asFlux()
 				.log()
 				.publishOn(Schedulers.parallel())
 				.log()
@@ -491,7 +492,7 @@ public class FluxSpecTests {
 		MonoProcessor<Integer> value = mapped.next()
 		                                     .toProcessor();
 		value.subscribe();
-		source.sink().next(1);
+		sink.next(1);
 
 //		then: "the value is mapped"
 		int result = value.block(Duration.ofSeconds(5));
