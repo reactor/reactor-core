@@ -472,7 +472,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} concatenating all inner sources sequences
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return wrap(sources).concatMap(identityFunction(), prefetch);
+		return from(sources).concatMap(identityFunction(), prefetch);
 	}
 
 	/**
@@ -539,7 +539,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return wrap(sources).concatMapDelayError(identityFunction(), prefetch);
+		return from(sources).concatMapDelayError(identityFunction(), prefetch);
 	}
 
 	/**
@@ -569,7 +569,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends
 			T>> sources, boolean delayUntilEnd, int prefetch) {
-		return wrap(sources).concatMapDelayError(identityFunction(), delayUntilEnd, prefetch);
+		return from(sources).concatMapDelayError(identityFunction(), delayUntilEnd, prefetch);
 	}
 
 	/**
