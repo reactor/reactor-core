@@ -84,7 +84,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			 * Terminated either successfully or after an error
 			 */
 			TERMINATED,
-			CANCELED,
+			CANCELLED,
 		}
 
 		volatile State state;
@@ -132,7 +132,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return upstream;
 			if (key == Attr.TERMINATED) return state == State.TERMINATED;
-			if (key == Attr.CANCELLED) return state == State.CANCELED;
+			if (key == Attr.CANCELLED) return state == State.CANCELLED;
 
 			return FluxConcatMapSupport.super.scanUnsafe(key);
 		}
@@ -155,7 +155,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		public void onNext(T t) {
 			if (!STATE.compareAndSet(this, State.REQUESTED, State.ACTIVE)) {
 				switch (state) {
-					case CANCELED:
+					case CANCELLED:
 						Operators.onDiscard(t, currentContext());
 						break;
 					case TERMINATED:
@@ -299,7 +299,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 			for (State previousState = this.state; ; previousState = this.state) {
 				switch (previousState) {
-					case CANCELED:
+					case CANCELLED:
 					case TERMINATED:
 						return true;
 					default:
@@ -325,8 +325,8 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void cancel() {
-			switch (STATE.getAndSet(this, State.CANCELED)) {
-				case CANCELED:
+			switch (STATE.getAndSet(this, State.CANCELLED)) {
+				case CANCELLED:
 					break;
 				case TERMINATED:
 					inner.cancel();
