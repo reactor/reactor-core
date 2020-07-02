@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 
@@ -63,6 +62,12 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         return new SwitchOnFirstMain<>(actual, transformer, cancelSourceOnComplete);
     }
 
+    @Override
+    public Object scanUnsafe(Attr key) {
+        if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+        return super.scanUnsafe(key);
+    }
+
     static abstract class AbstractSwitchOnFirstMain<T, R> extends Flux<T>
             implements InnerOperator<T, R> {
 
@@ -103,6 +108,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
 
             if (key == Attr.CANCELLED) return isCancelled && !this.done;
             if (key == Attr.TERMINATED) return this.done || isCancelled;
+            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
             return InnerOperator.super.scanUnsafe(key);
         }
@@ -515,6 +521,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         public Object scanUnsafe(Attr key) {
             if (key == Attr.PARENT) return parent;
             if (key == Attr.ACTUAL) return delegate;
+            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
             return null;
         }
@@ -608,6 +615,7 @@ final class FluxSwitchOnFirst<T, R> extends InternalFluxOperator<T, R> {
         public Object scanUnsafe(Attr key) {
             if (key == Attr.PARENT) return parent;
             if (key == Attr.ACTUAL) return delegate;
+            if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
             return null;
         }

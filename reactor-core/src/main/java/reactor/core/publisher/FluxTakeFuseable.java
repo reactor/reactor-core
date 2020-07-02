@@ -44,4 +44,10 @@ final class FluxTakeFuseable<T> extends InternalFluxOperator<T, T> implements Fu
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new TakeFuseableSubscriber<>(actual, n);
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

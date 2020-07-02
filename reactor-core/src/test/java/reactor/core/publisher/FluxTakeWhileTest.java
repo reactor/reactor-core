@@ -172,6 +172,15 @@ public class FluxTakeWhileTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxTakeWhile test = new FluxTakeWhile(parent, v -> true);
+
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxTakeWhile.TakeWhileSubscriber<Integer> test =
@@ -181,6 +190,7 @@ public class FluxTakeWhileTest {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onComplete();

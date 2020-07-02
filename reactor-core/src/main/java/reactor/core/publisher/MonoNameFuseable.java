@@ -23,6 +23,9 @@ import reactor.core.Fuseable;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * An operator that just bears a name or a set of tags, which can be retrieved via the
  * {@link Attr#TAGS TAGS}
@@ -58,6 +61,10 @@ final class MonoNameFuseable<T> extends InternalMonoOperator<T, T> implements Fu
 
 		if (key == Attr.TAGS && tags != null) {
 			return tags.stream();
+		}
+
+		if (key == RUN_STYLE) {
+		    return Attr.RunStyle.SYNC;
 		}
 
 		return super.scanUnsafe(key);

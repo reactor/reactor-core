@@ -29,6 +29,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
+import static reactor.core.Scannable.from;
 
 public class FluxSubscribeOnValueTest {
 
@@ -82,7 +83,8 @@ public class FluxSubscribeOnValueTest {
 		assertThat(test).isInstanceOf(Scannable.class)
 		                .isInstanceOf(FluxSubscribeOnValue.class);
 
-		assertThat(((Scannable) test).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+		assertThat(from(test).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+		assertThat(from(test).scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	@Test
@@ -93,6 +95,7 @@ public class FluxSubscribeOnValueTest {
 
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.future = FluxSubscribeOnValue.ScheduledScalar.FINISHED;

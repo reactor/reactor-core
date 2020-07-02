@@ -102,6 +102,8 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+
 		return null;
 	}
 
@@ -139,6 +141,9 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 			}
 			if (key == Attr.DELAY_ERROR) {
 				return delayError;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
 			}
 
 			return super.scanUnsafe(key);
@@ -250,6 +255,9 @@ final class MonoWhen extends Mono<Void> implements SourceProducer<Void>  {
 			}
 			if (key == Attr.ERROR) {
 				return error;
+			}
+			if (key == Attr.RUN_STYLE) {
+				return Attr.RunStyle.SYNC;
 			}
 
 			return null;

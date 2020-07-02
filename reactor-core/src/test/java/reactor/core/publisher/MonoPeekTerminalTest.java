@@ -26,6 +26,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MonoPeekTerminalTest {
 
 	@Test
+	public void scanOperator(){
+		MonoPeekTerminal test = new MonoPeekTerminal(Mono.just("foo"), null, null, null);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoPeekTerminal<String> main = new MonoPeekTerminal<>(Mono.just("foo"), null, null, null);
@@ -36,6 +43,7 @@ public class MonoPeekTerminalTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));

@@ -141,6 +141,13 @@ public class FluxFirstEmittingTest {
 		  .assertError(NullPointerException.class);
 	}
 
+	@Test
+	public void scanOperator(){
+	    FluxFirstEmitting test = new FluxFirstEmitting(Flux.range(1, 10), Flux.range(11, 10));
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
     @Test
     public void scanSubscriber() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
@@ -151,6 +158,7 @@ public class FluxFirstEmittingTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         parent.cancelled = true;
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();

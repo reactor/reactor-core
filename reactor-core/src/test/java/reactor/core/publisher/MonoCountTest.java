@@ -58,6 +58,13 @@ public class MonoCountTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    MonoCount test = new MonoCount(Flux.just(1, 2, 3));
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanCountSubscriber() {
 		CoreSubscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoCount.CountSubscriber<String> test = new MonoCount.CountSubscriber<>(actual);
@@ -68,6 +75,7 @@ public class MonoCountTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		//only TERMINATED state evaluated is one from Operators: hasValue
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();

@@ -48,6 +48,12 @@ final class FluxOnBackpressureLatest<T> extends InternalFluxOperator<T, T> {
 		return Integer.MAX_VALUE;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class LatestSubscriber<T>
 			implements InnerOperator<T, T> {
 
@@ -235,6 +241,7 @@ final class FluxOnBackpressureLatest<T> extends InternalFluxOperator<T, T> {
 			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

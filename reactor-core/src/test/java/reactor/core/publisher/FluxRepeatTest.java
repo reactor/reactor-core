@@ -20,9 +20,11 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -188,5 +190,28 @@ public class FluxRepeatTest {
 		finally {
 			Hooks.resetOnLastOperator(hookKey);
 		}
+	}
+
+	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxRepeat test = new FluxRepeat(parent, 4);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanSubscriber(){
+		Flux<Integer> source = Flux.just(1);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxRepeat.RepeatSubscriber<Integer> test = new FluxRepeat.RepeatSubscriber<>(source, actual, 3);
+
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

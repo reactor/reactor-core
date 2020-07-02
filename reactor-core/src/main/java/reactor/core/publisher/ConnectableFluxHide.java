@@ -42,9 +42,10 @@ final class ConnectableFluxHide<T> extends InternalConnectableFluxOperator<T, T>
 
 	@Override
 	@Nullable
-	public Object scanUnsafe(Scannable.Attr key) {
-		if (key == Scannable.Attr.PARENT) return source;
-		if (key == Scannable.Attr.PREFETCH) return getPrefetch();
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.PARENT) return source;
+		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

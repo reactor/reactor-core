@@ -378,6 +378,24 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxDoFinally test = new FluxDoFinally<>(parent, v -> {});
+
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanFuseableOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxDoFinallyFuseable test = new FluxDoFinallyFuseable(parent, s -> {});
+
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDoFinally.DoFinallySubscriber<String> test = new FluxDoFinally.DoFinallySubscriber<>(actual, st -> {});
@@ -386,6 +404,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();

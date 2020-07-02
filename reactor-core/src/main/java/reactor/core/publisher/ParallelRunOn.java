@@ -55,6 +55,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 		return null;
 	}

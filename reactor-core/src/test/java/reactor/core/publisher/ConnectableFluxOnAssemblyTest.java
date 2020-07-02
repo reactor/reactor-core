@@ -25,13 +25,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ConnectableFluxOnAssemblyTest {
 
 	@Test
-	public void scanMain() throws Exception {
+	public void scanMain() {
 		ConnectableFlux<String> source = Flux.just("foo").publish();
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
 		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source, stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -43,6 +44,7 @@ public class ConnectableFluxOnAssemblyTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(-1);
 		assertThat(test.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

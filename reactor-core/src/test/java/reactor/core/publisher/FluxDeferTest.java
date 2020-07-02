@@ -20,8 +20,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxDeferTest {
 
@@ -93,5 +96,12 @@ public class FluxDeferTest {
 		Assert.assertEquals(source.blockFirst().intValue(), 1);
 		Assert.assertEquals(source.blockFirst().intValue(), 2);
 		Assert.assertEquals(source.blockFirst().intValue(), 3);
+	}
+
+	@Test
+	public void scanOperator(){
+	    FluxDefer<Integer> test = new FluxDefer(() -> Flux.just(1));
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

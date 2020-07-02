@@ -92,6 +92,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			if (iterable instanceof Collection) return ((Collection) iterable).size();
 			if (iterable instanceof Tuple2) return ((Tuple2) iterable).size();
 		}
+		if (key == Attr.RUN_STYLE) {
+		    return Attr.RunStyle.SYNC;
+		}
 		return null;
 	}
 
@@ -379,6 +382,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return state == STATE_NO_NEXT;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -657,6 +661,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable, SourceProducer<
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return state == STATE_NO_NEXT;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

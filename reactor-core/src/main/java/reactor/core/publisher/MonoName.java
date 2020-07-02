@@ -111,6 +111,10 @@ final class MonoName<T> extends InternalMonoOperator<T, T> {
 			return tags.stream();
 		}
 
+		if (key == Attr.RUN_STYLE) {
+		    return Attr.RunStyle.SYNC;
+		}
+
 		return super.scanUnsafe(key);
 	}
 

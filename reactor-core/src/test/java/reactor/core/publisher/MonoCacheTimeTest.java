@@ -24,7 +24,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.MonoOperatorTest;
@@ -858,6 +861,42 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
 		d2.dispose();
 		assertThat(cancelled.get()).as("when both cancelled").isEqualTo(0);
+	}
+
+	@Test
+	public void scanOperator(){
+	    Mono<Integer> source = Mono.just(1);
+		MonoCacheTime test = new MonoCacheTime(source);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanCoordinatorSubscriber(){
+		MonoCacheTime main = new MonoCacheTime(Mono.just(1));
+		MonoCacheTime.CoordinatorSubscriber test = new MonoCacheTime.CoordinatorSubscriber(main);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanSubscriber() {
+		CoreSubscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoCacheTime.CacheMonoSubscriber test = new MonoCacheTime.CacheMonoSubscriber(actual);
+
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 }

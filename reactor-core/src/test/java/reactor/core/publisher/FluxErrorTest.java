@@ -37,6 +37,13 @@ public class FluxErrorTest {
 		            .verifyErrorMessage("test");
 	}
 
+	@Test
+	public void scanOperator(){
+		FluxError test = new FluxError<>(new IllegalStateException("boom"));
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
     @Test
     public void scanSubscription() {
 	    @SuppressWarnings("unchecked") CoreSubscriber<String> subscriber = Mockito.mock(InnerOperator.class);

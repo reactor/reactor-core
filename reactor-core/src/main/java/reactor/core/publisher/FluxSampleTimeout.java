@@ -74,6 +74,12 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		return main;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class SampleTimeoutMain<T, U>implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
@@ -145,6 +151,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.BUFFERED) return queue.size();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -362,6 +369,7 @@ final class FluxSampleTimeout<T, U> extends InternalFluxOperator<T, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return once == 1;
 			if (key == Attr.ACTUAL) return main;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}

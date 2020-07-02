@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -300,6 +299,7 @@ public class FluxMergeOrderedTest {
 
 		//default value
 		assertThat(fmo.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(fmo.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -313,6 +313,7 @@ public class FluxMergeOrderedTest {
 				.isSameAs(actual)
 				.isSameAs(test.actual());
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		test.emitted = 2;
 		test.requested = 10;
@@ -345,6 +346,7 @@ public class FluxMergeOrderedTest {
 		assertThat(test.actual()).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.done = true;

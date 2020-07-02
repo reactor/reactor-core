@@ -72,6 +72,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return scheduler;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 		return null;
 	}
@@ -129,6 +130,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable, Scannab
 				return 1;
 			}
 			if (key == Attr.RUN_ON) return scheduler;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

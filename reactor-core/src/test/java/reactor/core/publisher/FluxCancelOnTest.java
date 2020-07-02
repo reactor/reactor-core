@@ -23,10 +23,12 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.Scannable.from;
 
 public class FluxCancelOnTest {
 
@@ -55,22 +57,26 @@ public class FluxCancelOnTest {
 
 	@Test
 	public void scanOperator() {
-		final Flux<Integer> flux = Flux.just(1).cancelOn(Schedulers.boundedElastic());
+		Scheduler scheduler = Schedulers.boundedElastic();
+		final Flux<Integer> flux = Flux.just(1).cancelOn(scheduler);
 
 		assertThat(flux).isInstanceOf(Scannable.class);
-		assertThat(((Scannable) flux).scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.boundedElastic());
+		assertThat(from(flux).scan(Scannable.Attr.RUN_ON)).isSameAs(scheduler);
+		assertThat(from(flux).scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
-		FluxCancelOn.CancelSubscriber<String> test = new FluxCancelOn.CancelSubscriber<>(actual, Schedulers.single());
+		Scheduler scheduler = Schedulers.single();
+		FluxCancelOn.CancelSubscriber<String> test = new FluxCancelOn.CancelSubscriber<>(actual, scheduler);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
+		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(scheduler);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.cancel();

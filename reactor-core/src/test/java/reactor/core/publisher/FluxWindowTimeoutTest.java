@@ -232,6 +232,7 @@ public class FluxWindowTimeoutTest {
 		FluxWindowTimeout<Integer> test = new FluxWindowTimeout<>(Flux.just(1), 123, 100, TimeUnit.MILLISECONDS, Schedulers.immediate());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	private static final class MyWorker implements Scheduler.Worker, Scannable {
@@ -279,6 +280,8 @@ public class FluxWindowTimeoutTest {
 		Assertions.assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(scheduler.createWorker());
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+
 		Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
 		test.requested = 35;
 		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);

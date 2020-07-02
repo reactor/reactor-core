@@ -103,7 +103,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		return null; //no particular key to be represented, still useful in hooks
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
+		return null;
 	}
 
 	/**
@@ -585,9 +586,8 @@ final class FluxCreate<T> extends Flux<T> implements SourceProducer<T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return disposable == TERMINATED;
 			if (key == Attr.CANCELLED) return disposable == CANCELLED;
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
-				return requested;
-			}
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

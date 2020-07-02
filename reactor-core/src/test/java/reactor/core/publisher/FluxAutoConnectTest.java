@@ -91,5 +91,6 @@ public class FluxAutoConnectTest {
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(888);
 		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

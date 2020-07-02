@@ -270,6 +270,7 @@ public class MonoSequenceEqualTest {
 	public void scanOperator() {
 		MonoSequenceEqual<Integer> s = new MonoSequenceEqual<>(Mono.just(1), Mono.just(2), (a, b) -> true, 123);
 		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(s.scan(Scannable.Attr.RUN_STYLE)).isEqualTo(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -283,6 +284,7 @@ public class MonoSequenceEqualTest {
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();

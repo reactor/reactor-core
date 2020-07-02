@@ -18,7 +18,10 @@ package reactor.core.publisher;
 import java.io.IOException;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxCallableTest {
 
@@ -80,5 +83,12 @@ public class FluxCallableTest {
 		  .assertNotComplete()
 		  .assertError(IOException.class)
 		  .assertErrorMessage("forced failure");
+	}
+
+	@Test
+	public void scanOperator(){
+	    FluxCallable<Integer> test = new FluxCallable<>(() -> 1	);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

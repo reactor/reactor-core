@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
@@ -520,5 +521,12 @@ public class MonoExpandTest {
 				    .map(n -> n.name))
 		            .expectNextSequence(depthFirstExpected)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanOperator(){
+	    MonoExpand<Integer> test = new MonoExpand<>(Mono.just(10), countDown, false, 10);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

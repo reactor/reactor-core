@@ -56,6 +56,12 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		return mainSubscriber;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class SkipUntilOtherSubscriber<U> implements InnerConsumer<U> {
 
 		final SkipUntilMainSubscriber<?> main;
@@ -75,6 +81,7 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 			if (key == Attr.CANCELLED) return main.other == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return main.other;
 			if (key == Attr.ACTUAL) return main;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -160,6 +167,7 @@ final class FluxSkipUntilOther<T, U> extends InternalFluxOperator<T, T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return main;
 			if (key == Attr.CANCELLED) return main == Operators.cancelledSubscription();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

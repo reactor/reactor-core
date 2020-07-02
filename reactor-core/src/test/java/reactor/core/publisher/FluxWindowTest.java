@@ -580,6 +580,15 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxWindow test = new FluxWindow(parent, 3, Queues::empty);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanExactSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowExactSubscriber<Integer> test = new FluxWindow.WindowExactSubscriber<Integer>(actual,
@@ -589,6 +598,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
 
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -611,7 +621,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
-        test.requested = 35;
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		test.requested = 35;
         Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
         test.onNext(2);
         Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
@@ -675,6 +686,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
 
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();

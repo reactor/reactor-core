@@ -150,6 +150,16 @@ public class MonoCollectListTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    Flux<Integer> source = Flux.just(1);
+		MonoCollectList test = new MonoCollectList(source);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanBufferAllSubscriber() {
 		CoreSubscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoCollectListSubscriber<String> test = new MonoCollectListSubscriber<>(actual);
@@ -160,7 +170,7 @@ public class MonoCollectListTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));

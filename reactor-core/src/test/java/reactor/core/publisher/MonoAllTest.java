@@ -109,6 +109,13 @@ public class MonoAllTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    MonoAll<Integer> test = new MonoAll(Flux.just(1, 2, 3), v -> true);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoAll.AllSubscriber<String> test = new MonoAll.AllSubscriber<>(actual, String::isEmpty);
@@ -119,7 +126,7 @@ public class MonoAllTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));

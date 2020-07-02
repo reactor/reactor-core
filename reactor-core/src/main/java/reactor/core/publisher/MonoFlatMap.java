@@ -60,6 +60,12 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 		return manager;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class FlatMapMain<T, R> extends Operators.MonoSubscriber<T, R> {
 
 		final Function<? super T, ? extends Mono<? extends R>> mapper;
@@ -93,6 +99,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}
@@ -220,6 +227,7 @@ final class MonoFlatMap<T, R> extends InternalMonoOperator<T, R> implements Fuse
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

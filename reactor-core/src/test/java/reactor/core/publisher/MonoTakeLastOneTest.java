@@ -154,6 +154,13 @@ public class MonoTakeLastOneTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    MonoTakeLastOne<Integer> test = new MonoTakeLastOne(Flux.just(1, 2, 3));
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanTakeLastOneSubscriber() {
 		CoreSubscriber<String>
 				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
@@ -166,6 +173,7 @@ public class MonoTakeLastOneTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		//terminated is detected via state HAS_VALUE
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();

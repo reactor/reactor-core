@@ -37,7 +37,6 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class MonoUsingWhenTest {
 
-
 	@Test
 	public void nullResourcePublisherRejected() {
 		assertThatNullPointerException()
@@ -415,28 +414,11 @@ public class MonoUsingWhenTest {
 		    .hasDiscarded("resource foo");
 	}
 
-	// == scanUnsafe tests ==
-
 	@Test
 	public void scanOperator() {
 		MonoUsingWhen<Object, Object> op = new MonoUsingWhen<>(Mono.empty(), Mono::just, Mono::just, (res, err) -> Mono.just(res), Mono::just);
 
-		assertThat(op.scanUnsafe(Attr.ACTUAL))
-				.isSameAs(op.scanUnsafe(Attr.ACTUAL_METADATA))
-				.isSameAs(op.scanUnsafe(Attr.BUFFERED))
-				.isSameAs(op.scanUnsafe(Attr.CAPACITY))
-				.isSameAs(op.scanUnsafe(Attr.CANCELLED))
-				.isSameAs(op.scanUnsafe(Attr.DELAY_ERROR))
-				.isSameAs(op.scanUnsafe(Attr.ERROR))
-				.isSameAs(op.scanUnsafe(Attr.LARGE_BUFFERED))
-				.isSameAs(op.scanUnsafe(Attr.NAME))
-				.isSameAs(op.scanUnsafe(Attr.PARENT))
-				.isSameAs(op.scanUnsafe(Attr.RUN_ON))
-				.isSameAs(op.scanUnsafe(Attr.PREFETCH))
-				.isSameAs(op.scanUnsafe(Attr.REQUESTED_FROM_DOWNSTREAM))
-				.isSameAs(op.scanUnsafe(Attr.TERMINATED))
-				.isSameAs(op.scanUnsafe(Attr.TAGS))
-				.isNull();
+		assertThat(op.scan(Attr.RUN_STYLE)).isEqualTo(Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -454,6 +436,8 @@ public class MonoUsingWhenTest {
 		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED").isFalse();
 		op.resourceProvided = true;
 		assertThat(op.scan(Attr.TERMINATED)).as("TERMINATED resourceProvided").isTrue();
+
+		assertThat(op.scan(Attr.RUN_STYLE)).isEqualTo(Attr.RunStyle.SYNC);
 
 		assertThat(op.scanUnsafe(Attr.CANCELLED)).as("CANCELLED not supported").isNull();
 	}

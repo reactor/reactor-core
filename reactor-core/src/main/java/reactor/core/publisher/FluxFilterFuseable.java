@@ -51,6 +51,12 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		return new FilterFuseableSubscriber<>(actual, predicate);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class FilterFuseableSubscriber<T>
 			implements InnerOperator<T, T>, QueueSubscription<T>,
 			           ConditionalSubscriber<T> {
@@ -170,6 +176,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -389,6 +396,7 @@ final class FluxFilterFuseable<T> extends InternalFluxOperator<T, T> implements 
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

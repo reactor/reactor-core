@@ -52,4 +52,10 @@ final class ParallelArraySource<T> extends ParallelFlux<T> implements SourceProd
 			Flux.from(sources[i]).subscribe(subscribers[i]);
 		}
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return SourceProducer.super.scanUnsafe(key);
+	}
 }

@@ -441,6 +441,13 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 	}
 
 	@Test
+	public void scanOperator(){
+	    FluxBuffer<Integer, List<Integer>> test = new FluxBuffer(Flux.just(1, 2, 3), 2, 1, ArrayList::new);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanExactSubscriber() {
 		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxBuffer.BufferExactSubscriber<String, List<String>> test = new FluxBuffer.BufferExactSubscriber<>(
@@ -455,6 +462,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
@@ -484,6 +492,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
@@ -527,6 +536,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));

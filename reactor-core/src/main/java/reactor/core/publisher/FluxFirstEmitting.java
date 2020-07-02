@@ -163,7 +163,8 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		return null; //no particular key to be represented, still useful in hooks
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return null;
 	}
 
 	static final class RaceCoordinator<T>
@@ -304,6 +305,7 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.CANCELLED) return parent.cancelled;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

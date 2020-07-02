@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,8 +37,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.publisher.MonoMetricsFuseable.MetricsFuseableSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -56,6 +60,21 @@ public class MonoMetricsFuseableTest {
 	@After
 	public void removeRegistry() {
 		registry.close();
+	}
+
+	@Test
+	public void scanOperator(){
+		MonoMetricsFuseable<String> test = new MonoMetricsFuseable<>(Mono.just("foo"), registry);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanSubscriber(){
+		CoreSubscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MetricsFuseableSubscriber<Integer> test = new MetricsFuseableSubscriber(actual, registry, Clock.SYSTEM, Tags.empty());
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	// === Fuseable-specific tests ===

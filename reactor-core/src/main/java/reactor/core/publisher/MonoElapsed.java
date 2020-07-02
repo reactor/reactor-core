@@ -41,6 +41,7 @@ final class MonoElapsed<T> extends InternalMonoOperator<T, Tuple2<Long, T>> impl
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return scheduler;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return super.scanUnsafe(key);
 	}

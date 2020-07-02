@@ -24,8 +24,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.Logger;
-import reactor.util.Loggers;
 import reactor.util.context.Context;
 
 /**
@@ -38,8 +36,6 @@ import reactor.util.context.Context;
  */
 final class MonoCompletionStage<T> extends Mono<T>
         implements Fuseable, Scannable {
-
-    static final Logger LOGGER = Loggers.getLogger(MonoCompletionStage.class);
 
     final CompletionStage<? extends T> future;
 
@@ -98,6 +94,7 @@ final class MonoCompletionStage<T> extends Mono<T>
 
     @Override
     public Object scanUnsafe(Attr key) {
-        return null; //no particular key to be represented, still useful in hooks
+        if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
+        return null;
     }
 }

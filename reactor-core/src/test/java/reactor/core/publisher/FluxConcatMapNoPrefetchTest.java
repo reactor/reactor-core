@@ -20,7 +20,11 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,5 +74,39 @@ public class FluxConcatMapNoPrefetchTest extends AbstractFluxConcatMapTest {
 				.verify(Duration.ofSeconds(5));
 
 		assertThat(firstCompleted).isTrue();
+	}
+
+	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1, 2);
+		FluxConcatMapNoPrefetch<Integer, String> test = new FluxConcatMapNoPrefetch(parent, Flux.IDENTITY_FUNCTION , FluxConcatMap.ErrorMode.END);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isZero();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanConcatMapNoPrefetchDelayError() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxConcatMapNoPrefetch.FluxConcatMapNoPrefetchSubscriber test =
+				new FluxConcatMapNoPrefetch.FluxConcatMapNoPrefetchSubscriber(actual, Flux.IDENTITY_FUNCTION, FluxConcatMap.ErrorMode.END);
+
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isZero();
+		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

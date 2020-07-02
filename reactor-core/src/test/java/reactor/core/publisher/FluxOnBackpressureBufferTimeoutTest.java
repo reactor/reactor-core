@@ -319,6 +319,7 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 		Scannable test  = (Scannable) Flux.never().onBackpressureBuffer(Duration.ofSeconds(1), 123, v -> {}, Schedulers.single());
 
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.single());
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 
 	@Test
@@ -345,5 +346,6 @@ public class FluxOnBackpressureBufferTimeoutTest implements Consumer<Object> {
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isFalse();
 		assertThat(test.scan(Scannable.Attr.RUN_ON)).isSameAs(Schedulers.immediate());
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}
 }

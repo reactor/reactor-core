@@ -411,6 +411,7 @@ public class FluxRefCountTest {
 		FluxRefCount<Integer> test = new FluxRefCount<>(parent, 17);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(256);
 	}
 
@@ -424,6 +425,7 @@ public class FluxRefCountTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isEqualTo(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
 		test.onComplete();
@@ -449,6 +451,7 @@ public class FluxRefCountTest {
 				.isTrue();
 
 		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED after cancel+onComplete").isTrue();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED after cancel+onComplete").isFalse();
 	}

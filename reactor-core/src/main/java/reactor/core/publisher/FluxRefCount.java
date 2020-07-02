@@ -120,6 +120,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -180,6 +181,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			if (key == Attr. PARENT) return s;
 			if (key == Attr.TERMINATED) return parentDone == 1;
 			if (key == Attr.CANCELLED) return parentDone == 2;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

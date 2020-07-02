@@ -46,6 +46,7 @@ public class FluxCallableOnAssemblyTest {
 		FluxCallableOnAssembly<?> test = new FluxCallableOnAssembly<>(Flux.empty(), stacktrace);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

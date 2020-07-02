@@ -90,6 +90,12 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		return null;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			implements JoinSupport<R> {
 
@@ -180,6 +186,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 			if (key == Attr.BUFFERED) return queue.size() / 2;
 			if (key == Attr.TERMINATED) return active == 0;
 			if (key == Attr.ERROR) return error;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return JoinSupport.super.scanUnsafe(key);
 		}

@@ -178,6 +178,13 @@ public class FluxSampleFirstTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    FluxSampleFirst<Integer, Integer> test = new FluxSampleFirst(Flux.just(1), i -> i);
+
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSampleFirst.SampleFirstMain<Integer, Integer> test =
@@ -187,6 +194,7 @@ public class FluxSampleFirstTest {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         test.requested = 35;
         Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 
@@ -207,6 +215,7 @@ public class FluxSampleFirstTest {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main.other);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         test.request(35);
 		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 

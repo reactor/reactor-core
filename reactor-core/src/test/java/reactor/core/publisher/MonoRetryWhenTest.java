@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
 
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -332,4 +333,12 @@ public class MonoRetryWhenTest {
 		}
 	}
 
+	@Test
+	public void scanOperator(){
+		Mono<String> parent = Mono.just("foo");
+		MonoRetryWhen<String> test = new MonoRetryWhen(parent, Retry.backoff(5, Duration.ofMinutes(30)));
+
+	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
 }

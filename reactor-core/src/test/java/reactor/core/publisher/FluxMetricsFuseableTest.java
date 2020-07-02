@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -474,5 +475,14 @@ public class FluxMetricsFuseableTest {
 		bs.request(100);
 		assertThat(meter.totalAmount()).isEqualTo(108);
 		assertThat(meter.max()).isEqualTo(100);
+	}
+
+	@Test
+	public void scanOperator(){
+	    Flux<Integer> parent = Flux.just(1);
+		FluxMetricsFuseable test = new FluxMetricsFuseable(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

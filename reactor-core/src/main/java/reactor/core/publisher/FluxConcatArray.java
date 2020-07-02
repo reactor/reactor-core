@@ -85,6 +85,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.DELAY_ERROR) return delayError;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
 	}
 
@@ -215,6 +216,12 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 			}
 
 		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			return super.scanUnsafe(key);
+		}
 	}
 
 	static final class ConcatArrayDelayErrorSubscriber<T>
@@ -263,6 +270,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.DELAY_ERROR) return true;
 			if (key == Attr.ERROR) return error;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}

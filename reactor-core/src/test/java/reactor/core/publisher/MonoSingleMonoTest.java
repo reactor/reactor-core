@@ -3,6 +3,7 @@ package reactor.core.publisher;
 import java.util.NoSuchElementException;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,5 +38,12 @@ public class MonoSingleMonoTest {
 		StepVerifier.create(Mono.just("foo").hide().single())
 		            .expectNext("foo")
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanOperator(){
+	    MonoSingleMono<String> test = new MonoSingleMono(Mono.just("foo"));
+	    
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

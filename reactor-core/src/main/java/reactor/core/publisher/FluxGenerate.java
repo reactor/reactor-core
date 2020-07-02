@@ -85,7 +85,8 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		return null; //no particular key to be represented, still useful in hooks
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return null;
 	}
 
 	static final class GenerateSubscription<T, S>
@@ -138,6 +139,7 @@ extends Flux<T> implements Fuseable, SourceProducer<T> {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.ERROR) return generatedError;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

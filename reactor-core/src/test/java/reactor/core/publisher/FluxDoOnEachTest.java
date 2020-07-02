@@ -575,6 +575,24 @@ public class FluxDoOnEachTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxDoOnEach<Integer> test = new FluxDoOnEach<Integer>(parent, s -> {});
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanFuseableOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxDoOnEachFuseable<Integer> test = new FluxDoOnEachFuseable<>(parent, s -> {});
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDoOnEach<Integer> peek =
@@ -586,6 +604,7 @@ public class FluxDoOnEachTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));

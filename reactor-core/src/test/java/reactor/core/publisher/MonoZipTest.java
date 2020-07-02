@@ -516,6 +516,7 @@ public class MonoZipTest {
 	public void scanOperator() {
 		MonoZip s = new MonoZip<>(true, z -> z);
 		assertThat(s.scan(Scannable.Attr.DELAY_ERROR)).as("delayError").isTrue();
+		assertThat(s.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -527,6 +528,7 @@ public class MonoZipTest {
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
@@ -576,6 +578,7 @@ public class MonoZipTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(innerSub);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(coordinator);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(coordinator.scan(Scannable.Attr.TERMINATED)).isFalse(); //done == 1
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");

@@ -890,6 +890,15 @@ public class FluxPeekFuseableTest {
 		return "x" + x + "y" + y;
 	}
 
+	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxPeekFuseable<Integer> test = new FluxPeekFuseable<>(parent, s -> {}, s -> {},
+				e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
 
 	@Test
     public void scanFuseableSubscriber() {
@@ -902,6 +911,7 @@ public class FluxPeekFuseableTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
@@ -921,6 +931,7 @@ public class FluxPeekFuseableTest {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));

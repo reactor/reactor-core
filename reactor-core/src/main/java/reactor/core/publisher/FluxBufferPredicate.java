@@ -90,6 +90,12 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		return parent;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class BufferPredicateSubscriber<T, C extends Collection<? super T>>
 			extends AbstractQueue<C>
 			implements ConditionalSubscriber<T>, InnerOperator<T, C>, BooleanSupplier {
@@ -324,6 +330,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return b != null ? b.size() : 0;
 			}
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requestedBuffers;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

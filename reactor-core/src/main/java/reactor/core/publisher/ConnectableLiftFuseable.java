@@ -57,6 +57,7 @@ final class ConnectableLiftFuseable<I, O> extends InternalConnectableFluxOperato
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return source.getPrefetch();
 		if (key == Attr.PARENT) return source;
+		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
 		return null;
 	}
 

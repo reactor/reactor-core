@@ -154,6 +154,15 @@ public class FluxWithLatestFromTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxWithLatestFrom<Integer, Integer, Integer> test = new FluxWithLatestFrom<>(parent, Flux.just(2), (v1, v2) -> v1 + v2);
+
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWithLatestFrom.WithLatestFromSubscriber<Integer, Integer, Integer> test =
@@ -163,6 +172,7 @@ public class FluxWithLatestFromTest {
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
@@ -180,5 +190,6 @@ public class FluxWithLatestFromTest {
 		test.onSubscribe(parent);
 		Assertions.assertThat(test.currentContext()).isEqualTo(Context.empty());
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 }

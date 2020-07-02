@@ -50,6 +50,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -112,6 +113,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.TERMINATED) return REMAINING.get(this) == 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}
@@ -241,6 +243,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

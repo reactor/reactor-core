@@ -197,8 +197,11 @@ public class FluxIterableTest {
 		FluxIterable<String> otherFlux = new FluxIterable<>(other);
 
 		assertThat(collectionFlux.scan(Scannable.Attr.BUFFERED)).as("collection").isEqualTo(3);
+		assertThat(collectionFlux.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(tupleFlux.scan(Scannable.Attr.BUFFERED)).as("tuple").isEqualTo(2);
+		assertThat(tupleFlux.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(otherFlux.scan(Scannable.Attr.BUFFERED)).as("other").isEqualTo(0);
+		assertThat(otherFlux.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -210,6 +213,7 @@ public class FluxIterableTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.clear();
@@ -231,6 +235,7 @@ public class FluxIterableTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.clear();

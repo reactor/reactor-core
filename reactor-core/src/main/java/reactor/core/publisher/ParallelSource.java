@@ -74,6 +74,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 	public Object scanUnsafe(Scannable.Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -150,6 +151,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -484,6 +486,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			@Nullable
 			public Object scanUnsafe(Attr key) {
 				if (key == Attr.PARENT) return parent;
+				if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 				return InnerProducer.super.scanUnsafe(key);
 			}

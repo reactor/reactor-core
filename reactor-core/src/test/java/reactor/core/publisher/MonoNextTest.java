@@ -63,6 +63,16 @@ public class MonoNextTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<String> source = Flux.just("foo", "bar");
+		MonoNext test = new MonoNext(source);
+
+	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+	    assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoNext.NextSubscriber<String> test = new MonoNext.NextSubscriber<>(actual);
@@ -71,6 +81,7 @@ public class MonoNextTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));

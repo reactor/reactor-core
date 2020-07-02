@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -174,4 +175,21 @@ public class FluxDoFirstTest {
 		assertThat(subRef.get().getClass()).isEqualTo(FluxMapFuseable.MapFuseableSubscriber.class);
 	}
 
+	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxDoFirst<Integer> test = new FluxDoFirst<>(parent, () -> {});
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanOperatorFuseable(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxDoFirstFuseable<Integer> test = new FluxDoFirstFuseable<>(parent, () -> {});
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
 }

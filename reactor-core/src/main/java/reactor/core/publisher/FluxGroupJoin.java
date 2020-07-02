@@ -109,6 +109,12 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		return null;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	interface JoinSupport<T> extends InnerProducer<T> {
 
 		void innerError(Throwable ex);
@@ -514,6 +520,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.ACTUAL ) return parent;
 			if (key == Attr.CANCELLED) return isDisposed();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}
@@ -580,6 +587,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return subscription;
 			if (key == Attr.CANCELLED) return isDisposed();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

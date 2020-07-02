@@ -1057,6 +1057,15 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxWindowPredicate test = new FluxWindowPredicate(parent, Queues::empty, Queues::empty, 35, v -> true, Mode.UNTIL);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> test = new FluxWindowPredicate.WindowPredicateMain<>(actual,
@@ -1067,11 +1076,12 @@ public class FluxWindowPredicateTest extends
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		test.requested = 35;
+		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 		test.queue.offer(Flux.just(1).groupBy(i -> i).blockFirst());
 		Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		test.error = new IllegalStateException("boom");
@@ -1085,8 +1095,6 @@ public class FluxWindowPredicateTest extends
 		test.cancel();
 		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
-
-
 
 	@Test
     public void scanOtherSubscriber() {
@@ -1105,6 +1113,7 @@ public class FluxWindowPredicateTest extends
 		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 		test.queue.offer(27);
 		Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		test.error = new IllegalStateException("boom");

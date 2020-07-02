@@ -58,6 +58,12 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 		return new SingleSubscriber<>(actual, defaultValue, completeOnEmpty);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class SingleSubscriber<T> extends Operators.MonoSubscriber<T, T>  {
 
 		@Nullable
@@ -75,6 +81,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}

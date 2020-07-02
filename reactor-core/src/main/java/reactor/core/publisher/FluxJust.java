@@ -73,6 +73,7 @@ final class FluxJust<T> extends Flux<T>
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.BUFFERED) return 1;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
 	}
 
@@ -148,6 +149,7 @@ final class FluxJust<T> extends Flux<T>
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return terminado;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

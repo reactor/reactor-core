@@ -46,6 +46,7 @@ public class BlockingSingleSubscriberTest {
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).describedAs("CANCELLED").isFalse();
 		assertThat(test.scan(Scannable.Attr.ERROR)).describedAs("ERROR").isNull();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).describedAs("PREFETCH").isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).describedAs("RUN_STYLE").isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

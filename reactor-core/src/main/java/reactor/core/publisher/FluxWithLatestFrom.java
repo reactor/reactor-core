@@ -28,6 +28,9 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * Combines values from a main Publisher with values from another
  * Publisher through a bi-function and emits the result.
@@ -71,6 +74,12 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 		other.subscribe(secondary);
 
 		return main;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == RUN_STYLE) return SYNC;
+		return super.scanUnsafe(key);
 	}
 
 	static final class WithLatestFromSubscriber<T, U, R> implements InnerOperator<T, R> {
@@ -122,6 +131,7 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return main == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return main;
+			if (key == RUN_STYLE) return SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -276,6 +286,9 @@ final class FluxWithLatestFrom<T, U, R> extends InternalFluxOperator<T, R> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) {
 				return main;
+			}
+			if (key == RUN_STYLE) {
+			    return SYNC;
 			}
 			return null;
 		}

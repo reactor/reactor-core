@@ -176,6 +176,15 @@ public class FluxSkipLastTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxSkipLast test = new FluxSkipLast(parent, 3);
+
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSkipLast.SkipLastSubscriber<Integer> test = new FluxSkipLast.SkipLastSubscriber<>(actual, 7);
@@ -184,6 +193,7 @@ public class FluxSkipLastTest extends FluxOperatorTest<String, String> {
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(7);
         test.offer(1);
         Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);

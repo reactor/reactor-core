@@ -151,6 +151,12 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		return null;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class CoordinatorSubscriber<T> implements InnerConsumer<T>, Signal<T> {
 
 		final MonoCacheTime<T> main;
@@ -359,6 +365,7 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		@Nullable
 		@Override
 		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 			return null;
 		}
 
@@ -381,6 +388,12 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 			if (coordinator != null) {
 				coordinator.remove(this);
 			}
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			return super.scanUnsafe(key);
 		}
 	}
 

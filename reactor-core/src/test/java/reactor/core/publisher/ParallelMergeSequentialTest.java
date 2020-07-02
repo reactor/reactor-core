@@ -35,6 +35,7 @@ public class ParallelMergeSequentialTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -48,6 +49,7 @@ public class ParallelMergeSequentialTest {
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
@@ -104,6 +106,19 @@ public class ParallelMergeSequentialTest {
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(456);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 }

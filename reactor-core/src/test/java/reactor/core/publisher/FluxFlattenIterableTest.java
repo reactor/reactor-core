@@ -345,6 +345,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Attr.PREFETCH)).isEqualTo(35);
+		assertThat(test.scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -362,6 +363,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		assertThat(test.scan(Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 		test.queue.add(5);
 		assertThat(test.scan(Attr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();

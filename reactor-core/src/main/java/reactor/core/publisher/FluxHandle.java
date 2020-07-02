@@ -50,6 +50,12 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 		return new HandleSubscriber<>(actual, handler);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class HandleSubscriber<T, R>
 			implements InnerOperator<T, R>,
 			           Fuseable.ConditionalSubscriber<T>,
@@ -240,6 +246,7 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ERROR) return error;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -465,6 +472,7 @@ final class FluxHandle<T, R> extends InternalFluxOperator<T, R> {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ERROR) return error;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

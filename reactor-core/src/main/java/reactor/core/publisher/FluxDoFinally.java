@@ -73,6 +73,12 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 		return createSubscriber(actual, onFinally, false);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static class DoFinallySubscriber<T> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -101,6 +107,7 @@ final class FluxDoFinally<T> extends InternalFluxOperator<T, T> {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return once == 1;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

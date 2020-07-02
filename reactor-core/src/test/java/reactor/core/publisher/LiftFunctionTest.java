@@ -22,236 +22,342 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.awaitility.Awaitility;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
+import reactor.core.CorePublisher;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static reactor.core.Scannable.*;
 
 public class LiftFunctionTest {
 
-	@Test
-	public void liftMono() {
-		Mono<Integer> source = Mono.just(1)
-		                           .hide();
+	Publisher<Integer> liftOperator;
 
+	Publisher createPublisherAndApply(CorePublisher source) {
 		Operators.LiftFunction<Integer, Integer> liftFunction =
 				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
+		return liftFunction.apply(source);
+	}
 
+	void lift(Class publisher, Class fluxPublisher) {
 		assertThat(liftOperator)
-				.isInstanceOf(Mono.class)
-				.isExactlyInstanceOf(MonoLift.class);
+				.isInstanceOf(publisher)
+				.isExactlyInstanceOf(fluxPublisher);
 
-		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {}))
+		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {
+		}))
 				.doesNotThrowAnyException();
 	}
 
-	@Test
-	public void liftFlux() {
-		Flux<Integer> source = Flux.just(1)
-		                           .hide();
-
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
-
+	void liftFuseable(Class publisher, Class fluxPublisher) {
 		assertThat(liftOperator)
-				.isInstanceOf(Flux.class)
-				.isExactlyInstanceOf(FluxLift.class);
+				.isInstanceOf(publisher)
+				.isInstanceOf(Fuseable.class)
+				.isExactlyInstanceOf(fluxPublisher);
 
-		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {}))
+		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {
+		}))
 				.doesNotThrowAnyException();
 	}
 
-	@Test
-	public void liftParallelFlux() {
-		ParallelFlux<Integer> source = Flux.just(1)
-		                                   .parallel(2)
-		                                   .hide();
-
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
-
-		assertThat(liftOperator)
-				.isInstanceOf(ParallelFlux.class)
-				.isExactlyInstanceOf(ParallelLift.class);
-
-		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {}))
-				.doesNotThrowAnyException();
+	void scanOperator(CorePublisher source, int prefetch, Attr.RunStyle runStyle) {
+		assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(source);
+		assertThat(from(liftOperator).scan(Attr.PREFETCH)).isEqualTo(prefetch);
+		assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(runStyle);
 	}
 
-	@Test
-	public void liftConnectableFlux() {
-		ConnectableFlux<Integer> source = Flux.just(1)
-		                                      .publish()
-		                                      .hide();
+	@Nested
+	class MonoLiftTest {
 
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
+		Mono<Integer> source = Mono.just(1).hide();
 
-		assertThat(liftOperator)
-				.isInstanceOf(ConnectableFlux.class)
-				.isExactlyInstanceOf(ConnectableLift.class);
+		@BeforeEach
+		void createMonoAndApply() {
+			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+		}
 
-		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {}))
-				.doesNotThrowAnyException();
+		@Test
+		void liftMono() {
+			LiftFunctionTest.this.lift(Mono.class, MonoLift.class);
+		}
+
+		@Test
+		void scanOperator() {
+			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+		}
 	}
 
-	//see https://github.com/reactor/reactor-core/issues/1860
-	@Test
-	public void liftConnectableFluxWithCancelSupport() {
-		AtomicBoolean cancelSupportInvoked = new AtomicBoolean();
+	@Nested
+	class FluxLiftTest {
 
-		ConnectableFlux<Integer> source = Flux.just(1)
-		                                      .publish(); //TODO hide if ConnectableFlux gets a hide function
+		Flux<Integer> source = Flux.just(1).hide();
 
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
+		@BeforeEach
+		void createFluxAndApply() {
+			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+		}
 
-		assertThat(liftOperator)
-				.isExactlyInstanceOf(ConnectableLift.class);
+		@Test
+		void liftFlux() {
+			LiftFunctionTest.this.lift(Flux.class, FluxLift.class);
+		}
 
-		@SuppressWarnings("unchecked")
-		ConnectableLift<Integer, Integer> connectableLiftOperator = ((ConnectableLift<Integer, Integer>) liftOperator);
-
-		connectableLiftOperator.connect(d -> cancelSupportInvoked.set(true));
-
-		Awaitility.await().atMost(1, TimeUnit.SECONDS)
-		          .untilAsserted(() -> assertThat(cancelSupportInvoked).isTrue());
+		@Test
+		void scanOperator() {
+			LiftFunctionTest.this.scanOperator(source, -1, Attr.RunStyle.SYNC);
+		}
 	}
 
-	//see https://github.com/reactor/reactor-core/issues/1860
-	@Test
-	public void liftConnectableLiftFuseableWithCancelSupport() {
-		AtomicBoolean cancelSupportInvoked = new AtomicBoolean();
+	@Nested
+	class ParallelLiftTest {
 
-		ConnectableFlux<Integer> source = Flux.just(1)
-				.replay();
+		ParallelFlux<Integer> source = Flux.just(1).parallel(2).hide();
 
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
+		@BeforeEach
+		void createFluxAndApply() {
+			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+		}
 
-		assertThat(liftOperator)
-				.isExactlyInstanceOf(ConnectableLiftFuseable.class);
-		@SuppressWarnings("unchecked")
-		ConnectableLiftFuseable<Integer, Integer> connectableLifOperator = (ConnectableLiftFuseable<Integer, Integer>) liftOperator;
-		connectableLifOperator.connect(d -> cancelSupportInvoked.set(true));
+		@Test
+		void liftParallelFlux() {
+			LiftFunctionTest.this.lift(ParallelFlux.class, ParallelLift.class);
+		}
 
-		Awaitility.await().atMost(1, TimeUnit.SECONDS)
-				.untilAsserted(() -> assertThat(cancelSupportInvoked).isTrue());
+		@Test
+		void scanOperator() {
+			LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE, Attr.RunStyle.SYNC);
+		}
 	}
 
-	@Ignore("GroupedFlux is always fuseable for now")
-	@Test
-	public void liftGroupedFlux() {
-		Flux<GroupedFlux<String, Integer>> sourceGroups = Flux
-				.just(1)
-				.groupBy(i -> "" + i);
+	@Nested
+	class ConnectableLiftTest {
 
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+		@Nested
+		class Normal {
 
-		sourceGroups.map(g -> liftFunction.apply(g)) //TODO hide if GroupedFlux gets a proper hide() function
-		            .doOnNext(liftOperator -> assertThat(liftOperator)
-				            .isInstanceOf(GroupedFlux.class)
-				            .isExactlyInstanceOf(GroupedLift.class))
-		            .blockLast();
+			ConnectableFlux<Integer> source = Flux.just(1).publish().hide();
+
+			@BeforeEach
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+			}
+
+			@Test
+			void liftConnectableFlux() {
+				LiftFunctionTest.this.lift(ConnectableFlux.class, ConnectableLift.class);
+			}
+
+			@Test
+			void scanOperator() {
+				LiftFunctionTest.this.scanOperator(source, Queues.SMALL_BUFFER_SIZE, Attr.RunStyle.SYNC);
+			}
+		}
+
+		@Nested
+		class WithCancelSupport {
+
+			//see https://github.com/reactor/reactor-core/issues/1860
+			@Test
+			public void liftConnectableFluxWithCancelSupport() {
+				AtomicBoolean cancelSupportInvoked = new AtomicBoolean();
+				ConnectableFlux<Integer> source = Flux.just(1)
+						.publish(); //TODO hide if ConnectableFlux gets a hide function
+
+				liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+
+				assertThat(liftOperator)
+						.isInstanceOf(ConnectableFlux.class)
+						.isExactlyInstanceOf(ConnectableLift.class);
+
+				@SuppressWarnings("unchecked")
+				ConnectableLift<Integer, Integer> connectableLiftOperator = ((ConnectableLift<Integer, Integer>) liftOperator);
+
+				connectableLiftOperator.connect(d -> cancelSupportInvoked.set(true));
+
+				Awaitility.await().atMost(1, TimeUnit.SECONDS)
+						.untilAsserted(() -> assertThat(cancelSupportInvoked).isTrue());
+			}
+		}
 	}
 
-	@Test
-	public void liftMonoFuseable() {
+	@Nested
+	class GroupedLiftTest {
+
+		@Disabled("GroupedFlux is always fuseable for now")
+		@Test
+		public void liftGroupedFlux() {
+			Flux<GroupedFlux<String, Integer>> sourceGroups = Flux.just(1)
+					.groupBy(i -> "" + i);
+
+			Operators.LiftFunction<Integer, Integer> liftFunction =
+					Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+
+			sourceGroups.map(g -> liftFunction.apply(g)) //TODO hide if GroupedFlux gets a proper hide() function
+					.doOnNext(liftOperator -> assertThat(liftOperator)
+							.isInstanceOf(GroupedFlux.class)
+							.isExactlyInstanceOf(GroupedLift.class))
+					.blockLast();
+		}
+
+	}
+
+	@Nested
+	class MonoLiftFuseableTest {
+
 		Mono<Integer> source = Mono.just(1);
 
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
+		@BeforeEach
+		void createMonoAndApply() {
+			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+		}
 
-		assertThat(liftOperator)
-				.isInstanceOf(Mono.class)
-				.isInstanceOf(Fuseable.class)
-				.isExactlyInstanceOf(MonoLiftFuseable.class);
+		@Test
+		void liftMonoFuseable() {
+			LiftFunctionTest.this.liftFuseable(Mono.class, MonoLiftFuseable.class);
+		}
 
-		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {}))
-				.doesNotThrowAnyException();
+		@Test
+		void scanOperator() {
+			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+		}
+
 	}
 
-	@Test
-	public void liftFluxFuseable() {
+	@Nested
+	class FluxLiftFuseableTest {
+
 		Flux<Integer> source = Flux.just(1);
 
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
+		@BeforeEach
+		void createFluxAndApply() {
+			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+		}
 
-		assertThat(liftOperator)
-				.isInstanceOf(Flux.class)
-				.isInstanceOf(Fuseable.class)
-				.isExactlyInstanceOf(FluxLiftFuseable.class);
+		@Test
+		void liftFluxFuseable() {
+			LiftFunctionTest.this.lift(Flux.class, FluxLiftFuseable.class);
+		}
 
-		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {}))
-				.doesNotThrowAnyException();
+		@Test
+		void scanOperator() {
+			LiftFunctionTest.this.scanOperator(source, -1, Attr.RunStyle.SYNC);
+		}
 	}
 
-	@Test
-	public void liftParallelFluxFuseable() {
-		ParallelFlux<List<Integer>> source = Flux
-				.just(1)
+	@Nested
+	class ParallelLiftFuseableTest {
+
+		ParallelFlux<List<Integer>> source = Flux.just(1)
 				.parallel(2)
 				.collect(ArrayList::new, List::add);
 
-		Operators.LiftFunction<List<Integer>, List<Integer>> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<List<Integer>> liftOperator = liftFunction.apply(source);
+		@BeforeEach
+		void createFluxAndApply() {
+			liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+		}
 
-		assertThat(liftOperator)
-				.isInstanceOf(ParallelFlux.class)
-				.isExactlyInstanceOf(ParallelLiftFuseable.class);
+		@Test
+		void liftParallelFluxFuseable() {
+			LiftFunctionTest.this.lift(ParallelFlux.class, ParallelLiftFuseable.class);
+		}
 
-		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<List<Integer>>() {}))
-				.doesNotThrowAnyException();
+		@Test
+		void scanOperator() {
+			LiftFunctionTest.this.scanOperator(source, Integer.MAX_VALUE, Attr.RunStyle.SYNC);
+		}
 	}
 
-	@Test
-	public void liftConnectableFluxFuseable() {
-		ConnectableFlux<Integer> source = Flux.just(1)
-		                                      .publish()
-		                                      .replay(2);
+	@Nested
+	class ConnectableLiftFuseableTest {
 
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
-		Publisher<Integer> liftOperator = liftFunction.apply(source);
+		@Nested
+		class Normal {
 
-		assertThat(liftOperator)
-				.isInstanceOf(ConnectableFlux.class)
-				.isInstanceOf(Fuseable.class)
-				.isExactlyInstanceOf(ConnectableLiftFuseable.class);
+			ConnectableFlux<Integer> source = Flux.just(1)
+					.publish()
+					.replay(2);
 
-		assertThatCode(() -> liftOperator.subscribe(new BaseSubscriber<Integer>() {}))
-				.doesNotThrowAnyException();
+			@BeforeEach
+			void createFluxAndApply() {
+				liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+			}
+
+			@Test
+			void liftConnectableFluxFuseable() {
+				LiftFunctionTest.this.liftFuseable(ConnectableFlux.class, ConnectableLiftFuseable.class);
+			}
+
+			@Test
+			void scanOperator() {
+				LiftFunctionTest.this.scanOperator(source, 2, Attr.RunStyle.SYNC);
+			}
+		}
+
+		@Nested
+		class WithCancelSupport {
+
+			//see https://github.com/reactor/reactor-core/issues/1860
+			@Test
+			void liftConnectableFluxFuseableWithCancelSupport() {
+				AtomicBoolean cancelSupportInvoked = new AtomicBoolean();
+
+				ConnectableFlux<Integer> source = Flux.just(1)
+						.replay();
+
+				liftOperator = LiftFunctionTest.this.createPublisherAndApply(source);
+
+				assertThat(liftOperator)
+						.isExactlyInstanceOf(ConnectableLiftFuseable.class);
+
+				@SuppressWarnings("unchecked")
+				ConnectableLiftFuseable<Integer, Integer> connectableLifOperator = (ConnectableLiftFuseable<Integer, Integer>) liftOperator;
+				connectableLifOperator.connect(d -> cancelSupportInvoked.set(true));
+
+				Awaitility.await().atMost(1, TimeUnit.SECONDS)
+						.untilAsserted(() -> assertThat(cancelSupportInvoked).isTrue());
+			}
+		}
 	}
 
-	@Test
-	public void liftGroupedFluxFuseable() {
-		Flux<GroupedFlux<String, Integer>> sourceGroups = Flux
-				.just(1)
+	@Nested
+	class GroupedLiftFuseableTest {
+
+		Flux<GroupedFlux<String, Integer>> sourceGroups = Flux.just(1)
 				.groupBy(i -> "" + i);
 
-		Operators.LiftFunction<Integer, Integer> liftFunction =
-				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+		@Test
+		public void liftGroupedFluxFuseable() {
+			Operators.LiftFunction<Integer, Integer> liftFunction =
+					Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
 
-		sourceGroups.map(g -> liftFunction.apply(g))
-		            .doOnNext(liftOperator -> assertThat(liftOperator)
-				            .isInstanceOf(GroupedFlux.class)
-				            .isInstanceOf(Fuseable.class)
-				            .isExactlyInstanceOf(GroupedLiftFuseable.class))
-		            .blockLast();
+			sourceGroups.map(g -> liftFunction.apply(g))
+					.doOnNext(liftOperator -> assertThat(liftOperator)
+							.isInstanceOf(GroupedFlux.class)
+							.isInstanceOf(Fuseable.class)
+							.isExactlyInstanceOf(GroupedLiftFuseable.class))
+					.blockLast();
+		}
+
+		@Test
+		public void scanOperator() {
+			Operators.LiftFunction<Integer, Integer> liftFunction =
+					Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
+
+			sourceGroups.map(g -> liftFunction.apply(g))
+					.doOnNext(liftOperator -> {
+						assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(sourceGroups);
+						assertThat(from(liftOperator).scan(Attr.PREFETCH)).isSameAs(Queues.SMALL_BUFFER_SIZE);
+						assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
+					})
+					.blockLast();
+		}
 	}
 }

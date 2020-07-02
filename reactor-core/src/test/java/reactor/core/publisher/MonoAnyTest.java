@@ -172,17 +172,27 @@ public class MonoAnyTest {
 	}
 
 	@Test
+	public void scanOperator() {
+		Flux<Integer> parent = Flux.just(1);
+		MonoAny test = new MonoAny(parent, v -> true);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoAny.AnySubscriber<String> test = new MonoAny.AnySubscriber<>(actual, String::isEmpty);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));

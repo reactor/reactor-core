@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.util.annotation.Nullable;
@@ -79,6 +78,7 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_ON) return timedScheduler;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 		return null;
 	}
@@ -112,6 +112,7 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.RUN_ON) return worker;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.ASYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

@@ -48,6 +48,7 @@ public class ParallelConcatMapTest {
 		assertThat(test.scan(Scannable.Attr.PREFETCH))
 				.isEqualTo(123)
 				.isNotEqualTo(source.getPrefetch());
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isFalse();
 	}

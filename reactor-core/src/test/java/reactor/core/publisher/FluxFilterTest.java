@@ -255,6 +255,15 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		  .assertComplete();
 	}
 
+	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxFilter test = new FluxFilter(parent, e -> true);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
     @Test
     public void scanSubscriber() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
@@ -264,6 +273,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
@@ -280,6 +290,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));

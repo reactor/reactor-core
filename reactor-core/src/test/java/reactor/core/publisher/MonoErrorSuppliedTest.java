@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.function.Supplier;
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -123,5 +124,12 @@ public class MonoErrorSuppliedTest {
 
 	private Supplier<IllegalStateException> illegalStateExceptionSupplier() {
 		return () -> new IllegalStateException("boom");
+	}
+
+	@Test
+	public void scanOperator(){
+		MonoErrorSupplied test = new MonoErrorSupplied(() -> new NullPointerException());
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

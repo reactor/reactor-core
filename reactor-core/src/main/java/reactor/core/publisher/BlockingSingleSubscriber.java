@@ -152,6 +152,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 		if (key == Attr.CANCELLED) return cancelled;
 		if (key == Attr.ERROR) return error;
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

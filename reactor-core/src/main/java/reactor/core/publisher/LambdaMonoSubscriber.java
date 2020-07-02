@@ -26,6 +26,9 @@ import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}, targeted at {@link Mono}.
  *
@@ -193,6 +196,9 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 		}
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) {
 			return isDisposed();
+		}
+		if (key == RUN_STYLE) {
+		    return SYNC;
 		}
 
 		return null;

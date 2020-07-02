@@ -46,12 +46,15 @@ import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxSwitchOnFirstTest {
 
@@ -1854,6 +1857,77 @@ public class FluxSwitchOnFirstTest {
         }
     }
 
+
+    @Test
+    public void scanOperator(){
+    	Flux<Integer> parent = Flux.just(1);
+        FluxSwitchOnFirst test = new FluxSwitchOnFirst(parent, (s, f) -> Flux.empty(), false);
+
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+    }
+
+    @Test
+    public void scanMain(){
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxSwitchOnFirst.SwitchOnFirstMain test =
+                new FluxSwitchOnFirst.SwitchOnFirstMain(actual, (s, f) -> Flux.empty(), false);
+
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+    }
+
+    @Test
+    public void scanMainConditional(){
+        Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
+        FluxSwitchOnFirst.SwitchOnFirstConditionalMain test =
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain(actual, (s, f) -> Flux.empty(), false);
+
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanSubscriber(){
+        Fuseable.ConditionalSubscriber<String> delegate = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
+        FluxSwitchOnFirst.SwitchOnFirstConditionalMain parent =
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain(delegate, (s, f) -> Flux.empty(), false);
+        FluxSwitchOnFirst.SwitchOnFirstControlSubscriber test = new FluxSwitchOnFirst.SwitchOnFirstControlSubscriber(parent, delegate, false);
+
+        Subscription sub = Operators.emptySubscription();
+        test.onSubscribe(sub);
+
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(delegate);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+    }
+
+    @Test
+    public void scanConditionnalSubscriber(){
+        Fuseable.ConditionalSubscriber<String> delegate = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
+        FluxSwitchOnFirst.SwitchOnFirstConditionalMain main =
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain(delegate, (s, f) -> Flux.empty(), false);
+        FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber test = new FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber(main, delegate, false);
+
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(delegate);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+    }
 
     private static final class NoOpsScheduler implements Scheduler {
 

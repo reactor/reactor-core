@@ -217,6 +217,13 @@ public class MonoElementAtTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    MonoElementAt<String> test = new MonoElementAt(Flux.just(1, 2, 3), 1);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoElementAt.ElementAtSubscriber<String> test = new MonoElementAt.ElementAtSubscriber<>(actual, 1, "foo");
@@ -227,6 +234,7 @@ public class MonoElementAtTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));

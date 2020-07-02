@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -1162,6 +1163,13 @@ class FluxCreateTest {
 	}
 
 	@Test
+	public void scanOperator(){
+		FluxCreate test = new FluxCreate(v -> Arrays.asList(1, 2, 3), OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
+	}
+
+	@Test
 	void scanBaseSink() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual) {
@@ -1175,6 +1183,7 @@ class FluxCreateTest {
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -1246,6 +1255,7 @@ class FluxCreateTest {
 		decorated.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();

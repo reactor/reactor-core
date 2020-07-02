@@ -283,6 +283,15 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxDematerialize<Integer> test = new FluxDematerialize(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
@@ -293,6 +302,7 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();

@@ -43,4 +43,10 @@ final class MonoDoOnEachFuseable<T> extends InternalMonoOperator<T, T> implement
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return FluxDoOnEach.createSubscriber(actual, onSignal, true, true);
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

@@ -64,6 +64,17 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 		return new FluxConcatMapNoPrefetchSubscriber<>(actual, mapper, errorMode);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
+	@Override
+	public int getPrefetch() {
+		return 0;
+	}
+
 	static final class FluxConcatMapNoPrefetchSubscriber<T, R> implements FluxConcatMapSupport<T, R> {
 
 		enum State {
@@ -133,6 +144,8 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			if (key == Attr.PARENT) return upstream;
 			if (key == Attr.TERMINATED) return state == State.TERMINATED;
 			if (key == Attr.CANCELLED) return state == State.CANCELLED;
+			if (key == Attr.DELAY_ERROR) return this.errorMode != ErrorMode.IMMEDIATE;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return FluxConcatMapSupport.super.scanUnsafe(key);
 		}

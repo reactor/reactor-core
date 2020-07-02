@@ -54,6 +54,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -176,6 +177,12 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 		public void cancel() {
 			super.cancel();
 			s.cancel();
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			return super.scanUnsafe(key);
 		}
 	}
 }

@@ -59,6 +59,12 @@ final class FluxOnBackpressureDrop<T> extends InternalFluxOperator<T, T> {
 		return new DropSubscriber<>(actual, onDrop);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class DropSubscriber<T>
 			implements InnerOperator<T, T> {
 
@@ -168,6 +174,7 @@ final class FluxOnBackpressureDrop<T> extends InternalFluxOperator<T, T> {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

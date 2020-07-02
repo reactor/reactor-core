@@ -173,6 +173,7 @@ final class LambdaSubscriber<T>
 		if (key == Attr.PARENT) return subscription;
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

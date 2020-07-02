@@ -53,4 +53,10 @@ final class MonoLift<I, O> extends InternalMonoOperator<I, O> {
 		}
 		return super.stepName();
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
+		return super.scanUnsafe(key);
+	}
 }

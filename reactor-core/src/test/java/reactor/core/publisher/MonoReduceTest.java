@@ -305,6 +305,13 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 	}
 
 	@Test
+	public void scanOperator(){
+	    MonoReduce<Integer> test = new MonoReduce(Flux.just(1, 2, 3), (a, b) -> (Integer) a + (Integer) b);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoReduce.ReduceSubscriber<String> test = new MonoReduce.ReduceSubscriber<>(actual, (s1, s2) -> s1 + s2);
@@ -315,6 +322,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));

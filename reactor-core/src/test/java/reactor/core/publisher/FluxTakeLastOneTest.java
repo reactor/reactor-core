@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,5 +63,14 @@ public class FluxTakeLastOneTest {
 		                        .takeLast(1))
 	                .expectNext(100)
 	                .verifyComplete();
+	}
+
+	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1, 2, 3);
+		FluxTakeLastOne<Integer> test = new FluxTakeLastOne<>(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

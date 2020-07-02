@@ -62,4 +62,9 @@ final class MonoExpand<T> extends FluxFromMonoOperator<T, T> {
 		return null;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

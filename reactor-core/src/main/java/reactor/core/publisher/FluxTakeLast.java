@@ -54,6 +54,12 @@ final class FluxTakeLast<T> extends InternalFluxOperator<T, T> {
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
@@ -72,6 +78,7 @@ final class FluxTakeLast<T> extends InternalFluxOperator<T, T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -194,6 +201,7 @@ final class FluxTakeLast<T> extends InternalFluxOperator<T, T> {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.BUFFERED) return size();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

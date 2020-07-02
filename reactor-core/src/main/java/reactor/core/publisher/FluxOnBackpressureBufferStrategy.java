@@ -66,6 +66,12 @@ final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, 
 		return Integer.MAX_VALUE;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class BackpressureBufferDropOldestSubscriber<T>
 			extends ArrayDeque<T>
 			implements InnerOperator<T, T> {
@@ -119,6 +125,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends InternalFluxOperator<O, 
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.DELAY_ERROR) return delayError;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

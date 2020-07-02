@@ -74,6 +74,7 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.CAPACITY) return remaining;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}

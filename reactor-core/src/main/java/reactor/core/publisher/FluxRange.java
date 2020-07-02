@@ -70,7 +70,8 @@ final class FluxRange extends Flux<Integer>
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		return null; //no particular key to be represented, still useful in hooks
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return null;
 	}
 
 	static final class RangeSubscription implements InnerProducer<Integer>,
@@ -188,6 +189,7 @@ final class FluxRange extends Flux<Integer>
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return isEmpty();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -338,6 +340,7 @@ final class FluxRange extends Flux<Integer>
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == Attr.TERMINATED) return isEmpty();
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

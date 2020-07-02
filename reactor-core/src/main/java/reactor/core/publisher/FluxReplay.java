@@ -1146,6 +1146,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		if (key == Attr.PREFETCH) return getPrefetch();
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.RUN_ON) return scheduler;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -1391,6 +1392,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			if (key == Attr.BUFFERED) return buffer.size();
 			if (key == Attr.TERMINATED) return isTerminated();
 			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

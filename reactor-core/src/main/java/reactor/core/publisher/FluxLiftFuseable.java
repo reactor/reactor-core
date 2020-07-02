@@ -63,6 +63,12 @@ final class FluxLiftFuseable<I, O> extends InternalFluxOperator<I, O>
 	}
 
 	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Scannable.from(source).scanUnsafe(key);
+		return super.scanUnsafe(key);
+	}
+
+	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super O> actual) {
 		CoreSubscriber<? super I> input =
 				lifter.apply(source, actual);

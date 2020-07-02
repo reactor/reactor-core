@@ -519,4 +519,19 @@ public class MonoDoOnEachTest {
 
 		assertThat(errorHandlerCount).as("error handler invoked on top on complete").hasValue(1);
 	}
+
+	@Test
+	public void scanOperator(){
+		final MonoDoOnEach<String> test = new MonoDoOnEach<>(Mono.just("foo"), s -> { });
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanFuseableOperator(){
+		final MonoDoOnEachFuseable<String> test = new MonoDoOnEachFuseable<>(Mono.just("foo"), s -> { });
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
 }

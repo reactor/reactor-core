@@ -71,6 +71,12 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 		return new MetricsSubscriber<>(actual, meterRegistry, Clock.SYSTEM, this.tags);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static class MetricsSubscriber<T> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -153,6 +159,13 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 				s.request(l);
 			}
 		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
 	}
 
 }

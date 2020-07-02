@@ -43,9 +43,13 @@ public class MonoCallableOnAssemblyTest {
 	@Test
 	public void scanOperator() {
 		AssemblySnapshot stacktrace = new AssemblySnapshot(null, Traces.callSiteSupplierFactory.get());
-		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(Mono.empty(), stacktrace);
+		Mono<Object> source = Mono.empty();
+		MonoCallableOnAssembly<?> test = new MonoCallableOnAssembly<>(source, stacktrace);
 
-		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).as("ACTUAL_METADATA").isTrue();
+		assertThat(test.scan(Scannable.Attr.ACTUAL_METADATA)).isTrue();
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test

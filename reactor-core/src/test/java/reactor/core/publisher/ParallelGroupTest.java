@@ -33,6 +33,7 @@ public class ParallelGroupTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -48,6 +49,7 @@ public class ParallelGroupTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(s);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		//see other test for request
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isZero();

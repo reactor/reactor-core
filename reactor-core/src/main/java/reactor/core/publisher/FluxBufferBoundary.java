@@ -29,6 +29,9 @@ import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+import static reactor.core.Scannable.Attr.RUN_STYLE;
+import static reactor.core.Scannable.Attr.RunStyle.SYNC;
+
 /**
  * Buffers elements into custom collections where the buffer boundary is signalled
  * by another publisher.
@@ -75,6 +78,12 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		other.subscribe(parent.other);
 
 		return parent;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == RUN_STYLE) return SYNC;
+		return super.scanUnsafe(key);
 	}
 
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>
@@ -127,6 +136,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			}
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == RUN_STYLE) return SYNC;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -315,6 +325,9 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) {
 				return main;
+			}
+			if (key == RUN_STYLE) {
+			    return SYNC;
 			}
 			return super.scanUnsafe(key);
 		}

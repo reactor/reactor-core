@@ -843,6 +843,16 @@ public class FluxGroupByTest extends
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1);
+		FluxGroupBy<Integer, Integer, Integer> test
+				= new FluxGroupBy<>(parent, k -> k % 2, v -> -v, Queues.unbounded(3), Queues.unbounded(3), 3);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanMain() {
 		CoreSubscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxGroupBy.GroupByMain<Integer, Integer, String> test = new FluxGroupBy.GroupByMain<>(actual,
@@ -855,6 +865,7 @@ public class FluxGroupByTest extends
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isSameAs(123);
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isSameAs(0);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
@@ -876,6 +887,7 @@ public class FluxGroupByTest extends
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
 		assertThat(test.scan(Scannable.Attr.BUFFERED)).isSameAs(0);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();

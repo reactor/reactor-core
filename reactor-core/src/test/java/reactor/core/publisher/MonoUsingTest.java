@@ -25,6 +25,9 @@ import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
 
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -390,5 +393,31 @@ public class MonoUsingTest {
 		await().atMost(100, TimeUnit.MILLISECONDS)
 		       .with().pollInterval(10, TimeUnit.MILLISECONDS)
 		       .untilAsserted(assertThat(cleaned)::isTrue);
+	}
+
+	@Test
+	public void scanOperator(){
+		MonoUsing<Integer, Integer> test = new MonoUsing(() -> 1, r -> Mono.just(1), c -> {}, false);
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+	}
+
+
+	@Test
+	public void scanSubscriber() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		MonoUsing.MonoUsingSubscriber test = new MonoUsing.MonoUsingSubscriber(actual, rc -> {}, "foo", false, false);
+
+		final Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

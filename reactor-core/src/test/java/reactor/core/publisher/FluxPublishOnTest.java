@@ -61,6 +61,13 @@ import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.*;
+import static reactor.core.Scannable.Attr.PREFETCH;
+import static reactor.core.Scannable.Attr.RUN_ON;
+import static reactor.core.Scannable.Attr.RunStyle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
@@ -1253,6 +1260,18 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> source = Flux.just(1);
+		Scheduler scheduler = Schedulers.immediate();
+		FluxPublishOn test = new FluxPublishOn(source, scheduler, false, 3, 4, Queues::one);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(PREFETCH)).isEqualTo(3);
+		assertThat(test.scan(RUN_ON)).isSameAs(scheduler);
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
+	}
+
+	@Test
     public void scanSubscriber() throws InterruptedException {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxPublishOn.PublishOnSubscriber<Integer> test = new FluxPublishOn.PublishOnSubscriber<>(actual,
@@ -1266,6 +1285,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
         test.requested = 35;
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
 
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
@@ -1302,6 +1322,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
         test.queue.add(1);
         assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(RunStyle.ASYNC);
 
         assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();

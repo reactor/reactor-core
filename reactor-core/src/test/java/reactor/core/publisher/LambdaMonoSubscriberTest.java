@@ -279,6 +279,7 @@ public class LambdaMonoSubscriberTest {
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();

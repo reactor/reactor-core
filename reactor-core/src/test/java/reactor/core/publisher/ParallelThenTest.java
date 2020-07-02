@@ -78,6 +78,7 @@ public class ParallelThenTest {
 		ParallelThen test = new ParallelThen(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -90,6 +91,7 @@ public class ParallelThenTest {
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
@@ -128,6 +130,7 @@ public class ParallelThenTest {
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(s);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();

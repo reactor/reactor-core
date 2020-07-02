@@ -53,4 +53,10 @@ final class MonoMap<T, R> extends InternalMonoOperator<T, R> {
 		}
 		return new FluxMap.MapSubscriber<>(actual, mapper);
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

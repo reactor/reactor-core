@@ -19,9 +19,11 @@ import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
-
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoTimeoutTest {
 
@@ -156,5 +158,12 @@ public class MonoTimeoutTest {
 				            "first signal from a Publisher in 'source(MonoNever)' " +
 				            "(and no fallback has been configured)")
 		            .verify();
+	}
+
+	@Test
+	public void scanOperator(){
+	    MonoTimeout test = new MonoTimeout(Mono.just(1), Mono.just("foo"), "timeout");
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

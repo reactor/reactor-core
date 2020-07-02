@@ -104,4 +104,9 @@ final class MonoPeek<T> extends InternalMonoOperator<T, T> implements SignalPeek
 		return onCancelCall;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

@@ -40,4 +40,9 @@ final class FluxTakeLastOne<T> extends InternalFluxOperator<T, T> implements Fus
 		return Integer.MAX_VALUE;
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

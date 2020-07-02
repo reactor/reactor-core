@@ -22,6 +22,7 @@ import java.util.function.Function;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -40,6 +41,12 @@ final class FluxContextStart<T> extends InternalFluxOperator<T, T> implements Fu
 		Context c = doOnContext.apply(actual.currentContext());
 
 		return new ContextStartSubscriber<>(actual, c);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Scannable.Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
 	}
 
 	static final class ContextStartSubscriber<T>
@@ -70,6 +77,9 @@ final class FluxContextStart<T> extends InternalFluxOperator<T, T> implements Fu
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
 				return s;
+			}
+			if (key == Scannable.Attr.RUN_STYLE) {
+			    return Attr.RunStyle.SYNC;
 			}
 			return InnerOperator.super.scanUnsafe(key);
 		}

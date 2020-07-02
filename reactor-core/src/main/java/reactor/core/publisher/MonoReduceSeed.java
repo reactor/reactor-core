@@ -27,7 +27,7 @@ import reactor.util.annotation.Nullable;
 
 /**
  * Aggregates the source values with the help of an accumulator
- * function and emits the the final accumulated value.
+ * function and emits the final accumulated value.
  *
  * @param <T> the source value type
  * @param <R> the accumulated result type
@@ -57,6 +57,12 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 		return new ReduceSeedSubscriber<>(actual, accumulator, initialValue);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
+
 	static final class ReduceSeedSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {
 
 		final BiFunction<R, ? super T, R> accumulator;
@@ -78,6 +84,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return s;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}

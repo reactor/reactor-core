@@ -16,7 +16,10 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoErrorTest {
 
@@ -30,5 +33,12 @@ public class MonoErrorTest {
 	public void onMonoRejectedThrowOnBlock() {
 		Mono.error(new Exception("test"))
 		    .block();
+	}
+
+	@Test
+	public void scanOperator(){
+		MonoError test = new MonoError(new NullPointerException());
+
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

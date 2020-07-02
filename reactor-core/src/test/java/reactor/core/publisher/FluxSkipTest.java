@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -27,6 +26,8 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxSkipTest extends FluxOperatorTest<String, String> {
 
@@ -129,13 +130,23 @@ public class FluxSkipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
+	public void scanOperator(){
+		Flux<Integer> parent = Flux.just(1, 2, 3);
+		FluxSkip<Integer> test = new FluxSkip<>(parent, 1);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSkip.SkipSubscriber<Integer> test = new FluxSkip.SkipSubscriber<>(actual, 7);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }
 }

@@ -160,7 +160,7 @@ public class BlockingOptionalMonoSubscriberTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).as("PARENT").isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).as("PREFETCH").isEqualTo(Integer.MAX_VALUE);
-
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).as("RUN_STYLE").isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).as("TERMINATED").isFalse();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).as("CANCELLED").isFalse();

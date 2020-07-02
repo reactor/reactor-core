@@ -41,6 +41,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 		return null;
 	}
@@ -88,6 +89,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.TERMINATED) return REMAINING.get(this) == 0;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return super.scanUnsafe(key);
 		}
@@ -145,6 +147,7 @@ final class ParallelThen extends Mono<Void> implements Scannable, Fuseable {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 
 			return null;
 		}

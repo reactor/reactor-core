@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 
 /**
  * @author Stephane Maldini
@@ -35,5 +36,13 @@ final class MonoSourceFluxFuseable<I> extends MonoFromFluxOperator<I, I> impleme
 	@Override
 	public CoreSubscriber<? super I> subscribeOrReturn(CoreSubscriber<? super I> actual) {
 		return actual;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) {
+			return Scannable.from(source).scanUnsafe(key);
+		}
+		return super.scanUnsafe(key);
 	}
 }

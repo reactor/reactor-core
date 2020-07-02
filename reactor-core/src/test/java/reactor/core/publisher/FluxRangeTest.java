@@ -124,6 +124,14 @@ public class FluxRangeTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    FluxRange test = new FluxRange(0, 10);
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	    assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
+	}
+
+	@Test
 	public void scanSubscription() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxRange.RangeSubscription test = new FluxRange.RangeSubscription(actual, 1L, 10L);
@@ -131,6 +139,7 @@ public class FluxRangeTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.clear();

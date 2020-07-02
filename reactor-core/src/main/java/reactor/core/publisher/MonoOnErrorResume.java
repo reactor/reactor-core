@@ -43,4 +43,10 @@ final class MonoOnErrorResume<T> extends InternalMonoOperator<T, T> {
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new FluxOnErrorResume.ResumeSubscriber<>(actual, nextFactory);
 	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
+		return super.scanUnsafe(key);
+	}
 }

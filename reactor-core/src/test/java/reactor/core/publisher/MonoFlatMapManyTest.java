@@ -62,6 +62,13 @@ public class MonoFlatMapManyTest {
 	}
 
 	@Test
+	public void scanOperator(){
+	    MonoFlatMapMany<String, Integer> test = new MonoFlatMapMany(Mono.just("foo"), s -> Mono.just(1));
+
+	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
 	public void scanMain() {
 		CoreSubscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFlatMapMany.FlatMapManyMain<String, Integer> test = new MonoFlatMapMany.FlatMapManyMain<>
@@ -71,6 +78,7 @@ public class MonoFlatMapManyTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -86,6 +94,7 @@ public class MonoFlatMapManyTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(innerSubscription);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 
 		main.requested = 3L;
 		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
