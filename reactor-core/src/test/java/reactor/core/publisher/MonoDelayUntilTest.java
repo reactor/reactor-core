@@ -253,4 +253,11 @@ public class MonoDelayUntilTest {
 		test.error = new IllegalStateException("boom");
 		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 	}
+
+	@Test
+	public void testNullPublisherFromMapper() {
+		StepVerifier.create(Mono.just("foo").delayUntil(a -> null))
+		            .expectErrorMessage("mapper returned null value")
+					.verify();
+	}
 }
