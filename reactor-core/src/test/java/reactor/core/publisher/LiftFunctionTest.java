@@ -351,13 +351,16 @@ public class LiftFunctionTest {
 			Operators.LiftFunction<Integer, Integer> liftFunction =
 					Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
 
-			sourceGroups.map(g -> liftFunction.apply(g))
-					.doOnNext(liftOperator -> {
-						assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(sourceGroups);
-						assertThat(from(liftOperator).scan(Attr.PREFETCH)).isSameAs(Queues.SMALL_BUFFER_SIZE);
-						assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
-					})
-					.blockLast();
+			sourceGroups.map(g -> {
+				Publisher<Integer> liftOperator = liftFunction.apply(g);
+
+				assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(g);
+				assertThat(from(liftOperator).scan(Attr.PREFETCH)).isSameAs(g.getPrefetch());
+				assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(Attr.RUN_STYLE);
+
+				return liftOperator;
+			})
+			.blockLast();
 		}
 	}
 }
