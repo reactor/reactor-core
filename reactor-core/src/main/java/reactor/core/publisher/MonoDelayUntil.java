@@ -210,6 +210,7 @@ final class MonoDelayUntil<T> extends Mono<T> implements Scannable,
 
 			try {
 				p = generator.apply(value);
+				Objects.requireNonNull(p, "mapper returned null value");
 			}
 			catch (Throwable t) {
 				onError(t);
