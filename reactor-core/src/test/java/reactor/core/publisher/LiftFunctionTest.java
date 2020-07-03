@@ -356,7 +356,9 @@ public class LiftFunctionTest {
 
 				assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(g);
 				assertThat(from(liftOperator).scan(Attr.PREFETCH)).isSameAs(g.getPrefetch());
-				assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(Attr.RUN_STYLE);
+				assertThat(from(liftOperator).scan(Attr.RUN_STYLE))
+						.isSameAs(Attr.RunStyle.SYNC)
+						.isSameAs(from(g).scan(Attr.RUN_STYLE));
 
 				return liftOperator;
 			})
