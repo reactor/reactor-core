@@ -1,22 +1,35 @@
+# Note for JDK build matrix, we use https://github.com/DanySK/Gravis-CI rather than the default script
 language: java
-jdk:
-  - openjdk8
-  - openjdk11
-  - openjdk14
-
 sudo: required
+env:
+  global:
+    # Convenience variables for shortening commands
+    - GRAVIS_REPO="https://github.com/DanySK/Gravis-CI.git"
+    - GRAVIS="$HOME/gravis"
+  matrix:
+    # List any JDK you want to build your software with.
+    # You can see the list of supported environments by installing Jabba and using ls-remote:
+    # https://github.com/shyiko/jabba#usage
+    - JDK="adopt@1.8"
+    - JDK="adopt@1.11"
+    - JDK="adopt@1.14"
 
-script: ./travis-build.sh
+script:
+  - ./travis-build.sh
+
+before_install:
+  # Check out the script set
+  - travis_retry git clone --depth 1 $GRAVIS_REPO $GRAVIS
+  # Install the JDK you configured in the $JDK environment variable
+  # Never use travis_retry: hides failures. travis_retry is used internally where possible.
+  - source $GRAVIS/install-jdk
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
-
+  - $GRAVIS/clean-gradle-cache
 cache:
   directories:
-  - $HOME/.m2
-  - $HOME/.gradle/caches/
-  - $HOME/.gradle/wrapper/
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
