@@ -154,16 +154,32 @@ public class LambdaMonoSubscriberTest {
 	}
 
 	@Test
+	public void onNextConsumerExceptionHandledByErrorHandler() {
+		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
+
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
+				value -> { throw new IllegalArgumentException(); },
+				errorHolder::set,
+				() -> {},
+				null);
+
+		TestSubscription testSubscription = new TestSubscription();
+		tested.onSubscribe(testSubscription);
+		tested.onNext("foo");
+
+		assertThat(errorHolder.get()).as("onError").isInstanceOf(IllegalArgumentException.class);
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isFalse();
+	}
+
+	@Test
 	public void onNextConsumerExceptionBubblesUpDoesntTriggerCancellation() {
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
-
-			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(value -> {
-				throw new IllegalArgumentException();
-			}, errorHolder::set, () -> {
-			}, null);
+			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
+					value -> { throw new IllegalArgumentException(); },
+					null, //no errorConsumer so that we use onErrorDropped
+					() -> { }, null);
 
 			TestSubscription testSubscription = new TestSubscription();
 			tested.onSubscribe(testSubscription);
@@ -175,8 +191,6 @@ public class LambdaMonoSubscriberTest {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("IllegalArgumentException");
 
-			assertThat(errorHolder.get()).as("onError")
-			                             .isNull();
 			assertThat(testSubscription.isCancelled).as("subscription isCancelled")
 			                                        .isFalse();
 		}
@@ -190,12 +204,10 @@ public class LambdaMonoSubscriberTest {
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
-
-			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(value -> {
-				throw new OutOfMemoryError();
-			}, errorHolder::set, () -> {
-			}, null);
+			LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
+					value -> { throw new OutOfMemoryError(); },
+					null, //no errorConsumer so that we use onErrorDropped
+					() -> { }, null);
 
 			TestSubscription testSubscription = new TestSubscription();
 			tested.onSubscribe(testSubscription);
@@ -206,8 +218,6 @@ public class LambdaMonoSubscriberTest {
 			          .contains("Operator called default onErrorDropped")
 			          .contains("OutOfMemoryError");
 
-			assertThat(errorHolder.get()).as("onError")
-			                             .isNull();
 			assertThat(testSubscription.isCancelled).as("subscription isCancelled")
 			                                        .isFalse();
 		}
