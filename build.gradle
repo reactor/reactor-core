@@ -138,6 +138,15 @@ configure(subprojects) { p ->
 			maxGranularity 3
 		}
 
+		//show progress by displaying test classes, avoiding test suite timeouts
+		TestDescriptor last
+		afterTest { TestDescriptor td, TestResult tr ->
+			if (last != td.getParent()) {
+				last = td.getParent()
+				println last
+			}
+		}
+
 		if (isCiServer) {
 			def stdout = new LinkedList<TestOutputEvent>()
 			beforeTest { TestDescriptor td ->
