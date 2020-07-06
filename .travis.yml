@@ -15,7 +15,7 @@ env:
     - JDK="adopt@1.14"
 
 script:
-  - ./travis-build.sh
+  - ./gradlew check
 
 before_install:
   # Check out the script set
