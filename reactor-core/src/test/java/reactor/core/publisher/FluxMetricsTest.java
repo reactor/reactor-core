@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -462,8 +464,12 @@ public class FluxMetricsTest {
 
 	@Test
 	public void ensureFuseablePropagateOnComplete_inCaseOfAsyncFusion() {
-		Flux.fromIterable(Arrays.asList(1, 2, 3))
-		    .metrics()
+		Flux<Integer> source = Flux.fromIterable(Arrays.asList(1, 2, 3));
+		//smoke test that this form uses FluxMetricsFuseable
+		assertThat(source.metrics()).isInstanceOf(FluxMetricsFuseable.class);
+
+		//now use the test version with local registry
+		new FluxMetricsFuseable<Integer>(source, registry)
 		    .flatMapIterable(Arrays::asList)
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)
@@ -473,11 +479,16 @@ public class FluxMetricsTest {
 
 	@Test
 	public void ensureOnNextInAsyncModeIsCapableToPropagateNulls() {
-		Flux.using(() -> "irrelevant",
+		Flux<List<Integer>> source = Flux.using(() -> "irrelevant",
 				irrelevant -> Mono.fromSupplier(() -> Arrays.asList(1, 2, 3)),
 				irrelevant -> {
-				})
-		    .metrics()
+				});
+
+		//smoke test that this form uses FluxMetricsFuseable
+		assertThat(source.metrics()).isInstanceOf(FluxMetricsFuseable.class);
+
+		//now use the test version with local registry
+		new FluxMetricsFuseable<List<Integer>>(source, registry)
 		    .flatMapIterable(Function.identity())
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)

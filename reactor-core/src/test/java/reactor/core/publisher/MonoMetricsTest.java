@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,6 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
@@ -394,8 +396,13 @@ public class MonoMetricsTest {
 
 	@Test
 	public void ensureFuseablePropagateOnComplete_inCaseOfAsyncFusion() {
-		Mono.fromSupplier(() -> Arrays.asList(1, 2, 3))
-		    .metrics()
+		Mono<List<Integer>> source = Mono.fromSupplier(() -> Arrays.asList(1, 2, 3));
+
+		//smoke test that this form uses MonoMetricsFuseable
+		assertThat(source.metrics()).isInstanceOf(MonoMetricsFuseable.class);
+
+		//now use the test version with local registry
+		new MonoMetricsFuseable<List<Integer>>(source, registry)
 		    .flatMapIterable(Function.identity())
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)
@@ -405,11 +412,15 @@ public class MonoMetricsTest {
 
 	@Test
 	public void ensureOnNextInAsyncModeIsCapableToPropagateNulls() {
-		Mono.using(() -> "irrelevant",
+		Mono<List<Integer>> source = Mono.using(() -> "irrelevant",
 				irrelevant -> Mono.fromSupplier(() -> Arrays.asList(1, 2, 3)),
-				irrelevant -> {
-				})
-		    .metrics()
+				irrelevant -> { });
+
+		//smoke test that this form uses MonoMetricsFuseable
+		assertThat(source.metrics()).isInstanceOf(MonoMetricsFuseable.class);
+
+		//now use the test version with local registry
+		new MonoMetricsFuseable<List<Integer>>(source, registry)
 		    .flatMapIterable(Function.identity())
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)

@@ -99,7 +99,6 @@ public class FluxMetricsFuseableTest {
 		MockClock clock = new MockClock();
 		removeRegistry();
 		registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
-		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
@@ -132,7 +131,6 @@ public class FluxMetricsFuseableTest {
 		MockClock clock = new MockClock();
 		removeRegistry();
 		registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
-		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
@@ -168,7 +166,6 @@ public class FluxMetricsFuseableTest {
 		MockClock clock = new MockClock();
 		removeRegistry();
 		registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
-		Metrics.globalRegistry.add(registry);
 
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		FluxMetricsFuseable.MetricsFuseableSubscriber<Integer> fuseableSubscriber =
