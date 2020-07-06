@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Metrics;
@@ -24,21 +25,21 @@ import org.junit.runner.RunWith;
 
 import reactor.test.AutoDisposingRule;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.offset;
+import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;
 import static reactor.core.scheduler.SchedulerMetricDecorator.TAG_SCHEDULER_ID;
 
 @RunWith(JUnitParamsRunner.class)
 public class SchedulersMetricsTest {
 
-	final SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
+	SimpleMeterRegistry simpleMeterRegistry;
 
 	@Rule
 	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
 	@Before
 	public void setUp() {
+		simpleMeterRegistry = new SimpleMeterRegistry();
 		Metrics.addRegistry(simpleMeterRegistry);
 		Schedulers.enableMetrics();
 	}
@@ -168,7 +169,8 @@ public class SchedulersMetricsTest {
 		afterTest.autoDispose(Schedulers.newParallel("A", 1));
 		afterTest.autoDispose(Schedulers.newParallel("A", 1));
 
-		Metrics.globalRegistry.counter("foo", "tagged", "bar");
+		final Counter otherCounter = Metrics.globalRegistry.counter("foo", "tagged", "bar");
+		afterTest.autoDispose(() -> Metrics.globalRegistry.remove(otherCounter));
 
 		Schedulers.disableMetrics();
 
