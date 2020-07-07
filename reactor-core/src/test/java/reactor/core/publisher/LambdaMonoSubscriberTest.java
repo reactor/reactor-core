@@ -154,7 +154,7 @@ public class LambdaMonoSubscriberTest {
 	}
 
 	@Test
-	public void onNextConsumerExceptionHandledByErrorHandler() {
+	public void onNextConsumerExceptionTriggersCancellation() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
 		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
@@ -165,9 +165,37 @@ public class LambdaMonoSubscriberTest {
 
 		TestSubscription testSubscription = new TestSubscription();
 		tested.onSubscribe(testSubscription);
+
+		//the error is expected to be propagated through doError
 		tested.onNext("foo");
 
 		assertThat(errorHolder.get()).as("onError").isInstanceOf(IllegalArgumentException.class);
+		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isTrue();
+	}
+
+	@Test
+	public void onNextConsumerFatalDoesntTriggerCancellation() {
+		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
+
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
+				value -> { throw new OutOfMemoryError(); },
+				null,
+				() -> {},
+				null);
+
+		TestSubscription testSubscription = new TestSubscription();
+		tested.onSubscribe(testSubscription);
+
+		//the error is expected to be thrown as it is fatal
+		try {
+			tested.onNext("foo");
+			fail("Expected OutOfMemoryError to be thrown");
+		}
+		catch (OutOfMemoryError e) {
+			//expected
+		}
+
+		assertThat(errorHolder.get()).as("onError").isNull();
 		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isFalse();
 	}
 
