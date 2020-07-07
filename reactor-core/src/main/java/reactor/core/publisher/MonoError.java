@@ -49,6 +49,10 @@ final class MonoError<T> extends Mono<T> implements Fuseable.ScalarCallable, Sou
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof CallableAware) {
+			((CallableAware<T>) actual).onErrorFromCallable(error);
+			return;
+		}
 		Operators.error(actual, error);
 	}
 

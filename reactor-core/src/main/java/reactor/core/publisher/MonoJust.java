@@ -51,6 +51,10 @@ extends Mono<T>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof CallableAware) {
+			((CallableAware<T>) actual).onNextFromCallable(value);
+			return;
+		}
 		actual.onSubscribe(Operators.scalarSubscription(actual, value));
 	}
 

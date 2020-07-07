@@ -827,7 +827,7 @@ final class FluxConcatMap<T, R> extends InternalFluxOperator<T, R> {
 		void innerError(Throwable e);
 	}
 
-	static final class ConcatMapInner<R>
+	static class ConcatMapInner<R>
 			extends Operators.MultiSubscriptionSubscriber<R, R> {
 
 		final FluxConcatMapSupport<?, R> parent;

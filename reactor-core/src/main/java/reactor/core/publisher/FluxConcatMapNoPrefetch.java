@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 
@@ -26,7 +25,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.publisher.FluxConcatMap.ConcatMapInner;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.publisher.FluxConcatMap.FluxConcatMapSupport;
-import reactor.core.publisher.FluxConcatMap.WeakScalarSubscription;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -118,7 +116,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 
 		final CoreSubscriber<? super R> actual;
 
-		final ConcatMapInner<R> inner;
+		final Inner<R> inner;
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
@@ -134,7 +132,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.errorMode = errorMode;
-			this.inner = new ConcatMapInner<>(this);
+			this.inner = new Inner<>(this);
 			STATE.lazySet(this, State.INITIAL);
 		}
 
@@ -181,26 +179,6 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 			try {
 				Publisher<? extends R> p = mapper.apply(t);
 				Objects.requireNonNull(p, "The mapper returned a null Publisher");
-
-				if (p instanceof Callable) {
-					Callable<R> callable = (Callable<R>) p;
-
-					R result = callable.call();
-					if (result == null) {
-						innerComplete();
-						return;
-					}
-
-					if (inner.isUnbounded()) {
-						actual.onNext(result);
-						innerComplete();
-						return;
-					}
-
-					inner.set(new WeakScalarSubscription<>(result, inner));
-					return;
-				}
-
 				p.subscribe(inner);
 			}
 			catch (Throwable e) {
@@ -348,6 +326,30 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 					inner.cancel();
 					upstream.cancel();
 			}
+		}
+	}
+
+	static class Inner<R> extends ConcatMapInner<R> implements CallableAware<R> {
+
+		private final FluxConcatMapNoPrefetchSubscriber<?, R> subscriber;
+
+		public Inner(FluxConcatMapNoPrefetchSubscriber<?, R> subscriber) {
+			super(subscriber);
+			this.subscriber = subscriber;
+		}
+
+		@Override
+		public void onNextFromCallable(@Nullable R result) {
+			if (result != null) {
+				subscriber.innerNext(result);
+			}
+
+			subscriber.innerComplete();
+		}
+
+		@Override
+		public void onErrorFromCallable(Throwable e) {
+			subscriber.innerError(e);
 		}
 	}
 }
