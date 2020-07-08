@@ -31,6 +31,7 @@ import reactor.test.util.TestLogger;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.junit.Assert.*;
 
 public class LambdaMonoSubscriberTest {
@@ -173,11 +174,8 @@ public class LambdaMonoSubscriberTest {
 		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isTrue();
 	}
 
-
 	@Test
 	public void onNextConsumerBubblesUpErrorCallbackNotImplemented() {
-		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
-
 		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 				value -> { throw new IllegalArgumentException(); },
 				null,
@@ -188,15 +186,7 @@ public class LambdaMonoSubscriberTest {
 		tested.onSubscribe(testSubscription);
 
 		//the error is expected to be thrown as there is no error handler
-		try {
-			tested.onNext("foo");
-			fail("Expected IllegalArgumentException to be thrown");
-		}
-		catch (UnsupportedOperationException e) {
-			//expected
-		}
-
-		assertThat(errorHolder.get()).as("onError").isNull();
+		assertThatIllegalArgumentException().isThrownBy(() -> tested.onNext("foo"));
 		assertThat(testSubscription.isCancelled).as("subscription isCancelled").isTrue();
 	}
 
