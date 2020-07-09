@@ -95,26 +95,8 @@ publishing {
 					system = "GitHub Issues"
 					url = "https://github.com/reactor/reactor-core/issues"
 				}
-
-				withXml {
-					//set optional true for compileOnly dependencies, which are not in there by default
-					asNode().dependencies[0].each { node ->
-						def group = node.groupId.text()
-						def artifact = node.artifactId.text()
-						def version = node.version.text()
-						def isOptional = project.configurations.optional.allDependencies.any { dep -> dep.group == group && dep.name == artifact }
-						if (isOptional) {
-							node.appendNode('optional', true)
-							println "$group:$artifact:$version has been marked as optional in generated pom"
-						}
-					}
-					//groovy magic incantation to sort dependencies alphabetically (scope/group/name..)
-					def sorted = asNode().dependencies[0].children().collect().sort { it.scope.text() + it.groupId.text() + it.artifactId.text() }
-					asNode().dependencies[0].children().with { deps ->
-						deps.clear()
-						sorted.each { deps.add(it) }
-					}
-				}
+				//NB: only the direct dependencies are published in the pom (ie. only reactive-streams)
+				//optional dependencies are not published anymore, see https://github.com/reactor/reactor-core/issues/2262
 			}
 		}
 	}
