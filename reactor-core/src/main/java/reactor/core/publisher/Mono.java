@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.LongStream;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -3095,6 +3096,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Metrics are gathered on {@link Subscriber} events, and it is recommended to also
 	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
 	 * sequence.
+	 * <p>
+	 * The {@link MeterRegistry} used by reactor can be configured via
+	 * {@link Metrics.Configuration#useRegistry(MeterRegistry)} prior to using this operator, the default being
+	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
+	 * </p>
 	 *
 	 * @return an instrumented {@link Mono}
 	 */

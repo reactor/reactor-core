@@ -28,10 +28,11 @@ import java.util.stream.Collectors;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
@@ -42,6 +43,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.Metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.FluxMetrics.*;
@@ -50,15 +52,18 @@ import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINAT
 public class FluxMetricsTest {
 
 	private MeterRegistry registry;
+	private MeterRegistry previousRegistry;
 
 	@Before
 	public void setupRegistry() {
 		registry = new SimpleMeterRegistry();
+		previousRegistry = Metrics.Configuration.useRegistry(registry);
 	}
 
 	@After
-	public void removeRegistry() {
+	public void resetRegistry() {
 		registry.close();
+		Metrics.Configuration.useRegistry(previousRegistry);
 	}
 
 	@Test
@@ -71,7 +76,7 @@ public class FluxMetricsTest {
 				delegate.subscribe(actual);
 			}
 		};
-		FluxMetrics<String> test = new FluxMetrics<>(source, registry);
+		FluxMetrics<String> test = new FluxMetrics<>(source);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan unavailable").isFalse();
@@ -81,7 +86,7 @@ public class FluxMetricsTest {
 	@Test
 	public void sequenceNameFromScannableNoName() {
 		Flux<String> source = Flux.just("foo");
-		FluxMetrics<String> test = new FluxMetrics<>(source, registry);
+		FluxMetrics<String> test = new FluxMetrics<>(source);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan available").isTrue();
@@ -91,7 +96,7 @@ public class FluxMetricsTest {
 	@Test
 	public void sequenceNameFromScannableName() {
 		Flux<String> source = Flux.just("foo").name("foo").hide().hide();
-		FluxMetrics<String> test = new FluxMetrics<>(source, registry);
+		FluxMetrics<String> test = new FluxMetrics<>(source);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan available").isTrue();
@@ -102,7 +107,7 @@ public class FluxMetricsTest {
 	public void testUsesMicrometer() {
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
-		new FluxMetrics<>(Flux.just("foo").hide(), registry)
+		new FluxMetrics<>(Flux.just("foo").hide())
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
@@ -113,13 +118,13 @@ public class FluxMetricsTest {
 	public void splitMetricsOnName() {
 		final Flux<Integer> unnamedSource = Flux.<Integer>error(new ArithmeticException("boom"))
 				.hide();
-		final Flux<Integer> unnamed = new FluxMetrics<>(unnamedSource, registry)
+		final Flux<Integer> unnamed = new FluxMetrics<>(unnamedSource)
 				.onErrorResume(e -> Mono.empty());
 		final Flux<Integer> namedSource = Flux.range(1, 40)
 		                                      .name("foo")
 		                                      .map(i -> 100 / (40 - i))
 		                                      .hide();
-		final Flux<Integer> named = new FluxMetrics<>(namedSource, registry)
+		final Flux<Integer> named = new FluxMetrics<>(namedSource)
 				.onErrorResume(e -> Mono.empty());
 
 		Mono.when(unnamed, named).block();
@@ -152,7 +157,7 @@ public class FluxMetricsTest {
 		                           .name("usesTags")
 		                           .tag("tag2", "foo")
 		                           .hide();
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.blockLast();
 
 		Timer meter = registry
@@ -170,7 +175,7 @@ public class FluxMetricsTest {
 	public void onNextTimerCounts() {
 		Flux<Integer> source = Flux.range(1, 123)
 		                           .hide();
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.blockLast();
 
 		Timer nextMeter = registry
@@ -182,7 +187,7 @@ public class FluxMetricsTest {
 
 		Flux<Integer> source2 = Flux.range(1, 10)
 		                            .hide();
-		new FluxMetrics<>(source2, registry)
+		new FluxMetrics<>(source2)
 				.take(3)
 				.blockLast();
 
@@ -191,7 +196,7 @@ public class FluxMetricsTest {
 		Flux<Integer> source3 = Flux.range(1, 1000)
 		                            .name("foo")
 		                            .hide();
-		new FluxMetrics<>(source3, registry)
+		new FluxMetrics<>(source3)
 				.blockLast();
 
 		assertThat(nextMeter.count())
@@ -204,7 +209,7 @@ public class FluxMetricsTest {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 		Flux<Integer> source = testPublisher.flux().hide();
 
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.subscribe();
 
 		testPublisher.next(1)
@@ -227,7 +232,7 @@ public class FluxMetricsTest {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 		Flux<Integer> source = testPublisher.flux().hide();
 
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.subscribe();
 
 		testPublisher.next(1)
@@ -248,7 +253,7 @@ public class FluxMetricsTest {
 		Flux<String> source = Flux.just("foo")
 		                          .delayElements(Duration.ofMillis(100))
 		                          .hide();
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.blockLast();
 
 		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
@@ -284,7 +289,7 @@ public class FluxMetricsTest {
 		                           .delayElements(Duration.ofMillis(100))
 		                           .map(v -> 100 / v)
 		                           .hide();
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.onErrorReturn(-1)
 				.blockLast();
 
@@ -320,7 +325,7 @@ public class FluxMetricsTest {
 		Flux<Integer> source = Flux.just(1, 0)
 		                           .delayElements(Duration.ofMillis(100))
 		                           .hide();
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.take(1)
 				.blockLast();
 
@@ -355,7 +360,7 @@ public class FluxMetricsTest {
 	public void countsSubscriptions() {
 		Flux<Integer> source = Flux.range(1, 10)
 		                           .hide();
-		Flux<Integer> test = new FluxMetrics<>(source, registry);
+		Flux<Integer> test = new FluxMetrics<>(source);
 
 		test.subscribe();
 		Counter meter = registry.find(METER_SUBSCRIBED)
@@ -374,7 +379,7 @@ public class FluxMetricsTest {
 	public void requestTrackingDisabledIfNotNamed() {
 		Flux<Integer> source = Flux.range(1, 10)
 		                           .hide();
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.blockLast();
 
 		DistributionSummary meter = registry.find(METER_REQUESTED)
@@ -390,7 +395,7 @@ public class FluxMetricsTest {
 		Flux<Integer> source = Flux.range(1, 10)
 		                           .name("foo")
 		                           .hide();
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.blockLast();
 
 		DistributionSummary meter = registry.find(METER_REQUESTED)
@@ -416,7 +421,7 @@ public class FluxMetricsTest {
 		Flux<Integer> source = Flux.range(1, 10)
 		                           .name("foo")
 		                           .hide();
-		new FluxMetrics<>(source, registry)
+		new FluxMetrics<>(source)
 				.subscribe(bs);
 
 		DistributionSummary meter = registry.find(METER_REQUESTED)
@@ -445,9 +450,9 @@ public class FluxMetricsTest {
 		                           .name("error")
 		                           .hide();
 
-		new FluxMetrics<>(source1, registry)
+		new FluxMetrics<>(source1)
 				.blockLast();
-		new FluxMetrics<>(source2, registry)
+		new FluxMetrics<>(source2)
 				.onErrorReturn(0)
 				.blockLast();
 
@@ -469,7 +474,7 @@ public class FluxMetricsTest {
 		assertThat(source.metrics()).isInstanceOf(FluxMetricsFuseable.class);
 
 		//now use the test version with local registry
-		new FluxMetricsFuseable<Integer>(source, registry)
+		new FluxMetricsFuseable<Integer>(source)
 		    .flatMapIterable(Arrays::asList)
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)
@@ -488,7 +493,7 @@ public class FluxMetricsTest {
 		assertThat(source.metrics()).isInstanceOf(FluxMetricsFuseable.class);
 
 		//now use the test version with local registry
-		new FluxMetricsFuseable<List<Integer>>(source, registry)
+		new FluxMetricsFuseable<List<Integer>>(source)
 		    .flatMapIterable(Function.identity())
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)

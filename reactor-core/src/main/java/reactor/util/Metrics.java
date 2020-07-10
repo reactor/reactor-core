@@ -16,6 +16,9 @@
 
 package reactor.util;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import reactor.core.publisher.Flux;
+
 import static io.micrometer.core.instrument.Metrics.globalRegistry;
 
 /**
@@ -47,6 +50,25 @@ public class Metrics {
 	 */
 	public static final boolean isInstrumentationAvailable() {
 		return isMicrometerAvailable;
+	}
+
+	public static class Configuration {
+
+		/**
+		 * The registry to use in reactor for metrics related purposes.
+		 * @see Flux#metrics()
+		 */
+		private static MeterRegistry registry = globalRegistry;
+
+		public static MeterRegistry useRegistry(MeterRegistry registry) {
+			MeterRegistry previous = Configuration.registry;
+			Configuration.registry = registry;
+			return previous;
+		}
+
+		public static MeterRegistry getRegistry() {
+			return Configuration.registry;
+		}
 	}
 
 }

@@ -35,6 +35,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -635,7 +636,11 @@ public abstract class Schedulers {
 	 * {@link ExecutorService} that backs a {@link Scheduler}.
 	 * No-op if Micrometer isn't available.
 	 *
-	 * This instrumentation sends data to the Micrometer Global Registry.
+	 * <p>
+	 * The {@link MeterRegistry} used by reactor can be configured via
+	 * {@link Metrics.Configuration#useRegistry(MeterRegistry)} prior to using this method, the default being
+	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
+	 * </p>
 	 *
 	 * @implNote Note that this is added as a decorator via Schedulers when enabling metrics for schedulers, which doesn't change the Factory.
 	 */

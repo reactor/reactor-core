@@ -44,6 +44,7 @@ import reactor.core.Scannable;
 import reactor.core.publisher.MonoMetrics.MetricsSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.Metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.FluxMetrics.*;
@@ -52,15 +53,18 @@ import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINAT
 public class MonoMetricsTest {
 
 	private MeterRegistry registry;
+	private MeterRegistry previousRegistry;
 
 	@Before
 	public void setupRegistry() {
 		registry = new SimpleMeterRegistry();
+		previousRegistry = Metrics.Configuration.useRegistry(registry);
 	}
 
 	@After
-	public void removeRegistry() {
+	public void resetRegistry() {
 		registry.close();
+		Metrics.Configuration.useRegistry(previousRegistry);
 	}
 
 	@Test

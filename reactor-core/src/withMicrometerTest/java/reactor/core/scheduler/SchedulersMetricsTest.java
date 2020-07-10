@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -32,23 +33,25 @@ import static reactor.core.scheduler.SchedulerMetricDecorator.TAG_SCHEDULER_ID;
 @RunWith(JUnitParamsRunner.class)
 public class SchedulersMetricsTest {
 
-	SimpleMeterRegistry simpleMeterRegistry;
 
 	@Rule
 	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
+	private MeterRegistry registry;
+	private MeterRegistry previousRegistry;
+
 	@Before
 	public void setUp() {
-		simpleMeterRegistry = new SimpleMeterRegistry();
-		Metrics.addRegistry(simpleMeterRegistry);
+		registry = new SimpleMeterRegistry();
+		previousRegistry = reactor.util.Metrics.Configuration.useRegistry(registry);
 		Schedulers.enableMetrics();
 	}
 
 	@After
-	public void tearDown() {
+	public void teardDown() {
 		Schedulers.disableMetrics();
-		Metrics.globalRegistry.forEachMeter(Metrics.globalRegistry::remove);
-		Metrics.removeRegistry(simpleMeterRegistry);
+		registry.close();
+		reactor.util.Metrics.Configuration.useRegistry(previousRegistry);
 	}
 
 	@Test
@@ -56,7 +59,7 @@ public class SchedulersMetricsTest {
 		afterTest.autoDispose(Schedulers.newParallel("A", 3));
 		afterTest.autoDispose(Schedulers.newParallel("B", 2));
 
-		assertThat(simpleMeterRegistry.getMeters()
+		assertThat(registry.getMeters()
 		                              .stream()
 		                              .map(m -> m.getId().getTag("name"))
 		                              .distinct())
@@ -78,7 +81,7 @@ public class SchedulersMetricsTest {
 		afterTest.autoDispose(Schedulers.newSingle("B"));
 		afterTest.autoDispose(Schedulers.newBoundedElastic(4, 100, "C").createWorker());
 
-		assertThat(simpleMeterRegistry.getMeters()
+		assertThat(registry.getMeters()
 		                              .stream()
 		                              .map(m -> m.getId().getTag(TAG_SCHEDULER_ID))
 		                              .distinct())
@@ -100,7 +103,7 @@ public class SchedulersMetricsTest {
 		afterTest.autoDispose(Schedulers.newParallel("A", 1));
 		afterTest.autoDispose(Schedulers.newParallel("A", 1));
 
-		assertThat(simpleMeterRegistry.getMeters()
+		assertThat(registry.getMeters()
 		                              .stream()
 		                              .map(m -> m.getId().getTag("name"))
 		                              .distinct())
@@ -127,7 +130,7 @@ public class SchedulersMetricsTest {
 		afterTest.autoDispose(Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor(), "testService"));
 
 		assertThat(
-				simpleMeterRegistry.getMeters()
+				registry.getMeters()
 				                   .stream()
 				                   .map(m -> m.getId().getTag("name"))
 				                   .distinct()
@@ -153,7 +156,7 @@ public class SchedulersMetricsTest {
 		Schedulers.decorateExecutorService(instance, service);
 		Schedulers.decorateExecutorService(instance, service);
 
-		assertThat(simpleMeterRegistry.getMeters()
+		assertThat(registry.getMeters()
 		                              .stream()
 		                              .map(m -> m.getId().getTag("name"))
 		                              .distinct())
@@ -169,12 +172,12 @@ public class SchedulersMetricsTest {
 		afterTest.autoDispose(Schedulers.newParallel("A", 1));
 		afterTest.autoDispose(Schedulers.newParallel("A", 1));
 
-		final Counter otherCounter = Metrics.globalRegistry.counter("foo", "tagged", "bar");
-		afterTest.autoDispose(() -> Metrics.globalRegistry.remove(otherCounter));
+		final Counter otherCounter = registry.counter("foo", "tagged", "bar");
+		afterTest.autoDispose(() -> registry.remove(otherCounter));
 
 		Schedulers.disableMetrics();
 
-		assertThat(simpleMeterRegistry.getMeters()
+		assertThat(registry.getMeters()
 		                              .stream()
 		                              .map(m -> m.getId().getName())
 		                              .distinct())
@@ -210,7 +213,7 @@ public class SchedulersMetricsTest {
 			});
 		}
 
-		Collection<FunctionCounter> counters = simpleMeterRegistry
+		Collection<FunctionCounter> counters = registry
 				.find("executor.completed")
 				.tag(TAG_SCHEDULER_ID, scheduler.toString())
 				.functionCounters();
@@ -246,7 +249,7 @@ public class SchedulersMetricsTest {
 		}
 		phaser.arriveAndAwaitAdvance();
 
-		Collection<Timer> timers = simpleMeterRegistry
+		Collection<Timer> timers = registry
 				.find("executor")
 				.tag(TAG_SCHEDULER_ID, scheduler.toString())
 				.timers();
@@ -277,7 +280,7 @@ public class SchedulersMetricsTest {
 			return schedulerName.equals(it.getTag(TAG_SCHEDULER_ID));
 		};
 
-		assertThat(simpleMeterRegistry.getMeters())
+		assertThat(registry.getMeters())
 				.extracting(Meter::getId)
 				.anyMatch(schedulerPredicate);
 
@@ -286,7 +289,7 @@ public class SchedulersMetricsTest {
 		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
 			((ElasticScheduler) scheduler).eviction();
 
-			List<Meter> meters = simpleMeterRegistry.getMeters();
+			List<Meter> meters = registry.getMeters();
 			assertThat(meters)
 					.extracting(Meter::getId)
 					.anyMatch(it -> (schedulerName + "-0").equals(it.getTag("name")))
@@ -295,7 +298,7 @@ public class SchedulersMetricsTest {
 
 		scheduler.dispose();
 
-		assertThat(simpleMeterRegistry.getMeters())
+		assertThat(registry.getMeters())
 				.extracting(Meter::getId)
 				.noneMatch(schedulerPredicate);
 	}
@@ -308,13 +311,13 @@ public class SchedulersMetricsTest {
 			return scheduler.toString().equals(it.getTag(TAG_SCHEDULER_ID));
 		};
 
-		assertThat(simpleMeterRegistry.getMeters())
+		assertThat(registry.getMeters())
 				.extracting(Meter::getId)
 				.anyMatch(meterPredicate);
 
 		scheduler.dispose();
 
-		assertThat(simpleMeterRegistry.getMeters())
+		assertThat(registry.getMeters())
 				.extracting(Meter::getId)
 				.noneMatch(meterPredicate);
 	}
