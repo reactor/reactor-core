@@ -34,7 +34,8 @@ import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * @author Stephane Maldini
@@ -76,17 +77,16 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 			decorationCount.incrementAndGet();
 			return srv;
 		});
-		final Scheduler scheduler = new ElasticScheduler(Thread::new, 10);
+		final Scheduler scheduler = afterTest.autoDispose(new ElasticScheduler(Thread::new, 10));
+		afterTest.autoDispose(() -> Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit"));
 
-		try {
-			assertThat(decorationCount).as("before schedule").hasValue(0);
-			scheduler.schedule(() -> {});
-			assertThat(decorationCount).as("after schedule").hasValue(1);
-		}
-		finally {
-			scheduler.dispose();
-			Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit");
-		}
+		assertThat(decorationCount).as("before schedule").hasValue(0);
+		//first scheduled task implicitly starts one worker and thus creates one executor service
+		scheduler.schedule(() -> {});
+		assertThat(decorationCount).as("after schedule").hasValue(1);
+		//second scheduled task also implicitly starts one worker and thus creates a second executor service
+		scheduler.schedule(() -> {});
+		assertThat(decorationCount).as("after 2nd schedule").hasValue(2);
 	}
 
 	@Test(expected = IllegalArgumentException.class)

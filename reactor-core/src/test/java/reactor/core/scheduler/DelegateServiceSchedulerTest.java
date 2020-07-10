@@ -62,17 +62,16 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 			decorationCount.incrementAndGet();
 			return srv;
 		});
-		final Scheduler scheduler = new DelegateServiceScheduler("startAndDecorationImplicitExecutorService", Executors.newSingleThreadExecutor());
+		final Scheduler scheduler = afterTest.autoDispose(new DelegateServiceScheduler("startAndDecorationImplicitExecutorService", Executors.newSingleThreadExecutor()));
+		afterTest.autoDispose(() -> Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit"));
 
-		try {
-			assertThat(decorationCount).as("before schedule").hasValue(0);
-			scheduler.schedule(() -> {});
-			assertThat(decorationCount).as("after schedule").hasValue(1);
-		}
-		finally {
-			scheduler.dispose();
-			Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit");
-		}
+		assertThat(decorationCount).as("before schedule").hasValue(0);
+		//first scheduled task implicitly starts the scheduler and thus creates the executor service
+		scheduler.schedule(() -> {});
+		assertThat(decorationCount).as("after schedule").hasValue(1);
+		//second scheduled task runs on a started scheduler and doesn't create further executors
+		scheduler.schedule(() -> {});
+		assertThat(decorationCount).as("after 2nd schedule").hasValue(1);
 	}
 
 	@Test

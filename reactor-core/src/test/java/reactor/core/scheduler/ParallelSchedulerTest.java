@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -53,17 +54,16 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 			decorationCount.incrementAndGet();
 			return srv;
 		});
-		final Scheduler scheduler = new ParallelScheduler(4, Thread::new);
+		final Scheduler scheduler = afterTest.autoDispose(new ParallelScheduler(4, Thread::new));
+		afterTest.autoDispose(() -> Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit"));
 
-		try {
-			assertThat(decorationCount).as("before schedule").hasValue(0);
-			scheduler.schedule(() -> {});
-			assertThat(decorationCount).as("after schedule").hasValue(4);
-		}
-		finally {
-			scheduler.dispose();
-			Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit");
-		}
+		assertThat(decorationCount).as("before schedule").hasValue(0);
+		//first scheduled task implicitly starts the scheduler and thus creates _parallelism_ workers/executorServices
+		scheduler.schedule(() -> {});
+		assertThat(decorationCount).as("after schedule").hasValue(4);
+		//second scheduled task runs on a started scheduler and doesn't create further executors
+		scheduler.schedule(() -> {});
+		assertThat(decorationCount).as("after 2nd schedule").hasValue(4);
 	}
 
 
