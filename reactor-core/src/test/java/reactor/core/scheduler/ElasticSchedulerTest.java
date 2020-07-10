@@ -82,7 +82,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(decorationCount).as("before schedule").hasValue(0);
 		//first scheduled task implicitly starts one worker and thus creates one executor service
-		scheduler.schedule(() -> {});
+		scheduler.schedule(ThrowingRunnable.unchecked(() -> Thread.sleep(100)));
 		assertThat(decorationCount).as("after schedule").hasValue(1);
 		//second scheduled task also implicitly starts one worker and thus creates a second executor service
 		scheduler.schedule(() -> {});

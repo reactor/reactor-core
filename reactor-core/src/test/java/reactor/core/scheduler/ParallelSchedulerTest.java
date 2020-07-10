@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.pivovarit.function.ThrowingRunnable;
 import org.junit.Test;
 
 import reactor.core.Scannable;
@@ -59,7 +60,7 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(decorationCount).as("before schedule").hasValue(0);
 		//first scheduled task implicitly starts the scheduler and thus creates _parallelism_ workers/executorServices
-		scheduler.schedule(() -> {});
+		scheduler.schedule(ThrowingRunnable.unchecked(() -> Thread.sleep(100)));
 		assertThat(decorationCount).as("after schedule").hasValue(4);
 		//second scheduled task runs on a started scheduler and doesn't create further executors
 		scheduler.schedule(() -> {});
