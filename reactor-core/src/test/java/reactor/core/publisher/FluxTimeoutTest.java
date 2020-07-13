@@ -399,4 +399,15 @@ public class FluxTimeoutTest {
 
 		assertThat(generatorUsed.get()).as("generator used").isTrue();
 	}
+
+	@Test
+	public void onSubscribeRace() {
+		for (int i = 0; i < 10_000; i++) {
+			Flux.just("Hello")
+			    .concatMap(v -> Mono.delay(Duration.ofSeconds(10)))
+			    .timeout(Duration.ofMillis(0), Mono.just(123L))
+			    .collectList()
+			    .block(Duration.ofSeconds(1));
+		}
+	}
 }

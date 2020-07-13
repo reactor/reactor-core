@@ -81,6 +81,9 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 		TimeoutMainSubscriber<T, V> main =
 				new TimeoutMainSubscriber<>(serial, itemTimeout, other, timeoutDescription);
 
+		// First upstream, then downstream, to avoid overriding the fallback subscription.
+		source.subscribe(main);
+
 		serial.onSubscribe(main);
 
 		TimeoutTimeoutSubscriber ts = new TimeoutTimeoutSubscriber(main, 0L);
@@ -89,7 +92,7 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 		firstTimeout.subscribe(ts);
 
-		return main;
+		return null;
 	}
 
 	@Nullable
