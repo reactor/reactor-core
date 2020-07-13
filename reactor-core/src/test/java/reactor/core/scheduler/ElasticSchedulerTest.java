@@ -58,7 +58,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected boolean shouldCheckSupportRestart() {
-		return false;
+		return true;
 	}
 
 	@Test

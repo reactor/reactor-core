@@ -40,6 +40,9 @@ public abstract class AbstractSchedulerTest {
 	@Rule
 	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
+	/**
+	 * @return the {@link Scheduler} to be tested, {@link Scheduler#start() started}
+	 */
 	protected abstract Scheduler scheduler();
 
 	protected boolean shouldCheckInterrupted(){
@@ -80,6 +83,17 @@ public abstract class AbstractSchedulerTest {
 		else {
 			assertThat(s.isDisposed()).as("restart not supported").isTrue();
 		}
+	}
+
+	@Test
+	public void acceptTaskAfterStartStopStart() {
+		Assumptions.assumeThat(shouldCheckSupportRestart()).as("scheduler supports restart").isTrue();
+
+		Scheduler scheduler = scheduler();
+		scheduler.dispose();
+
+		scheduler.start();
+		assertThatCode(() -> scheduler.schedule(() -> {})).doesNotThrowAnyException();
 	}
 
 	@Test(timeout = 10000)
