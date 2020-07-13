@@ -55,16 +55,19 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 			decorationCount.incrementAndGet();
 			return srv;
 		});
-		final Scheduler scheduler = afterTest.autoDispose(new ParallelScheduler(4, Thread::new));
+
+		final int parallelismAndExpectedImplicitStart = 4;
+
+		final Scheduler scheduler = afterTest.autoDispose(new ParallelScheduler(parallelismAndExpectedImplicitStart, Thread::new));
 		afterTest.autoDispose(() -> Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit"));
 
 		assertThat(decorationCount).as("before schedule").hasValue(0);
 		//first scheduled task implicitly starts the scheduler and thus creates _parallelism_ workers/executorServices
 		scheduler.schedule(ThrowingRunnable.unchecked(() -> Thread.sleep(100)));
-		assertThat(decorationCount).as("after schedule").hasValue(4);
+		assertThat(decorationCount).as("after schedule").hasValue(parallelismAndExpectedImplicitStart);
 		//second scheduled task runs on a started scheduler and doesn't create further executors
 		scheduler.schedule(() -> {});
-		assertThat(decorationCount).as("after 2nd schedule").hasValue(4);
+		assertThat(decorationCount).as("after 2nd schedule").hasValue(parallelismAndExpectedImplicitStart);
 	}
 
 
