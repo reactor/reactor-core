@@ -43,8 +43,8 @@ public class MonoTimeoutTest {
 		Mono.just(1)
 		    .timeout(Mono.empty())
 		    .as(StepVerifier::create)
-			.expectNext(1)
-			.verifyComplete();
+		    .expectNext(1)
+		    .verifyComplete();
 	}
 
 	@Test
@@ -53,7 +53,7 @@ public class MonoTimeoutTest {
 		    .delaySubscription(Duration.ofMillis(1))
 		    .timeout(Mono.empty())
 		    .as(StepVerifier::create)
-			.expectError(TimeoutException.class);
+		    .expectError(TimeoutException.class);
 	}
 
 	@Test
@@ -61,8 +61,8 @@ public class MonoTimeoutTest {
 		Mono.just(1)
 		    .timeout(Mono.error(new RuntimeException("forced " + "failure")))
 		    .as(StepVerifier::create)
-			.expectNext(1)
-			.verifyComplete();
+		    .expectNext(1)
+		    .verifyComplete();
 	}
 
 	@Test

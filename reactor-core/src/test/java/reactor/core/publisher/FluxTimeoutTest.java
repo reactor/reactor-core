@@ -208,10 +208,10 @@ public class FluxTimeoutTest {
 	@Test
 	public void dropsErrorOnCompletedSource() {
 		Flux.range(0, 10)
-		             .timeout(Flux.error(new RuntimeException("forced failure")), v -> Flux.never())
-		             .as(StepVerifier::create)
-		             .expectNextCount(10)
-		             .verifyComplete();
+		    .timeout(Flux.error(new RuntimeException("forced failure")), v -> Flux.never())
+		    .as(StepVerifier::create)
+		    .expectNextCount(10)
+		    .verifyComplete();
 	}
 
 	@Test
