@@ -55,7 +55,7 @@ ext {
 	 * Versions not necessarily bumped by a script (testing, etc...) below:
 	 */
 	// Misc not often upgraded
-	jsr305Version = '3.0.2'
+	findbugsVersion = '3.0.1'
 	jsr166BackportVersion = '1.0.0.RELEASE'
 
 	// Blockhound

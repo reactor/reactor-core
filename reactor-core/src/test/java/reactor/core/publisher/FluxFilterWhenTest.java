@@ -402,7 +402,7 @@ public class FluxFilterWhenTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxFilterWhen test = new FluxFilterWhen(parent, v -> true, 123);
+		FluxFilterWhen<Integer> test = new FluxFilterWhen<>(parent, v -> Flux.just(true), 123);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

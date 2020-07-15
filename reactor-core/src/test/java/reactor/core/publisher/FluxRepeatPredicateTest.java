@@ -169,7 +169,7 @@ public class FluxRepeatPredicateTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxRepeatPredicate test = new FluxRepeatPredicate(parent, () -> true);
+		FluxRepeatPredicate<Integer> test = new FluxRepeatPredicate<>(parent, () -> true);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -180,7 +180,7 @@ public class FluxRepeatPredicateTest {
 		Flux<Integer> source = Flux.just(1);
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxRepeatPredicate.RepeatPredicateSubscriber<Integer> test =
-				new FluxRepeatPredicate.RepeatPredicateSubscriber(source, actual,  () -> true);
+				new FluxRepeatPredicate.RepeatPredicateSubscriber<>(source, actual,  () -> true);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

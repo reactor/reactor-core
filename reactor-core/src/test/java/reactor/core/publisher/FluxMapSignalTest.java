@@ -134,7 +134,7 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxMapSignal test = new FluxMapSignal(parent, v -> v, v -> v, () -> Flux.just(10));
+		FluxMapSignal<Integer, Integer> test = new FluxMapSignal<>(parent, v -> v, e -> 1, () -> 10);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

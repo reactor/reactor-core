@@ -360,7 +360,7 @@ public class FluxBufferWhenTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> source = Flux.just(1);
-		FluxBufferWhen test = new FluxBufferWhen(source,
+		FluxBufferWhen<Integer, ?, ?, List<Integer>> test = new FluxBufferWhen<>(source,
 				Flux.interval(Duration.ZERO, Duration.ofMillis(200)),
 				open -> Mono.delay(Duration.ofMillis(100)),
 				ArrayList::new,

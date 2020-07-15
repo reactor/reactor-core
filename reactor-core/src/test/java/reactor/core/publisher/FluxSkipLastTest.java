@@ -178,7 +178,7 @@ public class FluxSkipLastTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxSkipLast test = new FluxSkipLast(parent, 3);
+		FluxSkipLast<Integer> test = new FluxSkipLast<>(parent, 3);
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

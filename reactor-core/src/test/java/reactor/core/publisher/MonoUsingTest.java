@@ -397,7 +397,7 @@ public class MonoUsingTest {
 
 	@Test
 	public void scanOperator(){
-		MonoUsing<Integer, Integer> test = new MonoUsing(() -> 1, r -> Mono.just(1), c -> {}, false);
+		MonoUsing<Integer, Integer> test = new MonoUsing<>(() -> 1, r -> Mono.just(1), c -> {}, false);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
@@ -407,7 +407,7 @@ public class MonoUsingTest {
 	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		MonoUsing.MonoUsingSubscriber test = new MonoUsing.MonoUsingSubscriber(actual, rc -> {}, "foo", false, false);
+		MonoUsing.MonoUsingSubscriber<Integer, ?> test = new MonoUsing.MonoUsingSubscriber<>(actual, rc -> {}, "foo", false, false);
 
 		final Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

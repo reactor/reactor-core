@@ -376,9 +376,9 @@ public class FluxRefCountGraceTest {
 	@Test
 	public void scanInner(){
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
-		FluxRefCountGrace<Integer> parent = new FluxRefCountGrace(Flux.just(10).publish(), 17, Duration.ofSeconds(1), Schedulers.single());
+		FluxRefCountGrace<Integer> parent = new FluxRefCountGrace<>(Flux.just(10).publish(), 17, Duration.ofSeconds(1), Schedulers.single());
 
-		FluxRefCountGrace.RefCountInner test = new FluxRefCountGrace.RefCountInner(actual, parent, new FluxRefCountGrace.RefConnection(parent));
+		FluxRefCountGrace.RefCountInner<Integer> test = new FluxRefCountGrace.RefCountInner<>(actual, parent, new FluxRefCountGrace.RefConnection(parent));
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

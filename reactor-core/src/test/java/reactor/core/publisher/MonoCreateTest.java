@@ -318,7 +318,7 @@ public class MonoCreateTest {
 
 	@Test
 	public void scanOperator() {
-		MonoCreate<String> test = new MonoCreate(null);
+		MonoCreate<String> test = new MonoCreate<>(null);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();

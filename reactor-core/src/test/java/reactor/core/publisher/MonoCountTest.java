@@ -59,7 +59,7 @@ public class MonoCountTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoCount test = new MonoCount(Flux.just(1, 2, 3));
+	    MonoCount<Integer> test = new MonoCount<>(Flux.just(1, 2, 3));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

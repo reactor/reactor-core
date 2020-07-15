@@ -123,7 +123,7 @@ public class MonoRetryTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoRetry test = new MonoRetry(Mono.just(1), 3L);
+	    MonoRetry<Integer> test = new MonoRetry<>(Mono.just(1), 3L);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

@@ -391,7 +391,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	@Test
 	public void scanFuseableOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxDoFinallyFuseable test = new FluxDoFinallyFuseable(parent, s -> {});
+		FluxDoFinallyFuseable<Integer> test = new FluxDoFinallyFuseable<>(parent, s -> {});
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

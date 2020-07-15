@@ -27,7 +27,7 @@ public class MonoPeekTerminalTest {
 
 	@Test
 	public void scanOperator(){
-		MonoPeekTerminal test = new MonoPeekTerminal(Mono.just("foo"), null, null, null);
+		MonoPeekTerminal<String> test = new MonoPeekTerminal<>(Mono.just("foo"), null, null, null);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

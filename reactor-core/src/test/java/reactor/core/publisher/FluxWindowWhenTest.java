@@ -578,7 +578,7 @@ public class FluxWindowWhenTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxWindowWhen test = new FluxWindowWhen(parent, Flux.just(2), v -> Flux.empty(), Queues::empty);
+		FluxWindowWhen<Integer, Integer, Object> test = new FluxWindowWhen<>(parent, Flux.just(2), v -> Flux.empty(), Queues.empty());
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

@@ -184,7 +184,7 @@ public class FluxDetachTest {
 	
 	@Test
 	public void scanOperator(){
-	    FluxDetach<String> test = new FluxDetach(Flux.just(1));
+	    FluxDetach<Integer> test = new FluxDetach<>(Flux.just(1));
 	    
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

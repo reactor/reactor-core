@@ -168,7 +168,7 @@ public class FluxRetryTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxRetry<Integer> test = new FluxRetry(parent, 3L);
+		FluxRetry<Integer> test = new FluxRetry<>(parent, 3L);
 
 	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 	    assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
@@ -178,8 +178,8 @@ public class FluxRetryTest {
 	@Test
 	public void scanSubscriber(){
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		FluxRetry<Integer> source = new FluxRetry(Flux.just(1), 3L);
-		FluxRetry.RetrySubscriber<Integer> test = new FluxRetry.RetrySubscriber(source, ts, 1L);
+		FluxRetry<Integer> source = new FluxRetry<>(Flux.just(1), 3L);
+		FluxRetry.RetrySubscriber<Integer> test = new FluxRetry.RetrySubscriber<>(source, ts, 1L);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

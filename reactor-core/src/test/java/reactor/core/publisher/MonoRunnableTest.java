@@ -169,7 +169,7 @@ public class MonoRunnableTest {
 
 	@Test
 	public void scanOperator(){
-		MonoRunnable<String> test = new MonoRunnable(() -> {});
+		MonoRunnable<String> test = new MonoRunnable<>(() -> {});
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

@@ -207,7 +207,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1, 2);
-		FluxConcatMap<Integer, String> test = new FluxConcatMap(parent, Flux.IDENTITY_FUNCTION , Queues.one(), Integer.MAX_VALUE, FluxConcatMap.ErrorMode.END);
+		FluxConcatMap<Integer, Integer> test = new FluxConcatMap<>(parent, Flux::just, Queues.one(), Integer.MAX_VALUE, FluxConcatMap.ErrorMode.END);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -295,7 +295,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapImmediate<String, Integer> parent = new FluxConcatMap.ConcatMapImmediate<>(
 				actual, s -> Mono.just(s.length()), Queues.one(), 123);
-		FluxConcatMap.ConcatMapInner test = new FluxConcatMap.ConcatMapInner(parent);
+		FluxConcatMap.ConcatMapInner<Integer> test = new FluxConcatMap.ConcatMapInner<>(parent);
 
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

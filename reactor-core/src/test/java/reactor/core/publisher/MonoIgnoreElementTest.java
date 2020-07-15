@@ -9,7 +9,7 @@ public class MonoIgnoreElementTest {
 
     @Test
     public void scanOperator(){
-        MonoIgnoreElement<Integer> test = new MonoIgnoreElement(Mono.just(1));
+        MonoIgnoreElement<Integer> test = new MonoIgnoreElement<>(Mono.just(1));
 
         assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }

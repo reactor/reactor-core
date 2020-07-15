@@ -258,7 +258,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxFilter test = new FluxFilter(parent, e -> true);
+		FluxFilter<Integer> test = new FluxFilter<>(parent, e -> true);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

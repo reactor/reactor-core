@@ -261,7 +261,7 @@ public class FluxIndexTest extends FluxOperatorTest<Integer, Tuple2<Long, Intege
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxIndex test = new FluxIndex<>(parent, Tuples::of);
+		FluxIndex<Integer, Tuple2<Long, Integer>> test = new FluxIndex<>(parent, Tuples::of);
 
 	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -269,9 +269,9 @@ public class FluxIndexTest extends FluxOperatorTest<Integer, Tuple2<Long, Intege
 
 	@Test
 	public void scanSubscriber(){
-		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Object> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxIndex.IndexSubscriber<Object, Tuple2<Long, Object>> test =
-				new FluxIndex.IndexSubscriber(actual, Tuples::of);
+				new FluxIndex.IndexSubscriber<>(actual, Tuples::of);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -286,9 +286,10 @@ public class FluxIndexTest extends FluxOperatorTest<Integer, Tuple2<Long, Intege
 
 	@Test
 	public void scanConditionnalSubscriber(){
-		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-		FluxIndex.IndexConditionalSubscriber<Object, Tuple2<Long, Object>> test =
-				new FluxIndex.IndexConditionalSubscriber(actual, Tuples::of);
+		@SuppressWarnings("unchecked")
+		Fuseable.ConditionalSubscriber<Tuple2<Long, String>> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
+		FluxIndex.IndexConditionalSubscriber<String, Tuple2<Long, String>> test =
+				new FluxIndex.IndexConditionalSubscriber<>(actual, Tuples::of);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

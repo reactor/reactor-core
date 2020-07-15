@@ -388,7 +388,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxHandle test = new FluxHandle(parent, (t, s) -> { });
+		FluxHandle<Integer, ?> test = new FluxHandle<>(parent, (t, s) -> { });
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -397,7 +397,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanFuseableOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxHandleFuseable test = new FluxHandleFuseable(parent, (t, s) -> { });
+		FluxHandleFuseable<Integer, ?> test = new FluxHandleFuseable<>(parent, (t, s) -> { });
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

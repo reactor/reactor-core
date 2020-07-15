@@ -285,7 +285,7 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoOnErrorResume<String> test = new MonoOnErrorResume(Mono.just("foo"), e -> Mono.just("bar"));
+	    MonoOnErrorResume<String> test = new MonoOnErrorResume<>(Mono.just("foo"), e -> Mono.just("bar"));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

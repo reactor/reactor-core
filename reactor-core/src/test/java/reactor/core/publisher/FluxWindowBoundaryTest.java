@@ -251,7 +251,7 @@ public class FluxWindowBoundaryTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxWindowBoundary test = new FluxWindowBoundary(parent, Flux.just(2), Queues::empty);
+		FluxWindowBoundary<Integer, Integer> test = new FluxWindowBoundary<>(parent, Flux.just(2), Queues.empty());
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

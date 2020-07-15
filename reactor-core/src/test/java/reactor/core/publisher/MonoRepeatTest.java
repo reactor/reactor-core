@@ -136,7 +136,7 @@ public class MonoRepeatTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoRepeat<Integer> test = new MonoRepeat(Mono.just(1), 5L);
+	    MonoRepeat<Integer> test = new MonoRepeat<>(Mono.just(1), 5L);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

@@ -295,7 +295,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxIndexFuseable test = new FluxIndexFuseable<>(parent, Tuples::of);
+		FluxIndexFuseable<Integer, Tuple2<Long, Integer>> test = new FluxIndexFuseable<>(parent, Tuples::of);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -303,9 +303,9 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 
 	@Test
 	public void scanSubscriber(){
-		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxIndexFuseable.IndexFuseableSubscriber<Object, Tuple2<Long, Object>> test =
-				new FluxIndexFuseable.IndexFuseableSubscriber(actual, Tuples::of);
+		CoreSubscriber<Tuple2<Long, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxIndexFuseable.IndexFuseableSubscriber<Tuple2<Long, String>, String> test =
+				new FluxIndexFuseable.IndexFuseableSubscriber<>(actual, Tuples::of);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -320,9 +320,10 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 
 	@Test
 	public void scanConditionnalSubscriber(){
-		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-		FluxIndexFuseable.IndexFuseableConditionalSubscriber<Object, Tuple2<Long, Object>> test =
-				new FluxIndexFuseable.IndexFuseableConditionalSubscriber(actual, Tuples::of);
+		@SuppressWarnings("unchecked")
+		Fuseable.ConditionalSubscriber<Tuple2<Long, String>> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
+		FluxIndexFuseable.IndexFuseableConditionalSubscriber<Tuple2<Long, String>, String> test =
+				new FluxIndexFuseable.IndexFuseableConditionalSubscriber<>(actual, Tuples::of);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

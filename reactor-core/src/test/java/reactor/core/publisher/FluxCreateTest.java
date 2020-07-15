@@ -1164,7 +1164,7 @@ class FluxCreateTest {
 
 	@Test
 	public void scanOperator(){
-		FluxCreate test = new FluxCreate(v -> Arrays.asList(1, 2, 3), OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY);
+		FluxCreate<?> test = new FluxCreate<>(v -> {}, OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.ASYNC);
 	}

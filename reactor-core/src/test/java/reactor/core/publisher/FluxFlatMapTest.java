@@ -1365,7 +1365,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxFlatMap test = new FluxFlatMap(parent, i -> Flux.just(i), false, 3, Queues::empty, 123, Queues::empty);
+		FluxFlatMap<Integer, Integer> test = new FluxFlatMap<>(parent, i -> Flux.just(i), false, 3, Queues.empty(), 123, Queues.empty());
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);

@@ -78,7 +78,7 @@ dependencies {
 	testCompile "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
 
 	// JSR-305 annotations
-	optional "com.google.code.findbugs:jsr305:$jsr305Version"
+	optional "com.google.code.findbugs:jsr305:${findbugsVersion}"
 
 	//Optional Logging Operator
 	optional "org.slf4j:slf4j-api:$slf4jVersion"

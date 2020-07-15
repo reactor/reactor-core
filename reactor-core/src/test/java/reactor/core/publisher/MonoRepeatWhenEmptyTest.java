@@ -107,7 +107,7 @@ public class MonoRepeatWhenEmptyTest {
 
     @Test
     public void scanOperator(){
-        MonoRepeatWhen<Integer> test = new MonoRepeatWhen(Mono.just(1), o -> Mono.empty());
+        MonoRepeatWhen<Integer> test = new MonoRepeatWhen<>(Mono.just(1), o -> Mono.empty());
 
         assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }

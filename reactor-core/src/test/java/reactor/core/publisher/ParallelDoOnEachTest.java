@@ -11,7 +11,7 @@ public class ParallelDoOnEachTest {
 	@Test
 	public void scanOperator(){
 		ParallelFlux<Integer> parent = Flux.just(1).parallel(2);
-		ParallelDoOnEach test = new ParallelDoOnEach(parent, (k, v) -> {}, (k, v) -> {}, v -> {});
+		ParallelDoOnEach<Integer> test = new ParallelDoOnEach<>(parent, (k, v) -> {}, (k, v) -> {}, v -> {});
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Queues.SMALL_BUFFER_SIZE);

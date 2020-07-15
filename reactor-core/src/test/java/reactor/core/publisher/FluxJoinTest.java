@@ -257,7 +257,7 @@ public class FluxJoinTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxJoin test = new FluxJoin(parent, Flux.just(2), just(Flux.just(3)), just(Flux.just(4)), add);
+		FluxJoin<Integer, Integer, Integer, Integer, Integer> test = new FluxJoin<>(parent, Flux.just(2), just(Flux.just(3)), just(Flux.just(4)), add);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);

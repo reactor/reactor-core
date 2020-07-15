@@ -285,7 +285,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
     @Test
     public void scanOperator(){
     	Flux<Integer> parent = Flux.just(1);
-		FluxPublishMulticast test = new FluxPublishMulticast(parent, v -> v, 123, Queues::one);
+		FluxPublishMulticast<Integer, Integer> test = new FluxPublishMulticast<>(parent, v -> v, 123, Queues.one());
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
     	assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

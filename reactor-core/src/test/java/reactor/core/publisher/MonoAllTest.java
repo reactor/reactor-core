@@ -110,7 +110,7 @@ public class MonoAllTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoAll<Integer> test = new MonoAll(Flux.just(1, 2, 3), v -> true);
+	    MonoAll<Integer> test = new MonoAll<>(Flux.just(1, 2, 3), v -> true);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

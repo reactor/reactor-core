@@ -216,7 +216,7 @@ public class MonoDematerializeTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoDematerialize test = new MonoDematerialize(Mono.just(Signal.next(1)));
+	    MonoDematerialize<Integer> test = new MonoDematerialize<>(Mono.just(Signal.next(1)));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

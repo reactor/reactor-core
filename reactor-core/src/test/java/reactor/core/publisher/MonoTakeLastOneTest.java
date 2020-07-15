@@ -155,7 +155,7 @@ public class MonoTakeLastOneTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoTakeLastOne<Integer> test = new MonoTakeLastOne(Flux.just(1, 2, 3));
+	    MonoTakeLastOne<Integer> test = new MonoTakeLastOne<>(Flux.just(1, 2, 3));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

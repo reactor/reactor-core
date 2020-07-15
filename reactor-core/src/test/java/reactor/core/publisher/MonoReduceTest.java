@@ -306,7 +306,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 	@Test
 	public void scanOperator(){
-	    MonoReduce<Integer> test = new MonoReduce(Flux.just(1, 2, 3), (a, b) -> (Integer) a + (Integer) b);
+	    MonoReduce<Integer> test = new MonoReduce<>(Flux.just(1, 2, 3), (a, b) -> a + b);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

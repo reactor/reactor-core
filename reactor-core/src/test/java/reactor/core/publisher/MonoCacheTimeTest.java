@@ -866,7 +866,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 	    Mono<Integer> source = Mono.just(1);
-		MonoCacheTime test = new MonoCacheTime(source);
+		MonoCacheTime<Integer> test = new MonoCacheTime<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
@@ -875,8 +875,8 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
 	@Test
 	public void scanCoordinatorSubscriber(){
-		MonoCacheTime main = new MonoCacheTime(Mono.just(1));
-		MonoCacheTime.CoordinatorSubscriber test = new MonoCacheTime.CoordinatorSubscriber(main);
+		MonoCacheTime<Integer> main = new MonoCacheTime<>(Mono.just(1));
+		MonoCacheTime.CoordinatorSubscriber<Integer> test = new MonoCacheTime.CoordinatorSubscriber<>(main);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
@@ -884,7 +884,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoCacheTime.CacheMonoSubscriber test = new MonoCacheTime.CacheMonoSubscriber(actual);
+		MonoCacheTime.CacheMonoSubscriber<Boolean> test = new MonoCacheTime.CacheMonoSubscriber<>(actual);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

@@ -270,8 +270,9 @@ public class FluxConcatArrayTest {
 	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		@SuppressWarnings("unchecked")
 		Publisher<String>[] publishers = (Publisher<String>[]) new Publisher[0];
-		FluxConcatArray.ConcatArraySubscriber<String> test = new FluxConcatArray.ConcatArraySubscriber(actual, publishers);
+		FluxConcatArray.ConcatArraySubscriber<String> test = new FluxConcatArray.ConcatArraySubscriber<>(actual, publishers);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

@@ -128,7 +128,7 @@ public class MonoErrorSuppliedTest {
 
 	@Test
 	public void scanOperator(){
-		MonoErrorSupplied test = new MonoErrorSupplied(() -> new NullPointerException());
+		MonoErrorSupplied<?> test = new MonoErrorSupplied<>(() -> new NullPointerException());
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

@@ -175,7 +175,7 @@ public class MonoDelaySubscriptionTest {
 
 	@Test
 	public void scanOperator(){
-		MonoDelaySubscription<Integer, Integer> test = new MonoDelaySubscription(Mono.just(1), Mono.just(2));
+		MonoDelaySubscription<Integer, Integer> test = new MonoDelaySubscription<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

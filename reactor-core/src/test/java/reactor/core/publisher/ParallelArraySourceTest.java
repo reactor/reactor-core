@@ -38,6 +38,7 @@ public class ParallelArraySourceTest {
 
 	@Test
 	public void scanOperator(){
+		@SuppressWarnings("unchecked")
 		Publisher<Integer>[] sources = new Publisher[2];
 		sources[0] = Flux.range(1, 4);
 		sources[1] = just(10);

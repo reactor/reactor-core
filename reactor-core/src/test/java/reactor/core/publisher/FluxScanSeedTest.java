@@ -232,7 +232,7 @@ FluxScanSeedTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxScanSeed test = new FluxScanSeed(parent, () -> Flux.empty(), (v1, v2) -> Flux.just(1));
+		FluxScanSeed<Integer, Integer> test = new FluxScanSeed<>(parent, () -> 0, (v1, v2) -> 1);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -241,8 +241,8 @@ FluxScanSeedTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanCoordinator(){
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxScanSeed.ScanSeedCoordinator test =
-				new FluxScanSeed.ScanSeedCoordinator(actual, Flux.just(1), (v1, v2) -> Flux.just(1), () -> Flux.empty());
+		FluxScanSeed.ScanSeedCoordinator<Integer, Integer> test =
+				new FluxScanSeed.ScanSeedCoordinator<>(actual, Flux.just(1), (v1, v2) -> v1, () -> 0);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

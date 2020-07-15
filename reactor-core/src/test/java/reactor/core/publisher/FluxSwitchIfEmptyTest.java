@@ -109,7 +109,7 @@ public class FluxSwitchIfEmptyTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxSwitchIfEmpty test = new FluxSwitchIfEmpty(parent, Flux.just(2));
+		FluxSwitchIfEmpty<Integer> test = new FluxSwitchIfEmpty<>(parent, Flux.just(2));
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

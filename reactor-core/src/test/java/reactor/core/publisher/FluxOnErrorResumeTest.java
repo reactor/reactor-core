@@ -376,7 +376,7 @@ public class FluxOnErrorResumeTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = just(1);
-		FluxOnErrorResume test = new FluxOnErrorResume(parent, (e) -> just(10));
+		FluxOnErrorResume<Integer> test = new FluxOnErrorResume<>(parent, (e) -> just(10));
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -384,8 +384,9 @@ public class FluxOnErrorResumeTest {
 
 	@Test
 	public void scanSubscriber(){
-		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-		FluxOnErrorResume.ResumeSubscriber test = new FluxOnErrorResume.ResumeSubscriber(actual, (e) -> just(10));
+		@SuppressWarnings("unchecked")
+		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
+		FluxOnErrorResume.ResumeSubscriber<Integer> test = new FluxOnErrorResume.ResumeSubscriber<>(actual, (e) -> just(10));
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

@@ -477,7 +477,7 @@ public class FluxMetricsFuseableTest {
 	@Test
 	public void scanOperator(){
 	    Flux<Integer> parent = Flux.just(1);
-		FluxMetricsFuseable test = new FluxMetricsFuseable(parent);
+		FluxMetricsFuseable<Integer> test = new FluxMetricsFuseable<>(parent);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

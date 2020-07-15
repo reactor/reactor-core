@@ -10,7 +10,7 @@ public class MonoSubscriberContextTest {
 
     @Test
     public void scanOperator(){
-        MonoSubscriberContext<String> test = new MonoSubscriberContext(Mono.just(1), c -> c);
+        MonoSubscriberContext<Integer> test = new MonoSubscriberContext<>(Mono.just(1), c -> c);
 
         assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }

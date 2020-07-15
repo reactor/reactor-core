@@ -1861,7 +1861,7 @@ public class FluxSwitchOnFirstTest {
     @Test
     public void scanOperator(){
     	Flux<Integer> parent = Flux.just(1);
-        FluxSwitchOnFirst test = new FluxSwitchOnFirst(parent, (s, f) -> Flux.empty(), false);
+        FluxSwitchOnFirst<Integer, Integer> test = new FluxSwitchOnFirst<>(parent, (s, f) -> Flux.empty(), false);
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -1870,8 +1870,8 @@ public class FluxSwitchOnFirstTest {
     @Test
     public void scanMain(){
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxSwitchOnFirst.SwitchOnFirstMain test =
-                new FluxSwitchOnFirst.SwitchOnFirstMain(actual, (s, f) -> Flux.empty(), false);
+        FluxSwitchOnFirst.SwitchOnFirstMain<Integer, Integer> test =
+                new FluxSwitchOnFirst.SwitchOnFirstMain<>(actual, (s, f) -> Flux.empty(), false);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -1885,9 +1885,10 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void scanMainConditional(){
+        @SuppressWarnings("unchecked")
         Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-        FluxSwitchOnFirst.SwitchOnFirstConditionalMain test =
-                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain(actual, (s, f) -> Flux.empty(), false);
+        FluxSwitchOnFirst.SwitchOnFirstConditionalMain<String, String> test =
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(actual, (s, f) -> Flux.empty(), false);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -1901,10 +1902,11 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void scanSubscriber(){
+        @SuppressWarnings("unchecked")
         Fuseable.ConditionalSubscriber<String> delegate = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-        FluxSwitchOnFirst.SwitchOnFirstConditionalMain parent =
-                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain(delegate, (s, f) -> Flux.empty(), false);
-        FluxSwitchOnFirst.SwitchOnFirstControlSubscriber test = new FluxSwitchOnFirst.SwitchOnFirstControlSubscriber(parent, delegate, false);
+        FluxSwitchOnFirst.SwitchOnFirstConditionalMain<String, String> parent =
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(delegate, (s, f) -> Flux.empty(), false);
+        FluxSwitchOnFirst.SwitchOnFirstControlSubscriber<String> test = new FluxSwitchOnFirst.SwitchOnFirstControlSubscriber<>(parent, delegate, false);
 
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
@@ -1916,10 +1918,11 @@ public class FluxSwitchOnFirstTest {
 
     @Test
     public void scanConditionnalSubscriber(){
+        @SuppressWarnings("unchecked")
         Fuseable.ConditionalSubscriber<String> delegate = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
-        FluxSwitchOnFirst.SwitchOnFirstConditionalMain main =
-                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain(delegate, (s, f) -> Flux.empty(), false);
-        FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber test = new FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber(main, delegate, false);
+        FluxSwitchOnFirst.SwitchOnFirstConditionalMain<String, String> main =
+                new FluxSwitchOnFirst.SwitchOnFirstConditionalMain<>(delegate, (s, f) -> Flux.empty(), false);
+        FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber<String> test = new FluxSwitchOnFirst.SwitchOnFirstConditionalControlSubscriber<>(main, delegate, false);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
