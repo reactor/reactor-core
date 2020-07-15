@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,11 +31,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.TestLogger;
 import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
@@ -709,6 +711,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleError() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), s -> {
 				s.onSubscribe(Operators.emptySubscription());
@@ -716,15 +720,19 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				s.onError(new Exception("test2"));
 			}))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		} finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleError3() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
@@ -736,10 +744,12 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 						s.onError(new Exception("test2"));
 					}))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		} finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
@@ -757,6 +767,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleErrorHide() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
@@ -768,10 +780,12 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 						s.onError(new Exception("test2"));
 					}))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		} finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
@@ -792,6 +806,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleError2() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0,
 					Flux.just(1)
@@ -803,10 +819,12 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 						s.onError(new Exception("test2"));
 					}))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("test2");
+		} finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

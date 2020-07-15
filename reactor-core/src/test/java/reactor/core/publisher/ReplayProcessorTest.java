@@ -17,18 +17,20 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -547,57 +549,62 @@ public class ReplayProcessorTest {
 	}
 
 	@Test
-	public void timedAndBoundedOnSubscribeAndState(){
+	public void timedAndBoundedOnSubscribeAndState() {
 		testReplayProcessorState(ReplayProcessor.createSizeAndTimeout(1, Duration.ofSeconds(1)));
 	}
 
 	@Test
-	public void timedOnSubscribeAndState(){
+	public void timedOnSubscribeAndState() {
 		testReplayProcessorState(ReplayProcessor.createTimeout(Duration.ofSeconds(1)));
 	}
 
 	@Test
-	public void unboundedOnSubscribeAndState(){
+	public void unboundedOnSubscribeAndState() {
 		testReplayProcessorState(ReplayProcessor.create(1, true));
 	}
 
 	@Test
-	public void boundedOnSubscribeAndState(){
+	public void boundedOnSubscribeAndState() {
     	testReplayProcessorState(ReplayProcessor.cacheLast());
 	}
 
 	@SuppressWarnings("unchecked")
-	void testReplayProcessorState(ReplayProcessor<String> rp){
-		Disposable d1 = rp.subscribe();
+	void testReplayProcessorState(ReplayProcessor<String> rp) {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
+		try {
+			Disposable d1 = rp.subscribe();
 
-		rp.subscribe();
+			rp.subscribe();
 
-		ReplayProcessor.ReplayInner<String> s =
-				((ReplayProcessor.ReplayInner<String>) rp.inners().findFirst().get());
+			ReplayProcessor.ReplayInner<String> s = ((ReplayProcessor.ReplayInner<String>) rp.inners()
+			                                                                                 .findFirst()
+			                                                                                 .get());
 
-		assertThat(d1).isEqualTo(s.actual());
+			assertThat(d1).isEqualTo(s.actual());
 
-		assertThat(s.isEmpty()).isTrue();
-		assertThat(s.isCancelled()).isFalse();
-		assertThat(s.isCancelled()).isFalse();
+			assertThat(s.isEmpty()).isTrue();
+			assertThat(s.isCancelled()).isFalse();
+			assertThat(s.isCancelled()).isFalse();
 
-		assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
-		if(rp.getBufferSize() != Integer.MAX_VALUE) {
-			assertThat(rp.getBufferSize()).isEqualTo(1);
-		}
-		FluxSink<String> sink = rp.sink();
-		sink.next("test");
-		rp.onComplete();
+			assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
+			if (rp.getBufferSize() != Integer.MAX_VALUE) {
+				assertThat(rp.getBufferSize()).isEqualTo(1);
+			}
+			FluxSink<String> sink = rp.sink();
+			sink.next("test");
+			rp.onComplete();
 
-		rp.onComplete();
+			rp.onComplete();
 
-		Exception e = new RuntimeException("test");
-		try{
+			Exception e = new RuntimeException("test");
 			rp.onError(e);
-			Assert.fail();
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains(e.getMessage());
 		}
-		catch (Exception t){
-			assertThat(Exceptions.unwrap(t)).isEqualTo(e);
+		finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

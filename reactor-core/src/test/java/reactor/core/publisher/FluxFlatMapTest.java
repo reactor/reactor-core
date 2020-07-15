@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -36,10 +37,12 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
+import reactor.test.util.TestLogger;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -672,51 +675,68 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void failDoubleError() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(new Exception("test"));
 				s.onError(new Exception("test2"));
-			}).flatMap(Flux::just))
+			})
+			                        .flatMap(Flux::just))
 			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("java.lang.Exception: test2");
+		} finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleErrorTerminated() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain) s);
+				((FluxFlatMap.FlatMapMain) s).done = true;
+				((FluxFlatMap.FlatMapMain) s).drain(null);
 				s.onError(new Exception("test"));
-			}).flatMap(Flux::just))
-			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test");
+			})
+			                        .flatMap(Flux::just))
+			            .verifyComplete();
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("java.lang.Exception: test");
+		} finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleErrorTerminatedInner() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			StepVerifier.create(Flux.just(1).hide().flatMap(f -> Flux.from(s -> {
-				s.onSubscribe(Operators.emptySubscription());
-				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,( (FluxFlatMap
-						.FlatMapInner) s).parent);
-				s.onError(new Exception("test"));
-			})))
-			            .verifyErrorMessage("test");
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(Exceptions.unwrap(e)).hasMessage("test");
+			StepVerifier.create(Flux.just(1)
+			                        .hide()
+			                        .flatMap(f -> Flux.from(s -> {
+				                        s.onSubscribe(Operators.emptySubscription());
+				                        Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,
+						                        ((FluxFlatMap.FlatMapInner) s).parent);
+				                        s.onError(new Exception("test"));
+			                        })))
+			            .verifyComplete();
+
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("java.lang.Exception: test");
+		} finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

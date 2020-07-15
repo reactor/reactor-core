@@ -155,7 +155,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 			errorConsumer.accept(t);
 		}
 		else {
-			throw Exceptions.errorCallbackNotImplemented(t);
+			Operators.onErrorDropped(Exceptions.errorCallbackNotImplemented(t), this.initialContext);
 		}
 	}
 

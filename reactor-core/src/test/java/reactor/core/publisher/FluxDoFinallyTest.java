@@ -30,7 +30,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
+import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -493,18 +495,26 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	@Test
 	//see https://github.com/reactor/reactor-core/issues/951
 	public void gh951_withoutDoOnError() {
-		List<String> events = new ArrayList<>();
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
+		try {
+			List<String> events = new ArrayList<>();
 
-		Assertions.assertThatExceptionOfType(UnsupportedOperationException.class)
-		          .isThrownBy(Mono.just(true)
-		                          .map(this::throwError)
-		                          .doFinally(any -> events.add("doFinally " + any.toString()))
-		                          ::subscribe)
-		          .withMessage("java.lang.IllegalStateException: boom");
+			Mono.just(true)
+			    .map(this::throwError)
+			    .doFinally(any -> events.add("doFinally " + any.toString()))
+			    .subscribe();
 
-		Assertions.assertThat(events)
-		          .as("withoutDoOnError")
-		          .containsExactly("doFinally onError");
+			Assertions.assertThat(events)
+			          .as("withoutDoOnError")
+			          .containsExactly("doFinally onError");
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException: boom");
+		}
+		finally {
+			LoggerUtils.resetAppender(Operators.class);
+		}
 	}
 
 	private Boolean throwError(Boolean x) {

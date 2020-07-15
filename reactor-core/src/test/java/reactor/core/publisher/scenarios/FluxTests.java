@@ -28,9 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
@@ -68,8 +70,10 @@ import reactor.core.publisher.Processors;
 import reactor.core.publisher.Signal;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.TestLogger;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.function.Tuple2;
@@ -1172,20 +1176,24 @@ public class FluxTests extends AbstractReactorTest {
 		assertThat("Not totally dispatched", latch.await(30, TimeUnit.SECONDS));
 	}
 	@Test
-	public void unimplementedErrorCallback() throws InterruptedException {
-
-		Flux.error(new Exception("forced"))
-		       .log("error")
-		       .subscribe();
-
-		try{
-			Flux.error(new Exception("forced"))
+	public void unimplementedErrorCallback() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
+		try {
+			Flux.error(new Exception("forced1"))
+			    .log("error")
 			    .subscribe();
+
+			Flux.error(new Exception("forced2"))
+			    .subscribe();
+
+			Assertions.assertThat(testLogger.getErrContent())
+			          .contains("Operator called default onErrorDropped")
+			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.Exception: forced2");
 		}
-		catch(Exception e){
-			return;
+		finally {
+			LoggerUtils.resetAppender(Operators.class);
 		}
-		fail();
 	}
 
 	@Test
@@ -1407,34 +1415,60 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		AtomicReference<String> failure = new AtomicReference<>(null);
 		AtomicBoolean handled = new AtomicBoolean(false);
 
-		Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set("unexpected call to default" +
-				" UncaughtExceptionHandler with " + e));
-		Schedulers.onHandleError((t, e) -> handled.set(true));
-
+		Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set(
+				"unexpected call to default" + " UncaughtExceptionHandler with " + e));
 		CountDownLatch latch = new CountDownLatch(1);
+		AtomicInteger uncompletedWork = new AtomicInteger();
+		Schedulers.onHandleError((t, e) -> handled.set(true));
+		Schedulers.onScheduleHook("test", r -> {
+			uncompletedWork.incrementAndGet();
+			return () -> {
+				try {
+					r.run();
+				} finally {
+					uncompletedWork.decrementAndGet();
+				}
+			};
+		});
+
 		try {
 			Flux.interval(Duration.ofMillis(100))
 			    .take(1)
 			    .publishOn(Schedulers.parallel())
-                .doOnTerminate(() -> latch.countDown())
+			    .doOnCancel(latch::countDown)
 			    .subscribe(i -> {
 				    System.out.println("About to throw...");
 				    throw new IllegalArgumentException();
 			    });
-			latch.await(1, TimeUnit.SECONDS);
-		} catch (Throwable e) {
+
+			assertTrue("Expected latch to count down before timeout", latch.await(5, TimeUnit.SECONDS));
+			// awaiting to all threads done
+			while (uncompletedWork.get() != 0) {
+				Thread.sleep(100);
+			}
+		}
+		catch (Throwable e) {
 			fail(e.toString());
-		} finally {
+		}
+		finally {
+			LoggerUtils.resetAppender(Operators.class);
 			Thread.setDefaultUncaughtExceptionHandler(null);
 			Schedulers.resetOnHandleError();
+			Schedulers.resetOnScheduleHook("test");
 		}
-		assertThat(handled).as("Uncaught error handler").isTrue();
-		if (failure.get() != null) {
-			fail(failure.get());
-		}
+		assertThat(handled).as("Uncaught error handler")
+		                   .isFalse();
+		assertThat(failure).as("Uncaught error handler")
+		                   .hasValue(null);
+		Assertions.assertThat(testLogger.getErrContent())
+		          .contains("Operator called default onErrorDropped")
+		          .contains(
+				          "reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException");
 	}
 
 	@Test
