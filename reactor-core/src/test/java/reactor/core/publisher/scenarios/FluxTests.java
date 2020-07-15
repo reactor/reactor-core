@@ -28,9 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
@@ -1415,46 +1417,58 @@ public class FluxTests extends AbstractReactorTest {
 	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler() {
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.addAppender(testLogger, Operators.class);
+		AtomicReference<String> failure = new AtomicReference<>(null);
+		AtomicBoolean handled = new AtomicBoolean(false);
+
+		Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set(
+				"unexpected call to default" + " UncaughtExceptionHandler with " + e));
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicInteger uncompletedWork = new AtomicInteger();
+		Schedulers.onHandleError((t, e) -> handled.set(true));
+		Schedulers.onScheduleHook("test", r -> {
+			uncompletedWork.incrementAndGet();
+			return () -> {
+				try {
+					r.run();
+				} finally {
+					uncompletedWork.decrementAndGet();
+				}
+			};
+		});
+
 		try {
-			AtomicReference<String> failure = new AtomicReference<>(null);
-			AtomicBoolean handled = new AtomicBoolean(false);
+			Flux.interval(Duration.ofMillis(100))
+			    .take(1)
+			    .publishOn(Schedulers.parallel())
+			    .doOnCancel(latch::countDown)
+			    .subscribe(i -> {
+				    System.out.println("About to throw...");
+				    throw new IllegalArgumentException();
+			    });
 
-			Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set(
-					"unexpected call to default" + " UncaughtExceptionHandler with " + e));
-			Schedulers.onHandleError((t, e) -> handled.set(true));
-
-			CountDownLatch latch = new CountDownLatch(1);
-			try {
-				Flux.interval(Duration.ofMillis(100))
-				    .take(1)
-				    .publishOn(Schedulers.parallel())
-				    .doOnTerminate(() -> latch.countDown())
-				    .doOnCancel(() -> latch.countDown())
-				    .subscribe(i -> {
-					    System.out.println("About to throw...");
-					    throw new IllegalArgumentException();
-				    });
-				assertTrue("Expect latch to be countDown", latch.await(1, TimeUnit.SECONDS));
+			assertTrue("Expected latch to count down before timeout", latch.await(5, TimeUnit.SECONDS));
+			// awaiting to all threads done
+			while (uncompletedWork.get() != 0) {
+				Thread.sleep(100);
 			}
-			catch (Throwable e) {
-				fail(e.toString());
-			}
-			finally {
-				Thread.setDefaultUncaughtExceptionHandler(null);
-				Schedulers.resetOnHandleError();
-			}
-			assertThat(handled).as("Uncaught error handler")
-			                   .isFalse();
-			assertThat(failure).as("Uncaught error handler")
-			                   .hasValue(null);
-			Assertions.assertThat(testLogger.getErrContent())
-			          .contains("Operator called default onErrorDropped")
-			          .contains(
-					          "reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException");
+		}
+		catch (Throwable e) {
+			fail(e.toString());
 		}
 		finally {
 			LoggerUtils.resetAppender(Operators.class);
+			Thread.setDefaultUncaughtExceptionHandler(null);
+			Schedulers.resetOnHandleError();
+			Schedulers.resetOnScheduleHook("test");
 		}
+		assertThat(handled).as("Uncaught error handler")
+		                   .isFalse();
+		assertThat(failure).as("Uncaught error handler")
+		                   .hasValue(null);
+		Assertions.assertThat(testLogger.getErrContent())
+		          .contains("Operator called default onErrorDropped")
+		          .contains(
+				          "reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException");
 	}
 
 	@Test
