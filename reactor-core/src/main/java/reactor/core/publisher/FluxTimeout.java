@@ -76,23 +76,7 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<T> serial = Operators.serialize(actual);
-
-		TimeoutMainSubscriber<T, V> main =
-				new TimeoutMainSubscriber<>(serial, itemTimeout, other, timeoutDescription);
-
-		// First upstream, then downstream, to avoid overriding the fallback subscription.
-		source.subscribe(main);
-
-		serial.onSubscribe(main);
-
-		TimeoutTimeoutSubscriber ts = new TimeoutTimeoutSubscriber(main, 0L);
-
-		main.setTimeout(ts);
-
-		firstTimeout.subscribe(ts);
-
-		return null;
+		return new TimeoutMainSubscriber<>(actual, itemTimeout, other, timeoutDescription, firstTimeout);
 	}
 
 	@Nullable
@@ -118,6 +102,7 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 		final Publisher<? extends T> other;
 		final String timeoutDescription; //only useful/non-null when no `other`
+		final Publisher<?> firstTimeout;
 
 		Subscription s;
 
@@ -137,11 +122,12 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 		TimeoutMainSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<V>> itemTimeout,
 				@Nullable Publisher<? extends T> other,
-				@Nullable String timeoutDescription) {
-			super(actual);
+				@Nullable String timeoutDescription, Publisher<?> firstTimeout) {
+			super(Operators.serialize(actual));
 			this.itemTimeout = itemTimeout;
 			this.other = other;
 			this.timeoutDescription = timeoutDescription;
+			this.firstTimeout = firstTimeout;
 		}
 
 		@Override
@@ -150,6 +136,12 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 				this.s = s;
 
 				set(s);
+
+				TimeoutTimeoutSubscriber timeoutSubscriber = new TimeoutTimeoutSubscriber(this, 0L);
+				this.timeout = timeoutSubscriber;
+
+				actual.onSubscribe(this);
+				firstTimeout.subscribe(timeoutSubscriber);
 			}
 		}
 
