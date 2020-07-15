@@ -15,9 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 
 import org.assertj.core.api.Assertions;
@@ -27,13 +24,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.Loggers;
+import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -552,35 +549,30 @@ public class ReplayProcessorTest {
 	}
 
 	@Test
-	public void timedAndBoundedOnSubscribeAndState() throws UnsupportedEncodingException {
+	public void timedAndBoundedOnSubscribeAndState() {
 		testReplayProcessorState(ReplayProcessor.createSizeAndTimeout(1, Duration.ofSeconds(1)));
 	}
 
 	@Test
-	public void timedOnSubscribeAndState() throws UnsupportedEncodingException {
+	public void timedOnSubscribeAndState() {
 		testReplayProcessorState(ReplayProcessor.createTimeout(Duration.ofSeconds(1)));
 	}
 
 	@Test
-	public void unboundedOnSubscribeAndState() throws UnsupportedEncodingException {
+	public void unboundedOnSubscribeAndState() {
 		testReplayProcessorState(ReplayProcessor.create(1, true));
 	}
 
 	@Test
-	public void boundedOnSubscribeAndState() throws UnsupportedEncodingException {
+	public void boundedOnSubscribeAndState() {
     	testReplayProcessorState(ReplayProcessor.cacheLast());
 	}
 
 	@SuppressWarnings("unchecked")
-	void testReplayProcessorState(ReplayProcessor<String> rp)
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	void testReplayProcessorState(ReplayProcessor<String> rp) {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			Disposable d1 = rp.subscribe();
 
 			rp.subscribe();
@@ -607,14 +599,12 @@ public class ReplayProcessorTest {
 
 			Exception e = new RuntimeException("test");
 			rp.onError(e);
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains(e.getMessage());
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

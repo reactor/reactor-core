@@ -16,9 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -33,8 +30,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
-import reactor.util.Loggers;
+import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -496,14 +494,10 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	//see https://github.com/reactor/reactor-core/issues/951
-	public void gh951_withoutDoOnError() throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void gh951_withoutDoOnError() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			List<String> events = new ArrayList<>();
 
 			Mono.just(true)
@@ -514,14 +508,12 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 			Assertions.assertThat(events)
 			          .as("withoutDoOnError")
 			          .containsExactly("doFinally onError");
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException: boom");
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

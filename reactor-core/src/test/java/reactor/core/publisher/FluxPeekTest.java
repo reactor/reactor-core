@@ -16,9 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,10 +33,11 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.Loggers;
+import reactor.test.util.TestLogger;
 import reactor.util.concurrent.Queues;
 
 import static java.lang.Thread.sleep;
@@ -552,15 +550,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorDoesNotInvokeOnError()
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void afterTerminateCallbackErrorDoesNotInvokeOnError() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			IllegalStateException e = new IllegalStateException("test");
 			AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
 
@@ -584,13 +577,11 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 
 			assertThat(errorCallbackCapture.get()).isNull();
 
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains(e.toString());
 		} finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
@@ -652,15 +643,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorAndErrorCallbackError()
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void afterTerminateCallbackErrorAndErrorCallbackError() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			IllegalStateException error1 = new IllegalStateException("afterTerminate");
 			IllegalArgumentException error2 = new IllegalArgumentException("error");
 
@@ -673,7 +659,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			AssertSubscriber<String> ts = AssertSubscriber.create();
 
 			flux.subscribe(ts);
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains(error1.getMessage());
 			assertEquals(0, error2.getSuppressed().length);
@@ -682,22 +668,15 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			ts.assertComplete();
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorAndErrorCallbackError2()
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
 			IllegalArgumentException error = new IllegalArgumentException("error");
 			NullPointerException ex = new NullPointerException();
@@ -711,7 +690,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			AssertSubscriber<String> ts = AssertSubscriber.create();
 
 				flux.subscribe(ts);
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains(afterTerminate.getMessage());
 				//afterTerminate suppressed error which itself suppressed original err
@@ -724,9 +703,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			//the subscriber still sees the 'error' message since actual.onError is called before the afterTerminate callback
 			ts.assertErrorMessage("error");
 		}  finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

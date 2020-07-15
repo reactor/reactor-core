@@ -15,9 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -26,8 +23,9 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
-import reactor.util.Loggers;
+import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -165,27 +163,21 @@ public class MonoPeekTest {
 	}
 
 	@Test
-	public void testErrorWithDoOnSuccess() throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void testErrorWithDoOnSuccess() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			Mono.error(new NullPointerException("boom"))
 			    .doOnSuccess(aValue -> {
 			    })
 			    .subscribe();
 
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.NullPointerException: boom");
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

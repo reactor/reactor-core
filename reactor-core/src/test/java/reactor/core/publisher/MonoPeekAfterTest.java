@@ -16,9 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,7 +27,9 @@ import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
+import reactor.test.util.TestLogger;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -449,15 +448,10 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void afterSuccessOrErrorCallbackFailureInterruptsOnNextAndThrows()
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void afterSuccessOrErrorCallbackFailureInterruptsOnNextAndThrows() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			LongAdder invoked = new LongAdder();
 			try {
 				@SuppressWarnings("deprecation")
@@ -478,28 +472,21 @@ public class MonoPeekAfterTest {
 			}
 
 			assertEquals(1, invoked.intValue());
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("IllegalArgumentException")
 			          .contains("foo");
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
 	@Test
-	public void afterTerminateCallbackFailureInterruptsOnNextAndThrows()
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void afterTerminateCallbackFailureInterruptsOnNextAndThrows() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			LongAdder invoked = new LongAdder();
 			try {
 				@SuppressWarnings("deprecation")
@@ -521,15 +508,13 @@ public class MonoPeekAfterTest {
 
 			assertEquals(1, invoked.intValue());
 
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("foo")
 			          .contains("IllegalArgumentException");
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

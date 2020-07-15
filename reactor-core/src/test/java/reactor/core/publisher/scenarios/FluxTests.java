@@ -16,10 +16,7 @@
 
 package reactor.core.publisher.scenarios;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -71,8 +68,10 @@ import reactor.core.publisher.Processors;
 import reactor.core.publisher.Signal;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.TestLogger;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.function.Tuple2;
@@ -1175,16 +1174,10 @@ public class FluxTests extends AbstractReactorTest {
 		assertThat("Not totally dispatched", latch.await(30, TimeUnit.SECONDS));
 	}
 	@Test
-	public void unimplementedErrorCallback()
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void unimplementedErrorCallback() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
-
 			Flux.error(new Exception("forced1"))
 			    .log("error")
 			    .subscribe();
@@ -1192,14 +1185,12 @@ public class FluxTests extends AbstractReactorTest {
 			Flux.error(new Exception("forced2"))
 			    .subscribe();
 
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.Exception: forced2");
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
@@ -1421,15 +1412,10 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler()
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void testThrowWithoutOnErrorShowsUpInSchedulerHandler() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			AtomicReference<String> failure = new AtomicReference<>(null);
 			AtomicBoolean handled = new AtomicBoolean(false);
 
@@ -1460,16 +1446,14 @@ public class FluxTests extends AbstractReactorTest {
 			assertThat(handled).as("Uncaught error handler")
 			                   .isFalse();
 			assertThat(failure).as("Uncaught error handler")
-			                   .isNull();
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			                   .hasValue(null);
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains(
 					          "reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException");
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

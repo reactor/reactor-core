@@ -15,9 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,11 +37,12 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
-import reactor.util.Loggers;
+import reactor.test.util.TestLogger;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -676,14 +674,10 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	public void failDoubleError() throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void failDoubleError() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(new Exception("test"));
@@ -692,26 +686,20 @@ public class FluxFlatMapTest {
 			                        .flatMap(Flux::just))
 			            .verifyErrorMessage("test");
 
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test2");
 		} finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleErrorTerminated() throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void failDoubleErrorTerminated() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain) s);
@@ -721,25 +709,19 @@ public class FluxFlatMapTest {
 			})
 			                        .flatMap(Flux::just))
 			            .verifyComplete();
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test");
 		} finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void failDoubleErrorTerminatedInner() throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void failDoubleErrorTerminatedInner() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useConsoleLoggers();
 			StepVerifier.create(Flux.just(1)
 			                        .hide()
 			                        .flatMap(f -> Flux.from(s -> {
@@ -750,13 +732,11 @@ public class FluxFlatMapTest {
 			                        })))
 			            .verifyComplete();
 
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains("java.lang.Exception: test");
 		} finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 

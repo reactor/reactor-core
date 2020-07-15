@@ -101,7 +101,7 @@ dependencies {
 	testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
 	testRuntime "org.junit.vintage:junit-vintage-engine:${jUnitJupiterVersion}"
 
-	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testCompile "ch.qos.logback:logback-classic:$logbackVersion"
 	testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
 	// Testing
 	testCompile(project(":reactor-test")) {

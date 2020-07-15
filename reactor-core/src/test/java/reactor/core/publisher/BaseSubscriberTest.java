@@ -16,9 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,8 +27,8 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
-import reactor.util.Loggers;
+import reactor.test.LoggerUtils;
+import reactor.test.util.TestLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -84,14 +81,10 @@ public class BaseSubscriberTest {
 	}
 
 	@Test
-	public void onErrorCallbackNotImplemented() throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void onErrorCallbackNotImplemented() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			Flux<String> flux = Flux.error(new IllegalStateException());
 
 			flux.subscribe(new BaseSubscriber<String>() {
@@ -105,16 +98,12 @@ public class BaseSubscriberTest {
 					//NO-OP
 				}
 			});
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
-			          .contains("ErrorCallbackNotImplemented")
-			          .contains("IllegalStateException");
+			          .contains("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalStateException");
 		}
 		finally {
-			Hooks.resetOnNextDropped();
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
@@ -285,15 +274,10 @@ public class BaseSubscriberTest {
 	}
 
 	@Test
-	public void finallyExecutesWhenHookOnErrorFails()
-			throws UnsupportedEncodingException {
-		PrintStream err = System.err;
-		PrintStream out = System.out;
+	public void finallyExecutesWhenHookOnErrorFails() {
+		TestLogger testLogger = new TestLogger();
+		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			System.setErr(new PrintStream(outputStream));
-			System.setOut(new PrintStream(outputStream));
-			Loggers.useVerboseConsoleLoggers();
 			RuntimeException error = new IllegalArgumentException("hookOnError");
 			AtomicReference<SignalType> checkFinally = new AtomicReference<>();
 
@@ -317,15 +301,13 @@ public class BaseSubscriberTest {
 					checkFinally.set(type);
 				}
 			});
-			Assertions.assertThat(outputStream.toString("utf-8"))
+			Assertions.assertThat(testLogger.getErrContent())
 			          .contains("Operator called default onErrorDropped")
 			          .contains(error.getMessage());
 			assertThat(checkFinally).hasValue(SignalType.ON_ERROR);
 		}
 		finally {
-			Loggers.resetLoggerFactory();
-			System.setErr(err);
-			System.setOut(out);
+			LoggerUtils.resetAppender(Operators.class);
 		}
 	}
 
