@@ -301,7 +301,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxMap<String, String> test = new FluxMap(parent, v -> v.toString());
+		FluxMap<Integer, String> test = new FluxMap<>(parent, v -> v.toString());
 
 	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -342,7 +342,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanFuseableOperator(){
-		FluxMapFuseable<String, String> test = new FluxMapFuseable(Flux.just(1), v -> v.toString());
+		FluxMapFuseable<Integer, String> test = new FluxMapFuseable<>(Flux.just(1), v -> v.toString());
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

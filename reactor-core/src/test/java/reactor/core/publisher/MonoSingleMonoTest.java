@@ -42,7 +42,7 @@ public class MonoSingleMonoTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoSingleMono<String> test = new MonoSingleMono(Mono.just("foo"));
+	    MonoSingleMono<String> test = new MonoSingleMono<>(Mono.just("foo"));
 	    
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

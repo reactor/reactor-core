@@ -174,7 +174,7 @@ public class MonoAnyTest {
 	@Test
 	public void scanOperator() {
 		Flux<Integer> parent = Flux.just(1);
-		MonoAny test = new MonoAny(parent, v -> true);
+		MonoAny<Integer> test = new MonoAny<>(parent, v -> true);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);

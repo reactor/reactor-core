@@ -218,7 +218,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoElementAt<String> test = new MonoElementAt(Flux.just(1, 2, 3), 1);
+	    MonoElementAt<Integer> test = new MonoElementAt<>(Flux.just(1, 2, 3), 1);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

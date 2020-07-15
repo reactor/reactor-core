@@ -582,7 +582,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxWindow test = new FluxWindow(parent, 3, Queues::empty);
+		FluxWindow<Integer> test = new FluxWindow<>(parent, 3, Queues.empty());
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

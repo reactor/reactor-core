@@ -10,7 +10,7 @@ public class MonoSourceFluxTest {
 	@Test
 	public void scanOperator(){
 		Flux<String> source = Flux.just("foo", "bar");
-		MonoSourceFlux<String> test = new MonoSourceFlux(source);
+		MonoSourceFlux<String> test = new MonoSourceFlux<>(source);
 
 	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
@@ -20,7 +20,7 @@ public class MonoSourceFluxTest {
 	@Test
 	public void scanFuseableOperator(){
 		Flux<String> source = Flux.just("foo", "bar");
-		MonoSourceFluxFuseable<String> test = new MonoSourceFluxFuseable(source);
+		MonoSourceFluxFuseable<String> test = new MonoSourceFluxFuseable<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);

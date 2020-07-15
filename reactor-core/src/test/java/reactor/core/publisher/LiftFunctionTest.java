@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -27,27 +25,26 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
-
 import reactor.core.CorePublisher;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static reactor.core.Scannable.*;
+import static reactor.core.Scannable.Attr;
+import static reactor.core.Scannable.from;
 
 public class LiftFunctionTest {
 
 	Publisher<Integer> liftOperator;
 
-	Publisher createPublisherAndApply(CorePublisher source) {
-		Operators.LiftFunction<Integer, Integer> liftFunction =
+	<T> Publisher<T> createPublisherAndApply(CorePublisher<T> source) {
+		Operators.LiftFunction<T, T> liftFunction =
 				Operators.LiftFunction.liftScannable(null, (s, actual) -> actual);
 		return liftFunction.apply(source);
 	}
 
-	void lift(Class publisher, Class fluxPublisher) {
+	void lift(Class<?> publisher, Class<?> fluxPublisher) {
 		assertThat(liftOperator)
 				.isInstanceOf(publisher)
 				.isExactlyInstanceOf(fluxPublisher);
@@ -57,7 +54,7 @@ public class LiftFunctionTest {
 				.doesNotThrowAnyException();
 	}
 
-	void liftFuseable(Class publisher, Class fluxPublisher) {
+	void liftFuseable(Class<?> publisher, Class<?> fluxPublisher) {
 		assertThat(liftOperator)
 				.isInstanceOf(publisher)
 				.isInstanceOf(Fuseable.class)
@@ -68,7 +65,7 @@ public class LiftFunctionTest {
 				.doesNotThrowAnyException();
 	}
 
-	void scanOperator(CorePublisher source, int prefetch, Attr.RunStyle runStyle) {
+	void scanOperator(CorePublisher<?> source, int prefetch, Attr.RunStyle runStyle) {
 		assertThat(from(liftOperator).scan(Attr.PARENT)).isSameAs(source);
 		assertThat(from(liftOperator).scan(Attr.PREFETCH)).isEqualTo(prefetch);
 		assertThat(from(liftOperator).scan(Attr.RUN_STYLE)).isSameAs(runStyle);
@@ -255,9 +252,9 @@ public class LiftFunctionTest {
 	@Nested
 	class ParallelLiftFuseableTest {
 
-		ParallelFlux<List<Integer>> source = Flux.just(1)
+		ParallelFlux<Integer> source = Flux.just(1)
 				.parallel(2)
-				.collect(ArrayList::new, List::add);
+				.reduce(() -> 1, (a, b) -> a);
 
 		@BeforeEach
 		void createFluxAndApply() {

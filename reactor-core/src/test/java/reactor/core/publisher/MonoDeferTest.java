@@ -58,7 +58,7 @@ public class MonoDeferTest {
 	public void scanOperator() {
 		AtomicInteger i = new AtomicInteger();
 
-		MonoDefer<Integer> test = new MonoDefer(() -> Mono.just(i.incrementAndGet()));
+		MonoDefer<Integer> test = new MonoDefer<>(() -> Mono.just(i.incrementAndGet()));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
@@ -68,7 +68,7 @@ public class MonoDeferTest {
 	public void scanOperatorWithContext() {
 		AtomicInteger i = new AtomicInteger();
 
-		MonoDeferWithContext<Integer> test = new MonoDeferWithContext(c -> Mono.just(i.incrementAndGet()));
+		MonoDeferWithContext<Integer> test = new MonoDeferWithContext<>(c -> Mono.just(i.incrementAndGet()));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();

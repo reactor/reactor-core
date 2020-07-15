@@ -143,7 +143,8 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void scanOperator(){
-	    FluxFirstEmitting test = new FluxFirstEmitting(Flux.range(1, 10), Flux.range(11, 10));
+		@SuppressWarnings("unchecked")
+	    FluxFirstEmitting<Integer> test = new FluxFirstEmitting<>(Flux.range(1, 10), Flux.range(11, 10));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

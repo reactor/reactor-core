@@ -179,7 +179,7 @@ public class FluxSampleFirstTest {
 
 	@Test
 	public void scanOperator(){
-	    FluxSampleFirst<Integer, Integer> test = new FluxSampleFirst(Flux.just(1), i -> i);
+	    FluxSampleFirst<Integer, Integer> test = new FluxSampleFirst<>(Flux.just(1), i -> Flux.just(i));
 
 		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

@@ -36,7 +36,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxFilterFuseable<Integer> test = new FluxFilterFuseable(parent, e -> true);
+		FluxFilterFuseable<Integer> test = new FluxFilterFuseable<>(parent, e -> true);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

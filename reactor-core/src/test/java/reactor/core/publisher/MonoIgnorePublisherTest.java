@@ -17,7 +17,7 @@ public class MonoIgnorePublisherTest {
 
     @Test
     public void scanOperator(){
-        MonoIgnoreElement<String> test = new MonoIgnoreElement(Mono.just("foo"));
+        MonoIgnoreElement<String> test = new MonoIgnoreElement<>(Mono.just("foo"));
 
         assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
     }

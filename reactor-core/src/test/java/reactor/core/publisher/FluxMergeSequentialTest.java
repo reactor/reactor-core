@@ -800,7 +800,7 @@ public class FluxMergeSequentialTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.range(1, 5);
-		FluxMergeSequential test = new FluxMergeSequential(parent, t -> Flux.just(t), 3, 123, ErrorMode.END);
+		FluxMergeSequential<Integer, Integer> test = new FluxMergeSequential<>(parent, t -> Flux.just(t), 3, 123, ErrorMode.END);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -810,7 +810,7 @@ public class FluxMergeSequentialTest {
     public void scanMain() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMergeSequential.MergeSequentialMain<Integer, Integer> test =
-        		new FluxMergeSequential.MergeSequentialMain<Integer, Integer>(actual, i -> Mono.just(i),
+        		new FluxMergeSequential.MergeSequentialMain<>(actual, i -> Mono.just(i),
         				5, 123, ErrorMode.BOUNDARY, Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

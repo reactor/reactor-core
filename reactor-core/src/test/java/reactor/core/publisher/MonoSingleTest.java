@@ -246,7 +246,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoSingle<String> test = new MonoSingle(Flux.just("foo"));
+	    MonoSingle<String> test = new MonoSingle<>(Flux.just("foo"));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

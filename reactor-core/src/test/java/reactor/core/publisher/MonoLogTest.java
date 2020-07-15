@@ -12,7 +12,7 @@ public class MonoLogTest {
     @Test
     public void scanOperator(){
         Mono<Integer> source = Mono.just(1);
-        MonoLog<Integer> test = new MonoLog(source,
+        MonoLog<Integer> test = new MonoLog<>(source,
                 new SignalLogger<>(source, "category", Level.INFO, false, SignalType.ON_COMPLETE));
 
         assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -21,7 +21,7 @@ public class MonoLogTest {
     @Test
     public void scanFuseableOperator(){
         Mono<Integer> source = Mono.just(1);
-        MonoLogFuseable<Integer> test = new MonoLogFuseable(source,
+        MonoLogFuseable<Integer> test = new MonoLogFuseable<>(source,
                 new SignalLogger<>(source, "category", Level.INFO, false, SignalType.ON_COMPLETE));
 
         assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

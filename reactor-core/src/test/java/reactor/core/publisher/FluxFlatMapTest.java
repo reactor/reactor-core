@@ -702,9 +702,9 @@ public class FluxFlatMapTest {
 		try {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
-				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain) s);
-				((FluxFlatMap.FlatMapMain) s).done = true;
-				((FluxFlatMap.FlatMapMain) s).drain(null);
+				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain<?, ?>) s);
+				((FluxFlatMap.FlatMapMain<?, ?>) s).done = true;
+				((FluxFlatMap.FlatMapMain<?, ?>) s).drain(null);
 				s.onError(new Exception("test"));
 			})
 			                        .flatMap(Flux::just))
@@ -1365,7 +1365,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxFlatMap test = new FluxFlatMap(parent, i -> Flux.just(i), false, 3, Queues::empty, 123, Queues::empty);
+		FluxFlatMap<Integer, Integer> test = new FluxFlatMap<>(parent, i -> Flux.just(i), false, 3, Queues.empty(), 123, Queues.empty());
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);

@@ -704,7 +704,7 @@ public class MonoProcessorTest {
 		MonoProcessor<String> processor = MonoProcessor.create();
 		AssertSubscriber<String> subscriber = new AssertSubscriber<>();
 
-		MonoProcessor.NextInner test = new MonoProcessor.NextInner(subscriber, processor);
+		MonoProcessor.NextInner<String> test = new MonoProcessor.NextInner<>(subscriber, processor);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

@@ -23,14 +23,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
-
-import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -55,21 +51,27 @@ public class VirtualTimeSchedulerTests {
 	@Test
 	public void allEnabled() {
 		assertThat(Schedulers.newParallel("")).isNotInstanceOf(VirtualTimeScheduler.class);
-		assertThat(Schedulers.newElastic("")).isNotInstanceOf(VirtualTimeScheduler.class);
+		@SuppressWarnings("deprecation")
+		Scheduler elastic1 = Schedulers.newElastic("");
+		assertThat(elastic1).isNotInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isNotInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newSingle("")).isNotInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler.getOrSet();
 
 		assertThat(Schedulers.newParallel("")).isInstanceOf(VirtualTimeScheduler.class);
-		assertThat(Schedulers.newElastic("")).isInstanceOf(VirtualTimeScheduler.class);
+		@SuppressWarnings("deprecation")
+		Scheduler elastic2 = Schedulers.newElastic("");
+		assertThat(elastic2).isInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newSingle("")).isInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 
 		Assert.assertSame(Schedulers.newParallel(""), t);
-		Assert.assertSame(Schedulers.newElastic(""), t);
+		@SuppressWarnings("deprecation")
+		Scheduler elastic3 = Schedulers.newElastic("");
+		Assert.assertSame(elastic3, t);
 		Assert.assertSame(Schedulers.newBoundedElastic(5, Integer.MAX_VALUE, ""), t); //same even though different parameter
 		Assert.assertSame(Schedulers.newSingle(""), t);
 	}

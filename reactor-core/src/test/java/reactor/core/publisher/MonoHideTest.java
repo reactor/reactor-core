@@ -35,7 +35,7 @@ public class MonoHideTest {
 	@Test
 	public void scanOperator(){
 		Mono<Integer> parent = Mono.just(1);
-		MonoHide<Integer> test = new MonoHide(parent);
+		MonoHide<Integer> test = new MonoHide<>(parent);
 
 	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 	    assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);

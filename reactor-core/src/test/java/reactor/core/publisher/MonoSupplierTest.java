@@ -100,7 +100,7 @@ public class MonoSupplierTest {
 
 	@Test
 	public void scanOperator(){
-		MonoSupplier<String> test = new MonoSupplier(() -> "test");
+		MonoSupplier<String> test = new MonoSupplier<>(() -> "test");
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

@@ -115,7 +115,7 @@ public class MonoStreamCollectorTest {
 	@Test
 	public void scanOperator(){
 	    Flux<Integer> source = Flux.just(1);
-		MonoStreamCollector test = new MonoStreamCollector(source, Collectors.toSet());
+		MonoStreamCollector<Integer, ?, Set<Integer>> test = new MonoStreamCollector<>(source, Collectors.toSet());
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);

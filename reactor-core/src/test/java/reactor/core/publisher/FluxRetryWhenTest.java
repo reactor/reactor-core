@@ -370,7 +370,7 @@ public class FluxRetryWhenTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxRetryWhen test = new FluxRetryWhen(parent, Retry.from(other -> Flux.just(2)));
+		FluxRetryWhen<Integer> test = new FluxRetryWhen<>(parent, Retry.from(other -> Flux.just(2)));
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);

@@ -72,7 +72,7 @@ public class MonoMetricsFuseableTest {
 	@Test
 	public void scanSubscriber(){
 		CoreSubscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MetricsFuseableSubscriber<Integer> test = new MetricsFuseableSubscriber(actual, registry, Clock.SYSTEM, Tags.empty());
+		MetricsFuseableSubscriber<Integer> test = new MetricsFuseableSubscriber<>(actual, registry, Clock.SYSTEM, Tags.empty());
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

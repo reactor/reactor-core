@@ -256,7 +256,7 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxSkipUntilOther test = new FluxSkipUntilOther(parent, Flux.just(2));
+		FluxSkipUntilOther<Integer, Integer> test = new FluxSkipUntilOther<>(parent, Flux.just(2));
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

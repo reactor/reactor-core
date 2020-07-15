@@ -318,7 +318,7 @@ public class MonoFilterWhenTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoFilterWhen<Integer> test = new MonoFilterWhen(Mono.just(1), null);
+	    MonoFilterWhen<Integer> test = new MonoFilterWhen<>(Mono.just(1), null);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

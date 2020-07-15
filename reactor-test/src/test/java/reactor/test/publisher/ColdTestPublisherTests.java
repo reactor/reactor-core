@@ -307,7 +307,7 @@ public class ColdTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(NullPointerException.class)
-				.isThrownBy(() -> publisher.next(null, null)) //this causes a compiler warning, on purpose
+				.isThrownBy(() -> publisher.next(null, (String[]) null)) //end users forgetting to cast would see compiler warning as well
 				.withMessage("rest array is null, please cast to T if null T required");
 	}
 
@@ -316,7 +316,7 @@ public class ColdTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.createCold();
 
 		assertThatExceptionOfType(NullPointerException.class)
-				.isThrownBy(() -> publisher.emit(null)) //this causes a compiler warning, on purpose
+				.isThrownBy(() -> publisher.emit((String[])null)) //end users forgetting to cast would see compiler warning as well
 				.withMessage("values array is null, please cast to T if null T required");
 	}
 

@@ -183,6 +183,7 @@ final class FluxConcatMapNoPrefetch<T, R> extends InternalFluxOperator<T, R> {
 				Objects.requireNonNull(p, "The mapper returned a null Publisher");
 
 				if (p instanceof Callable) {
+					@SuppressWarnings("unchecked")
 					Callable<R> callable = (Callable<R>) p;
 
 					R result = callable.call();

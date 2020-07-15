@@ -56,14 +56,14 @@ public class MonoHandleTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoHandle<Integer, Integer> test = new MonoHandle(Mono.just(1), (v, s) -> {});
+	    MonoHandle<Integer, Integer> test = new MonoHandle<>(Mono.just(1), (v, s) -> {});
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
 	public void scanFuseableOperator(){
-		MonoHandleFuseable<Integer, Integer> test = new MonoHandleFuseable(Mono.just(1), (v, s) -> {});
+		MonoHandleFuseable<Integer, Integer> test = new MonoHandleFuseable<>(Mono.just(1), (v, s) -> {});
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

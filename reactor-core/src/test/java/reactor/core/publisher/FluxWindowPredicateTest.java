@@ -1059,7 +1059,7 @@ public class FluxWindowPredicateTest extends
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxWindowPredicate test = new FluxWindowPredicate(parent, Queues::empty, Queues::empty, 35, v -> true, Mode.UNTIL);
+		FluxWindowPredicate<Integer> test = new FluxWindowPredicate<>(parent, Queues.empty(), Queues.empty(), 35, v -> true, Mode.UNTIL);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

@@ -264,7 +264,7 @@ public class MonoSourceTest {
 	@Test
 	public void scanSubscriber() {
 		Flux<String> source = Flux.just("foo").map(i -> i);
-		MonoSource<String> test = new MonoSource(source);
+		MonoSource<String> test = new MonoSource<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
@@ -274,7 +274,7 @@ public class MonoSourceTest {
 	@Test
 	public void scanFuseableSubscriber(){
 		Mono<String> source = Mono.just("foo");
-		MonoSourceFuseable<String> test = new MonoSourceFuseable(source);
+		MonoSourceFuseable<String> test = new MonoSourceFuseable<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -283,7 +283,7 @@ public class MonoSourceTest {
 	@Test
 	public void scanSubscriberHide() {
 		Flux<String> source = Flux.just("foo").hide();
-		MonoSource<String> test = new MonoSource(source);
+		MonoSource<String> test = new MonoSource<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();

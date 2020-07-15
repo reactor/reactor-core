@@ -452,7 +452,7 @@ public class FluxStreamTest {
 
 	@Test
 	public void scanOperator(){
-		FluxStream test = new FluxStream(() -> source.stream());
+		FluxStream<Integer> test = new FluxStream<>(() -> source.stream());
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

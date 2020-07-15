@@ -169,7 +169,7 @@ public class FluxTakeLastTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1, 2, 3, 4, 5);
-		FluxTakeLast<Integer> test = new FluxTakeLast(parent, 3);
+		FluxTakeLast<Integer> test = new FluxTakeLast<>(parent, 3);
 
 	    Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 	    Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

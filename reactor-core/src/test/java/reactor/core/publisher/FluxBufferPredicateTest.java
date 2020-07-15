@@ -979,7 +979,7 @@ public class FluxBufferPredicateTest {
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
 		FluxBufferPredicate<Integer, ArrayList<Integer>> test =
-				new FluxBufferPredicate<>(parent, v -> (Integer) v != 0, ArrayList::new, FluxBufferPredicate.Mode.UNTIL);
+				new FluxBufferPredicate<>(parent, v -> v != 0, ArrayList::new, FluxBufferPredicate.Mode.UNTIL);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

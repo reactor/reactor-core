@@ -65,7 +65,7 @@ public class MonoNextTest {
 	@Test
 	public void scanOperator(){
 		Flux<String> source = Flux.just("foo", "bar");
-		MonoNext test = new MonoNext(source);
+		MonoNext<String> test = new MonoNext<>(source);
 
 	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 	    assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);

@@ -79,7 +79,7 @@ public class FluxConcatMapNoPrefetchTest extends AbstractFluxConcatMapTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1, 2);
-		FluxConcatMapNoPrefetch<Integer, String> test = new FluxConcatMapNoPrefetch(parent, Flux.IDENTITY_FUNCTION , FluxConcatMap.ErrorMode.END);
+		FluxConcatMapNoPrefetch<Integer, String> test = new FluxConcatMapNoPrefetch<>(parent, i -> Flux.just(i.toString()) , FluxConcatMap.ErrorMode.END);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isZero();
@@ -89,8 +89,8 @@ public class FluxConcatMapNoPrefetchTest extends AbstractFluxConcatMapTest {
 	@Test
 	public void scanConcatMapNoPrefetchDelayError() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxConcatMapNoPrefetch.FluxConcatMapNoPrefetchSubscriber test =
-				new FluxConcatMapNoPrefetch.FluxConcatMapNoPrefetchSubscriber(actual, Flux.IDENTITY_FUNCTION, FluxConcatMap.ErrorMode.END);
+		FluxConcatMapNoPrefetch.FluxConcatMapNoPrefetchSubscriber<Integer, Integer> test =
+				new FluxConcatMapNoPrefetch.FluxConcatMapNoPrefetchSubscriber<>(actual, Flux::just, FluxConcatMap.ErrorMode.END);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

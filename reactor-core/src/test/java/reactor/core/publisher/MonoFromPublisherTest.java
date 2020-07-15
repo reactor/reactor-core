@@ -9,7 +9,7 @@ public class MonoFromPublisherTest {
 
 	@Test
 	public void scanOperator(){
-		MonoFromPublisher test = new MonoFromPublisher(Flux.just("foo", "bar"));
+		MonoFromPublisher<String> test = new MonoFromPublisher<>(Flux.just("foo", "bar"));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

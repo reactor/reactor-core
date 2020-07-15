@@ -183,14 +183,14 @@ public class MonoPeekTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoPeek test = new MonoPeek(Mono.just(1), null, null, null, null);
+	    MonoPeek<Integer> test = new MonoPeek<>(Mono.just(1), null, null, null, null);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
 	public void scanFuseableOperator(){
-		MonoPeekFuseable test = new MonoPeekFuseable(Mono.just(1), null, null, null, null);
+		MonoPeekFuseable<Integer> test = new MonoPeekFuseable<>(Mono.just(1), null, null, null, null);
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

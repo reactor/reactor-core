@@ -101,7 +101,7 @@ public class FluxConcatIterableTest {
 
 	@Test
 	public void scanOperator(){
-	    FluxConcatIterable<Integer> test = new FluxConcatIterable(Arrays.asList(source, source, source));
+	    FluxConcatIterable<Integer> test = new FluxConcatIterable<>(Arrays.asList(source, source, source));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
@@ -110,7 +110,7 @@ public class FluxConcatIterableTest {
 	public void scanSubscriber(){
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		List<Publisher<Integer>> publishers = Arrays.asList(source, source, source);
-		FluxConcatIterable.ConcatIterableSubscriber<Integer> test = new FluxConcatIterable.ConcatIterableSubscriber(actual, publishers.iterator());
+		FluxConcatIterable.ConcatIterableSubscriber<Integer> test = new FluxConcatIterable.ConcatIterableSubscriber<>(actual, publishers.iterator());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

@@ -100,7 +100,7 @@ public class FluxDeferTest {
 
 	@Test
 	public void scanOperator(){
-	    FluxDefer<Integer> test = new FluxDefer(() -> Flux.just(1));
+	    FluxDefer<Integer> test = new FluxDefer<>(() -> Flux.just(1));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

@@ -284,8 +284,8 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 
 	@Test
 	public void scanOperator(){
-		Flux<Integer> parent = Flux.just(1);
-		FluxDematerialize<Integer> test = new FluxDematerialize(parent);
+		Flux<Signal<Integer>> parent = Flux.just(Signal.next(1));
+		FluxDematerialize<Integer> test = new FluxDematerialize<>(parent);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

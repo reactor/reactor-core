@@ -195,7 +195,7 @@ public class FluxRepeatTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxRepeat test = new FluxRepeat(parent, 4);
+		FluxRepeat<Integer> test = new FluxRepeat<>(parent, 4);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

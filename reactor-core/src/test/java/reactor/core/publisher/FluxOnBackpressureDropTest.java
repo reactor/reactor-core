@@ -147,7 +147,7 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void scanOperator(){
-	    FluxOnBackpressureDrop test = new FluxOnBackpressureDrop(Flux.just(1));
+	    FluxOnBackpressureDrop<Integer> test = new FluxOnBackpressureDrop<>(Flux.just(1));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

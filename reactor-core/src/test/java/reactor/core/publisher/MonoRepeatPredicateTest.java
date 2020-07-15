@@ -70,7 +70,7 @@ public class MonoRepeatPredicateTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoRepeatPredicate<Integer> test = new MonoRepeatPredicate(Mono.just(1), () -> true);
+	    MonoRepeatPredicate<Integer> test = new MonoRepeatPredicate<>(Mono.just(1), () -> true);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

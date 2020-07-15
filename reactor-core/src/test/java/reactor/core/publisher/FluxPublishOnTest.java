@@ -1263,7 +1263,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void scanOperator(){
 		Flux<Integer> source = Flux.just(1);
 		Scheduler scheduler = Schedulers.immediate();
-		FluxPublishOn test = new FluxPublishOn(source, scheduler, false, 3, 4, Queues::one);
+		FluxPublishOn<Integer> test = new FluxPublishOn<>(source, scheduler, false, 3, 4, Queues.one());
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(PREFETCH)).isEqualTo(3);

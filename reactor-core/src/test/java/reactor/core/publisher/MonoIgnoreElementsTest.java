@@ -12,7 +12,7 @@ public class MonoIgnoreElementsTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> source = Flux.just(1);
-		MonoIgnoreElements<Integer> test = new MonoIgnoreElements(source);
+		MonoIgnoreElements<Integer> test = new MonoIgnoreElements<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
@@ -22,7 +22,7 @@ public class MonoIgnoreElementsTest {
 	@Test
 	public void scanSubscriber() {
 		CoreSubscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoIgnoreElements.IgnoreElementsSubscriber test = new MonoIgnoreElements.IgnoreElementsSubscriber(actual);
+		MonoIgnoreElements.IgnoreElementsSubscriber<Boolean> test = new MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

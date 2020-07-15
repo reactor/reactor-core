@@ -173,7 +173,7 @@ public class MonoTimeoutTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoTimeout test = new MonoTimeout(Mono.just(1), Mono.just("foo"), "timeout");
+	    MonoTimeout<Integer, String, String> test = new MonoTimeout<>(Mono.just(1), Mono.just("foo"), "timeout");
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

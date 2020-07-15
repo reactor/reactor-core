@@ -436,7 +436,7 @@ public class FluxTimeoutTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxTimeout test = new FluxTimeout(parent, Flux.just(2), v -> Flux.empty(), "desc");
+		FluxTimeout<Integer, Integer, ?> test = new FluxTimeout<>(parent, Flux.just(2), v -> Flux.empty(), "desc");
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -444,8 +444,8 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void scanMainSubscriber(){
-		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> s.request(1));
-		TimeoutMainSubscriber test = new TimeoutMainSubscriber(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> s.request(1));
+		FluxTimeout.TimeoutMainSubscriber<String, Integer> test = new FluxTimeout.TimeoutMainSubscriber<>(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -463,9 +463,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void scanOtherSubscriber(){
-		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		TimeoutMainSubscriber main = new TimeoutMainSubscriber(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
-		TimeoutOtherSubscriber test = new TimeoutOtherSubscriber(actual, main);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxTimeout.TimeoutMainSubscriber<String, Integer> main = new FluxTimeout.TimeoutMainSubscriber<>(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
+		FluxTimeout.TimeoutOtherSubscriber<String> test = new FluxTimeout.TimeoutOtherSubscriber<>(actual, main);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -476,9 +476,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void scanTimeoutSubscriber(){
-		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		TimeoutMainSubscriber main = new TimeoutMainSubscriber(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
-		TimeoutTimeoutSubscriber test = new TimeoutTimeoutSubscriber(main, 2);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxTimeout.TimeoutMainSubscriber<String, Integer> main = new FluxTimeout.TimeoutMainSubscriber<>(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
+		FluxTimeout.TimeoutTimeoutSubscriber test = new FluxTimeout.TimeoutTimeoutSubscriber(main, 2);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);

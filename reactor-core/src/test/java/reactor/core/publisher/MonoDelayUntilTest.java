@@ -205,7 +205,7 @@ public class MonoDelayUntilTest {
 	@Test
 	public void scanOperator(){
 	    Mono<Integer> source = Mono.just(1);
-		MonoDelayUntil test = new MonoDelayUntil(source, i -> Mono.just(1));
+		MonoDelayUntil<Integer> test = new MonoDelayUntil<>(source, i -> Mono.just(1));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

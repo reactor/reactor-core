@@ -336,7 +336,7 @@ public class MonoRetryWhenTest {
 	@Test
 	public void scanOperator(){
 		Mono<String> parent = Mono.just("foo");
-		MonoRetryWhen<String> test = new MonoRetryWhen(parent, Retry.backoff(5, Duration.ofMinutes(30)));
+		MonoRetryWhen<String> test = new MonoRetryWhen<>(parent, Retry.backoff(5, Duration.ofMinutes(30)));
 
 	    assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

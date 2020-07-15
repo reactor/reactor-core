@@ -238,7 +238,7 @@ public class FluxRetryPredicateTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxRetryPredicate test = new FluxRetryPredicate(parent, p -> true);
+		FluxRetryPredicate<Integer> test = new FluxRetryPredicate<>(parent, p -> true);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -249,7 +249,7 @@ public class FluxRetryPredicateTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		Flux<Integer> source = Flux.just(1);
 		FluxRetryPredicate.RetryPredicateSubscriber<Integer> test =
-				new FluxRetryPredicate.RetryPredicateSubscriber(source, actual, p -> true);
+				new FluxRetryPredicate.RetryPredicateSubscriber<>(source, actual, p -> true);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

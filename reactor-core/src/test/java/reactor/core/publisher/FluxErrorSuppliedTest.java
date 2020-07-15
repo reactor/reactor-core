@@ -98,7 +98,7 @@ public class FluxErrorSuppliedTest {
 
 	@Test
 	public void scanOperator(){
-	    FluxErrorSupplied test = new FluxErrorSupplied(() -> new IllegalStateException());
+	    FluxErrorSupplied<?> test = new FluxErrorSupplied<>(() -> new IllegalStateException());
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

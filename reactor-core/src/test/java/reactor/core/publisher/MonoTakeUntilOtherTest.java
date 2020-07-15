@@ -196,7 +196,7 @@ public class MonoTakeUntilOtherTest {
 	@Test
 	public void scanOperator(){
 		TestPublisher<String> other = TestPublisher.create();
-	    MonoTakeUntilOther<Integer, String> test = new MonoTakeUntilOther(Mono.just(1), other);
+	    MonoTakeUntilOther<Integer, String> test = new MonoTakeUntilOther<>(Mono.just(1), other);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

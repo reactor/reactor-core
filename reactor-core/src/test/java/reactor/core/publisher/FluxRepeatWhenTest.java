@@ -373,7 +373,7 @@ public class FluxRepeatWhenTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxRepeatWhen<Integer> test = new FluxRepeatWhen(parent, v -> (Integer) v != 10);
+		FluxRepeatWhen<Integer> test = new FluxRepeatWhen<>(parent, c -> c.take(3));
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

@@ -114,7 +114,7 @@ public class FluxSourceTest {
 	@Test
 	public void scanOperatorWithSyncSource() {
 		Flux<Integer> parent = Flux.range(1,  10).map(i -> i);
-		FluxSource<Integer> test = new FluxSource(parent);
+		FluxSource<Integer> test = new FluxSource<>(parent);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
@@ -123,8 +123,8 @@ public class FluxSourceTest {
 
 	@Test
 	public void scanOperatorWithAsyncSource(){
-		FluxDelaySequence<String> source = new FluxDelaySequence(Flux.just(1), Duration.ofMillis(50), Schedulers.immediate());
-		FluxSource<String> test = new FluxSource(source);
+		FluxDelaySequence<Integer> source = new FluxDelaySequence<>(Flux.just(1), Duration.ofMillis(50), Schedulers.immediate());
+		FluxSource<Integer> test = new FluxSource<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
@@ -153,8 +153,8 @@ public class FluxSourceTest {
 
 	@Test
 	public void scanFuseableOperatorWithAsyncSource(){
-		FluxDelaySequence<String> source = new FluxDelaySequence(Flux.just(1), Duration.ofMillis(50), Schedulers.immediate());
-		FluxSourceFuseable<String> test = new FluxSourceFuseable(source);
+		FluxDelaySequence<Integer> source = new FluxDelaySequence<>(Flux.just(1), Duration.ofMillis(50), Schedulers.immediate());
+		FluxSourceFuseable<Integer> test = new FluxSourceFuseable<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);

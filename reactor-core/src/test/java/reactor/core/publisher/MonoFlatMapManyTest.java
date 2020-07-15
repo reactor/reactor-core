@@ -63,7 +63,7 @@ public class MonoFlatMapManyTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoFlatMapMany<String, Integer> test = new MonoFlatMapMany(Mono.just("foo"), s -> Mono.just(1));
+	    MonoFlatMapMany<String, Integer> test = new MonoFlatMapMany<>(Mono.just("foo"), s -> Mono.just(1));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

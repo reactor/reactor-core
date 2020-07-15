@@ -442,7 +442,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
 	@Test
 	public void scanOperator(){
-	    FluxBuffer<Integer, List<Integer>> test = new FluxBuffer(Flux.just(1, 2, 3), 2, 1, ArrayList::new);
+	    FluxBuffer<Integer, List<Integer>> test = new FluxBuffer<>(Flux.just(1, 2, 3), 2, 1, ArrayList::new);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

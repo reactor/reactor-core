@@ -134,6 +134,7 @@ public class MonoFirstTest {
 
 	@Test
 	public void scanOperator(){
+		@SuppressWarnings("unchecked")
 		MonoFirst<Integer> test = new MonoFirst<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

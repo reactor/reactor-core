@@ -152,7 +152,7 @@ public class MonoCollectListTest {
 	@Test
 	public void scanOperator(){
 	    Flux<Integer> source = Flux.just(1);
-		MonoCollectList test = new MonoCollectList(source);
+		MonoCollectList<Integer> test = new MonoCollectList<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);

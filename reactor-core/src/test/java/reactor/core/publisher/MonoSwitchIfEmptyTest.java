@@ -100,7 +100,7 @@ public class MonoSwitchIfEmptyTest {
 
 	@Test
 	public void scanOperator(){
-	    MonoSwitchIfEmpty<String> test = new MonoSwitchIfEmpty(Mono.just(1), Mono.empty());
+	    MonoSwitchIfEmpty<Integer> test = new MonoSwitchIfEmpty<>(Mono.just(1), Mono.empty());
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

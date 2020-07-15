@@ -165,7 +165,7 @@ public class FluxMaterializeTest
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxMaterialize test = new FluxMaterialize(parent);
+		FluxMaterialize<Integer> test = new FluxMaterialize<>(parent);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

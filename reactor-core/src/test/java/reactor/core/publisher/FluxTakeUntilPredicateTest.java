@@ -162,7 +162,7 @@ public class FluxTakeUntilPredicateTest {
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxTakeUntil test = new FluxTakeUntil(parent, v -> true);
+		FluxTakeUntil<Integer> test = new FluxTakeUntil<>(parent, v -> true);
 
 		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
