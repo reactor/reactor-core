@@ -62,31 +62,12 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
-	public void bothStartAndRestartAreNoOp() {
-		Scheduler scheduler = scheduler();
+	public void bothStartAndRestartDoNotThrow() {
+		Scheduler scheduler = afterTest.autoDispose(scheduler());
 		assertThatCode(scheduler::start).as("start").doesNotThrowAnyException();
 
 		scheduler.dispose();
 		assertThatCode(scheduler::start).as("restart").doesNotThrowAnyException();
-	}
-
-	@Test
-	public void startAndDecorationImplicit() {
-		AtomicInteger decorationCount = new AtomicInteger();
-		Schedulers.setExecutorServiceDecorator("startAndDecorationImplicit", (s, srv) -> {
-			decorationCount.incrementAndGet();
-			return srv;
-		});
-		final Scheduler scheduler = afterTest.autoDispose(new ElasticScheduler(Thread::new, 10));
-		afterTest.autoDispose(() -> Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit"));
-
-		assertThat(decorationCount).as("before schedule").hasValue(0);
-		//first scheduled task implicitly starts one worker and thus creates one executor service
-		scheduler.schedule(ThrowingRunnable.unchecked(() -> Thread.sleep(100)));
-		assertThat(decorationCount).as("after schedule").hasValue(1);
-		//second scheduled task also implicitly starts one worker and thus creates a second executor service
-		scheduler.schedule(() -> {});
-		assertThat(decorationCount).as("after 2nd schedule").hasValue(2);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
