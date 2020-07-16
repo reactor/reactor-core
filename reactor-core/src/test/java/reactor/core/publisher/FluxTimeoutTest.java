@@ -444,7 +444,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void scanMainSubscriber(){
-		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, s -> s.request(1));
 		TimeoutMainSubscriber test = new TimeoutMainSubscriber(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
 
 		Subscription subscription = Operators.emptySubscription();
@@ -452,8 +452,9 @@ public class FluxTimeoutTest {
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
 		test.request(2);
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L + 2L);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
