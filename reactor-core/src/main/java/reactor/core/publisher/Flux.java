@@ -6074,8 +6074,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
 	 * sequence.
 	 * <p>
-     * The {@link MeterRegistry} used by reactor can be configured via
-     * {@link Metrics.Configuration#useRegistry(MeterRegistry)} prior to using this operator, the default being
+	 * The {@link MeterRegistry} used by reactor can be configured via
+	 * {@link Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)} prior to using this operator, the default being
 	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 * </p>
 	 *

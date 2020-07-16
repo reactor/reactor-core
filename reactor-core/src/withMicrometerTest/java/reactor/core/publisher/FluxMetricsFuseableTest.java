@@ -40,8 +40,18 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Metrics;
 
-import static org.assertj.core.api.Assertions.*;
-import static reactor.core.publisher.FluxMetrics.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static reactor.core.publisher.FluxMetrics.METER_FLOW_DURATION;
+import static reactor.core.publisher.FluxMetrics.METER_ON_NEXT_DELAY;
+import static reactor.core.publisher.FluxMetrics.METER_REQUESTED;
+import static reactor.core.publisher.FluxMetrics.METER_SUBSCRIBED;
+import static reactor.core.publisher.FluxMetrics.REACTOR_DEFAULT_NAME;
+import static reactor.core.publisher.FluxMetrics.TAG_CANCEL;
+import static reactor.core.publisher.FluxMetrics.TAG_ON_COMPLETE;
+import static reactor.core.publisher.FluxMetrics.TAG_ON_ERROR;
+import static reactor.core.publisher.FluxMetrics.TAG_SEQUENCE_NAME;
 
 public class FluxMetricsFuseableTest {
 
@@ -53,13 +63,13 @@ public class FluxMetricsFuseableTest {
 	public void setupRegistry() {
 		clock = new MockClock();
 		registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
-		previousRegistry = Metrics.Configuration.useRegistry(registry);
+		previousRegistry = Metrics.MicrometerConfiguration.useRegistry(registry);
 	}
 
 	@After
 	public void resetRegistry() {
 		registry.close();
-		Metrics.Configuration.useRegistry(previousRegistry);
+		Metrics.MicrometerConfiguration.useRegistry(previousRegistry);
 	}
 
 	// === Fuseable-specific tests ===

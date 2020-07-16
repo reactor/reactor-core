@@ -33,7 +33,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.Metrics.Configuration;
+import reactor.util.Metrics.MicrometerConfiguration;
 import reactor.util.function.Tuple2;
 
 /**
@@ -60,7 +60,7 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 		this.name = resolveName(flux);
 		this.tags = resolveTags(flux, DEFAULT_TAGS_FLUX, this.name);
 
-		this.registryCandidate = Configuration.getRegistry();
+		this.registryCandidate = MicrometerConfiguration.getRegistry();
 	}
 
 	@Override

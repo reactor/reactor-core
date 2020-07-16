@@ -50,7 +50,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 
 		this.name = resolveName(flux);
 		this.tags = resolveTags(flux, FluxMetrics.DEFAULT_TAGS_FLUX, this.name);
-		this.registryCandidate = Metrics.Configuration.getRegistry();
+		this.registryCandidate = Metrics.MicrometerConfiguration.getRegistry();
 	}
 
 	@Override

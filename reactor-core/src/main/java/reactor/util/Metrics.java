@@ -52,22 +52,26 @@ public class Metrics {
 		return isMicrometerAvailable;
 	}
 
-	public static class Configuration {
+	public static class MicrometerConfiguration {
 
-		/**
-		 * The registry to use in reactor for metrics related purposes.
-		 * @see Flux#metrics()
-		 */
 		private static MeterRegistry registry = globalRegistry;
 
+		/**
+		 * Set the registry to use in reactor for metrics related purposes.
+		 * @return the previously configured registry.
+		 */
 		public static MeterRegistry useRegistry(MeterRegistry registry) {
-			MeterRegistry previous = Configuration.registry;
-			Configuration.registry = registry;
+			MeterRegistry previous = MicrometerConfiguration.registry;
+			MicrometerConfiguration.registry = registry;
 			return previous;
 		}
 
+		/**
+		 * Get the registry used in reactor for metrics related purposes.
+		 * @see Flux#metrics()
+		 */
 		public static MeterRegistry getRegistry() {
-			return Configuration.registry;
+			return MicrometerConfiguration.registry;
 		}
 	}
 

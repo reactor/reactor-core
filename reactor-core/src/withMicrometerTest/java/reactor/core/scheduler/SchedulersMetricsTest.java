@@ -13,7 +13,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import junitparams.JUnitParamsRunner;
@@ -25,6 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import reactor.test.AutoDisposingRule;
+import reactor.util.Metrics;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;
@@ -43,15 +43,15 @@ public class SchedulersMetricsTest {
 	@Before
 	public void setUp() {
 		registry = new SimpleMeterRegistry();
-		previousRegistry = reactor.util.Metrics.Configuration.useRegistry(registry);
+		previousRegistry = Metrics.MicrometerConfiguration.useRegistry(registry);
 		Schedulers.enableMetrics();
 	}
 
 	@After
-	public void teardDown() {
+	public void tearDown() {
 		Schedulers.disableMetrics();
 		registry.close();
-		reactor.util.Metrics.Configuration.useRegistry(previousRegistry);
+		Metrics.MicrometerConfiguration.useRegistry(previousRegistry);
 	}
 
 	@Test

@@ -46,7 +46,7 @@ final class SchedulerMetricDecorator
 	final MeterRegistry 						registry;
 
 	SchedulerMetricDecorator() {
-		registry = Metrics.Configuration.getRegistry();
+		registry = Metrics.MicrometerConfiguration.getRegistry();
 	}
 
 	@Override

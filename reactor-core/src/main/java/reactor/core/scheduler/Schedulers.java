@@ -638,7 +638,7 @@ public abstract class Schedulers {
 	 *
 	 * <p>
 	 * The {@link MeterRegistry} used by reactor can be configured via
-	 * {@link Metrics.Configuration#useRegistry(MeterRegistry)} prior to using this method, the default being
+	 * {@link Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)} prior to using this method, the default being
 	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 * </p>
 	 *
