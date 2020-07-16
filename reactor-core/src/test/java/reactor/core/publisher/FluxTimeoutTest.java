@@ -26,6 +26,9 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxTimeout.TimeoutMainSubscriber;
+import reactor.core.publisher.FluxTimeout.TimeoutOtherSubscriber;
+import reactor.core.publisher.FluxTimeout.TimeoutTimeoutSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -442,7 +445,7 @@ public class FluxTimeoutTest {
 	@Test
 	public void scanMainSubscriber(){
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxTimeout.TimeoutMainSubscriber test = new FluxTimeout.TimeoutMainSubscriber(actual, v -> Flux.just(2), Flux.empty(), "desc");
+		TimeoutMainSubscriber test = new TimeoutMainSubscriber(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -460,8 +463,8 @@ public class FluxTimeoutTest {
 	@Test
 	public void scanOtherSubscriber(){
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxTimeout.TimeoutMainSubscriber main = new FluxTimeout.TimeoutMainSubscriber(actual, v -> Flux.just(2), Flux.empty(), "desc");
-		FluxTimeout.TimeoutOtherSubscriber test = new FluxTimeout.TimeoutOtherSubscriber(actual, main);
+		TimeoutMainSubscriber main = new TimeoutMainSubscriber(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
+		TimeoutOtherSubscriber test = new TimeoutOtherSubscriber(actual, main);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
@@ -473,8 +476,8 @@ public class FluxTimeoutTest {
 	@Test
 	public void scanTimeoutSubscriber(){
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxTimeout.TimeoutMainSubscriber main = new FluxTimeout.TimeoutMainSubscriber(actual, v -> Flux.just(2), Flux.empty(), "desc");
-		FluxTimeout.TimeoutTimeoutSubscriber test = new FluxTimeout.TimeoutTimeoutSubscriber(main, 2);
+		TimeoutMainSubscriber main = new TimeoutMainSubscriber(actual, Flux.empty(), v -> Flux.just(2), Flux.empty(), "desc");
+		TimeoutTimeoutSubscriber test = new TimeoutTimeoutSubscriber(main, 2);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
