@@ -67,10 +67,10 @@ final class MonoTimeout<T, U, V> extends InternalMonoOperator<T, T> {
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		return new FluxTimeout.TimeoutMainSubscriber<T, T>(
 				Operators.serialize(actual),
+				firstTimeout,
 				NEVER,
 				other,
-				addNameToTimeoutDescription(source, timeoutDescription),
-				firstTimeout
+				addNameToTimeoutDescription(source, timeoutDescription)
 		);
 	}
 }

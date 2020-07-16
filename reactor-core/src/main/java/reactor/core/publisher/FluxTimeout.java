@@ -76,7 +76,7 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return new TimeoutMainSubscriber<>(actual, itemTimeout, other, timeoutDescription, firstTimeout);
+		return new TimeoutMainSubscriber<>(actual, firstTimeout, itemTimeout, other, timeoutDescription);
 	}
 
 	@Nullable
@@ -98,11 +98,12 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 	static final class TimeoutMainSubscriber<T, V>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
+		final Publisher<?> firstTimeout;
+
 		final Function<? super T, ? extends Publisher<V>> itemTimeout;
 
 		final Publisher<? extends T> other;
 		final String timeoutDescription; //only useful/non-null when no `other`
-		final Publisher<?> firstTimeout;
 
 		Subscription s;
 
@@ -119,10 +120,13 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 		static final AtomicLongFieldUpdater<TimeoutMainSubscriber> INDEX =
 				AtomicLongFieldUpdater.newUpdater(TimeoutMainSubscriber.class, "index");
 
-		TimeoutMainSubscriber(CoreSubscriber<? super T> actual,
+		TimeoutMainSubscriber(
+				CoreSubscriber<? super T> actual,
+				Publisher<?> firstTimeout,
 				Function<? super T, ? extends Publisher<V>> itemTimeout,
 				@Nullable Publisher<? extends T> other,
-				@Nullable String timeoutDescription, Publisher<?> firstTimeout) {
+				@Nullable String timeoutDescription
+		) {
 			super(Operators.serialize(actual));
 			this.itemTimeout = itemTimeout;
 			this.other = other;
