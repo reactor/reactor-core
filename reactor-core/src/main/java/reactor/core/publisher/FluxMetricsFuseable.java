@@ -20,12 +20,12 @@ import java.util.concurrent.TimeUnit;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
 import static reactor.core.publisher.FluxMetrics.*;
@@ -46,26 +46,11 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 	final MeterRegistry registryCandidate;
 
 	FluxMetricsFuseable(Flux<? extends T> flux) {
-		this(flux, null);
-	}
-
-	/**
-	 * For testing purposes.
-	 *
-	 * @param candidate the registry to use, as a plain {@link Object} to avoid leaking dependency
-	 */
-	FluxMetricsFuseable(Flux<? extends T> flux, @Nullable MeterRegistry candidate) {
 		super(flux);
 
 		this.name = resolveName(flux);
 		this.tags = resolveTags(flux, FluxMetrics.DEFAULT_TAGS_FLUX, this.name);
-
-		if (candidate == null) {
-			this.registryCandidate = Metrics.globalRegistry;
-		}
-		else {
-			this.registryCandidate = candidate;
-		}
+		this.registryCandidate = Metrics.MicrometerConfiguration.getRegistry();
 	}
 
 	@Override

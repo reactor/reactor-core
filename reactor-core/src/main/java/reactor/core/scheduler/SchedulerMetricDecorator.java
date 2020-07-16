@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.core.instrument.search.Search;
@@ -30,8 +31,7 @@ import io.micrometer.core.instrument.search.Search;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
-
-import static io.micrometer.core.instrument.Metrics.globalRegistry;
+import reactor.util.Metrics;
 
 final class SchedulerMetricDecorator
 			implements BiFunction<Scheduler, ScheduledExecutorService, ScheduledExecutorService>,
@@ -43,6 +43,11 @@ final class SchedulerMetricDecorator
 	final WeakHashMap<Scheduler, String>        seenSchedulers          = new WeakHashMap<>();
 	final Map<String, AtomicInteger>            schedulerDifferentiator = new HashMap<>();
 	final WeakHashMap<Scheduler, AtomicInteger> executorDifferentiator  = new WeakHashMap<>();
+	final MeterRegistry 						registry;
+
+	SchedulerMetricDecorator() {
+		registry = Metrics.MicrometerConfiguration.getRegistry();
+	}
 
 	@Override
 	public synchronized ScheduledExecutorService apply(Scheduler scheduler, ScheduledExecutorService service) {
@@ -82,7 +87,7 @@ final class SchedulerMetricDecorator
 		class MetricsRemovingScheduledExecutorService extends DelegatingScheduledExecutorService {
 
 			MetricsRemovingScheduledExecutorService() {
-				super(ExecutorServiceMetrics.monitor(globalRegistry, service, executorId, tags));
+				super(ExecutorServiceMetrics.monitor(registry, service, executorId, tags));
 			}
 
 			@Override
@@ -98,10 +103,10 @@ final class SchedulerMetricDecorator
 			}
 
 			void removeMetrics() {
-				Search.in(globalRegistry)
+				Search.in(registry)
 				      .tag("name", executorId)
 				      .meters()
-				      .forEach(globalRegistry::remove);
+				      .forEach(registry::remove);
 			}
 		}
 		return new MetricsRemovingScheduledExecutorService();
@@ -109,10 +114,10 @@ final class SchedulerMetricDecorator
 
 	@Override
 	public void dispose() {
-		Search.in(globalRegistry)
+		Search.in(registry)
 		      .tagKeys(TAG_SCHEDULER_ID)
 		      .meters()
-		      .forEach(globalRegistry::remove);
+		      .forEach(registry::remove);
 
 		//note default isDisposed (returning false) is good enough, since the cleared
 		//collections can always be reused even though they probably won't
