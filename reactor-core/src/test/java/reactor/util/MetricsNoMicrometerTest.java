@@ -31,20 +31,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * This test case should be OK to run in the normal test source set, but is intended
+ * This test case should be OK to run in the normal test source set and is intended
  * for a test sourceset that doesn't include Micrometer dependency, and which only runs
  * tests validating the likes of {@link Flux#metrics()} are NO-OP in that context.
+ *
+ * <p>For tests that validate metrics usage when micrometer <em>is</em> present,
+ * please have a look at the {@code withMicrometerTest} sourceset.</p>
  *
  * @author Simon Baslé
  */
 public class MetricsNoMicrometerTest {
-
-
-	@BeforeClass
-	public static void assumeNoMicrometer() {
-		Assumptions.assumeThat(Metrics.isInstrumentationAvailable())
-		           .as("Micrometer on the classpath").isFalse();
-	}
 
 	@Test
 	public void isMicrometerAvailable() {
