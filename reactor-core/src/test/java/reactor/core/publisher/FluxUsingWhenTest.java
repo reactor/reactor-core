@@ -1006,8 +1006,8 @@ public class FluxUsingWhenTest {
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				s.request(1);
 				subscription = s;
+				s.request(1);
 			}
 
 			@Override
@@ -1039,8 +1039,8 @@ public class FluxUsingWhenTest {
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				s.request(1);
 				subscription = s;
+				s.request(1);
 			}
 
 			@Override
@@ -1090,8 +1090,8 @@ public class FluxUsingWhenTest {
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				s.request(1);
 				subscription = s;
+				s.request(1);
 			}
 
 			@Override
@@ -1106,8 +1106,8 @@ public class FluxUsingWhenTest {
 			public void onComplete() {}
 		});
 
-		Thread.sleep(300);
-		assertThat(cleanupCount.sum()).isEqualTo(1000);
+		Awaitility.waitAtMost(500, TimeUnit.MILLISECONDS)
+		          .untilAsserted(() -> assertThat(cleanupCount.sum()).isEqualTo(1000));
 		assertThat(cancelled).as("source cancelled").isTrue();
 	}
 
@@ -1143,8 +1143,8 @@ public class FluxUsingWhenTest {
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				s.request(1);
 				subscription = s;
+				s.request(1);
 			}
 
 			@Override
@@ -1159,9 +1159,9 @@ public class FluxUsingWhenTest {
 			public void onComplete() {}
 		});
 
-		Thread.sleep(300);
-			          assertThat(cleanupCount.sum()).isEqualTo(1000);
-			          assertThat(cancelled).as("source cancelled").isTrue();
+		Awaitility.waitAtMost(500, TimeUnit.MILLISECONDS)
+		          .untilAsserted(() -> assertThat(cleanupCount.sum()).isEqualTo(1000));
+		assertThat(cancelled).as("source cancelled").isTrue();
 	}
 
 	@Test
