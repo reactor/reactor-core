@@ -702,9 +702,9 @@ public class FluxFlatMapTest {
 		try {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
-				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain) s);
-				((FluxFlatMap.FlatMapMain) s).done = true;
-				((FluxFlatMap.FlatMapMain) s).drain(null);
+				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain<?, ?>) s);
+				((FluxFlatMap.FlatMapMain<?, ?>) s).done = true;
+				((FluxFlatMap.FlatMapMain<?, ?>) s).drain(null);
 				s.onError(new Exception("test"));
 			})
 			                        .flatMap(Flux::just))
