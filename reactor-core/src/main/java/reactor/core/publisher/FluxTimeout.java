@@ -76,20 +76,7 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		CoreSubscriber<T> serial = Operators.serialize(actual);
-
-		TimeoutMainSubscriber<T, V> main =
-				new TimeoutMainSubscriber<>(serial, itemTimeout, other, timeoutDescription);
-
-		serial.onSubscribe(main);
-
-		TimeoutTimeoutSubscriber ts = new TimeoutTimeoutSubscriber(main, 0L);
-
-		main.setTimeout(ts);
-
-		firstTimeout.subscribe(ts);
-
-		return main;
+		return new TimeoutMainSubscriber<>(actual, firstTimeout, itemTimeout, other, timeoutDescription);
 	}
 
 	@Nullable
@@ -111,6 +98,8 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 	static final class TimeoutMainSubscriber<T, V>
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
+		final Publisher<?> firstTimeout;
+
 		final Function<? super T, ? extends Publisher<V>> itemTimeout;
 
 		final Publisher<? extends T> other;
@@ -131,14 +120,18 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 		static final AtomicLongFieldUpdater<TimeoutMainSubscriber> INDEX =
 				AtomicLongFieldUpdater.newUpdater(TimeoutMainSubscriber.class, "index");
 
-		TimeoutMainSubscriber(CoreSubscriber<? super T> actual,
+		TimeoutMainSubscriber(
+				CoreSubscriber<? super T> actual,
+				Publisher<?> firstTimeout,
 				Function<? super T, ? extends Publisher<V>> itemTimeout,
 				@Nullable Publisher<? extends T> other,
-				@Nullable String timeoutDescription) {
-			super(actual);
+				@Nullable String timeoutDescription
+		) {
+			super(Operators.serialize(actual));
 			this.itemTimeout = itemTimeout;
 			this.other = other;
 			this.timeoutDescription = timeoutDescription;
+			this.firstTimeout = firstTimeout;
 		}
 
 		@Override
@@ -147,6 +140,12 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 				this.s = s;
 
 				set(s);
+
+				TimeoutTimeoutSubscriber timeoutSubscriber = new TimeoutTimeoutSubscriber(this, 0L);
+				this.timeout = timeoutSubscriber;
+
+				actual.onSubscribe(this);
+				firstTimeout.subscribe(timeoutSubscriber);
 			}
 		}
 
