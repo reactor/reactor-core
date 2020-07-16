@@ -18,6 +18,7 @@ import me.champeau.gradle.japicmp.JapicmpTask
 apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
 apply plugin: 'me.champeau.gradle.jmh'
 apply plugin: 'biz.aQute.bnd.builder'
+apply plugin: 'org.unbroken-dome.test-sets'
 apply plugin: 'kotlin'
 apply plugin: 'org.jetbrains.dokka'
 
@@ -40,20 +41,13 @@ ext {
 	]
 }
 
-sourceSets {
-	noMicrometerTest {
-		java.srcDir 'src/test/java'
-		resources.srcDir 'src/test/resources'
-	}
+testSets {
+	withMicrometerTest
 }
 
 configurations {
 	compileOnly.extendsFrom jsr166backport
 	testCompile.extendsFrom jsr166backport
-	noMicrometerTestRuntime {
-		extendsFrom testRuntime
-		exclude group:"io.micrometer", module:"micrometer-core"
-	}
 }
 
 dependencies {
@@ -68,7 +62,7 @@ dependencies {
 	optional "org.slf4j:slf4j-api:$slf4jVersion"
 
 	//Optional Metrics
-	optional "io.micrometer:micrometer-core:$micrometerVersion"
+	compileOnly "io.micrometer:micrometer-core:$micrometerVersion"
 
 	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
@@ -78,7 +72,6 @@ dependencies {
 	testCompile "junit:junit:$jUnitVersion"
 
 	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
-	testRuntime "io.micrometer:micrometer-core:$micrometerVersion"
 	// Testing
 	testCompile(project(":reactor-test")) {
 		exclude module: 'reactor-core'
@@ -91,9 +84,11 @@ dependencies {
 	testCompile "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
 	testCompile "org.awaitility:awaitility:$awaitilityVersion"
 
-	noMicrometerTestCompile sourceSets.main.output
-	noMicrometerTestCompile sourceSets.test.output
-	noMicrometerTestCompile configurations.testCompile
+	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
+	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
+	withMicrometerTestImplementation "io.micrometer:micrometer-core:$micrometerVersion"
+	withMicrometerTestImplementation sourceSets.test.output
+
 }
 
 jmh {
@@ -207,21 +202,11 @@ task testNG(type: Test, group: 'verification') {
 	}
 }
 
-task testNoMicrometer(type: Test, group: 'verification') {
-	testClassesDirs = sourceSets.noMicrometerTest.output.classesDirs
-	classpath = sourceSets.noMicrometerTest.runtimeClasspath
-	include '**/*NoMicrometerTest.*'
-
-	doFirst {
-		println "Additional tests without Micrometer ($includes)"
-	}
-}
-
 //inherit basic test task + common configuration in root
 //always depend on testNoMicrometer, skip testNG on Travis, skip loops when not releasing
 //note that this way the tasks can be run individually
 check {
-	dependsOn testNoMicrometer
+	dependsOn withMicrometerTest
 	if (!detectedCiServers.contains("TRAVIS")) {
 		dependsOn testNG
 	}

@@ -31,6 +31,7 @@ plugins {
 	id "org.jetbrains.dokka" version "0.9.18" apply false
 	id "me.champeau.gradle.japicmp" version "0.2.6"
 	id "de.undercouch.download" version "3.4.3"
+	id "org.unbroken-dome.test-sets" version "3.0.0" apply false
 	//note: build scan plugin now must be applied in settings.gradle
 	id "com.jfrog.artifactory" version "4.15.2" apply false
 	id 'biz.aQute.bnd.builder' version '5.0.1' apply false
