@@ -28,6 +28,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,16 +49,23 @@ public class FluxTimeoutTest {
 	}
 
 	@Test
-	public void immediateTimeout() {
+	public void noTimeoutOnInstantSource() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.empty(), v -> Flux.never())
 		    .subscribe(ts);
 
-		ts.assertNoValues()
-		  .assertNotComplete()
-		  .assertError(TimeoutException.class);
+		ts.assertValueCount(10).assertComplete();
+	}
+
+	@Test
+	public void immediateTimeout() {
+		TestPublisher<Object> source = TestPublisher.create();
+		source.flux()
+		      .timeout(Flux.empty(), v -> Flux.never())
+		      .as(StepVerifier::create)
+		      .verifyError(TimeoutException.class);
 	}
 
 	@Test
@@ -202,18 +210,22 @@ public class FluxTimeoutTest {
 	}
 
 	@Test
+	public void dropsErrorOnCompletedSource() {
+		Flux.range(0, 10)
+		    .timeout(Flux.error(new RuntimeException("forced failure")), v -> Flux.never())
+		    .as(StepVerifier::create)
+		    .expectNextCount(10)
+		    .verifyComplete();
+	}
+
+	@Test
 	public void firstTimeoutError() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.range(1, 10)
-		    .timeout(Flux.error(new RuntimeException("forced " + "failure")),
-				    v -> Flux.never())
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNotComplete()
-		  .assertError(RuntimeException.class)
-		  .assertErrorMessage("forced failure");
+		TestPublisher<Object> source = TestPublisher.create();
+		source.flux()
+		      .timeout(Flux.error(new RuntimeException("forced failure")), v -> Flux.never())
+		      .as(StepVerifier::create)
+		      .then(source::complete)
+		      .verifyErrorMessage("forced failure");
 	}
 
 	@Test
@@ -402,6 +414,20 @@ public class FluxTimeoutTest {
 		            .verify();
 
 		assertThat(generatorUsed.get()).as("generator used").isTrue();
+	}
+
+	@Test
+	public void onSubscribeRace() {
+		for (int i = 0; i < 10_000; i++) {
+			Flux.just("Hello")
+			    .concatMap(v -> Mono.delay(Duration.ofSeconds(10)))
+			    .timeout(Duration.ofMillis(i % 100 == 0 ? 1 : 0), Mono.just(123L))
+			    .collectList()
+			    .as(StepVerifier::create)
+			    .expectNextMatches(it -> it.get(0).equals(123L))
+			    .expectComplete()
+				.verify(Duration.ofSeconds(1));
+		}
 	}
 
 	@Test
