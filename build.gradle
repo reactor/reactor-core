@@ -55,7 +55,11 @@ ext {
 	 * Versions not necessarily bumped by a script (testing, etc...) below:
 	 */
 	// Misc not often upgraded
+
+	// Used as a way to get jsr305 annotations.
+	// 3.0.1 is the last version that has the 'annotations' jar needed on the compile classpath
 	findbugsVersion = '3.0.1'
+	
 	jsr166BackportVersion = '1.0.0.RELEASE'
 
 	// Blockhound
