@@ -80,6 +80,8 @@ dependencies {
 
 	//Optional BlockHound support
 	optional "io.projectreactor.tools:blockhound:$blockhoundVersion"
+	// Also make BlockHound visible in the CP of dedicated testset
+	blockHoundTestImplementation "io.projectreactor.tools:blockhound:$blockhoundVersion"
 
 	//Optional JDK 9 Converter
 	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
