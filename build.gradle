@@ -140,6 +140,8 @@ configure(subprojects) { p ->
 			maxGranularity 3
 		}
 
+		maxParallelForks = Runtime.runtime.availableProcessors() / 2
+
 		//show progress by displaying test classes, avoiding test suite timeouts
 		TestDescriptor last
 		afterTest { TestDescriptor td, TestResult tr ->
