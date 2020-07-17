@@ -18,10 +18,11 @@ package reactor.core.scheduler;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.After;
+import org.assertj.core.api.Assumptions;
+import org.awaitility.Awaitility;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,6 +40,9 @@ public abstract class AbstractSchedulerTest {
 	@Rule
 	public AutoDisposingRule afterTest = new AutoDisposingRule();
 
+	/**
+	 * @return the {@link Scheduler} to be tested, {@link Scheduler#start() started}
+	 */
 	protected abstract Scheduler scheduler();
 
 	protected boolean shouldCheckInterrupted(){
@@ -57,11 +61,39 @@ public abstract class AbstractSchedulerTest {
 
 	protected boolean shouldCheckWorkerTimeScheduling() { return true; }
 
+	protected boolean shouldCheckSupportRestart() { return true; }
+
 	protected Scheduler schedulerNotCached() {
 		Scheduler s = scheduler();
 		assertThat(s).as("common scheduler tests should not use a CachedScheduler")
 		             .isNotInstanceOf(Schedulers.CachedScheduler.class);
 		return s;
+	}
+
+	@Test
+	public void restartSupport() {
+		boolean supportsRestart = shouldCheckSupportRestart();
+		Scheduler s = scheduler();
+		s.dispose();
+		s.start();
+
+		if (supportsRestart) {
+			assertThat(s.isDisposed()).as("restart supported").isFalse();
+		}
+		else {
+			assertThat(s.isDisposed()).as("restart not supported").isTrue();
+		}
+	}
+
+	@Test
+	public void acceptTaskAfterStartStopStart() {
+		Assumptions.assumeThat(shouldCheckSupportRestart()).as("scheduler supports restart").isTrue();
+
+		Scheduler scheduler = scheduler();
+		scheduler.dispose();
+
+		scheduler.start();
+		assertThatCode(() -> scheduler.schedule(() -> {})).doesNotThrowAnyException();
 	}
 
 	@Test(timeout = 10000)

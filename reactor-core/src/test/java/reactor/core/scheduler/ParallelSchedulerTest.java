@@ -20,9 +20,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.pivovarit.function.ThrowingRunnable;
 import org.junit.Test;
+
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,14 +43,37 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 		return Schedulers.newParallel("ParallelSchedulerTest");
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void negativeParallelism() throws Exception {
-		Schedulers.newParallel("test", -1);
-	}
-
 	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
+	}
+
+	@Test
+	public void startAndDecorationImplicit() {
+		AtomicInteger decorationCount = new AtomicInteger();
+		Schedulers.setExecutorServiceDecorator("startAndDecorationImplicit", (s, srv) -> {
+			decorationCount.incrementAndGet();
+			return srv;
+		});
+
+		final int parallelismAndExpectedImplicitStart = 4;
+
+		final Scheduler scheduler = afterTest.autoDispose(new ParallelScheduler(parallelismAndExpectedImplicitStart, Thread::new));
+		afterTest.autoDispose(() -> Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit"));
+
+		assertThat(decorationCount).as("before schedule").hasValue(0);
+		//first scheduled task implicitly starts the scheduler and thus creates _parallelism_ workers/executorServices
+		scheduler.schedule(ThrowingRunnable.unchecked(() -> Thread.sleep(100)));
+		assertThat(decorationCount).as("after schedule").hasValue(parallelismAndExpectedImplicitStart);
+		//second scheduled task runs on a started scheduler and doesn't create further executors
+		scheduler.schedule(() -> {});
+		assertThat(decorationCount).as("after 2nd schedule").hasValue(parallelismAndExpectedImplicitStart);
+	}
+
+
+	@Test(expected = IllegalArgumentException.class)
+	public void negativeParallelism() throws Exception {
+		Schedulers.newParallel("test", -1);
 	}
 
 	@Test

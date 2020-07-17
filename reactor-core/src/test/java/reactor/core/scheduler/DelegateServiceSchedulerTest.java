@@ -20,8 +20,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.pivovarit.function.ThrowingRunnable;
 import org.junit.Test;
 
 import reactor.core.Exceptions;
@@ -47,6 +49,30 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected boolean shouldCheckDisposeTask() {
 		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckSupportRestart() {
+		return false;
+	}
+
+	@Test
+	public void startAndDecorationImplicit() {
+		AtomicInteger decorationCount = new AtomicInteger();
+		Schedulers.setExecutorServiceDecorator("startAndDecorationImplicit", (s, srv) -> {
+			decorationCount.incrementAndGet();
+			return srv;
+		});
+		final Scheduler scheduler = afterTest.autoDispose(new DelegateServiceScheduler("startAndDecorationImplicitExecutorService", Executors.newSingleThreadExecutor()));
+		afterTest.autoDispose(() -> Schedulers.removeExecutorServiceDecorator("startAndDecorationImplicit"));
+
+		assertThat(decorationCount).as("before schedule").hasValue(0);
+		//first scheduled task implicitly starts the scheduler and thus creates the executor service
+		scheduler.schedule(ThrowingRunnable.unchecked(() -> Thread.sleep(100)));
+		assertThat(decorationCount).as("after schedule").hasValue(1);
+		//second scheduled task runs on a started scheduler and doesn't create further executors
+		scheduler.schedule(() -> {});
+		assertThat(decorationCount).as("after 2nd schedule").hasValue(1);
 	}
 
 	@Test

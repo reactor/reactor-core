@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.pivovarit.function.ThrowingRunnable;
@@ -34,6 +35,7 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * @author Stephane Maldini
@@ -49,19 +51,28 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		return Schedulers.newElastic("ElasticSchedulerTest");
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
-	public void unsupportedStart() {
-		Schedulers.elastic().start();
+	@Override
+	protected boolean shouldCheckInterrupted() {
+		return true;
+	}
+
+	@Override
+	protected boolean shouldCheckSupportRestart() {
+		return true;
+	}
+
+	@Test
+	public void bothStartAndRestartDoNotThrow() {
+		Scheduler scheduler = afterTest.autoDispose(scheduler());
+		assertThatCode(scheduler::start).as("start").doesNotThrowAnyException();
+
+		scheduler.dispose();
+		assertThatCode(scheduler::start).as("restart").doesNotThrowAnyException();
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void negativeTime() throws Exception {
 		Schedulers.newElastic("test", -1);
-	}
-
-	@Override
-	protected boolean shouldCheckInterrupted() {
-		return true;
 	}
 
 	@Test(timeout = 10000)

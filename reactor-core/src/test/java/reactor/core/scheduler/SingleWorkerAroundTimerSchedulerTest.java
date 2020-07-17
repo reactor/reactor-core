@@ -21,11 +21,6 @@ package reactor.core.scheduler;
 public class SingleWorkerAroundTimerSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
-	protected Scheduler scheduler() {
-		return Schedulers.single(Schedulers.newSingle("singleWorkerTimer"));
-	}
-
-	@Override
 	protected boolean shouldCheckDisposeTask() {
 		return false;
 	}
@@ -33,5 +28,15 @@ public class SingleWorkerAroundTimerSchedulerTest extends AbstractSchedulerTest 
 	@Override
 	protected boolean shouldCheckWorkerTimeScheduling() {
 		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckSupportRestart() {
+		return false;
+	}
+
+	@Override
+	protected Scheduler scheduler() {
+		return Schedulers.single(Schedulers.newSingle("singleWorkerTimer"));
 	}
 }

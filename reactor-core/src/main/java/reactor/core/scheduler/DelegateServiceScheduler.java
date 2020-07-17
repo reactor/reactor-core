@@ -26,6 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
@@ -46,27 +47,44 @@ import reactor.util.annotation.Nullable;
 final class DelegateServiceScheduler implements Scheduler, Scannable {
 
 	final String executorName;
-	final ScheduledExecutorService executor;
+	final ScheduledExecutorService original;
+
+	@Nullable
+	volatile ScheduledExecutorService executor;
+	static final AtomicReferenceFieldUpdater<DelegateServiceScheduler, ScheduledExecutorService> EXECUTOR =
+			AtomicReferenceFieldUpdater.newUpdater(DelegateServiceScheduler.class, ScheduledExecutorService.class, "executor");
 
 	DelegateServiceScheduler(String executorName, ExecutorService executorService) {
 			this.executorName = executorName;
-			ScheduledExecutorService exec = convert(executorService);
-			this.executor = Schedulers.decorateExecutorService(this, exec);
+			this.original = convert(executorService);
+			this.executor = null; //to be initialized in start()
+	}
+
+	ScheduledExecutorService getOrCreate() {
+		ScheduledExecutorService e = executor;
+		if (e == null) {
+			start();
+			e = executor;
+			if (e == null) {
+				throw new IllegalStateException("executor is null after implicit start()");
+			}
+		}
+		return e;
 	}
 
 	@Override
 	public Worker createWorker() {
-		return new ExecutorServiceWorker(executor);
+		return new ExecutorServiceWorker(getOrCreate());
 	}
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		return Schedulers.directSchedule(executor, task, null, 0L, TimeUnit.MILLISECONDS);
+		return Schedulers.directSchedule(getOrCreate(), task, null, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return Schedulers.directSchedule(executor, task, null, delay, unit);
+		return Schedulers.directSchedule(getOrCreate(), task, null, delay, unit);
 	}
 
 	@Override
@@ -74,7 +92,7 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		return Schedulers.directSchedulePeriodically(executor,
+		return Schedulers.directSchedulePeriodically(getOrCreate(),
 				task,
 				initialDelay,
 				period,
@@ -82,13 +100,22 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 	}
 
 	@Override
+	public void start() {
+		EXECUTOR.compareAndSet(this, null, Schedulers.decorateExecutorService(this, original));
+	}
+
+	@Override
 	public boolean isDisposed() {
-		return executor.isShutdown();
+		ScheduledExecutorService e = executor;
+		return e != null && e.isShutdown();
 	}
 
 	@Override
 	public void dispose() {
-		executor.shutdownNow();
+		ScheduledExecutorService e = executor;
+		if (e != null) {
+			e.shutdownNow();
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -104,7 +131,11 @@ final class DelegateServiceScheduler implements Scheduler, Scannable {
 		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 		if (key == Attr.NAME) return toString();
 
-		return Schedulers.scanExecutor(executor, key);
+		ScheduledExecutorService e = executor;
+		if (e != null) {
+			return Schedulers.scanExecutor(e, key);
+		}
+		return null;
 	}
 
 	@Override

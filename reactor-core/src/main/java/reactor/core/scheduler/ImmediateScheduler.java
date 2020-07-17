@@ -30,14 +30,18 @@ import reactor.core.Scannable;
  */
 final class ImmediateScheduler implements Scheduler, Scannable {
 
-    private static final ImmediateScheduler INSTANCE = new ImmediateScheduler();
-    
+    private static final ImmediateScheduler INSTANCE;
+
+    static {
+        INSTANCE = new ImmediateScheduler();
+        INSTANCE.start();
+    }
+
     public static Scheduler instance() {
         return INSTANCE;
     }
     
     private ImmediateScheduler() {
-        
     }
     
     static final Disposable FINISHED = Disposables.disposed();

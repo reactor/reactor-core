@@ -62,6 +62,7 @@ import static reactor.core.Exceptions.unwrap;
  * <p>
  * Factories prefixed with {@code new} (eg. {@link #newBoundedElastic(int, int, String)} return a new instance of their flavor of {@link Scheduler},
  * while other factories like {@link #boundedElastic()} return a shared instance - which is the one used by operators requiring that flavor as their default Scheduler.
+ * All instances are returned in a {@link Scheduler#start() started} state.
  *
  * @author Stephane Maldini
  */
@@ -139,7 +140,9 @@ public abstract class Schedulers {
 		if(!trampoline && executor instanceof ExecutorService){
 			return fromExecutorService((ExecutorService) executor);
 		}
-		return new ExecutorScheduler(executor, trampoline);
+		final ExecutorScheduler scheduler = new ExecutorScheduler(executor, trampoline);
+		scheduler.start();
+		return scheduler;
 	}
 
 	/**
@@ -167,7 +170,9 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler fromExecutorService(ExecutorService executorService, String executorName) {
-		return new DelegateServiceScheduler(executorName, executorService);
+		final DelegateServiceScheduler scheduler = new DelegateServiceScheduler(executorName, executorService);
+		scheduler.start();
+		return scheduler;
 	}
 
 	/**
@@ -333,7 +338,9 @@ public abstract class Schedulers {
 	 */
 	@Deprecated
 	public static Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
-		return factory.newElastic(ttlSeconds, threadFactory);
+		final Scheduler fromFactory = factory.newElastic(ttlSeconds, threadFactory);
+		fromFactory.start();
+		return fromFactory;
 	}
 
 
@@ -483,7 +490,12 @@ public abstract class Schedulers {
 	 * that reuses threads and evict idle ones
 	 */
 	public static Scheduler newBoundedElastic(int threadCap, int queuedTaskCap, ThreadFactory threadFactory, int ttlSeconds) {
-		return factory.newBoundedElastic(threadCap, queuedTaskCap, threadFactory, ttlSeconds);
+		Scheduler fromFactory = factory.newBoundedElastic(threadCap,
+				queuedTaskCap,
+				threadFactory,
+				ttlSeconds);
+		fromFactory.start();
+		return fromFactory;
 	}
 
 	/**
@@ -546,7 +558,9 @@ public abstract class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
-		return factory.newParallel(parallelism, threadFactory);
+		final Scheduler fromFactory = factory.newParallel(parallelism, threadFactory);
+		fromFactory.start();
+		return fromFactory;
 	}
 
 	/**
@@ -591,7 +605,9 @@ public abstract class Schedulers {
 	 * worker
 	 */
 	public static Scheduler newSingle(ThreadFactory threadFactory) {
-		return factory.newSingle(threadFactory);
+		final Scheduler fromFactory = factory.newSingle(threadFactory);
+		fromFactory.start();
+		return fromFactory;
 	}
 
 	/**
@@ -900,7 +916,9 @@ public abstract class Schedulers {
 	/**
 	 * Wraps a single {@link reactor.core.scheduler.Scheduler.Worker} from some other
 	 * {@link Scheduler} and provides {@link reactor.core.scheduler.Scheduler.Worker}
-	 * services on top of it.
+	 * services on top of it. Unlike with other factory methods in this class, the delegate
+	 * is assumed to be {@link Scheduler#start() started} and won't be implicitly started
+	 * by this method.
 	 * <p>
 	 * Use the {@link Scheduler#dispose()} to release the wrapped worker.
 	 *

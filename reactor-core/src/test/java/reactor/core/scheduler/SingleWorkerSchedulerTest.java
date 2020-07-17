@@ -45,6 +45,11 @@ public class SingleWorkerSchedulerTest extends AbstractSchedulerTest {
 		return false;
 	}
 
+	@Override
+	protected boolean shouldCheckSupportRestart() {
+		return false;
+	}
+
 	@Test
 	public void scanName() {
 		Scheduler withNamedFactory = Schedulers.single(Schedulers.newSingle("scanName"));
