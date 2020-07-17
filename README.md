@@ -22,18 +22,22 @@ The `master` branch is now dedicated to development of the `3.3.x` line.
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 
 ```groovy
-    repositories {
-//      maven { url 'https://repo.spring.io/snapshot' }
-//      maven { url 'https://repo.spring.io/milestone' }
-      mavenCentral()
-    }
+repositories {
+    mavenCentral()
+    maven { url "https://repo.spring.io/milestone" }
 
-    dependencies {
-      //compile "io.projectreactor:reactor-core:3.3.8.BUILD-SNAPSHOT"
-      //testCompile("io.projectreactor:reactor-test:3.3.8.BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.3.7.RELEASE"
-      testCompile("io.projectreactor:reactor-test:3.3.7.RELEASE")
-    }
+    // Snapshots
+    // maven { url "https://repo.spring.io/snapshot" }
+}
+
+dependencies {
+    compile "io.projectreactor:reactor-core:3.3.7.RELEASE"
+    testCompile "io.projectreactor:reactor-test:3.3.7.RELEASE"
+
+    // Snapshots
+    // compile "io.projectreactor:reactor-core:3.3.8.BUILD-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.3.8.BUILD-SNAPSHOT"
+}
 ```
 
 See the [reference documentation](https://projectreactor.io/docs/core/release/reference/docs/index.html#getting)
