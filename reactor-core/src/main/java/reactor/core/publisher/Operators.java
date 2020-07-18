@@ -85,7 +85,7 @@ public abstract class Operators {
 	 */
 	public static <T> long addCap(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
 		long r, u;
-		for (;;) {
+		for (; ; ) {
 			r = updater.get(instance);
 			if (r == Long.MAX_VALUE) {
 				return Long.MAX_VALUE;
