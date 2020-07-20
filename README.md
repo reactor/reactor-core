@@ -29,12 +29,12 @@ repositories {
 }
 
 dependencies {
-    compile "io.projectreactor:reactor-core:3.2.18.RELEASE"
-    testCompile "io.projectreactor:reactor-test:3.2.18.RELEASE"
+    compile "io.projectreactor:reactor-core:3.2.19.RELEASE"
+    testCompile "io.projectreactor:reactor-test:3.2.19.RELEASE"
 
     // Snapshots
-    // compile "io.projectreactor:reactor-core:3.2.19.BUILD-SNAPSHOT"
-    // testCompile "io.projectreactor:reactor-test:3.2.19.BUILD-SNAPSHOT"
+    // compile "io.projectreactor:reactor-core:3.2.20.BUILD-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.2.20.BUILD-SNAPSHOT"
 }
 ```
 
