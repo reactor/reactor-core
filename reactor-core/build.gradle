@@ -47,42 +47,46 @@ testSets {
 
 configurations {
 	compileOnly.extendsFrom jsr166backport
-	testCompile.extendsFrom jsr166backport
+	testCompileOnly.extendsFrom jsr166backport
 }
 
 dependencies {
 	// Reactive Streams
-	compile "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
-	testCompile "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
+	api "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
+	testImplementation "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
 
 	// JSR-305 annotations
-	optional "com.google.code.findbugs:jsr305:$jsr305Version"
+	compileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
+	testCompileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
 
 	//Optional Logging Operator
-	optional "org.slf4j:slf4j-api:$slf4jVersion"
+	compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+	testCompileOnly "org.slf4j:slf4j-api:$slf4jVersion"
 
 	//Optional Metrics
 	compileOnly "io.micrometer:micrometer-core:$micrometerVersion"
 
-	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
+	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
 	//Optional JDK 9 Converter
 	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
-	testCompile "junit:junit:$jUnitVersion"
+	testImplementation "junit:junit:$jUnitVersion"
 
-	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
 	// Testing
-	testCompile(project(":reactor-test")) {
+	testImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
 	}
 
-	testCompile "org.assertj:assertj-core:$assertJVersion"
-	testCompile "org.testng:testng:$testNgVersion"
-	testCompile "org.mockito:mockito-core:$mockitoVersion"
-	testCompile "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
-	testCompile "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
-	testCompile "org.awaitility:awaitility:$awaitilityVersion"
+	testImplementation "org.assertj:assertj-core:$assertJVersion"
+	testImplementation "org.testng:testng:$testNgVersion"
+	testImplementation "org.mockito:mockito-core:$mockitoVersion"
+	testImplementation "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
+	testImplementation "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
+	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
 
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
@@ -153,31 +157,30 @@ dokka {
 	dependsOn jar
 	group = "documentation"
 	description = "Generates Kotlin API documentation."
-	moduleName = "reactor-core"
-	jdkVersion = 8
 
 	outputFormat = "html"
 	outputDirectory = new File(project.buildDir, "docs/kdoc")
+	disableAutoconfiguration = true
 
-	//this is needed so that links to java classes are resolved
-	doFirst {
-		classpath += project.jar.outputs.files.getFiles()
-		classpath += project.sourceSets.main.compileClasspath
+	configuration {
+		moduleName = "reactor-core"
+		jdkVersion = 8
+		//this is needed so that links to java classes are resolved.
+		doFirst {
+			classpath += project.jar.outputs.files.getFiles()
+			classpath += project.sourceSets.main.compileClasspath
+		}
+		sourceRoot {
+			path = "src/main/kotlin"
+		}
+		externalDocumentationLink {
+			url = new URL("https://projectreactor.io/docs/core/release/api/")
+		}
+		externalDocumentationLink {
+			url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+		}
 	}
-	//this is needed so that the kdoc only generates for kotlin classes
-	//(default kotlinTasks sourceSet also includes java)
-	kotlinTasks {
 
-	}
-	processConfigurations = []
-	sourceDirs = files("src/main/kotlin")
-
-	externalDocumentationLink {
-		url = new URL("https://projectreactor.io/docs/core/release/api/")
-	}
-	externalDocumentationLink {
-		url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
-	}
 }
 
 task kdocZip(type: Zip, dependsOn: dokka) {

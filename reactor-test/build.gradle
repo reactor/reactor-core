@@ -37,16 +37,18 @@ ext {
 }
 
 dependencies {
-	compile project(":reactor-core")
+	api project(":reactor-core")
 
-	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
+	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
-	testCompile "junit:junit:$jUnitVersion"
+	testImplementation "junit:junit:$jUnitVersion"
 
-	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
 
-	testCompile "org.assertj:assertj-core:$assertJVersion"
-	testCompile "org.mockito:mockito-core:$mockitoVersion"
+	testImplementation "org.assertj:assertj-core:$assertJVersion"
+	testImplementation "org.mockito:mockito-core:$mockitoVersion"
 }
 
 task downloadBaseline(type: Download) {
@@ -92,33 +94,31 @@ dokka {
 	dependsOn jar
 	group = "documentation"
 	description = "Generates Kotlin API documentation."
-	moduleName = "reactor-test"
-	jdkVersion = 8
 
 	outputFormat = "html"
 	outputDirectory = new File(project.buildDir, "docs/kdoc")
+	disableAutoconfiguration = true
 
-	//this is needed so that links to java classes are resolved
-	doFirst {
-		classpath += project.jar.outputs.files.getFiles()
-		classpath += project.sourceSets.main.compileClasspath
-	}
-	//this is needed so that the kdoc only generates for kotlin classes
-	//(default kotlinTasks sourceSet also includes java)
-	kotlinTasks {
-
-	}
-	processConfigurations = []
-	sourceDirs = files("src/main/kotlin")
-
-	externalDocumentationLink {
-		url = new URL("https://projectreactor.io/docs/core/release/api/")
-	}
-	externalDocumentationLink {
-		url = new URL("https://projectreactor.io/docs/test/release/api/")
-	}
-	externalDocumentationLink {
-		url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+	configuration {
+		moduleName = "reactor-test"
+		jdkVersion = 8
+		//this is needed so that links to java classes are resolved.
+		doFirst {
+			classpath += project.jar.outputs.files.getFiles()
+			classpath += project.sourceSets.main.compileClasspath
+		}
+		sourceRoot {
+			path = "src/main/kotlin"
+		}
+		externalDocumentationLink {
+			url = new URL("https://projectreactor.io/docs/core/release/api/")
+		}
+		externalDocumentationLink {
+			url = new URL("https://projectreactor.io/docs/test/release/api/")
+		}
+		externalDocumentationLink {
+			url = new URL("https://www.reactive-streams.org/reactive-streams-1.0.2-javadoc/")
+		}
 	}
 }
 
