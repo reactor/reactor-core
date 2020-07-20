@@ -5170,7 +5170,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * signal is then propagated as normal.
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
-	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
+	 * @param prefetch the number of values to request from the source upon subscription, to be transformed to {@link Iterable}
 	 * @param <R> the merged output sequence type
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
