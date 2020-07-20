@@ -27,6 +27,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,19 +42,13 @@ public class FluxRetryPredicateTest {
 		new FluxRetryPredicate<>(null, e -> true);
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void predicateNull() {
-		Flux.never()
-		    .retry((Predicate<? super Throwable>) null);
-	}
-
 	@Test
 	public void normal() {
 		int[] times = {1};
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.retry(e -> times[0]-- > 0)
+		source.retryWhen(Retry.indefinitely().filter(e -> times[0]-- > 0))
 		      .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 1, 2, 3, 4, 5)
@@ -68,7 +63,7 @@ public class FluxRetryPredicateTest {
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		source.retry(e -> times[0]-- > 0)
+		source.retryWhen(Retry.indefinitely().filter(e -> times[0]-- > 0))
 		      .subscribe(ts);
 
 		ts.assertNoValues()
@@ -99,7 +94,7 @@ public class FluxRetryPredicateTest {
 	public void dontRepeat() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.retry(e -> false)
+		source.retryWhen(Retry.indefinitely().filter(e -> false))
 		      .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5)
@@ -112,10 +107,14 @@ public class FluxRetryPredicateTest {
 	public void predicateThrows() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		source.retry(e -> {
-			throw new RuntimeException("forced failure");
-		})
-		      .subscribe(ts);
+		source
+				.retryWhen(
+						Retry.indefinitely()
+						     .filter(e -> {
+							     throw new RuntimeException("forced failure");
+						     })
+				)
+				.subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5)
 		  .assertError(RuntimeException.class)
@@ -133,7 +132,7 @@ public class FluxRetryPredicateTest {
 				                        throw new RuntimeException("test");
 			                        }
 		                        })
-		                        .retry(e -> i.get() <= 2)
+		                        .retryWhen(Retry.indefinitely().filter(e -> i.get() <= 2))
 		                        .count())
 		            .expectNext(3L)
 		            .expectComplete()
@@ -146,16 +145,18 @@ public class FluxRetryPredicateTest {
 		AtomicInteger i = new AtomicInteger();
 		AtomicBoolean bool = new AtomicBoolean(true);
 
-		StepVerifier.create(Flux.defer(() -> Flux.just(i.incrementAndGet()))
-		                        .doOnNext(v -> {
-			                        if(v < 4) {
-				                        throw new RuntimeException("test");
-			                        }
-			                        else {
-				                        bool.set(false);
-			                        }
-		                        })
-		                        .retry(3, e -> bool.get()))
+		StepVerifier.create(Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           throw new RuntimeException("test");
+				           }
+				           else {
+					           bool.set(false);
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 3)));
+		}))
 		            .expectNext(4)
 		            .expectComplete()
 		            .verify();
@@ -166,16 +167,18 @@ public class FluxRetryPredicateTest {
 		AtomicInteger i = new AtomicInteger();
 		AtomicBoolean bool = new AtomicBoolean(true);
 
-		StepVerifier.create(Flux.defer(() -> Flux.just(i.incrementAndGet()))
-		                        .doOnNext(v -> {
-			                        if(v < 4) {
-				                        if( v > 2){
-					                        bool.set(false);
-				                        }
-				                        throw new RuntimeException("test");
-			                        }
-		                        })
-		                        .retry(3, e -> bool.get()))
+		StepVerifier.create(Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           if (v > 2) {
+						           bool.set(false);
+					           }
+					           throw new RuntimeException("test");
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 3)));
+		}))
 		            .verifyErrorMessage("test");
 	}
 
@@ -184,16 +187,18 @@ public class FluxRetryPredicateTest {
 		AtomicInteger i = new AtomicInteger();
 		AtomicBoolean bool = new AtomicBoolean(true);
 
-		StepVerifier.create(Flux.defer(() -> Flux.just(i.incrementAndGet()))
-		                        .doOnNext(v -> {
-			                        if(v < 4) {
-				                        throw new RuntimeException("test");
-			                        }
-			                        else {
-				                        bool.set(false);
-			                        }
-		                        })
-		                        .retry(2, e -> bool.get()))
+		StepVerifier.create(Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           throw new RuntimeException("test");
+				           }
+				           else {
+					           bool.set(false);
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 2)));
+		}))
 		            .verifyErrorMessage("test");
 	}
 
@@ -202,16 +207,18 @@ public class FluxRetryPredicateTest {
 		AtomicInteger i = new AtomicInteger();
 		AtomicBoolean bool = new AtomicBoolean(true);
 
-		StepVerifier.create(Flux.defer(() -> Flux.just(i.incrementAndGet()))
-		                        .doOnNext(v -> {
-			                        if(v < 4) {
-				                        throw new RuntimeException("test");
-			                        }
-			                        else {
-				                        bool.set(false);
-			                        }
-		                        })
-		                        .retry(0, e -> bool.get()))
+		StepVerifier.create(Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           throw new RuntimeException("test");
+				           }
+				           else {
+					           bool.set(false);
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 0)));
+		}))
 		            .expectNext(4)
 		            .expectComplete()
 		            .verify();
@@ -222,16 +229,18 @@ public class FluxRetryPredicateTest {
 		AtomicInteger i = new AtomicInteger();
 		AtomicBoolean bool = new AtomicBoolean(true);
 
-		StepVerifier.create(Flux.defer(() -> Flux.just(i.incrementAndGet()))
-		                        .doOnNext(v -> {
-			                        if(v < 4) {
-				                        if( v > 2){
-					                        bool.set(false);
-				                        }
-				                        throw new RuntimeException("test");
-			                        }
-		                        })
-		                        .retry(0, e -> bool.get()))
+		StepVerifier.create(Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           if (v > 2) {
+						           bool.set(false);
+					           }
+					           throw new RuntimeException("test");
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 0)));
+		}))
 		            .verifyErrorMessage("test");
 	}
 

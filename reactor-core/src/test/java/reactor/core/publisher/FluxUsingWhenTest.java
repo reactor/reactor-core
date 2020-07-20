@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.awaitility.Awaitility;
@@ -463,10 +464,13 @@ public class FluxUsingWhenTest {
 		TestResource testResource = new TestResource();
 
 		Flux<String> test = Flux
-				.usingWhen(Mono.just(testResource).hide(),
+				.usingWhen(
+						Mono.just(testResource).hide(),
 						tr -> source,
 						TestResource::commit,
-						tr -> tr.rollback(new RuntimeException("placeholder rollback exception")))
+						(tr, e) -> tr.rollback(new RuntimeException("placeholder rollback exception")),
+						TestResource::commit
+				)
 				.take(2);
 
 		StepVerifier.create(test)
@@ -487,14 +491,20 @@ public class FluxUsingWhenTest {
 		Loggers.useCustomLoggers(name -> tl);
 
 		try {
-			Flux<String> test = Flux.usingWhen(Mono.just(testResource),
-					tr -> source,
-					r -> r.commit()
-					      //immediate error to trigger the logging within the test
-					      .concatWith(Mono.error(new IllegalStateException("commit error"))),
-					r -> r.rollback(new RuntimeException("placeholder ignored rollback exception"))
-			)
-			                        .take(2);
+			Function<TestResource, Publisher<?>> completeOrCancel = r -> {
+				return r.commit()
+				        //immediate error to trigger the logging within the test
+				        .concatWith(Mono.error(new IllegalStateException("commit error")));
+			};
+			Flux<String> test = Flux
+					.usingWhen(
+							Mono.just(testResource),
+							tr -> source,
+							completeOrCancel,
+							(r, e) -> r.rollback(new RuntimeException("placeholder ignored rollback exception")),
+							completeOrCancel
+					)
+                    .take(2);
 
 			StepVerifier.create(test)
 			            .expectNext("0", "1")

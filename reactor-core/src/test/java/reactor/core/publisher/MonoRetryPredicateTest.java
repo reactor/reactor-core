@@ -17,10 +17,12 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import org.junit.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,14 +36,14 @@ public class MonoRetryPredicateTest {
 
 		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
 		                        .doOnNext(v -> {
-		                        	if(v < 4) {
+			                        if (v < 4) {
 				                        throw new RuntimeException("test");
 			                        }
 			                        else {
-		                        		bool.set(false);
+				                        bool.set(false);
 			                        }
 		                        })
-		                        .retry(3, e -> bool.get()))
+		                        .retryWhen(Retry.max(3).filter(e -> bool.get())))
 		            .expectNext(4)
 		            .expectComplete()
 		            .verify();
@@ -55,14 +57,14 @@ public class MonoRetryPredicateTest {
 
 		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
 		                        .doOnNext(v -> {
-		                        	if(v < 4) {
-		                        		if( v > 2){
+			                        if (v < 4) {
+				                        if (v > 2) {
 					                        bool.set(false);
 				                        }
 				                        throw new RuntimeException("test");
 			                        }
 		                        })
-		                        .retry(3, e -> bool.get()))
+		                        .retryWhen(Retry.max(3).filter(e -> bool.get())))
 		            .verifyErrorMessage("test");
 	}
 

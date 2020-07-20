@@ -31,6 +31,7 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.LongAssert;
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -59,13 +60,6 @@ public class FluxRetryWhenTest {
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
 		new FluxRetryWhen<>(null, Retry.from(v -> v));
-	}
-
-	@SuppressWarnings({"deprecation", "unchecked", "rawtypes", "ConstantConditions"})
-	@Test(expected = NullPointerException.class)
-	public void whenThrowableFactoryNull() {
-		Flux.never()
-		    .retryWhen((Function) null);
 	}
 
 	@SuppressWarnings("ConstantConditions")
@@ -889,7 +883,7 @@ public class FluxRetryWhenTest {
 			}
 		});
 
-		StepVerifier.withVirtualTime(() -> source.retryWhen(companion -> companion.delayElements(Duration.ofSeconds(3))))
+		StepVerifier.withVirtualTime(() -> source.retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(3))))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(3 * 3))
 		            .expectNext(1, 2, 3)
