@@ -1022,6 +1022,28 @@ public interface StepVerifier {
 		Step<T> expectNoFusionSupport();
 
 		/**
+		 * Expect no event and no Subscription has been observed by the verifier for the
+		 * length of the provided {@link Duration}. If virtual time is used, this duration
+		 * is verified using the virtual clock.
+		 * <p>
+		 * Note that you should only use this method as the first expectation if you
+		 * actually don't expect a subscription to happen. Use
+		 * {@link FirstStep#expectSubscription()} combined with {@link Step#expectNoEvent(Duration)}
+		 * to work around that.
+		 * <p>
+		 * Also avoid using this method at the end of the set of expectations:
+		 * prefer {@link #expectTimeout(Duration)} rather than {@code expectNoEvent(...).thenCancel()}.
+		 *
+		 * @param duration the duration for which to observe no event has been received
+		 *
+		 * @return this builder
+		 * @deprecated should probably always first use {@link #expectSubscription()} or equivalent
+		 */
+		@Override
+		@Deprecated
+		FirstStep<T> expectNoEvent(Duration duration);
+
+		/**
 		 * Expect a {@link Subscription}.
 		 * Effectively behave as the default implicit {@link Subscription} expectation.
 		 *

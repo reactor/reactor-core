@@ -1025,6 +1025,24 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 		return this.subscribe(onNext, onError, onComplete, onSubscribe, null);
 	}
 
+	/**
+	 * Subscribes to this {@link ParallelFlux} by providing an onNext, onError and
+	 * onComplete callback as well as an initial {@link Context}, then trigger the execution chain for all
+	 * 'rails'.
+	 *
+	 * @param onNext consumer of onNext signals
+	 * @param onError consumer of error signal
+	 * @param onComplete callback on completion signal
+	 * @param initialContext {@link Context} for the rails
+	 */
+	public final Disposable subscribe(
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete,
+			@Nullable Context initialContext) {
+		return this.subscribe(onNext, onError, onComplete, null, initialContext);
+	}
+
 	final Disposable subscribe(
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super Throwable> onError,

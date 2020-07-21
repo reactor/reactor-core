@@ -31,16 +31,10 @@ import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SuppressWarnings("deprecation") //retry with Predicate are deprecated, the underlying implementation is going to be removed ultimately
 public class FluxRetryPredicateTest {
 
 	final Flux<Integer> source = Flux.concat(Flux.range(1, 5),
 			Flux.error(new RuntimeException("forced failure 0")));
-
-	@Test(expected = NullPointerException.class)
-	public void sourceNull() {
-		new FluxRetryPredicate<>(null, e -> true);
-	}
 
 	@Test
 	public void normal() {
@@ -242,29 +236,5 @@ public class FluxRetryPredicateTest {
 			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 0)));
 		}))
 		            .verifyErrorMessage("test");
-	}
-
-	@Test
-	public void scanOperator(){
-		Flux<Integer> parent = Flux.just(1);
-		FluxRetryPredicate<Integer> test = new FluxRetryPredicate<>(parent, p -> true);
-
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-	}
-
-	@Test
-	public void scanSubscriber(){
-		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		Flux<Integer> source = Flux.just(1);
-		FluxRetryPredicate.RetryPredicateSubscriber<Integer> test =
-				new FluxRetryPredicate.RetryPredicateSubscriber<>(source, actual, p -> true);
-
-		Subscription parent = Operators.emptySubscription();
-		test.onSubscribe(parent);
-
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 }

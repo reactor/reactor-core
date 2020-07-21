@@ -67,11 +67,4 @@ public class MonoRetryPredicateTest {
 		                        .retryWhen(Retry.max(3).filter(e -> bool.get())))
 		            .verifyErrorMessage("test");
 	}
-
-	@Test
-	public void scanOperator(){
-		MonoRetryPredicate<String> test = new MonoRetryPredicate<>(Mono.just("foo"), e -> true);
-
-	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
-	}
 }
