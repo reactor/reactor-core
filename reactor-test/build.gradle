@@ -88,9 +88,6 @@ task japicmp(type: JapicmpTask) {
 
 	//TODO after a release, remove the reactor-test exclusions below if any
 	methodExcludes = [
-			// newly added method to the interface
-			'reactor.test.StepVerifier$LastStep#verifyTimeout(java.time.Duration)',
-
 	        'reactor.test.StepVerifier$FirstStep#expectNoEvent(java.time.Duration)',
 	]
 }
