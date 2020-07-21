@@ -154,6 +154,7 @@ task japicmp(type: JapicmpTask) {
 			'reactor.util.concurrent.WaitStrategy',
 	]
 	methodExcludes = [
+	        'reactor.core.publisher.Flux#onLastAssembly(reactor.core.publisher.Flux)',
 	        'reactor.core.publisher.Flux#compose(java.util.function.Function)',
 	        'reactor.core.publisher.Flux#retry(java.util.function.Predicate)',
 	        'reactor.core.publisher.Flux#retry(long, java.util.function.Predicate)',
@@ -166,6 +167,7 @@ task japicmp(type: JapicmpTask) {
 	        'reactor.core.publisher.Flux#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
 	        'reactor.core.publisher.Flux#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
 
+			'reactor.core.publisher.Mono#onLastAssembly(reactor.core.publisher.Mono)',
 			'reactor.core.publisher.Mono#compose(java.util.function.Function)',
 			'reactor.core.publisher.Mono#retry(java.util.function.Predicate)',
 			'reactor.core.publisher.Mono#retry(long, java.util.function.Predicate)',
