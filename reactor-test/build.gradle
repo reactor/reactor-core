@@ -82,10 +82,17 @@ task japicmp(type: JapicmpTask) {
 	failOnModification = true
 	failOnSourceIncompatibility = true
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	htmlOutputFile = file("${project.buildDir}/reports/japi.html")
 	ignoreMissingClasses = true
 	includeSynthetic = true
 
 	//TODO after a release, remove the reactor-test exclusions below if any
+	methodExcludes = [
+			// newly added method to the interface
+			'reactor.test.StepVerifier$LastStep#verifyTimeout(java.time.Duration)',
+
+	        'reactor.test.StepVerifier$FirstStep#expectNoEvent(java.time.Duration)',
+	]
 }
 
 tasks.withType(Test).all {
