@@ -57,6 +57,173 @@ public class FluxRetryWhenTest {
 	Flux<Integer> rangeError = Flux.concat(Flux.range(1, 2),
 			Flux.error(new RuntimeException("forced failure 0")));
 
+	@Test
+	public void dontRepeat() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		rangeError.retryWhen(Retry.indefinitely().filter(e -> false))
+		      .subscribe(ts);
+
+		ts.assertValues(1, 2)
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure 0")
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void predicateThrows() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		rangeError
+				.retryWhen(
+						Retry.indefinitely()
+						     .filter(e -> {
+							     throw new RuntimeException("forced failure");
+						     })
+				)
+				.subscribe(ts);
+
+		ts.assertValues(1, 2)
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure")
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void twoRetryNormal() {
+		AtomicInteger i = new AtomicInteger();
+
+		Mono<Long> source = Flux
+				.just("test", "test2", "test3")
+				.doOnNext(d -> {
+					if (i.getAndIncrement() < 2) {
+						throw new RuntimeException("test");
+					}
+				})
+				.retryWhen(Retry.indefinitely().filter(e -> i.get() <= 2))
+				.count();
+
+		StepVerifier.create(source)
+		            .expectNext(3L)
+		            .expectComplete()
+		            .verify();
+	}
+
+
+	@Test
+	public void twoRetryNormalSupplier() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		Flux<Integer> source = Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           throw new RuntimeException("test");
+				           }
+				           else {
+					           bool.set(false);
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 3)));
+		});
+
+		StepVerifier.create(source)
+		            .expectNext(4)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void twoRetryErrorSupplier() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		Flux<Integer> source = Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           if (v > 2) {
+						           bool.set(false);
+					           }
+					           throw new RuntimeException("test");
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 3)));
+		});
+
+		StepVerifier.create(source)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void twoRetryNormalSupplier3() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		Flux<Integer> source = Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           throw new RuntimeException("test");
+				           }
+				           else {
+					           bool.set(false);
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 2)));
+		});
+
+		StepVerifier.create(source)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void twoRetryNormalSupplier2() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		Flux<Integer> source = Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           throw new RuntimeException("test");
+				           }
+				           else {
+					           bool.set(false);
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 0)));
+		});
+
+		StepVerifier.create(source)
+		            .expectNext(4)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void twoRetryErrorSupplier2() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		Flux<Integer> source = Flux.defer(() -> {
+			return Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			           .doOnNext(v -> {
+				           if (v < 4) {
+					           if (v > 2) {
+						           bool.set(false);
+					           }
+					           throw new RuntimeException("test");
+				           }
+			           })
+			           .retryWhen(Retry.indefinitely().filter(Flux.countingPredicate(e -> bool.get(), 0)));
+		});
+
+		StepVerifier.create(source)
+		            .verifyErrorMessage("test");
+	}
+
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
 		new FluxRetryWhen<>(null, Retry.from(v -> v));
