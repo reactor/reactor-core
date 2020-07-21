@@ -141,7 +141,6 @@ task japicmp(type: JapicmpTask) {
 	failOnModification = true
 	failOnSourceIncompatibility = true
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
-	htmlOutputFile = file("${project.buildDir}/reports/japi.html")
 	ignoreMissingClasses = true
 	includeSynthetic = true
 
