@@ -8778,6 +8778,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 * @see #transform(Function) transform() for immmediate transformation of Flux
+	 * @see #transformWithContext(BiFunction) transformWithContext() for a similarly deferred transformation of Flux reading the ContextView
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
@@ -8788,6 +8789,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 				return result;
 			}
 			return transformer.apply(this);
+		});
+	}
+
+	//TODO javadoc
+	public final <V> Flux<V> transformWithContext(BiFunction<? super ContextView, ? super Flux<T>, ? extends Publisher<V>> transformer) {
+		return deferWithContext(ctxView -> {
+			if (Hooks.DETECT_CONTEXT_LOSS) {
+				//FIXME enable context loss detection for transformWithContext
+			}
+			return transformer.apply(ctxView, this);
 		});
 	}
 

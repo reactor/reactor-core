@@ -828,7 +828,7 @@ The read oriented operators allow to obtain data from the `Context` in a chain o
 its `ContextView`:
 
  - to access the context from a source-like operator, use `deferWithContext` factory method
- - to access the context from data signals, use `doOnEach` and `Signal#getContext()`
+ - to access the context from the middle of an operator chain, use `transformWithContext`
  - alternatively, when dealing with an inner sequence (like inside a `flatMap`), the `ContextView`
  can be materialized using `Mono.deferWithContext(Mono::just)`. Usually though, you might want
  to perform meaningful work directly within the defer's lambda, eg. `Mono.deferWithContext(ctx -> doSomethingAsyncWithContextData(v, ctx.get(key)))`

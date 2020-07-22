@@ -4302,6 +4302,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 * @see #transform(Function)
+	 * @see #transformWithContext(BiFunction)
 	 */
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
@@ -4311,6 +4312,16 @@ public abstract class Mono<T> implements CorePublisher<T> {
 				return result;
 			}
 			return from(transformer.apply(this));
+		});
+	}
+
+	//TODO javadoc
+	public final <V> Mono<V> transformWithContext(BiFunction<? super ContextView, ? super Mono<T>, ? extends Publisher<V>> transformer) {
+		return deferWithContext(ctxView -> {
+			if (Hooks.DETECT_CONTEXT_LOSS) {
+				//FIXME enable context loss detection for transformWithContext
+			}
+			return from(transformer.apply(ctxView, this));
 		});
 	}
 
