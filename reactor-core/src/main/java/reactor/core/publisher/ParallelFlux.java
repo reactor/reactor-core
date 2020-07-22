@@ -307,33 +307,6 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 		return merged;
 	}
 
-
-	/**
-	 * Allows composing operators off the 'rails', as individual {@link GroupedFlux} instances keyed by
-	 * the zero based rail's index. The transformed groups are {@link Flux#parallel parallelized} back
-	 * once the transformation has been applied.
-	 * <p>
-	 * Note that like in {@link #groups()}, requests and cancellation compose through, and
-	 * cancelling only one rail may result in undefined behavior.
-	 *
-	 * @param composer the composition function to apply on each {@link GroupedFlux rail}
-	 * @param <U> the type of the resulting parallelized flux
-	 * @return a {@link ParallelFlux} of the composed groups
-	 * @deprecated will be removed in 3.4.0. Use {@link #transformGroups(Function)} instead
-	 */
-	@Deprecated
-	public final <U> ParallelFlux<U> composeGroup(Function<? super GroupedFlux<Integer, T>,
-			? extends Publisher<? extends U>> composer) {
-		if (getPrefetch() > -1) {
-			return from(groups().flatMap(composer::apply),
-				parallelism(), getPrefetch(),
-				Queues.small());
-		}
-		else {
-			return from(groups().flatMap(composer::apply), parallelism());
-		}
-	}
-
 	/**
 	 * Generates and concatenates Publishers on each 'rail', signalling errors immediately
 	 * and generating 2 publishers upfront.
@@ -1022,7 +995,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super Throwable> onError,
 			@Nullable Runnable onComplete) {
-		return subscribe(onNext, onError, onComplete, (Context) null);
+		return this.subscribe(onNext, onError, onComplete, null, (Context) null);
 	}
 
 	@Override
@@ -1062,7 +1035,6 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @param onComplete callback on completion signal
 	 * @param initialContext {@link Context} for the rails
 	 */
-	@Deprecated
 	public final Disposable subscribe(
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super Throwable> onError,
@@ -1297,27 +1269,6 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 			source = (ParallelFlux<T>) Hooks.addAssemblyInfo(source, stacktrace);
 		}
 		return source;
-	}
-
-	/**
-	 * Invoke {@link Hooks} pointcut given a {@link ParallelFlux} and returning an
-	 * eventually new {@link ParallelFlux}
-	 *
-	 * @param <T> the value type
-	 * @param source the source to wrap
-	 *
-	 * @return the potentially wrapped source
-	 * @deprecated use {@link Operators#onLastAssembly(CorePublisher)}
-	 */
-	@SuppressWarnings("unchecked")
-	@Deprecated
-	protected static <T> ParallelFlux<T> onLastAssembly(ParallelFlux<T> source) {
-		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
-		if (hook == null) {
-			return source;
-		}
-		return (ParallelFlux<T>) Objects.requireNonNull(hook.apply(source),
-				"LastOperator hook returned null");
 	}
 
 	@SuppressWarnings("unchecked")

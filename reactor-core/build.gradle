@@ -148,8 +148,41 @@ task japicmp(type: JapicmpTask) {
 
 	//TODO after a release, bump the gradle.properties baseline
 	//TODO after a release, remove the reactor-core exclusions below if any
-	classExcludes = ["reactor.core.publisher.TopicProcessor", "reactor.core.publisher.WorkQueueProcessor", 'reactor.core.publisher.EventLoopProcessor$Slot']
-//	methodExcludes = ["reactor.core.Scannable#operatorName()"]
+	classExcludes = [
+			"reactor.core.publisher.TopicProcessor",
+			"reactor.core.publisher.WorkQueueProcessor",
+			'reactor.core.publisher.EventLoopProcessor$Slot',
+			'reactor.util.concurrent.WaitStrategy',
+	]
+	methodExcludes = [
+	        'reactor.core.publisher.Flux#onLastAssembly(reactor.core.publisher.Flux)',
+	        'reactor.core.publisher.Flux#compose(java.util.function.Function)',
+	        'reactor.core.publisher.Flux#retry(java.util.function.Predicate)',
+	        'reactor.core.publisher.Flux#retry(long, java.util.function.Predicate)',
+	        'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration)',
+	        'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration, java.time.Duration)',
+	        'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration, java.time.Duration, reactor.core.scheduler.Scheduler)',
+	        'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration, java.time.Duration, double)',
+	        'reactor.core.publisher.Flux#retryBackoff(long, java.time.Duration, java.time.Duration, double, reactor.core.scheduler.Scheduler)',
+	        'reactor.core.publisher.Flux#retryWhen(java.util.function.Function)',
+	        'reactor.core.publisher.Flux#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
+	        'reactor.core.publisher.Flux#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
+
+			'reactor.core.publisher.Mono#onLastAssembly(reactor.core.publisher.Mono)',
+			'reactor.core.publisher.Mono#compose(java.util.function.Function)',
+			'reactor.core.publisher.Mono#retry(java.util.function.Predicate)',
+			'reactor.core.publisher.Mono#retry(long, java.util.function.Predicate)',
+			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration)',
+			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration, java.time.Duration)',
+			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration, java.time.Duration, reactor.core.scheduler.Scheduler)',
+			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration, java.time.Duration, double)',
+			'reactor.core.publisher.Mono#retryBackoff(long, java.time.Duration, java.time.Duration, double, reactor.core.scheduler.Scheduler)',
+			'reactor.core.publisher.Mono#retryWhen(java.util.function.Function)',
+			'reactor.core.publisher.Mono#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
+			'reactor.core.publisher.Mono#usingWhen(org.reactivestreams.Publisher, java.util.function.Function, java.util.function.Function, java.util.function.Function, java.util.function.Function)',
+
+			'reactor.core.publisher.ParallelFlux#composeGroup(java.util.function.Function)',
+	]
 }
 
 //complements the javadoc.gradle common configuration

@@ -86,6 +86,9 @@ task japicmp(type: JapicmpTask) {
 	includeSynthetic = true
 
 	//TODO after a release, remove the reactor-test exclusions below if any
+	methodExcludes = [
+	        'reactor.test.StepVerifier$FirstStep#expectNoEvent(java.time.Duration)',
+	]
 }
 
 tasks.withType(Test).all {
