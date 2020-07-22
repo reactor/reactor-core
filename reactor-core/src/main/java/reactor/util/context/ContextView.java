@@ -24,6 +24,13 @@ import java.util.stream.Stream;
 import reactor.util.annotation.Nullable;
 
 /**
+ * A read-only view of a collection of key/value pairs that is propagated between components
+ * such as operators via the context protocol. Contexts are ideal to transport orthogonal
+ * information such as tracing or security tokens.
+ * <p>
+ * {@link Context} is an immutable variant of the same key/value pairs structure which exposes
+ * a write API that returns new instances on each write.
+ *
  * @author Simon Baslé
  */
 public interface ContextView {
