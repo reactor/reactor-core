@@ -204,38 +204,6 @@ public interface Context extends ContextView {
 		return Context.empty().putAll(contextView);
 	}
 
-	@Override
-	default <T> T get(Class<T> key){
-		T v = get((Object)key);
-		if(key.isInstance(v)){
-			return v;
-		}
-		throw new NoSuchElementException("Context does not contain a value of type "+key
-				.getName());
-	}
-
-	@Override
-	@Nullable
-	default <T> T getOrDefault(Object key, @Nullable T defaultValue){
-		if(!hasKey(key)){
-			return defaultValue;
-		}
-		return get(key);
-	}
-
-	@Override
-	default <T> Optional<T> getOrEmpty(Object key){
-		if(hasKey(key)) {
-			return Optional.of(get(key));
-		}
-		return Optional.empty();
-	}
-
-	@Override
-	default boolean isEmpty() {
-		return size() == 0;
-	}
-
 	/**
 	 * Switch to the {@link ContextView} interface, which only allows reading from the
 	 * context.

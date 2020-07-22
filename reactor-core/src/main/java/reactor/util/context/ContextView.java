@@ -55,7 +55,14 @@ public interface ContextView {
 	 * @see #getOrDefault(Object, Object)
 	 * @see #getOrEmpty(Object)
 	 */
-	<T> T get(Class<T> key);
+	default <T> T get(Class<T> key){
+		T v = get((Object)key);
+		if(key.isInstance(v)){
+			return v;
+		}
+		throw new NoSuchElementException("Context does not contain a value of type "+key
+				.getName());
+	}
 
 	/**
 	 * Resolve a value given a key within the {@link Context}. If unresolved return the
@@ -67,7 +74,12 @@ public interface ContextView {
 	 * @return the value resolved for this key, or the given default if not present
 	 */
 	@Nullable
-	<T> T getOrDefault(Object key, @Nullable T defaultValue);
+	default <T> T getOrDefault(Object key, @Nullable T defaultValue){
+		if(!hasKey(key)){
+			return defaultValue;
+		}
+		return get(key);
+	}
 
 	/**
 	 * Resolve a value given a key within the {@link Context}.
@@ -76,7 +88,12 @@ public interface ContextView {
 	 *
 	 * @return an {@link Optional} of the value for that key.
 	 */
-	<T> Optional<T> getOrEmpty(Object key);
+	default <T> Optional<T> getOrEmpty(Object key){
+		if(hasKey(key)) {
+			return Optional.of(get(key));
+		}
+		return Optional.empty();
+	}
 
 	/**
 	 * Return true if a particular key resolves to a value within the {@link Context}.
@@ -92,7 +109,9 @@ public interface ContextView {
 	 *
 	 * @return true if the {@link Context} is empty.
 	 */
-	boolean isEmpty();
+	default boolean isEmpty() {
+		return size() == 0;
+	}
 
 	/**
 	 * Return the size of this {@link Context}, the number of immutable key/value pairs stored inside it.
