@@ -30,7 +30,7 @@ interface CoreContext extends Context {
 	}
 	
 	@Override
-	default Context putAll(Context other) {
+	default Context putAll(ContextView other) {
 		if (other.isEmpty()) return this;
 
 		if (other instanceof CoreContext) {

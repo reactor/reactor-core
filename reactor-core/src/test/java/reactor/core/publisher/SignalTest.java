@@ -17,8 +17,10 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -344,7 +346,7 @@ public class SignalTest {
 			}
 
 			@Override
-			public Context getContext() {
+			public ContextView getContext() {
 				return Context.empty();
 			}
 

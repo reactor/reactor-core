@@ -61,6 +61,7 @@ import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -210,7 +211,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * Create a {@link Mono} provider that will {@link Function#apply supply} a target {@link Mono}
 	 * to subscribe to for each {@link Subscriber} downstream.
 	 * This operator behaves the same way as {@link #defer(Supplier)},
-	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
+	 * but accepts a {@link Function} that will receive the current {@link ContextView} as an argument.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/deferForMono.svg" alt="">
@@ -219,7 +220,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <T> the element type of the returned Mono instance
 	 * @return a new {@link Mono} factory
 	 */
-	public static <T> Mono<T> deferWithContext(Function<Context, ? extends Mono<? extends T>> supplier) {
+	public static <T> Mono<T> deferWithContext(Function<ContextView, ? extends Mono<? extends T>> supplier) {
 		return onAssembly(new MonoDeferWithContext<>(supplier));
 	}
 
@@ -4302,11 +4303,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 * @see #transform(Function)
 	 */
-	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				return from(new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this));
+				@SuppressWarnings({"unchecked", "rawtypes"})
+				Mono<V> result = from(new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this));
+				return result;
 			}
 			return from(transformer.apply(this));
 		});

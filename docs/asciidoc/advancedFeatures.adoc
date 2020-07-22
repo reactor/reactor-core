@@ -767,15 +767,16 @@ fetch a value you stored by its key. More specifically:
 
 * Both key and values are of type `Object`, so a `Context` instance can contain any number of
 highly divergent values from different libraries and sources.
-* A `Context` is immutable.
-* Use `put(Object key, Object value)` to store a key-value pair, returning a new
-`Context` instance. You can also merge two contexts into a new one by using
-`putAll(Context)`.
+* A `Context` is immutable. It expose write methods like `put` and `putAll` but they produce a new instance.
+* For a read-only API that doesn't even expose such write methods, there's the `ContextView` superinterface since 3.4.0
 * You can check whether the key is present with `hasKey(Object key)`.
 * Use `getOrDefault(Object key, T defaultValue)` to retrieve a value (cast to a `T`) or
 fall back to a default one if the `Context` instance does not have that key.
 * Use `getOrEmpty(Object key)` to get an `Optional<T>` (the `Context` instance attempts to cast the
 stored value to `T`).
+* Use `put(Object key, Object value)` to store a key-value pair, returning a new
+`Context` instance. You can also merge two contexts into a new one by using
+`putAll(ContextView)`.
 * Use `delete(Object key)` to remove the value associated to a key, returning a new
 `Context`.
 
@@ -817,13 +818,21 @@ impact third-party libraries that depend on the `Context`).
 [[context.read]]
 === Reading a `Context`
 
-Once you haved populated a `Context`, you can retrieve that data.
+Once you have populated a `Context`, you may want to peek into it at runtime.
 Most of the time, the responsibility of putting information into the `Context`
 is on the end user's side, while exploiting that information is on the third-party library's side,
 as such libraries are usually upstream of the client code.
 
-The tool for reading data from the context is the static `Mono.subscriberContext()`
-method.
+The read oriented operators allow to obtain data from the `Context` in a chain of operators:
+
+ - to access the context from a source-like operator, use `deferWithContext` factory method
+ - to access the context from data signals, use `doOnEach` and `Signal#getContext()`
+ - alternatively, when dealing with an inner sequence (like inside a `flatMap`), the `ContextView`
+ can be materialized using `Mono.deferWithContext(Mono::just)`
+
+TIP: In order to read from the `Context` without misleading users into thinking one can write to it
+while data is running through the pipeline, only the `ContextView` is exposed by the operators above.
+
 
 === Simple `Context` Examples
 
@@ -832,6 +841,8 @@ using a `Context`.
 
 We first look back at our simple example from the introduction in a bit more detail, as
 the following example shows:
+
+//TODO change the examples
 
 ====
 [source,java]

@@ -20,8 +20,10 @@ import java.io.Serializable;
 import java.util.Objects;
 
 import org.reactivestreams.Subscription;
+
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * The common implementation of a {@link Signal} (serializable and immutable).
@@ -36,7 +38,7 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 
 	private static final long serialVersionUID = -2004454746525418508L;
 
-	private final transient Context context;
+	private final transient ContextView contextView;
 
 	private final SignalType type;
 	private final Throwable  throwable;
@@ -45,8 +47,8 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 
 	private transient final Subscription subscription;
 
-	ImmutableSignal(Context context, SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription) {
-		this.context = context;
+	ImmutableSignal(ContextView contextView, SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription) {
+		this.contextView = contextView;
 		this.value = value;
 		this.subscription = subscription;
 		this.throwable = e;
@@ -77,8 +79,8 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 	}
 
 	@Override
-	public Context getContext() {
-		return context;
+	public ContextView getContext() {
+		return contextView;
 	}
 
 	@Override
