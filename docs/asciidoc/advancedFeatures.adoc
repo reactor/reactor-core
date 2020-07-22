@@ -742,7 +742,7 @@ writes to `Context`:
 ----
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-                .flatMap( s -> Mono.subscriberContext()
+                .flatMap( s -> Mono.deferredWithContext(Mono::just)
                                    .map( ctx -> s + " " + ctx.get(key)))
                 .subscriberContext(ctx -> ctx.put(key, "World"));
 
@@ -763,9 +763,10 @@ libraries that are responsible for the subscriptions.
 === The `Context` API
 
 `Context` is an interface reminiscent of `Map`.It stores key-value pairs and lets you
-fetch a value you stored by its key. More specifically:
+fetch a value you stored by its key. It has a simplified version that only exposes read
+methods, the `ContextView`. More specifically:
 
-* Both key and values are of type `Object`, so a `Context` instance can contain any number of
+* Both key and values are of type `Object`, so a `Context` (and `ContextView`) instance can contain any number of
 highly divergent values from different libraries and sources.
 * A `Context` is immutable. It expose write methods like `put` and `putAll` but they produce a new instance.
 * For a read-only API that doesn't even expose such write methods, there's the `ContextView` superinterface since 3.4.0
@@ -816,14 +817,15 @@ completely different instance, although it is really not recommended (doing so m
 impact third-party libraries that depend on the `Context`).
 
 [[context.read]]
-=== Reading a `Context`
+=== Reading a `Context`, through the `ContextView`
 
 Once you have populated a `Context`, you may want to peek into it at runtime.
 Most of the time, the responsibility of putting information into the `Context`
 is on the end user's side, while exploiting that information is on the third-party library's side,
 as such libraries are usually upstream of the client code.
 
-The read oriented operators allow to obtain data from the `Context` in a chain of operators:
+The read oriented operators allow to obtain data from the `Context` in a chain of operators by exposing
+its `ContextView`:
 
  - to access the context from a source-like operator, use `deferWithContext` factory method
  - to access the context from data signals, use `doOnEach` and `Signal#getContext()`
@@ -842,15 +844,13 @@ using a `Context`.
 We first look back at our simple example from the introduction in a bit more detail, as
 the following example shows:
 
-//TODO change the examples
-
 ====
 [source,java]
 ----
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-                .flatMap( s -> Mono.subscriberContext() //<2>
-                                   .map( ctx -> s + " " + ctx.get(key))) //<3>
+                .flatMap( s -> Mono.deferWithContext(Mono::just) //<2>
+                                   .map(ctxView -> s + " " + ctxView.get(key))) //<3>
                 .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
 StepVerifier.create(r)
@@ -859,7 +859,7 @@ StepVerifier.create(r)
 ----
 <1> The chain of operators ends with a call to `subscriberContext(Function)` that puts
 `"World"` into the `Context` under a key of `"message"`.
-<2> We `flatMap` on the source element, materializing the `Context` with `Mono.subscriberContext()`.
+<2> We `flatMap` on the source element, materializing the `ContextView` with `Mono.deferWithContext()`.
 <3> We then use `map` to extract the data associated to `"message"` and concatenate that with
 the original word.
 <4> The resulting `Mono<String>` emits `"Hello World"`.
@@ -881,8 +881,8 @@ the following example:
 String key = "message";
 Mono<String> r = Mono.just("Hello")
                      .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
-                     .flatMap( s -> Mono.subscriberContext()
-                                        .map( ctx -> s + " " + ctx.getOrDefault(key, "Stranger")));  //<2>
+                     .flatMap( s -> Mono.deferWithContext(Mono::just)
+                                        .map(ctxView -> s + " " + ctxView.getOrDefault(key, "Stranger")));  //<2>
 
 StepVerifier.create(r)
             .expectNext("Hello Stranger") //<3>
@@ -894,30 +894,6 @@ is used instead.
 <3> The resulting `Mono<String>` thus emits `"Hello Stranger"`.
 ====
 
-The following example also demonstrates the immutable nature of the `Context`, and how
-`Mono.subscriberContext()` always returns the `Context` set by `subscriberContext` calls:
-
-====
-[source,java]
-----
-String key = "message";
-
-Mono<String> r = Mono.subscriberContext() // <1>
-	.map( ctx -> ctx.put(key, "Hello")) // <2>
-	.flatMap( ctx -> Mono.subscriberContext()) // <3>
-	.map( ctx -> ctx.getOrDefault(key,"Default")); // <4>
-
-StepVerifier.create(r)
-	.expectNext("Default") // <5>
-	.verifyComplete();
-----
-<1> We materialize the `Context`
-<2> In a `map` we attempt to mutate it
-<3> We re-materialize the `Context` in a `flatMap`
-<4> We read the attempted key in the `Context`
-<5> The key was never set to `"Hello"`.
-====
-
 Similarly, in the case of several attempts to write the same key to the `Context`, the
 relative order of the writes matters, too. Operators that read the `Context` see
 the value that was set closest to being under them, as demonstrated in the following example:
@@ -926,11 +902,10 @@ the value that was set closest to being under them, as demonstrated in the follo
 [source,java]
 ----
 String key = "message";
-Mono<String> r = Mono.just("Hello")
-                .flatMap( s -> Mono.subscriberContext()
-                                   .map( ctx -> s + " " + ctx.get(key)))
-                .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-                .subscriberContext(ctx -> ctx.put(key, "World")); //<2>
+Mono<String> r = Mono
+		.deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key)))
+		.subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+		.subscriberContext(ctx -> ctx.put(key, "World")); //<2>
 
 StepVerifier.create(r)
             .expectNext("Hello Reactor") //<3>
@@ -938,14 +913,14 @@ StepVerifier.create(r)
 ----
 <1> A write attempt on key `"message"`.
 <2> Another write attempt on key `"message"`.
-<3> The `map` only saw the value set closest to it (and below it): `"Reactor"`.
+<3> The `deferWithContext` only saw the value set closest to it (and below it): `"Reactor"`.
 ====
 
 In the preceding example, the `Context` is populated with `"World"` during subscription.
 Then the subscription signal moves upstream and another write happens. This produces a
 second immutable `Context` with a value of `"Reactor"`. After that, data starts flowing.
-The `flatMap` sees the `Context` closest to it, which is our second `Context` with the
-`"Reactor"` value.
+The `deferWithContext` sees the `Context` closest to it, which is our second `Context` with the
+`"Reactor"` value (exposed to the user as a `ContextView`).
 
 You might wonder if the `Context` is propagated along with the data signal. If that was
 the case, putting another `flatMap` between these two writes would use the value from
@@ -955,13 +930,12 @@ the top `Context`. But this is not the case, as demonstrated by the following ex
 [source,java]
 ----
 String key = "message";
-Mono<String> r = Mono.just("Hello")
-                     .flatMap( s -> Mono.subscriberContext()
-                                        .map( ctx -> s + " " + ctx.get(key))) //<3>
-                     .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
-                     .flatMap( s -> Mono.subscriberContext()
-                                        .map( ctx -> s + " " + ctx.get(key))) //<4>
-                     .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+Mono<String> r = Mono
+		.deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
+		.subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
+		.flatMap( s -> Mono.deferWithContext(Mono::just)
+		                   .map( ctx -> s + " " + ctx.get(key))) //<4>
+		.subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
 StepVerifier.create(r)
             .expectNext("Hello Reactor World") //<5>
@@ -969,8 +943,8 @@ StepVerifier.create(r)
 ----
 <1> This is the first write to happen.
 <2> This is the second write to happen.
-<3> The first `flatMap` sees second write.
-<4> The second `flatMap` concatenates the result from first one with the value from the first write.
+<3> The top context read sees second write.
+<4> The `flatMap` concatenates the result from initial read with the value from the first write.
 <5> The `Mono` emits `"Hello Reactor World"`.
 ====
 
@@ -985,15 +959,12 @@ inside a `flatMap`, as in the following example:
 ----
 String key = "message";
 Mono<String> r =
-        Mono.just("Hello")
-            .flatMap( s -> Mono.subscriberContext()
-                               .map( ctx -> s + " " + ctx.get(key))
-            )
-            .flatMap( s -> Mono.subscriberContext()
-                               .map( ctx -> s + " " + ctx.get(key))
-                               .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-            )
-            .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
+		Mono.just("Hello")
+		    .flatMap( s -> Mono.deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key))))
+		    .flatMap( s -> Mono.deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+		                       .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+		    )
+		    .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
 
 StepVerifier.create(r)
             .expectNext("Hello World Reactor")
@@ -1050,7 +1021,7 @@ static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
 
 Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
 	Mono<Tuple2<String, Optional<Object>>> dataAndContext =
-			data.zipWith(Mono.subscriberContext() // <1>
+			data.zipWith(Mono.deferWithContext(Mono::just) // <1>
 			                 .map(c -> c.getOrEmpty(HTTP_CORRELATION_ID))); // <2>
 
 	return dataAndContext
@@ -1066,13 +1037,13 @@ Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
 			.map(msg -> Tuples.of(200, msg));
 }
 ----
-<1> Materialize the `Context` through `Mono.subscriberContext()`.
+<1> Materialize the `ContextView` through `Mono.deferWithContext(Mono::just)`.
 <2> Extract a value for a the correlation ID key, as an `Optional`.
 <3> If the key was present in the context, use the correlation ID as a header.
 ====
 
-The library snippet zips the data `Mono` with
-`Mono.subscriberContext()`. This gives the library a `Tuple2<String, Context>`, and that
+The library snippet zips the data `Mono` with `Mono.deferWithContext(Mono::just)`.
+This gives the library a `Tuple2<String, ContextView>`, and that
 context contains the `HTTP_CORRELATION_ID` entry from downstream (as it is on the direct
 path to the subscriber).
 

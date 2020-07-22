@@ -1070,8 +1070,8 @@ assertThat(errorCount).hasValue(6); // <6>
 	public void contextSimple1() {
 		String key = "message";
 		Mono<String> r = Mono.just("Hello")
-		                     .flatMap( s -> Mono.subscriberContext() //<2>
-		                                        .map( ctx -> s + " " + ctx.get(key))) //<3>
+		                     .flatMap( s -> Mono.deferWithContext(Mono::just) //<2>
+		                                        .map(ctxView -> s + " " + ctxView.get(key))) //<3>
 		                     .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
 		StepVerifier.create(r)
@@ -1084,8 +1084,8 @@ assertThat(errorCount).hasValue(6); // <6>
 		String key = "message";
 		Mono<String> r = Mono.just("Hello")
 		                     .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
-		                     .flatMap( s -> Mono.subscriberContext()
-		                                        .map( ctx -> s + " " + ctx.getOrDefault(key, "Stranger")));  //<2>
+		                     .flatMap( s -> Mono.deferWithContext(Mono::just)
+		                                        .map(ctxView -> s + " " + ctxView.getOrDefault(key, "Stranger")));  //<2>
 
 		StepVerifier.create(r)
 		            .expectNext("Hello Stranger") //<3>
@@ -1093,43 +1093,29 @@ assertThat(errorCount).hasValue(6); // <6>
 	}
 
 	@Test
-	public void contextSimple3() {
-		String key = "message";
-
-		Mono<String> r = Mono.subscriberContext() // <1>
-		                     .map( ctx -> ctx.put(key, "Hello")) // <2>
-		                     .flatMap( ctx -> Mono.subscriberContext()) // <3>
-		                     .map( ctx -> ctx.getOrDefault(key,"Default")); // <4>
-
-		StepVerifier.create(r)
-		            .expectNext("Default") // <5>
-		            .verifyComplete();
-	}
-
-	@Test
 	public void contextSimple4() {
 		String key = "message";
-		Mono<String> r = Mono.just("Hello")
-		                .flatMap( s -> Mono.subscriberContext()
-		                                   .map( ctx -> s + " " + ctx.get(key)))
-		                .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-		                .subscriberContext(ctx -> ctx.put(key, "World")); //<2>
+		Mono<String> r = Mono
+				.deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key)))
+				.subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+				.subscriberContext(ctx -> ctx.put(key, "World")); //<2>
 
 		StepVerifier.create(r)
 		            .expectNext("Hello Reactor") //<3>
 		            .verifyComplete();
 	}
 
+	//contextSimple4 deleted since writes are not exposed anymore with ContextView
+
 	@Test
 	public void contextSimple5() {
 		String key = "message";
-		Mono<String> r = Mono.just("Hello")
-		                     .flatMap( s -> Mono.subscriberContext()
-		                                        .map( ctx -> s + " " + ctx.get(key))) //<3>
-		                     .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
-		                     .flatMap( s -> Mono.subscriberContext()
-		                                        .map( ctx -> s + " " + ctx.get(key))) //<4>
-		                     .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+		Mono<String> r = Mono
+				.deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
+				.subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
+				.flatMap( s -> Mono.deferWithContext(Mono::just)
+				                   .map( ctx -> s + " " + ctx.get(key))) //<4>
+				.subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
 		StepVerifier.create(r)
 		            .expectNext("Hello Reactor World") //<5>
@@ -1141,11 +1127,8 @@ assertThat(errorCount).hasValue(6); // <6>
 		String key = "message";
 		Mono<String> r =
 				Mono.just("Hello")
-				    .flatMap( s -> Mono.subscriberContext()
-				                       .map( ctx -> s + " " + ctx.get(key))
-				    )
-				    .flatMap( s -> Mono.subscriberContext()
-				                       .map( ctx -> s + " " + ctx.get(key))
+				    .flatMap( s -> Mono.deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key))))
+				    .flatMap( s -> Mono.deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
 				                       .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
 				    )
 				    .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
@@ -1159,7 +1142,7 @@ assertThat(errorCount).hasValue(6); // <6>
 
 	Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
 		Mono<Tuple2<String, Optional<Object>>> dataAndContext =
-				data.zipWith(Mono.subscriberContext()
+				data.zipWith(Mono.deferWithContext(Mono::just)
 				                 .map(c -> c.getOrEmpty(HTTP_CORRELATION_ID)));
 
 		return dataAndContext
