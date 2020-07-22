@@ -197,7 +197,8 @@ public interface Context extends ContextView {
 	 * @param contextView the {@link ContextView} to convert (or cast) to {@link Context}
 	 * @return the converted {@link Context} for further modifications
 	 */
-	static Context fromReadOnly(ContextView contextView) {
+	static Context of(ContextView contextView) {
+		Objects.requireNonNull(contextView, "contextView");
 		if (contextView instanceof Context) {
 			return (Context) contextView;
 		}
@@ -277,7 +278,7 @@ public interface Context extends ContextView {
 		other.stream().sequential().forEach(newContext);
 		if (newContext.size() <= 5) {
 			// make it return Context{1-5}
-			return Context.of(newContext);
+			return Context.of((Map<?, ?>) newContext);
 		}
 		return newContext;
 	}
