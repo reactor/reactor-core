@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import junitparams.JUnitParamsRunner;
@@ -47,30 +48,53 @@ public class ContextLossDetectionTest {
 		return Arrays.asList(
 				new SourceFactory("Flux#transform") {
 					@Override
-					public CorePublisher<Context> apply(Function<CorePublisher<ContextView>, Publisher<Context>> f) {
+					public CorePublisher<ContextView> apply(TestTransformer f) {
 						return Flux.deferWithContext(Flux::just).transform(f);
 					}
 				},
 				new SourceFactory("Flux#transformDeferred") {
 					@Override
-					public CorePublisher<Context> apply(Function<CorePublisher<ContextView>, Publisher<Context>> f) {
+					public CorePublisher<ContextView> apply(TestTransformer f) {
 						return Flux.deferWithContext(Flux::just).transformDeferred(f);
+					}
+				},
+				new SourceFactory("Flux#transformDeferred(BiFunction)") {
+					@Override
+					public CorePublisher<ContextView> apply(TestTransformer f) {
+						return Flux.deferWithContext(Flux::just).transformDeferred(f.adaptToBiFunction());
+					}
+				},
+				new SourceFactory("Flux#transformDeferred(BiFunction) direct") {
+					@Override
+					public CorePublisher<ContextView> apply(TestTransformer f) {
+						return Flux.<ContextView>empty().transformDeferred(f.adaptToBiFunction());
 					}
 				},
 
 				new SourceFactory("Mono#transform") {
 					@Override
-					public CorePublisher<Context> apply(Function<CorePublisher<ContextView>, Publisher<Context>> f) {
+					public CorePublisher<ContextView> apply(TestTransformer f) {
 						return Mono.deferWithContext(Mono::just).transform(f);
 					}
 				},
 				new SourceFactory("Mono#transformDeferred") {
 					@Override
-					public CorePublisher<Context> apply(Function<CorePublisher<ContextView>, Publisher<Context>> f) {
+					public CorePublisher<ContextView> apply(TestTransformer f) {
 						return Mono.deferWithContext(Mono::just).transformDeferred(f);
 					}
+				},
+				new SourceFactory("Mono#transformDeferred(BiFunction)") {
+					@Override
+					public CorePublisher<ContextView> apply(TestTransformer f) {
+						return Mono.deferWithContext(Mono::just).transformDeferred(f.adaptToBiFunction());
+					}
+				},
+				new SourceFactory("Mono#transformDeferred(BiFunction) direct") {
+					@Override
+					public CorePublisher<ContextView> apply(TestTransformer f) {
+						return Mono.<ContextView>empty().transformDeferred(f.adaptToBiFunction());
+					}
 				}
-				//TODO test transformWithContext?
 		);
 	}
 
@@ -86,16 +110,18 @@ public class ContextLossDetectionTest {
 
 	@Test
 	@Parameters(method = "sources")
-	public void transformDeferredDetectsContextLoss(
-			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
-	) {
-		Function<CorePublisher<Context>, Publisher<Context>> lifter = source -> {
-			return actual -> source.subscribe(new ForwardingCoreSubscriber<Context>(actual) {
-				@Override
-				public Context currentContext() {
-					return Context.of("foo", "baz");
-				}
-			});
+	public void transformDeferredDetectsContextLoss(SourceFactory fn) {
+		TestTransformer lifter = new TestTransformer(fn + "'s badTransformer") {
+			@Override
+			public Publisher<ContextView> apply(CorePublisher<ContextView> source) {
+				return actual ->
+						source.subscribe(new ForwardingCoreSubscriber<ContextView>(actual) {
+							@Override
+							public Context currentContext() {
+								return Context.of("foo", "baz");
+							}
+						});
+			}
 		};
 
 		assertThatIllegalStateException()
@@ -104,21 +130,22 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
+				.withMessage("Context loss after applying " + fn + "'s badTransformer");
 	}
 
 	@Test
 	@Parameters(method = "sources")
-	public void transformDeferredDetectsContextLossWithEmptyContext(
-			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
-	) {
-		Function<CorePublisher<Context>, Publisher<Context>> lifter = source -> {
-			return actual -> source.subscribe(new ForwardingCoreSubscriber<Context>(actual) {
-				@Override
-				public Context currentContext() {
-					return Context.empty();
-				}
-			});
+	public void transformDeferredDetectsContextLossWithEmptyContext(SourceFactory fn) {
+		TestTransformer lifter = new TestTransformer(fn + "'s badTransformer") {
+			@Override
+			public Publisher<ContextView> apply(CorePublisher<ContextView> source) {
+				return actual -> source.subscribe(new ForwardingCoreSubscriber<ContextView>(actual) {
+					@Override
+					public Context currentContext() {
+						return Context.empty();
+					}
+				});
+			}
 		};
 
 		assertThatIllegalStateException()
@@ -127,16 +154,17 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
+				.withMessage("Context loss after applying " + fn + "'s badTransformer");
 	}
 
 	@Test
 	@Parameters(method = "sources")
-	public void transformDeferredDetectsContextLossWithDefaultContext(
-			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
-	) {
-		Function<CorePublisher<Context>, Publisher<Context>> lifter = source -> {
-			return actual -> source.subscribe(new ForwardingCoreSubscriber<>(actual));
+	public void transformDeferredDetectsContextLossWithDefaultContext(SourceFactory fn) {
+		TestTransformer lifter = new TestTransformer(fn + "'s badTransformer") {
+			@Override
+			public Publisher<ContextView> apply(CorePublisher<ContextView> source) {
+				return actual -> source.subscribe(new ForwardingCoreSubscriber<>(actual));
+			}
 		};
 
 		assertThatIllegalStateException()
@@ -145,21 +173,22 @@ public class ContextLossDetectionTest {
 					    .subscriberContext(Context.of("foo", "bar"))
 					    .blockLast();
 				})
-				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
+				.withMessage("Context loss after applying " + fn + "'s badTransformer");
 	}
 
 	@Test
 	@Parameters(method = "sources")
-	public void transformDeferredDetectsContextLossWithRSSubscriber(
-			Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> fn
-	) {
-		Function<CorePublisher<Context>, Publisher<Context>> lifter = source -> {
-			return actual -> source.subscribe(new ForwardingCoreSubscriber<>(actual));
+	public void transformDeferredDetectsContextLossWithRSSubscriber(SourceFactory fn) {
+		TestTransformer lifter = new TestTransformer(fn + "'s badTransformer") {
+			@Override
+			public Publisher<ContextView> apply(CorePublisher<ContextView> source) {
+				return actual -> source.subscribe(new ForwardingCoreSubscriber<>(actual));
+			}
 		};
 
 		assertThatIllegalStateException()
 				.isThrownBy(() -> {
-					FutureSubscriber<Context> subscriber = new FutureSubscriber<Context>() {
+					FutureSubscriber<ContextView> subscriber = new FutureSubscriber<ContextView>() {
 						@Override
 						public void onSubscribe(Subscription subscription) {
 							subscription.cancel();
@@ -176,10 +205,51 @@ public class ContextLossDetectionTest {
 						throw e.getCause();
 					}
 				})
-				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
+				.withMessage("Context loss after applying " + fn + "'s badTransformer");
 	}
 
-	static abstract class SourceFactory implements Function<Function<CorePublisher<ContextView>, Publisher<Context>>, CorePublisher<Context>> {
+	static abstract class TestTransformer implements Function<CorePublisher<ContextView>, Publisher<ContextView>> {
+
+		final String description;
+
+		protected TestTransformer(String description) {
+			this.description = description;
+		}
+
+		public TestTransformerAdapter adaptToBiFunction() {
+			return new TestTransformerAdapter(this);
+		}
+
+		@Override
+		public abstract Publisher<ContextView> apply(CorePublisher<ContextView> publisher);
+
+		@Override
+		public String toString() {
+			return description;
+		}
+	}
+
+	static class TestTransformerAdapter implements BiFunction<ContextView, CorePublisher<ContextView>, Publisher<ContextView>> {
+
+		final TestTransformer delegate;
+
+		protected TestTransformerAdapter(TestTransformer delegate) {
+			this.delegate = delegate;
+		}
+
+		@Override
+		public Publisher<ContextView> apply(ContextView contextView,
+				CorePublisher<ContextView> publisher) {
+			return delegate.apply(publisher);
+		}
+
+		@Override
+		public String toString() {
+			return delegate.toString();
+		}
+	}
+
+	static abstract class SourceFactory implements Function<TestTransformer, CorePublisher<ContextView>> {
 
 		final String name;
 

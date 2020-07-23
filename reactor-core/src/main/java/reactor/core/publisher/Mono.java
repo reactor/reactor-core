@@ -4279,7 +4279,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		if (Hooks.DETECT_CONTEXT_LOSS) {
-			transformer = new ContextTrackingFunctionWrapper(transformer);
+			transformer = new ContextTrackingUtils.FunctionWrapper(transformer);
 		}
 		return onAssembly(from(transformer.apply(this)));
 	}
@@ -4302,13 +4302,13 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 * @see #transform(Function)
-	 * @see #transformWithContext(BiFunction)
+	 * @see #transformDeferred(BiFunction)
 	 */
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
 				@SuppressWarnings({"unchecked", "rawtypes"})
-				Mono<V> result = from(new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this));
+				Mono<V> result = from(new ContextTrackingUtils.FunctionWrapper<T, V>((Function) transformer).apply(this));
 				return result;
 			}
 			return from(transformer.apply(this));
@@ -4316,10 +4316,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	//TODO javadoc
-	public final <V> Mono<V> transformWithContext(BiFunction<? super ContextView, ? super Mono<T>, ? extends Publisher<V>> transformer) {
+	public final <V> Mono<V> transformDeferred(BiFunction<? super ContextView, ? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				//FIXME enable context loss detection for transformWithContext
+				return ContextTrackingUtils.trackContextLossForMono(this, ctxView, transformer);
 			}
 			return from(transformer.apply(ctxView, this));
 		});

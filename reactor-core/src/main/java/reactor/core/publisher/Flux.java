@@ -8758,7 +8758,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		if (Hooks.DETECT_CONTEXT_LOSS) {
-			transformer = new ContextTrackingFunctionWrapper(transformer);
+			transformer = new ContextTrackingUtils.FunctionWrapper(transformer);
 		}
 		return onAssembly(from(transformer.apply(this)));
 	}
@@ -8778,14 +8778,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 * @see #transform(Function) transform() for immmediate transformation of Flux
-	 * @see #transformWithContext(BiFunction) transformWithContext() for a similarly deferred transformation of Flux reading the ContextView
+	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Flux reading the ContextView
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
 				@SuppressWarnings({"rawtypes", "unchecked"})
-				CorePublisher<V> result = new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this);
+				CorePublisher<V> result = new ContextTrackingUtils.FunctionWrapper<T, V>((Function) transformer).apply(this);
 				return result;
 			}
 			return transformer.apply(this);
@@ -8793,10 +8793,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	//TODO javadoc
-	public final <V> Flux<V> transformWithContext(BiFunction<? super ContextView, ? super Flux<T>, ? extends Publisher<V>> transformer) {
+	public final <V> Flux<V> transformDeferred(BiFunction<? super ContextView, ? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				//FIXME enable context loss detection for transformWithContext
+				return ContextTrackingUtils.trackContextLossForFlux(this, ctxView, transformer);
 			}
 			return transformer.apply(ctxView, this);
 		});
