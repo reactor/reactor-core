@@ -171,8 +171,9 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 				consumer.accept(x);
 			}
 			catch (Throwable t) {
-				Operators.onErrorDropped(t, this.initialContext);
-				return;
+				Exceptions.throwIfFatal(t);
+				s.cancel();
+				doError(t);
 			}
 		}
 		if (completeConsumer != null) {
