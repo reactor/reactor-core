@@ -43,6 +43,7 @@ public interface ContextView {
 	 * @param <T> an unchecked casted generic for fluent typing convenience
 	 *
 	 * @return the value resolved for this key (throws if key not found)
+	 *
 	 * @throws NoSuchElementException when the given key is not present
 	 * @see #getOrDefault(Object, Object)
 	 * @see #getOrEmpty(Object)
@@ -54,21 +55,20 @@ public interface ContextView {
 	 * Resolve a value given a type key within the {@link Context}.
 	 *
 	 * @param key a type key to resolve the value within the context
-	 *
 	 * @param <T> an unchecked casted generic for fluent typing convenience
 	 *
 	 * @return the value resolved for this type key (throws if key not found)
+	 *
 	 * @throws NoSuchElementException when the given type key is not present
 	 * @see #getOrDefault(Object, Object)
 	 * @see #getOrEmpty(Object)
 	 */
-	default <T> T get(Class<T> key){
-		T v = get((Object)key);
-		if(key.isInstance(v)){
+	default <T> T get(Class<T> key) {
+		T v = get((Object) key);
+		if (key.isInstance(v)) {
 			return v;
 		}
-		throw new NoSuchElementException("Context does not contain a value of type "+key
-				.getName());
+		throw new NoSuchElementException("Context does not contain a value of type " + key.getName());
 	}
 
 	/**
@@ -81,8 +81,8 @@ public interface ContextView {
 	 * @return the value resolved for this key, or the given default if not present
 	 */
 	@Nullable
-	default <T> T getOrDefault(Object key, @Nullable T defaultValue){
-		if(!hasKey(key)){
+	default <T> T getOrDefault(Object key, @Nullable T defaultValue) {
+		if (!hasKey(key)) {
 			return defaultValue;
 		}
 		return get(key);
@@ -95,8 +95,8 @@ public interface ContextView {
 	 *
 	 * @return an {@link Optional} of the value for that key.
 	 */
-	default <T> Optional<T> getOrEmpty(Object key){
-		if(hasKey(key)) {
+	default <T> Optional<T> getOrEmpty(Object key) {
+		if (hasKey(key)) {
 			return Optional.of(get(key));
 		}
 		return Optional.empty();
@@ -132,5 +132,5 @@ public interface ContextView {
 	 *
 	 * @return a {@link Stream} of key/value pairs held by this context
 	 */
-	Stream<Map.Entry<Object,Object>> stream();
+	Stream<Map.Entry<Object, Object>> stream();
 }
