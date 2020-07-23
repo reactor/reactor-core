@@ -830,7 +830,9 @@ its `ContextView`:
  - to access the context from a source-like operator, use `deferWithContext` factory method
  - to access the context from data signals, use `doOnEach` and `Signal#getContext()`
  - alternatively, when dealing with an inner sequence (like inside a `flatMap`), the `ContextView`
- can be materialized using `Mono.deferWithContext(Mono::just)`
+ can be materialized using `Mono.deferWithContext(Mono::just)`. Usually though, you might want
+ to perform meaningful work directly within the defer's lambda, eg. `Mono.deferWithContext(ctx -> doSomethingAsyncWithContextData(v, ctx.get(key)))`
+ where `v` is the value being flatMapped.
 
 TIP: In order to read from the `Context` without misleading users into thinking one can write to it
 while data is running through the pipeline, only the `ContextView` is exposed by the operators above.
