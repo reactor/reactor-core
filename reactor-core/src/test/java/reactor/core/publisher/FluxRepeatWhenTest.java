@@ -26,12 +26,13 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
-import reactor.util.function.Tuples;
+import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -427,13 +428,13 @@ public class FluxRepeatWhenTest {
 	public void repeatWhenContextTrigger_MergesOriginalContext() {
 		final int REPEAT_COUNT = 3;
 		List<String> repeats = Collections.synchronizedList(new ArrayList<>(4));
-		List<Context> contexts = Collections.synchronizedList(new ArrayList<>(4));
+		List<ContextView> contexts = Collections.synchronizedList(new ArrayList<>(4));
 
 		Flux<String> retryWithContext =
 				Flux.just("A", "B")
 				    .doOnEach(sig -> {
 				    	if (sig.isOnComplete()) {
-						    Context ctx = sig.getContext();
+						    ContextView ctx = sig.getContext();
 						    contexts.add(ctx);
 						    repeats.add("emitted " + ctx.get("emitted") + " elements this attempt, " + ctx.get("repeatsLeft") + " repeats left");
 					    }

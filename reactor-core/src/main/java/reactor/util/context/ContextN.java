@@ -165,7 +165,7 @@ final class ContextN extends LinkedHashMap<Object, Object>
 	}
 
 	@Override
-	public Context putAll(Context other) {
+	public Context putAll(ContextView other) {
 		if (other.isEmpty()) return this;
 
 		// slightly less wasteful implementation for non-core context:

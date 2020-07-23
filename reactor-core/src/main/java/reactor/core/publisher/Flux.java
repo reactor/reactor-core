@@ -68,6 +68,7 @@ import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -818,7 +819,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a deferred {@link Flux}
 	 */
-	public static <T> Flux<T> deferWithContext(Function<Context, ? extends Publisher<T>> supplier) {
+	public static <T> Flux<T> deferWithContext(Function<ContextView, ? extends Publisher<T>> supplier) {
 		return onAssembly(new FluxDeferWithContext<>(supplier));
 	}
 
@@ -8776,14 +8777,15 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Publisher}
 	 *
 	 * @return a new {@link Flux}
-	 * @see #transform(Function) transform() for immmediate transformation of {@link Flux}
+	 * @see #transform(Function) transform() for immmediate transformation of Flux
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 */
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				return new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this);
+				@SuppressWarnings({"rawtypes", "unchecked"})
+				CorePublisher<V> result = new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this);
+				return result;
 			}
 			return transformer.apply(this);
 		});

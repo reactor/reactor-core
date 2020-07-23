@@ -21,8 +21,10 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * A domain representation of a Reactive Stream signal.
@@ -230,12 +232,12 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	SignalType getType();
 
 	/**
-	 * Return the {@link Context} that is accessible by the time this {@link Signal} was
+	 * Return the readonly {@link ContextView} that is accessible by the time this {@link Signal} was
 	 * emitted.
 	 *
-	 * @return the {@link Context}, or an empty one if no context is available.
+	 * @return a read only {@link ContextView}, or an empty one if no context is available.
 	 */
-	Context getContext();
+	ContextView getContext();
 
 	/**
 	 * Indicates whether this signal represents an {@code onError} event.

@@ -32,11 +32,13 @@ import org.junit.runner.RunWith;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 @RunWith(JUnitParamsRunner.class)
 public class ContextLossDetectionTest {
@@ -45,27 +47,27 @@ public class ContextLossDetectionTest {
 		return Arrays.asList(
 				new SourceFactory("Flux#transform") {
 					@Override
-					public CorePublisher<Context> apply(Function<CorePublisher<Context>, Publisher<Context>> f) {
+					public CorePublisher<Context> apply(Function<CorePublisher<ContextView>, Publisher<Context>> f) {
 						return Flux.deferWithContext(Flux::just).transform(f);
 					}
 				},
-				new SourceFactory("Flux#transformDeferreed") {
+				new SourceFactory("Flux#transformDeferred") {
 					@Override
-					public CorePublisher<Context> apply(Function<CorePublisher<Context>, Publisher<Context>> f) {
+					public CorePublisher<Context> apply(Function<CorePublisher<ContextView>, Publisher<Context>> f) {
 						return Flux.deferWithContext(Flux::just).transformDeferred(f);
 					}
 				},
 
 				new SourceFactory("Mono#transform") {
 					@Override
-					public CorePublisher<Context> apply(Function<CorePublisher<Context>, Publisher<Context>> f) {
-						return Mono.subscriberContext().transform(f);
+					public CorePublisher<Context> apply(Function<CorePublisher<ContextView>, Publisher<Context>> f) {
+						return Mono.deferWithContext(Mono::just).transform(f);
 					}
 				},
 				new SourceFactory("Mono#transformDeferred") {
 					@Override
-					public CorePublisher<Context> apply(Function<CorePublisher<Context>, Publisher<Context>> f) {
-						return Mono.subscriberContext().transformDeferred(f);
+					public CorePublisher<Context> apply(Function<CorePublisher<ContextView>, Publisher<Context>> f) {
+						return Mono.deferWithContext(Mono::just).transformDeferred(f);
 					}
 				}
 		);
@@ -176,7 +178,7 @@ public class ContextLossDetectionTest {
 				.withMessageStartingWith("Context loss after applying reactor.core.publisher.ContextLossDetectionTest$$Lambda$");
 	}
 
-	static abstract class SourceFactory implements Function<Function<CorePublisher<Context>, Publisher<Context>>, CorePublisher<Context>> {
+	static abstract class SourceFactory implements Function<Function<CorePublisher<ContextView>, Publisher<Context>>, CorePublisher<Context>> {
 
 		final String name;
 

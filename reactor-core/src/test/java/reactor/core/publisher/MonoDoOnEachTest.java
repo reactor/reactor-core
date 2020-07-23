@@ -37,6 +37,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -249,7 +250,7 @@ public class MonoDoOnEachTest {
 
 	@Test
 	public void nextComplete() {
-		List<Tuple2<Signal, Context>> signalsAndContext = new ArrayList<>();
+		List<Tuple2<Signal, ContextView>> signalsAndContext = new ArrayList<>();
 		Mono.just(1)
 		    .hide()
 		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s, s.getContext())))
@@ -271,7 +272,7 @@ public class MonoDoOnEachTest {
 
 	@Test
 	public void nextError() {
-		List<Tuple2<Signal, Context>> signalsAndContext = new ArrayList<>();
+		List<Tuple2<Signal, ContextView>> signalsAndContext = new ArrayList<>();
 		Mono.just(0)
 		    .map(i -> 10 / i)
 		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s,s.getContext())))

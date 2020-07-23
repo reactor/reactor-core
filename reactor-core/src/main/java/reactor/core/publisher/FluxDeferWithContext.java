@@ -20,8 +20,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
+
 import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -32,9 +34,9 @@ import reactor.util.context.Context;
  */
 final class FluxDeferWithContext<T> extends Flux<T> implements SourceProducer<T> {
 
-	final Function<Context, ? extends Publisher<? extends T>> supplier;
+	final Function<ContextView, ? extends Publisher<? extends T>> supplier;
 
-	FluxDeferWithContext(Function<Context, ? extends Publisher<? extends T>> supplier) {
+	FluxDeferWithContext(Function<ContextView, ? extends Publisher<? extends T>> supplier) {
 		this.supplier = Objects.requireNonNull(supplier, "supplier");
 	}
 
@@ -44,7 +46,7 @@ final class FluxDeferWithContext<T> extends Flux<T> implements SourceProducer<T>
 
 		Context ctx = actual.currentContext();
 		try {
-			p = Objects.requireNonNull(supplier.apply(ctx),
+			p = Objects.requireNonNull(supplier.apply(ctx.readOnly()),
 					"The Publisher returned by the supplier is null");
 		}
 		catch (Throwable e) {

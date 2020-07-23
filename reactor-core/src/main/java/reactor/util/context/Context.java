@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
 
@@ -40,7 +39,7 @@ import reactor.util.annotation.Nullable;
  *
  * @author Stephane Maldini
  */
-public interface Context {
+public interface Context extends ContextView {
 
 	/**
 	 * Return an empty {@link Context}
@@ -191,88 +190,28 @@ public interface Context {
 	}
 
 	/**
-	 * Resolve a value given a key that exists within the {@link Context}, or throw
-	 * a {@link NoSuchElementException} if the key is not present.
+	 * Create a {@link Context} out of a {@link ContextView}, enabling write API on top of
+	 * the read-only view. If the {@link ContextView} is already a {@link Context}, return
+	 * the same instance.
 	 *
-	 * @param key a lookup key to resolve the value within the context
-	 * @param <T> an unchecked casted generic for fluent typing convenience
-	 *
-	 * @return the value resolved for this key (throws if key not found)
-	 * @throws NoSuchElementException when the given key is not present
-	 * @see #getOrDefault(Object, Object)
-	 * @see #getOrEmpty(Object)
-	 * @see #hasKey(Object)
+	 * @param contextView the {@link ContextView} to convert (or cast) to {@link Context}
+	 * @return the converted {@link Context} for further modifications
 	 */
-	<T> T get(Object key);
-
-	/**
-	 * Resolve a value given a type key within the {@link Context}.
-	 *
-	 * @param key a type key to resolve the value within the context
-	 *
-	 * @param <T> an unchecked casted generic for fluent typing convenience
-	 *
-	 * @return the value resolved for this type key (throws if key not found)
-	 * @throws NoSuchElementException when the given type key is not present
-	 * @see #getOrDefault(Object, Object)
-	 * @see #getOrEmpty(Object)
-	 */
-	default <T> T get(Class<T> key){
-		T v = get((Object)key);
-		if(key.isInstance(v)){
-			return v;
+	static Context of(ContextView contextView) {
+		Objects.requireNonNull(contextView, "contextView");
+		if (contextView instanceof Context) {
+			return (Context) contextView;
 		}
-		throw new NoSuchElementException("Context does not contain a value of type "+key
-				.getName());
+		return Context.empty().putAll(contextView);
 	}
 
 	/**
-	 * Resolve a value given a key within the {@link Context}. If unresolved return the
-	 * passed default value.
-	 *
-	 * @param key a lookup key to resolve the value within the context
-	 * @param defaultValue a fallback value if key doesn't resolve
-	 *
-	 * @return the value resolved for this key, or the given default if not present
+	 * Switch to the {@link ContextView} interface, which only allows reading from the
+	 * context.
+	 * @return the {@link ContextView} of this context
 	 */
-	@Nullable
-	default <T> T getOrDefault(Object key, @Nullable T defaultValue){
-		if(!hasKey(key)){
-			return defaultValue;
-		}
-		return get(key);
-	}
-
-	/**
-	 * Resolve a value given a key within the {@link Context}.
-	 *
-	 * @param key a lookup key to resolve the value within the context
-	 *
-	 * @return an {@link Optional} of the value for that key.
-	 */
-	default <T> Optional<T> getOrEmpty(Object key){
-		if(hasKey(key)) {
-			return Optional.of(get(key));
-		}
-		return Optional.empty();
-	}
-
-	/**
-	 * Return true if a particular key resolves to a value within the {@link Context}.
-	 *
-	 * @param key a lookup key to test for
-	 *
-	 * @return true if this context contains the given key
-	 */
-	boolean hasKey(Object key);
-
-	/**
-	 * Return true if the {@link Context} is empty.
-	 *
-	 * @return true if the {@link Context} is empty.
-	 */
-	default boolean isEmpty() {
-		return size() == 0;
+	default ContextView readOnly() {
+		return this;
 	}
 
 	/**
@@ -319,28 +258,14 @@ public interface Context {
 	Context delete(Object key);
 
 	/**
-	 * Return the size of this {@link Context}, the number of immutable key/value pairs stored inside it.
-	 *
-	 * @return the size of the {@link Context}
-	 */
-	int size();
-
-	/**
-	 * Stream key/value pairs from this {@link Context}
-	 *
-	 * @return a {@link Stream} of key/value pairs held by this context
-	 */
-	Stream<Map.Entry<Object,Object>> stream();
-
-	/**
 	 * Create a new {@link Context} by merging the content of this context and a given
-	 * {@link Context}. If the other context is empty, the same {@link Context} instance
+	 * {@link ContextView}. If the other context is empty, the same {@link Context} instance
 	 * is returned.
 	 *
-	 * @param other the other Context to get values from
-	 * @return a new Context with a merge of the entries from this context and the given context.
+	 * @param other the other {@link ContextView} to get values from
+	 * @return a new {@link Context} with a merge of the entries from this context and the given context.
 	 */
-	default Context putAll(Context other) {
+	default Context putAll(ContextView other) {
 		if (other.isEmpty()) return this;
 
 		if (other instanceof CoreContext) {
@@ -353,7 +278,7 @@ public interface Context {
 		other.stream().sequential().forEach(newContext);
 		if (newContext.size() <= 5) {
 			// make it return Context{1-5}
-			return Context.of(newContext);
+			return Context.of((Map<?, ?>) newContext);
 		}
 		return newContext;
 	}

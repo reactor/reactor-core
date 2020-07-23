@@ -380,37 +380,29 @@ public class ContextTest {
 		                                .withMessage("null value for key k6");
 	}
 
+	@Test
+	public void ofContextViewNull() {
+		assertThatNullPointerException().isThrownBy(() -> Context.of((ContextView) null))
+		                                .withMessage("contextView");
+	}
+
+	@Test
+	public void ofContextViewThatIsAContextReturnsSame() {
+		ContextView cv = Context.of("A", "a", "B", "b");
+
+		assertThat(Context.of(cv)).isSameAs(cv);
+	}
+
+	@Test
+	public void ofContextViewThatIsntContextReturnsNewContext() {
+		ForeignContextView cv = new ForeignContextView("A", "a");
+		cv.directPut("B", "b");
+
+		assertThat(Context.of(cv)).isNotSameAs(cv)
+		                          .isExactlyInstanceOf(Context2.class);
+	}
+
 	// == tests for default methods ==
-
-	@Test
-	public void getWithClass() {
-		Context context = Context.of(String.class, "someString");
-
-		assertThat(context.get(String.class)).isEqualTo("someString");
-	}
-
-	@Test
-	public void getWithClassKeyButNonMatchingInstance() {
-		Context context = Context.of(String.class, 4);
-
-		assertThatExceptionOfType(NoSuchElementException.class)
-				.isThrownBy(() -> context.get(String.class))
-				.withMessage("Context does not contain a value of type java.lang.String");
-	}
-
-	@Test
-	public void getOrEmptyWhenMatch() {
-		Context context = Context.of(1, "A");
-
-		assertThat(context.getOrEmpty(1)).hasValue("A");
-	}
-
-	@Test
-	public void getOrEmptyWhenNoMatch() {
-		Context context = Context.of(1, "A");
-
-		assertThat(context.getOrEmpty(2)).isEmpty();
-	}
 
 	@Test
 	public void defaultPutAll() {
@@ -536,33 +528,19 @@ public class ContextTest {
 				.containsValues("replaced", "value2", "value3", "value4", "value5");
 	}
 
-
-	static class ForeignContext implements Context {
-
-		final Map<Object, Object> delegate = new LinkedHashMap<>();
+	static class ForeignContext extends ForeignContextView implements Context {
 
 		ForeignContext(Object key, Object value) {
-			this.delegate.put(key, value);
+			super(key, value);
 		}
 
 		ForeignContext(Map<Object, Object> data) {
-			this.delegate.putAll(data);
-		}
-
-		@SuppressWarnings("unchecked")
-		@Override
-		public <T> T get(Object key) {
-			if (hasKey(key)) return (T) this.delegate.get(key);
-			throw new NoSuchElementException();
+			super(data);
 		}
 
 		@Override
-		public boolean hasKey(Object key) {
-			return this.delegate.containsKey(key);
-		}
-
 		ForeignContext directPut(Object key, Object value) {
-			this.delegate.put(key, value);
+			super.directPut(key, value);
 			return this;
 		}
 
@@ -584,11 +562,42 @@ public class ContextTest {
 		}
 
 		@Override
+		public String toString() {
+			return "ForeignContext" + delegate.toString();
+		}
+	}
+
+	static class ForeignContextView implements ContextView {
+
+		final Map<Object, Object> delegate = new LinkedHashMap<>();
+
+		ForeignContextView(Object key, Object value) {
+			this.delegate.put(key, value);
+		}
+
+		ForeignContextView(Map<Object, Object> data) {
+			this.delegate.putAll(data);
+		}
+
+		ForeignContextView directPut(Object key, Object value) {
+			this.delegate.put(key, value);
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public <T> T get(Object key) {
+			if (hasKey(key)) return (T) this.delegate.get(key);
+			throw new NoSuchElementException();
+		}
+
+		public boolean hasKey(Object key) {
+			return this.delegate.containsKey(key);
+		}
+
 		public int size() {
 			return delegate.size();
 		}
 
-		@Override
 		public Stream<Map.Entry<Object, Object>> stream() {
 			return delegate.entrySet().stream();
 		}
@@ -598,5 +607,4 @@ public class ContextTest {
 			return "ForeignContext" + delegate.toString();
 		}
 	}
-
 }

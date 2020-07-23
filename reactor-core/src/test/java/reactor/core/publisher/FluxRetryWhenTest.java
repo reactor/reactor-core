@@ -43,6 +43,7 @@ import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 import reactor.util.function.Tuple2;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
@@ -588,7 +589,7 @@ public class FluxRetryWhenTest {
 	public void retryWhenContextTrigger_MergesOriginalContext() {
 		final int RETRY_COUNT = 3;
 		List<Integer> retriesLeft = Collections.synchronizedList(new ArrayList<>(4));
-		List<Context> contextPerRetry = Collections.synchronizedList(new ArrayList<>(4));
+		List<ContextView> contextPerRetry = Collections.synchronizedList(new ArrayList<>(4));
 
 		Flux<Object> retryWithContext =
 				Flux.error(new IllegalStateException("boom"))

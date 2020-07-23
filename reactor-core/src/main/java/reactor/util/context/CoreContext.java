@@ -16,6 +16,8 @@
 
 package reactor.util.context;
 
+import java.util.Map;
+
 /**
  * Abstract base to optimize interactions between reactor core {@link Context} implementations.
  *
@@ -30,7 +32,7 @@ interface CoreContext extends Context {
 	}
 	
 	@Override
-	default Context putAll(Context other) {
+	default Context putAll(ContextView other) {
 		if (other.isEmpty()) return this;
 
 		if (other instanceof CoreContext) {
@@ -43,7 +45,7 @@ interface CoreContext extends Context {
 		other.stream().sequential().forEach(newContext);
 		if (newContext.size() <= 5) {
 			// make it return Context{1-5}
-			return Context.of(newContext);
+			return Context.of((Map<?, ?>) newContext);
 		}
 		return newContext;
 	}

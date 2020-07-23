@@ -20,12 +20,14 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import static reactor.core.Scannable.Attr.RUN_STYLE;
 import static reactor.core.Scannable.Attr.RunStyle.SYNC;
@@ -245,7 +247,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public Context getContext() {
+		public ContextView getContext() {
 			return cachedContext;
 		}
 
