@@ -3863,7 +3863,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
 	 *
-	 * @return a {@link Flux} requesting asynchronously
+	 * @return a {@link Mono} requesting asynchronously
 	 * @see #publishOn(Scheduler)
 	 */
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
