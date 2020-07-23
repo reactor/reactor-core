@@ -742,9 +742,9 @@ writes to `Context`:
 ----
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-                .flatMap( s -> Mono.deferredWithContext(Mono::just)
-                                   .map( ctx -> s + " " + ctx.get(key)))
-                .subscriberContext(ctx -> ctx.put(key, "World"));
+    .flatMap(s -> Mono.deferWithContext(ctx ->
+         Mono.just(s + " " + ctx.get(key))))
+    .subscriberContext(ctx -> ctx.put(key, "World"));
 
 StepVerifier.create(r)
             .expectNext("Hello World")
@@ -849,20 +849,19 @@ the following example shows:
 ----
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-                .flatMap( s -> Mono.deferWithContext(Mono::just) //<2>
-                                   .map(ctxView -> s + " " + ctxView.get(key))) //<3>
-                .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+    .flatMap(s -> Mono.deferWithContext(ctx ->
+         Mono.just(s + " " + ctx.get(key)))) //<2>
+    .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
 StepVerifier.create(r)
-            .expectNext("Hello World") //<4>
+            .expectNext("Hello World") //<3>
             .verifyComplete();
 ----
 <1> The chain of operators ends with a call to `subscriberContext(Function)` that puts
 `"World"` into the `Context` under a key of `"message"`.
-<2> We `flatMap` on the source element, materializing the `ContextView` with `Mono.deferWithContext()`.
-<3> We then use `map` to extract the data associated to `"message"` and concatenate that with
-the original word.
-<4> The resulting `Mono<String>` emits `"Hello World"`.
+<2> We `flatMap` on the source element, materializing the `ContextView` with `Mono.deferWithContext()`
+and directly extract the data associated to `"message"` and concatenate that with the original word.
+<3> The resulting `Mono<String>` emits `"Hello World"`.
 ====
 
 IMPORTANT: The numbering above versus the actual line order is not a mistake. It represents
@@ -880,9 +879,9 @@ the following example:
 ----
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-                     .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
-                     .flatMap( s -> Mono.deferWithContext(Mono::just)
-                                        .map(ctxView -> s + " " + ctxView.getOrDefault(key, "Stranger")));  //<2>
+    .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
+    .flatMap( s -> Mono.deferWithContext(ctx ->
+        Mono.just(s + " " + ctx.getOrDefault(key, "Stranger")))); //<2>
 
 StepVerifier.create(r)
             .expectNext("Hello Stranger") //<3>
@@ -903,9 +902,9 @@ the value that was set closest to being under them, as demonstrated in the follo
 ----
 String key = "message";
 Mono<String> r = Mono
-		.deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key)))
-		.subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-		.subscriberContext(ctx -> ctx.put(key, "World")); //<2>
+    .deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key)))
+    .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+    .subscriberContext(ctx -> ctx.put(key, "World")); //<2>
 
 StepVerifier.create(r)
             .expectNext("Hello Reactor") //<3>
@@ -931,11 +930,11 @@ the top `Context`. But this is not the case, as demonstrated by the following ex
 ----
 String key = "message";
 Mono<String> r = Mono
-		.deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
-		.subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
-		.flatMap( s -> Mono.deferWithContext(Mono::just)
-		                   .map( ctx -> s + " " + ctx.get(key))) //<4>
-		.subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+    .deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
+    .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
+    .flatMap( s -> Mono.deferWithContext(ctx ->
+        Mono.just(s + " " + ctx.get(key)))) //<4>
+    .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
 StepVerifier.create(r)
             .expectNext("Hello Reactor World") //<5>
@@ -958,13 +957,15 @@ inside a `flatMap`, as in the following example:
 [source,java]
 ----
 String key = "message";
-Mono<String> r =
-		Mono.just("Hello")
-		    .flatMap( s -> Mono.deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key))))
-		    .flatMap( s -> Mono.deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
-		                       .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-		    )
-		    .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
+Mono<String> r = Mono.just("Hello")
+    .flatMap( s -> Mono
+        .deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+    )
+    .flatMap( s -> Mono
+        .deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+        .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+    )
+    .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
 
 StepVerifier.create(r)
             .expectNext("Hello World Reactor")
@@ -1020,25 +1021,26 @@ context and "`augments the request`" if it can find the correlation ID:
 static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
 
 Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
-	Mono<Tuple2<String, Optional<Object>>> dataAndContext =
-			data.zipWith(Mono.deferWithContext(Mono::just) // <1>
-			                 .map(c -> c.getOrEmpty(HTTP_CORRELATION_ID))); // <2>
+  Mono<Tuple2<String, Optional<Object>>> dataAndContext =
+      data.zipWith(Mono.deferWithContext(c -> // <1>
+          Mono.just(c.getOrEmpty(HTTP_CORRELATION_ID))) // <2>
+      );
 
-	return dataAndContext
-			.<String>handle((dac, sink) -> {
-				if (dac.getT2().isPresent()) { // <3>
-					sink.next("PUT <" + dac.getT1() + "> sent to " + url + " with header X-Correlation-ID = " + dac.getT2().get());
-				}
-				else {
-					sink.next("PUT <" + dac.getT1() + "> sent to " + url);
-				}
-				sink.complete();
-			})
-			.map(msg -> Tuples.of(200, msg));
+  return dataAndContext.<String>handle((dac, sink) -> {
+      if (dac.getT2().isPresent()) { // <3>
+        sink.next("PUT <" + dac.getT1() + "> sent to " + url +
+            " with header X-Correlation-ID = " + dac.getT2().get());
+      }
+      else {
+        sink.next("PUT <" + dac.getT1() + "> sent to " + url);
+      }
+        sink.complete();
+      })
+      .map(msg -> Tuples.of(200, msg));
 }
 ----
-<1> Materialize the `ContextView` through `Mono.deferWithContext(Mono::just)`.
-<2> Extract a value for a the correlation ID key, as an `Optional`.
+<1> Materialize the `ContextView` through `Mono.deferWithContext` and...
+<2> within the defer, extract a value for a the correlation ID key, as an `Optional`.
 <3> If the key was present in the context, use the correlation ID as a header.
 ====
 
@@ -1059,14 +1061,15 @@ follows:
 ----
 @Test
 public void contextForLibraryReactivePut() {
-	Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
-			.subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
-			.filter(t -> t.getT1() < 300)
-			.map(Tuple2::getT2);
+  Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
+      .subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
+      .filter(t -> t.getT1() < 300)
+      .map(Tuple2::getT2);
 
-	StepVerifier.create(put)
-	            .expectNext("PUT <Walter> sent to www.example.com with header X-Correlation-ID = 2-j3r9afaf92j-afkaf")
-	            .verifyComplete();
+  StepVerifier.create(put)
+              .expectNext("PUT <Walter> sent to www.example.com" +
+                  " with header X-Correlation-ID = 2-j3r9afaf92j-afkaf")
+              .verifyComplete();
 }
 ----
 ====

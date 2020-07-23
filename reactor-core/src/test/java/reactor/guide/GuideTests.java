@@ -1068,116 +1068,128 @@ assertThat(errorCount).hasValue(6); // <6>
 
 	@Test
 	public void contextSimple1() {
-		String key = "message";
-		Mono<String> r = Mono.just("Hello")
-		                     .flatMap( s -> Mono.deferWithContext(Mono::just) //<2>
-		                                        .map(ctxView -> s + " " + ctxView.get(key))) //<3>
-		                     .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+		//use of two-space indentation on purpose to maximise readability in refguide
+String key = "message";
+Mono<String> r = Mono.just("Hello")
+    .flatMap(s -> Mono.deferWithContext(ctx ->
+         Mono.just(s + " " + ctx.get(key)))) //<2>
+    .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
-		StepVerifier.create(r)
-		            .expectNext("Hello World") //<4>
-		            .verifyComplete();
+StepVerifier.create(r)
+            .expectNext("Hello World") //<3>
+            .verifyComplete();
 	}
 
 	@Test
 	public void contextSimple2() {
-		String key = "message";
-		Mono<String> r = Mono.just("Hello")
-		                     .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
-		                     .flatMap( s -> Mono.deferWithContext(Mono::just)
-		                                        .map(ctxView -> s + " " + ctxView.getOrDefault(key, "Stranger")));  //<2>
+		//use of two-space indentation on purpose to maximise readability in refguide
+String key = "message";
+Mono<String> r = Mono.just("Hello")
+    .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
+    .flatMap( s -> Mono.deferWithContext(ctx ->
+        Mono.just(s + " " + ctx.getOrDefault(key, "Stranger")))); //<2>
 
-		StepVerifier.create(r)
-		            .expectNext("Hello Stranger") //<3>
-		            .verifyComplete();
+StepVerifier.create(r)
+            .expectNext("Hello Stranger") //<3>
+            .verifyComplete();
 	}
+
+	//contextSimple3 deleted since writes are not exposed anymore with ContextView
 
 	@Test
 	public void contextSimple4() {
-		String key = "message";
-		Mono<String> r = Mono
-				.deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key)))
-				.subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-				.subscriberContext(ctx -> ctx.put(key, "World")); //<2>
+		//use of two-space indentation on purpose to maximise readability in refguide
+String key = "message";
+Mono<String> r = Mono
+    .deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key)))
+    .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+    .subscriberContext(ctx -> ctx.put(key, "World")); //<2>
 
-		StepVerifier.create(r)
-		            .expectNext("Hello Reactor") //<3>
-		            .verifyComplete();
+StepVerifier.create(r)
+            .expectNext("Hello Reactor") //<3>
+            .verifyComplete();
 	}
-
-	//contextSimple4 deleted since writes are not exposed anymore with ContextView
 
 	@Test
 	public void contextSimple5() {
-		String key = "message";
-		Mono<String> r = Mono
-				.deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
-				.subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
-				.flatMap( s -> Mono.deferWithContext(Mono::just)
-				                   .map( ctx -> s + " " + ctx.get(key))) //<4>
-				.subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+		//use of two-space indentation on purpose to maximise readability in refguide
+String key = "message";
+Mono<String> r = Mono
+    .deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
+    .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
+    .flatMap( s -> Mono.deferWithContext(ctx ->
+        Mono.just(s + " " + ctx.get(key)))) //<4>
+    .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
-		StepVerifier.create(r)
-		            .expectNext("Hello Reactor World") //<5>
-		            .verifyComplete();
+StepVerifier.create(r)
+            .expectNext("Hello Reactor World") //<5>
+            .verifyComplete();
 	}
 
 	@Test
 	public void contextSimple6() {
-		String key = "message";
-		Mono<String> r =
-				Mono.just("Hello")
-				    .flatMap( s -> Mono.deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key))))
-				    .flatMap( s -> Mono.deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
-				                       .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-				    )
-				    .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
+		//use of two-space indentation on purpose to maximise readability in refguide
+String key = "message";
+Mono<String> r = Mono.just("Hello")
+    .flatMap( s -> Mono
+        .deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+    )
+    .flatMap( s -> Mono
+        .deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+        .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+    )
+    .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
 
-		StepVerifier.create(r)
-		            .expectNext("Hello World Reactor")
-		            .verifyComplete();
+StepVerifier.create(r)
+            .expectNext("Hello World Reactor")
+            .verifyComplete();
 	}
 
-	private static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
+//use of two-space indentation on purpose to maximise readability in refguide
+static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
 
-	Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
-		Mono<Tuple2<String, Optional<Object>>> dataAndContext =
-				data.zipWith(Mono.deferWithContext(Mono::just)
-				                 .map(c -> c.getOrEmpty(HTTP_CORRELATION_ID)));
+Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
+  Mono<Tuple2<String, Optional<Object>>> dataAndContext =
+      data.zipWith(Mono.deferWithContext(c -> // <1>
+          Mono.just(c.getOrEmpty(HTTP_CORRELATION_ID))) // <2>
+      );
 
-		return dataAndContext
-				.<String>handle((dac, sink) -> {
-					if (dac.getT2().isPresent()) {
-						sink.next("PUT <" + dac.getT1() + "> sent to " + url + " with header X-Correlation-ID = " + dac.getT2().get());
-					}
-					else {
-						sink.next("PUT <" + dac.getT1() + "> sent to " + url);
-					}
-					sink.complete();
-				})
-				.map(msg -> Tuples.of(200, msg));
-	}
+  return dataAndContext.<String>handle((dac, sink) -> {
+      if (dac.getT2().isPresent()) { // <3>
+        sink.next("PUT <" + dac.getT1() + "> sent to " + url +
+            " with header X-Correlation-ID = " + dac.getT2().get());
+      }
+      else {
+        sink.next("PUT <" + dac.getT1() + "> sent to " + url);
+      }
+        sink.complete();
+      })
+      .map(msg -> Tuples.of(200, msg));
+}
 
-	@Test
-	public void contextForLibraryReactivePut() {
-		Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
-				.subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
-				.filter(t -> t.getT1() < 300)
-				.map(Tuple2::getT2);
+//use of two-space indentation on purpose to maximise readability in refguide
+@Test
+public void contextForLibraryReactivePut() {
+  Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
+      .subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
+      .filter(t -> t.getT1() < 300)
+      .map(Tuple2::getT2);
 
-		StepVerifier.create(put)
-		            .expectNext("PUT <Walter> sent to www.example.com with header X-Correlation-ID = 2-j3r9afaf92j-afkaf")
-		            .verifyComplete();
-	}
+  StepVerifier.create(put)
+              .expectNext("PUT <Walter> sent to www.example.com" +
+                  " with header X-Correlation-ID = 2-j3r9afaf92j-afkaf")
+              .verifyComplete();
+}
 
 	@Test
 	public void contextForLibraryReactivePutNoContext() {
-	Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
-			.filter(t -> t.getT1() < 300)
-			.map(Tuple2::getT2);
+		//use of two-space indentation on purpose to maximise readability in refguide
+Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
+    .filter(t -> t.getT1() < 300)
+    .map(Tuple2::getT2);
 
-		StepVerifier.create(put)
-		            .expectNext("PUT <Walter> sent to www.example.com")
-		            .verifyComplete();
+StepVerifier.create(put)
+            .expectNext("PUT <Walter> sent to www.example.com")
+            .verifyComplete();
 	}
 }
