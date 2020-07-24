@@ -40,10 +40,11 @@ dependencies {
 
 	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
-	testCompile "junit:junit:$jUnitVersion"
-	testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
-	testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
-	testRuntime "org.junit.vintage:junit-vintage-engine:${jUnitJupiterVersion}"
+	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+	testCompile "junit:junit:${jUnitVersion}"
+	testImplementation "org.junit.jupiter:junit-jupiter-api"
+	testRuntime "org.junit.jupiter:junit-jupiter-engine"
+	testRuntime "org.junit.vintage:junit-vintage-engine"
 
 	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
 

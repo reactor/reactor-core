@@ -66,8 +66,8 @@ ext {
 	logbackVersion = '1.1.2'
 
 	// Testing
+	jUnitPlatformVersion = '5.6.0'
 	jUnitVersion = '4.13'
-	jUnitJupiterVersion = '5.6.0'
 	assertJVersion = '3.11.1'
 	mockitoVersion = '2.23.0'
 	jUnitParamsVersion = '1.1.1'

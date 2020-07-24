@@ -75,12 +75,13 @@ dependencies {
 	//Optional JDK 9 Converter
 	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
-	testCompile "junit:junit:$jUnitVersion"
-	testCompile "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
-	testCompile "org.junit.platform:junit-platform-launcher:1.6.1"
-	testCompile "org.junit.jupiter:junit-jupiter-params:${jUnitJupiterVersion}"
-	testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
-	testRuntime "org.junit.vintage:junit-vintage-engine:${jUnitJupiterVersion}"
+	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+	testCompile "junit:junit:${jUnitVersion}"
+	testCompile "org.junit.jupiter:junit-jupiter-api"
+	testCompile "org.junit.platform:junit-platform-launcher"
+	testCompile "org.junit.jupiter:junit-jupiter-params"
+	testRuntime "org.junit.jupiter:junit-jupiter-engine"
+	testRuntime "org.junit.vintage:junit-vintage-engine"
 
 	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
 	// Testing
