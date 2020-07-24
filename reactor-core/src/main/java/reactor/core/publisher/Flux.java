@@ -8784,7 +8784,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				return transform(transformer);
+				@SuppressWarnings({"rawtypes", "unchecked"})
+				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<T, V>((Function) transformer);
+				return wrapper.apply(this);
 			}
 			return transformer.apply(this);
 		});
@@ -8794,17 +8796,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final <V> Flux<V> transformDeferred(BiFunction<? super ContextView, ? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				return transform(new Function<Flux<T>, Publisher<V>>() {
-					@Override
-					public Publisher<V> apply(Flux<T> flux) {
-						return transformer.apply(ctxView, flux);
-					}
+				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
+						publisher -> transformer.apply(ctxView, wrap(publisher)),
+						transformer.toString()
+				);
 
-					@Override
-					public String toString() {
-						return transformer.toString();
-					}
-				});
+				return wrapper.apply(this);
 			}
 			return transformer.apply(ctxView, this);
 		});

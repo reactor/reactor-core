@@ -4307,7 +4307,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				return transform(transformer);
+				@SuppressWarnings({"unchecked", "rawtypes"})
+				Mono<V> result = from(new ContextTrackingFunctionWrapper<T, V>((Function) transformer).apply(this));
+				return result;
 			}
 			return from(transformer.apply(this));
 		});
@@ -4317,17 +4319,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final <V> Mono<V> transformDeferred(BiFunction<? super ContextView, ? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				return transform(new Function<Mono<T>, Publisher<V>>() {
-					@Override
-					public Publisher<V> apply(Mono<T> mono) {
-						return transformer.apply(ctxView, mono);
-					}
-
-					@Override
-					public String toString() {
-						return transformer.toString();
-					}
-				});
+				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
+						publisher -> transformer.apply(ctxView, wrap(publisher, false)),
+						transformer.toString()
+				);
+				return wrap(wrapper.apply(this), true);
 			}
 			return from(transformer.apply(ctxView, this));
 		});

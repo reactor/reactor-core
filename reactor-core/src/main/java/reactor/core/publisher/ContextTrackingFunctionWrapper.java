@@ -35,8 +35,18 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<CorePublisher<T>,
 
 	final Function<? super Publisher<T>, ? extends Publisher<V>> transformer;
 
+	final String marker;
+
 	ContextTrackingFunctionWrapper(Function<? super Publisher<T>, ? extends Publisher<V>> transformer) {
+		this(transformer, transformer.toString());
+	}
+
+	ContextTrackingFunctionWrapper(
+			Function<? super Publisher<T>, ? extends Publisher<V>> transformer,
+			String marker
+	) {
 		this.transformer = transformer;
+		this.marker = marker;
 	}
 
 	@Override
@@ -47,7 +57,7 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<CorePublisher<T>,
 			Context ctx = actual.currentContext();
 
 			if (!ctx.hasKey(key)) {
-				throw new IllegalStateException("Context loss after applying " + transformer);
+				throw new IllegalStateException("Context loss after applying " + marker);
 			}
 
 			Context newContext = ctx.delete(key);
