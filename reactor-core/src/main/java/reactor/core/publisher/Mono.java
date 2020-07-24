@@ -4279,7 +4279,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		if (Hooks.DETECT_CONTEXT_LOSS) {
-			transformer = new ContextTrackingUtils.FunctionWrapper(transformer);
+			transformer = new ContextTrackingFunctionWrapper(transformer);
 		}
 		return onAssembly(from(transformer.apply(this)));
 	}
@@ -4307,9 +4307,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				@SuppressWarnings({"unchecked", "rawtypes"})
-				Mono<V> result = from(new ContextTrackingUtils.FunctionWrapper<T, V>((Function) transformer).apply(this));
-				return result;
+				return transform(transformer);
 			}
 			return from(transformer.apply(this));
 		});
@@ -4319,7 +4317,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final <V> Mono<V> transformDeferred(BiFunction<? super ContextView, ? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				return ContextTrackingUtils.trackContextLossForMono(this, ctxView, transformer);
+				return transform(new Function<Mono<T>, Publisher<V>>() {
+					@Override
+					public Publisher<V> apply(Mono<T> mono) {
+						return transformer.apply(ctxView, mono);
+					}
+
+					@Override
+					public String toString() {
+						return transformer.toString();
+					}
+				});
 			}
 			return from(transformer.apply(ctxView, this));
 		});
