@@ -1,14 +1,38 @@
 package reactor.core.publisher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class FluxDeferWithContextTest {
+class FluxDeferWithContextTest {
 
 	@Test
-	public void scanOperator(){
+	void transformDeferred() {
+		final Flux<String> flux = Flux
+				.just("foo")
+				.transformDeferred((ctx, s) -> s.map(v -> v + " for " + ctx.getOrDefault("requestId", "NO ID")))
+				.subscriberContext(Context.of("unrelatedKey", true));
+
+		flux.subscriberContext(Context.of("requestId", "aA1"))
+		    .as(StepVerifier::create)
+		    .expectNext("foo for aA1")
+		    .verifyComplete();
+
+		flux.subscriberContext(Context.of("requestId", "bB2"))
+		    .as(StepVerifier::create)
+		    .expectNext("foo for bB2")
+		    .verifyComplete();
+
+		flux.as(StepVerifier::create)
+		    .expectNext("foo for NO ID")
+		    .verifyComplete();
+	}
+
+	@Test
+	void scanOperator(){
 		FluxDeferWithContext<Integer> test = new FluxDeferWithContext<>(context -> Flux.just(1));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
