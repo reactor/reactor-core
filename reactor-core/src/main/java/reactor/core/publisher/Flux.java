@@ -8758,7 +8758,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		if (Hooks.DETECT_CONTEXT_LOSS) {
-			transformer = new ContextTrackingUtils.FunctionWrapper(transformer);
+			transformer = new ContextTrackingFunctionWrapper(transformer);
 		}
 		return onAssembly(from(transformer.apply(this)));
 	}
@@ -8785,8 +8785,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return defer(() -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
 				@SuppressWarnings({"rawtypes", "unchecked"})
-				CorePublisher<V> result = new ContextTrackingUtils.FunctionWrapper<T, V>((Function) transformer).apply(this);
-				return result;
+				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<T, V>((Function) transformer);
+				return wrapper.apply(this);
 			}
 			return transformer.apply(this);
 		});
@@ -8796,7 +8796,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	public final <V> Flux<V> transformDeferred(BiFunction<? super ContextView, ? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
-				return ContextTrackingUtils.trackContextLossForFlux(this, ctxView, transformer);
+				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
+						publisher -> transformer.apply(ctxView, wrap(publisher)),
+						transformer.toString()
+				);
+
+				return wrapper.apply(this);
 			}
 			return transformer.apply(ctxView, this);
 		});
