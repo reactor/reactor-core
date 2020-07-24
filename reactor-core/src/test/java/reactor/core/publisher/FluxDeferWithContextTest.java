@@ -10,10 +10,10 @@ import static org.assertj.core.api.Assertions.*;
 class FluxDeferWithContextTest {
 
 	@Test
-	void transformDeferred() {
+	void transformDeferredWithContext() {
 		final Flux<String> flux = Flux
 				.just("foo")
-				.transformDeferred((ctx, s) -> s.map(v -> v + " for " + ctx.getOrDefault("requestId", "NO ID")))
+				.transformDeferred((s, ctx) -> s.map(v -> v + " for " + ctx.getOrDefault("requestId", "NO ID")))
 				.subscriberContext(Context.of("unrelatedKey", true));
 
 		flux.subscriberContext(Context.of("requestId", "aA1"))

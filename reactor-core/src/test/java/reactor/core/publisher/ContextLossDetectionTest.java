@@ -207,7 +207,7 @@ public class ContextLossDetectionTest {
 		}
 	}
 
-	static class LossyBiTransformer implements BiFunction<ContextView, CorePublisher<ContextView>, Publisher<ContextView>> {
+	static class LossyBiTransformer implements BiFunction<CorePublisher<ContextView>, ContextView, Publisher<ContextView>> {
 
 		final LossyTransformer delegate;
 
@@ -216,8 +216,7 @@ public class ContextLossDetectionTest {
 		}
 
 		@Override
-		public Publisher<ContextView> apply(ContextView contextView,
-				CorePublisher<ContextView> publisher) {
+		public Publisher<ContextView> apply(CorePublisher<ContextView> publisher, ContextView contextView) {
 			return delegate.apply(publisher);
 		}
 

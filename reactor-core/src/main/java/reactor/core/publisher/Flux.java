@@ -2299,7 +2299,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <P> the returned instance type
 	 *
 	 * @return the {@link Flux} transformed to an instance of P
-	 * @see #compose for a bounded conversion to {@link Publisher}
+	 * @see #transformDeferred(Function) transformDeferred(Function) for a lazy transformation of Flux
 	 */
 	public final <P> P as(Function<? super Flux<T>, P> transformer) {
 		return transformer.apply(this);
@@ -8752,8 +8752,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Flux}
 	 *
 	 * @return a new {@link Flux}
-	 * @see #transformDeferred(Function) for deferred composition of {@link Flux} for each {@link Subscriber}
-	 * @see #as for a loose conversion to an arbitrary type
+	 * @see #transformDeferred(Function) transformDeferred(Function) for deferred composition of Flux for each @link Subscriber
+	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
@@ -8777,9 +8777,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Publisher}
 	 *
 	 * @return a new {@link Flux}
-	 * @see #transform(Function) transform() for immmediate transformation of Flux
+	 * @see #transform(Function) transform(Function) for immmediate transformation of Flux
 	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Flux reading the ContextView
-	 * @see #as as() for a loose conversion to an arbitrary type
+	 * @see #as(Function)  as(Function) for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
@@ -8795,11 +8795,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Defer the given transformation to this {@link Flux} in order to generate a
 	 * target {@link Flux} type. A transformation will occur for each
-	 * {@link Subscriber}. In addition, the transfoming {@link BiFunction} exposes
+	 * {@link Subscriber}. In addition, the transforming {@link BiFunction} exposes
 	 * the {@link ContextView} of each {@link Subscriber}. For instance:
 	 *
 	 * <blockquote><pre>
-	 * Flux&lt;T> fluxLogged = flux.transformDeferred((ctx, original) -> original.log("for RequestID" + ctx.get("RequestID"))
+	 * Flux&lt;T> fluxLogged = flux.transformDeferred((original, ctx) -> original.log("for RequestID" + ctx.get("RequestID"))
 	 * //...later subscribe. Each subscriber has its Context with a RequestID entry
 	 * fluxLogged.subscriberContext(Context.of("RequestID", "requestA").subscribe();
 	 * fluxLogged.subscriberContext(Context.of("RequestID", "requestB").subscribe();
@@ -8811,21 +8811,21 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * instance upon subscription, with access to {@link ContextView}
 	 * @param <V> the item type in the returned {@link Publisher}
 	 * @return a new {@link Flux}
-	 * @see #as as() for a loose conversion to an arbitrary type
-	 * @see #transform(Function)
-	 * @see #transformDeferred(Function)
+	 * @see #transform(Function) transform(Function) for immmediate transformation of Flux
+	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Flux without the ContextView
+	 * @see #as(Function)  as(Function) for a loose conversion to an arbitrary type
 	 */
-	public final <V> Flux<V> transformDeferred(BiFunction<? super ContextView, ? super Flux<T>, ? extends Publisher<V>> transformer) {
+	public final <V> Flux<V> transformDeferred(BiFunction<? super Flux<T>, ? super ContextView, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
 				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
-						publisher -> transformer.apply(ctxView, wrap(publisher)),
+						publisher -> transformer.apply(wrap(publisher), ctxView),
 						transformer.toString()
 				);
 
 				return wrapper.apply(this);
 			}
-			return transformer.apply(ctxView, this);
+			return transformer.apply(this, ctxView);
 		});
 	}
 
