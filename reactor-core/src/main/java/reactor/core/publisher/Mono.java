@@ -4315,7 +4315,29 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		});
 	}
 
-	//TODO javadoc
+	/**
+	 * Defer the given transformation to this {@link Mono} in order to generate a
+	 * target {@link Mono} type. A transformation will occur for each
+	 * {@link Subscriber}. In addition, the transfoming {@link BiFunction} exposes
+	 * the {@link ContextView} of each {@link Subscriber}. For instance:
+	 *
+	 * <blockquote><pre>
+	 * Mono&lt;T> monoLogged = mono.transformDeferred((ctx, original) -> original.log("for RequestID" + ctx.get("RequestID"))
+	 * //...later subscribe. Each subscriber has its Context with a RequestID entry
+	 * monoLogged.subscriberContext(Context.of("RequestID", "requestA").subscribe();
+	 * monoLogged.subscriberContext(Context.of("RequestID", "requestB").subscribe();
+	 * </pre></blockquote>
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/transformDeferredForMono.svg" alt="">
+	 *
+	 * @param transformer the {@link BiFunction} to lazily map this {@link Mono} into a target {@link Mono}
+	 * instance upon subscription, with access to {@link ContextView}
+	 * @param <V> the item type in the returned {@link Publisher}
+	 * @return a new {@link Mono}
+	 * @see #as as() for a loose conversion to an arbitrary type
+	 * @see #transform(Function)
+	 * @see #transformDeferred(Function)
+	 */
 	public final <V> Mono<V> transformDeferred(BiFunction<? super ContextView, ? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return deferWithContext(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
