@@ -26,33 +26,47 @@ import reactor.core.publisher.FluxContextStart.ContextStartSubscriber;
 import reactor.util.context.Context;
 
 /**
- * This {@link Function} wrapper is used by reactor-tools to implement the context loss detection.
+ * This {@link Function} wrapper is used by operators like {@link Flux#transform(Function)}
+ * to implement the context loss detection.
  *
  */
-class ContextTrackingFunctionWrapper<T, V> implements Function<CorePublisher<T>, CorePublisher<V>> {
+class ContextTrackingFunctionWrapper<T, V> implements Function<Publisher<T>, CorePublisher<V>> {
 
 	static final String CONTEXT_MARKER_PREFIX = "reactor.core.context.marker.";
 
 	final Function<? super Publisher<T>, ? extends Publisher<V>> transformer;
 
+	final String marker;
+
 	ContextTrackingFunctionWrapper(Function<? super Publisher<T>, ? extends Publisher<V>> transformer) {
+		this(transformer, transformer.toString());
+	}
+
+	ContextTrackingFunctionWrapper(
+			Function<? super Publisher<T>, ? extends Publisher<V>> transformer,
+			String marker
+	) {
 		this.transformer = transformer;
+		this.marker = marker;
 	}
 
 	@Override
-	public CorePublisher<V> apply(CorePublisher<T> self) {
-		String key = CONTEXT_MARKER_PREFIX + System.identityHashCode(self);
+	public CorePublisher<V> apply(Publisher<T> source) {
+		String key = CONTEXT_MARKER_PREFIX + System.identityHashCode(source);
 
-		Publisher<V> newSource = Operators.<T, T>liftPublisher((p, actual) -> {
+		// Wrap source with a logic that will check whether the key is still there and remove it
+		source = Operators.<T, T>liftPublisher((p, actual) -> {
 			Context ctx = actual.currentContext();
 
 			if (!ctx.hasKey(key)) {
-				throw new IllegalStateException("Context loss after applying " + transformer);
+				throw new IllegalStateException("Context loss after applying " + marker);
 			}
 
 			Context newContext = ctx.delete(key);
 			return new ContextStartSubscriber<>(actual, newContext);
-		}).andThen(transformer).apply(self);
+		}).apply(source);
+
+		Publisher<V> result = transformer.apply(source);
 
 		// It is okay to return `CorePublisher` here since `transform` will use `from()` anyways
 		return new CorePublisher<V>() {
@@ -61,11 +75,11 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<CorePublisher<T>,
 				Context ctx = actual.currentContext().put(key, true);
 				CoreSubscriber<V> subscriber = new ContextStartSubscriber<>(actual, ctx);
 
-				if (newSource instanceof CorePublisher) {
-					((CorePublisher<V>) newSource).subscribe(subscriber);
+				if (result instanceof CorePublisher) {
+					((CorePublisher<V>) result).subscribe(subscriber);
 				}
 				else {
-					newSource.subscribe(subscriber);
+					result.subscribe(subscriber);
 				}
 			}
 

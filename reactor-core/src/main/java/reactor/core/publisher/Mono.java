@@ -1510,7 +1510,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <P> the returned instance type
 	 *
 	 * @return the {@link Mono} transformed to an instance of P
-	 * @see #compose for a bounded conversion to {@link Publisher}
+	 * @see #transformDeferred(Function) transformDeferred(Function) for a lazy transformation of Mono
 	 */
 	public final <P> P as(Function<? super Mono<T>, P> transformer) {
 		return transformer.apply(this);
@@ -4257,7 +4257,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
+	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #transformDeferred(Function)}, the
 	 * provided function is executed as part of assembly.
 	 *
 	 * <pre>
@@ -4273,7 +4273,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Mono}
 	 *
 	 * @return a new {@link Mono}
-	 * @see #transformDeferred(Function) transformDeferred(Function) for deferred composition of {@link Mono} for each {@link Subscriber}
+	 * @see #transformDeferred(Function) transformDeferred(Function) for deferred composition of Mono for each Subscriber
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
 	@SuppressWarnings({"unchecked", "rawtypes"})
@@ -4300,8 +4300,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Publisher}
 	 *
 	 * @return a new {@link Mono}
-	 * @see #as as() for a loose conversion to an arbitrary type
-	 * @see #transform(Function)
+	 * @see #transform(Function) transform(Function) for immmediate transformation of Mono
+	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Mono reading the ContextView
+	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> {
@@ -4311,6 +4312,42 @@ public abstract class Mono<T> implements CorePublisher<T> {
 				return result;
 			}
 			return from(transformer.apply(this));
+		});
+	}
+
+	/**
+	 * Defer the given transformation to this {@link Mono} in order to generate a
+	 * target {@link Mono} type. A transformation will occur for each
+	 * {@link Subscriber}. In addition, the transforming {@link BiFunction} exposes
+	 * the {@link ContextView} of each {@link Subscriber}. For instance:
+	 *
+	 * <blockquote><pre>
+	 * Mono&lt;T> monoLogged = mono.transformDeferred((original, ctx) -> original.log("for RequestID" + ctx.get("RequestID"))
+	 * //...later subscribe. Each subscriber has its Context with a RequestID entry
+	 * monoLogged.subscriberContext(Context.of("RequestID", "requestA").subscribe();
+	 * monoLogged.subscriberContext(Context.of("RequestID", "requestB").subscribe();
+	 * </pre></blockquote>
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/transformDeferredForMono.svg" alt="">
+	 *
+	 * @param transformer the {@link BiFunction} to lazily map this {@link Mono} into a target {@link Mono}
+	 * instance upon subscription, with access to {@link ContextView}
+	 * @param <V> the item type in the returned {@link Publisher}
+	 * @return a new {@link Mono}
+	 * @see #transform(Function) transform(Function) for immmediate transformation of Mono
+	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Mono without the ContextView
+	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
+	 */
+	public final <V> Mono<V> transformDeferred(BiFunction<? super Mono<T>, ? super ContextView, ? extends Publisher<V>> transformer) {
+		return deferWithContext(ctxView -> {
+			if (Hooks.DETECT_CONTEXT_LOSS) {
+				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
+						publisher -> transformer.apply(wrap(publisher, false), ctxView),
+						transformer.toString()
+				);
+				return wrap(wrapper.apply(this), true);
+			}
+			return from(transformer.apply(this, ctxView));
 		});
 	}
 
