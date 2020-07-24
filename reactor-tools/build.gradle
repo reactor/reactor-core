@@ -47,8 +47,9 @@ dependencies {
         javaAgentTestRuntime(dependency)
     }
 
-    testImplementation "org.junit.jupiter:junit-jupiter-api:${jUnitJupiterVersion}"
-    testRuntime "org.junit.jupiter:junit-jupiter-engine:${jUnitJupiterVersion}"
+    testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+    testImplementation "org.junit.jupiter:junit-jupiter-api"
+    testRuntime "org.junit.jupiter:junit-jupiter-engine"
 
     testCompile "org.assertj:assertj-core:$assertJVersion"
     testCompile 'cglib:cglib:3.3.0'
