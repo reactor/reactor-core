@@ -1073,7 +1073,7 @@ String key = "message";
 Mono<String> r = Mono.just("Hello")
     .flatMap(s -> Mono.deferContextual(ctx ->
          Mono.just(s + " " + ctx.get(key)))) //<2>
-    .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+    .contextWrite(ctx -> ctx.put(key, "World")); //<1>
 
 StepVerifier.create(r)
             .expectNext("Hello World") //<3>
@@ -1085,7 +1085,7 @@ StepVerifier.create(r)
 		//use of two-space indentation on purpose to maximise readability in refguide
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-    .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
+    .contextWrite(ctx -> ctx.put(key, "World")) //<1>
     .flatMap( s -> Mono.deferContextual(ctx ->
         Mono.just(s + " " + ctx.getOrDefault(key, "Stranger")))); //<2>
 
@@ -1102,8 +1102,8 @@ StepVerifier.create(r)
 String key = "message";
 Mono<String> r = Mono
     .deferContextual(ctx -> Mono.just("Hello " + ctx.get(key)))
-    .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-    .subscriberContext(ctx -> ctx.put(key, "World")); //<2>
+    .contextWrite(ctx -> ctx.put(key, "Reactor")) //<1>
+    .contextWrite(ctx -> ctx.put(key, "World")); //<2>
 
 StepVerifier.create(r)
             .expectNext("Hello Reactor") //<3>
@@ -1116,10 +1116,10 @@ StepVerifier.create(r)
 String key = "message";
 Mono<String> r = Mono
     .deferContextual(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
-    .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
+    .contextWrite(ctx -> ctx.put(key, "Reactor")) //<2>
     .flatMap( s -> Mono.deferContextual(ctx ->
         Mono.just(s + " " + ctx.get(key)))) //<4>
-    .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+    .contextWrite(ctx -> ctx.put(key, "World")); //<1>
 
 StepVerifier.create(r)
             .expectNext("Hello Reactor World") //<5>
@@ -1136,9 +1136,9 @@ Mono<String> r = Mono.just("Hello")
     )
     .flatMap( s -> Mono
         .deferContextual(ctxView -> Mono.just(s + " " + ctxView.get(key)))
-        .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+        .contextWrite(ctx -> ctx.put(key, "Reactor")) //<1>
     )
-    .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
+    .contextWrite(ctx -> ctx.put(key, "World")); // <2>
 
 StepVerifier.create(r)
             .expectNext("Hello World Reactor")
@@ -1171,7 +1171,7 @@ Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
 @Test
 public void contextForLibraryReactivePut() {
   Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
-      .subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
+      .contextWrite(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
       .filter(t -> t.getT1() < 300)
       .map(Tuple2::getT2);
 

@@ -8,12 +8,12 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class FluxContextStartTest {
+public class FluxContextWriteTest {
 
 	@Test
 	public void scanOperator(){
 		Flux<Integer> parent = Flux.just(1);
-		FluxContextStart<Integer> test = new FluxContextStart<>(parent, c -> c);
+		FluxContextWrite<Integer> test = new FluxContextWrite<>(parent, c -> c);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
@@ -22,7 +22,8 @@ public class FluxContextStartTest {
 	@Test
 	public void scanSubscriber(){
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxContextStart.ContextStartSubscriber<Integer> test = new FluxContextStart.ContextStartSubscriber<>(actual, Context.empty());
+		FluxContextWrite.ContextWriteSubscriber<Integer>
+				test = new FluxContextWrite.ContextWriteSubscriber<>(actual, Context.empty());
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

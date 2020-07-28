@@ -5,6 +5,7 @@ import reactor.core.Scannable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Deprecated
 public class MonoCurrentContextTest {
 
     @Test

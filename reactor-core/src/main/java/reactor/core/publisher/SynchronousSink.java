@@ -44,8 +44,8 @@ public interface SynchronousSink<T> {
 	/**
 	 * Return the current subscriber {@link Context}.
 	 * <p>
-	 *   {@link Context} can be enriched via {@link Mono#subscriberContext(Function)}
-	 *   or {@link Flux#subscriberContext(Function)}
+	 *   {@link Context} can be enriched via {@link Mono#contextWrite(Function)}
+	 *   or {@link Flux#contextWrite(Function)}
 	 *   operator or directly by a child subscriber overriding
 	 *   {@link CoreSubscriber#currentContext()}
 	 *

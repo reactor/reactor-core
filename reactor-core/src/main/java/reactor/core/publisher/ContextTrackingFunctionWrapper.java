@@ -22,7 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
-import reactor.core.publisher.FluxContextStart.ContextStartSubscriber;
+import reactor.core.publisher.FluxContextWrite.ContextWriteSubscriber;
 import reactor.util.context.Context;
 
 /**
@@ -63,7 +63,7 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<Publisher<T>, Cor
 			}
 
 			Context newContext = ctx.delete(key);
-			return new ContextStartSubscriber<>(actual, newContext);
+			return new ContextWriteSubscriber<>(actual, newContext);
 		}).apply(source);
 
 		Publisher<V> result = transformer.apply(source);
@@ -73,7 +73,7 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<Publisher<T>, Cor
 			@Override
 			public void subscribe(CoreSubscriber<? super V> actual) {
 				Context ctx = actual.currentContext().put(key, true);
-				CoreSubscriber<V> subscriber = new ContextStartSubscriber<>(actual, ctx);
+				CoreSubscriber<V> subscriber = new ContextWriteSubscriber<>(actual, ctx);
 
 				if (result instanceof CorePublisher) {
 					((CorePublisher<V>) result).subscribe(subscriber);

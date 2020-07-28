@@ -29,6 +29,7 @@ import reactor.core.Scannable;
 import reactor.test.LoggerUtils;
 import reactor.test.util.TestLogger;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.*;
@@ -39,9 +40,9 @@ public class LambdaMonoSubscriberTest {
 
 	@Test
 	public void initialContextIsVisibleToUpstream() {
-		AtomicReference<Context> contextRef = new AtomicReference<>();
+		AtomicReference<ContextView> contextRef = new AtomicReference<>();
 
-		Mono.subscriberContext()
+		Mono.deferWithContext(Mono::just)
 		    .doOnNext(contextRef::set)
 		    .subscribe(null, null, null, Context.of("subscriber", "context"));
 

@@ -452,8 +452,8 @@ public class FluxRepeatWhenTest {
 					        sink.error(new IllegalStateException("repeats exhausted"));
 					    }
 				    }))
-				    .subscriberContext(Context.of("repeatsLeft", REPEAT_COUNT, "emitted", 0))
-				    .subscriberContext(Context.of("thirdPartyContext", "present"));
+				    .contextWrite(Context.of("repeatsLeft", REPEAT_COUNT, "emitted", 0))
+				    .contextWrite(Context.of("thirdPartyContext", "present"));
 
 		StepVerifier.create(retryWithContext)
 		            .expectNext("A", "B")

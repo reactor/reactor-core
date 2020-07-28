@@ -35,6 +35,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.util.RaceTestUtils;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -767,16 +768,16 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	public void contextFromFirstSubscriberCached() {
 		AtomicInteger contextFillCount = new AtomicInteger();
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
-		Mono<Context> cached = Mono.subscriberContext()
-		                           .as(m -> new MonoCacheTime<>(m, Duration.ofMillis(500), vts))
-		                           .subscriberContext(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
+		Mono<ContextView> cached = Mono.deferWithContext(Mono::just)
+		                               .as(m -> new MonoCacheTime<>(m, Duration.ofMillis(500), vts))
+		                               .contextWrite(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
 
 		//at first pass, the context is captured
 		String cacheMiss = cached.map(x -> x.getOrDefault("a", "BAD")).block();
 		assertThat(cacheMiss).as("cacheMiss").isEqualTo("GOOD1");
 		assertThat(contextFillCount).as("cacheMiss").hasValue(1);
 
-		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since Mono.subscriberContext() result is cached
+		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since Mono.deferWithContext(Mono::just) result is cached
 		String cacheHit = cached.map(x -> x.getOrDefault("a", "BAD")).block();
 		assertThat(cacheHit).as("cacheHit").isEqualTo("GOOD1"); //value from the cache
 		assertThat(contextFillCount).as("cacheHit").hasValue(2); //function was still invoked

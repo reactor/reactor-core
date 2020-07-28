@@ -867,7 +867,7 @@ public class FluxUsingWhenTest {
 
 		TestResource testResource = new TestResource();
 		PublisherProbe<String> probe = PublisherProbe.of(
-				Mono.subscriberContext()
+				Mono.deferWithContext(Mono::just)
 				    .map(it -> it.get(String.class))
 				    .doOnNext(probeContextValue::set)
 				    .onErrorReturn("fail")
@@ -875,7 +875,7 @@ public class FluxUsingWhenTest {
 		Mono<String> contextHandler = probe.mono();
 
 		Mono<TestResource> resourceProvider = Mono.just(testResource)
-		                                          .zipWith(Mono.subscriberContext())
+		                                          .zipWith(Mono.deferWithContext(Mono::just))
 		                                          .doOnNext(it -> resourceContextValue.set(it.getT2().get(String.class)))
 		                                          .map(Tuple2::getT1);
 
@@ -884,7 +884,7 @@ public class FluxUsingWhenTest {
 				r -> contextHandler,
 				TestResource::rollback,
 				TestResource::cancel)
-		    .subscriberContext(Context.of(String.class, "contextual"))
+		    .contextWrite(Context.of(String.class, "contextual"))
 		    .as(StepVerifier::create)
 		    .expectAccessibleContext().contains(String.class, "contextual")
 		    .then()
@@ -908,7 +908,7 @@ public class FluxUsingWhenTest {
 
 		TestResource testResource = new TestResource();
 		PublisherProbe<String> probe = PublisherProbe.of(
-				Mono.subscriberContext()
+				Mono.deferWithContext(Mono::just)
 				    .map(it -> it.get(String.class))
 				    .doOnNext(probeContextValue::set)
 				    .onErrorReturn("fail")
@@ -916,7 +916,7 @@ public class FluxUsingWhenTest {
 		Mono<String> contextHandler = probe.mono();
 
 		Mono<TestResource> resourceProvider = Mono.just(testResource)
-		                                          .zipWith(Mono.subscriberContext())
+		                                          .zipWith(Mono.deferWithContext(Mono::just))
 		                                          .doOnNext(it -> resourceContextValue.set(it.getT2().get(String.class)))
 		                                          .map(Tuple2::getT1);
 
@@ -925,7 +925,7 @@ public class FluxUsingWhenTest {
 				TestResource::commit,
 				(r, err) -> contextHandler,
 				TestResource::cancel)
-		    .subscriberContext(Context.of(String.class, "contextual"))
+		    .contextWrite(Context.of(String.class, "contextual"))
 		    .as(StepVerifier::create)
 		    .expectAccessibleContext().contains(String.class, "contextual")
 		    .then()
@@ -946,7 +946,7 @@ public class FluxUsingWhenTest {
 		TestResource testResource = new TestResource();
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
 		PublisherProbe<String> probe = PublisherProbe.of(
-				Mono.subscriberContext()
+				Mono.deferWithContext(Mono::just)
 				    .map(it -> it.get(String.class))
 				    .doOnError(errorRef::set)
 				    .onErrorReturn("fail")
@@ -958,7 +958,7 @@ public class FluxUsingWhenTest {
 				TestResource::commit,
 				TestResource::rollback,
 				cancel -> cancelHandler)
-		    .subscriberContext(Context.of(String.class, "contextual"))
+		    .contextWrite(Context.of(String.class, "contextual"))
 		    .take(1)
 		    .as(StepVerifier::create)
 		    .expectNextCount(1)
@@ -976,7 +976,7 @@ public class FluxUsingWhenTest {
 		TestResource testResource = new TestResource();
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
 		PublisherProbe<String> probe = PublisherProbe.of(
-				Mono.subscriberContext()
+				Mono.deferWithContext(Mono::just)
 				    .map(it -> it.get(String.class))
 				    .doOnError(errorRef::set)
 				    .onErrorReturn("fail")
@@ -988,7 +988,7 @@ public class FluxUsingWhenTest {
 				commit -> cancelHandler,
 				TestResource::rollback,
 				null)
-		    .subscriberContext(Context.of(String.class, "contextual"))
+		    .contextWrite(Context.of(String.class, "contextual"))
 		    .take(1)
 		    .as(StepVerifier::create)
 		    .expectNextCount(1)
@@ -1443,21 +1443,21 @@ public class FluxUsingWhenTest {
 
 	private static Object[] sourcesContext() {
 		return new Object[] {
-				new Object[] { Mono.subscriberContext().map(it -> it.get(String.class)).hide() },
-				new Object[] { Mono.subscriberContext().map(it -> it.get(String.class)) }
+				new Object[] { Mono.deferWithContext(Mono::just).map(it -> it.get(String.class)).hide() },
+				new Object[] { Mono.deferWithContext(Mono::just).map(it -> it.get(String.class)) }
 		};
 	}
 
 	private static Object[] sourcesContextError() {
 		return new Object[] {
 				new Object[] { Mono
-						.subscriberContext()
+						.deferWithContext(Mono::just)
 						.map(it -> it.get(String.class))
 						.hide()
 						.map(it -> { throw new IllegalStateException("boom"); })
 				},
 				new Object[] { Mono
-						.subscriberContext()
+						.deferWithContext(Mono::just)
 						.map(it -> it.get(String.class))
 						.map(it -> { throw new IllegalStateException("boom"); })
 				}

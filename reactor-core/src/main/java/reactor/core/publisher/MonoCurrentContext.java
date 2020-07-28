@@ -24,6 +24,7 @@ import reactor.util.context.Context;
 /**
  * Materialize current {@link Context} from the subscribing flow
  */
+@Deprecated
 final class MonoCurrentContext extends Mono<Context>
 		implements Fuseable, Scannable {
 

@@ -609,8 +609,8 @@ public class FluxRetryWhenTest {
 		                    sink.error(Exceptions.retryExhausted("retries exhausted", rs.failure()));
 	                    }
                     })))
-				    .subscriberContext(Context.of("retriesLeft", RETRY_COUNT))
-					.subscriberContext(Context.of("thirdPartyContext", "present"));
+				    .contextWrite(Context.of("retriesLeft", RETRY_COUNT))
+					.contextWrite(Context.of("thirdPartyContext", "present"));
 
 		StepVerifier.create(retryWithContext)
 		            .expectErrorSatisfies(e -> assertThat(e).matches(Exceptions::isRetryExhausted, "isRetryExhausted")

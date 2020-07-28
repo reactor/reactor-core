@@ -289,10 +289,10 @@ public class MonoTests {
 	@Test
 	public void monoCacheContextHistory() {
 		AtomicInteger contextFillCount = new AtomicInteger();
-		Mono<String> cached = Mono.subscriberContext()
+		Mono<String> cached = Mono.deferWithContext(Mono::just)
 		                          .map(ctx -> ctx.getOrDefault("a", "BAD"))
 		                          .cache()
-		                          .subscriberContext(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
+		                          .contextWrite(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
 
 		//at first pass, the context is captured
 		String cacheMiss = cached.block();

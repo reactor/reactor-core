@@ -744,7 +744,7 @@ String key = "message";
 Mono<String> r = Mono.just("Hello")
     .flatMap(s -> Mono.deferContextual(ctx ->
          Mono.just(s + " " + ctx.get(key))))
-    .subscriberContext(ctx -> ctx.put(key, "World"));
+    .contextWrite(ctx -> ctx.put(key, "World"));
 
 StepVerifier.create(r)
             .expectNext("Hello World")
@@ -803,15 +803,15 @@ propagation mechanism to make itself available to each operator, starting with t
 `subscribe` and moving up the chain.
 
 In order to populate the `Context`, which can only be done at subscription time, you need
-to use the `subscriberContext` operator.
+to use the `contextWrite` operator.
 
-`subscriberContext(Context)` merges the `Context` you provide and the
+`contextWrite(ContextView)` merges the `ContextView` you provide and the
 `Context` from downstream (remember, the `Context` is propagated from the bottom of the
-chain towards the top). This is done through a call to `putAll`, resulting in a new
+chain towards the top). This is done through a call to `putAll`, resulting in a NEW
 `Context` for upstream.
 
-TIP: You can also use the more advanced `subscriberContext(Function<Context, Context>)`.
-It receives the state of the `Context` from downstream, lets you put or delete values
+TIP: You can also use the more advanced `contextWrite(Function<Context, Context>)`.
+It receives a copy of the `Context` from downstream, lets you put or delete values
 as you see fit, and returns the new `Context` to use. You can even decide to return a
 completely different instance, although it is really not recommended (doing so might
 impact third-party libraries that depend on the `Context`).
@@ -853,13 +853,13 @@ String key = "message";
 Mono<String> r = Mono.just("Hello")
     .flatMap(s -> Mono.deferContextual(ctx ->
          Mono.just(s + " " + ctx.get(key)))) //<2>
-    .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+    .contextWrite(ctx -> ctx.put(key, "World")); //<1>
 
 StepVerifier.create(r)
             .expectNext("Hello World") //<3>
             .verifyComplete();
 ----
-<1> The chain of operators ends with a call to `subscriberContext(Function)` that puts
+<1> The chain of operators ends with a call to `contextWrite(Function)` that puts
 `"World"` into the `Context` under a key of `"message"`.
 <2> We `flatMap` on the source element, materializing the `ContextView` with `Mono.deferContextual()`
 and directly extract the data associated to `"message"` and concatenate that with the original word.
@@ -867,7 +867,7 @@ and directly extract the data associated to `"message"` and concatenate that wit
 ====
 
 IMPORTANT: The numbering above versus the actual line order is not a mistake. It represents
-the execution order. Even though `subscriberContext` is the last piece of the chain, it is
+the execution order. Even though `contextWrite` is the last piece of the chain, it is
 the one that gets executed first (due to its subscription-time nature and the fact that
 the subscription signal flows from bottom to top).
 
@@ -881,7 +881,7 @@ the following example:
 ----
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-    .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
+    .contextWrite(ctx -> ctx.put(key, "World")) //<1>
     .flatMap( s -> Mono.deferContextual(ctx ->
         Mono.just(s + " " + ctx.getOrDefault(key, "Stranger")))); //<2>
 
@@ -905,8 +905,8 @@ the value that was set closest to being under them, as demonstrated in the follo
 String key = "message";
 Mono<String> r = Mono
     .deferContextual(ctx -> Mono.just("Hello " + ctx.get(key)))
-    .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
-    .subscriberContext(ctx -> ctx.put(key, "World")); //<2>
+    .contextWrite(ctx -> ctx.put(key, "Reactor")) //<1>
+    .contextWrite(ctx -> ctx.put(key, "World")); //<2>
 
 StepVerifier.create(r)
             .expectNext("Hello Reactor") //<3>
@@ -933,10 +933,10 @@ the top `Context`. But this is not the case, as demonstrated by the following ex
 String key = "message";
 Mono<String> r = Mono
     .deferContextual(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
-    .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
+    .contextWrite(ctx -> ctx.put(key, "Reactor")) //<2>
     .flatMap( s -> Mono.deferContextual(ctx ->
         Mono.just(s + " " + ctx.get(key)))) //<4>
-    .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
+    .contextWrite(ctx -> ctx.put(key, "World")); //<1>
 
 StepVerifier.create(r)
             .expectNext("Hello Reactor World") //<5>
@@ -965,9 +965,9 @@ Mono<String> r = Mono.just("Hello")
     )
     .flatMap( s -> Mono
         .deferContextual(ctxView -> Mono.just(s + " " + ctxView.get(key)))
-        .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
+        .contextWrite(ctx -> ctx.put(key, "Reactor")) //<1>
     )
-    .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
+    .contextWrite(ctx -> ctx.put(key, "World")); // <2>
 
 StepVerifier.create(r)
             .expectNext("Hello World Reactor")
@@ -1004,7 +1004,7 @@ In order to propagate a correlation ID, it would be called as follows:
 [source,java]
 ----
 doPut("www.example.com", Mono.just("Walter"))
-	.subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
+	.contextWrite(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
 ----
 ====
 
@@ -1064,7 +1064,7 @@ follows:
 @Test
 public void contextForLibraryReactivePut() {
   Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
-      .subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
+      .contextWrite(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
       .filter(t -> t.getT1() < 300)
       .map(Tuple2::getT2);
 

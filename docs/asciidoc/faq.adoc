@@ -326,7 +326,7 @@ public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(re
 	return restaurantService.byPrice(maxPrice))
 			   .doOnEach(logOnNext(r -> LOG.debug("found restaurant {} for ${}", <2>
 					r.getName(), r.getPricePerPerson())))
-			   .subscriberContext(Context.of("CONTEXT_KEY", apiId)); <3>
+			   .contextWrite(Context.of("CONTEXT_KEY", apiId)); <3>
 }
 ----
 <1> We need to get the contextual information from the request header to put it in the `Context`
@@ -371,7 +371,7 @@ public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(re
 	return restaurantService.byPrice(maxPrice))
 			   .doOnEach(logOnNext(v -> LOG.info("found restaurant {}", v))
 			   .doOnEach(logOnError(e -> LOG.error("error when searching restaurants", e)) <1>
-			   .subscriberContext(Context.of("CONTEXT_KEY", apiId));
+			   .contextWrite(Context.of("CONTEXT_KEY", apiId));
 }
 ----
 <1> In case the `restaurantService` emits an error, it will be logged with MDC context here

@@ -36,6 +36,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -732,22 +733,22 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		String key = "key";
 		int expectedValue = 1;
 
-		AtomicReference<Context> reference = new AtomicReference<>();
+		AtomicReference<ContextView> reference = new AtomicReference<>();
 
 		Flux<Integer> integerFlux =
 				Flux.just(1, 2, 3)
 				    .flatMap(value ->
-						    Mono.subscriberContext()
+						    Mono.deferWithContext(Mono::just)
 						        .doOnNext(reference::set)
 						        .thenReturn(value)
 				    )
 				    .publish()
 				    .autoConnect(2);
 
-		integerFlux.subscriberContext(Context.of(key, expectedValue))
+		integerFlux.contextWrite(Context.of(key, expectedValue))
 		           .subscribe();
 
-		integerFlux.subscriberContext(Context.of(key, 2))
+		integerFlux.contextWrite(Context.of(key, 2))
 		           .subscribe();
 
 		assertThat((int) reference.get().get(key)).isEqualTo(expectedValue);
