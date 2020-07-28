@@ -1883,7 +1883,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see ContextView
 	 */
 	public final Mono<T> contextWrite(ContextView contextToAppend) {
-		return this.contextWrite(c -> c.putAll(contextToAppend));
+		return contextWrite(c -> c.putAll(contextToAppend));
 	}
 
 	/**

@@ -3815,7 +3815,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see Context
 	 */
 	public final Flux<T> contextWrite(Function<Context, Context> contextModifier) {
-		return new FluxContextWrite<>(this, contextModifier);
+		return onAssembly(new FluxContextWrite<>(this, contextModifier));
 	}
 
 	/**
