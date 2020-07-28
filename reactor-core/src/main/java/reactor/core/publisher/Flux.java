@@ -3772,12 +3772,48 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return concat(this, other);
 	}
 
-	//FIXME javadoc
+	/**
+	 * Enrich the {@link Context} visible from downstream for the benefit of upstream
+	 * operators, by making all values from the provided {@link ContextView} visible on top
+	 * of pairs from downstream.
+	 * <p>
+	 * A {@link Context} (and its {@link ContextView}) is tied to a given subscription
+	 * and is read by querying the downstream {@link Subscriber}. {@link Subscriber} that
+	 * don't enrich the context instead access their own downstream's context. As a result,
+	 * this operator conceptually enriches a {@link Context} coming from under it in the chain
+	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
+	 * visible to operators above it in the chain.
+	 *
+	 * @param contextToAppend the {@link ContextView} to merge with the downstream {@link Context},
+	 * resulting in a new more complete {@link Context} that will be visible from upstream.
+	 *
+	 * @return a contextualized {@link Flux}
+	 * @see ContextView
+	 */
 	public final Flux<T> contextWrite(ContextView contextToAppend) {
 		return contextWrite(c -> c.putAll(contextToAppend));
 	}
 
-	//FIXME javadoc
+	/**
+	 * Enrich the {@link Context} visible from downstream for the benefit of upstream
+	 * operators, by applying a {@link Function} to the downstream {@link Context}.
+	 * <p>
+	 * The {@link Function} takes a {@link Context} for convenience, allowing to easily
+	 * call {@link Context#put(Object, Object) write APIs} to return a new {@link Context}.
+	 * <p>
+	 * A {@link Context} (and its {@link ContextView}) is tied to a given subscription
+	 * and is read by querying the downstream {@link Subscriber}. {@link Subscriber} that
+	 * don't enrich the context instead access their own downstream's context. As a result,
+	 * this operator conceptually enriches a {@link Context} coming from under it in the chain
+	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
+	 * visible to operators above it in the chain.
+	 *
+	 * @param contextModifier the {@link Function} to apply to the downstream {@link Context},
+	 * resulting in a new more complete {@link Context} that will be visible from upstream.
+	 *
+	 * @return a contextualized {@link Flux}
+	 * @see Context
+	 */
 	public final Flux<T> contextWrite(Function<Context, Context> contextModifier) {
 		return new FluxContextWrite<>(this, contextModifier);
 	}
