@@ -48,27 +48,31 @@ testSets {
 
 configurations {
 	compileOnly.extendsFrom jsr166backport
-	testCompile.extendsFrom jsr166backport
+	testCompileOnly.extendsFrom jsr166backport
 }
 
 dependencies {
 	// Reactive Streams
-	compile "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
-	testCompile "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
+	api "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
+	testImplementation "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
 
 	// JSR-305 annotations
-	optional "com.google.code.findbugs:jsr305:$jsr305Version"
+	compileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
+	testCompileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
 
 	//Optional Logging Operator
-	optional "org.slf4j:slf4j-api:$slf4jVersion"
+	compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+	testCompileOnly "org.slf4j:slf4j-api:$slf4jVersion"
 
 	//Optional Metrics
 	compileOnly "io.micrometer:micrometer-core:$micrometerVersion"
 
-	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
+	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
 	//Optional BlockHound support
-	optional "io.projectreactor.tools:blockhound:$blockhoundVersion"
+	compileOnly "io.projectreactor.tools:blockhound:$blockhoundVersion"
 	// Also make BlockHound visible in the CP of dedicated testset
 	blockHoundTestImplementation "io.projectreactor.tools:blockhound:$blockhoundVersion"
 
@@ -76,27 +80,27 @@ dependencies {
 	jsr166backport "io.projectreactor:jsr166:$jsr166BackportVersion"
 
 	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
-	testCompile "junit:junit:${jUnitVersion}"
-	testCompile "org.junit.jupiter:junit-jupiter-api"
-	testCompile "org.junit.platform:junit-platform-launcher"
-	testCompile "org.junit.jupiter:junit-jupiter-params"
-	testRuntime "org.junit.jupiter:junit-jupiter-engine"
-	testRuntime "org.junit.vintage:junit-vintage-engine"
+	testImplementation "junit:junit:${jUnitVersion}"
+	testImplementation "org.junit.jupiter:junit-jupiter-api"
+	testImplementation "org.junit.platform:junit-platform-launcher"
+	testImplementation "org.junit.jupiter:junit-jupiter-params"
+	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+	testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
 
-	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
 	// Testing
-	testCompile(project(":reactor-test")) {
+	testImplementation(project(":reactor-test")) {
 		exclude module: 'reactor-core'
 	}
 
-	testCompile "org.assertj:assertj-core:$assertJVersion"
-	testCompile "org.testng:testng:$testNgVersion"
-	testCompile "org.mockito:mockito-core:$mockitoVersion"
-	testCompile "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
-	testCompile "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
-	testCompile "org.awaitility:awaitility:$awaitilityVersion"
-	testCompile "com.pivovarit:throwing-function:$throwingFunctionVersion"
-	testCompile "com.tngtech.archunit:archunit:0.12.0"
+	testImplementation "org.assertj:assertj-core:$assertJVersion"
+	testImplementation "org.testng:testng:$testNgVersion"
+	testImplementation "org.mockito:mockito-core:$mockitoVersion"
+	testImplementation "org.openjdk.jol:jol-core:$javaObjectLayoutVersion"
+	testImplementation "pl.pragmatists:JUnitParams:$jUnitParamsVersion"
+	testImplementation "org.awaitility:awaitility:$awaitilityVersion"
+	testImplementation "com.pivovarit:throwing-function:$throwingFunctionVersion"
+	testImplementation "com.tngtech.archunit:archunit:0.12.0"
 
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.

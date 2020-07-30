@@ -20,6 +20,7 @@ plugins {
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'org.unbroken-dome.test-sets'
+apply plugin: 'java-library'
 
 description = 'Reactor Tools'
 
@@ -34,7 +35,7 @@ configurations {
 }
 
 dependencies {
-    compile project(':reactor-core')
+    api project(":reactor-core")
 
     shaded 'net.bytebuddy:byte-buddy-agent:1.10.9'
     shaded 'net.bytebuddy:byte-buddy:1.10.9'
@@ -48,10 +49,10 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api"
     testRuntime "org.junit.jupiter:junit-jupiter-engine"
 
-    testCompile "org.assertj:assertj-core:$assertJVersion"
-    testCompile 'cglib:cglib:3.3.0'
+    testImplementation "org.assertj:assertj-core:$assertJVersion"
+    testImplementation 'cglib:cglib:3.3.0'
 
-    jarFileTestCompile 'org.assertj:assertj-core:3.12.2' //FIXME bump in root and use property
+    jarFileTestImplementation 'org.assertj:assertj-core:3.12.2' //FIXME bump in root and use property
 }
 
 test {

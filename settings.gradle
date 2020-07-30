@@ -20,3 +20,6 @@ plugins {
 rootProject.name = 'reactor'
 
 include 'benchmarks', 'reactor-core', 'reactor-test', 'reactor-tools'
+
+// See https://docs.gradle.org/6.5.1/release-notes.html. Drop once using Gradle 7.0+
+enableFeaturePreview("VERSION_ORDERING_V2")

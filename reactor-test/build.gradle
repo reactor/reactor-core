@@ -36,20 +36,22 @@ ext {
 }
 
 dependencies {
-	compile project(":reactor-core")
+	api project(":reactor-core")
 
-	optional "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
+	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
 	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
-	testCompile "junit:junit:${jUnitVersion}"
+	testImplementation "junit:junit:${jUnitVersion}"
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
-	testRuntime "org.junit.jupiter:junit-jupiter-engine"
-	testRuntime "org.junit.vintage:junit-vintage-engine"
+	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+	testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
 
-	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
 
-	testCompile "org.assertj:assertj-core:$assertJVersion"
-	testCompile "org.mockito:mockito-core:$mockitoVersion"
+	testImplementation "org.assertj:assertj-core:$assertJVersion"
+	testImplementation "org.mockito:mockito-core:$mockitoVersion"
 }
 
 task downloadBaseline(type: Download) {
