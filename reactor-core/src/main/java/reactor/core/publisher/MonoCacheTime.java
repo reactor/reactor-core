@@ -218,8 +218,8 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
 		@Override
-		public ContextView getContext() {
-			throw new UnsupportedOperationException("illegal signal use: getContext");
+		public ContextView getContextView() {
+			throw new UnsupportedOperationException("illegal signal use: getContextView");
 		}
 
 		final boolean add(Operators.MonoSubscriber<T, T> toAdd) {

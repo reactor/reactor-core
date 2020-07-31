@@ -262,7 +262,7 @@ public interface Context extends ContextView {
 	 * {@link ContextView}. If the other context is empty, the same {@link Context} instance
 	 * is returned.
 	 *
-	 * @param other the other {@link ContextView} to get values from
+	 * @param other the other {@link ContextView} from which to copy entries
 	 * @return a new {@link Context} with a merge of the entries from this context and the given context.
 	 */
 	default Context putAll(ContextView other) {
@@ -281,5 +281,17 @@ public interface Context extends ContextView {
 			return Context.of((Map<?, ?>) newContext);
 		}
 		return newContext;
+	}
+
+	/**
+	 * See {@link #putAll(ContextView)}.
+	 *
+	 * @deprecated will be removed in 3.5, kept for backward compatibility with 3.3
+	 * @param context the {@link Context} from which to copy entries
+	 * @return a new {@link Context} with a merge of the entries from this context and the given context.
+	 */
+	@Deprecated
+	default Context putAll(Context context) {
+		return this.putAll((ContextView) context);
 	}
 }

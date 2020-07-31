@@ -79,7 +79,7 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 	}
 
 	@Override
-	public ContextView getContext() {
+	public ContextView getContextView() {
 		return contextView;
 	}
 

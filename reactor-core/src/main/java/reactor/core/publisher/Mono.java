@@ -200,11 +200,30 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * @param supplier a {@link Mono} factory
 	 * @param <T> the element type of the returned Mono instance
-	 * @return a new {@link Mono} factory
-	 * @see #deferWithContext(Function)
+	 * @return a deferred {@link Mono}
+	 * @see #deferContextual(Function)
 	 */
 	public static <T> Mono<T> defer(Supplier<? extends Mono<? extends T>> supplier) {
 		return onAssembly(new MonoDefer<>(supplier));
+	}
+
+	/**
+	 * Create a {@link Mono} provider that will {@link Function#apply supply} a target {@link Mono}
+	 * to subscribe to for each {@link Subscriber} downstream.
+	 * This operator behaves the same way as {@link #defer(Supplier)},
+	 * but accepts a {@link Function} that will receive the current {@link Context} as an argument.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/deferForMono.svg" alt="">
+	 * <p>
+	 * @param contextualMonoFactory a {@link Mono} factory
+	 * @param <T> the element type of the returned Mono instance
+	 * @return a deferred {@link Mono} deriving actual {@link Mono} from context values for each subscription
+	 * @deprecated use {@link #deferContextual(Function)} instead. to be removed in 3.5.0.
+	 */
+	@Deprecated
+	public static <T> Mono<T> deferWithContext(Function<Context, ? extends Mono<? extends T>> contextualMonoFactory) {
+		return deferContextual(view -> contextualMonoFactory.apply(Context.of(view)));
 	}
 
 	/**
@@ -216,12 +235,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/deferForMono.svg" alt="">
 	 * <p>
-	 * @param supplier a {@link Mono} factory
+	 * @param contextualMonoFactory a {@link Mono} factory
 	 * @param <T> the element type of the returned Mono instance
-	 * @return a new {@link Mono} factory
+	 * @return a deferred {@link Mono} deriving actual {@link Mono} from context values for each subscription
 	 */
-	public static <T> Mono<T> deferWithContext(Function<ContextView, ? extends Mono<? extends T>> supplier) {
-		return onAssembly(new MonoDeferWithContext<>(supplier));
+	public static <T> Mono<T> deferContextual(Function<ContextView, ? extends Mono<? extends T>> contextualMonoFactory) {
+		return onAssembly(new MonoDeferContextual<>(contextualMonoFactory));
 	}
 
 	/**
@@ -4301,7 +4320,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 * @see #transform(Function) transform(Function) for immmediate transformation of Mono
-	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Mono reading the ContextView
+	 * @see #transformDeferredContextual(BiFunction) transformDeferredContextual(BiFunction) for a similarly deferred transformation of Mono reading the ContextView
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
 	public final <V> Mono<V> transformDeferred(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
@@ -4322,7 +4341,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * the {@link ContextView} of each {@link Subscriber}. For instance:
 	 *
 	 * <blockquote><pre>
-	 * Mono&lt;T> monoLogged = mono.transformDeferred((original, ctx) -> original.log("for RequestID" + ctx.get("RequestID"))
+	 * Mono&lt;T> monoLogged = mono.transformDeferredContextual((original, ctx) -> original.log("for RequestID" + ctx.get("RequestID"))
 	 * //...later subscribe. Each subscriber has its Context with a RequestID entry
 	 * monoLogged.subscriberContext(Context.of("RequestID", "requestA").subscribe();
 	 * monoLogged.subscriberContext(Context.of("RequestID", "requestB").subscribe();
@@ -4335,11 +4354,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Publisher}
 	 * @return a new {@link Mono}
 	 * @see #transform(Function) transform(Function) for immmediate transformation of Mono
-	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Mono without the ContextView
+	 * @see #transformDeferred(Function) transformDeferred(Function) for a similarly deferred transformation of Mono without the ContextView
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
-	public final <V> Mono<V> transformDeferred(BiFunction<? super Mono<T>, ? super ContextView, ? extends Publisher<V>> transformer) {
-		return deferWithContext(ctxView -> {
+	public final <V> Mono<V> transformDeferredContextual(BiFunction<? super Mono<T>, ? super ContextView, ? extends Publisher<V>> transformer) {
+		return deferContextual(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
 				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
 						publisher -> transformer.apply(wrap(publisher, false), ctxView),

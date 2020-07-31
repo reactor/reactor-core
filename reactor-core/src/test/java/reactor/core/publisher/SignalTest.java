@@ -346,7 +346,7 @@ public class SignalTest {
 			}
 
 			@Override
-			public ContextView getContext() {
+			public ContextView getContextView() {
 				return Context.empty();
 			}
 

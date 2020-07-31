@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Condition;
@@ -526,6 +527,20 @@ public class ContextTest {
 		assertThat(resultN)
 				.containsKeys(1, 2, 3, 4, 5)
 				.containsValues("replaced", "value2", "value3", "value4", "value5");
+	}
+
+	@Test
+	public void putAllContextViewNoAmbiguity() {
+		Context context = Context.of("key", "value");
+		ContextView contextView = context;
+		Context receiver = Context.of("foo", "bar");
+
+		@SuppressWarnings("deprecation")
+		Context resultFromContext = receiver.putAll(context);
+		Context resultFromContextView = receiver.putAll(contextView);
+
+		assertThat(resultFromContext.stream().collect(Collectors.toList()))
+				.containsExactlyElementsOf(resultFromContextView.stream().collect(Collectors.toList()));
 	}
 
 	static class ForeignContext extends ForeignContextView implements Context {

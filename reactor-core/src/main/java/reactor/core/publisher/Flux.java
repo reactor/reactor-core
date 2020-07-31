@@ -796,7 +796,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <T>      the type of values passing through the {@link Flux}
 	 *
 	 * @return a deferred {@link Flux}
-	 * @see #deferWithContext(Function)
+	 * @see #deferContextual(Function)
 	 */
 	public static <T> Flux<T> defer(Supplier<? extends Publisher<T>> supplier) {
 		return onAssembly(new FluxDefer<>(supplier));
@@ -814,13 +814,34 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/deferForFlux.svg" alt="">
 	 *
-	 * @param supplier the {@link Publisher} {@link Function} to call on subscribe
+	 * @param contextualPublisherFactory the {@link Publisher} {@link Function} to call on subscribe
 	 * @param <T>      the type of values passing through the {@link Flux}
-	 *
-	 * @return a deferred {@link Flux}
+	 * @return a deferred {@link Flux} deriving actual {@link Flux} from context values for each subscription
+	 * @deprecated use {@link #deferContextual(Function)}
 	 */
-	public static <T> Flux<T> deferWithContext(Function<ContextView, ? extends Publisher<T>> supplier) {
-		return onAssembly(new FluxDeferWithContext<>(supplier));
+	@Deprecated
+	public static <T> Flux<T> deferWithContext(Function<Context, ? extends Publisher<T>> contextualPublisherFactory) {
+		return deferContextual(view -> contextualPublisherFactory.apply(Context.of(view)));
+	}
+
+	/**
+	 * Lazily supply a {@link Publisher} every time a {@link Subscription} is made on the
+	 * resulting {@link Flux}, so the actual source instantiation is deferred until each
+	 * subscribe and the {@link Function} can create a subscriber-specific instance.
+	 * This operator behaves the same way as {@link #defer(Supplier)},
+	 * but accepts a {@link Function} that will receive the current {@link ContextView} as an argument.
+	 * If the function doesn't generate a new instance however, this operator will
+	 * effectively behave like {@link #from(Publisher)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/deferForFlux.svg" alt="">
+	 *
+	 * @param contextualPublisherFactory the {@link Publisher} {@link Function} to call on subscribe
+	 * @param <T>      the type of values passing through the {@link Flux}
+	 * @return a deferred {@link Flux} deriving actual {@link Flux} from context values for each subscription
+	 */
+	public static <T> Flux<T> deferContextual(Function<ContextView, ? extends Publisher<T>> contextualPublisherFactory) {
+		return onAssembly(new FluxDeferContextual<>(contextualPublisherFactory));
 	}
 
 	/**
@@ -8778,7 +8799,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 * @see #transform(Function) transform(Function) for immmediate transformation of Flux
-	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Flux reading the ContextView
+	 * @see #transformDeferredContextual(BiFunction) transformDeferredContextual(BiFunction) for a similarly deferred transformation of Flux reading the ContextView
 	 * @see #as(Function)  as(Function) for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transformDeferred(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
@@ -8799,7 +8820,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * the {@link ContextView} of each {@link Subscriber}. For instance:
 	 *
 	 * <blockquote><pre>
-	 * Flux&lt;T> fluxLogged = flux.transformDeferred((original, ctx) -> original.log("for RequestID" + ctx.get("RequestID"))
+	 * Flux&lt;T> fluxLogged = flux.transformDeferredContextual((original, ctx) -> original.log("for RequestID" + ctx.get("RequestID"))
 	 * //...later subscribe. Each subscriber has its Context with a RequestID entry
 	 * fluxLogged.subscriberContext(Context.of("RequestID", "requestA").subscribe();
 	 * fluxLogged.subscriberContext(Context.of("RequestID", "requestB").subscribe();
@@ -8812,11 +8833,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <V> the item type in the returned {@link Publisher}
 	 * @return a new {@link Flux}
 	 * @see #transform(Function) transform(Function) for immmediate transformation of Flux
-	 * @see #transformDeferred(BiFunction) transformDeferred(BiFunction) for a similarly deferred transformation of Flux without the ContextView
+	 * @see #transformDeferred(Function) transformDeferred(Function) for a similarly deferred transformation of Flux without the ContextView
 	 * @see #as(Function)  as(Function) for a loose conversion to an arbitrary type
 	 */
-	public final <V> Flux<V> transformDeferred(BiFunction<? super Flux<T>, ? super ContextView, ? extends Publisher<V>> transformer) {
-		return deferWithContext(ctxView -> {
+	public final <V> Flux<V> transformDeferredContextual(BiFunction<? super Flux<T>, ? super ContextView, ? extends Publisher<V>> transformer) {
+		return deferContextual(ctxView -> {
 			if (Hooks.DETECT_CONTEXT_LOSS) {
 				ContextTrackingFunctionWrapper<T, V> wrapper = new ContextTrackingFunctionWrapper<>(
 						publisher -> transformer.apply(wrap(publisher), ctxView),
