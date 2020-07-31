@@ -742,7 +742,7 @@ writes to `Context`:
 ----
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-    .flatMap(s -> Mono.deferWithContext(ctx ->
+    .flatMap(s -> Mono.deferContextual(ctx ->
          Mono.just(s + " " + ctx.get(key))))
     .subscriberContext(ctx -> ctx.put(key, "World"));
 
@@ -827,11 +827,11 @@ as such libraries are usually upstream of the client code.
 The read oriented operators allow to obtain data from the `Context` in a chain of operators by exposing
 its `ContextView`:
 
- - to access the context from a source-like operator, use `deferWithContext` factory method
- - to access the context from the middle of an operator chain, use `transformDeferred(BiFunction)`
+ - to access the context from a source-like operator, use `deferContextual` factory method
+ - to access the context from the middle of an operator chain, use `transformDeferredContextual(BiFunction)`
  - alternatively, when dealing with an inner sequence (like inside a `flatMap`), the `ContextView`
- can be materialized using `Mono.deferWithContext(Mono::just)`. Usually though, you might want
- to perform meaningful work directly within the defer's lambda, eg. `Mono.deferWithContext(ctx -> doSomethingAsyncWithContextData(v, ctx.get(key)))`
+ can be materialized using `Mono.deferContextual(Mono::just)`. Usually though, you might want
+ to perform meaningful work directly within the defer's lambda, eg. `Mono.deferContextual(ctx -> doSomethingAsyncWithContextData(v, ctx.get(key)))`
  where `v` is the value being flatMapped.
 
 TIP: In order to read from the `Context` without misleading users into thinking one can write to it
@@ -851,7 +851,7 @@ the following example shows:
 ----
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-    .flatMap(s -> Mono.deferWithContext(ctx ->
+    .flatMap(s -> Mono.deferContextual(ctx ->
          Mono.just(s + " " + ctx.get(key)))) //<2>
     .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
@@ -861,7 +861,7 @@ StepVerifier.create(r)
 ----
 <1> The chain of operators ends with a call to `subscriberContext(Function)` that puts
 `"World"` into the `Context` under a key of `"message"`.
-<2> We `flatMap` on the source element, materializing the `ContextView` with `Mono.deferWithContext()`
+<2> We `flatMap` on the source element, materializing the `ContextView` with `Mono.deferContextual()`
 and directly extract the data associated to `"message"` and concatenate that with the original word.
 <3> The resulting `Mono<String>` emits `"Hello World"`.
 ====
@@ -882,7 +882,7 @@ the following example:
 String key = "message";
 Mono<String> r = Mono.just("Hello")
     .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
-    .flatMap( s -> Mono.deferWithContext(ctx ->
+    .flatMap( s -> Mono.deferContextual(ctx ->
         Mono.just(s + " " + ctx.getOrDefault(key, "Stranger")))); //<2>
 
 StepVerifier.create(r)
@@ -904,7 +904,7 @@ the value that was set closest to being under them, as demonstrated in the follo
 ----
 String key = "message";
 Mono<String> r = Mono
-    .deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key)))
+    .deferContextual(ctx -> Mono.just("Hello " + ctx.get(key)))
     .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
     .subscriberContext(ctx -> ctx.put(key, "World")); //<2>
 
@@ -914,13 +914,13 @@ StepVerifier.create(r)
 ----
 <1> A write attempt on key `"message"`.
 <2> Another write attempt on key `"message"`.
-<3> The `deferWithContext` only saw the value set closest to it (and below it): `"Reactor"`.
+<3> The `deferContextual` only saw the value set closest to it (and below it): `"Reactor"`.
 ====
 
 In the preceding example, the `Context` is populated with `"World"` during subscription.
 Then the subscription signal moves upstream and another write happens. This produces a
 second immutable `Context` with a value of `"Reactor"`. After that, data starts flowing.
-The `deferWithContext` sees the `Context` closest to it, which is our second `Context` with the
+The `deferContextual` sees the `Context` closest to it, which is our second `Context` with the
 `"Reactor"` value (exposed to the user as a `ContextView`).
 
 You might wonder if the `Context` is propagated along with the data signal. If that was
@@ -932,9 +932,9 @@ the top `Context`. But this is not the case, as demonstrated by the following ex
 ----
 String key = "message";
 Mono<String> r = Mono
-    .deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
+    .deferContextual(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
     .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
-    .flatMap( s -> Mono.deferWithContext(ctx ->
+    .flatMap( s -> Mono.deferContextual(ctx ->
         Mono.just(s + " " + ctx.get(key)))) //<4>
     .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
@@ -961,10 +961,10 @@ inside a `flatMap`, as in the following example:
 String key = "message";
 Mono<String> r = Mono.just("Hello")
     .flatMap( s -> Mono
-        .deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+        .deferContextual(ctxView -> Mono.just(s + " " + ctxView.get(key)))
     )
     .flatMap( s -> Mono
-        .deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+        .deferContextual(ctxView -> Mono.just(s + " " + ctxView.get(key)))
         .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
     )
     .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
@@ -1024,7 +1024,7 @@ static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
 
 Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
   Mono<Tuple2<String, Optional<Object>>> dataAndContext =
-      data.zipWith(Mono.deferWithContext(c -> // <1>
+      data.zipWith(Mono.deferContextual(c -> // <1>
           Mono.just(c.getOrEmpty(HTTP_CORRELATION_ID))) // <2>
       );
 
@@ -1041,12 +1041,12 @@ Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
       .map(msg -> Tuples.of(200, msg));
 }
 ----
-<1> Materialize the `ContextView` through `Mono.deferWithContext` and...
+<1> Materialize the `ContextView` through `Mono.deferContextual` and...
 <2> within the defer, extract a value for a the correlation ID key, as an `Optional`.
 <3> If the key was present in the context, use the correlation ID as a header.
 ====
 
-The library snippet zips the data `Mono` with `Mono.deferWithContext(Mono::just)`.
+The library snippet zips the data `Mono` with `Mono.deferContextual(Mono::just)`.
 This gives the library a `Tuple2<String, ContextView>`, and that
 context contains the `HTTP_CORRELATION_ID` entry from downstream (as it is on the direct
 path to the subscriber).

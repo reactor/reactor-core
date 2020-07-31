@@ -160,9 +160,6 @@ task japicmp(type: JapicmpTask) {
 			'reactor.util.concurrent.WaitStrategy',
 	]
 	methodExcludes = [
-			"reactor.core.publisher.Signal#getContext()",
-			"reactor.util.context.Context#putAll(reactor.util.context.Context)",
-
 			'reactor.core.publisher.Flux#onLastAssembly(reactor.core.publisher.Flux)',
 			'reactor.core.publisher.Flux#compose(java.util.function.Function)',
 			'reactor.core.publisher.Flux#retry(java.util.function.Predicate)',

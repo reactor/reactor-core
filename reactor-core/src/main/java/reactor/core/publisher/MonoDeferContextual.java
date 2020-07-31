@@ -19,8 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.reactivestreams.Publisher;
-
 import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -32,35 +30,34 @@ import reactor.util.context.ContextView;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDeferWithContext<T> extends Flux<T> implements SourceProducer<T> {
+final class MonoDeferContextual<T> extends Mono<T> implements SourceProducer<T> {
 
-	final Function<ContextView, ? extends Publisher<? extends T>> supplier;
+	final Function<ContextView, ? extends Mono<? extends T>> contextualMonoFactory;
 
-	FluxDeferWithContext(Function<ContextView, ? extends Publisher<? extends T>> supplier) {
-		this.supplier = Objects.requireNonNull(supplier, "supplier");
+	MonoDeferContextual(Function<ContextView, ? extends Mono<? extends T>> contextualMonoFactory) {
+		this.contextualMonoFactory = Objects.requireNonNull(contextualMonoFactory, "contextualMonoFactory");
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Publisher<? extends T> p;
+		Mono<? extends T> p;
 
 		Context ctx = actual.currentContext();
 		try {
-			p = Objects.requireNonNull(supplier.apply(ctx.readOnly()),
-					"The Publisher returned by the supplier is null");
+			p = Objects.requireNonNull(contextualMonoFactory.apply(ctx),
+					"The Mono returned by the contextualMonoFactory is null");
 		}
 		catch (Throwable e) {
 			Operators.error(actual, Operators.onOperatorError(e, ctx));
 			return;
 		}
 
-		from(p).subscribe(actual);
+		p.subscribe(actual);
 	}
-
 
 	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
-		return null;
+		return null; //no particular key to be represented, still useful in hooks
 	}
 }

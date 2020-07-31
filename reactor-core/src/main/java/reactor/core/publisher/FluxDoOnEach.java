@@ -247,7 +247,7 @@ final class FluxDoOnEach<T> extends InternalFluxOperator<T, T> {
 		}
 
 		@Override
-		public ContextView getContext() {
+		public ContextView getContextView() {
 			return cachedContext;
 		}
 

@@ -85,7 +85,7 @@ public class FluxDeferTest {
 	@Test
 	public void deferFluxWithContext() {
 		Flux<Integer> source = Flux
-				.deferWithContext(ctx -> {
+				.deferContextual(ctx -> {
 					AtomicInteger i = ctx.get("i");
 					return Mono.just(i.incrementAndGet());
 				})

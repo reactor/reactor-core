@@ -50,50 +50,50 @@ public class ContextLossDetectionTest {
 				new ContextTestCase("Flux#transform") {
 					@Override
 					public CorePublisher<ContextView> apply(LossyTransformer f) {
-						return Flux.deferWithContext(Flux::just).transform(f);
+						return Flux.deferContextual(Flux::just).transform(f);
 					}
 				},
-				new ContextTestCase("Flux#transformDeferred(Function)") {
+				new ContextTestCase("Flux#transformDeferred") {
 					@Override
 					public CorePublisher<ContextView> apply(LossyTransformer f) {
-						return Flux.deferWithContext(Flux::just).transformDeferred(f);
+						return Flux.deferContextual(Flux::just).transformDeferred(f);
 					}
 				},
-				new ContextTestCase("Flux#transformDeferred(BiFunction)") {
+				new ContextTestCase("Flux#transformDeferredContextual") {
 					@Override
 					public CorePublisher<ContextView> apply(LossyTransformer f) {
-						return Flux.deferWithContext(Flux::just).transformDeferred(f.adaptToBiFunction());
+						return Flux.deferContextual(Flux::just).transformDeferredContextual(f.adaptToBiFunction());
 					}
 				},
-				new ContextTestCase("Flux#transformDeferred(BiFunction) direct") {
+				new ContextTestCase("Flux#transformDeferredContextual direct") {
 					@Override
 					public CorePublisher<ContextView> apply(LossyTransformer f) {
-						return Flux.<ContextView>empty().transformDeferred(f.adaptToBiFunction());
+						return Flux.<ContextView>empty().transformDeferredContextual(f.adaptToBiFunction());
 					}
 				},
 
 				new ContextTestCase("Mono#transform") {
 					@Override
 					public CorePublisher<ContextView> apply(LossyTransformer f) {
-						return Mono.deferWithContext(Mono::just).transform(f);
+						return Mono.deferContextual(Mono::just).transform(f);
 					}
 				},
-				new ContextTestCase("Mono#transformDeferred(Function)") {
+				new ContextTestCase("Mono#transformDeferred") {
 					@Override
 					public CorePublisher<ContextView> apply(LossyTransformer f) {
-						return Mono.deferWithContext(Mono::just).transformDeferred(f);
+						return Mono.deferContextual(Mono::just).transformDeferred(f);
 					}
 				},
-				new ContextTestCase("Mono#transformDeferred(BiFunction)") {
+				new ContextTestCase("Mono#transformDeferredContextual") {
 					@Override
 					public CorePublisher<ContextView> apply(LossyTransformer f) {
-						return Mono.deferWithContext(Mono::just).transformDeferred(f.adaptToBiFunction());
+						return Mono.deferContextual(Mono::just).transformDeferredContextual(f.adaptToBiFunction());
 					}
 				},
-				new ContextTestCase("Mono#transformDeferred(BiFunction) direct") {
+				new ContextTestCase("Mono#transformDeferredContextual direct") {
 					@Override
 					public CorePublisher<ContextView> apply(LossyTransformer f) {
-						return Mono.<ContextView>empty().transformDeferred(f.adaptToBiFunction());
+						return Mono.<ContextView>empty().transformDeferredContextual(f.adaptToBiFunction());
 					}
 				}
 		);

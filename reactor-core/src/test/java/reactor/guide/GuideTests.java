@@ -1071,7 +1071,7 @@ assertThat(errorCount).hasValue(6); // <6>
 		//use of two-space indentation on purpose to maximise readability in refguide
 String key = "message";
 Mono<String> r = Mono.just("Hello")
-    .flatMap(s -> Mono.deferWithContext(ctx ->
+    .flatMap(s -> Mono.deferContextual(ctx ->
          Mono.just(s + " " + ctx.get(key)))) //<2>
     .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
@@ -1086,7 +1086,7 @@ StepVerifier.create(r)
 String key = "message";
 Mono<String> r = Mono.just("Hello")
     .subscriberContext(ctx -> ctx.put(key, "World")) //<1>
-    .flatMap( s -> Mono.deferWithContext(ctx ->
+    .flatMap( s -> Mono.deferContextual(ctx ->
         Mono.just(s + " " + ctx.getOrDefault(key, "Stranger")))); //<2>
 
 StepVerifier.create(r)
@@ -1101,7 +1101,7 @@ StepVerifier.create(r)
 		//use of two-space indentation on purpose to maximise readability in refguide
 String key = "message";
 Mono<String> r = Mono
-    .deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key)))
+    .deferContextual(ctx -> Mono.just("Hello " + ctx.get(key)))
     .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
     .subscriberContext(ctx -> ctx.put(key, "World")); //<2>
 
@@ -1115,9 +1115,9 @@ StepVerifier.create(r)
 		//use of two-space indentation on purpose to maximise readability in refguide
 String key = "message";
 Mono<String> r = Mono
-    .deferWithContext(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
+    .deferContextual(ctx -> Mono.just("Hello " + ctx.get(key))) //<3>
     .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<2>
-    .flatMap( s -> Mono.deferWithContext(ctx ->
+    .flatMap( s -> Mono.deferContextual(ctx ->
         Mono.just(s + " " + ctx.get(key)))) //<4>
     .subscriberContext(ctx -> ctx.put(key, "World")); //<1>
 
@@ -1132,10 +1132,10 @@ StepVerifier.create(r)
 String key = "message";
 Mono<String> r = Mono.just("Hello")
     .flatMap( s -> Mono
-        .deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+        .deferContextual(ctxView -> Mono.just(s + " " + ctxView.get(key)))
     )
     .flatMap( s -> Mono
-        .deferWithContext(ctxView -> Mono.just(s + " " + ctxView.get(key)))
+        .deferContextual(ctxView -> Mono.just(s + " " + ctxView.get(key)))
         .subscriberContext(ctx -> ctx.put(key, "Reactor")) //<1>
     )
     .subscriberContext(ctx -> ctx.put(key, "World")); // <2>
@@ -1150,7 +1150,7 @@ static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
 
 Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
   Mono<Tuple2<String, Optional<Object>>> dataAndContext =
-      data.zipWith(Mono.deferWithContext(c -> // <1>
+      data.zipWith(Mono.deferContextual(c -> // <1>
           Mono.just(c.getOrEmpty(HTTP_CORRELATION_ID))) // <2>
       );
 

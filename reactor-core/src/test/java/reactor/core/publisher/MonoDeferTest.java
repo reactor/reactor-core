@@ -41,7 +41,7 @@ public class MonoDeferTest {
 	@Test
 	public void deferMonoWithContext() {
 		Mono<Integer> source = Mono
-				.deferWithContext(ctx -> {
+				.deferContextual(ctx -> {
 					AtomicInteger i = ctx.get("i");
 					return Mono.just(i.incrementAndGet());
 				})
@@ -68,7 +68,7 @@ public class MonoDeferTest {
 	public void scanOperatorWithContext() {
 		AtomicInteger i = new AtomicInteger();
 
-		MonoDeferWithContext<Integer> test = new MonoDeferWithContext<>(c -> Mono.just(i.incrementAndGet()));
+		MonoDeferContextual<Integer> test = new MonoDeferContextual<>(c -> Mono.just(i.incrementAndGet()));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull();
