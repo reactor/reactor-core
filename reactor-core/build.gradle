@@ -193,6 +193,12 @@ task japicmp(type: JapicmpTask) {
 	]
 }
 
+gradle.taskGraph.afterTask { task, state ->
+	if (task instanceof JapicmpTask && state.failure) {
+		print file("${project.buildDir}/reports/japi.txt").getText()
+	}
+}
+
 //complements the javadoc.gradle common configuration
 javadoc {
 	options.addBooleanOption('nodeprecated', true)
