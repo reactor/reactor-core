@@ -63,7 +63,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.core.publisher.Sinks;
@@ -1349,34 +1348,38 @@ public class FluxTests extends AbstractReactorTest {
 	public void multiplexUsingDispatchersAndSplit() {
 		final Sinks.Many<Integer> forkEmitterProcessor = Sinks.many().multicast().onBackpressureBuffer();
 		final Sinks.Many<Integer> computationEmitterProcessor = Sinks.many()
-		                                                             .multicast()
-		                                                             .onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
+																	 .unsafe()
+																	 .multicast()
+																	 .onBackpressureBuffer(256, false);
 
 		Scheduler computation = Schedulers.newSingle("computation");
 		Scheduler persistence = Schedulers.newSingle("persistence");
 		Scheduler forkJoin = Schedulers.newParallel("forkJoin", 2);
 
 		final Flux<List<String>> computationStream =
-				computationEmitterProcessor.asFlux().publishOn(computation)
-				                      .map(i -> {
-					                      final List<String> list = new ArrayList<>(i);
-					                      for (int j = 0; j < i; j++) {
-						                      list.add("i" + j);
-					                      }
-					                      return list;
-				                      })
-				                      .doOnNext(ls -> println("Computed: ", ls))
-				                      .log("computation");
+				computationEmitterProcessor.asFlux()
+										   .publishOn(computation)
+				                      		.map(i -> {
+												  final List<String> list = new ArrayList<>(i);
+												  for (int j = 0; j < i; j++) {
+													  list.add("i" + j);
+												  }
+												  return list;
+											})
+											.doOnNext(ls -> println("Computed: ", ls))
+											.log("computation");
 
-		final Sinks.Many<Object> persistenceEmitterProcessor = Sinks.many()
-		                                                            .multicast()
-		                                                            .onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
+		final Sinks.Many<Integer> persistenceEmitterProcessor = Sinks.many()
+																	 .unsafe()
+																	 .multicast()
+																	 .onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
 
 		final Flux<List<String>> persistenceStream =
-				persistenceEmitterProcessor.asFlux().publishOn(persistence)
-				                      .doOnNext(i -> println("Persisted: ", i))
-				                      .map(i -> Collections.singletonList("done" + i))
-				                      .log("persistence");
+				persistenceEmitterProcessor.asFlux()
+										   .publishOn(persistence)
+										   .doOnNext(i -> println("Persisted: ", i))
+										   .map(i -> Collections.singletonList("done" + i))
+										   .log("persistence");
 
 		Flux<Integer> forkStream = forkEmitterProcessor.asFlux()
 													   .publishOn(forkJoin)
@@ -1397,24 +1400,18 @@ public class FluxTests extends AbstractReactorTest {
 
 		final Semaphore doneSemaphore = new Semaphore(0);
 
-		final MonoProcessor<List<String>> listPromise = joinStream.flatMap(Flux::fromIterable)
+		StepVerifier.create(joinStream.flatMap(Flux::fromIterable)
 		                                                 .log("resultStream")
 		                                                 .collectList()
-		                                                 .doOnTerminate(doneSemaphore::release)
-		                                                 .toProcessor();
-		listPromise.subscribe();
-
-		forkEmitterProcessor.emitNext(1);
-		forkEmitterProcessor.emitNext(2);
-		forkEmitterProcessor.emitNext(3);
-		forkEmitterProcessor.emitComplete();
-
-		List<String> res = listPromise.block(Duration.ofSeconds(5));
-		assertEquals(Arrays.asList("i0", "done1", "i0", "i1", "done2", "i0", "i1", "i2", "done3"), res);
-
-		forkJoin.dispose();
-		persistence.dispose();
-		computation.dispose();
+		                                                 .doOnTerminate(doneSemaphore::release))
+					.then(() -> {
+						forkEmitterProcessor.emitNext(1);
+						forkEmitterProcessor.emitNext(2);
+						forkEmitterProcessor.emitNext(3);
+						forkEmitterProcessor.emitComplete();
+					})
+					.assertNext(res -> assertEquals(Arrays.asList("i0", "done1", "i0", "i1", "done2", "i0", "i1", "i2", "done3"), res))
+					.verifyComplete();
 	}
 
 	@Test

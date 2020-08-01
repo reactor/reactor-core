@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       https://www.apache.org/licenses/LICENSE-2.0
+ *        https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,40 +17,59 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Processor;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.CorePublisher;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
- * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
+ * A {@code MonoProcessor} is a {@link Processor} that is also a {@link Mono}.
  *
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.3.RELEASE/src/docs/marble/monoprocessor.png" alt="">
- * <p>
  *
- * Once a {@link MonoProcessor} has been resolved, newer subscribers will benefit from the cached result.
+ * <p>
+ * Implementations might implements stateful semantics, allowing multiple subscriptions.
+ * Once a {@link MonoProcessor} has been resolved, implementations may also replay cached signals to newer subscribers.
+ * <p>
+ * Despite having default implementations, most methods should be reimplemented with meaningful semantics relevant to
+ * concrete child classes.
  *
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
  */
-public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
-		           Scannable, Sinks.One<O> {
+public abstract class MonoProcessor<O> extends Mono<O>
+		implements Processor<O, O>, CoreSubscriber<O>, Disposable,
+		           Subscription, //TODO remove Subscription in 3.5
+		           Scannable {
+
+	/**
+	 * Convert a {@link Sinks.One} to a {@link MonoProcessor} : subscribing to the processor
+	 * will be akin to subscribing to the {@link Sinks.One#asMono()}, and having the processor
+	 * subscribed to an upstream {@link org.reactivestreams.Publisher} will pass signals from
+	 * said {@link org.reactivestreams.Publisher} as calls to the sink's {@link Sinks.One#emitValue(Object) emit methods}.
+	 *
+	 * @param sink the {@link Sinks.One} to convert
+	 * @param <IN> the type of values that can be emitted by the sink
+	 * @return a {@link MonoProcessor} with the same semantics as the {@link Sinks.One}
+	 */
+	public static <IN> Processor<IN, IN> fromSink(Sinks.One<IN> sink) {
+		if (sink instanceof MonoProcessor) {
+			@SuppressWarnings("unchecked")
+			final MonoProcessor<IN> processor = (MonoProcessor<IN>) sink;
+			return processor;
+		}
+		return new DelegateSinkOneMonoProcessor<>(sink);
+	}
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -59,156 +78,46 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * @param <T> type of the expected value
 	 *
 	 * @return A {@link MonoProcessor}.
+	 * @deprecated Use {@link Sinks#one()}, to be removed in 3.5
 	 */
+	@Deprecated
 	public static <T> MonoProcessor<T> create() {
-		return new MonoProcessor<>(null);
+		return new NextProcessor<>(null);
 	}
 
+	/**
+	 * @deprecated the {@link MonoProcessor} will cease to implement {@link Subscription} in 3.5
+	 */
+	@Override
+	@Deprecated
+	public void cancel() {
+	}
 
-	volatile NextInner<O>[] subscribers;
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been interrupted via cancellation.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is cancelled, {@code false}
+	 * otherwise.
+	 * @deprecated the {@link MonoProcessor} will cease to implement {@link Subscription} and this method will be removed in 3.5
+	 */
+	@Deprecated
+	public boolean isCancelled() {
+		return false;
+	}
 
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<MonoProcessor, NextInner[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(MonoProcessor.class,
-					NextInner[].class,
-					"subscribers");
-
-	@SuppressWarnings("rawtypes")
-	static final NextInner[] EMPTY = new NextInner[0];
-
-	@SuppressWarnings("rawtypes")
-	static final NextInner[] TERMINATED = new NextInner[0];
-
-	@SuppressWarnings("rawtypes")
-	static final NextInner[] EMPTY_WITH_SOURCE = new NextInner[0];
-
-	@Nullable
-	CorePublisher<? extends O> source;
-
-	@Nullable
-	Throwable    error;
-	@Nullable
-	O            value;
-
-
-	volatile Subscription subscription;
-	static final AtomicReferenceFieldUpdater<MonoProcessor, Subscription> UPSTREAM =
-			AtomicReferenceFieldUpdater.newUpdater(MonoProcessor.class, Subscription
-					.class, "subscription");
-
-	MonoProcessor(@Nullable CorePublisher<? extends O> source) {
-		this.source = source;
-		SUBSCRIBERS.lazySet(this, source != null ? EMPTY_WITH_SOURCE : EMPTY);
+	/**
+	 * @param n the request amount
+	 * @deprecated the {@link MonoProcessor} will cease to implement {@link Subscription} in 3.5
+	 */
+	@Override
+	@Deprecated
+	public void request(long n) {
+		Operators.validate(n);
 	}
 
 	@Override
-	public Emission emitEmpty() {
-		return emitValue(null);
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public Emission emitError(Throwable cause) {
-		Objects.requireNonNull(cause, "onError cannot be null");
-
-		if (UPSTREAM.getAndSet(this, Operators.cancelledSubscription())
-				== Operators.cancelledSubscription()) {
-			Operators.onErrorDroppedMulticast(cause);
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
-
-		error = cause;
-		value = null;
-		source = null;
-
-		//no need to double check since UPSTREAM.getAndSet gates the completion already
-		for (NextInner<O> as : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
-			as.onError(cause);
-		}
-		return Sinks.Emission.OK;
-	}
-
-	@Override
-	public Emission emitValue(@Nullable O value) {
-		Subscription s;
-		if ((s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription()))
-				== Operators.cancelledSubscription()) {
-			if (value != null) {
-				Operators.onNextDroppedMulticast(value);
-			}
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
-
-		this.value = value;
-		Publisher<? extends O> parent = source;
-		source = null;
-
-		@SuppressWarnings("unchecked")
-		NextInner<O>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
-
-		if (value == null) {
-			for (NextInner<O> as : array) {
-				as.onComplete();
-			}
-		}
-		else {
-			if (s != null && !(parent instanceof Mono)) {
-				s.cancel();
-			}
-
-			for (NextInner<O> as : array) {
-				as.complete(value);
-			}
-		}
-		return Sinks.Emission.OK;
-	}
-
-	@Override
-	public Mono<O> asMono() {
-		return this;
-	}
-
-	@Override
-	public final void cancel() {
-		if (isTerminated()) {
-			return;
-		}
-
-		Subscription s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription());
-		if (s == Operators.cancelledSubscription()) {
-			return;
-		}
-
-		source = null;
-		if (s != null) {
-			s.cancel();
-		}
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
 	public void dispose() {
-		Subscription s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription());
-		if (s == Operators.cancelledSubscription()) {
-			return;
-		}
-
-		source = null;
-		if (s != null) {
-			s.cancel();
-		}
-
-
-		NextInner<O>[] a;
-		if ((a = SUBSCRIBERS.getAndSet(this, TERMINATED)) != TERMINATED) {
-			Exception e = new CancellationException("Disposed");
-			error = e;
-			value = null;
-
-			for (NextInner<O> as : a) {
-				as.onError(e);
-			}
-		}
+		onError(new CancellationException("Disposed"));
 	}
 
 	/**
@@ -235,47 +144,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	@Nullable
 	public O block(@Nullable Duration timeout) {
-		try {
-			if (!isPending()) {
-				return peek();
-			}
-
-			connect();
-
-			long delay;
-			if (null == timeout) {
-				delay = 0L;
-			}
-			else {
-				delay = System.nanoTime() + timeout.toNanos();
-			}
-			for (; ; ) {
-				NextInner<O>[] inners = subscribers;
-				if (inners == TERMINATED) {
-					if (error != null) {
-						RuntimeException re = Exceptions.propagate(error);
-						re = Exceptions.addSuppressed(re, new Exception("Mono#block terminated with an error"));
-						throw re;
-					}
-					if (value == null) {
-						return null;
-					}
-					return value;
-				}
-				if (timeout != null && delay < System.nanoTime()) {
-					cancel();
-					throw new IllegalStateException("Timeout on Mono blocking read");
-				}
-
-				Thread.sleep(1);
-			}
-
-		}
-		catch (InterruptedException ie) {
-			Thread.currentThread().interrupt();
-
-			throw new IllegalStateException("Thread Interruption on Mono blocking read");
-		}
+		return peek();
 	}
 
 	/**
@@ -284,18 +153,8 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * @return the produced {@link Throwable} error if any or null
 	 */
 	@Nullable
-	public final Throwable getError() {
-		return isTerminated() ? error : null;
-	}
-
-	/**
-	 * Indicates whether this {@code MonoProcessor} has been interrupted via cancellation.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} is cancelled, {@code false}
-	 * otherwise.
-	 */
-	public boolean isCancelled() {
-		return subscription == Operators.cancelledSubscription() && !isTerminated();
+	public Throwable getError() {
+		return null;
 	}
 
 	/**
@@ -313,7 +172,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
 	 */
 	public final boolean isSuccess() {
-		return isTerminated() && error == null;
+		return isTerminated() && !isError();
 	}
 
 	/**
@@ -322,42 +181,13 @@ public final class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
 	 */
-	public final boolean isTerminated() {
-		return subscribers == TERMINATED;
+	public boolean isTerminated() {
+		return false;
 	}
 
 	@Override
 	public boolean isDisposed() {
 		return isTerminated() || isCancelled();
-	}
-
-	@Override
-	public final void onComplete() {
-		emitValue(null);
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public final void onError(Throwable cause) {
-		emitError(cause);
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public final void onNext(@Nullable O value) {
-		emitValue(value);
-	}
-
-	@Override
-	public final void onSubscribe(Subscription subscription) {
-		if (Operators.setOnce(UPSTREAM, this, subscription)) {
-			subscription.request(Long.MAX_VALUE);
-		}
-	}
-
-	@Override
-	public Stream<? extends Scannable> inners() {
-		return Stream.of(subscribers);
 	}
 
 	/**
@@ -370,64 +200,17 @@ public final class MonoProcessor<O> extends Mono<O>
 	 */
 	@Nullable
 	public O peek() {
-		if (!isTerminated()) {
-			return null;
-		}
-
-		if (value != null) {
-			return value;
-		}
-
-		if (error != null) {
-			RuntimeException re = Exceptions.propagate(error);
-			re = Exceptions.addSuppressed(re, new Exception("Mono#peek terminated with an error"));
-			throw re;
-		}
-
 		return null;
 	}
 
 	@Override
-	public final void request(long n) {
-		Operators.validate(n);
-	}
-
-	@Override
-	public void subscribe(final CoreSubscriber<? super O> actual) {
-		NextInner<O> as = new NextInner<>(actual, this);
-		actual.onSubscribe(as);
-		if (add(as)) {
-			if (as.isCancelled()) {
-				remove(as);
-			}
-		}
-		else {
-			Throwable ex = error;
-			if (ex != null) {
-				actual.onError(ex);
-			}
-			else {
-				O v = value;
-				if (v != null) {
-					as.complete(v);
-				}
-				else {
-					as.onComplete();
-				}
-			}
-		}
-	}
-
-	void connect() {
-		Publisher<? extends O> parent = source;
-		if (parent != null && SUBSCRIBERS.compareAndSet(this, EMPTY_WITH_SOURCE, EMPTY)) {
-			parent.subscribe(this);
-		}
-	}
-
-	@Override
 	public Context currentContext() {
-		return Operators.multiSubscribersContext(subscribers);
+		InnerProducer<?>[] innerProducersArray =
+				inners().filter(InnerProducer.class::isInstance)
+				        .map(InnerProducer.class::cast)
+				        .toArray(InnerProducer[]::new);
+
+		return Operators.multiSubscribersContext(innerProducersArray);
 	}
 
 	@Override
@@ -437,8 +220,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		boolean t = isTerminated();
 
 		if (key == Attr.TERMINATED) return t;
-		if (key == Attr.PARENT) return subscription;
-		if (key == Attr.ERROR) return error;
+		if (key == Attr.ERROR) return getError();
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == Attr.CANCELLED) return isCancelled();
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
@@ -446,17 +228,13 @@ public final class MonoProcessor<O> extends Mono<O>
 		return null;
 	}
 
-	final boolean isPending() {
-		return !isTerminated();
-	}
-
 	/**
 	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
 	 *
 	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
 	 */
-	public final long downstreamCount() {
-		return subscribers.length;
+	public long downstreamCount() {
+		return inners().count();
 	}
 
 	/**
@@ -468,107 +246,8 @@ public final class MonoProcessor<O> extends Mono<O>
 		return downstreamCount() != 0;
 	}
 
-	boolean add(NextInner<O> ps) {
-		for (;;) {
-			NextInner<O>[] a = subscribers;
-
-			if (a == TERMINATED) {
-				return false;
-			}
-
-			int n = a.length;
-			@SuppressWarnings("unchecked")
-			NextInner<O>[] b = new NextInner[n + 1];
-			System.arraycopy(a, 0, b, 0, n);
-			b[n] = ps;
-
-			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-				Publisher<? extends O> parent = source;
-				if (parent != null && a == EMPTY_WITH_SOURCE) {
-					parent.subscribe(this);
-				}
-				return true;
-			}
-		}
+	@Override
+	public Stream<? extends Scannable> inners() {
+		return Stream.empty();
 	}
-
-	@SuppressWarnings("unchecked")
-	void remove(NextInner<O> ps) {
-		for (;;) {
-			NextInner<O>[] a = subscribers;
-			int n = a.length;
-			if (n == 0) {
-				return;
-			}
-
-			int j = -1;
-			for (int i = 0; i < n; i++) {
-				if (a[i] == ps) {
-					j = i;
-					break;
-				}
-			}
-
-			if (j < 0) {
-				return;
-			}
-
-			NextInner<O>[] b;
-
-			if (n == 1) {
-				b = EMPTY;
-			} else {
-				b = new NextInner[n - 1];
-				System.arraycopy(a, 0, b, 0, j);
-				System.arraycopy(a, j + 1, b, j, n - j - 1);
-			}
-			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-				return;
-			}
-		}
-	}
-
-	final static class NextInner<T> extends Operators.MonoSubscriber<T, T> {
-		final MonoProcessor<T> parent;
-
-		NextInner(CoreSubscriber<? super T> actual, MonoProcessor<T> parent) {
-			super(actual);
-			this.parent = parent;
-		}
-
-		@Override
-		public void cancel() {
-			if (STATE.getAndSet(this, CANCELLED) != CANCELLED) {
-				parent.remove(this);
-			}
-		}
-
-		@Override
-		public void onComplete() {
-			if (!isCancelled()) {
-				actual.onComplete();
-			}
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			if (isCancelled()) {
-				Operators.onOperatorError(t, currentContext());
-			} else {
-				actual.onError(t);
-			}
-		}
-
-		@Override
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) {
-				return parent;
-			}
-			if (key == Attr.RUN_STYLE) {
-			    return Attr.RunStyle.SYNC;
-			}
-			return super.scanUnsafe(key);
-		}
-	}
-
 }

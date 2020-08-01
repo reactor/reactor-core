@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -207,11 +208,10 @@ public class MonoElementAtTest {
 	public void cancel() {
 		TestPublisher<String> cancelTester = TestPublisher.create();
 
-		MonoProcessor<String> processor = cancelTester.flux()
-		                                              .elementAt(1000)
-		                                              .toProcessor();
-		processor.subscribe();
-		processor.cancel();
+		StepVerifier.create(cancelTester.flux()
+										.elementAt(1000))
+					.thenCancel()
+					.verify();
 
 		cancelTester.assertCancelled();
 	}

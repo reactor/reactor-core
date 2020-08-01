@@ -82,7 +82,7 @@ public class MonoTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		MonoProcessor<Integer> source = MonoProcessor.create();
+		NextProcessor<Integer> source = new NextProcessor<>(null);
 
 		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
 

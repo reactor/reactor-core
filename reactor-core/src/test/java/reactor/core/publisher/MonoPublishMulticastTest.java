@@ -73,7 +73,7 @@ public class MonoPublishMulticastTest {
 	public void cancelComposes() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		MonoProcessor<Integer> sp = MonoProcessor.create();
+		NextProcessor<Integer> sp = new NextProcessor<>(null);
 
 		sp.publish(o -> Mono.<Integer>never())
 		  .subscribe(ts);
@@ -89,7 +89,7 @@ public class MonoPublishMulticastTest {
 	public void cancelComposes2() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		MonoProcessor<Integer> sp = MonoProcessor.create();
+		NextProcessor<Integer> sp = new NextProcessor<>(null);
 
 		sp.publish(o -> Mono.<Integer>empty())
 		  .subscribe(ts);

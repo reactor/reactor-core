@@ -295,26 +295,24 @@ public class FluxBufferWhenTest {
 		//"overlapping buffers"
 		Sinks.Many<Integer> boundaryFlux = Sinks.many().multicast().onBackpressureBuffer();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
-														.bufferWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())
-														.buffer()
-														.publishNext()
-														.toProcessor();
-		res.subscribe();
-
-		numbers.emitNext(1);
-		numbers.emitNext(2);
-		bucketOpening.emitNext(1);
-		numbers.emitNext(3);
-		bucketOpening.emitNext(1);
-		numbers.emitNext(5);
-		boundaryFlux.emitNext(1);
-		bucketOpening.emitNext(1);
-		boundaryFlux.emitComplete();
-		numbers.emitComplete();
-
-		//"the collected overlapping lists are available"
-		assertThat(res.block()).containsExactly(Arrays.asList(3, 5), Collections.singletonList(5), Collections.emptyList());
+		StepVerifier.create(numbers.asFlux()
+								   .bufferWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())
+								   .collectList())
+					.then(() -> {
+						numbers.emitNext(1);
+						numbers.emitNext(2);
+						bucketOpening.emitNext(1);
+						numbers.emitNext(3);
+						bucketOpening.emitNext(1);
+						numbers.emitNext(5);
+						boundaryFlux.emitNext(1);
+						bucketOpening.emitNext(1);
+						boundaryFlux.emitComplete();
+						numbers.emitComplete();
+						//"the collected overlapping lists are available"
+					})
+					.assertNext(res -> assertThat(res).containsExactly(Arrays.asList(3, 5), Collections.singletonList(5), Collections.emptyList()))
+					.verifyComplete();
 	}
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime() {

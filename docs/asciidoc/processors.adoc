@@ -19,8 +19,8 @@ Since `3.4.0`, an effort has been started to hide concrete processor implementat
 advertise the standalone sink pattern first and foremost:
 
  - concrete processor implementations are deprecated and slated for removal in 3.5.0
- - processors can still be constructed through the `FluxProcessor.fromSink` and `MonoProcessor.fromSink` factories
  - sinks which are not produced by an operator are constructed through factory methods in the `Sinks` class.
+ - processors can still be obtained through the `FluxProcessor.fromSink` and `MonoProcessor.fromSink` factories
 
 [[sinks]]
 = Safely Produce from Multiple Threads by Using `Sinks.One` and `Sinks.Many`

@@ -45,7 +45,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoErrorSupplied<T> extends Mono<T> implements Fuseable.ScalarCallable, SourceProducer<T> {
+final class MonoErrorSupplied<T> extends Mono<T> implements Fuseable.ScalarCallable<T>, SourceProducer<T> {
 
 	final Supplier<? extends Throwable> errorSupplier;
 
@@ -72,7 +72,7 @@ final class MonoErrorSupplied<T> extends Mono<T> implements Fuseable.ScalarCalla
 	}
 
 	@Override
-	public Object call() throws Exception {
+	public T call() throws Exception {
 		Throwable error = Objects.requireNonNull(errorSupplier.get(), "the errorSupplier returned null");
 		if(error instanceof Exception){
 			throw ((Exception) error);

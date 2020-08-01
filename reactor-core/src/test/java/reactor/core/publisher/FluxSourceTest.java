@@ -29,7 +29,7 @@ public class FluxSourceTest {
 
 	@Test
 	public void wrapToFlux(){
-		MonoProcessor<String> mp = MonoProcessor.create();
+		NextProcessor<String> mp = new NextProcessor<>(null);
 
 		mp.onNext("test");
 		StepVerifier.create(Flux.from(mp))

@@ -870,7 +870,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <D> the type of the resource object
 	 * @return a new {@link Flux} built around a "transactional" resource, with several
 	 * termination path triggering asynchronous cleanup sequences
-	 * @see #usingWhen(Publisher, Function, Function, Function)
+	 *
 	 */
 	public static <T, D> Mono<T> usingWhen(Publisher<D> resourceSupplier,
 			Function<? super D, ? extends Mono<? extends T>> resourceClosure,
@@ -3641,6 +3641,32 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Prepare a {@link Mono} which shares this {@link Mono} result similar to {@link Flux#shareNext()}.
+	 * This will effectively turn this {@link Mono} into a hot task when the first
+	 * {@link Subscriber} subscribes using {@link #subscribe} API. Further {@link Subscriber} will share the same {@link Subscription}
+	 * and therefore the same result.
+	 * It's worth noting this is an un-cancellable {@link Subscription}.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/shareForMono.svg" alt="">
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final Mono<T> share() {
+		if (this instanceof Fuseable.ScalarCallable) {
+			return this;
+		}
+
+		NextProcessor<T> result;
+		if (this instanceof NextProcessor) {
+			result = (NextProcessor<T>)this;
+		}
+		else {
+			result = new NextProcessor<>(this);
+		}
+		return result;
+	}
+
+	/**
 	 * Expect exactly one item from this {@link Mono} source or signal
 	 * {@link java.util.NoSuchElementException} for an empty source.
 	 * <p>
@@ -3688,8 +3714,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe() {
-		if(this instanceof MonoProcessor){
-			MonoProcessor<T> s = (MonoProcessor<T>)this;
+		if(this instanceof NextProcessor){
+			NextProcessor<T> s = (NextProcessor<T>)this;
 			s.connect();
 			return s;
 		}
@@ -4333,17 +4359,18 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * is subscribed to its parent source if any.
 	 *
 	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
+	 * @deprecated prefer {@link #share()} to share a parent subscription, or use {@link Sinks}
 	 */
+	@Deprecated
 	public final MonoProcessor<T> toProcessor() {
-		MonoProcessor<T> result;
 		if (this instanceof MonoProcessor) {
-			result = (MonoProcessor<T>)this;
+			return (MonoProcessor<T>) this;
 		}
 		else {
-			result = new MonoProcessor<>(this);
+			NextProcessor<T> result = new NextProcessor<>(this);
+			result.connect();
+			return result;
 		}
-		result.connect();
-		return result;
 	}
 
 	/**

@@ -15,23 +15,6 @@
  */
 package reactor.test;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.Operators;
-import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
-import reactor.test.publisher.TestPublisher;
-import reactor.test.scheduler.VirtualTimeScheduler;
-import reactor.util.context.Context;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +31,23 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.assertj.core.api.Assertions;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Operators;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.publisher.TestPublisher;
+import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.context.Context;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.*;
@@ -2317,10 +2317,10 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyDrainOnRequestInCaseOfFusion() {
-		MonoProcessor<Integer> processor = MonoProcessor.create();
-		StepVerifier.create(processor, 0)
+		Sinks.One<Integer> processor = Sinks.one();
+		StepVerifier.create(processor.asMono(), 0)
 				.expectFusion(Fuseable.ANY)
-				.then(() -> processor.onNext(1))
+				.then(() -> processor.emitValue(1))
 				.thenRequest(1)
 				.expectNext(1)
 				.verifyComplete();

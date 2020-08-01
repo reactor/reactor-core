@@ -34,8 +34,8 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Signal;
+import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -214,10 +214,10 @@ public class MonoTests {
 
 	@Test
 	public void testMono() throws Exception {
-		MonoProcessor<String> promise = MonoProcessor.create();
-		promise.onNext("test");
+		Sinks.One<String> promise = Sinks.one();
+		promise.emitValue("test");
 		final CountDownLatch successCountDownLatch = new CountDownLatch(1);
-		promise.subscribe(v -> successCountDownLatch.countDown());
+		promise.asMono().subscribe(v -> successCountDownLatch.countDown());
 		assertThat("Failed", successCountDownLatch.await(10, TimeUnit.SECONDS));
 	}
 

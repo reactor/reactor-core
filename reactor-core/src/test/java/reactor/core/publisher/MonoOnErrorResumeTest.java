@@ -197,7 +197,7 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void mapError() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorMap(TestException.class, e -> new Exception("test"))
 				.subscribeWith(mp))
@@ -209,7 +209,7 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void otherwiseErrorFilter() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorResume(TestException.class, e -> Mono.just(1))
 				.subscribeWith(mp))
@@ -222,7 +222,7 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void otherwiseErrorUnfilter() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorResume(RuntimeException.class, e -> Mono.just(1))
 				.subscribeWith(mp))
@@ -234,7 +234,7 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void otherwiseReturnErrorFilter() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorReturn(TestException.class, 1)
 				.subscribeWith(mp))
@@ -248,7 +248,7 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void otherwiseReturnErrorFilter2() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorReturn(TestException.class::isInstance, 1)
 				.subscribeWith(mp))
@@ -261,7 +261,7 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void otherwiseReturnErrorUnfilter() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorReturn(RuntimeException.class, 1)
 				.subscribeWith(mp))
@@ -273,7 +273,7 @@ public class MonoOnErrorResumeTest {
 
 	@Test
 	public void otherwiseReturnErrorUnfilter2() {
-		MonoProcessor<Integer> mp = MonoProcessor.create();
+		NextProcessor<Integer> mp = new NextProcessor<>(null);
 		StepVerifier.create(Mono.<Integer>error(new TestException())
 				.onErrorReturn(RuntimeException.class::isInstance, 1)
 				.subscribeWith(mp))

@@ -333,23 +333,21 @@ public class FluxBufferBoundaryTest
 		//non overlapping buffers
 		Sinks.Many<Integer> boundaryFlux = Sinks.many().multicast().onBackpressureBuffer();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.asFlux()
-														.buffer(boundaryFlux.asFlux())
-														.buffer()
-														.publishNext()
-														.toProcessor();
-		res.subscribe();
-
-		numbers.emitNext(1);
-		numbers.emitNext(2);
-		numbers.emitNext(3);
-		boundaryFlux.emitNext(1);
-		numbers.emitNext(5);
-		numbers.emitNext(6);
-		numbers.emitComplete();
-
-		//"the collected lists are available"
-		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));
+		StepVerifier.create(numbers.asFlux()
+								   .buffer(boundaryFlux.asFlux())
+								   .collectList())
+					.then(() -> {
+						numbers.emitNext(1);
+						numbers.emitNext(2);
+						numbers.emitNext(3);
+						boundaryFlux.emitNext(1);
+						numbers.emitNext(5);
+						numbers.emitNext(6);
+						numbers.emitComplete();
+						//"the collected lists are available"
+					})
+					.assertNext(res -> assertThat(res).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6)))
+					.verifyComplete();
 	}
 
 	@Test
