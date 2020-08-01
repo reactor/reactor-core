@@ -15,39 +15,41 @@
  */
 package reactor.core.publisher;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-import java.util.Objects;
-import java.util.stream.Stream;
-
 /**
  * @author Stephane Maldini
  */
-final class DelegateSinkFluxProcessor<IN> extends FluxProcessor<IN, IN> {
+final class DelegateSinkOneMonoProcessor<IN> extends MonoProcessor<IN> {
 
-	final Flux<IN>       flux;
-	final Sinks.Many<IN> sink;
+	final Mono<IN>      downstream;
+	final Sinks.One<IN> sink;
 
-	DelegateSinkFluxProcessor(Sinks.Many<IN> sink) {
+	DelegateSinkOneMonoProcessor(Sinks.One<IN> sink) {
 		this.sink = Objects.requireNonNull(sink, "sink must not be null");
-		this.flux = sink.asFlux();
+		this.downstream = sink.asMono();
 	}
 
 	@Override
 	public Context currentContext() {
-		if(sink instanceof CoreSubscriber){
+		if (sink instanceof CoreSubscriber) {
 			return ((CoreSubscriber<?>) sink).currentContext();
 		}
+
 		return Context.empty();
 	}
 
 	@Override
 	public void onComplete() {
-		sink.emitComplete();
+		sink.emitEmpty();
 	}
 
 	@Override
@@ -56,8 +58,8 @@ final class DelegateSinkFluxProcessor<IN> extends FluxProcessor<IN, IN> {
 	}
 
 	@Override
-	public void onNext(IN in) {
-		sink.emitNext(in);
+	public void onNext(@Nullable IN in) {
+		sink.emitValue(in);
 	}
 
 	@Override
@@ -68,24 +70,13 @@ final class DelegateSinkFluxProcessor<IN> extends FluxProcessor<IN, IN> {
 	@Override
 	public void subscribe(CoreSubscriber<? super IN> actual) {
 		Objects.requireNonNull(actual, "subscribe");
-		flux.subscribe(actual);
-	}
-
-	@Override
-	public boolean isSerialized() {
-		return sink instanceof SerializedManySink;
+		downstream.subscribe(actual);
 	}
 
 	@Override
 	public Stream<? extends Scannable> inners() {
 		return Scannable.from(sink)
 		                .inners();
-	}
-
-	@Override
-	public int getBufferSize() {
-		return Scannable.from(sink)
-		                .scanOrDefault(Attr.CAPACITY, super.getBufferSize());
 	}
 
 	@Override
@@ -106,7 +97,7 @@ final class DelegateSinkFluxProcessor<IN> extends FluxProcessor<IN, IN> {
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) {
-			return flux;
+			return downstream;
 		}
 		return Scannable.from(sink)
 		                .scanUnsafe(key);

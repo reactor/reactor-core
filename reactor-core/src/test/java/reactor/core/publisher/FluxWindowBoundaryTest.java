@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
@@ -233,23 +234,22 @@ public class FluxWindowBoundaryTest {
 		//non overlapping buffers
 		Sinks.Many<Integer> boundaryFlux = Sinks.many().multicast().onBackpressureBuffer();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.asFlux().window(boundaryFlux.asFlux())
-		                                                .concatMap(Flux::buffer)
-		                                                .buffer()
-		                                                .publishNext()
-		                                                .toProcessor();
-		res.subscribe();
-
-		numbers.emitNext(1);
-		numbers.emitNext(2);
-		numbers.emitNext(3);
-		boundaryFlux.emitNext(1);
-		numbers.emitNext(5);
-		numbers.emitNext(6);
-		numbers.emitComplete();
-
-		//"the collected lists are available"
-		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));
+		StepVerifier.create(numbers.asFlux()
+								   .window(boundaryFlux.asFlux())
+								   .concatMap(Flux::buffer)
+								   .collectList())
+					.then(() -> {
+						numbers.emitNext(1);
+						numbers.emitNext(2);
+						numbers.emitNext(3);
+						boundaryFlux.emitNext(1);
+						numbers.emitNext(5);
+						numbers.emitNext(6);
+						numbers.emitComplete();
+						//"the collected lists are available"
+					})
+					.assertNext(res -> assertThat(res).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6)))
+					.verifyComplete();
 	}
 
 	@Test

@@ -6745,9 +6745,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/publishNext.svg" alt="">
 	 *
 	 * @return a new {@link Mono}
+	 * @deprecated use {@link #shareNext()} instead, or use `publish().next()` if you need
+	 * to `{@link ConnectableFlux#connect() connect()}. To be removed in 3.5.0
 	 */
+	@Deprecated
 	public final Mono<T> publishNext() {
-		return Mono.onAssembly(new MonoProcessor<>(this));
+		//Should add a ConnectableMono to align with #publish()
+		return shareNext();
 	}
 
 	/**
@@ -7457,6 +7461,20 @@ public abstract class Flux<T> implements CorePublisher<T> {
 		return onAssembly(new FluxRefCount<>(
 				new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.small()), 1)
 		);
+	}
+
+	/**
+	 * Prepare a {@link Mono} which shares this {@link Flux} sequence and dispatches the
+	 * first observed item to subscribers.
+	 * This will effectively turn any type of sequence into a hot sequence when the first
+	 * {@link Subscriber} subscribes.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/shareNext.svg" alt="">
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final Mono<T> shareNext() {
+		return Mono.onAssembly(new NextProcessor<>(this));
 	}
 
 	/**

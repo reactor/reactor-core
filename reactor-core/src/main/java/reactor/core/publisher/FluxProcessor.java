@@ -45,6 +45,16 @@ import static reactor.core.publisher.Sinks.Many;
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, CoreSubscriber<IN>, Scannable, Disposable {
 
+	/**
+	 * Convert a {@link Sinks.Many} to a {@link FluxProcessor} : subscribing to the processor
+	 * will be akin to subscribing to the {@link Many#asFlux()}, and having the processor
+	 * subscribed to an upstream {@link org.reactivestreams.Publisher} will pass signals from
+	 * said {@link org.reactivestreams.Publisher} as calls to the sink's {@link Sinks.Many#emitNext(Object) emit methods}.
+	 *
+	 * @param sink the {@link Sinks.Many} to convert
+	 * @param <IN> the type of values that can be emitted by the sink
+	 * @return a {@link FluxProcessor} with the same semantics as the {@link Sinks.Many}
+	 */
 	public static <IN> FluxProcessor<IN, IN> fromSink(Many<IN> sink) {
 		if (sink instanceof FluxProcessor) {
 			@SuppressWarnings("unchecked")
@@ -53,7 +63,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 				return processor;
 			}
 		}
-		return new DelegateSinkFluxProcessor<>(sink.asFlux(), sink);
+		return new DelegateSinkFluxProcessor<>(sink);
 	}
 
 	/**

@@ -213,7 +213,7 @@ public class MonoUsingTest {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		MonoProcessor<Integer> tp = MonoProcessor.create();
+		NextProcessor<Integer> tp = new NextProcessor<>(null);
 
 		Mono.using(() -> 1, r -> tp, cleanup::set, true)
 		    .subscribe(ts);

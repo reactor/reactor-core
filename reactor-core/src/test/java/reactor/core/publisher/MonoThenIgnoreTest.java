@@ -76,11 +76,10 @@ public class MonoThenIgnoreTest {
 	public void cancel() {
 		TestPublisher<String> cancelTester = TestPublisher.create();
 
-		MonoProcessor<Void> processor = cancelTester.flux()
-		                                            .then()
-		                                            .toProcessor();
-		processor.subscribe();
-		processor.cancel();
+		StepVerifier.create(cancelTester.flux()
+										.then())
+					.thenCancel()
+					.verify();
 
 		cancelTester.assertCancelled();
 	}

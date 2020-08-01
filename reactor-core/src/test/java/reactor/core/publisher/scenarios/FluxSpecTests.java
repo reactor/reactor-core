@@ -16,17 +16,6 @@
 
 package reactor.core.publisher.scenarios;
 
-import org.junit.Assert;
-import org.junit.Test;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
-import reactor.test.StepVerifier;
-import reactor.test.subscriber.AssertSubscriber;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +30,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -253,13 +253,12 @@ public class FluxSpecTests {
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 1, 2, 2, 3));
 
 //		when:"the values are filtered and result is collected"
-		MonoProcessor<List<Integer>> tap = s.distinctUntilChanged()
-		                                    .collectList()
-		                                    .toProcessor();
-		tap.subscribe();
+		List<Integer> tap = s.distinctUntilChanged()
+							 .collectList()
+							 .block();
 
 //		then:"collected must remove duplicates"
-		assertThat(tap.block()).containsExactly(1, 2, 3);
+		assertThat(tap).containsExactly(1, 2, 3);
 	}
 
 	@Test
@@ -269,12 +268,12 @@ public class FluxSpecTests {
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(2, 4, 3, 5, 2, 5));
 
 //		when:"the values are filtered and result is collected"
-		MonoProcessor<List<Integer>> tap = s.distinctUntilChanged(it -> it % 2 == 0)
+		List<Integer> tap = s.distinctUntilChanged(it -> it % 2 == 0)
 		                                    .collectList()
-		                                    .toProcessor();
+		                                    .block();
 
 //		then:"collected must remove duplicates"
-		assertThat(tap.block()).containsExactly(2, 3, 2, 5);
+		assertThat(tap).containsExactly(2, 3, 2, 5);
 	}
 
 	@Test
@@ -284,13 +283,13 @@ public class FluxSpecTests {
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 2, 3, 1, 2, 3, 4));
 
 //		when:"the values are filtered and result is collected"
-		MonoProcessor<List<Integer>> tap = s.distinct()
+		List<Integer> tap = s.distinct()
 		                                    .collectList()
-		                                    .toProcessor();
-		tap.subscribe();
+		                                    .block();
+
 
 //		then:"collected should be without duplicates"
-		assertThat(tap.block()).containsExactly(1, 2, 3, 4);
+		assertThat(tap).containsExactly(1, 2, 3, 4);
 	}
 
 	@Test
@@ -300,13 +299,13 @@ public class FluxSpecTests {
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 2, 3, 1, 2, 3, 4));
 
 //		when: "the values are filtered and result is collected"
-		MonoProcessor<List<Integer>> tap = s.distinct(it -> it % 3)
+		List<Integer> tap = s.distinct(it -> it % 3)
 		                                    .collectList()
-		                                    .toProcessor();
-		tap.subscribe();
+		                                    .block();
+
 
 //		then: "collected should be without duplicates"
-		assertThat(tap.block()).containsExactly(1, 2, 3);
+		assertThat(tap).containsExactly(1, 2, 3);
 	}
 
 	@Test
@@ -484,15 +483,11 @@ public class FluxSpecTests {
 				.flatMap(v -> Flux.just(v * 2))
 				.doOnError(Throwable::printStackTrace);
 
-//			when: "the source accepts a value"
-		MonoProcessor<Integer> value = mapped.next()
-		                                     .toProcessor();
-		value.subscribe();
-		source.emitNext(1);
 
-//		then: "the value is mapped"
-		int result = value.block(Duration.ofSeconds(5));
-		assertThat(result).isEqualTo(2);
+		StepVerifier.create(mapped.next())
+					.then(() -> source.emitNext(1))
+					.assertNext(result -> assertThat(result).isEqualTo(2))
+					.verifyComplete();
 	}
 
 	@Test
@@ -591,7 +586,7 @@ public class FluxSpecTests {
 //		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res).containsExactly("1a2a3a", "1a2b3a", "1a2b3b", "1a2b3c", "1a2b3d", "done");
 	}
-	
+
 	@Test
 	public void simpleConcat() {
 //		"A simple concat"
@@ -674,9 +669,9 @@ public class FluxSpecTests {
 //		"Stream can be counted"
 //		given: "source composables to count and tap"
 		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
-		MonoProcessor<Long> tap = source.asFlux()
-										.count()
-		                                .subscribeWith(MonoProcessor.create());
+		AssertSubscriber<Long> tap = source.asFlux()
+		                                   .count()
+		                                   .subscribeWith(AssertSubscriber.create());
 
 //		when: "the sources accept a value"
 		source.emitNext(1);
@@ -685,7 +680,7 @@ public class FluxSpecTests {
 		source.emitComplete();
 
 //		then: "the count value matches the number of accept"
-		assertThat(tap.peek()).isEqualTo(3);
+		tap.assertValues(3L).assertComplete();
 	}
 
 	@Test
@@ -813,7 +808,7 @@ public class FluxSpecTests {
 			                                .log("streamed")
 			                                .map(it -> it * 2)
 			                                .buffer()
-			                                .publishNext();
+			                                .shareNext();
 
 			res.subscribe();
 
@@ -915,7 +910,7 @@ public class FluxSpecTests {
 //		given: "a composable that will accept 5 values and a reduce function"
 		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
 		Mono<Integer> reduced = source.asFlux().reduce(new Reduction());
-		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
+		AssertSubscriber<Integer> value = reduced.subscribeWith(AssertSubscriber.create());
 
 //		when: "the expected number of values is accepted"
 		source.emitNext(1);
@@ -926,7 +921,7 @@ public class FluxSpecTests {
 		source.emitComplete();
 
 //		then: "the reduced composable holds the reduced value"
-		assertThat(value.peek()).isEqualTo(120);
+		value.assertValues(120).assertComplete();
 	}
 
 	@Test
@@ -934,21 +929,21 @@ public class FluxSpecTests {
 //		"When a known number of values is being reduced, only the final value is made available"
 //		given: "a composable that will accept 2 values and a reduce function"
 		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureBuffer();
-		MonoProcessor<Integer> value = source.asFlux().reduce(new Reduction())
-		                                     .subscribeWith(MonoProcessor.create());
+		AssertSubscriber<Integer> value = source.asFlux().reduce(new Reduction())
+		                                        .subscribeWith(AssertSubscriber.create());
 
 //		when: "the first value is accepted"
 		source.emitNext(1);
 
 //		then: "the reduced value is unknown"
-		assertThat(value.peek()).isNull();
+		value.assertNoValues();
 
 //		when: "the second value is accepted"
 		source.emitNext(2);
 		source.emitComplete();
 
 //		then: "the reduced value is known"
-		assertThat(value.peek()).isEqualTo(2);
+		value.assertValues(2).assertComplete();
 	}
 
 
@@ -985,20 +980,16 @@ public class FluxSpecTests {
 
 	@Test
 	public void reduceWillAccumulateListOfAcceptedValues() {
-//		"Reduce will accumulate a list of accepted values"
-//		given: "a composable"
 		Sinks.Many<Integer> source =
 				Sinks.many().multicast().onBackpressureBuffer();
-		Mono<List<Integer>> reduced = source.asFlux().collectList();
-		MonoProcessor<List<Integer>> value = reduced.toProcessor();
-		value.subscribe();
 
-//		when: "the first value is accepted"
-		source.emitNext(1);
-		source.emitComplete();
-
-//		then: "the list contains the first element"
-		assertThat(value.block()).containsExactly(1);
+		StepVerifier.create(source.asFlux()
+								  .collectList())
+					.then(() -> {
+						source.emitNext(1);
+						source.emitComplete();
+					})
+					.assertNext(res -> assertThat(res).containsExactly(1));
 	}
 
 	@Test
@@ -1012,19 +1003,19 @@ public class FluxSpecTests {
 		                              .log()
 		                              .flatMap(it -> it.log("lol")
 		                                               .reduce(new Reduction()));
-		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
+		AssertSubscriber<Integer> value = reduced.subscribeWith(AssertSubscriber.create());
 
 //		when: "the first value is accepted"
 		source.emitNext(1);
 
 //		then: "the reduction is not available"
-		assertThat(value.peek()).isNull();
+		value.assertNoValues();
 
 //		when: "the second value is accepted and flushed"
 		source.emitNext(2);
 
 //		then: "the updated reduction is available"
-		assertThat(value.peek()).isEqualTo(2);
+		value.assertValues(2);
 	}
 
 

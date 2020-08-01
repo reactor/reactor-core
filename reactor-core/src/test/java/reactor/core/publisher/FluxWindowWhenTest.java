@@ -278,28 +278,25 @@ public class FluxWindowWhenTest {
 		//"overlapping buffers"
 		Sinks.Many<Integer> boundaryFlux = Sinks.many().multicast().onBackpressureBuffer();
 
-		MonoProcessor<List<List<Integer>>> res = numbers.asFlux().windowWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux() )
-		                                                .flatMap(Flux::buffer)
-		                                                .buffer()
-		                                                .publishNext()
-		                                                .toProcessor();
-		res.subscribe();
-
-		numbers.emitNext(1);
-		numbers.emitNext(2);
-		bucketOpening.emitNext(1);
-		numbers.emitNext(3);
-		bucketOpening.emitNext(1);
-		numbers.emitNext(5);
-		boundaryFlux.emitNext(1);
-		bucketOpening.emitNext(1);
-		boundaryFlux.emitComplete();
-		numbers.emitComplete();
-
-		//"the collected overlapping lists are available"
-		assertThat(res.block()).containsExactly(
-				Arrays.asList(3, 5),
-				Arrays.asList(5));
+		StepVerifier.create(numbers.asFlux()
+								   .windowWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())
+								   .flatMap(Flux::buffer)
+								   .collectList())
+					.then(() -> {
+						numbers.emitNext(1);
+						numbers.emitNext(2);
+						bucketOpening.emitNext(1);
+						numbers.emitNext(3);
+						bucketOpening.emitNext(1);
+						numbers.emitNext(5);
+						boundaryFlux.emitNext(1);
+						bucketOpening.emitNext(1);
+						boundaryFlux.emitComplete();
+						numbers.emitComplete();
+						//"the collected overlapping lists are available"
+					})
+					.assertNext(res -> assertThat(res).containsExactly(Arrays.asList(3, 5), Arrays.asList(5)))
+					.verifyComplete();
 	}
 
 

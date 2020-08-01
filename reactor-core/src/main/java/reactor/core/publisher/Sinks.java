@@ -41,16 +41,17 @@ public final class Sinks {
 	}
 
 	/**
-	 * A {@link Sinks.One} with the following characteristics:
+	 * A {@link Sinks.Empty} which exclusively produces one terminal signal: error or complete.
+	 * It has the following characteristics:
 	 * <ul>
 	 *     <li>Multicast</li>
 	 *     <li>Backpressure : this sink does not need any demand since it can only signal error or completion</li>
 	 *     <li>Replaying: Replay the terminal signal (error or complete).</li>
 	 * </ul>
-	 * Use {@link One#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
+	 * Use {@link Sinks.Empty#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
 	 */
 	public static <T> Sinks.Empty<T> empty() {
-		return MonoProcessor.create();
+		return new VoidProcessor<T>();
 	}
 
 	/**
@@ -62,7 +63,7 @@ public final class Sinks {
 	 * Use {@link One#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
 	 */
 	public static <T> Sinks.One<T> one() {
-		return MonoProcessor.create();
+		return new NextProcessor<>(null);
 	}
 
 	/**
@@ -139,7 +140,7 @@ public final class Sinks {
 	}
 
 	/**
-	 * Provide {@link Sinks.Many} specs for sinks which can emit multiple elements
+	 * Provides {@link Sinks.Many} specs for sinks which can emit multiple elements
 	 */
 	public interface ManySpec {
 		/**
@@ -167,7 +168,7 @@ public final class Sinks {
 		/**
 		 * Return a builder for more advanced use cases such as building operators.
 		 * Unsafe {@link Sinks.Many} are not serialized and expect usage to be externally synchronized to respect
-		 * the Reactive Streams specification. The builder also allows to create {@link FluxProcessor} and {@link MonoProcessor}.
+		 * the Reactive Streams specification.
 		 *
 		 * @return {@link ManySpec}
 		 */
@@ -175,7 +176,7 @@ public final class Sinks {
 	}
 
 	/**
-	 * Provide unicast: 1 sink, 1 {@link Subscriber}
+	 * Provides unicast: 1 sink, 1 {@link Subscriber}
 	 */
 	public interface UnicastSpec {
 
@@ -225,7 +226,7 @@ public final class Sinks {
 	}
 
 	/**
-	 * Provide multicast : 1 sink, N {@link Subscriber}
+	 * Provides multicast : 1 sink, N {@link Subscriber}
 	 */
 	public interface MulticastSpec {
 
@@ -300,7 +301,7 @@ public final class Sinks {
 
 
 	/**
-	 * Provide multicast with history/replay capacity : 1 sink, N {@link Subscriber}
+	 * Provides multicast with history/replay capacity : 1 sink, N {@link Subscriber}
 	 */
 	public interface MulticastReplaySpec {
 		/**

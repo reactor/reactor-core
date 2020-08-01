@@ -162,11 +162,10 @@ public class MonoAnyTest {
 	public void cancel() {
 		TestPublisher<String> cancelTester = TestPublisher.create();
 
-		MonoProcessor<Boolean> processor = cancelTester.flux()
-		                                               .any(s -> s.length() > 100)
-		                                               .toProcessor();
-		processor.subscribe();
-		processor.cancel();
+		StepVerifier.create(cancelTester.flux()
+										.any(s -> s.length() > 100))
+					.thenCancel()
+					.verify();
 
 		cancelTester.assertCancelled();
 	}
