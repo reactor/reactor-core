@@ -52,6 +52,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1408,13 +1409,10 @@ public class FluxSwitchOnFirstTest {
                         @Override
                         public void subscribe(CoreSubscriber<? super Integer> actual) {
                             subscribers[0] = actual;
-                            f.subscribe(actual::onNext, actual::onError, actual::onComplete, (s) -> innerSubscriptions[0] = s);
+                            f.subscribe(new SideEffectSubscriber<>(actual::onNext, actual::onError, actual::onComplete, (s) -> innerSubscriptions[0] = s));
                         }
                     })
-                    .subscribe(__ -> {
-                    }, __ -> {
-                    }, () -> {
-                    }, s -> downstreamSubscriptions[0] = s);
+                    .subscribe(new SideEffectSubscriber<>(null, null, null, s -> downstreamSubscriptions[0] = s));
 
             CoreSubscriber<? super Integer> subscriber = subscribers[0];
             Subscription downstreamSubscription = downstreamSubscriptions[0];
@@ -1475,9 +1473,9 @@ public class FluxSwitchOnFirstTest {
                     }
                 })
                 .filter(__ -> true)
-                .subscribe(__ -> { }, __ -> { }, () -> { }, s -> downstreamSubscriptions[0] = s);
+                .subscribeWith(new SideEffectSubscriber<>(null, null, null, s -> downstreamSubscriptions[0] = s));
 
-            CoreSubscriber subscriber = subscribers[0];
+            CoreSubscriber<? super Integer> subscriber = subscribers[0];
             Subscription downstreamSubscription = downstreamSubscriptions[0];
             Subscription innerSubscription = innerSubscriptions[0];
             downstreamSubscription.request(1);
@@ -1962,5 +1960,52 @@ public class FluxSwitchOnFirstTest {
 
             }
         };
+    }
+
+    /**
+     * A subscriber used solely for triggering the various side effects of hooks, if set.
+     * In particular, does not {@link Subscription#request(long) request} any data by default.
+     */
+    private static final class SideEffectSubscriber<T> extends BaseSubscriber<T> {
+
+        private final Consumer<T> onNext;
+        private final Consumer<Throwable> onError;
+        private final Runnable onComplete;
+        private final Consumer<Subscription> onSubscribe;
+
+        private SideEffectSubscriber(@Nullable Consumer<T> onNext, @Nullable Consumer<Throwable> onError, @Nullable Runnable onComplete, @Nullable Consumer<Subscription> onSubscribe) {
+            this.onNext = onNext;
+            this.onError = onError;
+            this.onComplete = onComplete;
+            this.onSubscribe = onSubscribe;
+        }
+
+        @Override
+        protected void hookOnComplete() {
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        }
+
+        @Override
+        protected void hookOnSubscribe(Subscription subscription) {
+            if (onSubscribe != null) {
+                onSubscribe.accept(subscription);
+            }
+        }
+
+        @Override
+        protected void hookOnNext(T value) {
+            if (onNext != null) {
+                onNext.accept(value);
+            }
+        }
+
+        @Override
+        protected void hookOnError(Throwable throwable) {
+            if (onError != null) {
+                onError.accept(throwable);
+            }
+        }
     }
 }
