@@ -22,9 +22,11 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 ```groovy
 repositories {
     mavenCentral()
-    maven { url "https://repo.spring.io/milestone" }
 
-    // Snapshots
+    // Uncomment to get access to Milestones
+    // maven { url "https://repo.spring.io/milestone" }
+
+    // Uncomment to get access to Snapshots
     // maven { url "https://repo.spring.io/snapshot" }
 }
 
@@ -32,7 +34,7 @@ dependencies {
     compile "io.projectreactor:reactor-core:3.2.19.RELEASE"
     testCompile "io.projectreactor:reactor-test:3.2.19.RELEASE"
 
-    // Snapshots
+    // Alternatively, use the following for latest snapshot artifacts in this line
     // compile "io.projectreactor:reactor-core:3.2.20.BUILD-SNAPSHOT"
     // testCompile "io.projectreactor:reactor-test:3.2.20.BUILD-SNAPSHOT"
 }
