@@ -13,6 +13,8 @@
 
 Non-Blocking [Reactive Streams](https://www.reactive-streams.org/) Foundation for the JVM both implementing a [Reactive Extensions](https://reactivex.io) inspired API and efficient event streaming support.
 
+Since `3.3.x`, this repository also contains `reactor-tools`, a java agent aimed at helping with debugging of Reactor code.
+
 ## Getting it
    
 **Reactor 3 requires Java 8 or + to run**.
@@ -37,6 +39,9 @@ dependencies {
     // Alternatively, use the following for latest snapshot artifacts in this line
     // compile "io.projectreactor:reactor-core:3.3.9.BUILD-SNAPSHOT"
     // testCompile "io.projectreactor:reactor-test:3.3.9.BUILD-SNAPSHOT"
+
+    // Optionally, use `reactor-tools` to help debugging reactor code
+    // implementation "io.projectreactor:reactor-tools:3.3.8.RELEASE"
 }
 ```
 
