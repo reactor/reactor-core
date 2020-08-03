@@ -113,7 +113,7 @@ public class ContextTests {
 	@Test
 	public void currentContext() throws InterruptedException {
 		StepVerifier.create(Mono.just("foo")
-		                        .flatMap(d -> Mono.deferWithContext(Mono::just)
+		                        .flatMap(d -> Mono.deferContextual(Mono::just)
 		                                          .map(c -> d + c.get(Integer.class)))
 		                        .contextWrite(ctx ->
 				                        ctx.put(Integer.class, ctx.get(Integer.class) + 1))
@@ -126,7 +126,7 @@ public class ContextTests {
 	@Test
 	public void currentContextWithEmpty() throws InterruptedException {
 		StepVerifier.create(Mono.just("foo")
-		                        .flatMap(d -> Mono.deferWithContext(Mono::just)
+		                        .flatMap(d -> Mono.deferContextual(Mono::just)
 		                                          .map(c -> d + c.get(Integer.class))))
 		            .verifyErrorMatches(t -> t instanceof NoSuchElementException
 				            && "Context is empty".equals(t.getMessage()));
@@ -185,7 +185,7 @@ public class ContextTests {
 	public void monoSubscriberContextPutsAll() {
 		StepVerifier.create(
 				Mono.just("foo")
-				    .flatMap(v -> Mono.deferWithContext(Mono::just))
+				    .flatMap(v -> Mono.deferContextual(Mono::just))
 				    .contextWrite(Context.of("foo", "bar", 1, "baz"))
 					.contextWrite(Context.of("initial", "value"))
 		)
@@ -197,7 +197,7 @@ public class ContextTests {
 	public void monoSubscriberContextWithMergedEmpty() {
 		StepVerifier.create(
 				Mono.just("foo")
-				    .flatMap(v -> Mono.deferWithContext(Mono::just))
+				    .flatMap(v -> Mono.deferContextual(Mono::just))
 				    .contextWrite(Context.empty())
 				    .contextWrite(Context.of("initial", "value"))
 		)
@@ -209,7 +209,7 @@ public class ContextTests {
 	public void monoSubscriberContextWithBothEmpty() {
 		StepVerifier.create(
 				Mono.just("foo")
-				    .flatMap(v -> Mono.deferWithContext(Mono::just))
+				    .flatMap(v -> Mono.deferContextual(Mono::just))
 				    .contextWrite(Context.empty())
 				    .contextWrite(Context.empty())
 		)
@@ -221,7 +221,7 @@ public class ContextTests {
 	public void fluxSubscriberContextPutsAll() {
 		StepVerifier.create(
 				Flux.just("foo")
-				    .flatMap(v -> Mono.deferWithContext(Mono::just))
+				    .flatMap(v -> Mono.deferContextual(Mono::just))
 				    .contextWrite(Context.of("foo", "bar", 1, "baz"))
 					.contextWrite(Context.of("initial", "value"))
 		)
@@ -233,7 +233,7 @@ public class ContextTests {
 	public void fluxSubscriberContextWithMergedEmpty() {
 		StepVerifier.create(
 				Flux.just("foo")
-				    .flatMap(v -> Mono.deferWithContext(Mono::just))
+				    .flatMap(v -> Mono.deferContextual(Mono::just))
 				    .contextWrite(Context.empty())
 				    .contextWrite(Context.of("initial", "value"))
 		)
@@ -245,7 +245,7 @@ public class ContextTests {
 	public void fluxSubscriberContextWithBothEmpty() {
 		StepVerifier.create(
 				Flux.just("foo")
-				    .flatMap(v -> Mono.deferWithContext(Mono::just))
+				    .flatMap(v -> Mono.deferContextual(Mono::just))
 				    .contextWrite(Context.empty())
 				    .contextWrite(Context.empty())
 		)

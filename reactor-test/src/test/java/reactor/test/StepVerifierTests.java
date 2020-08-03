@@ -2043,7 +2043,7 @@ public class StepVerifierTests {
 
 	@Test
 	public void withInitialContext() {
-		StepVerifier.create(Mono.deferWithContext(Mono::just),
+		StepVerifier.create(Mono.deferContextual(Mono::just),
 				StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
 		            .assertNext(c -> Assertions.assertThat(c.getOrDefault("foo", "baz"))
 		                                       .isEqualTo("bar"))

@@ -709,7 +709,7 @@ public class StepVerifierAssertionsTests {
 
 	@Test
 	public void contextDiscardCaptureWithNoInitialContext() {
-		StepVerifier.create(Mono.deferWithContext(Mono::just)
+		StepVerifier.create(Mono.deferContextual(Mono::just)
 		                        .flatMapIterable(ctx -> ctx.stream()
 		                                                   .map(Map.Entry::getKey)
 		                                                   .map(String::valueOf)
@@ -726,7 +726,7 @@ public class StepVerifierAssertionsTests {
 	@Test
 	public void contextDiscardCaptureWithInitialContext() {
 		Context initial = Context.of("foo", "bar");
-		StepVerifier.create(Mono.deferWithContext(Mono::just)
+		StepVerifier.create(Mono.deferContextual(Mono::just)
 				.flatMapIterable(ctx -> ctx.stream()
 				                           .map(Map.Entry::getKey)
 				                           .map(String::valueOf)

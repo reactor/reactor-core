@@ -36,7 +36,7 @@ public class LambdaSubscriberTest {
 		AtomicReference<ContextView> contextRef = new AtomicReference<>();
 
 		Flux.just("foo")
-		    .flatMap(c -> Mono.deferWithContext(Mono::just))
+		    .flatMap(c -> Mono.deferContextual(Mono::just))
 		    .doOnNext(contextRef::set)
 		    .subscribe(null, null, null, Context.of("subscriber", "context"));
 

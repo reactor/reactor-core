@@ -867,7 +867,7 @@ public class FluxUsingWhenTest {
 
 		TestResource testResource = new TestResource();
 		PublisherProbe<String> probe = PublisherProbe.of(
-				Mono.deferWithContext(Mono::just)
+				Mono.deferContextual(Mono::just)
 				    .map(it -> it.get(String.class))
 				    .doOnNext(probeContextValue::set)
 				    .onErrorReturn("fail")
@@ -875,7 +875,7 @@ public class FluxUsingWhenTest {
 		Mono<String> contextHandler = probe.mono();
 
 		Mono<TestResource> resourceProvider = Mono.just(testResource)
-		                                          .zipWith(Mono.deferWithContext(Mono::just))
+		                                          .zipWith(Mono.deferContextual(Mono::just))
 		                                          .doOnNext(it -> resourceContextValue.set(it.getT2().get(String.class)))
 		                                          .map(Tuple2::getT1);
 
@@ -908,7 +908,7 @@ public class FluxUsingWhenTest {
 
 		TestResource testResource = new TestResource();
 		PublisherProbe<String> probe = PublisherProbe.of(
-				Mono.deferWithContext(Mono::just)
+				Mono.deferContextual(Mono::just)
 				    .map(it -> it.get(String.class))
 				    .doOnNext(probeContextValue::set)
 				    .onErrorReturn("fail")
@@ -916,7 +916,7 @@ public class FluxUsingWhenTest {
 		Mono<String> contextHandler = probe.mono();
 
 		Mono<TestResource> resourceProvider = Mono.just(testResource)
-		                                          .zipWith(Mono.deferWithContext(Mono::just))
+		                                          .zipWith(Mono.deferContextual(Mono::just))
 		                                          .doOnNext(it -> resourceContextValue.set(it.getT2().get(String.class)))
 		                                          .map(Tuple2::getT1);
 
@@ -946,7 +946,7 @@ public class FluxUsingWhenTest {
 		TestResource testResource = new TestResource();
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
 		PublisherProbe<String> probe = PublisherProbe.of(
-				Mono.deferWithContext(Mono::just)
+				Mono.deferContextual(Mono::just)
 				    .map(it -> it.get(String.class))
 				    .doOnError(errorRef::set)
 				    .onErrorReturn("fail")
@@ -976,7 +976,7 @@ public class FluxUsingWhenTest {
 		TestResource testResource = new TestResource();
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
 		PublisherProbe<String> probe = PublisherProbe.of(
-				Mono.deferWithContext(Mono::just)
+				Mono.deferContextual(Mono::just)
 				    .map(it -> it.get(String.class))
 				    .doOnError(errorRef::set)
 				    .onErrorReturn("fail")
@@ -1443,21 +1443,21 @@ public class FluxUsingWhenTest {
 
 	private static Object[] sourcesContext() {
 		return new Object[] {
-				new Object[] { Mono.deferWithContext(Mono::just).map(it -> it.get(String.class)).hide() },
-				new Object[] { Mono.deferWithContext(Mono::just).map(it -> it.get(String.class)) }
+				new Object[] { Mono.deferContextual(Mono::just).map(it -> it.get(String.class)).hide() },
+				new Object[] { Mono.deferContextual(Mono::just).map(it -> it.get(String.class)) }
 		};
 	}
 
 	private static Object[] sourcesContextError() {
 		return new Object[] {
 				new Object[] { Mono
-						.deferWithContext(Mono::just)
+						.deferContextual(Mono::just)
 						.map(it -> it.get(String.class))
 						.hide()
 						.map(it -> { throw new IllegalStateException("boom"); })
 				},
 				new Object[] { Mono
-						.deferWithContext(Mono::just)
+						.deferContextual(Mono::just)
 						.map(it -> it.get(String.class))
 						.map(it -> { throw new IllegalStateException("boom"); })
 				}

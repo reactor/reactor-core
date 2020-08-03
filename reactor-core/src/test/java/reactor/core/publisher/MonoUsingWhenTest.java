@@ -358,7 +358,7 @@ public class MonoUsingWhenTest {
 
 	@Test
 	public void resourceSupplierCanAccessContext() {
-		Mono.usingWhen(Mono.deferWithContext(Mono::just)
+		Mono.usingWhen(Mono.deferContextual(Mono::just)
 		                   .map(ctx -> ctx.get(String.class)),
 				Mono::just,
 				Mono::just,

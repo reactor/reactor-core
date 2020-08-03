@@ -129,7 +129,7 @@ public class FluxCacheTest {
 	public void cacheContextHistory() {
 		AtomicInteger contextFillCount = new AtomicInteger();
 		Flux<String> cached = Flux.just(1, 2)
-		                          .flatMap(i -> Mono.deferWithContext(Mono::just)
+		                          .flatMap(i -> Mono.deferContextual(Mono::just)
 		                                            .map(ctx -> ctx.getOrDefault("a", "BAD"))
 		                          )
 		                          .cache(1)
@@ -162,7 +162,7 @@ public class FluxCacheTest {
 
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		Flux<String> cached = Flux.just(1)
-		                          .flatMap(i -> Mono.deferWithContext(Mono::just)
+		                          .flatMap(i -> Mono.deferContextual(Mono::just)
 		                                            .map(ctx -> ctx.getOrDefault("a", "BAD"))
 		                          )
 		                          .replay(Duration.ofMillis(500), vts)
@@ -174,7 +174,7 @@ public class FluxCacheTest {
 		assertThat(cacheMiss).as("cacheMiss").isEqualTo("GOOD1");
 		assertThat(contextFillCount).as("cacheMiss").hasValue(1);
 
-		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since Mono.deferWithContext(Mono::just) result is cached
+		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since Mono.deferContextual(Mono::just) result is cached
 		String cacheHit = cached.blockLast();
 		assertThat(cacheHit).as("cacheHit").isEqualTo("GOOD1"); //value from the cache
 		assertThat(contextFillCount).as("cacheHit").hasValue(2); //function was still invoked

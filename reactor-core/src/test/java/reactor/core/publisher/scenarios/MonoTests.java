@@ -289,7 +289,7 @@ public class MonoTests {
 	@Test
 	public void monoCacheContextHistory() {
 		AtomicInteger contextFillCount = new AtomicInteger();
-		Mono<String> cached = Mono.deferWithContext(Mono::just)
+		Mono<String> cached = Mono.deferContextual(Mono::just)
 		                          .map(ctx -> ctx.getOrDefault("a", "BAD"))
 		                          .cache()
 		                          .contextWrite(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));

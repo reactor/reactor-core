@@ -738,7 +738,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		Flux<Integer> integerFlux =
 				Flux.just(1, 2, 3)
 				    .flatMap(value ->
-						    Mono.deferWithContext(Mono::just)
+						    Mono.deferContextual(Mono::just)
 						        .doOnNext(reference::set)
 						        .thenReturn(value)
 				    )

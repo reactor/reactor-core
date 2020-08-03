@@ -768,7 +768,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 	public void contextFromFirstSubscriberCached() {
 		AtomicInteger contextFillCount = new AtomicInteger();
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
-		Mono<ContextView> cached = Mono.deferWithContext(Mono::just)
+		Mono<ContextView> cached = Mono.deferContextual(Mono::just)
 		                               .as(m -> new MonoCacheTime<>(m, Duration.ofMillis(500), vts))
 		                               .contextWrite(ctx -> ctx.put("a", "GOOD" + contextFillCount.incrementAndGet()));
 
@@ -777,7 +777,7 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		assertThat(cacheMiss).as("cacheMiss").isEqualTo("GOOD1");
 		assertThat(contextFillCount).as("cacheMiss").hasValue(1);
 
-		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since Mono.deferWithContext(Mono::just) result is cached
+		//at second subscribe, the Context fill attempt is still done, but ultimately ignored since Mono.deferContextual(Mono::just) result is cached
 		String cacheHit = cached.map(x -> x.getOrDefault("a", "BAD")).block();
 		assertThat(cacheHit).as("cacheHit").isEqualTo("GOOD1"); //value from the cache
 		assertThat(contextFillCount).as("cacheHit").hasValue(2); //function was still invoked

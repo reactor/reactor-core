@@ -42,7 +42,7 @@ public class LambdaMonoSubscriberTest {
 	public void initialContextIsVisibleToUpstream() {
 		AtomicReference<ContextView> contextRef = new AtomicReference<>();
 
-		Mono.deferWithContext(Mono::just)
+		Mono.deferContextual(Mono::just)
 		    .doOnNext(contextRef::set)
 		    .subscribe(null, null, null, Context.of("subscriber", "context"));
 
