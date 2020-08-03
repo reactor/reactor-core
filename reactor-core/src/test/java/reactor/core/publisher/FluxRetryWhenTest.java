@@ -594,9 +594,9 @@ public class FluxRetryWhenTest {
 		Flux<Object> retryWithContext =
 				Flux.error(new IllegalStateException("boom"))
 				    .doOnEach(sig -> {
-					    retriesLeft.add(sig.getContext().get("retriesLeft"));
+					    retriesLeft.add(sig.getContextView().get("retriesLeft"));
 					    if (!sig.isOnNext()) {
-						    contextPerRetry.add(sig.getContext());
+						    contextPerRetry.add(sig.getContextView());
 					    }
 				    })
 				    .retryWhen(Retry.from(retrySignalFlux -> retrySignalFlux.handle((rs, sink) -> {

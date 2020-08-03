@@ -253,7 +253,7 @@ public class MonoDoOnEachTest {
 		List<Tuple2<Signal, ContextView>> signalsAndContext = new ArrayList<>();
 		Mono.just(1)
 		    .hide()
-		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s, s.getContext())))
+		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s, s.getContextView())))
 		    .subscriberContext(Context.of("foo", "bar"))
 		    .subscribe();
 
@@ -275,7 +275,7 @@ public class MonoDoOnEachTest {
 		List<Tuple2<Signal, ContextView>> signalsAndContext = new ArrayList<>();
 		Mono.just(0)
 		    .map(i -> 10 / i)
-		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s,s.getContext())))
+		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s,s.getContextView())))
 		    .subscriberContext(Context.of("foo", "bar"))
 		    .subscribe();
 

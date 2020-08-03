@@ -3843,7 +3843,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see Context
 	 */
 	public final Mono<T> subscriberContext(Context mergeContext) {
-		return subscriberContext(c -> c.putAll(mergeContext));
+		return subscriberContext(c -> c.putAll(mergeContext.readOnly()));
 	}
 
 	/**

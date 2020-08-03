@@ -119,7 +119,7 @@ public class Context1Test {
 	@Test
 	public void putAllOf() {
 		Context m = Context.of("A", 1, "B", 2, "C", 3);
-		Context put = c.putAll(m);
+		Context put = c.putAll(m.readOnly());
 
 		assertThat(put).isInstanceOf(Context4.class)
 		               .hasToString("Context4{1=A, A=1, B=2, C=3}");
@@ -128,7 +128,7 @@ public class Context1Test {
 	@Test
 	public void putAllReplaces() {
 		Context m = Context.of(c.key, "replaced", "A", 1);
-		Context put = c.putAll(m);
+		Context put = c.putAll(m.readOnly());
 
 		assertThat(put).isInstanceOf(Context2.class)
 		               .hasToString("Context2{1=replaced, A=1}");
@@ -137,7 +137,7 @@ public class Context1Test {
 	@Test
 	public void putAllOfEmpty() {
 		Context m = Context.empty();
-		Context put = c.putAll(m);
+		Context put = c.putAll(m.readOnly());
 
 		assertThat(put).isSameAs(c);
 	}

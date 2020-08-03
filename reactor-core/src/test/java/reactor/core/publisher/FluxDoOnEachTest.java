@@ -569,7 +569,7 @@ public class FluxDoOnEachTest {
 		            .verifyComplete();
 
 		assertThat(signals)
-		          .allSatisfy(signal -> assertThat(signal.getContext().hasKey("foo"))
+		          .allSatisfy(signal -> assertThat(signal.getContextView().hasKey("foo"))
 				          .as("has Context value")
 				          .isTrue());
 	}

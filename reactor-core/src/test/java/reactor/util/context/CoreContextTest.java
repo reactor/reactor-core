@@ -30,7 +30,7 @@ public class CoreContextTest {
 		Context initial = Context.of(1, "A", 2, "B", 3, "C");
 		Context other = new ContextTest.ForeignContext("staticKey", "staticValue");
 
-		Context result = initial.putAll(other);
+		Context result = initial.putAll(other.readOnly());
 
 		assertThat(result).isInstanceOf(CoreContext.class)
 		                  .isInstanceOf(Context4.class);
@@ -53,7 +53,7 @@ public class CoreContextTest {
 				.directPut(5, "value5")
 				.directPut(6, "value6");
 
-		Context result = initial.putAll(other);
+		Context result = initial.putAll(other.readOnly());
 
 		assertThat(result).isInstanceOf(ContextN.class);
 		ContextN resultN = (ContextN) result;
@@ -67,7 +67,7 @@ public class CoreContextTest {
 		Context a = Context.of(1, "value1", 2, "value2");
 		CoreContext b = (CoreContext) Context.of(1, "replaced", 3, "value3", 4, "value4");
 
-		Context result = a.putAll(b);
+		Context result = a.putAll(b.readOnly());
 
 		assertThat(result).isInstanceOf(Context4.class);
 		Context4 context4 = (Context4) result;

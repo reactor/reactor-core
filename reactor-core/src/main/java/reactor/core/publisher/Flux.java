@@ -7949,7 +7949,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see Context
 	 */
 	public final Flux<T> subscriberContext(Context mergeContext) {
-		return subscriberContext(c -> c.putAll(mergeContext));
+		return subscriberContext(c -> c.putAll(mergeContext.readOnly()));
 	}
 
 	/**
