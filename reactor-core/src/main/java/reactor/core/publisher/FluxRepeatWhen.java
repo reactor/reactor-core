@@ -30,6 +30,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 /**
  * Repeats a source when a companion sequence signals an item in response to the main's
@@ -180,8 +181,8 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 					//flow that emit a Context as a trigger for the re-subscription are
 					//used to REPLACE the currentContext()
-					if (trigger instanceof Context) {
-						this.context = this.context.putAll((Context) trigger);
+					if (trigger instanceof ContextView) {
+						this.context = this.context.putAll((ContextView) trigger);
 					}
 
 					source.subscribe(this);

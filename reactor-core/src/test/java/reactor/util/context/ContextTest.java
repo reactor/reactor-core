@@ -421,7 +421,7 @@ public class ContextTest {
 		ForeignContext left = new ForeignContext(leftMap);
 		ForeignContext right = new ForeignContext(rightMap);
 
-		Context combined = left.putAll(right);
+		Context combined = left.putAll(right.readOnly());
 		assertThat(combined).isInstanceOf(ContextN.class);
 		ContextN combinedN = (ContextN) combined;
 
@@ -447,7 +447,7 @@ public class ContextTest {
 		ContextN right = new ContextN(rightMap);
 		right.accept(6, "F");
 
-		Context combined = left.putAll(right);
+		Context combined = left.putAll(right.readOnly());
 		assertThat(combined).isInstanceOf(ForeignContext.class);
 		ForeignContext combinedN = (ForeignContext) combined;
 
@@ -484,7 +484,7 @@ public class ContextTest {
 
 		//this test proved flaky in the past, due to the parallelization
 		for (int i = 0; i < 1000; i++) {
-			Context combined = left.putAll(right);
+			Context combined = left.putAll(right.readOnly());
 			assertThat(combined).isInstanceOf(ContextN.class);
 			ContextN combinedN = (ContextN) combined;
 
@@ -499,7 +499,7 @@ public class ContextTest {
 		Context initial = new ForeignContext(1, "A");
 		Context other = new ForeignContext(2, "B");
 
-		Context result = initial.putAll(other);
+		Context result = initial.putAll(other.readOnly());
 
 		assertThat(result).isInstanceOf(Context2.class);
 		Context2 context2 = (Context2) result;
@@ -520,7 +520,7 @@ public class ContextTest {
 				.directPut(5, "value5")
 				.directPut(6, "value6");
 
-		Context result = initial.putAll(other);
+		Context result = initial.putAll(other.readOnly());
 
 		assertThat(result).isInstanceOf(ContextN.class);
 		ContextN resultN = (ContextN) result;

@@ -434,7 +434,7 @@ public class FluxRepeatWhenTest {
 				Flux.just("A", "B")
 				    .doOnEach(sig -> {
 				    	if (sig.isOnComplete()) {
-						    ContextView ctx = sig.getContext();
+						    ContextView ctx = sig.getContextView();
 						    contexts.add(ctx);
 						    repeats.add("emitted " + ctx.get("emitted") + " elements this attempt, " + ctx.get("repeatsLeft") + " repeats left");
 					    }

@@ -1049,7 +1049,7 @@ public class ParallelFluxTest {
 		Flux.just(1, 2, 3)
 		    .parallel(3)
 		    .doOnEach(s -> {
-			    String valueFromContext = s.getContext()
+			    String valueFromContext = s.getContextView()
 			                               .getOrDefault("test", null);
 			    results.add(s + " " + valueFromContext);
 		    })

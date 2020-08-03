@@ -164,7 +164,7 @@ public class Context3Test {
 	@Test
 	public void putAllOf() {
 		Context m = Context.of("A", 1, "B", 2, "C", 3);
-		Context put = c.putAll(m);
+		Context put = c.putAll(m.readOnly());
 
 		assertThat(put).isInstanceOf(ContextN.class);
 		assertThat(put.stream().map(Map.Entry::getKey))
@@ -174,7 +174,7 @@ public class Context3Test {
 	@Test
 	public void putAllReplaces() {
 		Context m = Context.of(c.key1, "replaced", "A", 1);
-		Context put = c.putAll(m);
+		Context put = c.putAll(m.readOnly());
 
 		assertThat(put).isInstanceOf(Context4.class)
 		               .hasToString("Context4{1=replaced, 2=B, 3=C, A=1}");
@@ -183,7 +183,7 @@ public class Context3Test {
 	@Test
 	public void putAllOfEmpty() {
 		Context m = Context.empty();
-		Context put = c.putAll(m);
+		Context put = c.putAll(m.readOnly());
 
 		assertThat(put).isSameAs(c);
 	}
