@@ -13,7 +13,7 @@
 
 Non-Blocking [Reactive Streams](https://www.reactive-streams.org/) Foundation for the JVM both implementing a [Reactive Extensions](https://reactivex.io) inspired API and efficient event streaming support.
 
-The `master` branch is now dedicated to development of the `3.3.x` line.
+Since `3.3.x`, this repository also contains `reactor-tools`, a java agent aimed at helping with debugging of Reactor code.
 
 ## Getting it
    
@@ -24,9 +24,11 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 ```groovy
 repositories {
     mavenCentral()
+
+    // Uncomment to get access to Milestones
     maven { url "https://repo.spring.io/milestone" }
 
-    // Snapshots
+    // Uncomment to get access to Snapshots
     // maven { url "https://repo.spring.io/snapshot" }
 }
 
@@ -35,9 +37,12 @@ dependencies {
     compile "io.projectreactor:reactor-core:3.4.0-M1"
     testCompile "io.projectreactor:reactor-test:3.4.0-M1"
 
-    // Snapshots
+    // Alternatively, use the following for latest snapshot artifacts in this line
     // compile "io.projectreactor:reactor-core:3.4.0-SNAPSHOT"
     // testCompile "io.projectreactor:reactor-test:3.4.0-SNAPSHOT"
+
+    // Optionally, use `reactor-tools` to help debugging reactor code
+    // implementation "io.projectreactor:reactor-tools:3.4.0-M1"
 }
 ```
 
