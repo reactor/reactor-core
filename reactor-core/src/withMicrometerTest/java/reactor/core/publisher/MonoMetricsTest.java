@@ -19,16 +19,13 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -57,7 +54,6 @@ import static reactor.core.publisher.FluxMetrics.TAG_CANCEL;
 import static reactor.core.publisher.FluxMetrics.TAG_KEY_EXCEPTION;
 import static reactor.core.publisher.FluxMetrics.TAG_ON_COMPLETE;
 import static reactor.core.publisher.FluxMetrics.TAG_ON_ERROR;
-import static reactor.core.publisher.FluxMetrics.TAG_SEQUENCE_NAME;
 import static reactor.test.publisher.TestPublisher.Violation.CLEANUP_ON_TERMINATE;
 
 public class MonoMetricsTest {
@@ -148,17 +144,15 @@ public class MonoMetricsTest {
 		Mono.when(unnamed, named).block();
 
 		Timer unnamedMeter = registry
-				.find(METER_FLOW_DURATION)
+				.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_ERROR))
 				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
-				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
 				.timer();
 
 		Timer namedMeter = registry
-				.find(METER_FLOW_DURATION)
+				.find("foo" + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_ERROR))
 				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
-				.tag(TAG_SEQUENCE_NAME, "foo")
 				.timer();
 
 		assertThat(unnamedMeter).isNotNull();
@@ -171,17 +165,16 @@ public class MonoMetricsTest {
 	@Test
 	public void usesTags() {
 		Mono<Integer> source = Mono.just(1)
-		                           .tag("tag1", "A")
-		                           .name("usesTags")
-		                           .tag("tag2", "foo")
+								   .name("usesTags")
+								   .tag("tag1", "A")
+								   .tag("tag2", "foo")
 		                           .hide();
 		new MonoMetrics<>(source, registry)
 				.block();
 
 		Timer meter = registry
-				.find(METER_FLOW_DURATION)
+				.find("usesTags" + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_COMPLETE))
-				.tag(TAG_SEQUENCE_NAME, "usesTags")
 				.tag("tag1", "A")
 				.tag("tag2", "foo")
 				.timer();
@@ -198,7 +191,7 @@ public class MonoMetricsTest {
 				.block();
 
 		Timer nextMeter = registry
-				.find(METER_ON_NEXT_DELAY)
+				.find(REACTOR_DEFAULT_NAME + METER_ON_NEXT_DELAY)
 				.timer();
 
 		assertThat(nextMeter).isNull();
@@ -209,14 +202,13 @@ public class MonoMetricsTest {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 		Mono<Integer> source = testPublisher.mono().hide();
 
-		new MonoMetrics<>(source, registry)
-				.subscribe();
+		new MonoMetrics<>(source, registry).subscribe();
 
 		testPublisher.complete()
 		             .next(2);
 
 		Counter malformedMeter = registry
-				.find(METER_MALFORMED)
+				.find(REACTOR_DEFAULT_NAME + METER_MALFORMED)
 				.counter();
 
 		assertThat(malformedMeter).isNotNull();
@@ -231,14 +223,13 @@ public class MonoMetricsTest {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 		Mono<Integer> source = testPublisher.mono().hide();
 
-		new MonoMetrics<>(source, registry)
-				.subscribe();
+		new MonoMetrics<>(source, registry).subscribe();
 
 		testPublisher.complete()
 		             .error(dropError);
 
 		Counter malformedMeter = registry
-				.find(METER_MALFORMED)
+				.find(REACTOR_DEFAULT_NAME + METER_MALFORMED)
 				.counter();
 
 		assertThat(malformedMeter).isNotNull();
@@ -248,20 +239,19 @@ public class MonoMetricsTest {
 
 	@Test
 	public void subscribeToComplete() {
-		Mono<Long> source = Mono.delay(Duration.ofMillis(100))
-		                          .hide();
-		new MonoMetrics<>(source, registry)
-				.block();
+		Mono<Long> source = Mono.delay(Duration.ofMillis(100)).hide();
 
-		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
+		new MonoMetrics<>(source, registry).block();
+
+		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
-		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcErrorTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
-		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCancelTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
@@ -283,19 +273,20 @@ public class MonoMetricsTest {
 		Mono<Long> source = Mono.delay(Duration.ofMillis(100))
 		                           .map(v -> 100 / v)
 		                           .hide();
+
 		new MonoMetrics<>(source, registry)
 				.onErrorReturn(-1L)
 				.block();
 
-		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
-		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcErrorTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
-		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCancelTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
@@ -322,15 +313,15 @@ public class MonoMetricsTest {
 		Thread.sleep(100);
 		disposable.dispose();
 
-		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
-		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcErrorTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
-		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCancelTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
@@ -351,12 +342,11 @@ public class MonoMetricsTest {
 
 	@Test
 	public void countsSubscriptions() {
-		Mono<Integer> source = Mono.just(1)
-		                           .hide();
+		Mono<Integer> source = Mono.just(1).hide();
 		Mono<Integer> test = new MonoMetrics<>(source, registry);
 
 		test.subscribe();
-		Counter meter = registry.find(METER_SUBSCRIBED)
+		Counter meter = registry.find(REACTOR_DEFAULT_NAME + METER_SUBSCRIBED)
 		                        .counter();
 
 		assertThat(meter).isNotNull();
@@ -373,46 +363,18 @@ public class MonoMetricsTest {
 		Mono<Integer> source = Mono.just(10)
 		                           .name("foo")
 		                           .hide();
-		new MonoMetrics<>(source, registry)
-				.block();
 
-		DistributionSummary meter = registry.find(METER_REQUESTED)
+		new MonoMetrics<>(source, registry).block();
+
+		DistributionSummary meter = registry.find("foo" + METER_REQUESTED)
 		                                    .summary();
 
 		assertThat(meter).as("global find").isNull();
 
-		meter = registry.find(METER_REQUESTED)
-		                .tag(TAG_SEQUENCE_NAME, "foo")
+		meter = registry.find("foo" + METER_REQUESTED)
 		                .summary();
 
 		assertThat(meter).as("tagged find").isNull();
-	}
-
-	//see https://github.com/reactor/reactor-core/issues/1425
-	@Test
-	public void flowDurationTagsConsistency() {
-		Mono<Integer> source1 = Mono.just(1)
-		                            .name("normal")
-		                            .hide();
-		Mono<Object> source2 = Mono.error(new IllegalStateException("dummy"))
-		                           .name("error")
-		                           .hide();
-
-		new MonoMetrics<>(source1, registry)
-				.block();
-		new MonoMetrics<>(source2, registry)
-				.onErrorReturn(0)
-				.block();
-
-		Set<Set<String>> uniqueTagKeySets = registry
-				.find(METER_FLOW_DURATION)
-				.meters()
-				.stream()
-				.map(it -> it.getId().getTags())
-				.map(it -> it.stream().map(Tag::getKey).collect(Collectors.toSet()))
-				.collect(Collectors.toSet());
-
-		assertThat(uniqueTagKeySets).hasSize(1);
 	}
 
 	@Test
