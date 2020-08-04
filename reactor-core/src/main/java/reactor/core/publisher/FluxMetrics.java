@@ -110,7 +110,6 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 				                                           .tags(commonTags)
 				                                           .description(
 						                                           "Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount")
-				                                           .baseUnit("requested amount")
 				                                           .register(registry);
 			}
 			else {
@@ -375,7 +374,6 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 	static void recordOnSubscribe(Tags commonTags, MeterRegistry registry) {
 		Counter.builder(METER_SUBSCRIBED)
 		       .tags(commonTags)
-		       .baseUnit("subscribers")
 		       .description("Counts how many Reactor sequences have been subscribed to")
 		       .register(registry)
 		       .increment();
