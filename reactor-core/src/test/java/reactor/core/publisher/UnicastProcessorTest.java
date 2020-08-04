@@ -183,7 +183,7 @@ public class UnicastProcessorTest {
 	@Test
 	public void contextTest() {
     	UnicastProcessor<Integer> p = UnicastProcessor.create();
-    	p.subscriberContext(ctx -> ctx.put("foo", "bar")).subscribe();
+    	p.contextWrite(ctx -> ctx.put("foo", "bar")).subscribe();
 
     	assertThat(p.sink().currentContext().get("foo").toString()).isEqualTo("bar");
 	}

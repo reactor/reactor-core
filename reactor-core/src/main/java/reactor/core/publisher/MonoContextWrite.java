@@ -23,11 +23,11 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
-final class MonoSubscriberContext<T> extends InternalMonoOperator<T, T> implements Fuseable {
+final class MonoContextWrite<T> extends InternalMonoOperator<T, T> implements Fuseable {
 
 	final Function<Context, Context> doOnContext;
 
-	MonoSubscriberContext(Mono<? extends T> source,
+	MonoContextWrite(Mono<? extends T> source,
 			Function<Context, Context> doOnContext) {
 		super(source);
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");
@@ -37,7 +37,7 @@ final class MonoSubscriberContext<T> extends InternalMonoOperator<T, T> implemen
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Context c = doOnContext.apply(actual.currentContext());
 
-		return new FluxContextStart.ContextStartSubscriber<>(actual, c);
+		return new FluxContextWrite.ContextWriteSubscriber<>(actual, c);
 	}
 
 	@Override

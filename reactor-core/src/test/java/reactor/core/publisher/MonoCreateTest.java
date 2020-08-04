@@ -381,7 +381,7 @@ public class MonoCreateTest {
 		StepVerifier.create(Mono.create(s -> s.success(s.currentContext()
 		                                                .get(AtomicInteger.class)
 		                                                .incrementAndGet()))
-		                        .subscriberContext(ctx -> ctx.put(AtomicInteger.class,
+		                        .contextWrite(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1)
 		            .verifyComplete();

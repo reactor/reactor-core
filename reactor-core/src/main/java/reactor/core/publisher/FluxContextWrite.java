@@ -20,17 +20,18 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class FluxContextStart<T> extends InternalFluxOperator<T, T> implements Fuseable {
+final class FluxContextWrite<T> extends InternalFluxOperator<T, T> implements Fuseable {
 
 	final Function<Context, Context> doOnContext;
 
-	FluxContextStart(Flux<? extends T> source,
+	FluxContextWrite(Flux<? extends T> source,
 			Function<Context, Context> doOnContext) {
 		super(source);
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");
@@ -40,7 +41,7 @@ final class FluxContextStart<T> extends InternalFluxOperator<T, T> implements Fu
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
 		Context c = doOnContext.apply(actual.currentContext());
 
-		return new ContextStartSubscriber<>(actual, c);
+		return new ContextWriteSubscriber<>(actual, c);
 	}
 
 	@Override
@@ -49,7 +50,7 @@ final class FluxContextStart<T> extends InternalFluxOperator<T, T> implements Fu
 		return super.scanUnsafe(key);
 	}
 
-	static final class ContextStartSubscriber<T>
+	static final class ContextWriteSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           QueueSubscription<T> {
 
@@ -61,7 +62,7 @@ final class FluxContextStart<T> extends InternalFluxOperator<T, T> implements Fu
 		Subscription         s;
 
 		@SuppressWarnings("unchecked")
-		ContextStartSubscriber(CoreSubscriber<? super T> actual, Context context) {
+		ContextWriteSubscriber(CoreSubscriber<? super T> actual, Context context) {
 			this.actual = actual;
 			this.context = context;
 			if (actual instanceof ConditionalSubscriber) {

@@ -39,7 +39,7 @@ public interface FluxSink<T> extends SequenceSink<T> {
 	/**
 	 * Return the current subscriber {@link Context}.
 	 * <p>
-	 *   {@link Context} can be enriched via {@link Flux#subscriberContext(Function)}
+	 *   {@link Context} can be enriched via {@link Flux#contextWrite(Function)}
 	 *   operator or directly by a child subscriber overriding
 	 *   {@link CoreSubscriber#currentContext()}
 	 *

@@ -237,7 +237,7 @@ public class ContextLossDetectionTest {
 		Flux<ContextView> assembleWithDownstreamContext(LossyTransformer lossyTransformer,
 				Context downstreamContext) {
 			return Flux.from(apply(lossyTransformer))
-			           .subscriberContext(downstreamContext);
+			           .contextWrite(downstreamContext);
 		}
 
 		@Override

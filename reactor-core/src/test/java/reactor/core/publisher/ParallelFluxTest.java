@@ -1054,7 +1054,7 @@ public class ParallelFluxTest {
 			    results.add(s + " " + valueFromContext);
 		    })
 		    .reduce(Integer::sum)
-		    .subscriberContext(Context.of("test", "Hello!"))
+		    .contextWrite(Context.of("test", "Hello!"))
 		    .block();
 
 		assertThat(results).containsExactlyInAnyOrder(

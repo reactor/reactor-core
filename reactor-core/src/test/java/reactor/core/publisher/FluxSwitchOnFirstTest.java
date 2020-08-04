@@ -483,8 +483,8 @@ public class FluxSwitchOnFirstTest {
 
                     return Flux.<Long>empty();
                 })
-                .subscriberContext(Context.of("a", "c"))
-                .subscriberContext(Context.of("c", "d"));
+                .contextWrite(Context.of("a", "c"))
+                .contextWrite(Context.of("c", "d"));
 
         StepVerifier.create(switchTransformed, 0)
                     .expectSubscription()
@@ -509,8 +509,8 @@ public class FluxSwitchOnFirstTest {
                     first[0] = f;
                     return innerFlux;
                 })
-                .subscriberContext(Context.of("a", "c"))
-                .subscriberContext(Context.of("c", "d"));
+                .contextWrite(Context.of("a", "c"))
+                .contextWrite(Context.of("c", "d"));
 
         StepVerifier.create(switchTransformed, 0)
                 .expectSubscription()
@@ -530,7 +530,7 @@ public class FluxSwitchOnFirstTest {
         TestPublisher<Long> publisher =
                 TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
         Flux<Long> switchTransformed = publisher.flux()
-                                                .switchOnFirst((first, innerFlux) -> innerFlux.subscriberContext(Context.of("a", "b")));
+                                                .switchOnFirst((first, innerFlux) -> innerFlux.contextWrite(Context.of("a", "b")));
 
         StepVerifier.create(new Flux<Long>() {
             @Override
@@ -566,10 +566,10 @@ public class FluxSwitchOnFirstTest {
         Flux<String> switchTransformed = publisher.flux()
                                                   .switchOnFirst(
                                                       (first, innerFlux) -> innerFlux.map(String::valueOf)
-                                                                                     .subscriberContext(Context.of("a", "b"))
+                                                                                     .contextWrite(Context.of("a", "b"))
                                                   )
-                                                  .subscriberContext(Context.of("a", "c"))
-                                                  .subscriberContext(Context.of("c", "d"));
+                                                  .contextWrite(Context.of("a", "c"))
+                                                  .contextWrite(Context.of("c", "d"));
 
         publisher.next(1L);
 
@@ -598,10 +598,10 @@ public class FluxSwitchOnFirstTest {
         Flux<String> switchTransformed = publisher.flux()
                                                   .switchOnFirst((first, innerFlux) ->
                                                       innerFlux.map(String::valueOf)
-                                                               .subscriberContext(Context.of("a", "b"))
+                                                               .contextWrite(Context.of("a", "b"))
                                                   )
-                                                  .subscriberContext(Context.of("a", "c"))
-                                                  .subscriberContext(Context.of("c", "d"));
+                                                  .contextWrite(Context.of("a", "c"))
+                                                  .contextWrite(Context.of("c", "d"));
 
         publisher.next(1L);
         publisher.complete();

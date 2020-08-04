@@ -254,7 +254,7 @@ public class MonoDoOnEachTest {
 		Mono.just(1)
 		    .hide()
 		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s, s.getContextView())))
-		    .subscriberContext(Context.of("foo", "bar"))
+		    .contextWrite(Context.of("foo", "bar"))
 		    .subscribe();
 
 		assertThat(signalsAndContext)
@@ -276,7 +276,7 @@ public class MonoDoOnEachTest {
 		Mono.just(0)
 		    .map(i -> 10 / i)
 		    .doOnEach(s -> signalsAndContext.add(Tuples.of(s,s.getContextView())))
-		    .subscriberContext(Context.of("foo", "bar"))
+		    .contextWrite(Context.of("foo", "bar"))
 		    .subscribe();
 
 		assertThat(signalsAndContext)

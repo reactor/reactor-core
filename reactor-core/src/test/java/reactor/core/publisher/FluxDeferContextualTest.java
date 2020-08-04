@@ -15,14 +15,14 @@ class FluxDeferContextualTest {
 		final Flux<String> flux = Flux
 				.just("foo")
 				.transformDeferredContextual((s, ctx) -> s.map(v -> v + " for " + ctx.getOrDefault("requestId", "NO ID")))
-				.subscriberContext(Context.of("unrelatedKey", true));
+				.contextWrite(Context.of("unrelatedKey", true));
 
-		flux.subscriberContext(Context.of("requestId", "aA1"))
+		flux.contextWrite(Context.of("requestId", "aA1"))
 		    .as(StepVerifier::create)
 		    .expectNext("foo for aA1")
 		    .verifyComplete();
 
-		flux.subscriberContext(Context.of("requestId", "bB2"))
+		flux.contextWrite(Context.of("requestId", "bB2"))
 		    .as(StepVerifier::create)
 		    .expectNext("foo for bB2")
 		    .verifyComplete();

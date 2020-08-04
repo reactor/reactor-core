@@ -89,7 +89,7 @@ public class FluxDeferTest {
 					AtomicInteger i = ctx.get("i");
 					return Mono.just(i.incrementAndGet());
 				})
-				.subscriberContext(Context.of(
+				.contextWrite(Context.of(
 						"i", new AtomicInteger()
 				));
 

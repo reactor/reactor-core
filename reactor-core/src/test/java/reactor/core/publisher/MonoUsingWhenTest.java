@@ -358,13 +358,13 @@ public class MonoUsingWhenTest {
 
 	@Test
 	public void resourceSupplierCanAccessContext() {
-		Mono.usingWhen(Mono.subscriberContext()
+		Mono.usingWhen(Mono.deferContextual(Mono::just)
 		                   .map(ctx -> ctx.get(String.class)),
 				Mono::just,
 				Mono::just,
 				(res, err) -> Mono.just(res),
 				Mono::just)
-		    .subscriberContext(Context.of(String.class, "contextual"))
+		    .contextWrite(Context.of(String.class, "contextual"))
 		    .as(StepVerifier::create)
 		    .expectNext("contextual")
 		    .verifyComplete();

@@ -705,7 +705,10 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Mono} emitting current context
 	 * @see #subscribe(CoreSubscriber)
+	 * @deprecated Use {@link #deferContextual(Function)} or {@link #transformDeferredContextual(BiFunction)} to materialize
+	 * the context. To obtain the same Mono of Context, use {@code Mono.deferContextual(Mono::just)}. To be removed in 3.5.0.
 	 */
+	@Deprecated
 	public static Mono<Context> subscriberContext() {
 		return onAssembly(MonoCurrentContext.INSTANCE);
 	}
@@ -1859,6 +1862,52 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
 		return Flux.concat(this, other);
+	}
+
+	/**
+	 * Enrich the {@link Context} visible from downstream for the benefit of upstream
+	 * operators, by making all values from the provided {@link ContextView} visible on top
+	 * of pairs from downstream.
+	 * <p>
+	 * A {@link Context} (and its {@link ContextView}) is tied to a given subscription
+	 * and is read by querying the downstream {@link Subscriber}. {@link Subscriber} that
+	 * don't enrich the context instead access their own downstream's context. As a result,
+	 * this operator conceptually enriches a {@link Context} coming from under it in the chain
+	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
+	 * visible to operators above it in the chain.
+	 *
+	 * @param contextToAppend the {@link ContextView} to merge with the downstream {@link Context},
+	 * resulting in a new more complete {@link Context} that will be visible from upstream.
+	 *
+	 * @return a contextualized {@link Mono}
+	 * @see ContextView
+	 */
+	public final Mono<T> contextWrite(ContextView contextToAppend) {
+		return contextWrite(c -> c.putAll(contextToAppend));
+	}
+
+	/**
+	 * Enrich the {@link Context} visible from downstream for the benefit of upstream
+	 * operators, by applying a {@link Function} to the downstream {@link Context}.
+	 * <p>
+	 * The {@link Function} takes a {@link Context} for convenience, allowing to easily
+	 * call {@link Context#put(Object, Object) write APIs} to return a new {@link Context}.
+	 * <p>
+	 * A {@link Context} (and its {@link ContextView}) is tied to a given subscription
+	 * and is read by querying the downstream {@link Subscriber}. {@link Subscriber} that
+	 * don't enrich the context instead access their own downstream's context. As a result,
+	 * this operator conceptually enriches a {@link Context} coming from under it in the chain
+	 * (downstream, by default an empty one) and makes the new enriched {@link Context}
+	 * visible to operators above it in the chain.
+	 *
+	 * @param contextModifier the {@link Function} to apply to the downstream {@link Context},
+	 * resulting in a new more complete {@link Context} that will be visible from upstream.
+	 *
+	 * @return a contextualized {@link Mono}
+	 * @see Context
+	 */
+	public final Mono<T> contextWrite(Function<Context, Context> contextModifier) {
+		return onAssembly(new MonoContextWrite<>(this, contextModifier));
 	}
 
 	/**
@@ -3841,7 +3890,9 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a contextualized {@link Mono}
 	 * @see Context
+	 * @deprecated Use {@link #contextWrite(ContextView)} instead. To be removed in 3.5.0.
 	 */
+	@Deprecated
 	public final Mono<T> subscriberContext(Context mergeContext) {
 		return subscriberContext(c -> c.putAll(mergeContext.readOnly()));
 	}
@@ -3863,9 +3914,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a contextualized {@link Mono}
 	 * @see Context
+	 * @deprecated Use {@link #contextWrite(Function)} instead. To be removed in 3.5.0.
 	 */
+	@Deprecated
 	public final Mono<T> subscriberContext(Function<Context, Context> doOnContext) {
-		return new MonoSubscriberContext<>(this, doOnContext);
+		return new MonoContextWrite<>(this, doOnContext);
 	}
 
 	/**
@@ -4343,8 +4396,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <blockquote><pre>
 	 * Mono&lt;T> monoLogged = mono.transformDeferredContextual((original, ctx) -> original.log("for RequestID" + ctx.get("RequestID"))
 	 * //...later subscribe. Each subscriber has its Context with a RequestID entry
-	 * monoLogged.subscriberContext(Context.of("RequestID", "requestA").subscribe();
-	 * monoLogged.subscriberContext(Context.of("RequestID", "requestB").subscribe();
+	 * monoLogged.contextWrite(Context.of("RequestID", "requestA").subscribe();
+	 * monoLogged.contextWrite(Context.of("RequestID", "requestB").subscribe();
 	 * </pre></blockquote>
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/transformDeferredForMono.svg" alt="">
