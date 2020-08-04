@@ -19,8 +19,10 @@ package reactor.test.publisher;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -353,7 +355,7 @@ public class PublisherProbeTest {
 	public void wasRequestedFlux() {
 		PublisherProbe<Void> probe = PublisherProbe.of(Flux.never());
 		AtomicReference<Subscription> sub = new AtomicReference<>();
-		probe.flux().subscribe(null, null, null, sub::set);
+		probe.flux().subscribeWith(subscriptionCaptorVia(sub));
 
 		assertThat(probe.wasRequested()).isFalse();
 
@@ -366,7 +368,7 @@ public class PublisherProbeTest {
 	public void assertWasRequestedFlux() {
 		PublisherProbe<Void> probe = PublisherProbe.empty();
 		AtomicReference<Subscription> sub = new AtomicReference<>();
-		probe.flux().subscribe(null, null, null, sub::set);
+		probe.flux().subscribeWith(subscriptionCaptorVia(sub));
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasRequested)
@@ -381,7 +383,7 @@ public class PublisherProbeTest {
 	public void assertWasNotRequestedFlux() {
 		PublisherProbe<Void> probe = PublisherProbe.empty();
 		AtomicReference<Subscription> sub = new AtomicReference<>();
-		probe.flux().subscribe(null, null, null, sub::set);
+		probe.flux().subscribeWith(subscriptionCaptorVia(sub));
 
 		probe.assertWasNotRequested();
 
@@ -392,4 +394,12 @@ public class PublisherProbeTest {
 				.withMessage("PublisherProbe should not have been requested but it was");
 	}
 
+	private <T> Subscriber<T> subscriptionCaptorVia(AtomicReference<Subscription> ref) {
+		return new BaseSubscriber<T>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				ref.set(subscription);
+			}
+		};
+	}
 }
