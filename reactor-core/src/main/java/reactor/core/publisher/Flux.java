@@ -6001,7 +6001,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
 	 * sequence.
 	 * <p>
-	 * In case no name has been provided, the default name "reactor" will be applied.
+	 * The name serves as a prefix in the reported metrics names. In case no name has been provided, the default name "reactor" will be applied.
 	 * <p>
 	 * The {@link MeterRegistry} used by reactor can be configured via
 	 * {@link Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)} prior to using this operator, the default being
@@ -6027,8 +6027,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
 	 * as long as this is the first reachable {@link Scannable#parents()}.
 	 * <p>
-	 * If {@link #metrics()} operator is called later in the chain, this name will be used for
-	 * {@link io.micrometer.core.instrument.Meter}.
+	 * If {@link #metrics()} operator is called later in the chain, this name will be used as a prefix for meters' name.
 	 *
 	 * @param name a name for the sequence
 	 *
@@ -8302,7 +8301,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * by {@link Scannable#parents()}).
 	 * <p>
 	 * Note that some monitoring systems like Prometheus require to have the exact same set of
-	 * tags for each {@link io.micrometer.core.instrument.Meter} bearing the same name.
+	 * tags for each meter bearing the same name.
 	 *
 	 * @param key a tag key
 	 * @param value a tag value

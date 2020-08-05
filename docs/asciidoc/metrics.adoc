@@ -63,7 +63,7 @@ To enable the metrics for this source `Flux` (returned from `listenToEvents()`),
 [source,java]
 ----
 listenToEvents()
-    .name("events") <1> (optionnal)
+    .name("events") <1> (optional)
     .metrics() <2>
     .doOnNext(event -> log.info("Received {}", event))
     .delayUntil(this::processEvent)
@@ -99,15 +99,9 @@ Want to be alerted when the listener throws an error? `reactor.flow.duration` wi
 
 Please note that when giving a name to a sequence, this sequence could not be aggregated with others anymore. As a compromise if you want to identify your sequence but still make it possible to aggregate with other views, you can use a <<Custom tags>> for the name by calling `(tag("flow", "events"))` for example.
 
-=== Common tags
+=== Common tag
 
-Every metric will have the following tag in common:
-[width="100%",options="header"]
-|=======
-| tag name | description | example
-
-| type | Publisher's type | "Mono"
-|=======
+Every metric will have a `type` tag in common, which value will be either `Flux` or `Mono` depending on the publisher's nature.
 
 === Custom tags
 
@@ -116,16 +110,18 @@ Users are allowed to add custom tags to their reactive chains:
 [source,java]
 ----
 listenToEvents()
-    .name("events")
-    .tag("source", "kafka") <1>
-    .metrics() <2>
+    .name("events") <1>
+    .tag("source", "kafka") <2>
+    .metrics() <3>
     .doOnNext(event -> log.info("Received {}", event))
     .delayUntil(this::processEvent)
     .retry()
     .subscribe();
 ----
-<1> Set a custom tag "source" to value "kafka".
-<2> All reported metrics will have `source=kafka` tag assigned in addition to the common tags described above.
+<1> Every metric at this stage will be identified as "events".
+<2> Set a custom tag "source" to value "kafka".
+<3> All reported metrics will have `source=kafka` tag assigned in addition to the common tag described above.
 ====
 
-Be careful when using `Flux#name` and `Flux#tag` operators together: some monitoring systems like Prometheus require to have the exact same set of tags for each metric with the same name.
+Please note that depending on the monitoring system you're using, using a name can be considered mandatory when using tags, since it would otherwise result in a different set of tags between two default-named sequences.
+Some systems like Prometheus might also require to have the exact same set of tags for each metric with the same name.

@@ -19,15 +19,13 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
@@ -441,6 +439,33 @@ public class FluxMetricsTest {
 		bs.request(100);
 		assertThat(meter.totalAmount()).isEqualTo(108);
 		assertThat(meter.max()).isEqualTo(100);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/1425
+	@Test
+	public void flowDurationTagsConsistency() {
+		Flux<Integer> source1 = Flux.just(1)
+		                            .hide();
+
+		Flux<Object> source2 = Flux.error(new IllegalStateException("dummy"))
+		                           .hide();
+
+		new FluxMetrics<>(source1)
+				.blockLast();
+
+		new FluxMetrics<>(source2)
+				.onErrorReturn(0)
+				.blockLast();
+
+		Set<Set<String>> uniqueTagKeySets = registry
+				.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.meters()
+				.stream()
+				.map(it -> it.getId().getTags())
+				.map(it -> it.stream().map(Tag::getKey).collect(Collectors.toSet()))
+				.collect(Collectors.toSet());
+
+		assertThat(uniqueTagKeySets).hasSize(1);
 	}
 
 	@Test
