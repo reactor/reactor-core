@@ -6001,12 +6001,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
 	 * sequence.
 	 * <p>
+	 * In case no name has been provided, the default name "reactor" will be applied.
+	 * <p>
 	 * The {@link MeterRegistry} used by reactor can be configured via
 	 * {@link Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)} prior to using this operator, the default being
 	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
-	 * </p>
 	 *
 	 * @return an instrumented {@link Flux}
+	 *
+	 * @see {@link #name(String)}
+	 * @see {@link #tag(String, String)}
 	 */
 	public final Flux<T> metrics() {
 		if (!Metrics.isInstrumentationAvailable()) {
@@ -6022,9 +6026,16 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	/**
 	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
 	 * as long as this is the first reachable {@link Scannable#parents()}.
+	 * <p>
+	 * If {@link #metrics()} operator is called later in the chain, this name will be used for
+	 * {@link io.micrometer.core.instrument.Meter}.
 	 *
 	 * @param name a name for the sequence
+	 *
 	 * @return the same sequence, but bearing a name
+	 *
+	 * @see {@link #metrics()}
+	 * @see {@link #tag(String, String)}
 	 */
 	public final Flux<T> name(String name) {
 		return FluxName.createOrAppend(this, name);
@@ -8289,10 +8300,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * all tags throughout the publisher chain by using {@link Scannable#tags()} (as
 	 * traversed
 	 * by {@link Scannable#parents()}).
+	 * <p>
+	 * Note that some monitoring systems like Prometheus require to have the exact same set of
+	 * tags for each {@link io.micrometer.core.instrument.Meter} bearing the same name.
 	 *
 	 * @param key a tag key
 	 * @param value a tag value
+	 *
 	 * @return the same sequence, but bearing tags
+	 *
+	 * @see {@link #name(String)}
+	 * @see {@link #metrics()}
 	 */
 	public final Flux<T> tag(String key, String value) {
 		return FluxName.createOrAppend(this, key, value);

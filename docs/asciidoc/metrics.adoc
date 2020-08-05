@@ -57,12 +57,13 @@ listenToEvents()
 ----
 ====
 
-To enable the metrics for this source `Flux` (returned from `listenToEvents()`), we need to give it a name and turn on the metrics collecting:
+To enable the metrics for this source `Flux` (returned from `listenToEvents()`), we need to turn on the metrics collecting:
+
 ====
 [source,java]
 ----
 listenToEvents()
-    .name("events") <1>
+    .name("events") <1> (optionnal)
     .metrics() <2>
     .doOnNext(event -> log.info("Received {}", event))
     .delayUntil(this::processEvent)
@@ -70,7 +71,7 @@ listenToEvents()
     .subscribe();
 ----
 <1> Every metric at this stage will be identified as "events".
-<2> `Flux#metrics` operator enables the reporting of metrics and uses the last known name up in the pipeline.
+<2> `Flux#metrics` operator enables the reporting of metrics, using the name provided in when calling `Flux#name` operator. In case `Flux#name` operator has not been used, the default name will be `reactor`.
 ====
 
 Just adding these two operators will expose a whole bunch of useful metrics!
@@ -79,15 +80,15 @@ Just adding these two operators will expose a whole bunch of useful metrics!
 |=======
 | metric name | type | description
 
-| reactor.subscribed | Counter | Counts how many Reactor sequences have been subscribed to
+| [name].subscribed | Counter | Counts how many Reactor sequences have been subscribed to
 
-| reactor.malformed.source | Counter | Counts the number of events received from a malformed source (ie an onNext after an onComplete)
+| [name].malformed.source | Counter | Counts the number of events received from a malformed source (ie an onNext after an onComplete)
 
-| reactor.requested | DistributionSummary | Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount
+| [name].requested | DistributionSummary | Counts the amount requested to a named Flux by all subscribers, until at least one requests an unbounded amount
 
-| reactor.onNext.delay | Timer | Measures delays between onNext signals (or between onSubscribe and first onNext)
+| [name].onNext.delay | Timer | Measures delays between onNext signals (or between onSubscribe and first onNext)
 
-| reactor.flow.duration | Timer | Times the duration elapsed between a subscription and the termination or cancellation of the sequence. A status tag is added to specify what event caused the timer to end (`onComplete`, `onError`, `cancel`).
+| [name].flow.duration | Timer | Times the duration elapsed between a subscription and the termination or cancellation of the sequence. A status tag is added to specify what event caused the timer to end (`onComplete`, `onError`, `cancel`).
 |=======
 
 Want to know how many times your event processing has restarted due to some error? Read `reactor.subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
@@ -96,16 +97,16 @@ Interested in "events per second" metric? Measure the rate of `reactor.onNext.de
 
 Want to be alerted when the listener throws an error? `reactor.flow.duration` with `status=error` tag is your friend.
 
+Please note that when giving a name to a sequence, this sequence could not be aggregated with others anymore. As a compromise if you want to identify your sequence but still make it possible to aggregate with other views, you can use a <<Custom tags>> for the name by calling `(tag("flow", "events"))` for example.
+
 === Common tags
 
-Every metric will have the following tags in common:
+Every metric will have the following tag in common:
 [width="100%",options="header"]
 |=======
 | tag name | description | example
 
 | type | Publisher's type | "Mono"
-
-| flow | current flow's name, set by `.name()` operator | "events"
 |=======
 
 === Custom tags
@@ -115,8 +116,8 @@ Users are allowed to add custom tags to their reactive chains:
 [source,java]
 ----
 listenToEvents()
-    .tag("source", "kafka") <1>
     .name("events")
+    .tag("source", "kafka") <1>
     .metrics() <2>
     .doOnNext(event -> log.info("Received {}", event))
     .delayUntil(this::processEvent)
@@ -125,5 +126,6 @@ listenToEvents()
 ----
 <1> Set a custom tag "source" to value "kafka".
 <2> All reported metrics will have `source=kafka` tag assigned in addition to the common tags described above.
-
 ====
+
+Be careful when using `Flux#name` and `Flux#tag` operators together: some monitoring systems like Prometheus require to have the exact same set of tags for each metric with the same name.
