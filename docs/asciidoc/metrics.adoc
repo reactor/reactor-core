@@ -97,13 +97,11 @@ Interested in "events per second" metric? Measure the rate of `reactor.onNext.de
 
 Want to be alerted when the listener throws an error? `reactor.flow.duration` with `status=error` tag is your friend.
 
-Please note that when giving a name to a sequence, this sequence could not be aggregated with others anymore. As a compromise if you want to identify your sequence but still make it possible to aggregate with other views, you can use a <<Custom tags>> for the name by calling `(tag("flow", "events"))` for example.
+Please note that when giving a name to a sequence, this sequence could not be aggregated with others anymore. As a compromise if you want to identify your sequence but still make it possible to aggregate with other views, you can use a <<Tags>> for the name by calling `(tag("flow", "events"))` for example.
 
-=== Common tag
+=== Tags
 
 Every metric will have a `type` tag in common, which value will be either `Flux` or `Mono` depending on the publisher's nature.
-
-=== Custom tags
 
 Users are allowed to add custom tags to their reactive chains:
 ====
