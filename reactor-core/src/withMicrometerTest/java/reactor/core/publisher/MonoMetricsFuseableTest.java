@@ -55,7 +55,6 @@ import static reactor.core.publisher.FluxMetrics.TAG_CANCEL;
 import static reactor.core.publisher.FluxMetrics.TAG_KEY_EXCEPTION;
 import static reactor.core.publisher.FluxMetrics.TAG_ON_COMPLETE;
 import static reactor.core.publisher.FluxMetrics.TAG_ON_ERROR;
-import static reactor.core.publisher.FluxMetrics.TAG_SEQUENCE_NAME;
 
 public class MonoMetricsFuseableTest {
 
@@ -86,7 +85,7 @@ public class MonoMetricsFuseableTest {
 	@Test
 	public void scanSubscriber(){
 		CoreSubscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MetricsFuseableSubscriber<Integer> test = new MetricsFuseableSubscriber<>(actual, registry, Clock.SYSTEM, Tags.empty());
+		MetricsFuseableSubscriber<Integer> test = new MetricsFuseableSubscriber<>(actual, registry, Clock.SYSTEM, "foo", Tags.empty());
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
@@ -98,7 +97,7 @@ public class MonoMetricsFuseableTest {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		MetricsFuseableSubscriber<Integer> fuseableSubscriber =
 				new MetricsFuseableSubscriber<>(testSubscriber,
-						registry, Clock.SYSTEM, Tags.empty());
+						registry, Clock.SYSTEM, "foo", Tags.empty());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		testQueue.offer(1);
@@ -120,7 +119,7 @@ public class MonoMetricsFuseableTest {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		MetricsFuseableSubscriber<Integer> fuseableSubscriber =
 				new MetricsFuseableSubscriber<>(testSubscriber,
-						registry, Clock.SYSTEM, Tags.empty());
+						registry, Clock.SYSTEM, "foo", Tags.empty());
 
 		assertThat(fuseableSubscriber.size()).as("size").isEqualTo(0);
 		assertThat(fuseableSubscriber.isEmpty()).as("isEmpty").isTrue();
@@ -132,7 +131,7 @@ public class MonoMetricsFuseableTest {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		MetricsFuseableSubscriber<Integer> fuseableSubscriber =
 				new MetricsFuseableSubscriber<>(testSubscriber,
-						registry, clock, Tags.empty());
+						registry, clock, "foo", Tags.empty());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		testQueue.offer(1);
@@ -147,8 +146,7 @@ public class MonoMetricsFuseableTest {
 		assertThat(val2).isNull();
 
 		//test meters
-		Timer nextTimer = registry.find(METER_ON_NEXT_DELAY)
-				.timer();
+		Timer nextTimer = registry.find("foo" + METER_ON_NEXT_DELAY).timer();
 
 		assertThat(nextTimer).as("no onNext delay meter for Mono").isNull();
 	}
@@ -158,7 +156,7 @@ public class MonoMetricsFuseableTest {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		MetricsFuseableSubscriber<Integer> fuseableSubscriber =
 				new MetricsFuseableSubscriber<>(testSubscriber,
-						registry, clock, Tags.empty());
+						registry, clock, "foo", Tags.empty());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		testQueue.offer(1);
@@ -175,7 +173,7 @@ public class MonoMetricsFuseableTest {
 		assertThat(val2).isNull();
 
 		//test meters
-		Timer terminationTimer = registry.find(METER_FLOW_DURATION)
+		Timer terminationTimer = registry.find("foo" + METER_FLOW_DURATION)
 		                          .tags(Tags.of(TAG_ON_COMPLETE))
 		                          .timer();
 
@@ -188,7 +186,7 @@ public class MonoMetricsFuseableTest {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		MetricsFuseableSubscriber<Integer> fuseableSubscriber =
 				new MetricsFuseableSubscriber<>(testSubscriber,
-						registry, clock, Tags.empty());
+						registry, clock, "foo", Tags.empty());
 
 		FluxPeekFuseableTest.AssertQueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		testQueue.setCompleteWithError(true);
@@ -206,7 +204,7 @@ public class MonoMetricsFuseableTest {
 		                                 .withMessage("AssertQueueSubscriber poll error");
 
 		//test meters
-		Timer terminationTimer = registry.find(METER_FLOW_DURATION)
+		Timer terminationTimer = registry.find("foo" + METER_FLOW_DURATION)
 		                          .tags(Tags.of(TAG_ON_ERROR))
 		                          .timer();
 
@@ -219,7 +217,7 @@ public class MonoMetricsFuseableTest {
 		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
 		MetricsFuseableSubscriber<Integer> fuseableSubscriber =
 				new MetricsFuseableSubscriber<>(testSubscriber,
-						registry, Clock.SYSTEM, Tags.empty());
+						registry, Clock.SYSTEM, "foo", Tags.empty());
 
 		Fuseable.QueueSubscription<Integer> testQueue = new FluxPeekFuseableTest.AssertQueueSubscription<>();
 		fuseableSubscriber.onSubscribe(testQueue);
@@ -249,8 +247,7 @@ public class MonoMetricsFuseableTest {
 	@Test
 	public void splitMetricsOnNameFuseable() {
 		final Mono<Integer> unnamedSource = Mono.just(0).map(v -> 100 / v);
-		final Mono<Integer> namedSource = Mono.just(0).map(v -> 100 / v)
-		                                      .name("foo");
+		final Mono<Integer> namedSource = Mono.just(0).map(v -> 100 / v).name("foo");
 		
 		final Mono<Integer> unnamed = new MonoMetricsFuseable<>(unnamedSource, registry)
 				.onErrorResume(e -> Mono.empty());
@@ -260,17 +257,15 @@ public class MonoMetricsFuseableTest {
 		Mono.when(unnamed, named).block();
 
 		Timer unnamedMeter = registry
-				.find(METER_FLOW_DURATION)
+				.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_ERROR))
 				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
-				.tag(TAG_SEQUENCE_NAME, REACTOR_DEFAULT_NAME)
 				.timer();
 
 		Timer namedMeter = registry
-				.find(METER_FLOW_DURATION)
+				.find("foo" + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_ERROR))
 				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
-				.tag(TAG_SEQUENCE_NAME, "foo")
 				.timer();
 
 		assertThat(unnamedMeter).isNotNull();
@@ -283,16 +278,15 @@ public class MonoMetricsFuseableTest {
 	@Test
 	public void usesTagsFuseable() {
 		Mono<Integer> source = Mono.just(8)
-		                           .tag("tag1", "A")
-		                           .name("usesTags")
+								   .name("usesTags")
+								   .tag("tag1", "A")
 		                           .tag("tag2", "foo");
-		new MonoMetricsFuseable<>(source, registry)
-		    .block();
+
+		new MonoMetricsFuseable<>(source, registry).block();
 
 		Timer meter = registry
-				.find(METER_FLOW_DURATION)
+				.find("usesTags" + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_COMPLETE))
-				.tag(TAG_SEQUENCE_NAME, "usesTags")
 				.tag("tag1", "A")
 				.tag("tag2", "foo")
 				.timer();
@@ -308,7 +302,7 @@ public class MonoMetricsFuseableTest {
 		    .block();
 
 		Timer nextMeter = registry
-				.find(METER_ON_NEXT_DELAY)
+				.find(REACTOR_DEFAULT_NAME + METER_ON_NEXT_DELAY)
 				.timer();
 
 		assertThat(nextMeter).isNull();
@@ -328,15 +322,15 @@ public class MonoMetricsFuseableTest {
 		            .verifyComplete();
 
 
-		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
-		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcErrorTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
-		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCancelTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
@@ -363,15 +357,15 @@ public class MonoMetricsFuseableTest {
 		    .onErrorReturn(-1L)
 		    .block();
 
-		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
-		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcErrorTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
-		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCancelTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
@@ -398,15 +392,15 @@ public class MonoMetricsFuseableTest {
 		Thread.sleep(100);
 		disposable.dispose();
 
-		Timer stcCompleteTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                                 .tags(Tags.of(TAG_ON_COMPLETE))
 		                                 .timer();
 
-		Timer stcErrorTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcErrorTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                              .tags(Tags.of(TAG_ON_ERROR))
 		                              .timer();
 
-		Timer stcCancelTimer = registry.find(METER_FLOW_DURATION)
+		Timer stcCancelTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                               .tags(Tags.of(TAG_CANCEL))
 		                               .timer();
 
@@ -431,7 +425,7 @@ public class MonoMetricsFuseableTest {
 		Mono<Integer> test = new MonoMetricsFuseable<>(source, registry);
 
 		test.subscribe();
-		Counter meter = registry.find(METER_SUBSCRIBED)
+		Counter meter = registry.find(REACTOR_DEFAULT_NAME + METER_SUBSCRIBED)
 		                        .counter();
 
 		assertThat(meter).isNotNull();
@@ -450,13 +444,13 @@ public class MonoMetricsFuseableTest {
 		new MonoMetricsFuseable<>(source, registry)
 				.block();
 
-		DistributionSummary meter = registry.find(METER_REQUESTED)
+		DistributionSummary meter = registry.find("foo" + METER_REQUESTED)
 		                                    .summary();
 
 		assertThat(meter).as("global find").isNull();
 
 		meter = registry.find(METER_REQUESTED)
-		                .tag(TAG_SEQUENCE_NAME, "foo")
+		                .name("foo")
 		                .summary();
 
 		assertThat(meter).as("tagged find").isNull();

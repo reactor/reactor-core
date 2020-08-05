@@ -58,7 +58,7 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		super(mono);
 
 		this.name = resolveName(mono);
-		this.tags = resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO, this.name);
+		this.tags = resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO);
 
 		if (registryCandidate == null) {
 			this.registryCandidate = Metrics.globalRegistry;
@@ -70,7 +70,7 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.tags);
+		return new MetricsFuseableSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags);
 	}
 
 	@Override
@@ -97,8 +97,9 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		MetricsFuseableSubscriber(CoreSubscriber<? super T> actual,
 				MeterRegistry registry,
 				Clock clock,
+				String sequenceName,
 				Tags sequenceTags) {
-			super(actual, registry, clock, sequenceTags);
+			super(actual, registry, clock, sequenceName, sequenceTags);
 		}
 
 		@Override
@@ -118,7 +119,7 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 					return;
 				}
 				done = true;
-				FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
+				FluxMetrics.recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
 				actual.onComplete();
 			}
 		}
@@ -130,13 +131,14 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 			}
 			else {
 				if (done) {
-					FluxMetrics.recordMalformed(commonTags, registry);
+					FluxMetrics.recordMalformed(sequenceName, commonTags, registry);
 					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 				done = true;
 				//TODO looks like we don't count onNext: `Mono.empty()` vs `Mono.just("foo")`
-				FluxMetrics.recordOnComplete(commonTags,
+				FluxMetrics.recordOnComplete(sequenceName,
+						commonTags,
 						registry,
 						subscribeToTerminateSample);
 				actual.onNext(t);
@@ -152,7 +154,7 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				FluxMetrics.recordOnSubscribe(commonTags, registry);
+				FluxMetrics.recordOnSubscribe(sequenceName, commonTags, registry);
 				this.subscribeToTerminateSample = Timer.start(clock);
 				this.qs = Operators.as(s);
 				this.s = s;
@@ -170,13 +172,13 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 			try {
 				T v = qs.poll();
 				if (!done && (v != null || mode == SYNC)) {
-					FluxMetrics.recordOnComplete(commonTags, registry, subscribeToTerminateSample);
+					FluxMetrics.recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
 				}
 				done = true;
 				return v;
 			}
 			catch (Throwable e) {
-				FluxMetrics.recordOnError(commonTags, registry, subscribeToTerminateSample, e);
+				FluxMetrics.recordOnError(sequenceName, commonTags, registry, subscribeToTerminateSample, e);
 				throw e;
 			}
 		}

@@ -3020,12 +3020,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * {@link #name(String) name} (and optionally {@link #tag(String, String) tag}) the
 	 * sequence.
 	 * <p>
+	 * The name serves as a prefix in the reported metrics names. In case no name has been provided, the default name "reactor" will be applied.
+	 * <p>
 	 * The {@link MeterRegistry} used by reactor can be configured via
 	 * {@link Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)} prior to using this operator, the default being
 	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 * </p>
 	 *
-	 * @return an instrumented {@link Mono}
+	 * @return an instrumented {@link Flux}
+	 *
+	 * @see {@link #name(String)}
+	 * @see {@link #tag(String, String)}
 	 */
 	public final Mono<T> metrics() {
 		if (!Metrics.isInstrumentationAvailable()) {
@@ -3041,9 +3046,15 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	/**
 	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
 	 * as long as this is the first reachable {@link Scannable#parents()}.
+	 * <p>
+	 * If {@link #metrics()} operator is called later in the chain, this name will be used as a prefix for meters' name.
 	 *
 	 * @param name a name for the sequence
+	 *
 	 * @return the same sequence, but bearing a name
+	 *
+	 * @see {@link #metrics()}
+	 * @see {@link #tag(String, String)}
 	 */
 	public final Mono<T> name(String name) {
 		return MonoName.createOrAppend(this, name);
@@ -3991,10 +4002,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * all tags throughout the publisher chain by using {@link Scannable#tags()} (as
 	 * traversed
 	 * by {@link Scannable#parents()}).
+	 * <p>
+	 * Note that some monitoring systems like Prometheus require to have the exact same set of
+	 * tags for each meter bearing the same name.
 	 *
 	 * @param key a tag key
 	 * @param value a tag value
+	 *
 	 * @return the same sequence, but bearing tags
+	 *
+	 * @see {@link #name(String)}
+	 * @see {@link #metrics()}
 	 */
 	public final Mono<T> tag(String key, String value) {
 		return MonoName.createOrAppend(this, key, value);

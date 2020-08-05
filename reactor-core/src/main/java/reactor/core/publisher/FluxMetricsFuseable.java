@@ -49,7 +49,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 		super(flux);
 
 		this.name = resolveName(flux);
-		this.tags = resolveTags(flux, FluxMetrics.DEFAULT_TAGS_FLUX, this.name);
+		this.tags = resolveTags(flux, FluxMetrics.DEFAULT_TAGS_FLUX);
 		this.registryCandidate = Metrics.MicrometerConfiguration.getRegistry();
 	}
 
@@ -107,7 +107,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 			}
 
 			if (done) {
-				recordMalformed(commonTags, registry);
+				recordMalformed(sequenceName, commonTags, registry);
 				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
@@ -130,7 +130,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 				T v = qs.poll();
 
 				if (v == null && mode == SYNC) {
-					recordOnComplete(commonTags, registry, subscribeToTerminateSample);
+					recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
 				}
 				if (v != null) {
 					//this is an onNext event
@@ -142,7 +142,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 				return v;
 			}
 			catch (Throwable e) {
-				recordOnError(commonTags, registry, subscribeToTerminateSample, e);
+				recordOnError(sequenceName, commonTags, registry, subscribeToTerminateSample, e);
 				throw e;
 			}
 		}
@@ -150,7 +150,7 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				recordOnSubscribe(commonTags, registry);
+				recordOnSubscribe(sequenceName, commonTags, registry);
 				this.subscribeToTerminateSample = Timer.start(clock);
 				this.lastNextEventNanos = clock.monotonicTime();
 				this.qs = Operators.as(s);
