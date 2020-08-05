@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -255,8 +254,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Si
 			}
 		}
 
-		while (!q.offer(t)) {
-			LockSupport.parkNanos(10);
+		if (!q.offer(t)) {
+			return Emission.FAIL_OVERFLOW;
 		}
 		drain();
 		return Emission.OK;
