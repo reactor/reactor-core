@@ -91,11 +91,11 @@ Just adding these two operators will expose a whole bunch of useful metrics!
 | [name].flow.duration | Timer | Times the duration elapsed between a subscription and the termination or cancellation of the sequence. A status tag is added to specify what event caused the timer to end (`onComplete`, `onError`, `cancel`).
 |=======
 
-Want to know how many times your event processing has restarted due to some error? Read `reactor.subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
+Want to know how many times your event processing has restarted due to some error? Read `[name].subscribed`, because `retry()` operator will re-subscribe to the source publisher on error.
 
-Interested in "events per second" metric? Measure the rate of `reactor.onNext.delay` 's count.
+Interested in "events per second" metric? Measure the rate of `[name].onNext.delay` 's count.
 
-Want to be alerted when the listener throws an error? `reactor.flow.duration` with `status=error` tag is your friend.
+Want to be alerted when the listener throws an error? `[name].flow.duration` with `status=error` tag is your friend.
 
 Please note that when giving a name to a sequence, this sequence could not be aggregated with others anymore. As a compromise if you want to identify your sequence but still make it possible to aggregate with other views, you can use a <<Tags>> for the name by calling `(tag("flow", "events"))` for example.
 
