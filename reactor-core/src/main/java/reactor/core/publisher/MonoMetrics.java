@@ -18,11 +18,11 @@ package reactor.core.publisher;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
 import static reactor.core.publisher.FluxMetrics.*;
@@ -41,34 +41,21 @@ final class MonoMetrics<T> extends InternalMonoOperator<T, T> {
 
 	final String        name;
 	final Tags          tags;
-	final MeterRegistry meterRegistry;
+
+	final MeterRegistry registryCandidate;
 
 	MonoMetrics(Mono<? extends T> mono) {
-		this(mono, null);
-	}
-
-	/**
-	 * For testing purposes.
-	 *
-	 * @param meterRegistry the registry to use
-	 */
-	MonoMetrics(Mono<? extends T> mono, @Nullable MeterRegistry meterRegistry) {
 		super(mono);
 
 		this.name = resolveName(mono);
 		this.tags = resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO);
 
-		if (meterRegistry == null) {
-			this.meterRegistry = Metrics.globalRegistry;
-		}
-		else {
-			this.meterRegistry = meterRegistry;
-		}
+		this.registryCandidate = Metrics.MicrometerConfiguration.getRegistry();
 	}
 
 	@Override
 	public CoreSubscriber<? super T> subscribeOrReturn(CoreSubscriber<? super T> actual) {
-		return new MetricsSubscriber<>(actual, meterRegistry, Clock.SYSTEM, this.name, this.tags);
+		return new MetricsSubscriber<>(actual, registryCandidate, Clock.SYSTEM, this.name, this.tags);
 	}
 
 	@Override

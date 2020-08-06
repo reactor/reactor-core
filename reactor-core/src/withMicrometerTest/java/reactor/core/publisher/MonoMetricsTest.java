@@ -73,7 +73,7 @@ public class MonoMetricsTest {
 
 	@Test
 	public void scanOperator(){
-		MonoMetrics<String> test = new MonoMetrics<>(Mono.just("foo"), registry);
+		MonoMetrics<String> test = new MonoMetrics<>(Mono.just("foo"));
 
 		assertThat(test.scan(Attr.RUN_STYLE)).isSameAs(Attr.RunStyle.SYNC);
 	}
@@ -88,7 +88,7 @@ public class MonoMetricsTest {
 				delegate.subscribe(actual);
 			}
 		};
-		MonoMetrics<String> test = new MonoMetrics<>(source, registry);
+		MonoMetrics<String> test = new MonoMetrics<>(source);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan unavailable").isFalse();
@@ -98,7 +98,7 @@ public class MonoMetricsTest {
 	@Test
 	public void sequenceNameFromScannableNoName() {
 		Mono<String> source = Mono.just("foo");
-		MonoMetrics<String> test = new MonoMetrics<>(source, registry);
+		MonoMetrics<String> test = new MonoMetrics<>(source);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan available").isTrue();
@@ -108,7 +108,7 @@ public class MonoMetricsTest {
 	@Test
 	public void sequenceNameFromScannableName() {
 		Mono<String> source = Mono.just("foo").name("foo").hide().hide();
-		MonoMetrics<String> test = new MonoMetrics<>(source, registry);
+		MonoMetrics<String> test = new MonoMetrics<>(source);
 
 		assertThat(Scannable.from(source).isScanAvailable())
 				.as("source scan available").isTrue();
@@ -119,7 +119,7 @@ public class MonoMetricsTest {
 	public void testUsesMicrometer() {
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
-		new MonoMetrics<>(Mono.just("foo").hide(), registry)
+		new MonoMetrics<>(Mono.just("foo").hide())
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
@@ -130,13 +130,15 @@ public class MonoMetricsTest {
 	public void splitMetricsOnName() {
 		final Mono<Integer> unnamedSource = Mono.<Integer>error(new ArithmeticException("boom"))
 				.hide();
-		final Mono<Integer> unnamed = new MonoMetrics<>(unnamedSource, registry)
+		final Mono<Integer> unnamed = new MonoMetrics<>(unnamedSource)
 				.onErrorResume(e -> Mono.empty());
+
 		final Mono<Integer> namedSource = Mono.just(40)
 		                                      .name("foo")
 		                                      .map(i -> 100 / (40 - i))
 		                                      .hide();
-		final Mono<Integer> named = new MonoMetrics<>(namedSource, registry)
+
+		final Mono<Integer> named = new MonoMetrics<>(namedSource)
 				.onErrorResume(e -> Mono.empty());
 
 		Mono.when(unnamed, named).block();
@@ -167,8 +169,8 @@ public class MonoMetricsTest {
 								   .tag("tag1", "A")
 								   .tag("tag2", "foo")
 		                           .hide();
-		new MonoMetrics<>(source, registry)
-				.block();
+
+		new MonoMetrics<>(source).block();
 
 		Timer meter = registry
 				.find("usesTags" + METER_FLOW_DURATION)
@@ -183,10 +185,9 @@ public class MonoMetricsTest {
 
 	@Test
 	public void noOnNextTimer() {
-		Mono<Integer> source = Mono.just(1)
-		                           .hide();
-		new MonoMetrics<>(source, registry)
-				.block();
+		Mono<Integer> source = Mono.just(1).hide();
+
+		new MonoMetrics<>(source).block();
 
 		Timer nextMeter = registry
 				.find(REACTOR_DEFAULT_NAME + METER_ON_NEXT_DELAY)
@@ -200,7 +201,7 @@ public class MonoMetricsTest {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 		Mono<Integer> source = testPublisher.mono().hide();
 
-		new MonoMetrics<>(source, registry).subscribe();
+		new MonoMetrics<>(source).subscribe();
 
 		testPublisher.complete()
 		             .next(2);
@@ -221,7 +222,7 @@ public class MonoMetricsTest {
 		TestPublisher<Integer> testPublisher = TestPublisher.createNoncompliant(CLEANUP_ON_TERMINATE);
 		Mono<Integer> source = testPublisher.mono().hide();
 
-		new MonoMetrics<>(source, registry).subscribe();
+		new MonoMetrics<>(source).subscribe();
 
 		testPublisher.complete()
 		             .error(dropError);
@@ -239,7 +240,7 @@ public class MonoMetricsTest {
 	public void subscribeToComplete() {
 		Mono<Long> source = Mono.delay(Duration.ofMillis(100)).hide();
 
-		new MonoMetrics<>(source, registry).block();
+		new MonoMetrics<>(source).block();
 
 		Timer stcCompleteTimer = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 		                                 .tags(Tags.of(TAG_ON_COMPLETE))
@@ -272,7 +273,7 @@ public class MonoMetricsTest {
 		                           .map(v -> 100 / v)
 		                           .hide();
 
-		new MonoMetrics<>(source, registry)
+		new MonoMetrics<>(source)
 				.onErrorReturn(-1L)
 				.block();
 
@@ -307,7 +308,7 @@ public class MonoMetricsTest {
 	public void subscribeToCancel() throws InterruptedException {
 		Mono<Long> source = Mono.delay(Duration.ofMillis(200))
 		                           .hide();
-		Disposable disposable = new MonoMetrics<>(source, registry).subscribe();
+		Disposable disposable = new MonoMetrics<>(source).subscribe();
 		Thread.sleep(100);
 		disposable.dispose();
 
@@ -341,7 +342,7 @@ public class MonoMetricsTest {
 	@Test
 	public void countsSubscriptions() {
 		Mono<Integer> source = Mono.just(1).hide();
-		Mono<Integer> test = new MonoMetrics<>(source, registry);
+		Mono<Integer> test = new MonoMetrics<>(source);
 
 		test.subscribe();
 		Counter meter = registry.find(REACTOR_DEFAULT_NAME + METER_SUBSCRIBED)
@@ -362,7 +363,7 @@ public class MonoMetricsTest {
 		                           .name("foo")
 		                           .hide();
 
-		new MonoMetrics<>(source, registry).block();
+		new MonoMetrics<>(source).block();
 
 		DistributionSummary meter = registry.find("foo" + METER_REQUESTED)
 		                                    .summary();
@@ -384,10 +385,9 @@ public class MonoMetricsTest {
 		Mono<Object> source2 = Mono.error(new IllegalStateException("dummy"))
 		                           .hide();
 
-		new MonoMetrics<>(source1, registry)
-				.block();
+		new MonoMetrics<>(source1).block();
 
-		new MonoMetrics<>(source2, registry)
+		new MonoMetrics<>(source2)
 				.onErrorReturn(0)
 				.block();
 
