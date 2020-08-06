@@ -136,13 +136,13 @@ public class FluxMetricsTest {
 		Timer unnamedMeter = registry
 				.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_ERROR))
-				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
+				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName() + ": boom")
 				.timer();
 
 		Timer namedMeter = registry
 				.find("foo" + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_ERROR))
-				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName())
+				.tag(TAG_KEY_EXCEPTION, ArithmeticException.class.getName() + ": / by zero")
 				.timer();
 
 		assertThat(unnamedMeter).isNotNull();

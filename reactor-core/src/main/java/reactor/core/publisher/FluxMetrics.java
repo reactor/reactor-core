@@ -337,9 +337,7 @@ final class FluxMetrics<T> extends InternalFluxOperator<T, T> {
 	static void recordOnError(String name, Tags commonTags, MeterRegistry registry, Timer.Sample flowDuration, Throwable e) {
 		Timer timer = Timer.builder(name + METER_FLOW_DURATION)
 		                   .tags(commonTags.and(TAG_ON_ERROR))
-		                   .tag(TAG_KEY_EXCEPTION,
-				                   e.getClass()
-				                    .getName())
+		                   .tag(TAG_KEY_EXCEPTION, e.toString())
 		                   .description(
 				                   "Times the duration elapsed between a subscription and the onError termination of the sequence, with the exception name as a tag.")
 		                   .register(registry);
