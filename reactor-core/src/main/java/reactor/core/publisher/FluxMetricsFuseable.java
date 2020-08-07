@@ -130,7 +130,11 @@ final class FluxMetricsFuseable<T> extends InternalFluxOperator<T, T> implements
 				T v = qs.poll();
 
 				if (v == null && mode == SYNC) {
-					recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
+					if (this.onNextIntervalTimer.count() == 0) {
+						recordOnCompleteEmpty(sequenceName, commonTags, registry, subscribeToTerminateSample);
+					} else {
+						recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
+					}
 				}
 				if (v != null) {
 					//this is an onNext event

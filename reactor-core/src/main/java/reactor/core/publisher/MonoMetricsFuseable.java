@@ -98,6 +98,9 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 		@Override
 		public void onComplete() {
 			if (mode == ASYNC) {
+				if (!done) { //if it was valued, taken care of in poll()
+					FluxMetrics.recordOnCompleteEmpty(sequenceName, commonTags, registry, subscribeToTerminateSample);
+				}
 				actual.onComplete();
 			}
 			else {
@@ -105,7 +108,7 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 					return;
 				}
 				done = true;
-				FluxMetrics.recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
+				FluxMetrics.recordOnCompleteEmpty(sequenceName, commonTags, registry, subscribeToTerminateSample);
 				actual.onComplete();
 			}
 		}
@@ -122,7 +125,6 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 					return;
 				}
 				done = true;
-				//TODO looks like we don't count onNext: `Mono.empty()` vs `Mono.just("foo")`
 				FluxMetrics.recordOnComplete(sequenceName,
 						commonTags,
 						registry,
@@ -157,8 +159,13 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 			}
 			try {
 				T v = qs.poll();
-				if (!done && (v != null || mode == SYNC)) {
-					FluxMetrics.recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
+				if (!done) {
+					if (v == null && mode == SYNC) {
+						FluxMetrics.recordOnCompleteEmpty(sequenceName, commonTags, registry, subscribeToTerminateSample);
+					}
+					else if (v != null) {
+						FluxMetrics.recordOnComplete(sequenceName, commonTags, registry, subscribeToTerminateSample);
+					}
 				}
 				done = true;
 				return v;
