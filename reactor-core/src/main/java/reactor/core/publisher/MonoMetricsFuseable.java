@@ -18,12 +18,12 @@ package reactor.core.publisher;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.Metrics;
 import reactor.util.annotation.Nullable;
 
 import static reactor.core.publisher.FluxMetrics.resolveName;
@@ -46,26 +46,12 @@ final class MonoMetricsFuseable<T> extends InternalMonoOperator<T, T> implements
 	final MeterRegistry registryCandidate;
 
 	MonoMetricsFuseable(Mono<? extends T> mono) {
-		this(mono, null);
-	}
-
-	/**
-	 * For testing purposes.
-	 *
-	 * @param registryCandidate the registry to use, as a plain {@link Object} to avoid leaking dependency
-	 */
-	MonoMetricsFuseable(Mono<? extends T> mono, @Nullable MeterRegistry registryCandidate) {
 		super(mono);
 
 		this.name = resolveName(mono);
 		this.tags = resolveTags(mono, FluxMetrics.DEFAULT_TAGS_MONO);
 
-		if (registryCandidate == null) {
-			this.registryCandidate = Metrics.globalRegistry;
-		}
-		else {
-			this.registryCandidate = registryCandidate;
-		}
+		this.registryCandidate = Metrics.MicrometerConfiguration.getRegistry();;
 	}
 
 	@Override

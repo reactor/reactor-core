@@ -46,15 +46,8 @@ import reactor.util.Metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static reactor.core.publisher.FluxMetrics.METER_FLOW_DURATION;
-import static reactor.core.publisher.FluxMetrics.METER_ON_NEXT_DELAY;
-import static reactor.core.publisher.FluxMetrics.METER_REQUESTED;
-import static reactor.core.publisher.FluxMetrics.METER_SUBSCRIBED;
-import static reactor.core.publisher.FluxMetrics.REACTOR_DEFAULT_NAME;
-import static reactor.core.publisher.FluxMetrics.TAG_CANCEL;
-import static reactor.core.publisher.FluxMetrics.TAG_KEY_EXCEPTION;
-import static reactor.core.publisher.FluxMetrics.TAG_ON_COMPLETE;
-import static reactor.core.publisher.FluxMetrics.TAG_ON_ERROR;
+import static reactor.core.publisher.FluxMetrics.*;
+import static reactor.core.publisher.FluxMetrics.TAG_ON_COMPLETE_EMPTY;
 
 public class MonoMetricsFuseableTest {
 
@@ -77,7 +70,7 @@ public class MonoMetricsFuseableTest {
 
 	@Test
 	public void scanOperator(){
-		MonoMetricsFuseable<String> test = new MonoMetricsFuseable<>(Mono.just("foo"), registry);
+		MonoMetricsFuseable<String> test = new MonoMetricsFuseable<>(Mono.just("foo"));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
@@ -237,7 +230,7 @@ public class MonoMetricsFuseableTest {
 	public void testUsesMicrometerFuseable() {
 		AtomicReference<Subscription> subRef = new AtomicReference<>();
 
-		new MonoMetricsFuseable<>(Mono.just("foo"), registry)
+		new MonoMetricsFuseable<>(Mono.just("foo"))
 				.doOnSubscribe(subRef::set)
 				.subscribe();
 
@@ -249,9 +242,9 @@ public class MonoMetricsFuseableTest {
 		final Mono<Integer> unnamedSource = Mono.just(0).map(v -> 100 / v);
 		final Mono<Integer> namedSource = Mono.just(0).map(v -> 100 / v).name("foo");
 		
-		final Mono<Integer> unnamed = new MonoMetricsFuseable<>(unnamedSource, registry)
+		final Mono<Integer> unnamed = new MonoMetricsFuseable<>(unnamedSource)
 				.onErrorResume(e -> Mono.empty());
-		final Mono<Integer> named = new MonoMetricsFuseable<>(namedSource, registry)
+		final Mono<Integer> named = new MonoMetricsFuseable<>(namedSource)
 				.onErrorResume(e -> Mono.empty());
 
 		Mono.when(unnamed, named).block();
@@ -282,7 +275,7 @@ public class MonoMetricsFuseableTest {
 								   .tag("tag1", "A")
 		                           .tag("tag2", "foo");
 
-		new MonoMetricsFuseable<>(source, registry).block();
+		new MonoMetricsFuseable<>(source).block();
 
 		Timer meter = registry
 				.find("usesTags" + METER_FLOW_DURATION)
@@ -298,7 +291,7 @@ public class MonoMetricsFuseableTest {
 	@Test
 	public void noOnNextTimerFuseable() {
 		Mono<Integer> source = Mono.just(123);
-		new MonoMetricsFuseable<>(source, registry)
+		new MonoMetricsFuseable<>(source)
 		    .block();
 
 		Timer nextMeter = registry
@@ -308,7 +301,7 @@ public class MonoMetricsFuseableTest {
 		assertThat(nextMeter).isNull();
 	}
 
-
+	
 	@Test
 	public void subscribeToCompleteFuseable() {
 		Mono<String> source = Mono.fromCallable(() -> {
@@ -316,7 +309,7 @@ public class MonoMetricsFuseableTest {
 			return "foo";
 		});
 
-		StepVerifier.create(new MonoMetricsFuseable<>(source, registry))
+		StepVerifier.create(new MonoMetricsFuseable<>(source))
 		            .expectFusion(Fuseable.ASYNC)
 		            .expectNext("foo")
 		            .verifyComplete();
@@ -353,7 +346,7 @@ public class MonoMetricsFuseableTest {
 	public void subscribeToErrorFuseable() {
 		Mono<Long> source = Mono.delay(Duration.ofMillis(100))
 		                        .map(v -> 100 / v);
-		new MonoMetricsFuseable<>(source, registry)
+		new MonoMetricsFuseable<>(source)
 		    .onErrorReturn(-1L)
 		    .block();
 
@@ -388,7 +381,7 @@ public class MonoMetricsFuseableTest {
 	public void subscribeToCancelFuseable() throws InterruptedException {
 		Mono<String> source = Mono.delay(Duration.ofMillis(200))
 		                        .map(i -> "foo");
-		Disposable disposable = new MonoMetricsFuseable<>(source, registry).subscribe();
+		Disposable disposable = new MonoMetricsFuseable<>(source).subscribe();
 		Thread.sleep(100);
 		disposable.dispose();
 
@@ -422,7 +415,7 @@ public class MonoMetricsFuseableTest {
 	@Test
 	public void countsSubscriptionsFuseable() {
 		Mono<Integer> source = Mono.just(10);
-		Mono<Integer> test = new MonoMetricsFuseable<>(source, registry);
+		Mono<Integer> test = new MonoMetricsFuseable<>(source);
 
 		test.subscribe();
 		Counter meter = registry.find(REACTOR_DEFAULT_NAME + METER_SUBSCRIBED)
@@ -441,7 +434,7 @@ public class MonoMetricsFuseableTest {
 	public void noRequestTrackingEvenForNamedSequence() {
 		Mono<Integer> source = Mono.just(10)
 		                           .name("foo");
-		new MonoMetricsFuseable<>(source, registry)
+		new MonoMetricsFuseable<>(source)
 				.block();
 
 		DistributionSummary meter = registry.find("foo" + METER_REQUESTED)
