@@ -62,7 +62,7 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * @param <IN> the type of values that can be emitted by the sink
 	 * @return a {@link MonoProcessor} with the same semantics as the {@link Sinks.One}
 	 */
-	public static <IN> Processor<IN, IN> fromSink(Sinks.One<IN> sink) {
+	public static <IN> MonoProcessor<IN> fromSink(Sinks.One<IN> sink) {
 		if (sink instanceof MonoProcessor) {
 			@SuppressWarnings("unchecked")
 			final MonoProcessor<IN> processor = (MonoProcessor<IN>) sink;
