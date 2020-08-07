@@ -1065,4 +1065,24 @@ public class FluxRetryWhenTest {
 		            .verifyComplete();
 	}
 
+	@Test
+	public void retryWhenWithThrowableFunction() {
+		AtomicInteger sourceHelper = new AtomicInteger();
+		Flux<Integer> source = Flux.create(sink -> {
+			if (sourceHelper.getAndIncrement() == 3) {
+				sink.next(1).next(2).next(3).complete();
+			}
+			else {
+				sink.error(new IllegalStateException("boom"));
+			}
+		});
+
+		Function<Flux<Throwable>, Flux<Long>> throwableBased = throwableFlux -> throwableFlux.index().map(Tuple2::getT1);
+
+		StepVerifier.create(source.retryWhen(Retry.withThrowable(throwableBased)))
+		            .expectSubscription()
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
 }
