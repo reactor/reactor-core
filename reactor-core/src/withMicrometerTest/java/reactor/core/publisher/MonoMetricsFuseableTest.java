@@ -301,7 +301,168 @@ public class MonoMetricsFuseableTest {
 		assertThat(nextMeter).isNull();
 	}
 
-	
+	@Test
+	public void completeEmptyNoFusion() {
+		Mono<Integer> source = Mono.<Integer>empty().hide();
+
+		StepVerifier.create(new MonoMetricsFuseable<>(source))
+		            .expectNoFusionSupport()
+		            .verifyComplete();
+
+		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE))
+				.timer();
+
+		Timer stcCompleteEmptyCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE_EMPTY))
+				.timer();
+
+		assertThat(stcCompleteCounter)
+				.as("complete with element")
+				.isNull();
+
+		assertThat(stcCompleteEmptyCounter)
+				.as("complete without any element")
+				.isNotNull()
+				.satisfies(timer -> assertThat(timer.count()).as("timer count").isOne());
+	}
+
+	@Test
+	public void completeEmptyAsyncFusion() {
+		Mono<Integer> source = Mono.fromCallable(() -> null);
+
+		StepVerifier.create(new MonoMetricsFuseable<>(source))
+		            .expectFusion(Fuseable.ASYNC)
+		            .verifyComplete();
+
+		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE))
+				.timer();
+
+		Timer stcCompleteEmptyCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE_EMPTY))
+				.timer();
+
+		assertThat(stcCompleteCounter)
+				.as("complete with element")
+				.isNull();
+
+		assertThat(stcCompleteEmptyCounter)
+				.as("complete without any element")
+				.isNotNull()
+				.satisfies(timer -> assertThat(timer.count()).as("timer count").isOne());
+	}
+
+	@Test
+	public void completeEmptySyncFusion() {
+		MonoMetricsFuseable.MetricsFuseableSubscriber<Object> subscriber =
+				new MetricsFuseableSubscriber<>(AssertSubscriber.create(),
+						registry, clock, REACTOR_DEFAULT_NAME, DEFAULT_TAGS_MONO);
+
+		//trigger the fusion and polling
+		subscriber.onSubscribe(new FluxPeekFuseableTest.AssertQueueSubscription<>());
+		assertThat(subscriber.requestFusion(Fuseable.SYNC)).as("SYNC requested").isEqualTo(Fuseable.SYNC);
+		assertThat(subscriber.poll()).as("poll empty").isNull();
+
+		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE))
+				.timer();
+
+		Timer stcCompleteEmptyCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE_EMPTY))
+				.timer();
+
+		assertThat(stcCompleteCounter)
+				.as("complete with element")
+				.isNull();
+
+		assertThat(stcCompleteEmptyCounter)
+				.as("complete without any element")
+				.isNotNull()
+				.satisfies(timer -> assertThat(timer.count()).as("timer count").isOne());
+	}
+
+	@Test
+	public void completeWithElementNoFusion() {
+		Mono<Integer> source = Mono.just(1).hide();
+
+		StepVerifier.create(new MonoMetricsFuseable<>(source))
+		            .expectNoFusionSupport()
+		            .expectNext(1)
+		            .verifyComplete();
+
+		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+		                                   .tags(Tags.of(TAG_ON_COMPLETE))
+		                                   .timer();
+
+		Timer stcCompleteEmptyCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+		                                        .tags(Tags.of(TAG_ON_COMPLETE_EMPTY))
+		                                        .timer();
+
+		assertThat(stcCompleteCounter)
+				.as("complete with element")
+				.isNotNull()
+				.satisfies(timer -> assertThat(timer.count()).as("timer count").isOne());
+
+		assertThat(stcCompleteEmptyCounter)
+				.as("complete without any element")
+				.isNull();
+	}
+
+	@Test
+	public void completeWithElementAsyncFusion() {
+		Mono<Integer> source = Mono.fromCallable(() -> 1);
+
+		StepVerifier.create(new MonoMetricsFuseable<>(source))
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectNext(1)
+		            .verifyComplete();
+
+		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE))
+				.timer();
+
+		Timer stcCompleteEmptyCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE_EMPTY))
+				.timer();
+
+		assertThat(stcCompleteCounter)
+				.as("complete with element")
+				.isNotNull()
+				.satisfies(timer -> assertThat(timer.count()).as("timer count").isOne());
+
+		assertThat(stcCompleteEmptyCounter)
+				.as("complete without any element")
+				.isNull();
+	}
+
+	@Test
+	public void completeWithElementSyncFusion() {
+		Mono<Integer> source = Mono.just(1);
+
+		StepVerifier.create(new MonoMetricsFuseable<>(source))
+		            .expectFusion(Fuseable.SYNC)
+		            .expectNext(1)
+		            .verifyComplete();
+
+		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE))
+				.timer();
+
+		Timer stcCompleteEmptyCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
+				.tags(Tags.of(TAG_ON_COMPLETE_EMPTY))
+				.timer();
+
+		assertThat(stcCompleteCounter)
+				.as("complete with element")
+				.isNotNull()
+				.satisfies(timer -> assertThat(timer.count()).as("timer count").isOne());
+
+		assertThat(stcCompleteEmptyCounter)
+				.as("complete without any element")
+				.isNull();
+	}
+
 	@Test
 	public void subscribeToCompleteFuseable() {
 		Mono<String> source = Mono.fromCallable(() -> {
