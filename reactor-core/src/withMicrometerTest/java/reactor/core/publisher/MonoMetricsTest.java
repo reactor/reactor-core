@@ -230,7 +230,7 @@ public class MonoMetricsTest {
 	public void completeEmpty() {
 		Mono<Integer> source = Mono.empty();
 
-		new MonoMetrics<>(source, registry).block();
+		new MonoMetrics<>(source).block();
 
 		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 											.tags(Tags.of(TAG_ON_COMPLETE))
@@ -253,7 +253,7 @@ public class MonoMetricsTest {
 	public void completeWithElement() {
 		Mono<Integer> source = Mono.just(1);
 
-		new MonoMetrics<>(source, registry).block();
+		new MonoMetrics<>(source).block();
 
 		Timer stcCompleteCounter = registry.find(REACTOR_DEFAULT_NAME + METER_FLOW_DURATION)
 				.tags(Tags.of(TAG_ON_COMPLETE))
