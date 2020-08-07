@@ -193,11 +193,27 @@ public abstract class Retry {
 	 * @param function the {@link Function} representing the desired {@link Retry} strategy as a lambda
 	 * @return the {@link Retry} strategy adapted from the {@link Function}
 	 */
-	public static final Retry from(Function<Flux<RetrySignal>, Publisher<?>> function) {
+	public static final Retry from(Function<Flux<RetrySignal>, ? extends Publisher<?>> function) {
 		return new Retry() {
 			@Override
 			public Publisher<?> generateCompanion(Flux<RetrySignal> retrySignalCompanion) {
 				return function.apply(retrySignalCompanion);
+			}
+		};
+	}
+
+	/**
+	 * An adapter for {@link Flux} of {@link Throwable}-based {@link Function} to provide {@link Retry}
+	 * from a legacy retryWhen {@link Function}.
+	 *
+	 * @param function the {@link Function} representing the desired {@link Retry} strategy as a lambda
+	 * @return the {@link Retry} strategy adapted from the {@link Function}
+	 */
+	public static final Retry withThrowable(Function<Flux<Throwable>, ? extends Publisher<?>> function) {
+		return new Retry() {
+			@Override
+			public Publisher<?> generateCompanion(Flux<RetrySignal> retrySignals) {
+				return function.apply(retrySignals.map(RetrySignal::failure));
 			}
 		};
 	}
