@@ -446,7 +446,7 @@ public class MonoMetricsTest {
 		assertThat(source.metrics()).isInstanceOf(MonoMetricsFuseable.class);
 
 		//now use the test version with local registry
-		new MonoMetricsFuseable<List<Integer>>(source, registry)
+		new MonoMetricsFuseable<List<Integer>>(source)
 		    .flatMapIterable(Function.identity())
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)
@@ -464,7 +464,7 @@ public class MonoMetricsTest {
 		assertThat(source.metrics()).isInstanceOf(MonoMetricsFuseable.class);
 
 		//now use the test version with local registry
-		new MonoMetricsFuseable<List<Integer>>(source, registry)
+		new MonoMetricsFuseable<List<Integer>>(source)
 		    .flatMapIterable(Function.identity())
 		    .as(StepVerifier::create)
 		    .expectNext(1, 2, 3)
