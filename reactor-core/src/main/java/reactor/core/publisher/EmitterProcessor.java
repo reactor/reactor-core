@@ -227,11 +227,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Si
 			return Emission.FAIL_TERMINATED;
 		}
 
-		if (sourceMode == Fuseable.ASYNC) {
-			drain();
-			return Emission.OK;
-		}
-
 		Objects.requireNonNull(t, "onNext");
 
 		Queue<T> q = queue;
@@ -317,6 +312,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Si
 	@Override
 	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
+		if (sourceMode == Fuseable.ASYNC) {
+			drain();
+			return;
+		}
+
 		emitNext(t);
 	}
 

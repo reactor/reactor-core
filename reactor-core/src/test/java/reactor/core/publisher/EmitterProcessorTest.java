@@ -24,19 +24,18 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Processor;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -46,6 +45,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static reactor.core.Scannable.Attr;
 import static reactor.core.Scannable.Attr.*;
@@ -107,6 +107,21 @@ public class EmitterProcessorTest {
 		            .expectNext(1, 2, 3, 4, 5)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void emitNextNullWithAsyncFusion() {
+		EmitterProcessor<Integer> processor = EmitterProcessor.create();
+
+		// Any `QueueSubscription` capable of doing ASYNC fusion
+		Fuseable.QueueSubscription<Object> queueSubscription = UnicastProcessor.create();
+		processor.onSubscribe(queueSubscription);
+
+		// Expect the ASYNC fusion mode
+		assertThat(processor.sourceMode).as("sourceMode").isEqualTo(Fuseable.ASYNC);
+
+		processor.onNext(null);
+		assertThatThrownBy(() -> processor.emitNext(null)).isInstanceOf(NullPointerException.class);
 	}
 
 	@Test
