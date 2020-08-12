@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -1051,7 +1052,16 @@ public class FluxPeekFuseableTest {
 
 		@Override
 		public boolean add(T t) {
-			return q.add(t);
+			return q.offer(t);
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends T> c) {
+			for (T t : c) {
+				if (!q.offer(t))
+					return false;
+			}
+			return true;
 		}
 
 		@Override
