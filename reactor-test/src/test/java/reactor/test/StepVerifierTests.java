@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
@@ -2390,5 +2392,43 @@ public class StepVerifierTests {
 		            .isInstanceOf(IllegalStateException.class)
                     .hasMessage("ErrorInSubscribeFlux");
         });
+	}
+
+	@Test
+	public void withVirtualTimeResetsCustomFactoryAndOldSharedThreads() {
+		try {
+			AtomicInteger customFactoryInvoked = new AtomicInteger();
+			Schedulers.Factory customFactory = new Schedulers.Factory() {
+
+				@Override
+				public Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
+					customFactoryInvoked.incrementAndGet();
+					return Schedulers.Factory.super.newParallel(parallelism, threadFactory);
+				}
+			};
+			Schedulers.setFactory(customFactory);
+			Scheduler preParallel = Schedulers.parallel();
+
+			assertThat(customFactoryInvoked).as("custom factory pre verifier").hasValue(1);
+
+			StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofSeconds(1)))
+			            .thenAwait(Duration.ofSeconds(1))
+			            .expectNext(0L)
+			            .expectComplete()
+			            .verify(Duration.ofMillis(500));
+
+			assertThat(customFactoryInvoked).as("custom factory post verification").hasValue(1);
+
+			Scheduler postParallel = Schedulers.parallel();
+			Scheduler postNewParallel = Schedulers.newParallel("foo");
+			postNewParallel.dispose();
+
+			assertThat(postParallel).isSameAs(preParallel);
+			assertThat(postNewParallel).isNotInstanceOf(VirtualTimeScheduler.class);
+			assertThat(customFactoryInvoked).as("custom factory post newParallel").hasValue(2);
+		}
+		finally {
+			Schedulers.resetFactory();
+		}
 	}
 }
