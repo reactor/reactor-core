@@ -1015,6 +1015,9 @@ final class FluxFlatMap<T, R> extends InternalFluxOperator<T, R> {
 
 		@Override
 		public void request(long n) {
+			if (sourceMode == Fuseable.SYNC) {
+				return;
+			}
 			long p = produced + n;
 			if (p >= limit) {
 				produced = 0L;
