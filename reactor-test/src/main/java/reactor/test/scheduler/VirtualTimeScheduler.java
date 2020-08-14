@@ -82,7 +82,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * <p>
 	 * While this methods makes best effort to be thread safe, it is usually advised to
 	 * perform such wide-impact setup serially and BEFORE all test code runs
-	 * (setup/beforeAll/beforeClass...). The create Scheduler is returned.
+	 * (setup/beforeAll/beforeClass...). The created Scheduler is returned.
 	 *
 	 * @return the VirtualTimeScheduler that was created and set through the factory
 	 */
@@ -99,7 +99,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * <p>
 	 * While this methods makes best effort to be thread safe, it is usually advised to
 	 * perform such wide-impact setup serially and BEFORE all test code runs
-	 * (setup/beforeAll/beforeClass...). The create Scheduler is returned.
+	 * (setup/beforeAll/beforeClass...). The created Scheduler is returned.
 
 	 *
 	 * @param defer true to defer all clock move operations until there are tasks in queue, if a scheduler is created

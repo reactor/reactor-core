@@ -702,7 +702,9 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * @param snapshot
+	 * Reset the Factory and Schedulers with the ones saved in a 
+	 * previously {@link #setFactoryWithSnapshot(Factory) captured} snapshot.
+	 * <p>Passing {@code null} re-applies the default factory.
 	 */
 	public static void resetFrom(@Nullable Snapshot snapshot) {
 		if (snapshot == null) {
