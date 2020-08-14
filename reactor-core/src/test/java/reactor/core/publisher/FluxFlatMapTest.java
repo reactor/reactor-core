@@ -18,24 +18,35 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxPeekFuseableTest.AssertQueueSubscription;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
@@ -48,6 +59,42 @@ import reactor.util.concurrent.Queues;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxFlatMapTest {
+
+
+	@Test
+	public void flatmapInnerShouldntRequestInFusionModeSync() {
+		/*
+		See original reproduction case in https://github.com/reactor/reactor-core/issues/2318
+		This simplified test directly triggers the fusion/request, reliably reproducing the
+		root cause behind the NoSuchElementError in an efficient way.
+		*/
+		final AssertQueueSubscription<Integer> inner = new AssertQueueSubscription<Integer>() {
+			@Override
+			public int requestFusion(int requestedMode) {
+				if ((requestedMode & Fuseable.SYNC) != 0) {
+					return Fuseable.SYNC;
+				}
+				return Fuseable.NONE;
+			}
+		};
+		inner.addAll(Arrays.asList(1, 2, 3, 4, 5));
+
+		FluxFlatMap.FlatMapMain<?, Integer> parent = new FluxFlatMap.FlatMapMain<>(
+				AssertSubscriber.create(0),
+				ignored -> Mono.empty(),
+				false,
+				8,
+				Queues.small(),
+				4,
+				Queues.small());
+		FluxFlatMap.FlatMapInner<Integer> flatMapInner = new FluxFlatMap.FlatMapInner<>(parent, 4);
+		flatMapInner.onSubscribe(inner);
+
+		assertThat(flatMapInner.sourceMode).as("SYNC fusion expected").isEqualTo(Fuseable.SYNC);
+
+		flatMapInner.request(4); //go over produced and trigger source request
+		assertThat(inner.requested).as("inner requested").isZero();
+	}
 
 	/*@Test
 	public void constructors() {
