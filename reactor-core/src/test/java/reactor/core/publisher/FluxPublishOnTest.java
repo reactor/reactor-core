@@ -1184,8 +1184,15 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			                            }
 		                            }));
 
+		final long start = System.currentTimeMillis();
 		for (int i = 0; i < COUNT; i++) {
-			while (s.tryEmitNext(i).hasFailed() );
+			long busyLoops = 0;
+			while (s.tryEmitNext(i).hasFailed()) {
+				busyLoops++;
+				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
+					throw new RuntimeException("Busy loop timed out");
+				}
+			}
 		}
 
 		internalLatch.await(5, TimeUnit.SECONDS);
@@ -1224,8 +1231,15 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			latch.countDown();
 		});
 
+		final long start = System.currentTimeMillis();
 		for (int i = 1; i <= items; i++) {
-			while (s.tryEmitNext(String.valueOf(i)).hasFailed() );
+			long busyLoops = 0;
+			while (s.tryEmitNext(String.valueOf(i)).hasFailed()) {
+				busyLoops++;
+				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
+					throw new RuntimeException("Busy loop timed out");
+				}
+			}
 		}
 		latch.await(15, TimeUnit.SECONDS);
 		assertThat(latch.getCount())
