@@ -260,7 +260,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				Throwable ex = Operators.onOperatorError(s,
 						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t, currentContext());
 				if (!Exceptions.addThrowable(ERROR, this, ex)) {
-					Operators.onErrorDroppedMulticast(ex);
+					Operators.onErrorDroppedMulticast(ex, subscribers);
 					return;
 				}
 				done = true;
@@ -271,7 +271,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDroppedMulticast(t);
+				Operators.onErrorDroppedMulticast(t, subscribers);
 				return;
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -279,7 +279,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				drain();
 			}
 			else {
-				Operators.onErrorDroppedMulticast(t);
+				Operators.onErrorDroppedMulticast(t, subscribers);
 			}
 		}
 

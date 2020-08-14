@@ -1314,9 +1314,9 @@ public abstract class Operators {
 
 
 
-	static Context multiSubscribersContext(InnerProducer<?>[] subscribers){
-		if (subscribers.length > 0){
-			return subscribers[0].actual().currentContext();
+	static Context multiSubscribersContext(InnerProducer<?>[] multicastInners){
+		if (multicastInners.length > 0){
+			return multicastInners[0].actual().currentContext();
 		}
 		return Context.empty();
 	}
@@ -1347,18 +1347,18 @@ public abstract class Operators {
 		}
 	}
 
-
 	/**
 	 * An unexpected exception is about to be dropped from an operator that has multiple
 	 * subscribers (and thus potentially multiple Context with local onErrorDropped handlers).
 	 *
 	 * @param e the dropped exception
+	 * @param multicastInners the inner targets of the multicast
 	 * @see #onErrorDropped(Throwable, Context)
 	 */
-	static void onErrorDroppedMulticast(Throwable e) {
+	static void onErrorDroppedMulticast(Throwable e, InnerProducer<?>[] multicastInners) {
 		//TODO let this method go through multiple contexts and use their local handlers
 		//if at least one has no local handler, also call onErrorDropped(e, Context.empty())
-		onErrorDropped(e, Context.empty());
+		onErrorDropped(e, multiSubscribersContext(multicastInners));
 	}
 
 	/**
@@ -1370,12 +1370,13 @@ public abstract class Operators {
 	 *
 	 * @param <T> the dropped value type
 	 * @param t the dropped data
+	 * @param multicastInners the inner targets of the multicast
 	 * @see #onNextDropped(Object, Context)
 	 */
-	static <T> void onNextDroppedMulticast(T t) {
+	static <T> void onNextDroppedMulticast(T t,	InnerProducer<?>[] multicastInners) {
 		//TODO let this method go through multiple contexts and use their local handlers
 		//if at least one has no local handler, also call onNextDropped(t, Context.empty())
-		onNextDropped(t, Context.empty());
+		onNextDropped(t, multiSubscribersContext(multicastInners));
 	}
 
 	static <T> long producedCancellable(AtomicLongFieldUpdater<T> updater, T instance, long n) {

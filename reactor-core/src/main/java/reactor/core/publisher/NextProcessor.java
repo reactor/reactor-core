@@ -124,7 +124,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
 		if (UPSTREAM.getAndSet(this, Operators.cancelledSubscription()) == Operators.cancelledSubscription()) {
-			Operators.onErrorDroppedMulticast(cause);
+			Operators.onErrorDroppedMulticast(cause, subscribers);
 			return Emission.FAIL_TERMINATED;
 		}
 
@@ -144,7 +144,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 		Subscription s;
 		if ((s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription())) == Operators.cancelledSubscription()) {
 			if (value != null) {
-				Operators.onNextDroppedMulticast(value);
+				Operators.onNextDroppedMulticast(value, subscribers);
 			}
 			return Emission.FAIL_TERMINATED;
 		}
