@@ -101,44 +101,78 @@ public final class Sinks {
 		 */
 		FAIL_OVERFLOW,
 		/**
-		 * Has failed to emit the signal because the sink was previously been interrupted by its consumer
+		 * Has failed to emit the signal because the sink was previously interrupted by its consumer
 		 */
 		FAIL_CANCELLED;
 
 		/**
 		 * Has successfully emitted the signal
 		 */
-		public boolean hasEmitted() {
+		public boolean hasSucceeded() {
 			return this == OK;
 		}
 
 		/**
 		 * Has failed to emit the signal because the sink was previously terminated successfully or with an error, or
-		 * has been cancelled or has overflowed an underlying fixed size buffer.
+		 * has been cancelled or has overflowed its buffering capacity in terms of backpressure.
 		 */
 		public boolean hasFailed() {
 			return this != OK;
 		}
 
 		/**
-		 * Has failed to emit the signal because the sink does not have buffering capacity left
+		 * Easily convert from an {@link Emission} to throwing an exception on {@link #hasFailed() failure cases}.
+		 * This is useful if throwing is the most relevant way of dealing with a failed emission attempt.
+		 * See also {@link #orThrowWithCause(Throwable)} in case of an {@link One#emitError(Throwable) emitError}
+		 * failure for which you want to propagate the originally pushed {@link Exception}.
+		 *
+		 * @see #orThrowWithCause(Throwable)
 		 */
-		public boolean hasOverflowed() {
-			return this == FAIL_OVERFLOW;
+		public void orThrow() {
+			if (this == OK) return;
+
+			throw new EmissionException(this);
 		}
 
 		/**
-		 * Has failed to emit the signal because the sink was previously been interrupted by its consumer
+		 * Easily convert from an {@link Emission} to throwing an exception on {@link #hasFailed() failure cases}.
+		 * This is useful if throwing is the most relevant way of dealing with failed {@link One#emitError(Throwable)}
+		 * attempt, in which case you probably wants to propagate the originally pushed {@link Exception}.
+		 *
+		 * @see #orThrow()
 		 */
-		public boolean wasPreviouslyCancelled() {
-			return this == FAIL_CANCELLED;
+		public void orThrowWithCause(Throwable cause) {
+			if (this == OK) return;
+
+			throw new EmissionException(cause, this);
+		}
+	}
+
+	/**
+	 * An exception representing a {@link Emission#hasFailed() failed} {@link Emission}.
+	 * The exact type of failure can be found via {@link #getReason()}.
+	 */
+	public static final class EmissionException extends IllegalStateException {
+
+		final Emission reason;
+
+		public EmissionException(Emission reason) {
+			super("Sink emission failed with " + reason);
+			this.reason = reason;
+		}
+
+		public EmissionException(Throwable cause, Emission reason) {
+			super("Sink emission failed with " + reason, cause);
+			this.reason = reason;
 		}
 
 		/**
-		 * Has failed to emit the signal because the sink was previously terminated successfully or with an error
+		 * Get the failure {@link Emission} code that is represented by this exception.
+		 *
+		 * @return the {@link Emission}
 		 */
-		public boolean wasPreviouslyTerminated() {
-			return this == FAIL_TERMINATED;
+		public Emission getReason() {
+			return this.reason;
 		}
 	}
 
