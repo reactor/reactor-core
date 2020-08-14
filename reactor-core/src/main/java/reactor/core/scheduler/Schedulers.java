@@ -683,9 +683,14 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Set the current {@link Schedulers} aside in a capturing {@link Snapshot} that
-	 * can be later restored via {@link #resetFrom(Snapshot)}.
+	 * Replace {@link Schedulers} factories ({@link #newParallel(String) newParallel},
+	 * {@link #newSingle(String) newSingle} and {@link #newBoundedElastic(int, int, String) newBoundedElastic}).
+	 * Unlike {@link #setFactory(Factory}), doesn't shutdown previous Schedulers but capture
+	 * them in a {@link Snapshot} that can be later restored via {@link #resetFrom(Snapshot)}.
+	 * <p>
+	 * This method should be called safely and with caution, typically on app startup.
 	 *
+	 * @param factoryInstance an arbitrary {@link Factory} instance
 	 * @return a {@link Snapshot} representing a restorable snapshot of {@link Schedulers}
 	 */
 	public static Snapshot setFactoryWithSnapshot(Factory newFactory) {
@@ -702,9 +707,10 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Reset the Factory and Schedulers with the ones saved in a 
+	 * Replace the current Factory and shared Schedulers with the ones saved in a 
 	 * previously {@link #setFactoryWithSnapshot(Factory) captured} snapshot.
-	 * <p>Passing {@code null} re-applies the default factory.
+	 * <p>
+	 * Passing {@code null} re-applies the default factory.
 	 */
 	public static void resetFrom(@Nullable Snapshot snapshot) {
 		if (snapshot == null) {
