@@ -115,7 +115,7 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
 		if (isTerminated()) {
-			Operators.onErrorDroppedMulticast(cause);
+			Operators.onErrorDroppedMulticast(cause, subscribers);
 			return Emission.FAIL_TERMINATED;
 		}
 

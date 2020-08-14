@@ -456,7 +456,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	public Emission emitError(Throwable t) {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
-			Operators.onErrorDroppedMulticast(t);
+			Operators.onErrorDroppedMulticast(t, subscribers);
 			return Emission.FAIL_TERMINATED;
 		}
 

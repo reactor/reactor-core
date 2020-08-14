@@ -154,7 +154,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 		DirectInner<T>[] inners = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 		if (inners == TERMINATED) {
-			Operators.onErrorDroppedMulticast(t);
+			Operators.onErrorDroppedMulticast(t, subscribers);
 			return Emission.FAIL_TERMINATED;
 		}
 

@@ -339,7 +339,7 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		@Override
 		public void onNext(T t) {
 			if (main.state != this) {
-				Operators.onNextDroppedMulticast(t);
+				Operators.onNextDroppedMulticast(t, subscribers);
 				return;
 			}
 			signalCached(Signal.next(t));
@@ -348,7 +348,7 @@ class MonoCacheTime<T> extends InternalMonoOperator<T, T> implements Runnable {
 		@Override
 		public void onError(Throwable t) {
 			if (main.state != this) {
-				Operators.onErrorDroppedMulticast(t);
+				Operators.onErrorDroppedMulticast(t, subscribers);
 				return;
 			}
 			signalCached(Signal.error(t));
