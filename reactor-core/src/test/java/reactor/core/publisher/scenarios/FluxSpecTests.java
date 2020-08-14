@@ -1103,9 +1103,16 @@ public class FluxSpecTests {
 					latch.countDown();
 				});
 
+		final long start = System.currentTimeMillis();
 		Flux.range(1, 1000).subscribe(data -> {
-			while(head.tryEmitNext(data).hasFailed());
-		}, head::tryEmitError, head::tryEmitComplete);
+			long busyLoops = 0;
+			while(head.tryEmitNext(data).hasFailed()) {
+				busyLoops++;
+				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
+					throw new RuntimeException("Busy loop timed out");
+				}
+			}
+		}, head::emitError, head::emitComplete);
 		latch.await();
 		Assert.assertTrue(sum.get() == length);
 	}

@@ -589,7 +589,13 @@ public class FluxTests extends AbstractReactorTest {
 		long start = System.currentTimeMillis();
 
 		for (String i : data) {
-			while (deferred.tryEmitNext(i).hasFailed() );
+			long busyLoops = 0;
+			while (deferred.tryEmitNext(i).hasFailed()) {
+				busyLoops++;
+				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
+					throw new RuntimeException("Busy loop timed out");
+				}
+			}
 		}
 		if (!latch.await(10, TimeUnit.SECONDS)) {
 			throw new RuntimeException(latch.getCount()+ " ");
@@ -643,7 +649,13 @@ public class FluxTests extends AbstractReactorTest {
 
 		long start = System.currentTimeMillis();
 		for (int i : data) {
-			while (deferred.tryEmitNext(i).hasFailed() );
+			long busyLoops = 0;
+			while (deferred.tryEmitNext(i).hasFailed()) {
+				busyLoops++;
+				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
+					throw new RuntimeException("Busy loop timed out");
+				}
+			}
 		}
 
 		if (!latch.await(15, TimeUnit.SECONDS)) {
@@ -692,7 +704,13 @@ public class FluxTests extends AbstractReactorTest {
 		long start = System.currentTimeMillis();
 
 		for (int i : data) {
-			while (mapManydeferred.tryEmitNext(i).hasFailed() );
+			long busyLoops = 0;
+			while (mapManydeferred.tryEmitNext(i).hasFailed()) {
+				busyLoops++;
+				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
+					throw new RuntimeException("Busy loop timed out");
+				}
+			}
 		}
 
 		if (!latch.await(20, TimeUnit.SECONDS)) {
@@ -774,8 +792,15 @@ public class FluxTests extends AbstractReactorTest {
 			                                                items.forEach(item -> latch.countDown());
 		                                                }));
 
+		final long start = System.currentTimeMillis();
 		testDataset.forEach(data -> {
-			while (batchingStreamDef.tryEmitNext(data).hasFailed() );
+			long busyLoops = 0;
+			while (batchingStreamDef.tryEmitNext(data).hasFailed()) {
+				busyLoops++;
+				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
+					throw new RuntimeException("Busy loop timed out");
+				}
+			}
 		});
 
 		System.out.println(batchesDistribution);
