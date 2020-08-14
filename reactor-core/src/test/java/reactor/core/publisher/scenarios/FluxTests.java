@@ -589,7 +589,7 @@ public class FluxTests extends AbstractReactorTest {
 		long start = System.currentTimeMillis();
 
 		for (String i : data) {
-			while (deferred.emitNext(i).hasFailed() );
+			while (deferred.tryEmitNext(i).hasFailed() );
 		}
 		if (!latch.await(10, TimeUnit.SECONDS)) {
 			throw new RuntimeException(latch.getCount()+ " ");
@@ -643,7 +643,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		long start = System.currentTimeMillis();
 		for (int i : data) {
-			while (deferred.emitNext(i).hasFailed() );
+			while (deferred.tryEmitNext(i).hasFailed() );
 		}
 
 		if (!latch.await(15, TimeUnit.SECONDS)) {
@@ -692,7 +692,7 @@ public class FluxTests extends AbstractReactorTest {
 		long start = System.currentTimeMillis();
 
 		for (int i : data) {
-			while (mapManydeferred.emitNext(i).hasFailed() );
+			while (mapManydeferred.tryEmitNext(i).hasFailed() );
 		}
 
 		if (!latch.await(20, TimeUnit.SECONDS)) {
@@ -775,7 +775,7 @@ public class FluxTests extends AbstractReactorTest {
 		                                                }));
 
 		testDataset.forEach(data -> {
-			while (batchingStreamDef.emitNext(data).hasFailed() );
+			while (batchingStreamDef.tryEmitNext(data).hasFailed() );
 		});
 
 		System.out.println(batchesDistribution);

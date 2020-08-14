@@ -1104,8 +1104,8 @@ public class FluxSpecTests {
 				});
 
 		Flux.range(1, 1000).subscribe(data -> {
-			while(head.emitNext(data).hasFailed());
-		}, head::emitError, head::emitComplete);
+			while(head.tryEmitNext(data).hasFailed());
+		}, head::tryEmitError, head::tryEmitComplete);
 		latch.await();
 		Assert.assertTrue(sum.get() == length);
 	}

@@ -148,7 +148,7 @@ public class VoidProcessorTest {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 
 		mp.onError(new Exception("test"));
-		assertThat(mp.emitError(new Exception("test")).hasFailed()).isTrue();
+		assertThat(mp.tryEmitError(new Exception("test")).hasFailed()).isTrue();
 	}
 
 	@Test
@@ -156,7 +156,7 @@ public class VoidProcessorTest {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 
 		mp.onComplete();
-		assertThat(mp.emitError(new Exception("test")).hasFailed()).isTrue();
+		assertThat(mp.tryEmitError(new Exception("test")).hasFailed()).isTrue();
 	}
 
 }

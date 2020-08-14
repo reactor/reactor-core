@@ -16,14 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
-import reactor.core.Scannable;
-import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
-
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
@@ -31,6 +23,15 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.

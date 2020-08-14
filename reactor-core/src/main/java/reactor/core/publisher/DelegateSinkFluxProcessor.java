@@ -15,14 +15,15 @@
  */
 package reactor.core.publisher;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
-
-import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * @author Stephane Maldini

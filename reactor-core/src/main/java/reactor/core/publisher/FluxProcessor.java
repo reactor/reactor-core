@@ -49,7 +49,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * Convert a {@link Sinks.Many} to a {@link FluxProcessor} : subscribing to the processor
 	 * will be akin to subscribing to the {@link Many#asFlux()}, and having the processor
 	 * subscribed to an upstream {@link org.reactivestreams.Publisher} will pass signals from
-	 * said {@link org.reactivestreams.Publisher} as calls to the sink's {@link Sinks.Many#emitNext(Object) emit methods}.
+	 * said {@link org.reactivestreams.Publisher} as calls to the sink's {@link Sinks.Many#tryEmitNext(Object) emit methods}.
 	 *
 	 * @param sink the {@link Sinks.Many} to convert
 	 * @param <IN> the type of values that can be emitted by the sink

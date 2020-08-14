@@ -16,18 +16,19 @@
 
 package reactor.core.publisher.scenarios;
 
-import org.junit.Before;
-import org.junit.Test;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.GroupedFlux;
-import reactor.core.publisher.Sinks;
-import reactor.test.subscriber.AssertSubscriber;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.GroupedFlux;
+import reactor.core.publisher.Sinks;
+import reactor.test.subscriber.AssertSubscriber;
 
 import static org.junit.Assert.assertEquals;
 

@@ -220,7 +220,21 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Emission emitComplete() {
+	public void onComplete() {
+		//no particular error condition handling for onComplete
+		@SuppressWarnings("unused")
+		Emission emission = tryEmitComplete();
+	}
+
+	@Override
+	public void emitComplete() {
+		//no particular error condition handling for onComplete
+		@SuppressWarnings("unused")
+		Emission emission = tryEmitComplete();
+	}
+
+	@Override
+	public Emission tryEmitComplete() {
 		if (done) {
 			return Emission.FAIL_TERMINATED;
 		}
@@ -237,13 +251,24 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Emission emitError(Throwable t) {
+	public void onError(Throwable throwable) {
+		emitError(throwable);
+	}
+
+	@Override
+	public void emitError(Throwable error) {
+		Emission result = tryEmitError(error);
+		if (result == Emission.FAIL_TERMINATED) {
+			Operators.onErrorDropped(error, currentContext());
+		}
+	}
+
+	@Override
+	public Emission tryEmitError(Throwable t) {
 		if (done) {
-			Operators.onErrorDropped(t, currentContext());
 			return Emission.FAIL_TERMINATED;
 		}
 		if (cancelled) {
-			Operators.onErrorDropped(t, currentContext());
 			return Emission.FAIL_CANCELLED;
 		}
 
@@ -257,20 +282,43 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Emission emitNext(T t) {
+	public void onNext(T t) {
+		emitNext(t);
+	}
+
+	@Override
+	public void emitNext(T value) {
+		switch(tryEmitNext(value)) {
+			case FAIL_OVERFLOW:
+				Operators.onDiscard(value, currentContext());
+				//the emitError will onErrorDropped if already terminated
+				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
+				break;
+			case FAIL_CANCELLED:
+				Operators.onDiscard(value, currentContext());
+				break;
+			case FAIL_TERMINATED:
+				Operators.onNextDropped(value, currentContext());
+				break;
+			case OK:
+				break;
+		}
+	}
+
+	@Override
+	public Emission tryEmitNext(T t) {
 		if (done) {
-			Operators.onNextDropped(t, currentContext());
 			return Emission.FAIL_TERMINATED;
 		}
 		if (cancelled) {
-			Operators.onNextDropped(t, currentContext());
 			return Emission.FAIL_CANCELLED;
 		}
 
 		if (!queue.offer(t)) {
+			//FIXME inconsistency here, we return FAIL_OVERFLOW but also fail the subscribers
 			Context ctx = actual.currentContext();
 			Throwable ex = Operators.onOperatorError(null,
-													 Exceptions.failWithOverflow(), t, ctx);
+					Exceptions.failWithOverflow(), t, ctx);
 			if (onOverflow != null) {
 				try {
 					onOverflow.accept(t);
@@ -280,8 +328,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 					ex.initCause(e);
 				}
 			}
-			Operators.onDiscard(t, ctx);
-			onError(ex);
+			onError(ex); //FIXME should this really error ??
 			return Emission.FAIL_OVERFLOW;
 		}
 		drain(t);
@@ -462,21 +509,6 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	public Context currentContext() {
 		CoreSubscriber<? super T> actual = this.actual;
 		return actual != null ? actual.currentContext() : Context.empty();
-	}
-
-	@Override
-	public void onNext(T t) {
-		emitNext(t);
-	}
-
-	@Override
-	public void onError(Throwable t) {
-		emitError(t);
-	}
-
-	@Override
-	public void onComplete() {
-		emitComplete();
 	}
 
 	@Override

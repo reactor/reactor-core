@@ -22,7 +22,8 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 	volatile NextInner<O>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<NextProcessor, NextInner[]> SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, NextInner[].class, "subscribers");
+	static final AtomicReferenceFieldUpdater<NextProcessor, NextInner[]> SUBSCRIBERS =
+			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, NextInner[].class, "subscribers");
 
 	@SuppressWarnings("rawtypes")
 	static final NextInner[] EMPTY = new NextInner[0];
@@ -34,7 +35,9 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 	static final NextInner[] EMPTY_WITH_SOURCE = new NextInner[0];
 
 	volatile     Subscription                                             subscription;
-	static final AtomicReferenceFieldUpdater<NextProcessor, Subscription> UPSTREAM = AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<NextProcessor, Subscription> UPSTREAM =
+			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");
 
 	CorePublisher<? extends O> source;
 
@@ -114,17 +117,43 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 	}
 
 	@Override
-	public Emission emitEmpty() {
-		return emitValue(null);
+	public final void onComplete() {
+		//no particular error condition handling for onComplete
+		@SuppressWarnings("unused")
+		Emission emission = tryEmitEmpty();
+	}
+
+	@Override
+	public void emitEmpty() {
+		//no particular error condition handling for onComplete
+		@SuppressWarnings("unused")
+		Emission emission = tryEmitEmpty();
+	}
+
+	@Override
+	public Emission tryEmitEmpty() {
+		return tryEmitValue(null);
+	}
+
+	@Override
+	public final void onError(Throwable cause) {
+		emitError(cause);
+	}
+
+	@Override
+	public void emitError(Throwable error) {
+		Emission result = tryEmitError(error);
+		if (result == Emission.FAIL_TERMINATED) {
+			Operators.onErrorDroppedMulticast(error, subscribers);
+		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public Emission emitError(Throwable cause) {
+	public Emission tryEmitError(Throwable cause) {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
 		if (UPSTREAM.getAndSet(this, Operators.cancelledSubscription()) == Operators.cancelledSubscription()) {
-			Operators.onErrorDroppedMulticast(cause, subscribers);
 			return Emission.FAIL_TERMINATED;
 		}
 
@@ -140,12 +169,40 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 	}
 
 	@Override
-	public Emission emitValue(@Nullable O value) {
+	public final void onNext(@Nullable O value) {
+		emitValue(value);
+	}
+
+	@Override
+	public void emitValue(@Nullable O value) {
+		if (value == null) {
+			//no particular error condition handling for onComplete
+			@SuppressWarnings("unused")
+			Emission emission = tryEmitEmpty();
+			return;
+		}
+
+		switch(tryEmitValue(value)) {
+			case FAIL_OVERFLOW:
+				Operators.onDiscard(value, currentContext());
+				//the emitError will onErrorDropped if already terminated
+				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.One#emitValue"));
+				break;
+			case FAIL_CANCELLED:
+				Operators.onDiscard(value, currentContext());
+				break;
+			case FAIL_TERMINATED:
+				Operators.onNextDroppedMulticast(value, subscribers);
+				break;
+			case OK:
+				break;
+		}
+	}
+
+	@Override
+	public Emission tryEmitValue(@Nullable O value) {
 		Subscription s;
 		if ((s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription())) == Operators.cancelledSubscription()) {
-			if (value != null) {
-				Operators.onNextDroppedMulticast(value, subscribers);
-			}
 			return Emission.FAIL_TERMINATED;
 		}
 
@@ -231,21 +288,6 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 		if (s != null) {
 			s.cancel();
 		}
-	}
-
-	@Override
-	public final void onComplete() {
-		emitValue(null);
-	}
-
-	@Override
-	public final void onError(Throwable cause) {
-		emitError(cause);
-	}
-
-	@Override
-	public final void onNext(@Nullable O value) {
-		emitValue(value);
 	}
 
 	@Override
