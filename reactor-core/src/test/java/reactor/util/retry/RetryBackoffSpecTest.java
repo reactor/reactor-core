@@ -29,6 +29,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxRetryWhenTest;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
@@ -397,16 +398,14 @@ public class RetryBackoffSpecTest {
 
 	@Test
 	public void backoffSchedulerIsEagerlyCaptured() {
-		RetryBackoffSpec spec = Retry.backoff(3, Duration.ofMillis(10))
+		RetryBackoffSpec spec = Retry.backoff(3, Duration.ofMillis(500))
 				.scheduler(Schedulers.parallel());
 
-		StepVerifier.withVirtualTime(() -> Flux.error(new IllegalStateException("boom"))
-		                                       .retryWhen(spec)
-		)
-		            .expectSubscription()
-		            .thenAwait(Duration.ofHours(1))
-		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(RejectedExecutionException.class))
-		            .verify(Duration.ofSeconds(1));
+		Schedulers.resetFactory();
+
+		assertThat(spec.backoffSchedulerSupplier.get())
+				.isNotSameAs(Schedulers.parallel())
+				.matches(Scheduler::isDisposed, "disposed");
 	}
 
 	@Test

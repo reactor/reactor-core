@@ -104,6 +104,7 @@ public abstract class Schedulers {
 			        .map(Integer::parseInt)
 			        .orElse(100000);
 
+	@Nullable
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
 	/**
@@ -619,8 +620,8 @@ public abstract class Schedulers {
 	 * @param c the new hook to set.
 	 */
 	public static void onHandleError(BiConsumer<Thread, ? super Throwable> c) {
-		if (log.isDebugEnabled()) {
-			log.debug("Hooking new default: onHandleError");
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Hooking new default: onHandleError");
 		}
 		onHandleErrorHook = Objects.requireNonNull(c, "onHandleError");
 	}
@@ -677,16 +678,70 @@ public abstract class Schedulers {
 	/**
 	 * Re-apply default factory to {@link Schedulers}
 	 */
-	public static void resetFactory(){
+	public static void resetFactory() {
 		setFactory(DEFAULT);
+	}
+
+	/**
+	 * Replace {@link Schedulers} factories ({@link #newParallel(String) newParallel},
+	 * {@link #newSingle(String) newSingle} and {@link #newBoundedElastic(int, int, String) newBoundedElastic}).
+	 * Unlike {@link #setFactory(Factory}), doesn't shutdown previous Schedulers but capture
+	 * them in a {@link Snapshot} that can be later restored via {@link #resetFrom(Snapshot)}.
+	 * <p>
+	 * This method should be called safely and with caution, typically on app startup.
+	 *
+	 * @param factoryInstance an arbitrary {@link Factory} instance
+	 * @return a {@link Snapshot} representing a restorable snapshot of {@link Schedulers}
+	 */
+	public static Snapshot setFactoryWithSnapshot(Factory newFactory) {
+		//nulling out CACHED references ensures that the schedulers won't be disposed
+		//when setting the newFactory via setFactory
+		Snapshot snapshot = new Snapshot(
+				CACHED_ELASTIC.getAndSet(null),
+				CACHED_BOUNDED_ELASTIC.getAndSet(null),
+				CACHED_PARALLEL.getAndSet(null),
+				CACHED_SINGLE.getAndSet(null),
+				factory);
+		setFactory(newFactory);
+		return snapshot;
+	}
+
+	/**
+	 * Replace the current Factory and shared Schedulers with the ones saved in a 
+	 * previously {@link #setFactoryWithSnapshot(Factory) captured} snapshot.
+	 * <p>
+	 * Passing {@code null} re-applies the default factory.
+	 */
+	public static void resetFrom(@Nullable Snapshot snapshot) {
+		if (snapshot == null) {
+			resetFactory();
+			return;
+		}
+		//Restore the atomic references first, so that concurrent calls to Schedulers either
+		//get a soon-to-be-shutdown instance or the restored instance
+		CachedScheduler oldElastic = CACHED_ELASTIC.getAndSet(snapshot.oldElasticScheduler);
+		CachedScheduler oldBoundedElastic = CACHED_BOUNDED_ELASTIC.getAndSet(snapshot.oldBoundedElasticScheduler);
+		CachedScheduler oldParallel = CACHED_PARALLEL.getAndSet(snapshot.oldParallelScheduler);
+		CachedScheduler oldSingle = CACHED_SINGLE.getAndSet(snapshot.oldSingleScheduler);
+
+		//From there on, we've restored all the snapshoted instances, the factory can be
+		//restored too and will start backing Schedulers.newXxx().
+		//We thus never create a CachedScheduler by accident.
+		factory = snapshot.oldFactory;
+
+		//Shutdown the old CachedSchedulers, if any
+		if (oldElastic != null) oldElastic._dispose();
+		if (oldBoundedElastic != null) oldBoundedElastic._dispose();
+		if (oldParallel != null) oldParallel._dispose();
+		if (oldSingle != null) oldSingle._dispose();
 	}
 
 	/**
 	 * Reset the {@link #onHandleError(BiConsumer)} hook to the default no-op behavior.
 	 */
 	public static void resetOnHandleError() {
-		if (log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults: onHandleError");
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Reset to factory defaults: onHandleError");
 		}
 		onHandleErrorHook = null;
 	}
@@ -1003,6 +1058,55 @@ public abstract class Schedulers {
 		}
 	}
 
+	/**
+	 * It is also {@link Disposable} in case you don't want to restore the live {@link Schedulers}
+	 */
+	public static final class Snapshot implements Disposable {
+
+		@Nullable
+		final CachedScheduler oldElasticScheduler;
+
+		@Nullable
+		final CachedScheduler oldBoundedElasticScheduler;
+
+		@Nullable
+		final CachedScheduler oldParallelScheduler;
+
+		@Nullable
+		final CachedScheduler oldSingleScheduler;
+
+		final Factory oldFactory;
+
+		private Snapshot(@Nullable CachedScheduler oldElasticScheduler,
+				@Nullable CachedScheduler oldBoundedElasticScheduler,
+				@Nullable CachedScheduler oldParallelScheduler,
+				@Nullable CachedScheduler oldSingleScheduler,
+				Factory factory) {
+			this.oldElasticScheduler = oldElasticScheduler;
+			this.oldBoundedElasticScheduler = oldBoundedElasticScheduler;
+			this.oldParallelScheduler = oldParallelScheduler;
+			this.oldSingleScheduler = oldSingleScheduler;
+			oldFactory = factory;
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return
+					(oldElasticScheduler == null || oldElasticScheduler.isDisposed()) &&
+					(oldBoundedElasticScheduler == null || oldBoundedElasticScheduler.isDisposed()) &&
+					(oldParallelScheduler == null || oldParallelScheduler.isDisposed()) &&
+					(oldSingleScheduler == null || oldSingleScheduler.isDisposed());
+		}
+
+		@Override
+		public void dispose() {
+			if (oldElasticScheduler != null) oldElasticScheduler._dispose();
+			if (oldBoundedElasticScheduler != null) oldBoundedElasticScheduler._dispose();
+			if (oldParallelScheduler != null) oldParallelScheduler._dispose();
+			if (oldSingleScheduler != null) oldSingleScheduler._dispose();
+		}
+	}
+
 	// Internals
 	static final String ELASTIC               = "elastic"; // IO stuff
 	static final String BOUNDED_ELASTIC       = "boundedElastic"; // Blocking stuff with scale to zero
@@ -1070,10 +1174,10 @@ public abstract class Schedulers {
 		return reference.get();
 	}
 
-	static final Logger log = Loggers.getLogger(Schedulers.class);
+	static final Logger LOGGER = Loggers.getLogger(Schedulers.class);
 
 	static final void defaultUncaughtException(Thread t, Throwable e) {
-		Schedulers.log.error("Scheduler worker in group " + t.getThreadGroup().getName()
+		Schedulers.LOGGER.error("Scheduler worker in group " + t.getThreadGroup().getName()
 				+ " failed with an uncaught exception", e);
 	}
 
@@ -1085,10 +1189,11 @@ public abstract class Schedulers {
 			x.uncaughtException(thread, t);
 		}
 		else {
-			log.error("Scheduler worker failed with an uncaught exception", t);
+			LOGGER.error("Scheduler worker failed with an uncaught exception", t);
 		}
-		if (onHandleErrorHook != null) {
-			onHandleErrorHook.accept(thread, t);
+		BiConsumer<Thread, ? super Throwable> hook = onHandleErrorHook;
+		if (hook != null) {
+			hook.accept(thread, t);
 		}
 	}
 
