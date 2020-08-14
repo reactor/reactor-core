@@ -56,7 +56,8 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * Convert a {@link Sinks.One} to a {@link MonoProcessor} : subscribing to the processor
 	 * will be akin to subscribing to the {@link Sinks.One#asMono()}, and having the processor
 	 * subscribed to an upstream {@link org.reactivestreams.Publisher} will pass signals from
-	 * said {@link org.reactivestreams.Publisher} as calls to the sink's {@link Sinks.One#emitValue(Object) emit methods}.
+	 * said {@link org.reactivestreams.Publisher} as calls to the sink's
+	 * {@link Sinks.One#tryEmitValue(Object) emit methods}.
 	 *
 	 * @param sink the {@link Sinks.One} to convert
 	 * @param <IN> the type of values that can be emitted by the sink

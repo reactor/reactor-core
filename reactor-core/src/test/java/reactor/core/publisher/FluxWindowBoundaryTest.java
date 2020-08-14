@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;

@@ -16,20 +16,6 @@
 
 package reactor.core.scheduler;
 
-import org.assertj.core.api.Assertions;
-import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
-import reactor.core.Disposable;
-import reactor.core.Disposables;
-import reactor.core.Exceptions;
-import reactor.core.Scannable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
-import reactor.test.StepVerifier;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -49,6 +35,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
+
+import reactor.core.Disposable;
+import reactor.core.Disposables;
+import reactor.core.Exceptions;
+import reactor.core.Scannable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;

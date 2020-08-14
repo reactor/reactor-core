@@ -61,11 +61,9 @@ import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-import static reactor.core.Scannable.Attr.PREFETCH;
-import static reactor.core.Scannable.Attr.RUN_ON;
-import static reactor.core.Scannable.Attr.RunStyle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static reactor.core.Scannable.Attr.*;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
@@ -1187,7 +1185,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		                            }));
 
 		for (int i = 0; i < COUNT; i++) {
-			while (s.emitNext(i).hasFailed() );
+			while (s.tryEmitNext(i).hasFailed() );
 		}
 
 		internalLatch.await(5, TimeUnit.SECONDS);
@@ -1227,7 +1225,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		});
 
 		for (int i = 1; i <= items; i++) {
-			while (s.emitNext(String.valueOf(i)).hasFailed() );
+			while (s.tryEmitNext(String.valueOf(i)).hasFailed() );
 		}
 		latch.await(15, TimeUnit.SECONDS);
 		assertThat(latch.getCount())
