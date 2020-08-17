@@ -57,7 +57,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		CoreSubscriber<T> serial = Operators.serialize(s);
 
 		RetryWhenMainSubscriber<T> main =
-				new RetryWhenMainSubscriber<>(serial, other.completionSignal, source);
+				new RetryWhenMainSubscriber<>(serial, other.completionSignal, source, whenSourceFactory.retryContext());
 
 		other.main = main;
 		serial.onSubscribe(main);
@@ -102,6 +102,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		long subsequentFailureIndex = 0L;
 		@Nullable
 		Throwable lastFailure = null;
+		final ContextView retryContext;
 
 		Context context;
 
@@ -113,12 +114,14 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		
 		RetryWhenMainSubscriber(CoreSubscriber<? super T> actual,
 				Sinks.Many<Retry.RetrySignal> signaller,
-				CorePublisher<? extends T> source) {
+				CorePublisher<? extends T> source,
+				ContextView retryContext) {
 			super(actual);
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
 			this.context = actual.currentContext();
+			this.retryContext = retryContext;
 		}
 
 		@Override
@@ -135,6 +138,11 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		public Throwable failure() {
 			assert this.lastFailure != null;
 			return this.lastFailure;
+		}
+
+		@Override
+		public ContextView retryContextView() {
+			return retryContext;
 		}
 
 		@Override

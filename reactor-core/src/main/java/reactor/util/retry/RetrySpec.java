@@ -26,6 +26,7 @@ import java.util.function.Predicate;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.context.ContextView;
 
 /**
  * A simple count-based {@link Retry} strategy with configurable features. Use {@link Retry#max(long)},
@@ -93,7 +94,8 @@ public final class RetrySpec extends Retry {
 	/**
 	 * Copy constructor.
 	 */
-	RetrySpec(long max,
+	RetrySpec(ContextView retryContext,
+			long max,
 			Predicate<? super Throwable> aThrowablePredicate,
 			boolean isTransientErrors,
 			Consumer<RetrySignal> doPreRetry,
@@ -101,6 +103,7 @@ public final class RetrySpec extends Retry {
 			BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPreRetry,
 			BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPostRetry,
 			BiFunction<RetrySpec, RetrySignal, Throwable> retryExhaustedGenerator) {
+		super(retryContext);
 		this.maxAttempts = max;
 		this.errorFilter = aThrowablePredicate::test; //massaging type
 		this.isTransientErrors = isTransientErrors;
@@ -109,6 +112,25 @@ public final class RetrySpec extends Retry {
 		this.asyncPreRetry = asyncPreRetry;
 		this.asyncPostRetry = asyncPostRetry;
 		this.retryExhaustedGenerator = retryExhaustedGenerator;
+	}
+
+	/**
+	 * Set the user provided {@link Retry#retryContext() context} that can be used to manipulate state on retries.
+	 *
+	 * @param retryContext a new snapshot of user provided data
+	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
+	 */
+	public RetrySpec withRetryContext(ContextView retryContext) {
+		return new RetrySpec(
+				retryContext,
+				this.maxAttempts,
+				this.errorFilter,
+				this.isTransientErrors,
+				this.doPreRetry,
+				this.doPostRetry,
+				this.asyncPreRetry,
+				this.asyncPostRetry,
+				this.retryExhaustedGenerator);
 	}
 
 	/**
@@ -121,6 +143,7 @@ public final class RetrySpec extends Retry {
 	 */
 	public RetrySpec maxAttempts(long maxAttempts) {
 		return new RetrySpec(
+				this.retryContext,
 				maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -141,6 +164,7 @@ public final class RetrySpec extends Retry {
 	 */
 	public RetrySpec filter(Predicate<? super Throwable> errorFilter) {
 		return new RetrySpec(
+				this.retryContext,
 				this.maxAttempts,
 				Objects.requireNonNull(errorFilter, "errorFilter"),
 				this.isTransientErrors,
@@ -176,6 +200,7 @@ public final class RetrySpec extends Retry {
 		Predicate<? super Throwable> newPredicate = Objects.requireNonNull(predicateAdjuster.apply(this.errorFilter),
 				"predicateAdjuster must return a new predicate");
 		return new RetrySpec(
+				this.retryContext,
 				this.maxAttempts,
 				newPredicate,
 				this.isTransientErrors,
@@ -198,6 +223,7 @@ public final class RetrySpec extends Retry {
 	public RetrySpec doBeforeRetry(
 			Consumer<RetrySignal> doBeforeRetry) {
 		return new RetrySpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -219,6 +245,7 @@ public final class RetrySpec extends Retry {
 	 */
 	public RetrySpec doAfterRetry(Consumer<RetrySignal> doAfterRetry) {
 		return new RetrySpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -239,6 +266,7 @@ public final class RetrySpec extends Retry {
 	public RetrySpec doBeforeRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncBeforeRetry) {
 		return new RetrySpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -259,6 +287,7 @@ public final class RetrySpec extends Retry {
 	public RetrySpec doAfterRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncAfterRetry) {
 		return new RetrySpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -281,6 +310,7 @@ public final class RetrySpec extends Retry {
 	 */
 	public RetrySpec onRetryExhaustedThrow(BiFunction<RetrySpec, RetrySignal, Throwable> retryExhaustedGenerator) {
 		return new RetrySpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -305,6 +335,7 @@ public final class RetrySpec extends Retry {
 	 */
 	public RetrySpec transientErrors(boolean isTransientErrors) {
 		return new RetrySpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				isTransientErrors,

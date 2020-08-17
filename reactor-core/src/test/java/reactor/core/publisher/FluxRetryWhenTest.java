@@ -542,7 +542,7 @@ public class FluxRetryWhenTest {
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRetryWhen.RetryWhenMainSubscriber<Integer> test =
-        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty());
+        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty(), Context.empty());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -561,7 +561,7 @@ public class FluxRetryWhenTest {
     public void scanOtherSubscriber() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRetryWhen.RetryWhenMainSubscriber<Integer> main =
-        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty());
+        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty(), Context.empty());
         FluxRetryWhen.RetryWhenOtherSubscriber test = new FluxRetryWhen.RetryWhenOtherSubscriber();
         test.main = main;
 
@@ -577,11 +577,41 @@ public class FluxRetryWhenTest {
 		Sinks.Many<Retry.RetrySignal> signaller = Sinks.many().multicast().onBackpressureError();
 		Flux<Integer> when = Flux.empty();
 		FluxRetryWhen.RetryWhenMainSubscriber<Integer> main = new FluxRetryWhen
-				.RetryWhenMainSubscriber<>(actual, signaller, when);
+				.RetryWhenMainSubscriber<>(actual, signaller, when, Context.empty());
 
 		List<Scannable> inners = main.inners().collect(Collectors.toList());
 
 		assertThat(inners).containsExactly((Scannable) signaller, main.otherArbiter);
+	}
+
+	@Test
+	public void retryContextExposedOnRetrySignal() {
+		AtomicInteger i = new AtomicInteger();
+
+		AtomicBoolean needsRollback = new AtomicBoolean();
+		ContextView ctx = Context.of("needsRollback", needsRollback);
+
+		Mono<Long> source = Flux
+				.just("test", "test2", "test3")
+				.doOnNext(d -> {
+					if (i.getAndIncrement() < 2) {
+						assertThat(needsRollback.compareAndSet(false, true)).as("needsRollback").isTrue();
+						throw new RuntimeException("test");
+					}
+				})
+				.retryWhen(Retry.indefinitely()
+						.withRetryContext(ctx)
+						.doBeforeRetry(rs -> {
+							AtomicBoolean atomic = rs.retryContextView().get("needsRollback");
+							assertThat(atomic.compareAndSet(true, false)).as("needsRollback").isTrue();
+						}))
+				.count();
+
+		StepVerifier.create(source)
+				.expectNext(3L)
+				.expectComplete()
+				.verify();
+
 	}
 
 	@Test

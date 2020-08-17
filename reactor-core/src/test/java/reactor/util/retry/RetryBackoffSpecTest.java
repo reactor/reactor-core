@@ -33,6 +33,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -55,8 +56,17 @@ public class RetryBackoffSpecTest {
 				.isNotSameAs(init.doAfterRetry(rs -> {}))
 				.isNotSameAs(init.doBeforeRetryAsync(rs -> Mono.empty()))
 				.isNotSameAs(init.doAfterRetryAsync(rs -> Mono.empty()))
-				.isNotSameAs(init.onRetryExhaustedThrow((b, rs) -> new IllegalStateException("boon")));
+				.isNotSameAs(init.onRetryExhaustedThrow((b, rs) -> new IllegalStateException("boon")))
+				.isNotSameAs(init.withRetryContext(Context.of("foo", "bar")));
 	}
+
+	@Test
+	public void retryContextIsCorrectlyPropagatedAndSet() {
+		RetryBackoffSpec init = Retry.backoff(1L, Duration.ZERO);
+		assertThat(init.withRetryContext(Context.of("foo", "bar")).maxAttempts(10))
+				.satisfies(rs -> rs.retryContext().get("foo").equals("bar"));
+	}
+
 
 	@Test
 	public void builderCanBeUsedAsTemplate() {

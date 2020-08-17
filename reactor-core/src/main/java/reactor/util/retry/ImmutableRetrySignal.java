@@ -16,6 +16,9 @@
 
 package reactor.util.retry;
 
+import reactor.util.context.Context;
+import reactor.util.context.ContextView;
+
 /**
  * An immutable {@link reactor.util.retry.Retry.RetrySignal} that can be used for retained
  * copies of mutable implementations.
@@ -27,12 +30,19 @@ final class ImmutableRetrySignal implements Retry.RetrySignal {
 	final long      failureTotalIndex;
 	final long      failureSubsequentIndex;
 	final Throwable failure;
+	final ContextView retryContext;
 
 	ImmutableRetrySignal(long failureTotalIndex, long failureSubsequentIndex,
 			Throwable failure) {
+		this(failureTotalIndex, failureSubsequentIndex, failure, Context.empty());
+	}
+
+	ImmutableRetrySignal(long failureTotalIndex, long failureSubsequentIndex,
+			Throwable failure, ContextView retryContext) {
 		this.failureTotalIndex = failureTotalIndex;
 		this.failureSubsequentIndex = failureSubsequentIndex;
 		this.failure = failure;
+		this.retryContext = retryContext;
 	}
 
 	@Override
@@ -48,6 +58,11 @@ final class ImmutableRetrySignal implements Retry.RetrySignal {
 	@Override
 	public Throwable failure() {
 		return this.failure;
+	}
+
+	@Override
+	public ContextView retryContextView() {
+		return retryContext;
 	}
 
 	@Override

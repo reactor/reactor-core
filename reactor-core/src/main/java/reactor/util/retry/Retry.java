@@ -23,6 +23,8 @@ import org.reactivestreams.Publisher;
 
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import static reactor.util.retry.RetrySpec.*;
 
@@ -47,6 +49,16 @@ import static reactor.util.retry.RetrySpec.*;
  */
 public abstract class Retry {
 
+	public final ContextView retryContext;
+
+	public Retry() {
+		this(Context.empty());
+	}
+
+	protected Retry(ContextView retryContext) {
+		this.retryContext = retryContext;
+	}
+
 	/**
 	 * The intent of the functional {@link Retry} class is to let users configure how to react to {@link RetrySignal}
 	 * by providing the operator with a companion publisher. Any {@link org.reactivestreams.Subscriber#onNext(Object) onNext}
@@ -59,6 +71,16 @@ public abstract class Retry {
 	 * @return the actual companion to use, which might delay or limit retry attempts
 	 */
 	public abstract Publisher<?> generateCompanion(Flux<RetrySignal> retrySignals);
+
+	/**
+	 * Return the user provided context that was set at construction time.
+	 *
+	 * @return the user provided context that will be accessible via {@link RetrySignal#retryContextView()}.
+	 */
+	public ContextView retryContext() {
+		return retryContext;
+	}
+
 
 	/**
 	 * State for a {@link Flux#retryWhen(Retry)} Flux retry} or {@link reactor.core.publisher.Mono#retryWhen(Retry) Mono retry}.
@@ -93,6 +115,16 @@ public abstract class Retry {
 		Throwable failure();
 
 		/**
+		 * Return a read-only view of the user provided context, which may be used to store
+		 * objects to be reset/rollbacked or otherwise mutated before or after a retry.
+		 *
+		 * @return a read-only view of a user provided context.
+		 */
+		default ContextView retryContextView() {
+			return Context.empty();
+		}
+
+		/**
 		 * Return an immutable copy of this {@link RetrySignal} which is guaranteed to give a consistent view
 		 * of the state at the time at which this method is invoked.
 		 * This is especially useful if this {@link RetrySignal} is a transient view of the state of the underlying
@@ -101,7 +133,7 @@ public abstract class Retry {
 		 * @return an immutable copy of the current {@link RetrySignal}, always safe to use
 		 */
 		default RetrySignal copy() {
-			return new ImmutableRetrySignal(totalRetries(), totalRetriesInARow(), failure());
+			return new ImmutableRetrySignal(totalRetries(), totalRetriesInARow(), failure(), retryContextView());
 		}
 	}
 
@@ -118,7 +150,7 @@ public abstract class Retry {
 	 * @see RetryBackoffSpec#minBackoff(Duration)
 	 */
 	public static RetryBackoffSpec backoff(long maxAttempts, Duration minBackoff) {
-		return new RetryBackoffSpec(maxAttempts, t -> true, false, minBackoff, MAX_BACKOFF, 0.5d, Schedulers::parallel,
+		return new RetryBackoffSpec(Context.empty(), maxAttempts, t -> true, false, minBackoff, MAX_BACKOFF, 0.5d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);
 	}
@@ -140,7 +172,7 @@ public abstract class Retry {
 	 * @see RetryBackoffSpec#maxBackoff(Duration)
 	 */
 	public static RetryBackoffSpec fixedDelay(long maxAttempts, Duration fixedDelay) {
-		return new RetryBackoffSpec(maxAttempts, t -> true, false, fixedDelay, fixedDelay, 0d, Schedulers::parallel,
+		return new RetryBackoffSpec(Context.empty(), maxAttempts, t -> true, false, fixedDelay, fixedDelay, 0d, Schedulers::parallel,
 				NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetryBackoffSpec.BACKOFF_EXCEPTION_GENERATOR);
 	}
@@ -155,7 +187,7 @@ public abstract class Retry {
 	 * @see RetrySpec#maxAttempts(long)
 	 */
 	public static RetrySpec max(long max) {
-		return new RetrySpec(max, t -> true, false, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
+		return new RetrySpec(Context.empty(), max, t -> true, false, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetrySpec.RETRY_EXCEPTION_GENERATOR);
 	}
 
@@ -172,7 +204,7 @@ public abstract class Retry {
 	 * @see RetrySpec#transientErrors(boolean)
 	 */
 	public static RetrySpec maxInARow(long maxInARow) {
-		return new RetrySpec(maxInARow, t -> true, true, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
+		return new RetrySpec(Context.empty(), maxInARow, t -> true, true, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RETRY_EXCEPTION_GENERATOR);
 	}
 
@@ -183,7 +215,7 @@ public abstract class Retry {
 	 * @return the retry indefinitely spec for further configuration
 	 */
 	public static RetrySpec indefinitely() {
-		return new RetrySpec(Long.MAX_VALUE, t -> true, false, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
+		return new RetrySpec(Context.empty(), Long.MAX_VALUE, t -> true, false, NO_OP_CONSUMER, NO_OP_CONSUMER, NO_OP_BIFUNCTION, NO_OP_BIFUNCTION,
 				RetrySpec.RETRY_EXCEPTION_GENERATOR);
 	}
 
@@ -194,7 +226,7 @@ public abstract class Retry {
 	 * @return the {@link Retry} strategy adapted from the {@link Function}
 	 */
 	public static final Retry from(Function<Flux<RetrySignal>, ? extends Publisher<?>> function) {
-		return new Retry() {
+		return new Retry(Context.empty()) {
 			@Override
 			public Publisher<?> generateCompanion(Flux<RetrySignal> retrySignalCompanion) {
 				return function.apply(retrySignalCompanion);
@@ -210,7 +242,7 @@ public abstract class Retry {
 	 * @return the {@link Retry} strategy adapted from the {@link Function}
 	 */
 	public static final Retry withThrowable(Function<Flux<Throwable>, ? extends Publisher<?>> function) {
-		return new Retry() {
+		return new Retry(Context.empty()) {
 			@Override
 			public Publisher<?> generateCompanion(Flux<RetrySignal> retrySignals) {
 				return function.apply(retrySignals.map(RetrySignal::failure));

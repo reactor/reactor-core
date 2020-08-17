@@ -31,6 +31,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.ContextView;
 
 /**
  * A {@link Retry} strategy based on exponential backoffs, with configurable features. Use {@link Retry#backoff(long, Duration)}
@@ -123,7 +124,9 @@ public final class RetryBackoffSpec extends Retry {
 	/**
 	 * Copy constructor.
 	 */
-	RetryBackoffSpec(long max,
+	RetryBackoffSpec(
+			ContextView retryContext,
+			long max,
 			Predicate<? super Throwable> aThrowablePredicate,
 			boolean isTransientErrors,
 			Duration minBackoff, Duration maxBackoff, double jitterFactor,
@@ -133,6 +136,7 @@ public final class RetryBackoffSpec extends Retry {
 			BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPreRetry,
 			BiFunction<RetrySignal, Mono<Void>, Mono<Void>> asyncPostRetry,
 			BiFunction<RetryBackoffSpec, RetrySignal, Throwable> retryExhaustedGenerator) {
+		super(retryContext);
 		this.maxAttempts = max;
 		this.errorFilter = aThrowablePredicate::test; //massaging type
 		this.isTransientErrors = isTransientErrors;
@@ -148,6 +152,29 @@ public final class RetryBackoffSpec extends Retry {
 	}
 
 	/**
+	 * Set the user provided {@link Retry#retryContext() context} that can be used to manipulate state on retries.
+	 *
+	 * @param retryContext a new snapshot of user provided data
+	 * @return a new copy of the {@link RetryBackoffSpec} which can either be further configured or used as {@link Retry}
+	 */
+	public RetryBackoffSpec withRetryContext(ContextView retryContext) {
+		return new RetryBackoffSpec(
+				retryContext,
+				this.maxAttempts,
+				this.errorFilter,
+				this.isTransientErrors,
+				this.minBackoff,
+				this.maxBackoff,
+				this.jitterFactor,
+				this.backoffSchedulerSupplier,
+				this.syncPreRetry,
+				this.syncPostRetry,
+				this.asyncPreRetry,
+				this.asyncPostRetry,
+				this.retryExhaustedGenerator);
+	}
+
+	/**
 	 * Set the maximum number of retry attempts allowed. 1 meaning "1 retry attempt":
 	 * the original subscription plus an extra re-subscription in case of an error, but
 	 * no more.
@@ -157,6 +184,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec maxAttempts(long maxAttempts) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -181,6 +209,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec filter(Predicate<? super Throwable> errorFilter) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				Objects.requireNonNull(errorFilter, "errorFilter"),
 				this.isTransientErrors,
@@ -220,6 +249,7 @@ public final class RetryBackoffSpec extends Retry {
 		Predicate<? super Throwable> newPredicate = Objects.requireNonNull(predicateAdjuster.apply(this.errorFilter),
 				"predicateAdjuster must return a new predicate");
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				newPredicate,
 				this.isTransientErrors,
@@ -246,6 +276,7 @@ public final class RetryBackoffSpec extends Retry {
 	public RetryBackoffSpec doBeforeRetry(
 			Consumer<RetrySignal> doBeforeRetry) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -271,6 +302,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec doAfterRetry(Consumer<RetrySignal> doAfterRetry) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -295,6 +327,7 @@ public final class RetryBackoffSpec extends Retry {
 	public RetryBackoffSpec doBeforeRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncBeforeRetry) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -319,6 +352,7 @@ public final class RetryBackoffSpec extends Retry {
 	public RetryBackoffSpec doAfterRetryAsync(
 			Function<RetrySignal, Mono<Void>> doAsyncAfterRetry) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -346,6 +380,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec onRetryExhaustedThrow(BiFunction<RetryBackoffSpec, RetrySignal, Throwable> retryExhaustedGenerator) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -374,6 +409,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec transientErrors(boolean isTransientErrors) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				isTransientErrors,
@@ -398,6 +434,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec minBackoff(Duration minBackoff) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -422,6 +459,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec maxBackoff(Duration maxBackoff) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -447,6 +485,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec jitter(double jitterFactor) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
@@ -471,6 +510,7 @@ public final class RetryBackoffSpec extends Retry {
 	 */
 	public RetryBackoffSpec scheduler(@Nullable Scheduler backoffScheduler) {
 		return new RetryBackoffSpec(
+				this.retryContext,
 				this.maxAttempts,
 				this.errorFilter,
 				this.isTransientErrors,
