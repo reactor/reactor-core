@@ -202,7 +202,6 @@ gradle.allprojects() { p ->
 configure(subprojects) { p ->
 	//these apply once the above configure is done, but before project-specific build.gradle have applied
 	apply plugin: "io.reactor.gradle.java-conventions"
-	apply plugin: "io.reactor.gradle.optional-dependencies"
 	apply from: "${rootDir}/gradle/javadoc.gradle"
 
 	//these apply AFTER project-specific build.gradle have applied
