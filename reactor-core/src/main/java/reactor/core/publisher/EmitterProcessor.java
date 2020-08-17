@@ -51,7 +51,8 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
- * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
+ * @deprecated To be removed in 3.5. Prefer clear cut usage of {@link Sinks}:
+ * <pre>Sinks.many().multicast().onBackpressureBuffer();</pre> for example.
  */
 @Deprecated
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {
