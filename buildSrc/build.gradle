@@ -52,9 +52,5 @@ gradlePlugin {
 			id = "io.reactor.gradle.java-conventions"
 			implementationClass = "io.reactor.gradle.JavaConventions"
 		}
-		optionalDependenciesPlugin {
-			id = "io.reactor.gradle.optional-dependencies"
-			implementationClass = "io.reactor.gradle.OptionalDependenciesPlugin"
-		}
 	}
 }
