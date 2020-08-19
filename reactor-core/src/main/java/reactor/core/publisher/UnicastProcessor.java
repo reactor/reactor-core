@@ -85,7 +85,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the input and output type
  * @deprecated to be removed in 3.5, prefer clear cut usage of {@link Sinks}:
- * <pre>Sinks.many().unicast().onBackpressureBuffer()</pre> for example.
+ * <pre><code>Sinks.many().unicast()</code></pre>.
  */
 @Deprecated
 public final class UnicastProcessor<T> extends FluxProcessor<T, T>

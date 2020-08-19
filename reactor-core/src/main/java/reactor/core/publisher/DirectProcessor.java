@@ -59,7 +59,7 @@ import reactor.util.annotation.Nullable;
  * </p>
  *
  * </br>
- * </br>
+ * </br>`
  *
  * <p>
  *      <b>Note: </b> If there are no Subscribers, upstream items are dropped and only
@@ -80,7 +80,7 @@ import reactor.util.annotation.Nullable;
  *
  * @param <T> the input and output value type
  * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}:
- * <pre>Sinks.many().multicast().onBackpressureError();</pre> for example.
+ * <pre><code>Sinks.many().multicast().onBackpressureError();</code></pre>.
  */
 @Deprecated
 public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {

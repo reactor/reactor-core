@@ -226,12 +226,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * </ul>
 	 *
 	 * @return a serializing {@link FluxSink}
-	 * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}:
-	 * <pre>
-	 *     final Sinks.Many<String> sink = Sinks.many().replay().latest();
-	 *     sink.emitNext("value");
-	 * </pre>
-	 * for example.
+	 * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}
+	 * though the {@link Sinks#many()} spec.
 	 */
 	@Deprecated
 	public final FluxSink<IN> sink() {
@@ -257,12 +253,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * for the
 	 * available strategies
 	 * @return a serializing {@link FluxSink}
-	 * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}:
-	 * <pre>
-	 *     final Sinks.Many<String> sink = Sinks.many().replay().latest();
-	 *     sink.emitNext("value");
-	 * </pre>
-	 * for example.
+	 * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}
+	 * through the {@link Sinks#many()} spec.
 	 */
 	@Deprecated
 	public final FluxSink<IN> sink(FluxSink.OverflowStrategy strategy) {

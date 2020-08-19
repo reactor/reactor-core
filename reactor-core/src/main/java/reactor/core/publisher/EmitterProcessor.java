@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
@@ -51,8 +52,11 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * @param <T> the input and output value type
  *
  * @author Stephane Maldini
- * @deprecated To be removed in 3.5. Prefer clear cut usage of {@link Sinks}:
- * <pre>Sinks.many().multicast().onBackpressureBuffer();</pre> for example.
+ * @deprecated To be removed in 3.5. Prefer clear cut usage of {@link Sinks} through
+ * variations of <pre><code>Sinks.many().multicast().onBackpressureBuffer()</code></pre>.
+ *
+ * This processor is blocking on {@link EmitterProcessor#emitNext(T)}. This behaviour can be implemented
+ * with the {@link Sinks} API by calling {@link Sinks#many()#tryEmitNext(T)} and one of the xWhile method.
  */
 @Deprecated
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {
