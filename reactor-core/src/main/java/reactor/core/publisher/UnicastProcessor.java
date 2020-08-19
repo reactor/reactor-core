@@ -288,11 +288,22 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public void emitNext(T value) {
-		switch(tryEmitNext(value)) {
+		switch (tryEmitNext(value)) {
 			case FAIL_OVERFLOW:
+				Context ctx = actual.currentContext();
+				IllegalStateException overflow = Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext");
+				Throwable ex = Operators.onOperatorError(null, overflow, value, ctx);
+				if (onOverflow != null) {
+					try {
+						onOverflow.accept(value);
+					}
+					catch (Throwable e) {
+						Exceptions.throwIfFatal(e);
+						ex.initCause(e);
+					}
+				}
+				onError(ex);
 				Operators.onDiscard(value, currentContext());
-				//the emitError will onErrorDropped if already terminated
-				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
 				break;
 			case FAIL_CANCELLED:
 				Operators.onDiscard(value, currentContext());
@@ -315,20 +326,6 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		if (!queue.offer(t)) {
-			//FIXME inconsistency here, we return FAIL_OVERFLOW but also fail the subscribers
-			Context ctx = actual.currentContext();
-			Throwable ex = Operators.onOperatorError(null,
-					Exceptions.failWithOverflow(), t, ctx);
-			if (onOverflow != null) {
-				try {
-					onOverflow.accept(t);
-				}
-				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					ex.initCause(e);
-				}
-			}
-			onError(ex); //FIXME should this really error ??
 			return Emission.FAIL_OVERFLOW;
 		}
 		drain(t);
