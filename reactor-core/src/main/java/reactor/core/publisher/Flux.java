@@ -946,6 +946,41 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
+	 * Pick the first {@link Publisher} to emit any value and replay all signals
+	 * from that {@link Publisher}, effectively behaving like the
+	 * fastest of these competing sources.
+	 *
+	 * <p>
+	 * // TODO replace the img
+	 *
+	 * @param sources The competing source publishers
+	 * @param <I> The type of values in both source and output sequences
+	 *
+	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 */
+	@SafeVarargs
+	public static <I> Flux<I> firstValue(Publisher<? extends I>... sources) {
+		return onAssembly(new FluxFirstValueEmitting<>(sources));
+	}
+
+	/**
+	 * Pick the first {@link Publisher} to emit any value and replay all signals
+	 * from that {@link Publisher}, effectively behaving like the
+	 * fastest of these competing sources.
+	 *
+	 * <p>
+	 * // TODO replace the img
+	 *
+	 * @param sources The competing source publishers
+	 * @param <I> The type of values in both source and output sequences
+	 *
+	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 */
+	public static <I> Flux<I> firstValue(Iterable<? extends Publisher<? extends I>> sources) {
+		return onAssembly(new FluxFirstValueEmitting<>(sources));
+	}
+
+	/**
 	 * Decorate the specified {@link Publisher} with the {@link Flux} API.
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/fromForFlux.svg" alt="">
