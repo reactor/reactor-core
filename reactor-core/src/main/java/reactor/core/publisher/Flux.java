@@ -959,8 +959,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
 	@SafeVarargs
-	public static <I> Flux<I> firstValue(Publisher<? extends I>... sources) {
-		return onAssembly(new FluxFirstValueEmitting<>(sources));
+	public static <I> Flux<I> firstValues(Publisher<? extends I>... sources) {
+		return onAssembly(new FluxFirstValuesEmitting<>(sources));
 	}
 
 	/**
@@ -976,8 +976,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
-	public static <I> Flux<I> firstValue(Iterable<? extends Publisher<? extends I>> sources) {
-		return onAssembly(new FluxFirstValueEmitting<>(sources));
+	public static <I> Flux<I> firstValues(Iterable<? extends Publisher<? extends I>> sources) {
+		return onAssembly(new FluxFirstValuesEmitting<>(sources));
 	}
 
 	/**
@@ -6646,6 +6646,31 @@ public abstract class Flux<T> implements CorePublisher<T> {
 			}
 		}
 		return first(this, other);
+	}
+
+	/**
+	 * Pick the first {@link Publisher} between this {@link Flux} and another publisher
+	 * to emit any value and replay all signals from that
+	 * {@link Publisher}, effectively behaving like the fastest of these competing sources.
+	 *
+	 * <p> TODO
+	 * <img class="marble" src="doc-files/marbles/orForFlux.svg" alt="">
+	 *
+	 * @param other the {@link Publisher} to race with
+	 *
+	 * @return the fastest sequence
+	 * @see #firstValues
+	 */
+	public final Flux<T> orValues(Publisher<? extends T> other) {
+		if (this instanceof FluxFirstValuesEmitting) {
+			FluxFirstValuesEmitting<T> publisherAmb = (FluxFirstValuesEmitting<T>) this;
+
+			FluxFirstValuesEmitting<T> result = publisherAmb.ambAdditionalSource(other);
+			if (result != null) {
+				return result;
+			}
+		}
+		return firstValues(this, other);
 	}
 
 	/**

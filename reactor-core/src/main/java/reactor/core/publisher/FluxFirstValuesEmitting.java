@@ -9,6 +9,7 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Stream;
@@ -20,25 +21,24 @@ import java.util.stream.Stream;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<? extends T>[] array;
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
-	private final static Throwable completedEmpty = new Throwable();
-
 	@SafeVarargs
-	FluxFirstValueEmitting(Publisher<? extends T>... array) {
+	FluxFirstValuesEmitting(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	FluxFirstValueEmitting(Iterable<? extends Publisher<? extends T>> iterable) {
+	FluxFirstValuesEmitting(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T>[] a = array;
@@ -113,9 +113,33 @@ final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<
 			return;
 		}
 
-		RaceValueCoordinator<T> coordinator = new RaceValueCoordinator<>(n);
+		RaceValuesCoordinator<T> coordinator = new RaceValuesCoordinator<>(n);
 
 		coordinator.subscribe(a, actual);
+	}
+
+	/**
+	 * Returns a new instance which has the additional source to be amb'd together with
+	 * the current array of sources.
+	 * <p>
+	 * This operation doesn't change the current FluxFirstValueEmitting instance.
+	 *
+	 * @param source the new source to merge with the others
+	 *
+	 * @return the new FluxFirstValueEmitting instance or null if the Amb runs with an Iterable
+	 */
+	@Nullable
+	FluxFirstValuesEmitting<T> ambAdditionalSource(Publisher<? extends T> source) {
+		if (array != null) {
+			int n = array.length;
+			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
+					new Publisher[n + 1];
+			System.arraycopy(array, 0, newArray, 0, n);
+			newArray[n] = source;
+
+			return new FluxFirstValuesEmitting<>(newArray);
+		}
+		return null;
 	}
 
 	@Override
@@ -124,27 +148,27 @@ final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<
 		return null;
 	}
 
-	static final class RaceValueCoordinator<T>
+	static final class RaceValuesCoordinator<T>
 			implements Subscription, Scannable {
 
-		final FirstValueEmittingSubscriber<T>[] subscribers;
+		final FirstValuesEmittingSubscriber<T>[] subscribers;
 		final Throwable[] errorsOrCompleteEmpty;
 
 		volatile boolean cancelled;
 
 		@SuppressWarnings("rawtypes")
 		volatile int wip;
-		static final AtomicIntegerFieldUpdater<RaceValueCoordinator> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(RaceValueCoordinator.class, "wip");
+		static final AtomicIntegerFieldUpdater<RaceValuesCoordinator> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(RaceValuesCoordinator.class, "wip");
 
 		@SuppressWarnings("rawtypes")
 		volatile int nbErrorsOrCompletedEmpty;
-		static final AtomicIntegerFieldUpdater<RaceValueCoordinator> ERRORS_OR_COMPLETED_EMPTY =
-				AtomicIntegerFieldUpdater.newUpdater(RaceValueCoordinator.class, "nbErrorsOrCompletedEmpty");
+		static final AtomicIntegerFieldUpdater<RaceValuesCoordinator> ERRORS_OR_COMPLETED_EMPTY =
+				AtomicIntegerFieldUpdater.newUpdater(RaceValuesCoordinator.class, "nbErrorsOrCompletedEmpty");
 
 		@SuppressWarnings("unchecked")
-		public RaceValueCoordinator(int n) {
-			subscribers = new FirstValueEmittingSubscriber[n];
+		public RaceValuesCoordinator(int n) {
+			subscribers = new FirstValuesEmittingSubscriber[n];
 			errorsOrCompleteEmpty = new Throwable[n];
 			wip = Integer.MIN_VALUE;
 		}
@@ -165,7 +189,7 @@ final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<
 					   CoreSubscriber<? super T> actual) {
 
 			for (int i = 0; i < sources.length; i++) {
-				subscribers[i] = new FirstValueEmittingSubscriber<T>(actual, this, i);
+				subscribers[i] = new FirstValuesEmittingSubscriber<T>(actual, this, i);
 			}
 
 			actual.onSubscribe(this);
@@ -192,7 +216,7 @@ final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<
 				if (w >= 0) {
 					subscribers[w].request(n);
 				} else {
-					for (FirstValueEmittingSubscriber<T> s : subscribers) {
+					for (FirstValuesEmittingSubscriber<T> s : subscribers) {
 						s.request(n);
 					}
 				}
@@ -210,7 +234,7 @@ final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<
 			if (w >= 0) {
 				subscribers[w].cancel();
 			} else {
-				for (FirstValueEmittingSubscriber<T> s : subscribers) {
+				for (FirstValuesEmittingSubscriber<T> s : subscribers) {
 					s.cancel();
 				}
 			}
@@ -233,10 +257,10 @@ final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<
 
 	}
 
-	static final class FirstValueEmittingSubscriber<T> extends Operators.DeferredSubscription
+	static final class FirstValuesEmittingSubscriber<T> extends Operators.DeferredSubscription
 			implements InnerOperator<T, T> {
 
-		final RaceValueCoordinator<T> parent;
+		final RaceValuesCoordinator<T> parent;
 
 		final CoreSubscriber<? super T> actual;
 
@@ -244,7 +268,7 @@ final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<
 
 		boolean won;
 
-		FirstValueEmittingSubscriber(CoreSubscriber<? super T> actual, RaceValueCoordinator<T> parent, int index) {
+		FirstValuesEmittingSubscriber(CoreSubscriber<? super T> actual, RaceValuesCoordinator<T> parent, int index) {
 			this.actual = actual;
 			this.parent = parent;
 			this.index = index;
@@ -294,16 +318,18 @@ final class FluxFirstValueEmitting<T> extends Flux<T> implements SourceProducer<
 			if (won) {
 				actual.onComplete();
 			} else {
-				recordTerminalSignals(completedEmpty);
+				recordTerminalSignals(new NoSuchElementException("source at index " + index + " completed empty"));
 			}
 		}
 
 		void recordTerminalSignals(Throwable t) {
 			parent.errorsOrCompleteEmpty[index] = t;
-			int nb = RaceValueCoordinator.ERRORS_OR_COMPLETED_EMPTY.incrementAndGet(parent);
+			int nb = RaceValuesCoordinator.ERRORS_OR_COMPLETED_EMPTY.incrementAndGet(parent);
 
 			if (nb == parent.subscribers.length) {
-				actual.onError(Exceptions.multiple(parent.errorsOrCompleteEmpty));
+				NoSuchElementException e = new NoSuchElementException("All sources completed with error or without values");
+				e.addSuppressed(Exceptions.multiple(parent.errorsOrCompleteEmpty));
+				actual.onError(e);
 			}
 		}
 	}
