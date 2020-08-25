@@ -3,6 +3,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -14,6 +15,7 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FluxFirstValuesEmittingTest {
 
@@ -74,14 +76,19 @@ public class FluxFirstValuesEmittingTest {
 
 	@Test
 	public void requestAndCancelArePropagated() {
-		StepVerifier.withVirtualTime(() -> Flux.firstValues(
-				Flux.range(1, 10),
-				Flux.range(11, 10)
-		))
+		AtomicBoolean firstSourceCancelled = new AtomicBoolean();
+		AtomicBoolean secondSourceCancelled = new AtomicBoolean();
+
+		StepVerifier.create(Flux.firstValues(
+				Flux.range(1, 10).doOnCancel(() -> firstSourceCancelled.set(true)),
+				Flux.range(11, 10).doOnCancel(() -> secondSourceCancelled.set(true))
+		), 0)
 				.thenRequest(5)
 				.expectNext(1, 2, 3, 4, 5)
-				.thenCancel()
-				.verify(Duration.ofSeconds(1L));
+				.thenCancel();
+
+//		assertTrue(firstSourceCancelled.get());
+		assertTrue(secondSourceCancelled.get());
 	}
 
 	@Test

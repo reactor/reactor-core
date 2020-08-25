@@ -355,6 +355,15 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return onAssembly(new MonoFirst<>(monos));
 	}
 
+	@SafeVarargs
+	public static <T> Mono<T> firstValue(Mono<? extends T>... monos) {
+		return onAssembly(new MonoFirstValue<>(monos));
+	}
+
+	public static <T> Mono<T> firstValue(Iterable<? extends Mono<? extends T>> monos) {
+		return onAssembly(new MonoFirstValue<>(monos));
+	}
+
 	/**
 	 * Expose the specified {@link Publisher} with the {@link Mono} API, and ensure it will emit 0 or 1 item.
 	 * The source emitter will be cancelled on the first `onNext`.
@@ -3247,7 +3256,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	/**
 	 * Subscribe to a fallback publisher when any error occurs, using a function to
-	 * choose the fallback depending on the error.
+	 * choose the fallback depending on the error
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorResumeForMono.svg" alt="">
@@ -3259,8 +3268,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see Flux#onErrorResume
 	 */
 	public final Mono<T> onErrorResume(Function<? super Throwable, ? extends Mono<? extends
-			T>> fallback) {
-		return onAssembly(new MonoOnErrorResume<>(this, fallback));
+			T>> fallback) {		return onAssembly(new MonoOnErrorResume<>(this, fallback));
 	}
 
 	/**
