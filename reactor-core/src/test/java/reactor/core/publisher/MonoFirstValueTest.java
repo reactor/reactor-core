@@ -1,15 +1,14 @@
 package reactor.core.publisher;
 
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Publisher;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +24,6 @@ class MonoFirstValueTest {
 				.thenAwait(Duration.ofMillis(1_500L))
 				.expectNext(1)
 				.verifyComplete();
-
 	}
 
 	@Test
@@ -39,7 +37,6 @@ class MonoFirstValueTest {
 				.thenAwait(Duration.ofMillis(500L))
 				.expectNext(1)
 				.verifyComplete();
-
 	}
 
 	@Test
@@ -60,7 +57,6 @@ class MonoFirstValueTest {
 				.verify();
 	}
 
-
 	@Test
 	public void arrayNull() {
 		assertThrows(NullPointerException.class, () -> Mono.firstValue((Mono<Integer>[]) null));
@@ -68,24 +64,31 @@ class MonoFirstValueTest {
 
 	@Test
 	public void iterableNull() {
-		assertThrows(NullPointerException.class, () -> Mono.firstValue((Mono<Publisher<Integer>>) null));
+		assertThrows(NullPointerException.class, () -> Mono.firstValue((Iterable<Mono<Integer>>) null));
 	}
 
 	@Test
 	public void cancelIsPropagated() {
-		AtomicBoolean firstSourceCancelled = new AtomicBoolean();
-		AtomicBoolean secondSourceCancelled = new AtomicBoolean();
+		TestPublisher<Integer> pub1 = TestPublisher.create();
+		TestPublisher<Integer> pub2 = TestPublisher.create();
 
-		StepVerifier.withVirtualTime(() -> Mono.firstValue(
-				Mono.never().doOnCancel(() -> firstSourceCancelled.set(true)),
-				Mono.never().doOnCancel(() -> secondSourceCancelled.set(true))
-		))
-				.then(() -> {})
+		StepVerifier.create(Mono.firstValue(Mono.from(pub1), Mono.from(pub2)))
+				.thenRequest(1)
+				.then(() -> {
+					pub1.emit(1 ).complete();
+					pub2.emit(2).complete();
+				})
+				.expectNext(1)
 				.thenCancel()
 				.verify(Duration.ofSeconds(1L));
 
-		assertTrue(firstSourceCancelled.get());
-		assertTrue(secondSourceCancelled.get());
+		pub1.assertWasSubscribed();
+		pub1.assertMaxRequested(1);
+		pub1.assertCancelled();
+
+		pub2.assertWasSubscribed();
+		pub2.assertMaxRequested(1);
+		pub2.assertWasCancelled();
 	}
 
 	@Test

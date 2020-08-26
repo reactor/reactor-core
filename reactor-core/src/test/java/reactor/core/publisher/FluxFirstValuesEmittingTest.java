@@ -11,6 +11,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +29,6 @@ public class FluxFirstValuesEmittingTest {
 				.thenAwait(Duration.ofMillis(1_500L))
 				.expectNext(1, 2, 3)
 				.verifyComplete();
-
 	}
 
 	@Test
@@ -42,7 +42,6 @@ public class FluxFirstValuesEmittingTest {
 				.thenAwait(Duration.ofMillis(1_500L))
 				.expectNext(1, 2, 3)
 				.verifyComplete();
-
 	}
 
 	@Test
@@ -76,19 +75,26 @@ public class FluxFirstValuesEmittingTest {
 
 	@Test
 	public void requestAndCancelArePropagated() {
-		AtomicBoolean firstSourceCancelled = new AtomicBoolean();
-		AtomicBoolean secondSourceCancelled = new AtomicBoolean();
+		TestPublisher<Integer> pub1 = TestPublisher.create();
+		TestPublisher<Integer> pub2 = TestPublisher.create();
 
-		StepVerifier.create(Flux.firstValues(
-				Flux.range(1, 10).doOnCancel(() -> firstSourceCancelled.set(true)),
-				Flux.range(11, 10).doOnCancel(() -> secondSourceCancelled.set(true))
-		), 0)
-				.thenRequest(5)
-				.expectNext(1, 2, 3, 4, 5)
-				.thenCancel();
+		StepVerifier.create(Flux.firstValues(pub1, pub2))
+				.thenRequest(4)
+				.then(() -> {
+					pub1.emit(1, 2, 3, 4, 5).complete();
+					pub2.emit(6, 7, 8, 9, 10).complete();
+				})
+				.expectNext(1, 2, 3, 4)
+				.thenCancel()
+				.verify(Duration.ofSeconds(1L));
 
-//		assertTrue(firstSourceCancelled.get());
-		assertTrue(secondSourceCancelled.get());
+		pub1.assertWasSubscribed();
+		pub1.assertMaxRequested(4);
+		pub1.assertCancelled();
+
+		pub2.assertWasSubscribed();
+		pub2.assertMaxRequested(4);
+		pub2.assertWasCancelled();
 	}
 
 	@Test
