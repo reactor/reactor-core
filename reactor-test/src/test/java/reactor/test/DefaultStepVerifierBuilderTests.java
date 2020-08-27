@@ -21,7 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.publisher.Flux;
 import reactor.test.DefaultStepVerifierBuilder.DefaultVerifySubscriber;
 import reactor.test.DefaultStepVerifierBuilder.DescriptionEvent;
@@ -58,7 +59,8 @@ public class DefaultStepVerifierBuilderTests {
 				.withMessageStartingWith("expectation failed (an unexpected Subscription has been received");
 	}
 
-	@Test(timeout = 4000)
+	@Test
+	@Timeout(4)
 	public void manuallyManagedVirtualTime() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		try {

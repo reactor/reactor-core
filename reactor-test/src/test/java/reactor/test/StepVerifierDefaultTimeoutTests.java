@@ -18,21 +18,21 @@ package reactor.test;
 
 import java.time.Duration;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class StepVerifierDefaultTimeoutTests {
 
-	@BeforeClass
+	@BeforeAll
 	public static void init() {
 		StepVerifier.setDefaultTimeout(Duration.ofMillis(100));
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void clean() {
 		StepVerifier.resetDefaultTimeout();
 	}
