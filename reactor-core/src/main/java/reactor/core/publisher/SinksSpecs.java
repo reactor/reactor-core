@@ -35,7 +35,7 @@ final class SinksSpecs {
 final class SerializedManySink<T> implements Many<T>, Scannable {
 
 	final Many<T>           sink;
-	final CoreSubscriber<T> contextHolder;
+	final Contextable contextHolder;
 
 	volatile     Throwable                                                  error;
 	@SuppressWarnings("rawtypes")
@@ -51,7 +51,7 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 	volatile boolean done;
 
-	SerializedManySink(Many<T> sink, CoreSubscriber<T> contextHolder) {
+	SerializedManySink(Many<T> sink, Contextable contextHolder) {
 		this.sink = sink;
 		this.mpscQueue = Queues.<T>unboundedMultiproducer().get();
 		this.contextHolder = contextHolder;
@@ -260,7 +260,7 @@ abstract class SinkSpecImpl {
 		this.serialized = serialized;
 	}
 
-	final <T, SINKPROC extends Many<T> & CoreSubscriber<T>> Many<T> toSerializedSink(SINKPROC sink) {
+	final <T, SINKPROC extends Many<T> & Contextable> Many<T> toSerializedSink(SINKPROC sink) {
 		if (serialized) {
 			return new SerializedManySink<T>(sink, sink);
 		}
@@ -333,6 +333,11 @@ final class UnicastSpecImpl extends SinkSpecImpl implements Sinks.UnicastSpec {
 	@Override
 	public <T> Many<T> onBackpressureBuffer(Queue<T> queue, Disposable endCallback) {
 		return toSerializedSink(UnicastProcessor.create(queue, endCallback));
+	}
+
+	@Override
+	public <T> Many<T> onBackpressureError() {
+		return toSerializedSink(UnicastManySinkNoBackpressure.create());
 	}
 }
 

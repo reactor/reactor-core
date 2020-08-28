@@ -260,6 +260,18 @@ public final class Sinks {
 		 * @param endCallback when a terminal signal is observed: error, complete or cancel
 		 */
 		<T> Sinks.Many<T> onBackpressureBuffer(Queue<T> queue, Disposable endCallback);
+
+		/**
+		 * A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li><strong>Unicast</strong>: contrary to most other {@link Sinks.Many}, the
+		 *     {@link Flux} view rejects {@link Subscriber subscribers} past the first one.</li>
+		 *     <li>Backpressure : this sink is able to honor downstream demand and will emit `onError` if there is a mismatch.</li>
+		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
+		 *     pushed to the sink AFTER this subscriber was subscribed.</li>
+		 * </ul>
+		 */
+		<T> Sinks.Many<T> onBackpressureError();
 	}
 
 	/**
