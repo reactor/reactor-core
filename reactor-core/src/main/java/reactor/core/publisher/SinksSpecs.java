@@ -115,11 +115,16 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 	@Override
 	public void emitNext(T value) {
-		switch(tryEmitNext(value)) {
+		switch (tryEmitNext(value)) {
 			case FAIL_OVERFLOW:
-				Operators.onDiscard(value, currentContext());
+				Context ctx = currentContext();
+				IllegalStateException overflow = Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext");
+
+				Subscription s = sink instanceof Subscription ? (Subscription) sink : null;
+				Throwable ex = Operators.onOperatorError(s, overflow, value, ctx);
 				//the emitError will onErrorDropped if already terminated
-				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
+				emitError(ex);
+				Operators.onDiscard(value, currentContext());
 				break;
 			case FAIL_CANCELLED:
 				Operators.onDiscard(value, currentContext());
@@ -138,30 +143,22 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		if (done) {
 			return Sinks.Emission.FAIL_TERMINATED;
 		}
+		Emission emission;
 		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-			Emission emission;
-			try {
-				emission = sink.tryEmitNext(t);
-			}
-			catch (Throwable ex) {
-				Subscription s = sink instanceof Subscription ? (Subscription) sink : null;
-				ex = Operators.onOperatorError(s, ex, t, currentContext());
-				tryEmitError(ex);
-				//should use sink.dispose
-				return Sinks.Emission.FAIL_TERMINATED;
-			}
-			if (WIP.decrementAndGet(this) == 0) {
-				return emission;
+			emission = sink.tryEmitNext(t);
+			if (WIP.decrementAndGet(this) != 0) {
+				// TODO make drainLoop() return Emission and return it instead?
+				drainLoop();
 			}
 		}
 		else {
 			this.mpscQueue.offer(t);
-			if (WIP.getAndIncrement(this) != 0) {
-				return Sinks.Emission.OK;
+			if (WIP.getAndIncrement(this) == 0) {
+				drainLoop();
 			}
+			emission = Sinks.Emission.OK;
 		}
-		drainLoop();
-		return Sinks.Emission.OK;
+		return emission;
 	}
 
 	//impl note: don't use sink.isTerminated() in the drain loop,

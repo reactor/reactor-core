@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import org.junit.Test;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.MemoryUtils;
 import reactor.test.StepVerifier;
@@ -252,5 +253,30 @@ public class UnicastProcessorTest {
 		} finally {
 			Hooks.resetOnNextDropped();
 		}
+	}
+
+	@Test
+	public void shouldNotThrowFromTryEmitNext() {
+		UnicastProcessor<Object> processor = new UnicastProcessor<>(Queues.empty().get());
+
+		StepVerifier.create(processor, 0)
+		            .expectSubscription()
+		            .then(() -> {
+			            assertThat(processor.tryEmitNext("boom"))
+					            .as("emission")
+					            .isEqualTo(Sinks.Emission.FAIL_OVERFLOW);
+		            })
+		            .then(processor::emitComplete)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void shouldSignalErrorOnOverflow() {
+		UnicastProcessor<Object> processor = new UnicastProcessor<>(Queues.empty().get());
+
+		StepVerifier.create(processor, 0)
+		            .expectSubscription()
+		            .then(() -> processor.emitNext("boom"))
+		            .verifyErrorMatches(Exceptions::isOverflow);
 	}
 }
