@@ -266,7 +266,7 @@ public final class Sinks {
 		 * <ul>
 		 *     <li><strong>Unicast</strong>: contrary to most other {@link Sinks.Many}, the
 		 *     {@link Flux} view rejects {@link Subscriber subscribers} past the first one.</li>
-		 *     <li>Backpressure : this sink is able to honor downstream demand and will emit `onError` if there is a mismatch.</li>
+		 *     <li>Backpressure : this sink honors downstream demand of the Subscriber, and will emit {@link Subscriber#onError(Throwable)} if there is a mismatch.</li>
 		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
 		 *     pushed to the sink AFTER this subscriber was subscribed.</li>
 		 * </ul>
@@ -340,7 +340,7 @@ public final class Sinks {
 		 * <ul>
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: elements pushed via {@link Many#tryEmitNext(Object)} are ignored</li>
-		 *     <li>Backpressure : this sink is not able to honor downstream demand and will emit `onError` if there is a mismatch.</li>
+		 *     <li>Backpressure : this sink is not able to honor downstream demand and will emit {@link Subscriber#onError(Throwable)} if there is a mismatch.</li>
 		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
 		 *     pushed to the sink AFTER this subscriber was subscribed.</li>
 		 * </ul>
