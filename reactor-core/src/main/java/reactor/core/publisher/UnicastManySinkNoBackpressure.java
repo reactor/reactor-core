@@ -25,7 +25,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.util.context.Context;
 
-final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Many<T>, Subscription, Contextable {
+final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Many<T>, Subscription, ContextHolder {
 
 	public static <E> UnicastManySinkNoBackpressure<E> create() {
 		return new UnicastManySinkNoBackpressure<>();

@@ -9,7 +9,6 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Subscription;
 
-import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -34,8 +33,8 @@ final class SinksSpecs {
 
 final class SerializedManySink<T> implements Many<T>, Scannable {
 
-	final Many<T>           sink;
-	final Contextable contextHolder;
+	final Many<T>       sink;
+	final ContextHolder contextHolder;
 
 	volatile     Throwable                                                  error;
 	@SuppressWarnings("rawtypes")
@@ -51,7 +50,7 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 	volatile boolean done;
 
-	SerializedManySink(Many<T> sink, Contextable contextHolder) {
+	SerializedManySink(Many<T> sink, ContextHolder contextHolder) {
 		this.sink = sink;
 		this.mpscQueue = Queues.<T>unboundedMultiproducer().get();
 		this.contextHolder = contextHolder;
@@ -257,7 +256,7 @@ abstract class SinkSpecImpl {
 		this.serialized = serialized;
 	}
 
-	final <T, SINKPROC extends Many<T> & Contextable> Many<T> toSerializedSink(SINKPROC sink) {
+	final <T, SINKPROC extends Many<T> & ContextHolder> Many<T> toSerializedSink(SINKPROC sink) {
 		if (serialized) {
 			return new SerializedManySink<T>(sink, sink);
 		}

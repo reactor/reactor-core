@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import reactor.util.context.Context;
 
-interface Contextable {
+interface ContextHolder {
 
 	/**
 	 * Request a {@link Context} from dependent components which can include downstream
