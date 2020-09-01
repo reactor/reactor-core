@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,7 +31,7 @@ public class SerializedManySinkTest {
 	public void shouldNotThrowFromTryEmitNext() {
 		SerializedManySink<Object> sink = new SerializedManySink<>(
 				new EmptyMany<>(),
-				Operators.emptySubscriber()
+				Context::empty
 		);
 
 		StepVerifier.create(sink.asFlux(), 0)
@@ -48,7 +49,7 @@ public class SerializedManySinkTest {
 	public void shouldSignalErrorOnOverflow() {
 		SerializedManySink<Object> sink = new SerializedManySink<>(
 				new EmptyMany<>(),
-				Operators.emptySubscriber()
+				Context::empty
 		);
 
 		StepVerifier.create(sink.asFlux(), 0)
@@ -69,7 +70,7 @@ public class SerializedManySinkTest {
 								return super.tryEmitNext(o);
 							}
 						},
-						Operators.emptySubscriber()
+						Context::empty
 				)
 		);
 

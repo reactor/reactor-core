@@ -43,7 +43,7 @@ import static reactor.core.publisher.Sinks.Many;
  * @param <OUT> the output value type
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, CoreSubscriber<IN>, Scannable, Disposable {
+		implements Processor<IN, OUT>, CoreSubscriber<IN>, Scannable, Disposable, ContextHolder {
 
 	/**
 	 * Convert a {@link Sinks.Many} to a {@link FluxProcessor} : subscribing to the processor
