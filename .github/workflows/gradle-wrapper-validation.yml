@@ -1,9 +1,9 @@
-name: "Validate Gradle Wrapper"
+name: "Gradle Wrapper"
 on: [push, pull_request]
 
 jobs:
   validation:
-    name: "Gradle wrapper validation"
+    name: "validation"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
