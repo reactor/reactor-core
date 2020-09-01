@@ -47,13 +47,10 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	static final AtomicIntegerFieldUpdater<SerializedManySink> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(SerializedManySink.class, "wip");
 
-	final Queue<T> mpscQueue;
-
 	volatile boolean done;
 
 	SerializedManySink(Many<T> sink, CoreSubscriber<T> contextHolder) {
 		this.sink = sink;
-		this.mpscQueue = Queues.<T>unboundedMultiproducer().get();
 		this.contextHolder = contextHolder;
 	}
 
@@ -83,15 +80,17 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 			return Sinks.Emission.FAIL_TERMINATED;
 		}
 		done = true;
-		drain();
-		return Sinks.Emission.OK;
+		return drain();
 	}
 
 	@Override
 	public void emitError(Throwable error) {
 		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDropped(error, currentContext());
+		switch (result) {
+			case FAIL_TERMINATED:
+			case FAIL_NON_SERIALIZED:
+				Operators.onErrorDropped(error, currentContext());
+				break;
 		}
 	}
 
@@ -103,13 +102,9 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		}
 		if (Exceptions.addThrowable(ERROR, this, t)) {
 			done = true;
-			drain();
-			return Sinks.Emission.OK;
+			return drain();
 		}
 
-		Context ctx = currentContext();
-		//we do deal with the queue inside tryEmitError, but the throwable t is left up to the user
-		Operators.onDiscardQueueWithClear(mpscQueue, ctx, null);
 		return Sinks.Emission.FAIL_TERMINATED;
 	}
 
@@ -143,82 +138,52 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		if (done) {
 			return Sinks.Emission.FAIL_TERMINATED;
 		}
-		Emission emission;
 		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-			emission = sink.tryEmitNext(t);
+			Emission emission = sink.tryEmitNext(t);
 			if (WIP.decrementAndGet(this) != 0) {
-				// TODO make drainLoop() return Emission and return it instead?
-				drainLoop();
+				return drainLoop();
 			}
+			return emission;
 		}
 		else {
-			this.mpscQueue.offer(t);
-			if (WIP.getAndIncrement(this) == 0) {
-				drainLoop();
-			}
-			emission = Sinks.Emission.OK;
+			return Emission.FAIL_NON_SERIALIZED;
 		}
-		return emission;
 	}
 
 	//impl note: don't use sink.isTerminated() in the drain loop,
 	//it needs to separately check its own `done` status before calling the base sink
 	//complete()/error() methods (which do flip the isTerminated), otherwise it could
 	//bypass the terminate handler (in buffer and latest variants notably).
-	final void drain() {
-		if (WIP.getAndIncrement(this) == 0) {
-			drainLoop();
+	final Emission drain() {
+		if (WIP.getAndIncrement(this) != 0) {
+			return Emission.FAIL_NON_SERIALIZED;
 		}
+
+		return drainLoop();
 	}
 
-	final void drainLoop() {
+	final Emission drainLoop() {
 		Many<T> e = sink;
-		Queue<T> q = mpscQueue;
 		for (; ; ) {
-
-			for (; ; ) {
-				if (isCancelled()) {
-					Operators.onDiscardQueueWithClear(q, currentContext(), null);
-					if (WIP.decrementAndGet(this) != 0) {
-						continue;
-					}
-					else {
-						return;
-					}
+			if (isCancelled()) {
+				if (WIP.decrementAndGet(this) != 0) {
+					continue;
 				}
-				if (ERROR.get(this) != null) {
-					Operators.onDiscardQueueWithClear(q, currentContext(), null);
-					//noinspection ConstantConditions
-					e.emitError(Exceptions.terminate(ERROR, this));
-					return;
-				}
-
-				boolean d = done;
-				T v = q.poll();
-
-				boolean empty = v == null;
-
-				if (d && empty) {
-					e.emitComplete();
-					return;
-				}
-
-				if (empty) {
-					break;
-				}
-
-				try {
-					e.emitNext(v);
-				}
-				catch (Throwable ex) {
-					ex = Operators.onOperatorError(null, ex, v, currentContext());
-					emitError(ex);
-					break;
+				else {
+					return Emission.FAIL_CANCELLED;
 				}
 			}
+			if (ERROR.get(this) != null) {
+				//noinspection ConstantConditions
+				e.emitError(Exceptions.terminate(ERROR, this));
+				return Emission.FAIL_TERMINATED;
+			}
 
-			if (WIP.decrementAndGet(this) == 0) {
-				break;
+			boolean d = done;
+
+			if (d) {
+				e.emitComplete();
+				return Emission.OK;
 			}
 		}
 	}
@@ -226,9 +191,6 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.BUFFERED) {
-			return mpscQueue.size();
-		}
 		if (key == Attr.ERROR) {
 			return error;
 		}

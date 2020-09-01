@@ -103,7 +103,11 @@ public final class Sinks {
 		/**
 		 * Has failed to emit the signal because the sink was previously interrupted by its consumer
 		 */
-		FAIL_CANCELLED;
+		FAIL_CANCELLED,
+		/**
+		 * Has failed to emit the signal because the access was not serialized
+		 */
+		FAIL_NON_SERIALIZED;
 
 		/**
 		 * Has successfully emitted the signal
