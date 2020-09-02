@@ -278,7 +278,7 @@ These features are demonstrated in the following snippet:
 StepVerifier.create(Mono.just(1).map(i -> i + 10),
 				StepVerifierOptions.create().withInitialContext(Context.of("thing1", "thing2"))) // <1>
 		            .expectAccessibleContext() //<2>
-		            .contains("foo", "bar") // <3>
+		            .contains("thing1", "thing2") // <3>
 		            .then() // <4>
 		            .expectNext(11)
 		            .verifyComplete(); // <5>
