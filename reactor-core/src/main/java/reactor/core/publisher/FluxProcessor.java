@@ -202,7 +202,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * Create a {@link FluxProcessor} that safely gates multi-threaded producer
 	 * {@link Subscriber#onNext(Object)}.
 	 *
-	 * <p><strong>onDiscard Support:</strong> The resulting processor discards elements received from the source
+	 * <p><strong>Discard Support:</strong> The resulting processor discards elements received from the source
 	 * {@link Publisher} (if any) when it cancels subscription to said source.
 	 *
 	 * @return a serializing {@link FluxProcessor}
