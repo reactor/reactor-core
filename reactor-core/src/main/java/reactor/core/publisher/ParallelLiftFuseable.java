@@ -77,7 +77,7 @@ final class ParallelLiftFuseable<I, O> extends ParallelFlux<O>
 	}
 
 	@Override
-	protected void subscribe(CoreSubscriber<? super O>[] s) {
+	public void subscribe(CoreSubscriber<? super O>[] s) {
 		@SuppressWarnings("unchecked") CoreSubscriber<? super I>[] subscribers =
 				new CoreSubscriber[parallelism()];
 
