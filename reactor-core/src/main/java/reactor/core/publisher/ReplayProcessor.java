@@ -48,7 +48,8 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  * <p>
  *
  * @param <T> the value type
- * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
+ * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks} through
+ * variations under {@link reactor.core.publisher.Sinks.MulticastReplaySpec Sinks.many().replay()}.
  */
 @Deprecated
 public final class ReplayProcessor<T> extends FluxProcessor<T, T>

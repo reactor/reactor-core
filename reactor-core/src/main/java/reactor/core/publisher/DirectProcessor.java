@@ -79,7 +79,8 @@ import reactor.util.annotation.Nullable;
  * </p>
  *
  * @param <T> the input and output value type
- * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
+ * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks} with
+ * {@link Sinks.MulticastSpec#onBackpressureError() Sinks.many().multicast().onBackpressureError()}.
  */
 @Deprecated
 public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {

@@ -226,7 +226,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * </ul>
 	 *
 	 * @return a serializing {@link FluxSink}
-	 * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
+	 * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}
+	 * through the {@link Sinks#many()} spec.
 	 */
 	@Deprecated
 	public final FluxSink<IN> sink() {
@@ -252,7 +253,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * for the
 	 * available strategies
 	 * @return a serializing {@link FluxSink}
-	 * @deprecated Prefer clear cut usage of {@link Sinks}, to be removed in 3.5
+	 * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}
+	 * through the {@link Sinks#many()} spec.
 	 */
 	@Deprecated
 	public final FluxSink<IN> sink(FluxSink.OverflowStrategy strategy) {
