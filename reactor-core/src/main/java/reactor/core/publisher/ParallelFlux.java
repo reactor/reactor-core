@@ -951,7 +951,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @param subscribers the subscribers array to run in parallel, the number of items
 	 * must be equal to the parallelism level of this ParallelFlux
 	 */
-	protected abstract void subscribe(CoreSubscriber<? super T>[] subscribers);
+	public abstract void subscribe(CoreSubscriber<? super T>[] subscribers);
 
 	/**
 	 * Subscribes to this {@link ParallelFlux} and triggers the execution chain for all
