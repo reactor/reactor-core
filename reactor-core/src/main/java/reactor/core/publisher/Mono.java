@@ -569,7 +569,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/ignoreElementsForMono.svg" alt="">
 	 * <p>
 	 *
-	 * @reactor.discard This operator discards the element from the source.
+	 * <p><strong>Discard Support:</strong> This operator discards the element from the source.
 	 *
 	 * @param source the {@link Publisher} to ignore
 	 * @param <T> the source type of the ignored data
@@ -801,7 +801,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * triggers a short-circuit of the main sequence with the same terminal signal
 	 * (no cleanup is invoked).
 	 *
-	 * @reactor.discard This operator discards any source element if the {@code asyncCleanup} handler fails.
+	 * <p><strong>Discard Support:</strong> This operator discards any source element if the {@code asyncCleanup} handler fails.
 	 *
 	 * @param resourceSupplier a {@link Publisher} that "generates" the resource,
 	 * subscribed for each subscription to the main sequence
@@ -856,7 +856,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * triggers a short-circuit of the main sequence with the same terminal signal
 	 * (no cleanup is invoked).
 	 *
-	 * @reactor.discard This operator discards the element if the {@code asyncComplete} handler fails.
+	 * <p><strong>Discard Support:</strong> This operator discards the element if the {@code asyncComplete} handler fails.
 	 *
 	 * @param resourceSupplier a {@link Publisher} that "generates" the resource,
 	 * subscribed for each subscription to the main sequence
@@ -2618,7 +2618,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/filterForMono.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the element if it does not match the filter. It
+	 * <p><strong>Discard Support:</strong> This operator discards the element if it does not match the filter. It
 	 * also discards upon cancellation or error triggered by a data signal.
 	 *
 	 * @param tester the predicate to evaluate
@@ -2644,7 +2644,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/filterWhenForMono.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the element if it does not match the filter. It
+	 * <p><strong>Discard Support:</strong> This operator discards the element if it does not match the filter. It
 	 * also discards upon cancellation or error triggered by a data signal.
 	 *
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
@@ -2726,7 +2726,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * calls per iterable. This second invocation is skipped on a {@link Collection } however, a type which is
 	 * assumed to be always finite.
 	 *
-	 * @reactor.discard Upon cancellation, this operator discards {@code T} elements it prefetched and, in
+	 * <p><strong>Discard Support:</strong> Upon cancellation, this operator discards {@code T} elements it prefetched and, in
 	 * some cases, attempts to discard remainder of the currently processed {@link Iterable} (if it can
 	 * safely ensure the iterator is finite). Note that this means each {@link Iterable}'s {@link Iterable#iterator()}
 	 * method could be invoked twice.
@@ -2805,7 +2805,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <img class="marble" src="doc-files/marbles/ignoreElementForMono.svg" alt="">
 	 * <p>
 	 *
-	 * @reactor.discard This operator discards the source element.
+	 * <p><strong>Discard Support:</strong> This operator discards the source element.
 	 *
 	 * @return a new empty {@link Mono} representing the completion of this {@link Mono}.
 	 */
@@ -4105,7 +4105,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/thenForMono.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the element from the source.
+	 * <p><strong>Discard Support:</strong> This operator discards the element from the source.
 	 *
 	 * @return a {@link Mono} ignoring its payload (actively dropping)
 	 */
@@ -4123,7 +4123,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/thenWithMonoForMono.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the element from the source.
+	 * <p><strong>Discard Support:</strong> This operator discards the element from the source.
 	 *
 	 * @param other a {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
@@ -4143,7 +4143,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/thenReturn.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the element from the source.
+	 * <p><strong>Discard Support:</strong> This operator discards the element from the source.
 	 *
 	 * @param value a value to emit after termination
 	 * @param <V> the element type of the supplied value
@@ -4161,7 +4161,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/thenEmptyForMono.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the element from the source.
+	 * <p><strong>Discard Support:</strong> This operator discards the element from the source.
 	 *
 	 * @param other a {@link Publisher} to wait for after this Mono's termination
 	 * @return a new {@link Mono} completing when both publishers have completed in
@@ -4180,7 +4180,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/thenManyForMono.svg" alt="">
 	 *
-	 * @reactor.discard This operator discards the element from the source.
+	 * <p><strong>Discard Support:</strong> This operator discards the element from the source.
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the element type of the supplied Publisher
