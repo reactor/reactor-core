@@ -26,7 +26,7 @@ buildscript {
 	}
 
 	dependencies {
-		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.3'
+		classpath 'com.github.erizo.gradle:jcstress-gradle-plugin:0.8.4'
 	}
 }
 
@@ -69,7 +69,7 @@ configurations {
 
 dependencies {
 	// Reactive Streams
-	compile /*should be api but jcstress plugin is broken*/ "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
+	api "org.reactivestreams:reactive-streams:${reactiveStreamsVersion}"
 	testImplementation "org.reactivestreams:reactive-streams-tck:${reactiveStreamsVersion}"
 
 	// JSR-305 annotations
