@@ -84,8 +84,8 @@ import reactor.util.context.Context;
  * </p>
  *
  * @param <T> the input and output type
- * @deprecated to be removed in 3.5, prefer clear cut usage of {@link Sinks}:
- * <pre><code>Sinks.many().unicast()</code></pre>.
+ * @deprecated to be removed in 3.5, prefer clear cut usage of {@link Sinks} through
+ * variations under {@link reactor.core.publisher.Sinks.UnicastSpec Sinks.many().unicast()}.
  */
 @Deprecated
 public final class UnicastProcessor<T> extends FluxProcessor<T, T>
