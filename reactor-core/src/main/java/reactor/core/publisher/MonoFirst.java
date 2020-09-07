@@ -63,7 +63,6 @@ final class MonoFirst<T> extends Mono<T> implements SourceProducer<T>  {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	//TODO mutualize with FluxFirstEmitting
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T>[] a = array;
 		int n;
@@ -142,8 +141,8 @@ final class MonoFirst<T> extends Mono<T> implements SourceProducer<T>  {
 			return;
 		}
 
-		FluxFirstEmitting.RaceCoordinator<T> coordinator =
-				new FluxFirstEmitting.RaceCoordinator<>(n);
+		FluxFirst.RaceCoordinator<T> coordinator =
+				new FluxFirst.RaceCoordinator<>(n);
 
 		coordinator.subscribe(a, n, actual);
 	}

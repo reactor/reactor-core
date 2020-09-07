@@ -925,7 +925,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> first(Publisher<? extends I>... sources) {
-		return onAssembly(new FluxFirstEmitting<>(sources));
+		return onAssembly(new FluxFirst<>(sources));
 	}
 
 	/**
@@ -942,7 +942,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
 	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
-		return onAssembly(new FluxFirstEmitting<>(sources));
+		return onAssembly(new FluxFirst<>(sources));
 	}
 
 	/**
@@ -960,7 +960,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> firstValues(Publisher<? extends I>... sources) {
-		return onAssembly(new FluxFirstValuesEmitting<>(sources));
+		return onAssembly(new FluxFirstValues<>(sources));
 	}
 
 	/**
@@ -977,7 +977,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
 	public static <I> Flux<I> firstValues(Iterable<? extends Publisher<? extends I>> sources) {
-		return onAssembly(new FluxFirstValuesEmitting<>(sources));
+		return onAssembly(new FluxFirstValues<>(sources));
 	}
 
 	/**
@@ -6637,10 +6637,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #first
 	 */
 	public final Flux<T> or(Publisher<? extends T> other) {
-		if (this instanceof FluxFirstEmitting) {
-			FluxFirstEmitting<T> publisherAmb = (FluxFirstEmitting<T>) this;
+		if (this instanceof FluxFirst) {
+			FluxFirst<T> orPublisher = (FluxFirst<T>) this;
 
-			FluxFirstEmitting<T> result = publisherAmb.ambAdditionalSource(other);
+			FluxFirst<T> result = orPublisher.orAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}
@@ -6662,10 +6662,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #firstValues
 	 */
 	public final Flux<T> orValues(Publisher<? extends T> other) {
-		if (this instanceof FluxFirstValuesEmitting) {
-			FluxFirstValuesEmitting<T> publisherAmb = (FluxFirstValuesEmitting<T>) this;
+		if (this instanceof FluxFirstValues) {
+			FluxFirstValues<T> orPublisher = (FluxFirstValues<T>) this;
 
-			FluxFirstValuesEmitting<T> result = publisherAmb.ambAdditionalSource(other);
+			FluxFirstValues<T> result = orPublisher.orAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}

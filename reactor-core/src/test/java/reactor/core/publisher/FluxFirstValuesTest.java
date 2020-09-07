@@ -3,7 +3,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -18,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FluxFirstValuesEmittingTest {
+public class FluxFirstValuesTest {
 
 	@Test
 	public void firstSourceEmittingValueIsChosen() {
@@ -150,7 +149,7 @@ public class FluxFirstValuesEmittingTest {
 	@Test
 	public void scanOperator() {
 		@SuppressWarnings("unchecked")
-		FluxFirstValuesEmitting<Integer> test = new FluxFirstValuesEmitting<>(Flux.range(1, 10), Flux.range(11, 10));
+		FluxFirstValues<Integer> test = new FluxFirstValues<>(Flux.range(1, 10), Flux.range(11, 10));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
@@ -159,8 +158,8 @@ public class FluxFirstValuesEmittingTest {
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
-		FluxFirstValuesEmitting.RaceValuesCoordinator<String> parent = new FluxFirstValuesEmitting.RaceValuesCoordinator<>(1);
-		FluxFirstValuesEmitting.FirstValuesEmittingSubscriber<String> test = new FluxFirstValuesEmitting.FirstValuesEmittingSubscriber<>(actual, parent, 1);
+		FluxFirstValues.RaceValuesCoordinator<String> parent = new FluxFirstValues.RaceValuesCoordinator<>(1);
+		FluxFirstValues.FirstValuesEmittingSubscriber<String> test = new FluxFirstValues.FirstValuesEmittingSubscriber<>(actual, parent, 1);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 
@@ -176,8 +175,8 @@ public class FluxFirstValuesEmittingTest {
 	public void scanRaceCoordinator() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
-		FluxFirstValuesEmitting.RaceValuesCoordinator<String> parent = new FluxFirstValuesEmitting.RaceValuesCoordinator<>(1);
-		FluxFirstValuesEmitting.FirstValuesEmittingSubscriber<String> test = new FluxFirstValuesEmitting.FirstValuesEmittingSubscriber<>(actual, parent, 1);
+		FluxFirstValues.RaceValuesCoordinator<String> parent = new FluxFirstValues.RaceValuesCoordinator<>(1);
+		FluxFirstValues.FirstValuesEmittingSubscriber<String> test = new FluxFirstValues.FirstValuesEmittingSubscriber<>(actual, parent, 1);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 

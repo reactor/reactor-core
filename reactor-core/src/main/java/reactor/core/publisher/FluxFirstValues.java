@@ -21,19 +21,19 @@ import java.util.stream.Stream;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFirstValues<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<? extends T>[] array;
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
 	@SafeVarargs
-	FluxFirstValuesEmitting(Publisher<? extends T>... array) {
+	FluxFirstValues(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	FluxFirstValuesEmitting(Iterable<? extends Publisher<? extends T>> iterable) {
+	FluxFirstValues(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -129,7 +129,7 @@ final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer
 	 * @return the new FluxFirstValueEmitting instance or null if the Amb runs with an Iterable
 	 */
 	@Nullable
-	FluxFirstValuesEmitting<T> ambAdditionalSource(Publisher<? extends T> source) {
+	FluxFirstValues<T> orAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
@@ -137,7 +137,7 @@ final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = source;
 
-			return new FluxFirstValuesEmitting<>(newArray);
+			return new FluxFirstValues<>(newArray);
 		}
 		return null;
 	}
@@ -157,9 +157,9 @@ final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer
 		volatile boolean cancelled;
 
 		@SuppressWarnings("rawtypes")
-		volatile int wip;
-		static final AtomicIntegerFieldUpdater<RaceValuesCoordinator> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(RaceValuesCoordinator.class, "wip");
+		volatile int winner;
+		static final AtomicIntegerFieldUpdater<RaceValuesCoordinator> WINNER =
+				AtomicIntegerFieldUpdater.newUpdater(RaceValuesCoordinator.class, "winner");
 
 		@SuppressWarnings("rawtypes")
 		volatile int nbErrorsOrCompletedEmpty;
@@ -170,7 +170,7 @@ final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer
 		public RaceValuesCoordinator(int n) {
 			subscribers = new FirstValuesEmittingSubscriber[n];
 			errorsOrCompleteEmpty = new Throwable[n];
-			wip = Integer.MIN_VALUE;
+			winner = Integer.MIN_VALUE;
 		}
 
 		@Override
@@ -195,7 +195,7 @@ final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer
 			actual.onSubscribe(this);
 
 			for (int i = 0; i < sources.length; i++) {
-				if (cancelled || wip != Integer.MIN_VALUE) {
+				if (cancelled || winner != Integer.MIN_VALUE) {
 					return;
 				}
 
@@ -212,7 +212,7 @@ final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				int w = wip;
+				int w = winner;
 				if (w >= 0) {
 					subscribers[w].request(n);
 				} else {
@@ -230,7 +230,7 @@ final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer
 			}
 			cancelled = true;
 
-			int w = wip;
+			int w = winner;
 			if (w >= 0) {
 				subscribers[w].cancel();
 			} else {
@@ -241,8 +241,8 @@ final class FluxFirstValuesEmitting<T> extends Flux<T> implements SourceProducer
 		}
 
 		boolean tryWin(int index) {
-			if (wip == Integer.MIN_VALUE) {
-				if (WIP.compareAndSet(this, Integer.MIN_VALUE, index)) {
+			if (winner == Integer.MIN_VALUE) {
+				if (WINNER.compareAndSet(this, Integer.MIN_VALUE, index)) {
 					for (int i = 0; i < subscribers.length; i++) {
 						if (i != index) {
 							subscribers[i].cancel();

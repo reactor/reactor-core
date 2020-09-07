@@ -35,19 +35,19 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFirst<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<? extends T>[] array;
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
 	@SafeVarargs
-	FluxFirstEmitting(Publisher<? extends T>... array) {
+	FluxFirst(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	FluxFirstEmitting(Iterable<? extends Publisher<? extends T>> iterable) {
+	FluxFirst(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -141,14 +141,14 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 	 * Returns a new instance which has the additional source to be amb'd together with
 	 * the current array of sources.
 	 * <p>
-	 * This operation doesn't change the current FluxFirstEmitting instance.
+	 * This operation doesn't change the current FluxFirst instance.
 	 *
 	 * @param source the new source to merge with the others
 	 *
-	 * @return the new FluxFirstEmitting instance or null if the Amb runs with an Iterable
+	 * @return the new FluxFirst instance or null if the Amb runs with an Iterable
 	 */
 	@Nullable
-	FluxFirstEmitting<T> ambAdditionalSource(Publisher<? extends T> source) {
+	FluxFirst<T> orAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
@@ -156,7 +156,7 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = source;
 
-			return new FluxFirstEmitting<>(newArray);
+			return new FluxFirst<>(newArray);
 		}
 		return null;
 	}
@@ -174,15 +174,15 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 
 		volatile boolean cancelled;
 
-		volatile int wip;
+		volatile int winner;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<RaceCoordinator> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(RaceCoordinator.class, "wip");
+		static final AtomicIntegerFieldUpdater<RaceCoordinator> WINNER =
+				AtomicIntegerFieldUpdater.newUpdater(RaceCoordinator.class, "winner");
 
 		@SuppressWarnings("unchecked")
 		RaceCoordinator(int n) {
 			subscribers = new FirstEmittingSubscriber[n];
-			wip = Integer.MIN_VALUE;
+			winner = Integer.MIN_VALUE;
 		}
 
 		@Override
@@ -210,14 +210,14 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 			actual.onSubscribe(this);
 
 			for (int i = 0; i < n; i++) {
-				if (cancelled || wip != Integer.MIN_VALUE) {
+				if (cancelled || winner != Integer.MIN_VALUE) {
 					return;
 				}
 
 				Publisher<? extends T> p = sources[i];
 
 				if (p == null) {
-					if (WIP.compareAndSet(this, Integer.MIN_VALUE, -1)) {
+					if (WINNER.compareAndSet(this, Integer.MIN_VALUE, -1)) {
 						actual.onError(new NullPointerException("The " + i + " th Publisher source is null"));
 					}
 					return;
@@ -231,7 +231,7 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				int w = wip;
+				int w = winner;
 				if (w >= 0) {
 					subscribers[w].request(n);
 				}
@@ -250,7 +250,7 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 			}
 			cancelled = true;
 
-			int w = wip;
+			int w = winner;
 			if (w >= 0) {
 				subscribers[w].cancel();
 			}
@@ -262,8 +262,8 @@ final class FluxFirstEmitting<T> extends Flux<T> implements SourceProducer<T> {
 		}
 
 		boolean tryWin(int index) {
-			if (wip == Integer.MIN_VALUE) {
-				if (WIP.compareAndSet(this, Integer.MIN_VALUE, index)) {
+			if (winner == Integer.MIN_VALUE) {
+				if (WINNER.compareAndSet(this, Integer.MIN_VALUE, index)) {
 
 					FirstEmittingSubscriber<T>[] a = subscribers;
 					int n = a.length;

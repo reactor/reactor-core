@@ -9,7 +9,6 @@ import java.util.Objects;
 
 final class MonoFirstValue<T> extends Mono<T> implements SourceProducer<T> {
 
-
 	final Mono<? extends T>[] array;
 
 	final Iterable<? extends Mono<? extends T>> iterable;
@@ -39,7 +38,6 @@ final class MonoFirstValue<T> extends Mono<T> implements SourceProducer<T> {
 	}
 
 	@Override
-	//TODO mutualize with FluxFirstEmitting
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T>[] a = array;
 		int n;
@@ -118,8 +116,8 @@ final class MonoFirstValue<T> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 
-		FluxFirstValuesEmitting.RaceValuesCoordinator<T> coordinator =
-				new FluxFirstValuesEmitting.RaceValuesCoordinator<>(n);
+		FluxFirstValues.RaceValuesCoordinator<T> coordinator =
+				new FluxFirstValues.RaceValuesCoordinator<>(n);
 
 		coordinator.subscribe(a, actual);
 	}

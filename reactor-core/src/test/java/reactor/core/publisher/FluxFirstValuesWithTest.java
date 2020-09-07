@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxFirstValuesEmittingWithTest {
+public class FluxFirstValuesWithTest {
 
 	@Test
 	public void noStackOverflow() {
@@ -55,8 +55,8 @@ public class FluxFirstValuesEmittingWithTest {
 		Flux<Integer> f = Flux.firstValues(Mono.just(1), Mono.just(2))
 				.orValues(Mono.just(3));
 
-		Assertions.assertTrue(f instanceof FluxFirstValuesEmitting);
-		FluxFirstValuesEmitting<Integer> s = (FluxFirstValuesEmitting<Integer>) f;
+		Assertions.assertTrue(f instanceof FluxFirstValues);
+		FluxFirstValues<Integer> s = (FluxFirstValues<Integer>) f;
 		Assertions.assertNotNull(s.array);
 		Assertions.assertEquals(s.array.length, 3);
 
@@ -67,8 +67,8 @@ public class FluxFirstValuesEmittingWithTest {
 		Flux<Integer> f = Flux.firstValues(Arrays.asList(Mono.just(1), Mono.just(2)))
 				.orValues(Mono.just(3));
 
-		Assertions.assertTrue(f instanceof FluxFirstValuesEmitting);
-		FluxFirstValuesEmitting<Integer> s = (FluxFirstValuesEmitting<Integer>) f;
+		Assertions.assertTrue(f instanceof FluxFirstValues);
+		FluxFirstValues<Integer> s = (FluxFirstValues<Integer>) f;
 		Assertions.assertNotNull(s.array);
 		Assertions.assertEquals(s.array.length, 2);
 

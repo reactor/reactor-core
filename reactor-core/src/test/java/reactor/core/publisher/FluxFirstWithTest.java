@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxFirstEmittingWithTest {
+public class FluxFirstWithTest {
 
 	@Test
 	public void noStackOverflow() {
@@ -63,8 +63,8 @@ public class FluxFirstEmittingWithTest {
 		Flux<Integer> f = Flux.first(Mono.just(1), Mono.just(2))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof FluxFirstEmitting);
-		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
+		Assert.assertTrue(f instanceof FluxFirst);
+		FluxFirst<Integer> s = (FluxFirst<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 3);
 
@@ -78,8 +78,8 @@ public class FluxFirstEmittingWithTest {
 		Flux<Integer> f = Flux.first(Arrays.asList(Mono.just(1), Mono.just(2)))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof FluxFirstEmitting);
-		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
+		Assert.assertTrue(f instanceof FluxFirst);
+		FluxFirst<Integer> s = (FluxFirst<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 2);
 
