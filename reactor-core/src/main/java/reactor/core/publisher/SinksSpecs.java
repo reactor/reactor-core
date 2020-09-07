@@ -16,7 +16,6 @@ import reactor.core.publisher.Sinks.Emission;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
-import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 final class SinksSpecs {
@@ -41,10 +40,10 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	static final AtomicReferenceFieldUpdater<SerializedManySink, Throwable> ERROR =
 			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Throwable.class, "error");
 
-	volatile     int                                           wip;
+	volatile Thread lockedAt;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<SerializedManySink> WIP =
-			AtomicIntegerFieldUpdater.newUpdater(SerializedManySink.class, "wip");
+	static final AtomicReferenceFieldUpdater<SerializedManySink, Thread> LOCKED_AT =
+			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Thread.class, "lockedAt");
 
 	volatile boolean done;
 
@@ -78,8 +77,13 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		if (done) {
 			return Sinks.Emission.FAIL_TERMINATED;
 		}
+		Thread lockedAt = this.lockedAt;
+		if (!(lockedAt == null || lockedAt == Thread.currentThread())) {
+			return Emission.FAIL_NON_SERIALIZED;
+		}
+
 		done = true;
-		return drain();
+		return sink.tryEmitComplete();
 	}
 
 	@Override
@@ -99,18 +103,22 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		if (done) {
 			return Sinks.Emission.FAIL_TERMINATED;
 		}
-		if (Exceptions.addThrowable(ERROR, this, t)) {
-			done = true;
-			return drain();
+		Thread lockedAt = this.lockedAt;
+		if (!(lockedAt == null || lockedAt == Thread.currentThread())) {
+			return Emission.FAIL_NON_SERIALIZED;
+		}
+		if (!Exceptions.addThrowable(ERROR, this, t)) {
+			return Emission.FAIL_TERMINATED;
 		}
 
-		return Sinks.Emission.FAIL_TERMINATED;
+		done = true;
+		return sink.tryEmitError(t);
 	}
 
 	@Override
 	public void emitNext(T value) {
 		switch (tryEmitNext(value)) {
-			case FAIL_OVERFLOW:
+			case FAIL_OVERFLOW: {
 				Context ctx = currentContext();
 				IllegalStateException overflow = Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext");
 
@@ -120,12 +128,24 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 				emitError(ex);
 				Operators.onDiscard(value, currentContext());
 				break;
+			}
 			case FAIL_CANCELLED:
 				Operators.onDiscard(value, currentContext());
 				break;
 			case FAIL_TERMINATED:
 				Operators.onNextDropped(value, currentContext());
 				break;
+			case FAIL_NON_SERIALIZED: {
+				Context ctx = currentContext();
+				IllegalStateException overflow = Exceptions.failWithOverflow("The access is not serialized");
+
+				Subscription s = sink instanceof Subscription ? (Subscription) sink : null;
+				Throwable ex = Operators.onOperatorError(s, overflow, value, ctx);
+				//the emitError will onErrorDropped if already terminated
+				emitError(ex);
+				Operators.onDiscard(value, currentContext());
+				break;
+			}
 			case OK:
 				break;
 		}
@@ -137,54 +157,20 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		if (done) {
 			return Sinks.Emission.FAIL_TERMINATED;
 		}
-		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-			Emission emission = sink.tryEmitNext(t);
-			if (WIP.decrementAndGet(this) != 0) {
-				return drainLoop();
+		Thread currentThread = Thread.currentThread();
+		Thread lockedAt = LOCKED_AT.get(this);
+		if (lockedAt != null) {
+			if (lockedAt != currentThread) {
+				return Emission.FAIL_NON_SERIALIZED;
 			}
-			return emission;
 		}
-		else {
-			return Emission.FAIL_NON_SERIALIZED;
-		}
-	}
-
-	//impl note: don't use sink.isTerminated() in the drain loop,
-	//it needs to separately check its own `done` status before calling the base sink
-	//complete()/error() methods (which do flip the isTerminated), otherwise it could
-	//bypass the terminate handler (in buffer and latest variants notably).
-	final Emission drain() {
-		if (WIP.getAndIncrement(this) != 0) {
+		else if (!LOCKED_AT.compareAndSet(this, null, currentThread)) {
 			return Emission.FAIL_NON_SERIALIZED;
 		}
 
-		return drainLoop();
-	}
-
-	final Emission drainLoop() {
-		Many<T> e = sink;
-		for (; ; ) {
-			if (isCancelled()) {
-				if (WIP.decrementAndGet(this) != 0) {
-					continue;
-				}
-				else {
-					return Emission.FAIL_CANCELLED;
-				}
-			}
-			if (ERROR.get(this) != null) {
-				//noinspection ConstantConditions
-				e.emitError(Exceptions.terminate(ERROR, this));
-				return Emission.FAIL_TERMINATED;
-			}
-
-			boolean d = done;
-
-			if (d) {
-				e.emitComplete();
-				return Emission.OK;
-			}
-		}
+		Emission emission = sink.tryEmitNext(t);
+		LOCKED_AT.compareAndSet(this, currentThread, null);
+		return emission;
 	}
 
 	@Override

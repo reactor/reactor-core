@@ -20,7 +20,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
@@ -29,6 +31,9 @@ import reactor.util.context.Context;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SerializedManySinkTest {
+
+	@Rule
+	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	@Test
 	public void shouldNotThrowFromTryEmitNext() {
@@ -69,7 +74,7 @@ public class SerializedManySinkTest {
 						new EmptyMany<Object>() {
 							@Override
 							public Emission tryEmitNext(Object o) {
-								SerializedManySink.WIP.incrementAndGet(sink.get());
+								SerializedManySink.LOCKED_AT.set(sink.get(), new Thread());
 								return super.tryEmitNext(o);
 							}
 						},
@@ -83,13 +88,15 @@ public class SerializedManySinkTest {
 	}
 
 	@Test
-	public void blah() throws Exception {
+	public void sameThreadRecursion() throws Exception {
 		DirectProcessor<Object> processor = DirectProcessor.create();
-		SerializedManySink<Object> manySink = new SerializedManySink<>(processor, Operators.emptySubscriber());
+		SerializedManySink<Object> manySink = new SerializedManySink<>(processor, Context::empty);
 
 		CompletableFuture<Object> muchFuture = processor.doOnNext(o -> {
-			assertThat(manySink.wip).as("wip").isNotZero();
-			assertThat(manySink.tryEmitNext("second")).as("second").isEqualTo(Emission.FAIL_NON_SERIALIZED);
+			if ("first".equals(o)) {
+				assertThat(manySink.lockedAt).as("lockedAt").isEqualTo(Thread.currentThread());
+				assertThat(manySink.tryEmitNext("second")).as("second").isEqualTo(Emission.OK);
+			}
 		}).next().toFuture();
 
 		assertThat(manySink.tryEmitNext("first")).as("first").isEqualTo(Emission.OK);
