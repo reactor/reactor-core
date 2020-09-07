@@ -20,8 +20,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Signal;
 
 import static org.assertj.core.api.Assertions.assertThat;

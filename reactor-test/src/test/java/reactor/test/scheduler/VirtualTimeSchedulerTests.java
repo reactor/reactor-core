@@ -25,9 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -69,12 +68,12 @@ public class VirtualTimeSchedulerTests {
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 
-		Assert.assertSame(Schedulers.newParallel(""), t);
+		assertThat(Schedulers.newParallel("")).isSameAs(t);
 		@SuppressWarnings("deprecation")
 		Scheduler elastic3 = Schedulers.newElastic("");
-		Assert.assertSame(elastic3, t);
-		Assert.assertSame(Schedulers.newBoundedElastic(5, Integer.MAX_VALUE, ""), t); //same even though different parameter
-		Assert.assertSame(Schedulers.newSingle(""), t);
+		assertThat(elastic3).isSameAs(t);
+		assertThat(Schedulers.newBoundedElastic(5, Integer.MAX_VALUE, "")).isSameAs(t); //same even though different parameter
+		assertThat(Schedulers.newSingle("")).isSameAs(t);
 	}
 
 	@Test
@@ -83,14 +82,14 @@ public class VirtualTimeSchedulerTests {
 
 		VirtualTimeScheduler.getOrSet(vts);
 
-		Assert.assertSame(vts, uncache(Schedulers.single()));
-		Assert.assertFalse(vts.shutdown);
+		assertThat(vts).isSameAs(uncache(Schedulers.single()));
+		assertThat(vts.shutdown).isFalse();
 
 
 		VirtualTimeScheduler.getOrSet(vts);
 
-		Assert.assertSame(vts, uncache(Schedulers.single()));
-		Assert.assertFalse(vts.shutdown);
+		assertThat(vts).isSameAs(uncache(Schedulers.single()));
+		assertThat(vts.shutdown).isFalse();
 	}
 
 	@Test
@@ -101,10 +100,10 @@ public class VirtualTimeSchedulerTests {
 		VirtualTimeScheduler firstEnableResult = VirtualTimeScheduler.getOrSet(vts1);
 		VirtualTimeScheduler secondEnableResult = VirtualTimeScheduler.getOrSet(vts2);
 
-		Assert.assertSame(vts1, firstEnableResult);
-		Assert.assertSame(vts1, secondEnableResult);
-		Assert.assertSame(vts1, uncache(Schedulers.single()));
-		Assert.assertFalse(vts1.shutdown);
+		assertThat(vts1).isSameAs(firstEnableResult);
+		assertThat(vts1).isSameAs(secondEnableResult);
+		assertThat(vts1).isSameAs(uncache(Schedulers.single()));
+		assertThat(vts1.shutdown).isFalse();
 	}
 
 	@Test
@@ -433,7 +432,7 @@ public class VirtualTimeSchedulerTests {
 		return potentialCached;
 	}
 
-	@After
+	@AfterEach
 	public void cleanup() {
 		VirtualTimeScheduler.reset();
 	}

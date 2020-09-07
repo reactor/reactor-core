@@ -21,7 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Operators;
 import reactor.test.DefaultStepVerifierBuilder.DefaultVerifySubscriber;
@@ -73,7 +74,8 @@ public class DefaultStepVerifierBuilderTests {
 		s.verify(Duration.ofSeconds(1));
 	}
 
-	@Test(timeout = 4000)
+	@Test
+	@Timeout(4)
 	public void manuallyManagedVirtualTime() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		try {
