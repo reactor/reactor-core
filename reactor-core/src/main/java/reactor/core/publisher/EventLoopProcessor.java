@@ -264,6 +264,12 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		return super.scanUnsafe(key);
 	}
 
+	@Override
+	public Context currentContext() {
+		//TODO could use support of keeping track of inners, but this class is going to be removed anyway
+		return Context.empty();
+	}
+
 	/**
 	 * A method to extract a name from the ThreadFactory if it turns out to be a Supplier
 	 * (in which case the supplied value string representation is used). Otherwise return
