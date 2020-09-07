@@ -43,11 +43,8 @@ dependencies {
 	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
 
 	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
-	testImplementation "junit:junit:${jUnitVersion}"
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-	testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
-
 	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
 
 	testImplementation "org.assertj:assertj-core:$assertJVersion"
@@ -103,6 +100,10 @@ jar {
 			'Automatic-Module-Name': 'reactor.test'
 	}
 	bnd(bndOptions)
+}
+
+tasks.withType(Test).all {
+	useJUnitPlatform()
 }
 
 check.dependsOn japicmp

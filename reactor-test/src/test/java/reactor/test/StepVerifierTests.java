@@ -33,10 +33,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
@@ -54,6 +53,7 @@ import reactor.util.context.Context;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 
 /**
@@ -1168,7 +1168,8 @@ public class StepVerifierTests {
 	            .withMessage("scenarioSupplier");
 	}
 
-	@Test(timeout = 3000)
+	@Test
+	@Timeout(value = 3000, unit = TimeUnit.MILLISECONDS)
 	public void verifyVirtualTimeOnNextIntervalManual() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
@@ -1210,7 +1211,8 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(timeout = 1000)
+	@Test
+	@Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
 	public void verifyCreatedForAllSchedulerUsesVirtualTime() {
 		//a timeout will occur if virtual time isn't used
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
@@ -1235,7 +1237,8 @@ public class StepVerifierTests {
 		assertThat(verifyDuration.toMillis()).isGreaterThanOrEqualTo(1000L);
 	}
 
-	@Test(timeout = 500)
+	@Test
+	@Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
 	public void noSignalVirtualTime() {
 		StepVerifier.withVirtualTime(Mono::never, 1)
 		            .expectSubscription()
@@ -1894,7 +1897,8 @@ public class StepVerifierTests {
 		assertThat(totalRequest.longValue()).isEqualTo(12L);
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void expectCancelDoNotHang() {
 		StepVerifier.create(Flux.just("foo", "bar"), 1)
 		            .expectNext("foo")
@@ -1902,7 +1906,8 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void consumeNextWithLowRequestShortcircuits() {
 		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1)
 				                         .expectNext("foo");
@@ -1913,7 +1918,8 @@ public class StepVerifierTests {
 	            .withMessageEndingWith("request remaining since last step: 0, expected: 1");
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void assertNextLowRequestShortcircuits() {
 		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1)
 		                                                   .expectNext("foo");
@@ -1924,7 +1930,8 @@ public class StepVerifierTests {
 				.withMessageEndingWith("request remaining since last step: 0, expected: 1");
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void expectNextLowRequestShortcircuits() {
 		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1)
 		                                                   .expectNext("foo");
@@ -1935,7 +1942,8 @@ public class StepVerifierTests {
 				.withMessageEndingWith("request remaining since last step: 0, expected: 1");
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void expectNextCountLowRequestShortcircuits() {
 		assertThatExceptionOfType(IllegalArgumentException.class)
 				.isThrownBy(() -> StepVerifier.create(Flux.just("foo", "bar"), 1)
@@ -1945,7 +1953,8 @@ public class StepVerifierTests {
 				.withMessageEndingWith("request remaining since last step: 1, expected: 2");
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void expectNextMatchesLowRequestShortcircuits() {
 		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1)
 		                                                   .expectNext("foo");
@@ -1956,7 +1965,8 @@ public class StepVerifierTests {
 				.withMessageEndingWith("request remaining since last step: 0, expected: 1");
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void expectNextSequenceLowRequestShortcircuits() {
 		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1);
 		List<String> expected = Arrays.asList("foo", "bar");
@@ -1967,7 +1977,8 @@ public class StepVerifierTests {
 				.withMessageEndingWith("request remaining since last step: 1, expected: 2");
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void thenConsumeWhileLowRequestShortcircuits() {
 		StepVerifier.Step<Integer> validSoFar = StepVerifier.create(Flux.just(1, 2), 1)
 		                                                    .expectNext(1);
@@ -1978,7 +1989,8 @@ public class StepVerifierTests {
 	            .withMessageEndingWith("request remaining since last step: 0, expected: at least 1 (best effort estimation)");
 	}
 
-	@Test(timeout = 1000L)
+	@Test
+	@Timeout(value = 1000L, unit = TimeUnit.MILLISECONDS)
 	public void lowRequestCheckCanBeDisabled() {
 		StepVerifier.create(Flux.just(1, 2),
 				StepVerifierOptions.create().initialRequest(1).checkUnderRequesting(false))
@@ -2037,7 +2049,7 @@ public class StepVerifierTests {
 		                                       .take(100000)
 		                                       .collectList())
 		            .thenAwait(Duration.ofHours(1000))
-		            .consumeNextWith(list -> Assert.assertTrue(list.size() == 100000))
+		            .consumeNextWith(list -> assertTrue(list.size() == 100000))
 		            .verifyComplete();
 	}
 
@@ -2135,7 +2147,8 @@ public class StepVerifierTests {
 		}
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void gh783() {
 		int size = 1;
 		Scheduler parallel = Schedulers.newParallel("gh-783");
@@ -2154,7 +2167,8 @@ public class StepVerifierTests {
 		            .verifyComplete();
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void gh783_deferredAdvanceTime() {
 		int size = 61;
 		Scheduler parallel = Schedulers.newParallel("gh-783");
@@ -2175,7 +2189,7 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	//FIXME this case of doubly-nested schedules is still not fully fixed
 	public void gh783_withInnerFlatmap() {
 		int size = 61;

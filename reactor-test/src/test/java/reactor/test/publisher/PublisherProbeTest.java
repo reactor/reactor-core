@@ -18,7 +18,7 @@ package reactor.test.publisher;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;

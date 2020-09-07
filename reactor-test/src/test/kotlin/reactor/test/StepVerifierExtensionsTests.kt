@@ -16,7 +16,7 @@
 
 package reactor.test
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import reactor.core.publisher.toMono
 
 @Suppress("deprecation")
