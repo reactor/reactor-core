@@ -1,5 +1,6 @@
 package reactor.core.publisher;
 
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -146,6 +147,36 @@ class MonoFirstValueTest {
 		MonoFirstValue<Integer> test = new MonoFirstValue<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void pairWise() {
+		Mono<Integer> f = Mono.firstValue(Mono.just(1), Mono.just(2))
+				.orValue(Mono.just(3));
+
+		Assert.assertTrue(f instanceof MonoFirst);
+		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
+		Assert.assertTrue(s.array != null);
+		Assert.assertTrue(s.array.length == 3);
+
+		f.subscribeWith(AssertSubscriber.create())
+				.assertValues(1)
+				.assertComplete();
+	}
+
+	@Test
+	public void pairWiseIterable() {
+		Mono<Integer> f = Mono.first(Arrays.asList(Mono.just(1), Mono.just(2)))
+				.or(Mono.just(3));
+
+		Assert.assertTrue(f instanceof MonoFirst);
+		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
+		Assert.assertTrue(s.array != null);
+		Assert.assertTrue(s.array.length == 2);
+
+		f.subscribeWith(AssertSubscriber.create())
+				.assertValues(1)
+				.assertComplete();
 	}
 
 }

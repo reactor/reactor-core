@@ -3091,6 +3091,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return first(this, other);
 	}
 
+	public final Mono<T> orValue(Mono<? extends T> other) {
+		if (this instanceof MonoFirstValue) {
+			MonoFirstValue<T> a = (MonoFirstValue<T>) this;
+			Mono<T> result =  a.orAdditionalSource(other);
+			if (result != null) {
+				return result;
+			}
+		}
+		return firstValue(this, other);
+	}
+
 	/**
 	 * Evaluate the emitted value against the given {@link Class} type. If the
 	 * value matches the type, it is passed into the new {@link Mono}. Otherwise the
