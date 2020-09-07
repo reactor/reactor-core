@@ -21,6 +21,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -265,6 +266,20 @@ public class DirectProcessorTest {
 
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+    }
+
+    @Test
+	public void currentContextDelegatesToFirstSubscriber() {
+	    AssertSubscriber<Object> testSubscriber1 = new AssertSubscriber<>(Context.of("key", "value1"));
+	    AssertSubscriber<Object> testSubscriber2 = new AssertSubscriber<>(Context.of("key", "value2"));
+
+	    DirectProcessor<Object> directProcessor = new DirectProcessor<>();
+	    directProcessor.subscribe(testSubscriber1);
+	    directProcessor.subscribe(testSubscriber2);
+
+	    Context processorContext = directProcessor.currentContext();
+
+	    assertThat(processorContext.getOrDefault("key", "EMPTY")).isEqualTo("value1");
     }
 
 }

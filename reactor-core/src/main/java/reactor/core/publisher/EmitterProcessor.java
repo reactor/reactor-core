@@ -31,6 +31,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 
@@ -160,6 +161,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	@Override
 	public Stream<? extends Scannable> inners() {
 		return Stream.of(subscribers);
+	}
+
+	@Override
+	public Context currentContext() {
+		return Operators.multiSubscribersContext(subscribers);
 	}
 
 	@Override
