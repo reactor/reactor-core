@@ -137,7 +137,9 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 				break;
 			case FAIL_NON_SERIALIZED: {
 				Context ctx = currentContext();
-				IllegalStateException overflow = Exceptions.failWithOverflow("The access is not serialized");
+				IllegalStateException overflow = new IllegalStateException(
+						"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
+				);
 
 				Subscription s = sink instanceof Subscription ? (Subscription) sink : null;
 				Throwable ex = Operators.onOperatorError(s, overflow, value, ctx);
