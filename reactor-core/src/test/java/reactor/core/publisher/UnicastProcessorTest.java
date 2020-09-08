@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
 import org.junit.Test;
@@ -70,7 +71,9 @@ public class UnicastProcessorTest {
 		for (int i = 0; i < 5; i++) {
 			Runnable generator = () -> {
 				for (int j = 0; j < countPerThread; j++) {
-					sink.emitNext(j);
+					while (sink.tryEmitNext(j).hasFailed()) {
+						LockSupport.parkNanos(10);
+					}
 				}
 			};
 			executor.submit(generator);
