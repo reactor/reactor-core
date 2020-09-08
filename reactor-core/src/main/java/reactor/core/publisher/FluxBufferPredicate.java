@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
@@ -108,7 +109,8 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		final Predicate<? super T> predicate;
 
-		C buffer;
+		@Nullable
+		volatile C buffer;
 
 		boolean done;
 
@@ -151,8 +153,8 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 					// here we request everything from the source. switching to
 					// fastpath will avoid unnecessary request(1) during filling
 					fastpath = true;
-					requestedBuffers = Long.MAX_VALUE;
-					requestedFromSource = Long.MAX_VALUE;
+					REQUESTED_BUFFERS.set(this, Long.MAX_VALUE);
+					REQUESTED_FROM_SOURCE.set(this, Long.MAX_VALUE);
 					s.request(Long.MAX_VALUE);
 				}
 				else {
@@ -176,8 +178,13 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		@Override
 		public void cancel() {
+			C b;
+			synchronized (this) {
+				b = buffer;
+				buffer = null;
+				Operators.onDiscardMultiple(b, this.ctx);
+			}
 			Operators.terminate(S, this);
-			Operators.onDiscardMultiple(buffer, this.ctx);
 		}
 
 		@Override
@@ -201,32 +208,35 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return true;
 			}
 
-			C b = buffer;
 			boolean match;
 			try {
 				match = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, this.ctx));
-				Operators.onDiscardMultiple(buffer, this.ctx);
+				onError(Operators.onOperatorError(s, e, t, this.ctx)); //will discard the buffer
 				Operators.onDiscard(t, this.ctx);
 				return true;
 			}
 
 			if (mode == Mode.UNTIL && match) {
-				b.add(t);
+				if (cancelledWhileAdding(t)) {
+					return true;
+				}
 				onNextNewBuffer();
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
 				onNextNewBuffer();
-				b = buffer;
-				b.add(t);
+				if (cancelledWhileAdding(t)) {
+					return true;
+				}
 			}
 			else if (mode == Mode.WHILE && !match) {
 				onNextNewBuffer();
 			}
 			else {
-				b.add(t);
+				if (cancelledWhileAdding(t)) {
+					return true;
+				}
 			}
 
 			if (fastpath) {
@@ -242,9 +252,30 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			return true;
 		}
 
+		boolean cancelledWhileAdding(T value) {
+			synchronized (this) {
+				C b = buffer;
+				if (b == null || s == Operators.cancelledSubscription()) {
+					Operators.onDiscard(value, actual.currentContext());
+					return true;
+				}
+				else {
+					b.add(value);
+					return false;
+				}
+			}
+		}
+
 		@Nullable
 		private C triggerNewBuffer() {
-			C b = buffer;
+			C b;
+			synchronized (this) {
+				b = buffer;
+
+				if (b == null || s == Operators.cancelledSubscription()) {
+					return null;
+				}
+			}
 
 			if (b.isEmpty()) {
 				//emit nothing and we'll reuse the same buffer
@@ -263,7 +294,12 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return null;
 			}
 
-			buffer = c;
+			synchronized (this) {
+				if (buffer == null) {
+					return null;
+				}
+				buffer = c;
+			}
 			return b;
 		}
 
@@ -296,8 +332,14 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return;
 			}
 			done = true;
-			Operators.onDiscardMultiple(buffer, this.ctx);
-			buffer = null;
+			C b;
+			synchronized (this) {
+				b = buffer;
+				buffer = null;
+			}
+			//safe to discard the buffer outside synchronized block
+			//since onNext MUST NOT happen in parallel with onError
+			Operators.onDiscardMultiple(b, this.ctx);
 			actual.onError(t);
 		}
 
@@ -347,7 +389,9 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		public C poll() {
 			C b = buffer;
 			if (b != null && !b.isEmpty()) {
-				buffer = null;
+				synchronized (this) {
+					buffer = null;
+				}
 				return b;
 			}
 			return null;
@@ -361,7 +405,8 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		@Override
 		public int size() {
-			return buffer == null || buffer.isEmpty() ? 0 : 1;
+			C b = buffer;
+			return b == null || b.isEmpty() ? 0 : 1;
 		}
 
 		@Override

@@ -23,25 +23,29 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxBufferPredicate.BufferPredicateSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.util.RaceTestUtils;
+import reactor.util.context.Context;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -609,8 +613,8 @@ public class FluxBufferPredicateTest {
 		};
 		bufferPredicate.subscribe(subscriber);
 		@SuppressWarnings("unchecked")
-		final FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
-				(FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
+		final BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
+				(BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
 
 		for (int i = 0; i < 10; i++) {
 			final int value = i;
@@ -640,8 +644,8 @@ public class FluxBufferPredicateTest {
 		};
 		bufferPredicate.subscribe(subscriber);
 		@SuppressWarnings("unchecked")
-		final FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
-				(FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
+		final BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
+				(BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
 
 		for (int i = 0; i < 10; i++) {
 			final int value = i;
@@ -671,8 +675,8 @@ public class FluxBufferPredicateTest {
 		};
 		bufferPredicate.subscribe(subscriber);
 		@SuppressWarnings("unchecked")
-		final FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
-				(FluxBufferPredicate.BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
+		final BufferPredicateSubscriber<Integer, List<Integer>> bufferPredicateSubscriber =
+				(BufferPredicateSubscriber<Integer, List<Integer>>) subscriber.subscription;
 
 		for (int i = 0; i < 10; i++) {
 			final int value = i;
@@ -848,7 +852,7 @@ public class FluxBufferPredicateTest {
 		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		List<String> initialBuffer = Arrays.asList("foo", "bar");
-		FluxBufferPredicate.BufferPredicateSubscriber<String, List<String>> test = new FluxBufferPredicate.BufferPredicateSubscriber<>(
+		BufferPredicateSubscriber<String, List<String>> test = new BufferPredicateSubscriber<>(
 				actual, initialBuffer, ArrayList::new, s -> s.length() < 5,
 				FluxBufferPredicate.Mode.WHILE
 		);
@@ -872,7 +876,7 @@ public class FluxBufferPredicateTest {
 		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		List<String> initialBuffer = Arrays.asList("foo", "bar");
-		FluxBufferPredicate.BufferPredicateSubscriber<String, List<String>> test = new FluxBufferPredicate.BufferPredicateSubscriber<>(
+		BufferPredicateSubscriber<String, List<String>> test = new BufferPredicateSubscriber<>(
 				actual, initialBuffer, ArrayList::new, s -> s.length() < 5,
 				FluxBufferPredicate.Mode.WHILE
 		);
@@ -910,6 +914,153 @@ public class FluxBufferPredicateTest {
 		            .expectErrorMessage("boom")
 		            .verifyThenAssertThat()
 		            .hasDiscardedExactly(1, 2, 3);
+	}
+
+	static private final Context DISCARD_RACE_WITH_ON_NEXT_CTX = Context.of(Hooks.KEY_ON_DISCARD, (Consumer<?>) (Object o) -> ((AtomicInteger) o).incrementAndGet());
+
+	BaseSubscriber<ArrayList<AtomicInteger>> createDiscardRaceWithOnNextDownstream(final AtomicLong receivedCounter) {
+		return new BaseSubscriber<ArrayList<AtomicInteger>>() {
+			@Override
+			public Context currentContext() {
+				return DISCARD_RACE_WITH_ON_NEXT_CTX;
+			}
+
+			@Override
+			protected void hookOnNext(ArrayList<AtomicInteger> value) {
+				receivedCounter.addAndGet(value.size());
+			}
+		};
+	}
+
+	@Test
+	public void discardRaceWithOnNext_bufferAdds() {
+		final int ROUNDS = 100_000;
+		Predicate<AtomicInteger> predicate = v -> v.get() == 100;
+		FluxBufferPredicate.Mode mode = FluxBufferPredicate.Mode.UNTIL;
+
+		for (int i = 0; i < ROUNDS; i++) {
+			AtomicLong received = new AtomicLong();
+			AtomicInteger value1 = new AtomicInteger(-1);
+			AtomicInteger value2 = new AtomicInteger(-2);
+
+			BaseSubscriber<ArrayList<AtomicInteger>> downstream = createDiscardRaceWithOnNextDownstream(received);
+			BufferPredicateSubscriber<AtomicInteger, ArrayList<AtomicInteger>> subscriber = new BufferPredicateSubscriber<>(
+					downstream, new ArrayList<>(), ArrayList::new, predicate, mode);
+			subscriber.onSubscribe(Operators.emptySubscription());
+
+			subscriber.onNext(value1);
+
+			if (i % 2 == 0) {
+				RaceTestUtils.race(subscriber::cancel, () -> subscriber.onNext(value2));
+			}
+			else {
+				RaceTestUtils.race(() -> subscriber.onNext(value2), subscriber::cancel);
+			}
+
+			Assertions.assertThat(received.get() + (value1.get() + 1) + (value2.get() + 2))
+					.as("received " + received.get() + ", val1 state " + value1.get() + ", val2 state " + value2.get())
+					.withFailMessage("\nExpecting values to be either received or discarded in round %s/%s (%s)", i, ROUNDS, i % 2 == 0 ? "cancel/onNext" : "onNext/cancel")
+					.isEqualTo(2);
+		}
+	}
+
+	@Test
+	public void discardRaceWithOnNext_bufferUntilWithMatch() {
+		final int ROUNDS = 100_000;
+		Predicate<AtomicInteger> predicate = v -> v.get() == -2;
+		FluxBufferPredicate.Mode mode = FluxBufferPredicate.Mode.UNTIL;
+
+		for (int i = 0; i < ROUNDS; i++) {
+			AtomicLong received = new AtomicLong();
+			AtomicInteger value1 = new AtomicInteger(-1);
+			AtomicInteger value2 = new AtomicInteger(-2);
+
+			BaseSubscriber<ArrayList<AtomicInteger>> downstream = createDiscardRaceWithOnNextDownstream(received);
+			BufferPredicateSubscriber<AtomicInteger, ArrayList<AtomicInteger>> subscriber = new BufferPredicateSubscriber<>(
+					downstream, new ArrayList<>(), ArrayList::new, predicate, mode);
+			subscriber.onSubscribe(Operators.emptySubscription());
+
+			subscriber.onNext(value1);
+			subscriber.onNext(value1);
+
+			if (i % 2 == 0) {
+				RaceTestUtils.race(subscriber::cancel, () -> subscriber.onNext(value2));
+			}
+			else {
+				RaceTestUtils.race(() -> subscriber.onNext(value2), subscriber::cancel);
+			}
+
+			Assertions.assertThat(received.get() + (value1.get() + 1) + (value2.get() + 2))
+					.as("received " + received.get() + ", val1 state " + value1.get() + ", val2 state " + value2.get())
+					.withFailMessage("\nExpecting values to be either received or discarded in round %s/%s", i, ROUNDS)
+					.isEqualTo(3);
+		}
+	}
+
+	@Test
+	public void discardRaceWithOnNext_bufferUntilCutBeforeWithMatch() {
+		final int ROUNDS = 100_000;
+		Predicate<AtomicInteger> predicate = v -> v.get() == -2;
+		FluxBufferPredicate.Mode mode = FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE;
+
+		for (int i = 0; i < ROUNDS; i++) {
+			AtomicLong received = new AtomicLong();
+			AtomicInteger value1 = new AtomicInteger(-1);
+			AtomicInteger value2 = new AtomicInteger(-2);
+
+			BaseSubscriber<ArrayList<AtomicInteger>> downstream = createDiscardRaceWithOnNextDownstream(received);
+			BufferPredicateSubscriber<AtomicInteger, ArrayList<AtomicInteger>> subscriber = new BufferPredicateSubscriber<>(
+					downstream, new ArrayList<>(), ArrayList::new, predicate, mode);
+			subscriber.onSubscribe(Operators.emptySubscription());
+
+			subscriber.onNext(value1);
+
+			if (i % 2 == 0) {
+				RaceTestUtils.race(subscriber::cancel, () -> subscriber.onNext(value2));
+			}
+			else {
+				RaceTestUtils.race(() -> subscriber.onNext(value2), subscriber::cancel);
+			}
+
+			Assertions.assertThat(received.get() + (value1.get() + 1) + (value2.get() + 2))
+					.as("received " + received.get() + ", val1 state " + value1.get() + ", val2 state " + value2.get())
+					.withFailMessage("\nExpecting values to be either received or discarded in round %s/%s", i, ROUNDS)
+					.isEqualTo(2);
+		}
+	}
+
+	@Test
+	public void discardRaceWithOnNext_bufferWhileWithNoMatch() {
+		final int ROUNDS = 100_000;
+		Predicate<AtomicInteger> predicate = v -> v.get() != -2;
+		FluxBufferPredicate.Mode mode = FluxBufferPredicate.Mode.WHILE;
+
+		for (int i = 0; i < ROUNDS; i++) {
+			AtomicLong received = new AtomicLong();
+			AtomicInteger value1 = new AtomicInteger(-1);
+			AtomicInteger value2 = new AtomicInteger(-2);
+
+			BaseSubscriber<ArrayList<AtomicInteger>> downstream = createDiscardRaceWithOnNextDownstream(received);
+			BufferPredicateSubscriber<AtomicInteger, ArrayList<AtomicInteger>> subscriber = new BufferPredicateSubscriber<>(
+					downstream, new ArrayList<>(), ArrayList::new, predicate, mode);
+			subscriber.onSubscribe(Operators.emptySubscription());
+
+			subscriber.onNext(value1);
+
+			if (i % 2 == 0) {
+				RaceTestUtils.race(subscriber::cancel, () -> subscriber.onNext(value2));
+			}
+			else {
+				RaceTestUtils.race(() -> subscriber.onNext(value2), subscriber::cancel);
+			}
+
+			Assertions.assertThat(value2).as("trigger value not discarded").hasValue(-2);
+
+			Assertions.assertThat(received.get() + (value1.get() + 1))
+					.as("received " + received.get() + ", val1 state " + value1.get())
+					.withFailMessage("\nExpecting non-trigger values to be either received or discarded in round %s/%s", i, ROUNDS)
+					.isEqualTo(1);
+		}
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1937
