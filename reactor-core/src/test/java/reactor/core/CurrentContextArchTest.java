@@ -26,17 +26,24 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.junit.Test;
 
+import reactor.core.publisher.FluxProcessor;
+
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
-public class CoreSubscriberArchTest {
+public class CurrentContextArchTest {
 
-	static JavaClasses classes = new ClassFileImporter()
+	static JavaClasses CORE_SUBSCRIBER_CLASSES = new ClassFileImporter()
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
 			.importPackagesOf(CoreSubscriber.class);
 
+	static JavaClasses FLUXPROCESSOR_CLASSES = new ClassFileImporter()
+			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
+			.importPackagesOf(FluxProcessor.class);
+
 	@Test
-	public void shouldNotUseDefaultCurrentContext() {
+	public void corePublishersShouldNotUseDefaultCurrentContext() {
 		classes()
 				.that().implement(CoreSubscriber.class)
 				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
@@ -58,6 +65,35 @@ public class CoreSubscriberArchTest {
 						}
 					}
 				})
-				.check(classes);
+				.check(CORE_SUBSCRIBER_CLASSES);
+	}
+
+	@Test
+	public void fluxProcessorsShouldNotUseDefaultCurrentContext() {
+		classes()
+				.that().areAssignableTo(FluxProcessor.class)
+				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
+				.should(new ArchCondition<JavaClass>("not use the default currentContext()") {
+					@Override
+					public void check(JavaClass item, ConditionEvents events) {
+						boolean overridesMethod = item
+								.getAllMethods()
+								.stream()
+								.filter(it -> "currentContext".equals(it.getName()))
+								.filter(it -> it.getRawParameterTypes().isEmpty())
+								//method declared in a class derived from FluxProcessor but NOT FluxProcessor itself !
+								.anyMatch(it -> it.getOwner().isAssignableTo(FluxProcessor.class)
+										&& !it.getOwner().isEquivalentTo(FluxProcessor.class));
+
+
+						if (!overridesMethod) {
+							events.add(SimpleConditionEvent.violated(
+									item,
+									item.getFullName() + item.getSourceCodeLocation() + ": FluxProcessor#currentContext() is not overridden"
+							));
+						}
+					}
+				})
+				.check(FLUXPROCESSOR_CLASSES);
 	}
 }

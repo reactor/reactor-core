@@ -43,6 +43,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -922,5 +923,19 @@ public class EmitterProcessorTest {
 
 		processor.remove(inner);
 		assertThat(processor.subscribers).as("post remove inner").isEmpty();
+	}
+
+	@Test
+	public void currentContextDelegatesToFirstSubscriber() {
+		AssertSubscriber<Object> testSubscriber1 = new AssertSubscriber<>(Context.of("key", "value1"));
+		AssertSubscriber<Object> testSubscriber2 = new AssertSubscriber<>(Context.of("key", "value2"));
+
+		EmitterProcessor<Object> emitterProcessor = new EmitterProcessor<>(false, 1);
+		emitterProcessor.subscribe(testSubscriber1);
+		emitterProcessor.subscribe(testSubscriber2);
+
+		Context processorContext = emitterProcessor.currentContext();
+
+		assertThat(processorContext.getOrDefault("key", "EMPTY")).isEqualTo("value1");
 	}
 }
