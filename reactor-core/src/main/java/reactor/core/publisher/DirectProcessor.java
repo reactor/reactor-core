@@ -28,6 +28,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
@@ -119,6 +120,11 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 	@Override
 	public int getPrefetch() {
 		return Integer.MAX_VALUE;
+	}
+
+	@Override
+	public Context currentContext() {
+		return Operators.multiSubscribersContext(subscribers);
 	}
 
 	@Override
