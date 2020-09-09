@@ -354,13 +354,58 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return onAssembly(new MonoFirst<>(monos));
 	}
 
+	/**
+	 * Pick the first {@link Mono} to emit any value and replay that signal,
+	 * effectively behaving like the fastest of these competing sources.
+	 * <p>
+	 * // TODO replace the img
+	 * <p>
+	 * @param monos The deferred monos to use.
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 */
 	@SafeVarargs
 	public static <T> Mono<T> firstValue(Mono<? extends T>... monos) {
 		return onAssembly(new MonoFirstValue<>(monos));
 	}
 
+	/**
+	 * Pick the first {@link Mono} to emit any value and replay that signal,
+	 * effectively behaving like the fastest of these competing sources.
+	 * <p>
+	 * // TODO replace the img
+	 * <p>
+	 * @param monos The deferred monos to use.
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 */
 	public static <T> Mono<T> firstValue(Iterable<? extends Mono<? extends T>> monos) {
 		return onAssembly(new MonoFirstValue<>(monos));
+	}
+
+	/**
+	 * Pick the first {@link Mono} to emit any value and replay that signal,
+	 * effectively behaving like the fastest of these competing sources.
+	 * <p>
+	 * // TODO replace the img
+	 * <p>
+	 * @param mono the first deferred mono to use
+	 * @param other the second deferred mono to use
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 */
+	public static <T> Mono<T> firstValue(Mono<? extends T> mono, Mono<? extends T> other) {
+		if (mono instanceof MonoFirstValue) {
+			MonoFirstValue<T> a = (MonoFirstValue<T>) mono;
+			Mono<T> result =  a.orAdditionalSource(other);
+			if (result != null) {
+				return result;
+			}
+		}
+		return onAssembly(new MonoFirstValue<>(mono, other));
 	}
 
 	/**
@@ -3090,17 +3135,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 		return first(this, other);
 	}
 
-	public final Mono<T> orValue(Mono<? extends T> other) {
-		if (this instanceof MonoFirstValue) {
-			MonoFirstValue<T> a = (MonoFirstValue<T>) this;
-			Mono<T> result =  a.orAdditionalSource(other);
-			if (result != null) {
-				return result;
-			}
-		}
-		return firstValue(this, other);
-	}
-
 	/**
 	 * Evaluate the emitted value against the given {@link Class} type. If the
 	 * value matches the type, it is passed into the new {@link Mono}. Otherwise the
@@ -3278,7 +3312,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see Flux#onErrorResume
 	 */
 	public final Mono<T> onErrorResume(Function<? super Throwable, ? extends Mono<? extends
-			T>> fallback) {		return onAssembly(new MonoOnErrorResume<>(this, fallback));
+			T>> fallback) {
+		return onAssembly(new MonoOnErrorResume<>(this, fallback));
 	}
 
 	/**

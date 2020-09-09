@@ -162,6 +162,21 @@ public class FluxFirstValuesTest {
 	}
 
 	@Test
+	public void pairWise() {
+		Flux<Integer> firstValues = Flux.firstValues(Flux.just(1), Mono.just(2));
+		Flux<Integer> orValues = Flux.firstValues(firstValues, Mono.just(3));
+
+		assertThat(orValues).isInstanceOf(FluxFirstValues.class);
+		assertThat(((FluxFirstValues<Integer>) orValues).array)
+				.isNotNull()
+				.hasSize(3);
+
+		orValues.subscribeWith(AssertSubscriber.create())
+				.assertValues(1)
+				.assertComplete();
+	}
+
+	@Test
 	public void scanOperator() {
 		@SuppressWarnings("unchecked")
 		FluxFirstValues<Integer> test = new FluxFirstValues<>(Flux.range(1, 10), Flux.range(11, 10));

@@ -15,7 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Assert;
+import org.junit.Assert.*;
 import org.junit.jupiter.api.Test;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -158,40 +158,24 @@ class MonoFirstValueTest {
 	}
 
 	@Test
+	public void pairWise() {
+		Mono<Integer> firstValue = Mono.firstValue(Mono.just(1), Mono.just(2));
+		Mono<Integer> orValue = Mono.firstValue(firstValue, Mono.just(3));
+
+		assertThat(orValue).isInstanceOf(MonoFirstValue.class);
+		assertThat(((MonoFirstValue<Integer>) orValue).array)
+				.isNotNull()
+				.hasSize(3);
+
+		orValue.subscribeWith(AssertSubscriber.create())
+				.assertValues(1)
+				.assertComplete();
+	}
+
+	@Test
 	public void scanOperator() {
 		MonoFirstValue<Integer> test = new MonoFirstValue<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
-
-	@Test
-	public void pairWise() {
-		Mono<Integer> f = Mono.firstValue(Mono.just(1), Mono.just(2))
-				.orValue(Mono.just(3));
-
-		Assert.assertTrue(f instanceof MonoFirst);
-		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
-		Assert.assertTrue(s.array != null);
-		Assert.assertTrue(s.array.length == 3);
-
-		f.subscribeWith(AssertSubscriber.create())
-				.assertValues(1)
-				.assertComplete();
-	}
-
-	@Test
-	public void pairWiseIterable() {
-		Mono<Integer> f = Mono.first(Arrays.asList(Mono.just(1), Mono.just(2)))
-				.or(Mono.just(3));
-
-		Assert.assertTrue(f instanceof MonoFirst);
-		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
-		Assert.assertTrue(s.array != null);
-		Assert.assertTrue(s.array.length == 2);
-
-		f.subscribeWith(AssertSubscriber.create())
-				.assertValues(1)
-				.assertComplete();
-	}
-
 }
