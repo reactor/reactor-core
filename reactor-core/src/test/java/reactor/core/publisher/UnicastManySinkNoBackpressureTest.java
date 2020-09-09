@@ -19,7 +19,6 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
-import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
 
@@ -80,6 +79,24 @@ class UnicastManySinkNoBackpressureTest {
 		StepVerifier.create(sink.asFlux(), 0).thenCancel().verify();
 
 		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_CANCELLED);
+	}
+
+	@Test
+	void completed() {
+		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		sink.asFlux().subscribe();
+		sink.tryEmitComplete().orThrow();
+
+		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_TERMINATED);
+	}
+
+	@Test
+	void errored() {
+		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		sink.asFlux().subscribe(v -> {}, e -> {});
+		sink.tryEmitError(new IllegalArgumentException("boom")).orThrow();
+
+		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_TERMINATED);
 	}
 
 	@Test
