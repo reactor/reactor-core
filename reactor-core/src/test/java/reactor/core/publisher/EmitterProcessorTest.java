@@ -35,6 +35,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -858,5 +859,51 @@ public class EmitterProcessorTest {
 		Context processorContext = emitterProcessor.currentContext();
 
 		assertThat(processorContext.getOrDefault("key", "EMPTY")).isEqualTo("value1");
+	}
+
+	@Test
+	public void tryEmitNextWithNoSubscriberFailsOnlyIfNoCapacity() {
+		EmitterProcessor<Integer> emitterProcessor = EmitterProcessor.create(1);
+
+		assertThat(emitterProcessor.tryEmitNext(1)).isEqualTo(Sinks.Emission.OK);
+		assertThat(emitterProcessor.tryEmitNext(2)).isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
+
+		StepVerifier.create(emitterProcessor)
+		            .expectNext(1)
+		            .then(emitterProcessor::emitComplete)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void tryEmitNextWithNoSubscriberFailsIfNoCapacityAndAllSubscribersCancelledAndNoAutoTermination() {
+		//in case of autoCancel, removing all subscribers results in TERMINATED rather than EMPTY
+		EmitterProcessor<Integer> emitterProcessor = EmitterProcessor.create(1, false);
+		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
+
+		emitterProcessor.subscribe(testSubscriber);
+
+		assertThat(emitterProcessor.tryEmitNext(1)).as("emit 1, with subscriber").isEqualTo(Sinks.Emission.OK);
+		assertThat(emitterProcessor.tryEmitNext(2)).as("emit 2, with subscriber").isEqualTo(Sinks.Emission.OK);
+		assertThat(emitterProcessor.tryEmitNext(3)).as("emit 3, with subscriber").isEqualTo(Sinks.Emission.OK);
+
+		testSubscriber.cancel();
+
+		assertThat(emitterProcessor.tryEmitNext(4)).as("emit 4, without subscriber, buffered").isEqualTo(Sinks.Emission.OK);
+		assertThat(emitterProcessor.tryEmitNext(5)).as("emit 5, without subscriber").isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
+	}
+
+	@Test
+	public void emitNextWithNoSubscriberNoCapacityKeepsSinkOpenWithBuffer() {
+		EmitterProcessor<Integer> emitterProcessor = EmitterProcessor.create(1, false);
+		//fill the buffer
+		assertThat(emitterProcessor.tryEmitNext(1)).as("filling buffer").isEqualTo(Sinks.Emission.OK);
+		//test proper
+		//this is "discarded" but no hook can be invoked, so effectively dropped on the floor
+		emitterProcessor.emitNext(2);
+
+		StepVerifier.create(emitterProcessor)
+		            .expectNext(1)
+		            .expectTimeout(Duration.ofSeconds(1))
+		            .verify();
 	}
 }

@@ -518,6 +518,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			case FAIL_TERMINATED:
 				Operators.onNextDroppedMulticast(value, subscribers);
 				break;
+			case FAIL_ZERO_SUBSCRIBER: //cannot happen in ReplayProcessor
+				throw new IllegalStateException("FAIL_ZERO_SUBSCRIBER shouldn't happen in ReplayProcessor");
 			case OK:
 				break;
 		}
@@ -530,6 +532,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			return Emission.FAIL_TERMINATED;
 		}
 
+		//note: ReplayProcessor can so far ALWAYS buffer the element, no FAIL_ZERO_SUBSCRIBER here
 		b.add(t);
 		for (FluxReplay.ReplaySubscription<T> rs : subscribers) {
 			b.replay(rs);
