@@ -85,10 +85,8 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Ma
 
 	@Override
 	public void cancel() {
-		switch (STATE.getAndSet(this, State.CANCELLED)) {
-			case SUBSCRIBED:
-				actual = null;
-				break;
+		if (STATE.getAndSet(this, State.CANCELLED) == State.SUBSCRIBED) {
+			actual = null;
 		}
 	}
 
@@ -156,20 +154,25 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Ma
 	@Override
 	public Emission tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t");
-
-		switch (state) {
-			case INITIAL:
-				return Emission.FAIL_ZERO_SUBSCRIBER;
-			case SUBSCRIBED:
-				actual.onError(t);
-				actual = null;
-				return Emission.OK;
-			case TERMINATED:
-				return Emission.FAIL_TERMINATED;
-			case CANCELLED:
-				return Emission.FAIL_CANCELLED;
-			default:
-				throw new IllegalStateException();
+		for(;;) { //for the benefit of retrying SUBSCRIBED
+			State s = this.state;
+			switch (s) {
+				case INITIAL:
+					return Emission.FAIL_ZERO_SUBSCRIBER;
+				case SUBSCRIBED:
+					if (STATE.compareAndSet(this, s, State.TERMINATED)) {
+						actual.onError(t);
+						actual = null;
+						return Emission.OK;
+					}
+					continue;
+				case TERMINATED:
+					return Emission.FAIL_TERMINATED;
+				case CANCELLED:
+					return Emission.FAIL_CANCELLED;
+				default:
+					throw new IllegalStateException();
+			}
 		}
 	}
 
@@ -182,19 +185,25 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Ma
 
 	@Override
 	public Emission tryEmitComplete() {
-		switch (state) {
-			case INITIAL:
-				return Emission.FAIL_ZERO_SUBSCRIBER;
-			case SUBSCRIBED:
-				actual.onComplete();
-				actual = null;
-				return Emission.OK;
-			case TERMINATED:
-				return Emission.FAIL_TERMINATED;
-			case CANCELLED:
-				return Emission.FAIL_CANCELLED;
-			default:
-				throw new IllegalStateException();
+		for (;;) { //for the benefit of retrying SUBSCRIBED
+			State s = this.state;
+			switch (s) {
+				case INITIAL:
+					return Emission.FAIL_ZERO_SUBSCRIBER;
+				case SUBSCRIBED:
+					if (STATE.compareAndSet(this, s, State.TERMINATED)) {
+						actual.onComplete();
+						actual = null;
+						return Emission.OK;
+					}
+					continue;
+				case TERMINATED:
+					return Emission.FAIL_TERMINATED;
+				case CANCELLED:
+					return Emission.FAIL_CANCELLED;
+				default:
+					throw new IllegalStateException();
+			}
 		}
 	}
 }
