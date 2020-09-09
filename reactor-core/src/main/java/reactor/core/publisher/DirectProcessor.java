@@ -162,7 +162,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 		}
 
 		for (DirectInner<?> s : inners) {
-			s.onComplete();
+			s.emitComplete();
 		}
 		return Emission.OK;
 	}
@@ -193,7 +193,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 
 		error = t;
 		for (DirectInner<?> s : inners) {
-			s.onError(t);
+			s.emitError(t);
 		}
 		return Emission.OK;
 	}
@@ -232,10 +232,11 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 			return Emission.FAIL_TERMINATED;
 		}
 
+		boolean atLeastOneEmit = false;
 		for (DirectInner<T> s : inners) {
-			s.onNext(t);
+			atLeastOneEmit = atLeastOneEmit || s.tryEmitNext(t);
 		}
-		return Emission.OK;
+		return atLeastOneEmit ? Emission.OK : Emission.FAIL_OVERFLOW;
 	}
 
 	@Override
@@ -409,24 +410,25 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 			return actual;
 		}
 
-		void onNext(T value) {
+		boolean tryEmitNext(T value) {
 			if (requested != 0L) {
 				actual.onNext(value);
 				if (requested != Long.MAX_VALUE) {
 					REQUESTED.decrementAndGet(this);
 				}
-				return;
+				return true;
 			}
 			parent.remove(this);
 			actual.onError(Exceptions.failWithOverflow(
 					"Can't deliver value due to lack of requests"));
+			return false;
 		}
 
-		void onError(Throwable e) {
+		void emitError(Throwable e) {
 			actual.onError(e);
 		}
 
-		void onComplete() {
+		void emitComplete() {
 			actual.onComplete();
 		}
 
