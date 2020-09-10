@@ -355,15 +355,22 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Pick the first {@link Mono} to emit any value and replay that signal,
-	 * effectively behaving like the fastest of these competing sources.
+	 * Pick the first {@link Mono} source to emit any value and replay that signal,
+	 * effectively behaving like the source that first emits an
+	 * {@link Subscriber#onNext(Object) onNext}.
+	 *
 	 * <p>
 	 * // TODO replace the img
 	 * <p>
-	 * @param monos The deferred monos to use.
-	 * @param <T> The type of the function result.
+	 * Valued sources always "win" over an empty source (one that only emits onComplete)
+	 * or a failing source (one that only emits onError).
+	 * Note that like in {@link #first(Mono[])}, an infinite source can be problematic
+	 * if no other source emits onNext.
 	 *
-	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 * @param monos The competing source monos
+	 * @param <T> The type of the element in the sources and the resulting mono
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
 	@SafeVarargs
 	public static <T> Mono<T> firstValue(Mono<? extends T>... monos) {
@@ -371,31 +378,45 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Pick the first {@link Mono} to emit any value and replay that signal,
-	 * effectively behaving like the fastest of these competing sources.
+	 * Pick the first {@link Mono} source to emit any value and replay that signal,
+	 * effectively behaving like the source that first emits an
+	 * {@link Subscriber#onNext(Object) onNext}.
+	 *
 	 * <p>
 	 * // TODO replace the img
 	 * <p>
-	 * @param monos The deferred monos to use.
-	 * @param <T> The type of the function result.
+	 * Valued sources always "win" over an empty source (one that only emits onComplete)
+	 * or a failing source (one that only emits onError).
+	 * Note that like in {@link #first(Iterable)}, an infinite source can be problematic
+	 * if no other source emits onNext.
 	 *
-	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 * @param monos An {@link Iterable} of the competing source monos
+	 * @param <T> The type of the element in the sources and the resulting mono
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
 	public static <T> Mono<T> firstValue(Iterable<? extends Mono<? extends T>> monos) {
 		return onAssembly(new MonoFirstValue<>(monos));
 	}
 
 	/**
-	 * Pick the first {@link Mono} to emit any value and replay that signal,
-	 * effectively behaving like the fastest of these competing sources.
+	 * Pick the first {@link Mono} source to emit any value and replay that signal,
+	 * effectively behaving like the source that first emits an
+	 * {@link Subscriber#onNext(Object) onNext}.
+	 *
 	 * <p>
 	 * // TODO replace the img
 	 * <p>
-	 * @param mono the first deferred mono to use
-	 * @param other the second deferred mono to use
-	 * @param <T> The type of the function result.
+	 * Valued sources always "win" over an empty source (one that only emits onComplete)
+	 * or a failing source (one that only emits onError).
+	 * Note that like in {@link #first(Mono[])}, an infinite source can be problematic
+	 * if no other source emits onNext.
 	 *
-	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 * @param mono the first competing source {@link Mono}
+	 * @param other the other competing source {@link Mono}
+	 * @param <T> The type of the element in the sources and the resulting mono
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
 	public static <T> Mono<T> firstValue(Mono<? extends T> mono, Mono<? extends T> other) {
 		if (mono instanceof MonoFirstValue) {

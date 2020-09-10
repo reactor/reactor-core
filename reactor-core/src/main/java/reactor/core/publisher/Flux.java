@@ -945,13 +945,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Pick the first {@link Publisher} to emit any value and replay all values
-	 * from that {@link Publisher}, effectively behaving like the
-	 * fastest of these competing sources.
+	 * Pick the first {@link Publisher} to emit any value and replay all elements
+	 * from that {@link Publisher}, effectively behaving like the source that first
+	 * emits an {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
 	 * // TODO replace the img
 	 * <p>
+	 * Valued sources always "win" over an empty source (one that only emits onComplete)
+	 * or a failing source (one that only emits onError).
+	 * Note that like in {@link #first(Publisher[])}, an infinite source can be problematic
+	 * if no other source emits onNext.
+	 *
 	 * @param sources The competing source publishers
 	 * @param <I> The type of values in both source and output sequences
 	 *
@@ -964,13 +969,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Pick the first {@link Publisher} to emit any value and replay all values
-	 * from that {@link Publisher}, effectively behaving like the
-	 * fastest of these competing sources.
+	 * from that {@link Publisher}, effectively behaving like the source that first
+	 * emits an {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
 	 * // TODO replace the img
 	 * <p>
-	 * @param sources The competing source publishers
+	 * Valued sources always "win" over an empty source (one that only emits onComplete)
+	 * or a failing source (one that only emits onError).
+	 * Note that like in {@link #first(Iterable)}, an infinite source can be problematic
+	 * if no other source emits onNext.
+	 *
+	 * @param sources An {@link Iterable} of the competing source publishers
 	 * @param <I> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
@@ -981,14 +991,19 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Pick the first {@link Publisher} to emit any value and replay all values
-	 * from that {@link Publisher}, effectively behaving like the
-	 * fastest of these competing sources.
+	 * from that {@link Publisher}, effectively behaving like the source that first
+	 * emits an {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
 	 * // TODO replace the img
 	 * <p>
-	 * @param source The first deferred source to use
-	 * @oaram other The second deferred source to use
+	 * Valued sources always "win" over an empty source (one that only emits onComplete)
+	 * or a failing source (one that only emits onError).
+	 * Note that like in {@link #first(Publisher[])}, an infinite source can be problematic
+	 * if no other source emits onNext.
+	 *
+	 * @param source The first competing source publisher
+	 * @param other The other competing source publisher
 	 * @param <I> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
