@@ -54,6 +54,8 @@ import static org.junit.Assert.assertThat;
 
 public class FluxBufferPredicateTest {
 
+	private static final int ROUNDS = 10_000; //increase this number locally if you want better confidence that no race condition occurs
+
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntil() {
@@ -692,7 +694,7 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void requestRaceWithOnNextLoops() {
-		for (int i = 0; i < 100_000; i++) {
+		for (int i = 0; i < ROUNDS; i++) {
 			requestRaceWithOnNext();
 			onNextRaceWithRequest();
 			onNextRaceWithRequestOfTwo();
@@ -934,7 +936,6 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void discardRaceWithOnNext_bufferAdds() {
-		final int ROUNDS = 100_000;
 		Predicate<AtomicInteger> predicate = v -> v.get() == 100;
 		FluxBufferPredicate.Mode mode = FluxBufferPredicate.Mode.UNTIL;
 
@@ -966,7 +967,6 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void discardRaceWithOnNext_bufferUntilWithMatch() {
-		final int ROUNDS = 100_000;
 		Predicate<AtomicInteger> predicate = v -> v.get() == -2;
 		FluxBufferPredicate.Mode mode = FluxBufferPredicate.Mode.UNTIL;
 
@@ -999,7 +999,6 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void discardRaceWithOnNext_bufferUntilCutBeforeWithMatch() {
-		final int ROUNDS = 100_000;
 		Predicate<AtomicInteger> predicate = v -> v.get() == -2;
 		FluxBufferPredicate.Mode mode = FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE;
 
@@ -1031,7 +1030,6 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void discardRaceWithOnNext_bufferWhileWithNoMatch() {
-		final int ROUNDS = 100_000;
 		Predicate<AtomicInteger> predicate = v -> v.get() != -2;
 		FluxBufferPredicate.Mode mode = FluxBufferPredicate.Mode.WHILE;
 
