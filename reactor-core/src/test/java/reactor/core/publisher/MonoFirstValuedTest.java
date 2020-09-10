@@ -73,8 +73,13 @@ class MonoFirstValuedTest {
 	}
 
 	@Test
+	public void firstNull() {
+		assertThrows(NullPointerException.class, () -> Mono.firstValued(null, Mono.just(1), Mono.just(2)));
+	}
+
+	@Test
 	public void arrayNull() {
-		assertThrows(NullPointerException.class, () -> Mono.firstValued((Mono<Integer>[]) null));
+		assertThrows(NullPointerException.class, () -> Mono.firstValued(Mono.just(1),(Mono<Integer>[]) null));
 	}
 
 	@Test
@@ -110,7 +115,7 @@ class MonoFirstValuedTest {
 	public void singleArrayNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Mono.firstValued((Mono<Object>) null)
+		Mono.firstValued(Mono.empty(), (Mono<Object>) null)
 				.subscribe(ts);
 
 		ts.assertNoValues()
@@ -169,6 +174,17 @@ class MonoFirstValuedTest {
 		orValue.subscribeWith(AssertSubscriber.create())
 				.assertValues(1)
 				.assertComplete();
+	}
+
+	@Test
+	public void combineMoreThanOneAdditionalSource() {
+		Mono<Integer> step1 = Mono.firstValued(Mono.just(1), Mono.just(2));
+		Mono<Integer> step2 = Mono.firstValued(step1, Mono.just(3), Mono.just(4));
+
+		assertThat(step2).isInstanceOfSatisfying(MonoFirstValued.class,
+				mfv -> assertThat(mfv.array)
+						.hasSize(4)
+						.doesNotContainNull());
 	}
 
 	@Test

@@ -41,15 +41,57 @@ final class FluxFirstValued<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
-	@SafeVarargs
-	FluxFirstValued(Publisher<? extends T>... array) {
+	private FluxFirstValued(Publisher<? extends T>[] array) {
 		this.array = Objects.requireNonNull(array, "array");
+		this.iterable = null;
+	}
+
+	@SafeVarargs
+	FluxFirstValued(Publisher<? extends T> first, Publisher<? extends T>... others) {
+		Objects.requireNonNull(first, "first");
+		Objects.requireNonNull(others, "others");
+		@SuppressWarnings("unchecked")
+		Publisher<? extends T>[] newArray = new Publisher[others.length + 1];
+		newArray[0] = first;
+		System.arraycopy(others, 0, newArray, 1, others.length);
+		this.array = newArray;
 		this.iterable = null;
 	}
 
 	FluxFirstValued(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
+	}
+
+	/**
+	 * Returns a new instance which has the additional sources to be flattened together with
+	 * the current array of sources.
+	 * <p>
+	 * This operation doesn't change the current {@link FluxFirstValued} instance.
+	 *
+	 * @param others the new sources to merge with the current sources
+	 *
+	 * @return the new {@link FluxFirstValued} instance or null if new sources cannot be added (backed by an Iterable)
+	 */
+	@SafeVarargs
+	@Nullable
+	final FluxFirstValued<T> firstValuedAdditionalSources(Publisher<? extends T>... others) {
+		Objects.requireNonNull(others, "others");
+		if (others.length == 0) {
+			return this;
+		}
+		if (array == null) {
+			//iterable mode, returning null to convey 2 nested operators are needed here
+			return null;
+		}
+		int currentSize = array.length;
+		int otherSize = others.length;
+		@SuppressWarnings("unchecked")
+		Publisher<? extends T>[] newArray = new Publisher[currentSize + otherSize];
+		System.arraycopy(array, 0, newArray, 0, currentSize);
+		System.arraycopy(others, 0, newArray, currentSize, otherSize);
+
+		return new FluxFirstValued<>(newArray);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -130,30 +172,6 @@ final class FluxFirstValued<T> extends Flux<T> implements SourceProducer<T> {
 		RaceValuesCoordinator<T> coordinator = new RaceValuesCoordinator<>(n);
 
 		coordinator.subscribe(a, actual);
-	}
-
-	/**
-	 * Returns a new instance which has the additional source to be amb'd together with
-	 * the current array of sources.
-	 * <p>
-	 * This operation doesn't change the current FluxFirstValueEmitting instance.
-	 *
-	 * @param source the new source to merge with the others
-	 *
-	 * @return the new FluxFirstValueEmitting instance or null if the Amb runs with an Iterable
-	 */
-	@Nullable
-	FluxFirstValued<T> orAdditionalSource(Publisher<? extends T> source) {
-		if (array != null) {
-			int n = array.length;
-			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
-					new Publisher[n + 1];
-			System.arraycopy(array, 0, newArray, 0, n);
-			newArray[n] = source;
-
-			return new FluxFirstValued<>(newArray);
-		}
-		return null;
 	}
 
 	@Override

@@ -364,29 +364,6 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
-	 * Note that like in {@link #first(Mono[])}, an infinite source can be problematic
-	 * if no other source emits onNext.
-	 *
-	 * @param monos The competing source monos
-	 * @param <T> The type of the element in the sources and the resulting mono
-	 *
-	 * @return a new {@link Mono} behaving like the fastest of its sources
-	 */
-	@SafeVarargs
-	public static <T> Mono<T> firstValued(Mono<? extends T>... monos) {
-		return onAssembly(new MonoFirstValued<>(monos));
-	}
-
-	/**
-	 * Pick the first {@link Mono} source to emit any value and replay that signal,
-	 * effectively behaving like the source that first emits an
-	 * {@link Subscriber#onNext(Object) onNext}.
-	 *
-	 * <p>
-	 * // TODO replace the img
-	 * <p>
-	 * Valued sources always "win" over an empty source (one that only emits onComplete)
-	 * or a failing source (one that only emits onError).
 	 * Note that like in {@link #first(Iterable)}, an infinite source can be problematic
 	 * if no other source emits onNext.
 	 *
@@ -411,23 +388,27 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * or a failing source (one that only emits onError).
 	 * Note that like in {@link #first(Mono[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
+	 * <p>
+	 * In case the {@code first} source is already an array-based {@link #firstValued(Mono, Mono[])}
+	 * instance, nesting is avoided: a single new array-based instance is created with all the
+	 * sources from {@code first} plus all the {@code others} sources at the same level.
 	 *
-	 * @param mono the first competing source {@link Mono}
-	 * @param other the other competing source {@link Mono}
+	 * @param first the first competing source {@link Mono}
+	 * @param others the other competing sources {@link Mono}
 	 * @param <T> The type of the element in the sources and the resulting mono
 	 *
 	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
-	public static <T> Mono<T> firstValued(Mono<? extends T> mono, Mono<? extends T> other) {
-		if (mono instanceof MonoFirstValued) {
+	public static <T> Mono<T> firstValued(Mono<? extends T> first, Mono<? extends T>... others) {
+		if (first instanceof MonoFirstValued) {
 			@SuppressWarnings("unchecked")
-			MonoFirstValued<T> a = (MonoFirstValued<T>) mono;
-			Mono<T> result =  a.orAdditionalSource(other);
+			MonoFirstValued<T> a = (MonoFirstValued<T>) first;
+			Mono<T> result =  a.firstValuedAdditionalSources(others);
 			if (result != null) {
 				return result;
 			}
 		}
-		return onAssembly(new MonoFirstValued<>(mono, other));
+		return onAssembly(new MonoFirstValued<>(first, others));
 	}
 
 	/**

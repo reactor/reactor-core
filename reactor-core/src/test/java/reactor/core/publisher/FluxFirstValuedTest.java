@@ -22,6 +22,7 @@ import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -30,7 +31,6 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FluxFirstValuedTest {
 
@@ -76,10 +76,14 @@ public class FluxFirstValuedTest {
 				.verify();
 	}
 
+	@Test
+	public void firstNull() {
+		assertThrows(NullPointerException.class, () -> Flux.firstValued(null, Flux.just(1), Flux.just(2)));
+	}
 
 	@Test
 	public void arrayNull() {
-		assertThrows(NullPointerException.class, () -> Flux.firstValued((Publisher<Integer>[]) null));
+		assertThrows(NullPointerException.class, () -> Flux.firstValued(Flux.just(1), (Publisher<Integer>[]) null));
 	}
 
 	@Test
@@ -112,10 +116,10 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void singleArrayNullSource() {
+	public void singleNullSourceInVararg() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.firstValued((Publisher<Object>) null)
+		Flux.firstValued(Mono.empty(), (Publisher<Object>) null)
 				.subscribe(ts);
 
 		ts.assertNoValues()
@@ -174,6 +178,17 @@ public class FluxFirstValuedTest {
 		orValues.subscribeWith(AssertSubscriber.create())
 				.assertValues(1)
 				.assertComplete();
+	}
+
+	@Test
+	public void combineMoreThanOneAdditionalSource() {
+		Flux<Integer> step1 = Flux.firstValued(Flux.just(1), Mono.just(2));
+		Flux<Integer> step2 = Flux.firstValued(step1, Flux.just(3), Mono.just(4));
+
+		assertThat(step2).isInstanceOfSatisfying(FluxFirstValued.class,
+				ffv -> assertThat(ffv.array)
+						.hasSize(4)
+						.doesNotContainNull());
 	}
 
 	@Test

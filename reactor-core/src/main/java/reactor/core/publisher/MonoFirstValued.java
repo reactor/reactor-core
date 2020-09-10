@@ -28,9 +28,19 @@ final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
 
 	final Iterable<? extends Mono<? extends T>> iterable;
 
-	@SafeVarargs
-	MonoFirstValued(Mono<? extends T>... array) {
+	private MonoFirstValued(Mono<? extends T>[] array) {
 		this.array = Objects.requireNonNull(array, "array");
+		this.iterable = null;
+	}
+
+	@SafeVarargs
+	MonoFirstValued(Mono<? extends T> first, Mono<? extends T>... others) {
+		Objects.requireNonNull(first, "first");
+		Objects.requireNonNull(others, "others");
+		@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[others.length + 1];
+		newArray[0] = first;
+		System.arraycopy(others, 0, newArray, 1, others.length);
+		this.array = newArray;
 		this.iterable = null;
 	}
 
@@ -39,17 +49,34 @@ final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
 		this.iterable = Objects.requireNonNull(iterable);
 	}
 
+	/**
+	 * Returns a new instance which has the additional sources to be flattened together with
+	 * the current array of sources.
+	 * <p>
+	 * This operation doesn't change the current {@link MonoFirstValued} instance.
+	 *
+	 * @param others the new sources to merge with the current sources
+	 *
+	 * @return the new {@link MonoFirstValued} instance or null if new sources cannot be added (backed by an Iterable)
+	 */
 	@Nullable
-	Mono<T> orAdditionalSource(Mono<? extends T> other) {
-		if (array != null) {
-			int n = array.length;
-			@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[n + 1];
-			System.arraycopy(array, 0, newArray, 0, n);
-			newArray[n] = other;
-
-			return new MonoFirstValued<>(newArray);
+	@SafeVarargs
+	final MonoFirstValued<T> firstValuedAdditionalSources(Mono<? extends T>... others) {
+		Objects.requireNonNull(others, "others");
+		if (others.length == 0) {
+			return this;
 		}
-		return null;
+		if (array == null) {
+			//iterable mode, returning null to convey 2 nested operators are needed here
+			return null;
+		}
+		int currentSize = array.length;
+		int otherSize = others.length;
+		@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[currentSize + otherSize];
+		System.arraycopy(array, 0, newArray, 0, currentSize);
+		System.arraycopy(others, 0, newArray, currentSize, otherSize);
+
+		return new MonoFirstValued<>(newArray);
 	}
 
 	@Override

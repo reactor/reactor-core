@@ -945,29 +945,6 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Pick the first {@link Publisher} to emit any value and replay all elements
-	 * from that {@link Publisher}, effectively behaving like the source that first
-	 * emits an {@link Subscriber#onNext(Object) onNext}.
-	 *
-	 * <p>
-	 * // TODO replace the img
-	 * <p>
-	 * Valued sources always "win" over an empty source (one that only emits onComplete)
-	 * or a failing source (one that only emits onError).
-	 * Note that like in {@link #first(Publisher[])}, an infinite source can be problematic
-	 * if no other source emits onNext.
-	 *
-	 * @param sources The competing source publishers
-	 * @param <I> The type of values in both source and output sequences
-	 *
-	 * @return a new {@link Flux} behaving like the fastest of its sources
-	 */
-	@SafeVarargs
-	public static <I> Flux<I> firstValued(Publisher<? extends I>... sources) {
-		return onAssembly(new FluxFirstValued<>(sources));
-	}
-
-	/**
 	 * Pick the first {@link Publisher} to emit any value and replay all values
 	 * from that {@link Publisher}, effectively behaving like the source that first
 	 * emits an {@link Subscriber#onNext(Object) onNext}.
@@ -1001,24 +978,29 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * or a failing source (one that only emits onError).
 	 * Note that like in {@link #first(Publisher[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
+	 * <p>
+	 * In case the {@code first} source is already an array-based {@link #firstValued(Publisher, Publisher[])}
+	 * instance, nesting is avoided: a single new array-based instance is created with all the
+	 * sources from {@code first} plus all the {@code others} sources at the same level.
 	 *
-	 * @param source The first competing source publisher
-	 * @param other The other competing source publisher
+	 * @param first The first competing source publisher
+	 * @param others The other competing source publishers
 	 * @param <I> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
-	public static <I> Flux<I> firstValued(Publisher<? extends I> source, Publisher<? extends I> other){
-		if (source instanceof FluxFirstValued) {
+	@SafeVarargs
+	public static <I> Flux<I> firstValued(Publisher<? extends I> first, Publisher<? extends I>... others) {
+		if (first instanceof FluxFirstValued) {
 			@SuppressWarnings("unchecked")
-			FluxFirstValued<I> orPublisher = (FluxFirstValued<I>) source;
+			FluxFirstValued<I> orPublisher = (FluxFirstValued<I>) first;
 
-			FluxFirstValued<I> result = orPublisher.orAdditionalSource(other);
+			FluxFirstValued<I> result = orPublisher.firstValuedAdditionalSources(others);
 			if (result != null) {
 				return result;
 			}
 		}
-		return onAssembly(new FluxFirstValued<>(source, other));
+		return onAssembly(new FluxFirstValued<>(first, others));
 	}
 
 	/**
