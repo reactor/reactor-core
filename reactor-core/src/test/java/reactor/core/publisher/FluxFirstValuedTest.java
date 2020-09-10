@@ -32,10 +32,10 @@ import reactor.test.subscriber.AssertSubscriber;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class FluxFirstValuedTest {
+class FluxFirstValuedTest {
 
 	@Test
-	public void firstSourceEmittingValueIsChosen() {
+	void firstSourceEmittingValueIsChosen() {
 		StepVerifier.withVirtualTime(() -> Flux.firstValued(
 				Flux.just(1, 2, 3).delayElements(Duration.ofMillis(500L)),
 				Flux.just(4, 5, 6).delayElements(Duration.ofMillis(1_000L))
@@ -46,7 +46,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void firstSourceEmittingValueIsChosenOverErrorOrCompleteEmpty() {
+	void firstSourceEmittingValueIsChosenOverErrorOrCompleteEmpty() {
 		StepVerifier.withVirtualTime(() -> Flux.firstValued(
 				Flux.just(1, 2, 3).delayElements(Duration.ofMillis(500L)),
 				Flux.error(new RuntimeException("Boom!")),
@@ -59,7 +59,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void onlyErrorOrCompleteEmptyEmitsError() {
+	void onlyErrorOrCompleteEmptyEmitsError() {
 		StepVerifier.withVirtualTime(() -> Flux.firstValued(
 				Flux.error(new RuntimeException("Boom!")),
 				Flux.empty()
@@ -77,22 +77,22 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void firstNull() {
+	void firstNull() {
 		assertThrows(NullPointerException.class, () -> Flux.firstValued(null, Flux.just(1), Flux.just(2)));
 	}
 
 	@Test
-	public void arrayNull() {
+	void arrayNull() {
 		assertThrows(NullPointerException.class, () -> Flux.firstValued(Flux.just(1), (Publisher<Integer>[]) null));
 	}
 
 	@Test
-	public void iterableNull() {
+	void iterableNull() {
 		assertThrows(NullPointerException.class, () -> Flux.firstValued((Iterable<Publisher<Integer>>) null));
 	}
 
 	@Test
-	public void requestAndCancelArePropagated() {
+	void requestAndCancelArePropagated() {
 		TestPublisher<Integer> pub1 = TestPublisher.create();
 		TestPublisher<Integer> pub2 = TestPublisher.create();
 
@@ -116,7 +116,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void singleNullSourceInVararg() {
+	void singleNullSourceInVararg() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.firstValued(Mono.empty(), (Publisher<Object>) null)
@@ -128,7 +128,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void arrayOneIsNullSource() {
+	void arrayOneIsNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.firstValued(Flux.never(), null, Flux.never())
@@ -140,7 +140,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void singleIterableNullSource() {
+	void singleIterableNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.firstValued(Arrays.asList((Publisher<Object>) null))
@@ -152,7 +152,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void iterableOneIsNullSource() {
+	void iterableOneIsNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.firstValued(Arrays.asList(Flux.never(),
@@ -166,7 +166,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void pairWise() {
+	void pairWise() {
 		Flux<Integer> firstValues = Flux.firstValued(Flux.just(1), Mono.just(2));
 		Flux<Integer> orValues = Flux.firstValued(firstValues, Mono.just(3));
 
@@ -181,7 +181,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void combineMoreThanOneAdditionalSource() {
+	void combineMoreThanOneAdditionalSource() {
 		Flux<Integer> step1 = Flux.firstValued(Flux.just(1), Mono.just(2));
 		Flux<Integer> step2 = Flux.firstValued(step1, Flux.just(3), Mono.just(4));
 
@@ -192,7 +192,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void scanOperator() {
+	void scanOperator() {
 		@SuppressWarnings("unchecked") FluxFirstValued<Integer>
 				test = new FluxFirstValued<>(Flux.range(1, 10), Flux.range(11, 10));
 
@@ -200,7 +200,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void scanSubscriber() {
+	void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
 		FluxFirstValued.RaceValuesCoordinator<String> parent = new FluxFirstValued.RaceValuesCoordinator<>(1);
@@ -217,7 +217,7 @@ public class FluxFirstValuedTest {
 	}
 
 	@Test
-	public void scanRaceCoordinator() {
+	void scanRaceCoordinator() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
 		FluxFirstValued.RaceValuesCoordinator<String> parent = new FluxFirstValued.RaceValuesCoordinator<>(1);
