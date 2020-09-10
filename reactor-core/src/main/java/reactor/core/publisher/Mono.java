@@ -374,7 +374,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	@SafeVarargs
 	public static <T> Mono<T> firstValued(Mono<? extends T>... monos) {
-		return onAssembly(new MonoFirstValue<>(monos));
+		return onAssembly(new MonoFirstValued<>(monos));
 	}
 
 	/**
@@ -396,7 +396,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
 	public static <T> Mono<T> firstValued(Iterable<? extends Mono<? extends T>> monos) {
-		return onAssembly(new MonoFirstValue<>(monos));
+		return onAssembly(new MonoFirstValued<>(monos));
 	}
 
 	/**
@@ -419,14 +419,14 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
 	public static <T> Mono<T> firstValued(Mono<? extends T> mono, Mono<? extends T> other) {
-		if (mono instanceof MonoFirstValue) {
-			MonoFirstValue<T> a = (MonoFirstValue<T>) mono;
+		if (mono instanceof MonoFirstValued) {
+			MonoFirstValued<T> a = (MonoFirstValued<T>) mono;
 			Mono<T> result =  a.orAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}
 		}
-		return onAssembly(new MonoFirstValue<>(mono, other));
+		return onAssembly(new MonoFirstValued<>(mono, other));
 	}
 
 	/**

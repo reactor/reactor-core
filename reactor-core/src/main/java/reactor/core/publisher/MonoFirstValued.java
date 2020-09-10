@@ -22,19 +22,19 @@ import reactor.util.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Objects;
 
-final class MonoFirstValue<T> extends Mono<T> implements SourceProducer<T> {
+final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
 
 	final Mono<? extends T>[] array;
 
 	final Iterable<? extends Mono<? extends T>> iterable;
 
 	@SafeVarargs
-	MonoFirstValue(Mono<? extends T>... array) {
+	MonoFirstValued(Mono<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	MonoFirstValue(Iterable<? extends Mono<? extends T>> iterable) {
+	MonoFirstValued(Iterable<? extends Mono<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -47,7 +47,7 @@ final class MonoFirstValue<T> extends Mono<T> implements SourceProducer<T> {
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = other;
 
-			return new MonoFirstValue<>(newArray);
+			return new MonoFirstValued<>(newArray);
 		}
 		return null;
 	}
@@ -131,8 +131,8 @@ final class MonoFirstValue<T> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 
-		FluxFirstValues.RaceValuesCoordinator<T> coordinator =
-				new FluxFirstValues.RaceValuesCoordinator<>(n);
+		FluxFirstValued.RaceValuesCoordinator<T> coordinator =
+				new FluxFirstValued.RaceValuesCoordinator<>(n);
 
 		coordinator.subscribe(a, actual);
 	}

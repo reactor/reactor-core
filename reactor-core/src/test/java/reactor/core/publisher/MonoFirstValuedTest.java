@@ -28,7 +28,7 @@ import java.util.NoSuchElementException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-class MonoFirstValueTest {
+class MonoFirstValuedTest {
 
 	@Test
 	public void firstSourceEmittingValueIsChosen() {
@@ -161,8 +161,8 @@ class MonoFirstValueTest {
 		Mono<Integer> firstValue = Mono.firstValued(Mono.just(1), Mono.just(2));
 		Mono<Integer> orValue = Mono.firstValued(firstValue, Mono.just(3));
 
-		assertThat(orValue).isInstanceOf(MonoFirstValue.class);
-		assertThat(((MonoFirstValue<Integer>) orValue).array)
+		assertThat(orValue).isInstanceOf(MonoFirstValued.class);
+		assertThat(((MonoFirstValued<Integer>) orValue).array)
 				.isNotNull()
 				.hasSize(3);
 
@@ -173,7 +173,7 @@ class MonoFirstValueTest {
 
 	@Test
 	public void scanOperator() {
-		MonoFirstValue<Integer> test = new MonoFirstValue<>(Mono.just(1), Mono.just(2));
+		MonoFirstValued<Integer> test = new MonoFirstValued<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

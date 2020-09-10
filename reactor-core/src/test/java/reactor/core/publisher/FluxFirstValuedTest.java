@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FluxFirstValuesTest {
+public class FluxFirstValuedTest {
 
 	@Test
 	public void firstSourceEmittingValueIsChosen() {
@@ -166,8 +166,8 @@ public class FluxFirstValuesTest {
 		Flux<Integer> firstValues = Flux.firstValued(Flux.just(1), Mono.just(2));
 		Flux<Integer> orValues = Flux.firstValued(firstValues, Mono.just(3));
 
-		assertThat(orValues).isInstanceOf(FluxFirstValues.class);
-		assertThat(((FluxFirstValues<Integer>) orValues).array)
+		assertThat(orValues).isInstanceOf(FluxFirstValued.class);
+		assertThat(((FluxFirstValued<Integer>) orValues).array)
 				.isNotNull()
 				.hasSize(3);
 
@@ -178,8 +178,8 @@ public class FluxFirstValuesTest {
 
 	@Test
 	public void scanOperator() {
-		@SuppressWarnings("unchecked")
-		FluxFirstValues<Integer> test = new FluxFirstValues<>(Flux.range(1, 10), Flux.range(11, 10));
+		@SuppressWarnings("unchecked") FluxFirstValued<Integer>
+				test = new FluxFirstValued<>(Flux.range(1, 10), Flux.range(11, 10));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
@@ -188,8 +188,8 @@ public class FluxFirstValuesTest {
 	public void scanSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
-		FluxFirstValues.RaceValuesCoordinator<String> parent = new FluxFirstValues.RaceValuesCoordinator<>(1);
-		FluxFirstValues.FirstValuesEmittingSubscriber<String> test = new FluxFirstValues.FirstValuesEmittingSubscriber<>(actual, parent, 1);
+		FluxFirstValued.RaceValuesCoordinator<String> parent = new FluxFirstValued.RaceValuesCoordinator<>(1);
+		FluxFirstValued.FirstValuesEmittingSubscriber<String> test = new FluxFirstValued.FirstValuesEmittingSubscriber<>(actual, parent, 1);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 
@@ -205,8 +205,8 @@ public class FluxFirstValuesTest {
 	public void scanRaceCoordinator() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
-		FluxFirstValues.RaceValuesCoordinator<String> parent = new FluxFirstValues.RaceValuesCoordinator<>(1);
-		FluxFirstValues.FirstValuesEmittingSubscriber<String> test = new FluxFirstValues.FirstValuesEmittingSubscriber<>(actual, parent, 1);
+		FluxFirstValued.RaceValuesCoordinator<String> parent = new FluxFirstValued.RaceValuesCoordinator<>(1);
+		FluxFirstValued.FirstValuesEmittingSubscriber<String> test = new FluxFirstValued.FirstValuesEmittingSubscriber<>(actual, parent, 1);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 

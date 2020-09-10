@@ -35,19 +35,19 @@ import java.util.stream.Stream;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstValues<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFirstValued<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<? extends T>[] array;
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
 	@SafeVarargs
-	FluxFirstValues(Publisher<? extends T>... array) {
+	FluxFirstValued(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	FluxFirstValues(Iterable<? extends Publisher<? extends T>> iterable) {
+	FluxFirstValued(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -143,7 +143,7 @@ final class FluxFirstValues<T> extends Flux<T> implements SourceProducer<T> {
 	 * @return the new FluxFirstValueEmitting instance or null if the Amb runs with an Iterable
 	 */
 	@Nullable
-	FluxFirstValues<T> orAdditionalSource(Publisher<? extends T> source) {
+	FluxFirstValued<T> orAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
@@ -151,7 +151,7 @@ final class FluxFirstValues<T> extends Flux<T> implements SourceProducer<T> {
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = source;
 
-			return new FluxFirstValues<>(newArray);
+			return new FluxFirstValued<>(newArray);
 		}
 		return null;
 	}
