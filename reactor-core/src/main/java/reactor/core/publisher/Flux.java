@@ -924,7 +924,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> first(Publisher<? extends I>... sources) {
-		return onAssembly(new FluxFirst<>(sources));
+		return onAssembly(new FluxFirstSignalling<>(sources));
 	}
 
 	/**
@@ -941,7 +941,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
 	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
-		return onAssembly(new FluxFirst<>(sources));
+		return onAssembly(new FluxFirstSignalling<>(sources));
 	}
 
 	/**
@@ -6677,10 +6677,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @see #first
 	 */
 	public final Flux<T> or(Publisher<? extends T> other) {
-		if (this instanceof FluxFirst) {
-			FluxFirst<T> orPublisher = (FluxFirst<T>) this;
+		if (this instanceof FluxFirstSignalling) {
+			FluxFirstSignalling<T> orPublisher = (FluxFirstSignalling<T>) this;
 
-			FluxFirst<T> result = orPublisher.orAdditionalSource(other);
+			FluxFirstSignalling<T> result = orPublisher.orAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}

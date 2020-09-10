@@ -30,19 +30,19 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFirst<T> extends Mono<T> implements SourceProducer<T>  {
+final class MonoFirstSignalling<T> extends Mono<T> implements SourceProducer<T>  {
 
 	final Mono<? extends T>[] array;
 
 	final Iterable<? extends Mono<? extends T>> iterable;
 
 	@SafeVarargs
-	MonoFirst(Mono<? extends T>... array) {
+	MonoFirstSignalling(Mono<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	MonoFirst(Iterable<? extends Mono<? extends T>> iterable) {
+	MonoFirstSignalling(Iterable<? extends Mono<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -55,7 +55,7 @@ final class MonoFirst<T> extends Mono<T> implements SourceProducer<T>  {
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = other;
 
-			return new MonoFirst<>(newArray);
+			return new MonoFirstSignalling<>(newArray);
 		}
 		return null;
 	}
@@ -140,8 +140,8 @@ final class MonoFirst<T> extends Mono<T> implements SourceProducer<T>  {
 			return;
 		}
 
-		FluxFirst.RaceCoordinator<T> coordinator =
-				new FluxFirst.RaceCoordinator<>(n);
+		FluxFirstSignalling.RaceCoordinator<T> coordinator =
+				new FluxFirstSignalling.RaceCoordinator<>(n);
 
 		coordinator.subscribe(a, n, actual);
 	}

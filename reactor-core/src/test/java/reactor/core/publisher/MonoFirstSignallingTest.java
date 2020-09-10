@@ -26,7 +26,7 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MonoFirstTest {
+public class MonoFirstSignallingTest {
 
 	@Test(timeout = 5000)
 	public void allEmpty() {
@@ -55,8 +55,8 @@ public class MonoFirstTest {
 		Mono<Integer> f = Mono.first(Mono.just(1), Mono.just(2))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof MonoFirst);
-		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
+		Assert.assertTrue(f instanceof MonoFirstSignalling);
+		MonoFirstSignalling<Integer> s = (MonoFirstSignalling<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 3);
 
@@ -93,8 +93,8 @@ public class MonoFirstTest {
 		Mono<Integer> f = Mono.first(Arrays.asList(Mono.just(1), Mono.just(2)))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof MonoFirst);
-		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
+		Assert.assertTrue(f instanceof MonoFirstSignalling);
+		MonoFirstSignalling<Integer> s = (MonoFirstSignalling<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 2);
 
@@ -133,8 +133,8 @@ public class MonoFirstTest {
 
 	@Test
 	public void scanOperator(){
-		@SuppressWarnings("unchecked")
-		MonoFirst<Integer> test = new MonoFirst<>(Mono.just(1), Mono.just(2));
+		@SuppressWarnings("unchecked") MonoFirstSignalling<Integer>
+				test = new MonoFirstSignalling<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

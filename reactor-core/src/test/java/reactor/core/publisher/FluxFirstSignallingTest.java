@@ -26,7 +26,7 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxFirstTest {
+public class FluxFirstSignallingTest {
 
 	@Test(expected = NullPointerException.class)
 	public void arrayNull() {
@@ -35,7 +35,7 @@ public class FluxFirstTest {
 
 	@Test(expected = NullPointerException.class)
 	public void iterableNull() {
-		new FluxFirst<>((Iterable<Publisher<Integer>>) null);
+		new FluxFirstSignalling<>((Iterable<Publisher<Integer>>) null);
 	}
 
 	@Test
@@ -143,8 +143,8 @@ public class FluxFirstTest {
 
 	@Test
 	public void scanOperator(){
-		@SuppressWarnings("unchecked")
-		FluxFirst<Integer> test = new FluxFirst<>(Flux.range(1, 10), Flux.range(11, 10));
+		@SuppressWarnings("unchecked") FluxFirstSignalling<Integer>
+				test = new FluxFirstSignalling<>(Flux.range(1, 10), Flux.range(11, 10));
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
@@ -152,8 +152,8 @@ public class FluxFirstTest {
     @Test
     public void scanSubscriber() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFirst.RaceCoordinator<String> parent = new FluxFirst.RaceCoordinator<>(1);
-        FluxFirst.FirstEmittingSubscriber<String> test = new FluxFirst.FirstEmittingSubscriber<>(actual, parent, 1);
+        FluxFirstSignalling.RaceCoordinator<String> parent = new FluxFirstSignalling.RaceCoordinator<>(1);
+        FluxFirstSignalling.FirstEmittingSubscriber<String> test = new FluxFirstSignalling.FirstEmittingSubscriber<>(actual, parent, 1);
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
 
@@ -168,8 +168,8 @@ public class FluxFirstTest {
     @Test
     public void scanRaceCoordinator() {
         CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFirst.RaceCoordinator<String> parent = new FluxFirst.RaceCoordinator<>(1);
-        FluxFirst.FirstEmittingSubscriber<String> test = new FluxFirst.FirstEmittingSubscriber<>(actual, parent, 1);
+        FluxFirstSignalling.RaceCoordinator<String> parent = new FluxFirstSignalling.RaceCoordinator<>(1);
+        FluxFirstSignalling.FirstEmittingSubscriber<String> test = new FluxFirstSignalling.FirstEmittingSubscriber<>(actual, parent, 1);
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
 

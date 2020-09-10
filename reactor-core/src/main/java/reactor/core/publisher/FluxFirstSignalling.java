@@ -34,19 +34,19 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirst<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFirstSignalling<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<? extends T>[] array;
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
 	@SafeVarargs
-	FluxFirst(Publisher<? extends T>... array) {
+	FluxFirstSignalling(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	FluxFirst(Iterable<? extends Publisher<? extends T>> iterable) {
+	FluxFirstSignalling(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -140,14 +140,14 @@ final class FluxFirst<T> extends Flux<T> implements SourceProducer<T> {
 	 * Returns a new instance which has the additional source to be amb'd together with
 	 * the current array of sources.
 	 * <p>
-	 * This operation doesn't change the current FluxFirst instance.
+	 * This operation doesn't change the current FluxFirstSignalling instance.
 	 *
 	 * @param source the new source to merge with the others
 	 *
-	 * @return the new FluxFirst instance or null if the Amb runs with an Iterable
+	 * @return the new FluxFirstSignalling instance or null if the Amb runs with an Iterable
 	 */
 	@Nullable
-	FluxFirst<T> orAdditionalSource(Publisher<? extends T> source) {
+	FluxFirstSignalling<T> orAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
@@ -155,7 +155,7 @@ final class FluxFirst<T> extends Flux<T> implements SourceProducer<T> {
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = source;
 
-			return new FluxFirst<>(newArray);
+			return new FluxFirstSignalling<>(newArray);
 		}
 		return null;
 	}

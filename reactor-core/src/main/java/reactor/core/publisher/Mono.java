@@ -335,7 +335,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	@SafeVarargs
 	public static <T> Mono<T> first(Mono<? extends T>... monos) {
-		return onAssembly(new MonoFirst<>(monos));
+		return onAssembly(new MonoFirstSignalling<>(monos));
 	}
 
 	/**
@@ -351,7 +351,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono} behaving like the fastest of its sources.
 	 */
 	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
-		return onAssembly(new MonoFirst<>(monos));
+		return onAssembly(new MonoFirstSignalling<>(monos));
 	}
 
 	/**
@@ -3146,8 +3146,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @see #first
 	 */
 	public final Mono<T> or(Mono<? extends T> other) {
-		if (this instanceof MonoFirst) {
-			MonoFirst<T> a = (MonoFirst<T>) this;
+		if (this instanceof MonoFirstSignalling) {
+			MonoFirstSignalling<T> a = (MonoFirstSignalling<T>) this;
 			Mono<T> result =  a.orAdditionalSource(other);
 			if (result != null) {
 				return result;
