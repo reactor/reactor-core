@@ -110,7 +110,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		final Predicate<? super T> predicate;
 
 		@Nullable
-		volatile C buffer;
+		C buffer;
 
 		boolean done;
 
