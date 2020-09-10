@@ -36,7 +36,7 @@ public class FluxFirstValuesTest {
 
 	@Test
 	public void firstSourceEmittingValueIsChosen() {
-		StepVerifier.withVirtualTime(() -> Flux.firstValues(
+		StepVerifier.withVirtualTime(() -> Flux.firstValued(
 				Flux.just(1, 2, 3).delayElements(Duration.ofMillis(500L)),
 				Flux.just(4, 5, 6).delayElements(Duration.ofMillis(1_000L))
 		))
@@ -47,7 +47,7 @@ public class FluxFirstValuesTest {
 
 	@Test
 	public void firstSourceEmittingValueIsChosenOverErrorOrCompleteEmpty() {
-		StepVerifier.withVirtualTime(() -> Flux.firstValues(
+		StepVerifier.withVirtualTime(() -> Flux.firstValued(
 				Flux.just(1, 2, 3).delayElements(Duration.ofMillis(500L)),
 				Flux.error(new RuntimeException("Boom!")),
 				Flux.empty(),
@@ -60,7 +60,7 @@ public class FluxFirstValuesTest {
 
 	@Test
 	public void onlyErrorOrCompleteEmptyEmitsError() {
-		StepVerifier.withVirtualTime(() -> Flux.firstValues(
+		StepVerifier.withVirtualTime(() -> Flux.firstValued(
 				Flux.error(new RuntimeException("Boom!")),
 				Flux.empty()
 		))
@@ -79,12 +79,12 @@ public class FluxFirstValuesTest {
 
 	@Test
 	public void arrayNull() {
-		assertThrows(NullPointerException.class, () -> Flux.firstValues((Publisher<Integer>[]) null));
+		assertThrows(NullPointerException.class, () -> Flux.firstValued((Publisher<Integer>[]) null));
 	}
 
 	@Test
 	public void iterableNull() {
-		assertThrows(NullPointerException.class, () -> Flux.firstValues((Iterable<Publisher<Integer>>) null));
+		assertThrows(NullPointerException.class, () -> Flux.firstValued((Iterable<Publisher<Integer>>) null));
 	}
 
 	@Test
@@ -92,7 +92,7 @@ public class FluxFirstValuesTest {
 		TestPublisher<Integer> pub1 = TestPublisher.create();
 		TestPublisher<Integer> pub2 = TestPublisher.create();
 
-		StepVerifier.create(Flux.firstValues(pub1, pub2))
+		StepVerifier.create(Flux.firstValued(pub1, pub2))
 				.thenRequest(4)
 				.then(() -> {
 					pub1.emit(1, 2, 3, 4, 5).complete();
@@ -115,7 +115,7 @@ public class FluxFirstValuesTest {
 	public void singleArrayNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.firstValues((Publisher<Object>) null)
+		Flux.firstValued((Publisher<Object>) null)
 				.subscribe(ts);
 
 		ts.assertNoValues()
@@ -127,7 +127,7 @@ public class FluxFirstValuesTest {
 	public void arrayOneIsNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.firstValues(Flux.never(), null, Flux.never())
+		Flux.firstValued(Flux.never(), null, Flux.never())
 				.subscribe(ts);
 
 		ts.assertNoValues()
@@ -139,7 +139,7 @@ public class FluxFirstValuesTest {
 	public void singleIterableNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.firstValues(Arrays.asList((Publisher<Object>) null))
+		Flux.firstValued(Arrays.asList((Publisher<Object>) null))
 				.subscribe(ts);
 
 		ts.assertNoValues()
@@ -151,7 +151,7 @@ public class FluxFirstValuesTest {
 	public void iterableOneIsNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.firstValues(Arrays.asList(Flux.never(),
+		Flux.firstValued(Arrays.asList(Flux.never(),
 				(Publisher<Object>) null,
 				Flux.never()))
 				.subscribe(ts);
@@ -163,8 +163,8 @@ public class FluxFirstValuesTest {
 
 	@Test
 	public void pairWise() {
-		Flux<Integer> firstValues = Flux.firstValues(Flux.just(1), Mono.just(2));
-		Flux<Integer> orValues = Flux.firstValues(firstValues, Mono.just(3));
+		Flux<Integer> firstValues = Flux.firstValued(Flux.just(1), Mono.just(2));
+		Flux<Integer> orValues = Flux.firstValued(firstValues, Mono.just(3));
 
 		assertThat(orValues).isInstanceOf(FluxFirstValues.class);
 		assertThat(((FluxFirstValues<Integer>) orValues).array)
