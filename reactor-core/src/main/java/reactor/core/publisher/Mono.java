@@ -399,6 +399,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
+	@SafeVarargs
 	public static <T> Mono<T> firstValued(Mono<? extends T> first, Mono<? extends T>... others) {
 		if (first instanceof MonoFirstValued) {
 			@SuppressWarnings("unchecked")
