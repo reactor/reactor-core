@@ -181,7 +181,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			synchronized (this) {
 				b = buffer;
 				buffer = null;
-				Operators.onDiscardMultiple(buffer, actual.currentContext());
+				Operators.onDiscardMultiple(b, actual.currentContext());
 			}
 			cleanup();
 			Operators.terminate(S, this);
