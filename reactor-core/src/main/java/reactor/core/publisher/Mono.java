@@ -420,6 +420,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 */
 	public static <T> Mono<T> firstValued(Mono<? extends T> mono, Mono<? extends T> other) {
 		if (mono instanceof MonoFirstValued) {
+			@SuppressWarnings("unchecked")
 			MonoFirstValued<T> a = (MonoFirstValued<T>) mono;
 			Mono<T> result =  a.orAdditionalSource(other);
 			if (result != null) {

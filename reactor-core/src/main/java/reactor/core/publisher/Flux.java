@@ -1010,6 +1010,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 */
 	public static <I> Flux<I> firstValued(Publisher<? extends I> source, Publisher<? extends I> other){
 		if (source instanceof FluxFirstValued) {
+			@SuppressWarnings("unchecked")
 			FluxFirstValued<I> orPublisher = (FluxFirstValued<I>) source;
 
 			FluxFirstValued<I> result = orPublisher.orAdditionalSource(other);
