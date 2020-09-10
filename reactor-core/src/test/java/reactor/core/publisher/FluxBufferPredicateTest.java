@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
@@ -1091,9 +1092,9 @@ public class FluxBufferPredicateTest {
 			}
 
 			Assertions.assertThat(received.get() + (value1.get() + 1) + (value2.get() + 2))
-					.as("received " + received.get() + ", val1 state " + value1.get() + ", val2 state " + value2.get())
-					.withFailMessage("\nExpecting values to be either received or discarded in round %s/%s (%s)", i, ROUNDS, i % 2 == 0 ? "cancel/onNext" : "onNext/cancel")
-					.isEqualTo(2);
+			          .as("received " + received.get() + ", val1 state " + value1.get() + ", val2 state " + value2.get())
+			          .withFailMessage("\nExpecting values to be either received or discarded in round %s/%s (%s)", i, ROUNDS, i % 2 == 0 ? "cancel/onNext" : "onNext/cancel")
+			          .isEqualTo(2);
 		}
 	}
 
