@@ -211,7 +211,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 
 		RepeatWhenMainSubscriber<?> main;
 
-		final Sinks.Many<Long> completionSignal = Sinks.many().multicast().onBackpressureError();
+		final Sinks.Many<Long> completionSignal = Sinks.many().multicast().onBackpressureBuffer();
 
 		@Override
 		public Context currentContext() {

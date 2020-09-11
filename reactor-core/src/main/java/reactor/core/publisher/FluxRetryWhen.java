@@ -241,7 +241,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 	implements InnerConsumer<Object>, OptimizableOperator<Retry.RetrySignal, Retry.RetrySignal> {
 		RetryWhenMainSubscriber<?> main;
 
-		final Sinks.Many<Retry.RetrySignal> completionSignal = Sinks.many().multicast().onBackpressureError();
+		final Sinks.Many<Retry.RetrySignal> completionSignal = Sinks.many().multicast().onBackpressureBuffer();
 
 		@Override
 		public Context currentContext() {

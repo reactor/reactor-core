@@ -16,16 +16,24 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SerializedManySinkTest {
+
+	@Rule
+	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	@Test
 	public void shouldNotThrowFromTryEmitNext() {
@@ -39,7 +47,7 @@ public class SerializedManySinkTest {
 		            .then(() -> {
 			            assertThat(sink.tryEmitNext("boom"))
 					            .as("emission")
-					            .isEqualTo(Sinks.Emission.FAIL_OVERFLOW);
+					            .isEqualTo(Emission.FAIL_OVERFLOW);
 		            })
 		            .then(sink::emitComplete)
 		            .verifyComplete();
@@ -65,8 +73,8 @@ public class SerializedManySinkTest {
 				new SerializedManySink<>(
 						new EmptyMany<Object>() {
 							@Override
-							public Sinks.Emission tryEmitNext(Object o) {
-								SerializedManySink.WIP.incrementAndGet(sink.get());
+							public Emission tryEmitNext(Object o) {
+								SerializedManySink.LOCKED_AT.set(sink.get(), new Thread());
 								return super.tryEmitNext(o);
 							}
 						},
@@ -76,7 +84,23 @@ public class SerializedManySinkTest {
 
 		assertThat(sink.get().tryEmitNext("boom"))
 				.as("emission")
-				.isEqualTo(Sinks.Emission.FAIL_OVERFLOW);
+				.isEqualTo(Emission.FAIL_OVERFLOW);
+	}
+
+	@Test
+	public void sameThreadRecursion() throws Exception {
+		DirectProcessor<Object> processor = DirectProcessor.create();
+		SerializedManySink<Object> manySink = new SerializedManySink<>(processor, Context::empty);
+
+		CompletableFuture<Object> muchFuture = processor.doOnNext(o -> {
+			if ("first".equals(o)) {
+				assertThat(manySink.lockedAt).as("lockedAt").isEqualTo(Thread.currentThread());
+				assertThat(manySink.tryEmitNext("second")).as("second").isEqualTo(Emission.OK);
+			}
+		}).next().toFuture();
+
+		assertThat(manySink.tryEmitNext("first")).as("first").isEqualTo(Emission.OK);
+		muchFuture.get(5, TimeUnit.SECONDS);
 	}
 
 	static class EmptyMany<T> implements Sinks.Many<T> {
@@ -84,17 +108,17 @@ public class SerializedManySinkTest {
 		final Sinks.Many<T> delegate = Sinks.many().multicast().onBackpressureError();
 
 		@Override
-		public Sinks.Emission tryEmitNext(T o) {
-			return Sinks.Emission.FAIL_OVERFLOW;
+		public Emission tryEmitNext(T o) {
+			return Emission.FAIL_OVERFLOW;
 		}
 
 		@Override
-		public Sinks.Emission tryEmitComplete() {
+		public Emission tryEmitComplete() {
 			return delegate.tryEmitComplete();
 		}
 
 		@Override
-		public Sinks.Emission tryEmitError(Throwable error) {
+		public Emission tryEmitError(Throwable error) {
 			return delegate.tryEmitError(error);
 		}
 
