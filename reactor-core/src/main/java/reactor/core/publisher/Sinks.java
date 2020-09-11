@@ -565,8 +565,10 @@ public final class Sinks {
 		 * @param t the value to emit, not null
 		 * @see #tryEmitNext(Object)
 		 * @see Subscriber#onNext(Object)
+		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitNext(Object)} and handle the result.
 		 *
 		 */
+		@Deprecated
 		void emitNext(T t);
 
 		/**
@@ -581,7 +583,9 @@ public final class Sinks {
 		 *
 		 * @see #tryEmitComplete()
 		 * @see Subscriber#onComplete()
+		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitComplete()} and handle the result.
 		 */
+		@Deprecated
 		void emitComplete();
 
 		/**
@@ -598,7 +602,9 @@ public final class Sinks {
 		 * @param error the exception to signal, not null
 		 * @see #tryEmitError(Throwable)
 		 * @see Subscriber#onError(Throwable)
+		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitError(Throwable)} and handle the result.
 		 */
+		@Deprecated
 		void emitError(Throwable error);
 
 		/**
@@ -653,7 +659,9 @@ public final class Sinks {
 		 *
 		 * @see #tryEmitEmpty()
 		 * @see Subscriber#onComplete()
+		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitEmpty()} and handle the result.
 		 */
+		@Deprecated
 		void emitEmpty();
 
 		/**
@@ -670,7 +678,9 @@ public final class Sinks {
 		 * @param error the exception to signal, not null
 		 * @see #tryEmitError(Throwable)
 		 * @see Subscriber#onError(Throwable)
+		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitError(Throwable)} and handle the result.
 		 */
+		@Deprecated
 		void emitError(Throwable error);
 
 		/**
@@ -730,8 +740,9 @@ public final class Sinks {
 		 * @see #tryEmitValue(Object)
 		 * @see Subscriber#onNext(Object)
 		 * @see Subscriber#onComplete()
-		 *
+		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitValue(Object)} and handle the result.
 		 */
+		@Deprecated
 		void emitValue(@Nullable T value);
 
 	}
