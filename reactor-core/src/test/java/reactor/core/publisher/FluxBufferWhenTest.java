@@ -166,18 +166,22 @@ public class FluxBufferWhenTest {
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe()
-		                               .multicast()
-		                               .onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe()
-		                               .multicast()
-		                               .onBackpressureError();
-		Sinks.Many<Integer> sp3 = Sinks.many().unsafe()
-		                               .multicast()
-		                               .onBackpressureError();
-		Sinks.Many<Integer> sp4 = Sinks.many().unsafe()
-		                               .multicast()
-		                               .onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp3 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp4 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .bufferWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
@@ -236,13 +240,18 @@ public class FluxBufferWhenTest {
 	public void startCompletes() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> open = Sinks.many().unsafe()
-		                                .multicast()
-		                                .onBackpressureError();
-		Sinks.Many<Integer> close = Sinks.many().unsafe()
-		                                 .multicast()
-		                                 .onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> source = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> open = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> close = DirectProcessor.create();
 
 		source.asFlux()
 			  .bufferWhen(open.asFlux(), v -> close.asFlux())

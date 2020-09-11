@@ -63,7 +63,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntil() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
 
@@ -127,7 +130,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntil() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL);
 
@@ -147,7 +153,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorUntil() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(),
 				i -> {
@@ -170,7 +179,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntilOther() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
 
@@ -201,7 +213,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntilOther() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther =
 				new FluxBufferPredicate<>(sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(),
 						FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE);
@@ -222,7 +237,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorUntilOther() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntilOther =
 				new FluxBufferPredicate<>(sp1.asFlux(),
 				i -> {
@@ -375,7 +393,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhile() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 != 0, Flux.listSupplier(),
 				FluxBufferPredicate.Mode.WHILE);
@@ -407,7 +428,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntInitiallyMatch() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -438,7 +462,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntMatch() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i > 4, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -464,7 +491,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void mainErrorWhile() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
@@ -484,7 +514,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void predicateErrorWhile() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1.asFlux(),
 				i -> {
@@ -509,7 +542,10 @@ public class FluxBufferPredicateTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void bufferSupplierThrows() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0,
 				() -> { throw new RuntimeException("supplier failure"); },
@@ -524,7 +560,10 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void bufferSupplierThrowsLater() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		int count[] = {1};
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0,
@@ -549,7 +588,10 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void bufferSupplierReturnsNull() {
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxBufferPredicate<Integer, List<Integer>> bufferUntil = new FluxBufferPredicate<>(
 				sp1.asFlux(), i -> i % 3 == 0,
 				() -> null,
@@ -568,7 +610,10 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void multipleTriggersOfEmptyBufferKeepInitialBuffer() {
 		//this is best demonstrated with bufferWhile:
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		LongAdder bufferCount = new LongAdder();
 		Supplier<List<Integer>> bufferSupplier = () -> {
 			bufferCount.increment();

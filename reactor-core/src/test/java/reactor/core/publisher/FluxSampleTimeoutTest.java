@@ -37,9 +37,18 @@ public class FluxSampleTimeoutTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp3 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .sampleTimeout(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
@@ -78,8 +87,14 @@ public class FluxSampleTimeoutTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .sampleTimeout(v -> sp2.asFlux())
@@ -101,8 +116,14 @@ public class FluxSampleTimeoutTest {
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .sampleTimeout(v -> sp2.asFlux())
@@ -124,7 +145,10 @@ public class FluxSampleTimeoutTest {
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .sampleTimeout(v -> null)

@@ -77,8 +77,14 @@ public class FluxBufferBoundaryTest
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .buffer(sp2.asFlux())
@@ -129,8 +135,14 @@ public class FluxBufferBoundaryTest
 	public void mainError() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .buffer(sp2.asFlux())
@@ -176,8 +188,14 @@ public class FluxBufferBoundaryTest
 	public void otherError() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .buffer(sp2.asFlux())
@@ -223,8 +241,14 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierThrows() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .buffer(sp2.asFlux(), (Supplier<List<Integer>>) () -> {
@@ -245,8 +269,14 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierThrowsLater() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		int count[] = {1};
 
@@ -277,8 +307,14 @@ public class FluxBufferBoundaryTest
 	public void bufferSupplierReturnsNUll() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
 		   .buffer(sp2.asFlux(), (Supplier<List<Integer>>) () -> null)

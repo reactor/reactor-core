@@ -105,7 +105,13 @@ public class SerializedManySinkTest {
 
 	static class EmptyMany<T> implements Sinks.Many<T> {
 
-		final Sinks.Many<T> delegate = Sinks.many().multicast().onBackpressureError();
+		final Sinks.Many<T> delegate;
+
+		{
+			Sinks.many()
+			     .multicast();
+			delegate = DirectProcessor.create();
+		}
 
 		@Override
 		public Emission tryEmitNext(T o) {

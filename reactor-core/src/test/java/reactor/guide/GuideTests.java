@@ -48,6 +48,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.ConnectableFlux;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
@@ -201,7 +202,9 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		Sinks.Many<String> hotSource = Sinks.many().multicast().onBackpressureError();
+		Sinks.many()
+		     .multicast();
+		Sinks.Many<String> hotSource = DirectProcessor.create();
 
 		Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 

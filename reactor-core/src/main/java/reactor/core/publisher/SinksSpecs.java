@@ -311,11 +311,6 @@ final class MulticastSpecImpl extends SinkSpecImpl implements Sinks.MulticastSpe
 	public <T> Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
 		return toSerializedSink(EmitterProcessor.create(bufferSize, autoCancel));
 	}
-
-	@Override
-	public <T> Many<T> onBackpressureError() {
-		return toSerializedSink(DirectProcessor.create());
-	}
 }
 
 @SuppressWarnings("deprecation")

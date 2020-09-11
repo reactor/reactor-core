@@ -263,7 +263,10 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.many()
+		     .unsafe()
+		     .multicast();
+		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		Flux.using(() -> 1, r -> tp.asFlux(), cleanup::set, true)
 		    .subscribe(ts);
