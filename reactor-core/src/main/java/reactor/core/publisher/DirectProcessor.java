@@ -202,9 +202,10 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 	public void emitNext(T value) {
 		switch(tryEmitNext(value)) {
 			case FAIL_OVERFLOW:
+				//since FAIL_OVERFLOW can only happens if ALL subscribers overflowed, they're all terminated at this point
+				//in the old behavior, the DirectProcessor wasn't terminated in such a case so for now we mirror that behavior
+				//note that discarding is no-op at this point since all subscribers should have been removed by now :(
 				Operators.onDiscard(value, currentContext());
-				//the emitError will onErrorDropped if already terminated
-				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
 				break;
 			case FAIL_CANCELLED:
 				Operators.onDiscard(value, currentContext());
@@ -234,7 +235,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 
 		boolean atLeastOneEmit = false;
 		for (DirectInner<T> s : inners) {
-			atLeastOneEmit = atLeastOneEmit || s.tryEmitNext(t);
+			atLeastOneEmit = s.tryEmitNext(t) || atLeastOneEmit; //careful, we always want to tryEmitNext ;)
 		}
 		return atLeastOneEmit ? Emission.OK : Emission.FAIL_OVERFLOW;
 	}
