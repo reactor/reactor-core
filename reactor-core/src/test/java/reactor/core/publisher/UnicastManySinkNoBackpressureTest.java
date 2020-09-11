@@ -34,6 +34,18 @@ class UnicastManySinkNoBackpressureTest {
 	}
 
 	@Test
+	void noSubscribersTryError() {
+		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		assertThat(sink.tryEmitError(new NullPointerException())).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+	}
+
+	@Test
+	void noSubscribersTryComplete() {
+		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		assertThat(sink.tryEmitComplete()).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+	}
+
+	@Test
 	void noRequest() {
 		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
 
