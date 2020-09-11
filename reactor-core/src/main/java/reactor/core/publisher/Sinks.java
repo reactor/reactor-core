@@ -340,7 +340,11 @@ public final class Sinks {
 		 * <ul>
 		 *     <li>Multicast</li>
 		 *     <li>Without {@link Subscriber}: elements pushed via {@link Many#tryEmitNext(Object)} are ignored</li>
-		 *     <li>Backpressure : this sink is not able to honor downstream demand and will emit {@link Subscriber#onError(Throwable)} if there is a mismatch.</li>
+		 *     <li>Backpressure : this sink is not able to honor individual downstream demand and will terminate the
+		 *     {@link Subscriber} for which there is a mismatch with {@link Subscriber#onError(Throwable)}.
+		 *     {@link Many#tryEmitNext(Object)} only returns {@link Emission#FAIL_OVERFLOW} if all current subscribers
+		 *     were terminated like that. In any case, {@link Many#emitNext(Object)} doesn't terminate the sink in case
+		 *     of overflow.</li>
 		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
 		 *     pushed to the sink AFTER this subscriber was subscribed.</li>
 		 * </ul>
