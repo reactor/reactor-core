@@ -15,7 +15,11 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
+
+import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
 
@@ -26,7 +30,19 @@ class UnicastManySinkNoBackpressureTest {
 	@Test
 	void noSubscribers() {
 		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
-		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_OVERFLOW);
+		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+	}
+
+	@Test
+	void noSubscribersTryError() {
+		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		assertThat(sink.tryEmitError(new NullPointerException())).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+	}
+
+	@Test
+	void noSubscribersTryComplete() {
+		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+		assertThat(sink.tryEmitComplete()).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
@@ -65,4 +81,22 @@ class UnicastManySinkNoBackpressureTest {
 
 		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_CANCELLED);
 	}
+
+	@Test
+	void beforeSubscriberEmitNextIsIgnoredKeepsSinkOpen() {
+		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
+
+		sink.emitNext("hi");
+
+		StepVerifier.create(sink.asFlux())
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(500))
+		            .then(() -> {
+		            	sink.emitNext("second");
+		            	sink.emitComplete();
+		            })
+		            .expectNext("second")
+		            .verifyComplete();
+	}
+
 }

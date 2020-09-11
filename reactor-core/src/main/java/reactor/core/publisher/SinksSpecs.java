@@ -118,6 +118,10 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	@Override
 	public void emitNext(T value) {
 		switch (tryEmitNext(value)) {
+			case FAIL_ZERO_SUBSCRIBER:
+				//we want to "discard" without rendering the sink terminated.
+				// effectively NO-OP cause there's no subscriber, so no context :(
+				break;
 			case FAIL_OVERFLOW: {
 				Context ctx = currentContext();
 				IllegalStateException overflow = Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext");
@@ -126,7 +130,7 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 				Throwable ex = Operators.onOperatorError(s, overflow, value, ctx);
 				//the emitError will onErrorDropped if already terminated
 				emitError(ex);
-				Operators.onDiscard(value, currentContext());
+				Operators.onDiscard(value, ctx);
 				break;
 			}
 			case FAIL_CANCELLED:
