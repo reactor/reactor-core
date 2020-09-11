@@ -286,10 +286,14 @@ public final class Sinks {
 		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@link Queues#SMALL_BUFFER_SIZE}
 		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
 		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
-		 *     of multiple subscribers.</li>
-		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
-		 *     pushed to the sink AFTER this subscriber was subscribed. To the exception of the first
-		 *     subscriber (see below).</li>
+		 *     of multiple subscribers.<br>If the difference between multiple subscribers is greater than {@link Queues#SMALL_BUFFER_SIZE}:
+		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link Emission#FAIL_OVERFLOW}</li>
+		 * 	        <li>{@link Many#emitNext(Object) emitNext} will terminate the sink by {@link Many#emitError(Throwable) emitting}
+		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
+		 * 	   </li>
+		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
+		 *     the elements that have been pushed to the sink AFTER this subscriber was subscribed, or elements
+		 *     that have been buffered due to backpressure/warm up.</li>
 		 * </ul>
 		 * <p>
 		 * <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
@@ -300,13 +304,17 @@ public final class Sinks {
 		 * A {@link Sinks.Many} with the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@param bufferSize}
+		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@code bufferSize}
 		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
 		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
-		 *     of multiple subscribers.</li>
-		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
-		 *     pushed to the sink AFTER this subscriber was subscribed. To the exception of the first
-		 *     subscriber (see below).</li>
+		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
+		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link Emission#FAIL_OVERFLOW}</li>
+		 *          <li>{@link Many#emitNext(Object) emitNext} will terminate the sink by {@link Many#emitError(Throwable) emitting}
+		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
+		 *     </li>
+		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
+		 *     the elements that have been pushed to the sink AFTER this subscriber was subscribed, or elements
+		 *     that have been buffered due to backpressure/warm up.</li>
 		 * </ul>
 		 * <p>
 		 * <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
@@ -319,13 +327,17 @@ public final class Sinks {
 		 * A {@link Sinks.Many} with the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@param bufferSize}
+		 *     <li>Without {@link Subscriber}: warm up. Remembers up to {@code bufferSize}
 		 *     elements pushed via {@link Many#tryEmitNext(Object)} before the first {@link Subscriber} is registered.</li>
 		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
-		 *     of multiple subscribers.</li>
-		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
-		 *     pushed to the sink AFTER this subscriber was subscribed. To the exception of the first
-		 *     subscriber (see below).</li>
+		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
+		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link Emission#FAIL_OVERFLOW}</li>
+		 *          <li>{@link Many#emitNext(Object) emitNext} will terminate the sink by {@link Many#emitError(Throwable) emitting}
+		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
+		 *     </li>
+		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
+		 *     the elements that have been pushed to the sink AFTER this subscriber was subscribed, or elements
+		 *     that have been buffered due to backpressure/warm up.</li>
 		 * </ul>
 		 * <p>
 		 * <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
