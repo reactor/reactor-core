@@ -276,10 +276,10 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
 
-		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
-		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureError();
 
 		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
