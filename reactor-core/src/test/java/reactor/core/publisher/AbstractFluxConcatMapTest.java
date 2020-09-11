@@ -276,10 +276,10 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
-		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source1 = DirectProcessor.create();
+		Sinks.Many<Integer> source2 = DirectProcessor.create();
 
 		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
@@ -315,10 +315,10 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void mainErrorsImmediate() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
-		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source1 = DirectProcessor.create();
+		Sinks.Many<Integer> source2 = DirectProcessor.create();
 
 		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
@@ -349,10 +349,10 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void mainErrorsBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
-		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source1 = DirectProcessor.create();
+		Sinks.Many<Integer> source2 = DirectProcessor.create();
 
 		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
@@ -390,10 +390,10 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void innerErrorsImmediate() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
-		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source1 = DirectProcessor.create();
+		Sinks.Many<Integer> source2 = DirectProcessor.create();
 
 		source.asFlux().concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux(), implicitPrefetchValue())
 		      .subscribe(ts);
@@ -846,10 +846,10 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void innerErrorsBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
-		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source1 = DirectProcessor.create();
+		Sinks.Many<Integer> source2 = DirectProcessor.create();
 
 		//gh-1101: default changed from BOUNDARY to END
 		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), false, implicitPrefetchValue())
@@ -881,10 +881,10 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 	public void innerErrorsEnd() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> source1 = Sinks.many().multicast().onBackpressureError();
-		Sinks.Many<Integer> source2 = Sinks.many().multicast().onBackpressureError();
+		Sinks.Many<Integer> source1 = DirectProcessor.create();
+		Sinks.Many<Integer> source2 = DirectProcessor.create();
 
 		source.asFlux().concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux(), true, implicitPrefetchValue())
 		      .subscribe(ts);

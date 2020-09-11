@@ -110,9 +110,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -135,9 +135,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -160,9 +160,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -250,9 +250,9 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		source.asFlux()
 			  .timeout(tp.asFlux(), v -> tp.asFlux())

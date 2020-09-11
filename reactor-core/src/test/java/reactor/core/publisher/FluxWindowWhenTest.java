@@ -150,10 +150,10 @@ public class FluxWindowWhenTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> sp4 = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> sp1 = DirectProcessor.create();
+		Sinks.Many<Integer> sp2 = DirectProcessor.create();
+		Sinks.Many<Integer> sp3 = DirectProcessor.create();
+		Sinks.Many<Integer> sp4 = DirectProcessor.create();
 
 		sp1.asFlux().windowWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
 		   .subscribe(ts);
@@ -193,10 +193,10 @@ public class FluxWindowWhenTest {
 	public void normalStarterEnds() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> openSelector = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> closeSelectorFor1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> closeSelectorForOthers = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
+		Sinks.Many<Integer> openSelector = DirectProcessor.create();
+		Sinks.Many<Integer> closeSelectorFor1 = DirectProcessor.create();
+		Sinks.Many<Integer> closeSelectorForOthers = DirectProcessor.create();
 
 		source.asFlux().windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorForOthers.asFlux())
 		      .subscribe(ts);
@@ -237,10 +237,10 @@ public class FluxWindowWhenTest {
 	public void oneWindowOnly() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> openSelector = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> closeSelectorFor1 = Sinks.many().unsafe().multicast().onBackpressureError();
-		Sinks.Many<Integer> closeSelectorOthers = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> source = DirectProcessor.create();
+		Sinks.Many<Integer> openSelector = DirectProcessor.create();
+		Sinks.Many<Integer> closeSelectorFor1 = DirectProcessor.create();
+		Sinks.Many<Integer> closeSelectorOthers = DirectProcessor.create();
 
 		source.asFlux().windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorOthers.asFlux())
 		      .subscribe(ts);

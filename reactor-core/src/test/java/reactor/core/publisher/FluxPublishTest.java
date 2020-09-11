@@ -493,7 +493,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retry() {
-		Sinks.Many<Integer> dp = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> dp = DirectProcessor.create();
 		StepVerifier.create(
 				dp.asFlux()
 				  .publish()
@@ -520,7 +520,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retryWithPublishOn() {
-		Sinks.Many<Integer> dp = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> dp = DirectProcessor.create();
 		StepVerifier.create(
 				dp.asFlux()
 				  .publishOn(Schedulers.parallel()).publish()

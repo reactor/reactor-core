@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
@@ -2085,7 +2086,7 @@ public class StepVerifierTests {
 	@Test
 	public void assertNextWithSubscribeOnDirectProcessor() {
 		Scheduler scheduler = Schedulers.newBoundedElastic(1, 100, "test");
-		Sinks.Many<Integer> processor = Sinks.many().unsafe().multicast().onBackpressureError();
+		Sinks.Many<Integer> processor = DirectProcessor.create();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
 		                             .doOnNext(processor::emitNext)
 		                             .subscribeOn(scheduler);

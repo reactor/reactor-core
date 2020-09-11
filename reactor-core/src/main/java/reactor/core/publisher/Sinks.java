@@ -355,18 +355,6 @@ public final class Sinks {
 		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
 		 */
 		<T> Sinks.Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
-
-		/**
-		 * A {@link Sinks.Many} with the following characteristics:
-		 * <ul>
-		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: elements pushed via {@link Many#tryEmitNext(Object)} are ignored</li>
-		 *     <li>Backpressure : this sink is not able to honor downstream demand and will emit {@link Subscriber#onError(Throwable)} if there is a mismatch.</li>
-		 *     <li>Replaying: No replay. Only forwards to a {@link Subscriber} the elements that have been
-		 *     pushed to the sink AFTER this subscriber was subscribed.</li>
-		 * </ul>
-		 */
-		<T> Sinks.Many<T> onBackpressureError();
 	}
 
 
