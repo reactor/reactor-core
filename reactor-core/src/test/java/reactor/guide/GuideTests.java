@@ -202,8 +202,6 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		Sinks.many()
-		     .multicast();
 		Sinks.Many<String> hotSource = DirectProcessor.create();
 
 		Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);

@@ -68,9 +68,6 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressured() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
@@ -110,9 +107,6 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void error() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
@@ -129,9 +123,6 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressureWithDrop() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>(0) {

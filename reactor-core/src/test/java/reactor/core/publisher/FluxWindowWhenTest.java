@@ -150,21 +150,9 @@ public class FluxWindowWhenTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp3 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp4 = DirectProcessor.create();
 
 		sp1.asFlux().windowWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
@@ -205,21 +193,9 @@ public class FluxWindowWhenTest {
 	public void normalStarterEnds() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> openSelector = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> closeSelectorFor1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> closeSelectorForOthers = DirectProcessor.create();
 
 		source.asFlux().windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorForOthers.asFlux())
@@ -261,21 +237,9 @@ public class FluxWindowWhenTest {
 	public void oneWindowOnly() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> openSelector = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> closeSelectorFor1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> closeSelectorOthers = DirectProcessor.create();
 
 		source.asFlux().windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorOthers.asFlux())

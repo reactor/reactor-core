@@ -663,9 +663,6 @@ public class SchedulersTest {
 
 	public void assertRejectingScheduler(Scheduler scheduler) {
 		try {
-			Sinks.many()
-			     .unsafe()
-			     .multicast();
 			Sinks.Many<String> p = DirectProcessor.create();
 
 			AtomicReference<String> r = new AtomicReference<>();

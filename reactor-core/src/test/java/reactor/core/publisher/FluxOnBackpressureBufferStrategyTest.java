@@ -103,9 +103,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void drop() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -134,9 +131,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropOldest() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -165,9 +159,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void error() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -273,9 +264,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropCallbackError() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -306,9 +294,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void dropOldestCallbackError() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -339,9 +324,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void errorCallbackError() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -372,9 +354,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithErrorStrategyOverflowsAfterDrain() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -405,9 +384,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithDropStrategyNoError() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -436,9 +412,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void noCallbackWithDropOldestStrategyNoError() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		FluxOnBackpressureBufferStrategy<String> flux = new FluxOnBackpressureBufferStrategy<>(
@@ -467,9 +440,6 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 
 	@Test
 	public void fluxOnBackpressureBufferStrategyNoCallback() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> processor = DirectProcessor.create();
 
 		StepVerifier.create(processor.asFlux().onBackpressureBuffer(2, DROP_OLDEST), 0)

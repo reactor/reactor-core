@@ -431,9 +431,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalUntil() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(sp1.asFlux(),
 				Queues.small(),
@@ -501,9 +498,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorUntilIsPropagatedToBothWindowAndMain() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
 				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -530,9 +524,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorUntil() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
 				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -561,9 +552,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalUntilCutBefore() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1.asFlux(),
 				Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -595,9 +583,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorUntilCutBeforeIsPropagatedToBothWindowAndMain() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
 				new FluxWindowPredicate<>(sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -625,9 +610,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorUntilCutBefore() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
 				new FluxWindowPredicate<>(sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -662,9 +644,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhile() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -696,9 +675,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhileDoesntInitiallyMatch() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -737,9 +713,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void normalWhileDoesntMatch() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -775,9 +748,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void mainErrorWhileIsPropagatedToBothWindowAndMain() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
@@ -825,9 +795,6 @@ public class FluxWindowPredicateTest extends
 
 	@Test
 	public void predicateErrorWhile() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1.asFlux(), Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,

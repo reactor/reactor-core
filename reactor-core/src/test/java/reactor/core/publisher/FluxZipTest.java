@@ -791,9 +791,6 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void failDoubleTerminalPublisher() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> d1 = DirectProcessor.create();
 		Hooks.onErrorDropped(e -> {
 		});
@@ -1086,9 +1083,6 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void prematureCompleteSourceEmptyDouble() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> d = DirectProcessor.create();
 		StepVerifier.create(Flux.zip(obj -> 0, d.asFlux(), s -> {
 			Scannable directInner = Scannable.from(d).inners().findFirst().get();

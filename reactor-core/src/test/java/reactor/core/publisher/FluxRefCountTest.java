@@ -400,9 +400,6 @@ public class FluxRefCountTest {
 
 	@Test
 	public void delayElementShouldNotCancelTwice() throws Exception {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Long> p = DirectProcessor.create();
 		AtomicInteger cancellations = new AtomicInteger();
 

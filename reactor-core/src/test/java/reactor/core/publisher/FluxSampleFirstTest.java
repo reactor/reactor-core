@@ -34,17 +34,8 @@ public class FluxSampleFirstTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp3 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -90,17 +81,8 @@ public class FluxSampleFirstTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp3 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -124,17 +106,8 @@ public class FluxSampleFirstTest {
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp3 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -158,9 +131,6 @@ public class FluxSampleFirstTest {
 	public void throttlerThrows() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -183,9 +153,6 @@ public class FluxSampleFirstTest {
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 
 		sp1.asFlux()

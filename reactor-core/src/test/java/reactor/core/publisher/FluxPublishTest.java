@@ -493,9 +493,6 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retry() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> dp = DirectProcessor.create();
 		StepVerifier.create(
 				dp.asFlux()
@@ -523,9 +520,6 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retryWithPublishOn() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> dp = DirectProcessor.create();
 		StepVerifier.create(
 				dp.asFlux()

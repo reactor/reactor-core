@@ -110,14 +110,8 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -141,14 +135,8 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -172,14 +160,8 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -268,14 +250,8 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		source.asFlux()

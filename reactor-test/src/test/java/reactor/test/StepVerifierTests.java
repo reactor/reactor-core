@@ -2086,9 +2086,6 @@ public class StepVerifierTests {
 	@Test
 	public void assertNextWithSubscribeOnDirectProcessor() {
 		Scheduler scheduler = Schedulers.newBoundedElastic(1, 100, "test");
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> processor = DirectProcessor.create();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
 		                             .doOnNext(processor::emitNext)

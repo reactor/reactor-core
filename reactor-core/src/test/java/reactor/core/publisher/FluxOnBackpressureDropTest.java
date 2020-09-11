@@ -90,9 +90,6 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void someDrops() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> tp = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);

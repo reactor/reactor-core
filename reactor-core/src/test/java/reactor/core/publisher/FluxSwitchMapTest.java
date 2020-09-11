@@ -35,13 +35,7 @@ public class FluxSwitchMapTest {
 	public void noswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -72,13 +66,7 @@ public class FluxSwitchMapTest {
 	public void noswitchBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -121,17 +109,8 @@ public class FluxSwitchMapTest {
 	public void doswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp3 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -181,13 +160,7 @@ public class FluxSwitchMapTest {
 	public void mainCompletesBefore() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
@@ -216,13 +189,7 @@ public class FluxSwitchMapTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
@@ -247,13 +214,7 @@ public class FluxSwitchMapTest {
 	public void innerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
@@ -280,9 +241,6 @@ public class FluxSwitchMapTest {
 	public void mapperThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -303,9 +261,6 @@ public class FluxSwitchMapTest {
 	public void mapperReturnsNull() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 
 		sp1.asFlux()

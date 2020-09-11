@@ -111,18 +111,9 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	public void singleSubscriberOnly() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source2 = DirectProcessor.create();
 
 		source.asFlux()
@@ -160,18 +151,9 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source2 = DirectProcessor.create();
 
 		source.asFlux()

@@ -166,21 +166,9 @@ public class FluxBufferWhenTest {
 	public void normal() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp3 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp4 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -240,17 +228,8 @@ public class FluxBufferWhenTest {
 	public void startCompletes() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> source = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> open = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> close = DirectProcessor.create();
 
 		source.asFlux()

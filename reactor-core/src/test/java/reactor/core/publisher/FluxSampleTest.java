@@ -43,14 +43,8 @@ public class FluxSampleTest {
 	}
 
 	void sample(boolean complete, boolean which) {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> main = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> other = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -135,14 +129,8 @@ public class FluxSampleTest {
 
 	@Test
 	public void subscriberCancels() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> main = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> other = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -163,14 +151,8 @@ public class FluxSampleTest {
 	}
 
 	public void completeImmediately(boolean which) {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> main = DirectProcessor.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<String> other = DirectProcessor.create();
 
 		if (which) {

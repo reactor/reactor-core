@@ -37,17 +37,8 @@ public class FluxSampleTimeoutTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp3 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -87,13 +78,7 @@ public class FluxSampleTimeoutTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -116,13 +101,7 @@ public class FluxSampleTimeoutTest {
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp2 = DirectProcessor.create();
 
 		sp1.asFlux()
@@ -145,9 +124,6 @@ public class FluxSampleTimeoutTest {
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp1 = DirectProcessor.create();
 
 		sp1.asFlux()

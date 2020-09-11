@@ -159,13 +159,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void fused() {
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> dp1 = DirectProcessor.create();
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> dp2 = DirectProcessor.create();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();

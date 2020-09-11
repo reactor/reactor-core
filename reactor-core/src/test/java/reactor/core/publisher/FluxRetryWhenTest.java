@@ -574,8 +574,6 @@ public class FluxRetryWhenTest {
 	@Test
 	public void inners() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		Sinks.many()
-		     .multicast();
 		Sinks.Many<Retry.RetrySignal> signaller = DirectProcessor.create();
 		Flux<Integer> when = Flux.empty();
 		FluxRetryWhen.RetryWhenMainSubscriber<Integer> main = new FluxRetryWhen

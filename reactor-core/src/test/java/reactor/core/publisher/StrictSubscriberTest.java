@@ -73,9 +73,6 @@ public class StrictSubscriberTest {
 		AtomicBoolean state2 = new AtomicBoolean();
 		AtomicReference<Throwable> e = new AtomicReference<>();
 
-		Sinks.many()
-		     .unsafe()
-		     .multicast();
 		Sinks.Many<Integer> sp = DirectProcessor.create();
 
 		sp.asFlux().doOnCancel(() -> state2.set(state1.get()))
