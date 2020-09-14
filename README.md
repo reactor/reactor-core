@@ -34,15 +34,15 @@ repositories {
 
 dependencies {
     //TODO change to the release artifact and comment milestone repo above when GA
-    compile "io.projectreactor:reactor-core:3.4.0-M2"
-    testCompile "io.projectreactor:reactor-test:3.4.0-M2"
+    compile "io.projectreactor:reactor-core:3.4.0-RC1"
+    testCompile "io.projectreactor:reactor-test:3.4.0-RC1"
 
     // Alternatively, use the following for latest snapshot artifacts in this line
     // compile "io.projectreactor:reactor-core:3.4.0-SNAPSHOT"
     // testCompile "io.projectreactor:reactor-test:3.4.0-SNAPSHOT"
 
     // Optionally, use `reactor-tools` to help debugging reactor code
-    // implementation "io.projectreactor:reactor-tools:3.4.0-M2"
+    // implementation "io.projectreactor:reactor-tools:3.4.0-RC1"
 }
 ```
 
