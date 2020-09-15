@@ -189,6 +189,7 @@ class MonoFirstValuedTest {
 
 	@Test
 	void scanOperator() {
+		@SuppressWarnings("unchecked")
 		MonoFirstValued<Integer> test = new MonoFirstValued<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);

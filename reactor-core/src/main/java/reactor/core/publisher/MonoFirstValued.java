@@ -80,6 +80,7 @@ final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T>[] a = array;
 		int n;
