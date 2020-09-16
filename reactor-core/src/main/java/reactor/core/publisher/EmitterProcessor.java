@@ -326,6 +326,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Si
 	}
 
 	@Override
+	public int currentSubscriberCount() {
+		return subscribers.length;
+	}
+
+	@Override
 	public Flux<T> asFlux() {
 		return this;
 	}

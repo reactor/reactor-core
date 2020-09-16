@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -189,30 +188,30 @@ public class FluxRefCountTest {
 						   .publish()
 						   .refCount();
 
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isZero();
 
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
-		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
-		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
 		e.emitNext(1);
 		e.emitNext(2);
 
 		ts1.cancel();
 
-		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
 		e.emitNext(3);
 
 		ts2.cancel();
 
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isZero();
 
 		ts1.assertValues(1, 2)
 		   .assertNoError()
@@ -231,30 +230,30 @@ public class FluxRefCountTest {
 						   .publish()
 						   .refCount(2);
 
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isZero();
 
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isZero();
 
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
-		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
 		e.emitNext(1);
 		e.emitNext(2);
 
 		ts1.cancel();
 
-		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
 		e.emitNext(3);
 
 		ts2.cancel();
 
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source connected").isZero();
 
 		ts1.assertValues(1, 2)
 		   .assertNoError()

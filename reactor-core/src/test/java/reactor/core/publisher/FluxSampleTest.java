@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -103,8 +102,8 @@ public class FluxSampleTest {
 			  .assertErrorMessage("forced failure");
 		}
 
-		Assert.assertFalse("Main has subscribers?", Scannable.from(main).inners().count() != 0);
-		Assert.assertFalse("Other has subscribers?", Scannable.from(other).inners().count() != 0);
+		assertThat(main.currentSubscriberCount()).as("main has subscriber").isZero();
+		assertThat(other.currentSubscriberCount()).as("other has subscriber").isZero();
 	}
 
 	@Test
@@ -137,13 +136,13 @@ public class FluxSampleTest {
 
 		main.asFlux().sample(other.asFlux()).subscribe(ts);
 
-		Assert.assertTrue("Main no subscriber?", Scannable.from(main).inners().count() != 0);
-		Assert.assertTrue("Other no subscriber?", Scannable.from(other).inners().count() != 0);
+		assertThat(main.currentSubscriberCount()).as("main has subscriber").isPositive();
+		assertThat(other.currentSubscriberCount()).as("other has subscriber").isPositive();
 
 		ts.cancel();
 
-		Assert.assertFalse("Main no subscriber?", Scannable.from(main).inners().count() != 0);
-		Assert.assertFalse("Other no subscriber?", Scannable.from(other).inners().count() != 0);
+		assertThat(main.currentSubscriberCount()).as("main has subscriber").isZero();
+		assertThat(other.currentSubscriberCount()).as("other has subscriber").isZero();
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -166,8 +165,8 @@ public class FluxSampleTest {
 
 		main.asFlux().sample(other.asFlux()).subscribe(ts);
 
-		Assert.assertFalse("Main subscriber?", Scannable.from(main).inners().count() != 0);
-		Assert.assertFalse("Other subscriber?", Scannable.from(other).inners().count() != 0);
+		assertThat(main.currentSubscriberCount()).as("main has subscriber").isZero();
+		assertThat(other.currentSubscriberCount()).as("other has subscriber").isZero();
 
 		ts.assertNoValues()
 		  .assertNoError()

@@ -18,8 +18,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -27,6 +25,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxSampleFirstTest {
 
@@ -72,9 +72,9 @@ public class FluxSampleFirstTest {
 		  .assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp3).inners().count() != 0);
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
+		assertThat(sp3.currentSubscriberCount()).as("sp3 has subscriber").isZero();
 	}
 
 	@Test
@@ -97,9 +97,9 @@ public class FluxSampleFirstTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp3).inners().count() != 0);
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
+		assertThat(sp3.currentSubscriberCount()).as("sp3 has subscriber").isZero();
 	}
 
 	@Test
@@ -122,9 +122,9 @@ public class FluxSampleFirstTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp3).inners().count() != 0);
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
+		assertThat(sp3.currentSubscriberCount()).as("sp3 has subscriber").isZero();
 	}
 
 	@Test
@@ -146,7 +146,7 @@ public class FluxSampleFirstTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -165,7 +165,7 @@ public class FluxSampleFirstTest {
 		  .assertError(NullPointerException.class)
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	Flux<Integer> scenario_sampleFirstTime(){
@@ -186,7 +186,7 @@ public class FluxSampleFirstTest {
 	public void scanOperator(){
 	    FluxSampleFirst<Integer, Integer> test = new FluxSampleFirst<>(Flux.just(1), i -> Flux.just(i));
 
-		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}
 
 	@Test
@@ -197,18 +197,18 @@ public class FluxSampleFirstTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-		Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 
         test.error = new IllegalStateException("boom");
-        Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -218,14 +218,14 @@ public class FluxSampleFirstTest {
         		new FluxSampleFirst.SampleFirstMain<>(actual, i -> Flux.just(i));
         FluxSampleFirst.SampleFirstOther<Integer> test = new  FluxSampleFirst.SampleFirstOther<>(main);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main.other);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
-        Assertions.assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main.other);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+        assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
         test.request(35);
-		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

@@ -42,6 +42,21 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class NextProcessorTest {
 
 	@Test
+	public void currentSubscriberCount() {
+		Sinks.One<Integer> sink = new NextProcessor<>(null);
+
+		assertThat(sink.currentSubscriberCount()).isZero();
+
+		sink.asMono().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isOne();
+
+		sink.asMono().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isEqualTo(2);
+	}
+
+	@Test
 	public void noRetentionOnTermination() throws InterruptedException {
 		Date date = new Date();
 		CompletableFuture<Date> future = new CompletableFuture<>();

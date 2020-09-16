@@ -461,7 +461,7 @@ public class FluxWindowPredicateTest extends
 		            .expectNext(Signal.complete())
 				    .verifyComplete();
 
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -519,7 +519,7 @@ public class FluxWindowPredicateTest extends
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify();
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -547,7 +547,7 @@ public class FluxWindowPredicateTest extends
 					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
 					.verify();
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -578,7 +578,7 @@ public class FluxWindowPredicateTest extends
 				    .then(sp1::emitComplete)
 				    .expectNext(Signal.complete())
 				    .verifyComplete();
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -605,7 +605,7 @@ public class FluxWindowPredicateTest extends
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify();
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -633,7 +633,7 @@ public class FluxWindowPredicateTest extends
 					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
 					.verify();
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	private <T> Predicate<? super Signal<T>> signalErrorMessage(String expectedMessage) {
@@ -670,7 +670,7 @@ public class FluxWindowPredicateTest extends
 		            .then(sp1::emitComplete)
 		            .expectNext(Signal.complete())
 		            .verifyComplete();
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -708,7 +708,7 @@ public class FluxWindowPredicateTest extends
 					.expectNext(Signal.complete())
 					.expectComplete()
 					.verify(Duration.ofSeconds(1));
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -743,7 +743,7 @@ public class FluxWindowPredicateTest extends
 		            //remainder window, not emitted
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -766,7 +766,7 @@ public class FluxWindowPredicateTest extends
 					//this is the error in the main:
 					.expectErrorMessage("forced failure")
 					.verify(Duration.ofMillis(100));
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -818,7 +818,7 @@ public class FluxWindowPredicateTest extends
 					//error in the window:
 					.expectErrorMessage("predicate failure")
 					.verify(Duration.ofMillis(100));
-		assertThat(Scannable.from(sp1).inners().findAny().isPresent()).isFalse();
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 

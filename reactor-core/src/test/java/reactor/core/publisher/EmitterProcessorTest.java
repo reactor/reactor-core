@@ -35,7 +35,6 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -57,6 +56,21 @@ import static reactor.core.Scannable.Attr.*;
  */
 @SuppressWarnings("deprecation")
 public class EmitterProcessorTest {
+
+	@Test
+	public void currentSubscriberCount() {
+		Sinks.Many<Integer> sink = EmitterProcessor.create();
+
+		assertThat(sink.currentSubscriberCount()).isZero();
+
+		sink.asFlux().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isOne();
+
+		sink.asFlux().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isEqualTo(2);
+	}
 
 	//see https://github.com/reactor/reactor-core/issues/1364
 	@Test
@@ -263,9 +277,9 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 		StepVerifier.create(tp)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
-			            Assert.assertFalse("Completed?", tp.isTerminated());
-			            Assert.assertNull("Has error?", tp.getError());
+			            assertThat(tp.currentSubscriberCount()).as("has subscriber").isPositive();
+			            assertThat(tp.isTerminated()).as("isTerminated").isFalse();
+			            assertThat(tp.getError()).as("getError").isNull();
 		            })
 		            .then(() -> {
 			            tp.onNext(1);
@@ -280,9 +294,9 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
-		Assert.assertTrue("Not completed?", tp.isTerminated());
-		Assert.assertNull("Has error?", tp.getError());
+		assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+		assertThat(tp.isTerminated()).as("isTerminated").isTrue();
+		assertThat(tp.getError()).as("getError").isNull();
 	}
 
 	@Test
@@ -290,9 +304,9 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 		StepVerifier.create(tp, 0L)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
-			            Assert.assertFalse("Completed?", tp.isTerminated());
-			            Assert.assertNull("Has error?", tp.getError());
+			            assertThat(tp.currentSubscriberCount()).as("has subscriber").isPositive();
+			            assertThat(tp.isTerminated()).as("isTerminated").isFalse();
+			            assertThat(tp.getError()).as("getError").isNull();
 		            })
 		            .then(() -> {
 			            tp.onNext(1);
@@ -304,9 +318,9 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
-		Assert.assertTrue("Not completed?", tp.isTerminated());
-		Assert.assertNull("Has error?", tp.getError());
+		assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+		assertThat(tp.isTerminated()).as("isTerminated").isTrue();
+		assertThat(tp.getError()).as("getError").isNull();
 	}
 
 	@Test
@@ -314,9 +328,9 @@ public class EmitterProcessorTest {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create(100);
 		StepVerifier.create(tp, 0L)
 		            .then(() -> {
-			            Assert.assertTrue("No subscribers?", Scannable.from(tp).inners().count() != 0);
-			            Assert.assertFalse("Completed?", tp.isTerminated());
-			            Assert.assertNull("Has error?", tp.getError());
+			            assertThat(tp.currentSubscriberCount()).as("has subscriber").isPositive();
+			            assertThat(tp.isTerminated()).as("isTerminated").isFalse();
+			            assertThat(tp.getError()).as("getError").isNull();
 		            })
 		            .then(() -> {
 			            tp.onNext(1);
@@ -328,9 +342,9 @@ public class EmitterProcessorTest {
 		            .expectComplete()
 		            .verify();
 
-		Assert.assertFalse("Subscribers present?", Scannable.from(tp).inners().count() != 0);
-		Assert.assertTrue("Not completed?", tp.isTerminated());
-		Assert.assertNull("Has error?", tp.getError());
+		assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+		assertThat(tp.isTerminated()).as("isTerminated").isTrue();
+		assertThat(tp.getError()).as("getError").isNull();
 	}
 
 	@Test
@@ -341,9 +355,11 @@ public class EmitterProcessorTest {
 		assertThat(tp.isCancelled()).isFalse();
 
 		assertThat(tp.inners()).isEmpty();
+		assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
 
 		Disposable d1 = tp.subscribe();
 		assertThat(tp.inners()).hasSize(1);
+		assertThat(tp.currentSubscriberCount()).isPositive();
 
 		FluxSink<Integer> s = tp.sink();
 

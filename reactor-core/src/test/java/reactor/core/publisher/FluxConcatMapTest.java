@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -127,8 +126,8 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		source.emitNext(1);
 		source.emitNext(2);
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.tryEmitNext(1).orThrow();
 		//using an emit below would terminate the sink with an error
@@ -166,8 +165,8 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 
 		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.tryEmitNext(1).orThrow();
 		//using an emit below would terminate the sink with an error

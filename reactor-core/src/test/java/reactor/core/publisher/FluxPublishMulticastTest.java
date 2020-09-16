@@ -22,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -183,11 +182,11 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		  .publish(o -> Flux.<Integer>never())
 		  .subscribe(ts);
 
-		Assert.assertTrue("Not subscribed?", Scannable.from(sp).inners().count() != 0);
+		assertThat(sp.currentSubscriberCount()).as("subscribed").isPositive();
 
 		ts.cancel();
 
-		Assert.assertTrue("Still subscribed?", Scannable.from(sp).inners().count() == 0);
+		assertThat(sp.currentSubscriberCount()).as("still subscribed").isZero();
 	}
 
 	@Test
@@ -200,7 +199,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		  .publish(o -> Flux.<Integer>empty())
 		  .subscribe(ts);
 
-		Assert.assertFalse("Still subscribed?", Scannable.from(sp).inners().count() == 1);
+		assertThat(sp.currentSubscriberCount()).as("still subscribed").isZero();
 	}
 
 	@Test

@@ -59,6 +59,11 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Ma
 	}
 
 	@Override
+	public int currentSubscriberCount() {
+		return state == State.SUBSCRIBED ? 1 : 0;
+	}
+
+	@Override
 	public Flux<T> asFlux() {
 		return this;
 	}

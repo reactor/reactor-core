@@ -27,6 +27,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UnicastManySinkNoBackpressureTest {
 
 	@Test
+	void currentSubscriberCount() {
+		Sinks.Many<Integer> sink = UnicastManySinkNoBackpressure.create();
+
+		assertThat(sink.currentSubscriberCount()).isZero();
+
+		sink.asFlux().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isOne();
+	}
+
+	@Test
 	void noSubscribers() {
 		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
 		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);

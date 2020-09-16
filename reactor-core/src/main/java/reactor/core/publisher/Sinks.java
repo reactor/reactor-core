@@ -601,6 +601,18 @@ public final class Sinks {
 		void emitError(Throwable error);
 
 		/**
+		 * Get how many {@link Subscriber Subscribers} are currently subscribed to the sink.
+		 * <p>
+		 * This is a best effort peek at the sink state, and a subsequent attempt at emitting
+		 * to the sink might still return {@link Emission#FAIL_ZERO_SUBSCRIBER} where relevant.
+		 * (generally in {@link #tryEmitNext(Object)}). Request (and lack thereof) isn't taken
+		 * into account, all registered subscribers are counted.
+		 *
+		 * @return the number of subscribers at the time of invocation
+		 */
+		int currentSubscriberCount();
+
+		/**
 		 * Return a {@link Flux} view of this sink. Every call returns the same instance.
 		 *
 		 * @return the {@link Flux} view associated to this {@link Sinks.Many}
@@ -675,6 +687,17 @@ public final class Sinks {
 		 */
 		@Deprecated
 		void emitError(Throwable error);
+
+		/**
+		 * Get how many {@link Subscriber Subscribers} are currently subscribed to the sink.
+		 * <p>
+		 * This is a best effort peek at the sink state, and a subsequent attempt at emitting
+		 * to the sink might still return {@link Emission#FAIL_ZERO_SUBSCRIBER} where relevant.
+		 * Request (and lack thereof) isn't taken into account, all registered subscribers are counted.
+		 *
+		 * @return the number of active subscribers at the time of invocation
+		 */
+		int currentSubscriberCount();
 
 		/**
 		 * Return a {@link Mono} view of this sink. Every call returns the same instance.

@@ -541,6 +541,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public int currentSubscriberCount() {
+		return subscribers.length;
+	}
+
+	@Override
 	public Flux<T> asFlux() {
 		return this;
 	}

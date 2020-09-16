@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -69,9 +68,9 @@ public class FluxSampleTimeoutTest {
 		  .assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
-		Assert.assertFalse("sp3 has subscribers?", Scannable.from(sp3).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
+		assertThat(sp3.currentSubscriberCount()).as("sp3 has subscriber").isZero();
 	}
 
 	@Test
@@ -93,8 +92,8 @@ public class FluxSampleTimeoutTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 	}
 
 	@Test
@@ -116,8 +115,8 @@ public class FluxSampleTimeoutTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 	}
 
 	@Test
@@ -136,7 +135,7 @@ public class FluxSampleTimeoutTest {
 		  .assertError(NullPointerException.class)
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
