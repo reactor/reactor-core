@@ -37,6 +37,11 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 	}
 
 	@Override
+	public int currentSubscriberCount() {
+		return subscribers.length;
+	}
+
+	@Override
 	public Mono<T> asMono() {
 		return this;
 	}

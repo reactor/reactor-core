@@ -346,6 +346,11 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public int currentSubscriberCount() {
+		return hasDownstream ? 1 : 0;
+	}
+
+	@Override
 	public Flux<T> asFlux() {
 		return this;
 	}

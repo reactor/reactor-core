@@ -28,6 +28,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class VoidProcessorTest {
 
+	@Test
+	public void currentSubscriberCount() {
+		Sinks.Empty<Integer> sink = new VoidProcessor<>();
+
+		assertThat(sink.currentSubscriberCount()).isZero();
+
+		sink.asMono().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isOne();
+
+		sink.asMono().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isEqualTo(2);
+	}
 
 	@Test(expected = IllegalStateException.class)
 	public void NextProcessorResultNotAvailable() {

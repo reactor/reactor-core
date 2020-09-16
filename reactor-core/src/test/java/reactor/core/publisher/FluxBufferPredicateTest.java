@@ -36,7 +36,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -88,7 +87,7 @@ public class FluxBufferPredicateTest {
 				.expectNext(Arrays.asList(7, 8))
 				.expectComplete()
 				.verify();
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -141,7 +140,7 @@ public class FluxBufferPredicateTest {
 		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
 		            .expectErrorMessage("forced failure")
 		            .verify();
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -165,8 +164,9 @@ public class FluxBufferPredicateTest {
 					.then(() -> sp1.emitNext(5))
 					.expectErrorMessage("predicate failure")
 					.verify();
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
+
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalUntilOther() {
@@ -195,7 +195,7 @@ public class FluxBufferPredicateTest {
 				.expectNext(Arrays.asList(6, 7, 8))
 				.expectComplete()
 				.verify();
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -216,7 +216,7 @@ public class FluxBufferPredicateTest {
 		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
 		            .expectErrorMessage("forced failure")
 		            .verify();
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -240,7 +240,7 @@ public class FluxBufferPredicateTest {
 					.then(() -> sp1.emitNext(5))
 					.expectErrorMessage("predicate failure")
 					.verify();
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -401,7 +401,7 @@ public class FluxBufferPredicateTest {
 				.expectNext(Arrays.asList(7, 8))
 				.expectComplete()
 				.verify();
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -432,7 +432,7 @@ public class FluxBufferPredicateTest {
 					.expectNext(Collections.singletonList(9))
 					.expectComplete()
 					.verify(Duration.ofSeconds(1));
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -458,7 +458,7 @@ public class FluxBufferPredicateTest {
 		            .then(sp1::emitComplete)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -478,7 +478,7 @@ public class FluxBufferPredicateTest {
 		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
 		            .expectErrorMessage("forced failure")
 		            .verify(Duration.ofMillis(100));
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -503,7 +503,7 @@ public class FluxBufferPredicateTest {
 					.then(() -> sp1.emitNext(5)) //fails
 					.expectErrorMessage("predicate failure")
 					.verify(Duration.ofMillis(100));
-		assertFalse(Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 	}
 
 	@Test
@@ -515,7 +515,7 @@ public class FluxBufferPredicateTest {
 				() -> { throw new RuntimeException("supplier failure"); },
 				FluxBufferPredicate.Mode.UNTIL);
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 
 		StepVerifier.create(bufferUntil)
 		            .expectErrorMessage("supplier failure")
@@ -536,7 +536,7 @@ public class FluxBufferPredicateTest {
 				},
 				FluxBufferPredicate.Mode.UNTIL);
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 
 		StepVerifier.create(bufferUntil)
 		            .then(() -> sp1.emitNext(1))
@@ -555,7 +555,7 @@ public class FluxBufferPredicateTest {
 				() -> null,
 				FluxBufferPredicate.Mode.UNTIL);
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 
 		StepVerifier.create(bufferUntil)
 		            .then(() -> sp1.emitNext(1))

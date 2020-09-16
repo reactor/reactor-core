@@ -50,10 +50,10 @@ public class FluxAutoConnectTest {
 		e.asFlux().publish().autoConnect(0, cancel::set);
 		
 		Assert.assertNotNull(cancel.get());
-		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source subscribed").isPositive();
 
 		cancel.get().dispose();
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source subscribed").isZero();
 	}
 
 	@Test
@@ -65,20 +65,20 @@ public class FluxAutoConnectTest {
 		Flux<Integer> p = e.asFlux().publish().autoConnect(2, cancel::set);
 		
 		Assert.assertNull(cancel.get());
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source subscribed").isZero();
 		
 		p.subscribe(AssertSubscriber.create());
 		
 		Assert.assertNull(cancel.get());
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source subscribed").isZero();
 
 		p.subscribe(AssertSubscriber.create());
 
 		Assert.assertNotNull(cancel.get());
-		Assert.assertTrue("sp has no subscribers?", Scannable.from(e).inners().count() != 0);
-		
+		assertThat(e.currentSubscriberCount()).as("source subscribed").isPositive();
+
 		cancel.get().dispose();
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("source subscribed").isZero();
 	}
 
 	@Test

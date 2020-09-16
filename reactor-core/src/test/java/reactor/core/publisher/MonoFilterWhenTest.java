@@ -254,7 +254,7 @@ public class MonoFilterWhenTest {
 		                        .filterWhen(v -> pp.asFlux()))
 		            .thenCancel();
 
-		assertThat(Scannable.from(pp).inners().count() != 0).isFalse();
+		assertThat(pp.currentSubscriberCount()).as("pp has subscriber").isZero();
 	}
 
 	@Test

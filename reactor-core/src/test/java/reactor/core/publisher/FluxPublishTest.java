@@ -429,7 +429,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertError(CancellationException.class)
 		.assertNotComplete();
 
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("still connected").isZero();
 	}
 
 	@Test
@@ -450,7 +450,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertError(CancellationException.class)
 		.assertNotComplete();
 
-		Assert.assertFalse("sp has subscribers?", Scannable.from(e).inners().count() != 0);
+		assertThat(e.currentSubscriberCount()).as("still connected").isZero();
 	}
 
 	@Test

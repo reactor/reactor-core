@@ -18,27 +18,19 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -46,7 +38,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxPeekFuseableTest.AssertQueueSubscription;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
@@ -394,8 +385,8 @@ public class FluxFlatMapTest {
 		.assertNoError()
 		.assertNotComplete();
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.emitNext(1);
 		source2.emitNext(10);
@@ -429,8 +420,8 @@ public class FluxFlatMapTest {
 		.assertNoError()
 		.assertNotComplete();
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertTrue("source2 no  subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isPositive();
 
 		source1.emitNext(1);
 		source1.emitComplete();

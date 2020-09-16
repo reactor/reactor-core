@@ -3,7 +3,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
@@ -50,6 +49,11 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	SerializedManySink(Many<T> sink, ContextHolder contextHolder) {
 		this.sink = sink;
 		this.contextHolder = contextHolder;
+	}
+
+	@Override
+	public int currentSubscriberCount() {
+		return sink.currentSubscriberCount();
 	}
 
 	@Override

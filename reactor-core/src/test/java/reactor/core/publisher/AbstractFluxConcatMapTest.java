@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -29,12 +28,13 @@ import org.junit.rules.Timeout;
 import org.reactivestreams.Publisher;
 
 import reactor.core.CorePublisher;
-import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String, String> {
 
@@ -272,6 +272,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		    .verify(Duration.ofSeconds(5));
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -290,8 +291,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.emitNext(1);
 		source2.emitNext(10);
@@ -307,8 +308,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isZero();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 	}
 
 	@Test
@@ -329,8 +330,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.emitNext(1);
 
@@ -341,8 +342,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isZero();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 	}
 
 	@Test
@@ -363,8 +364,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.emitNext(1);
 
@@ -382,8 +383,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isZero();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 	}
 
 	@Test
@@ -404,8 +405,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.emitNext(1);
 
@@ -416,8 +417,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isZero();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 	}
 
 	@Test
@@ -861,8 +862,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.emitNext(1);
 
@@ -873,8 +874,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isZero();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 	}
 
 	@Test
@@ -895,8 +896,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		source.emitNext(1);
 
-		Assert.assertTrue("source1 no subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
 		source1.emitNext(1);
 
@@ -904,7 +905,7 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		source.emitNext(2);
 
-		Assert.assertTrue("source2 no subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isPositive();
 
 		source2.emitNext(2);
 		source2.emitComplete();
@@ -916,8 +917,8 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("source1 has subscribers?", Scannable.from(source1).inners().count() != 0);
-		Assert.assertFalse("source2 has subscribers?", Scannable.from(source2).inners().count() != 0);
+		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isZero();
+		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 	}
 
 	@Test

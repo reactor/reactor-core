@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -183,10 +182,10 @@ public class FluxWindowWhenTest {
 		expect(ts, 0, 2, 3);
 		expect(ts, 1, 3, 4);
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
-		Assert.assertFalse("sp3 has subscribers?", Scannable.from(sp3).inners().count() != 0);
-		Assert.assertFalse("sp4 has subscribers?", Scannable.from(sp4).inners().count() != 0);
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
+		assertThat(sp3.currentSubscriberCount()).as("sp3 has subscriber").isZero();
+		assertThat(sp4.currentSubscriberCount()).as("sp4 has subscriber").isZero();
 	}
 
 	@Test
@@ -227,10 +226,10 @@ public class FluxWindowWhenTest {
 		expect(ts, 0, 2, 3);
 		expect(ts, 1, 3, 4);
 
-		Assert.assertFalse("openSelector has subscribers?", Scannable.from(openSelector).inners().count() != 0);
-		Assert.assertFalse("closeSelectorFor1 has subscribers?", Scannable.from(closeSelectorFor1).inners().count() != 0);
-		Assert.assertFalse("closeSelectorForOthers has subscribers?", Scannable.from(closeSelectorForOthers).inners().count() != 0);
-		Assert.assertFalse("source has subscribers?", Scannable.from(source).inners().count() != 0);
+		assertThat(openSelector.currentSubscriberCount()).as("openSelector has subscriber").isZero();
+		assertThat(closeSelectorFor1.currentSubscriberCount()).as("closeSelectorFor1 has subscriber").isZero();
+		assertThat(closeSelectorForOthers.currentSubscriberCount()).as("closeSelectorForOthers has subscriber").isZero();
+		assertThat(source.currentSubscriberCount()).as("source has subscriber").isZero();
 	}
 
 	@Test
@@ -262,10 +261,10 @@ public class FluxWindowWhenTest {
 
 		expect(ts, 0, 1, 2, 3);
 
-		Assert.assertFalse("source has subscribers?", Scannable.from(source).inners().count() != 0);
-		Assert.assertFalse("openSelector has subscribers?", Scannable.from(openSelector).inners().count() != 0);
-		Assert.assertFalse("closeSelectorFor1 has subscribers?", Scannable.from(closeSelectorFor1).inners().count() != 0);
-		Assert.assertFalse("closeSelectorOthers has subscribers?", Scannable.from(closeSelectorOthers).inners().count() != 0);
+		assertThat(openSelector.currentSubscriberCount()).as("openSelector has subscriber").isZero();
+		assertThat(closeSelectorFor1.currentSubscriberCount()).as("closeSelectorFor1 has subscriber").isZero();
+		assertThat(closeSelectorOthers.currentSubscriberCount()).as("closeSelectorOthers has subscriber").isZero();
+		assertThat(source.currentSubscriberCount()).as("source has subscriber").isZero();
 	}
 
 

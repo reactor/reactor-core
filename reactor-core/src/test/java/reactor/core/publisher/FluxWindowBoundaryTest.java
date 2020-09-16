@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -82,8 +81,8 @@ public class FluxWindowBoundaryTest {
 		ts.assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 	}
 
 	@Test
@@ -118,8 +117,8 @@ public class FluxWindowBoundaryTest {
 		ts.assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 	}
 
 	@Test
@@ -160,8 +159,8 @@ public class FluxWindowBoundaryTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 	}
 
 	@Test
@@ -202,8 +201,8 @@ public class FluxWindowBoundaryTest {
 		  .assertErrorMessage("forced failure")
 		  .assertNotComplete();
 
-		Assert.assertFalse("sp1 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 	}
 
 

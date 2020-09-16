@@ -101,7 +101,7 @@ public class StrictSubscriberTest {
 		Assert.assertNull("Error: " + e.get(), e.get());
 
 		Assert.assertTrue("Cancel executed before onSubscribe finished", state2.get());
-		Assert.assertFalse("Has subscribers?!", Scannable.from(sp).inners().count() != 0);
+		assertThat(sp.currentSubscriberCount()).as("sp has subscriber").isZero();
 	}
 
 	@Test

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -155,7 +154,7 @@ public class FluxBufferBoundaryTest
 
 		sp1.emitError(new RuntimeException("forced failure"));
 
-		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 
 		sp2.emitNext(2);
 
@@ -204,7 +203,7 @@ public class FluxBufferBoundaryTest
 
 		sp2.emitError(new RuntimeException("forced failure"));
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 
 		ts.assertValues(Arrays.asList(1, 2))
 		  .assertError(RuntimeException.class)
@@ -232,8 +231,8 @@ public class FluxBufferBoundaryTest
 		})
 		   .subscribe(ts);
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -264,8 +263,8 @@ public class FluxBufferBoundaryTest
 
 		sp2.emitNext(1);
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -284,8 +283,8 @@ public class FluxBufferBoundaryTest
 		   .buffer(sp2.asFlux(), (Supplier<List<Integer>>) () -> null)
 		   .subscribe(ts);
 
-		Assert.assertFalse("sp1 has subscribers?", Scannable.from(sp1).inners().findAny().isPresent());
-		Assert.assertFalse("sp2 has subscribers?", Scannable.from(sp2).inners().findAny().isPresent());
+		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
+		assertThat(sp2.currentSubscriberCount()).as("sp2 has subscriber").isZero();
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)

@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.junit.Test;
@@ -48,6 +47,17 @@ import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("deprecation")
 public class UnicastProcessorTest {
+
+	@Test
+	public void currentSubscriberCount() {
+		Sinks.Many<Integer> sink = UnicastProcessor.create();
+
+		assertThat(sink.currentSubscriberCount()).isZero();
+
+		sink.asFlux().subscribe();
+
+		assertThat(sink.currentSubscriberCount()).isOne();
+	}
 
     @Test
     public void secondSubscriberRejectedProperly() {
@@ -196,23 +206,23 @@ public class UnicastProcessorTest {
 	public void subscriptionCancelUpdatesDownstreamCount() {
 		UnicastProcessor<String> processor = UnicastProcessor.create();
 
-		assertThat(processor.downstreamCount())
+		assertThat(processor.currentSubscriberCount())
 				.as("before subscribe")
 				.isZero();
 
 		LambdaSubscriber<String> subscriber = new LambdaSubscriber<>(null, null, null, null);
 		Disposable subscription = processor.subscribeWith(subscriber);
 
-		assertThat(processor.downstreamCount())
+		assertThat(processor.currentSubscriberCount())
 				.as("after subscribe")
-				.isEqualTo(1);
+				.isPositive();
 		assertThat(processor.actual())
 				.as("after subscribe has actual")
 				.isSameAs(subscriber);
 
 		subscription.dispose();
 
-		assertThat(processor.downstreamCount())
+		assertThat(processor.currentSubscriberCount())
 				.as("after subscription cancel")
 				.isZero();
 	}
