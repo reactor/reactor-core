@@ -256,7 +256,7 @@ Flux<String> bridge = Flux.create(sink -> {
     });
     sink.onRequest(n -> {
         List<String> messages = myMessageProcessor.getHistory(n); // <1>
-        for(String s : message) {
+        for(String s : messages) {
            sink.next(s); // <2>
         }
     });
