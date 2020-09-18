@@ -356,6 +356,48 @@ public final class Sinks {
 		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
 		 */
 		<T> Sinks.Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
+
+		/**
+		 A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: fail fast on {@link Many#tryEmitNext(Object) tryEmitNext}.</li>
+		 *     <li>Backpressure : notify the caller with {@link Emission#FAIL_OVERFLOW} if any of the subscribers
+		 *     cannot process an element, failing fast and backing off from emitting the element at all (all or nothing).
+		 * 	   From the perspective of subscribers, data is dropped and never seen but they are not terminated.
+		 *     </li>
+		 *     <li>Replaying: No replay of elements. Only forwards to a {@link Subscriber} the elements that
+		 *     have been pushed to the sink AFTER this subscriber was subscribed, provided all of the subscribers
+		 *     have demand.</li>
+		 * </ul>
+		 * <p>
+		 * <img class="marble" src="doc-files/marbles/sinkDirectAllOrNothing.svg" alt="">
+		 *
+		 * @param <T> the type of elements to emit
+		 * @return a multicast {@link Sinks.Many} that "drops" in case any subscriber is too slow
+		 */
+		<T> Sinks.Many<T> directAllOrNothing();
+
+		/**
+		 A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: fail fast on {@link Many#tryEmitNext(Object) tryEmitNext}.</li>
+		 *     <li>Backpressure : notify the caller with {@link Emission#FAIL_OVERFLOW} if <strong>none</strong>
+		 *     of the subscribers can process an element. Otherwise, it ignores slow subscribers and emits the
+		 *     element to fast ones as a best effort. From the perspective of slow subscribers, data is dropped
+		 *     and never seen, but they are not terminated.
+		 *     </li>
+		 *     <li>Replaying: No replay of elements. Only forwards to a {@link Subscriber} the elements that
+		 *     have been pushed to the sink AFTER this subscriber was subscribed.</li>
+		 * </ul>
+		 * <p>
+		 * <img class="marble" src="doc-files/marbles/sinkDirectBestEffort.svg" alt="">
+		 *
+		 * @param <T> the type of elements to emit
+		 * @return a multicast {@link Sinks.Many} that "drops" in case of no demand from any subscriber
+		 */
+		<T> Sinks.Many<T> directBestEffort();
 	}
 
 

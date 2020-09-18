@@ -228,7 +228,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test
 	public void allDistinctConditional() {
-		Sinks.Many<Integer> dp = DirectProcessor.create();
+		Sinks.Many<Integer> dp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = dp.asFlux()
 										 .distinctUntilChanged()

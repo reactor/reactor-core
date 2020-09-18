@@ -46,7 +46,6 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -663,7 +662,7 @@ public class SchedulersTest {
 
 	public void assertRejectingScheduler(Scheduler scheduler) {
 		try {
-			Sinks.Many<String> p = DirectProcessor.create();
+			Sinks.Many<String> p = Sinks.many().unsafe().multicast().directBestEffort();
 
 			AtomicReference<String> r = new AtomicReference<>();
 			CountDownLatch l = new CountDownLatch(1);
