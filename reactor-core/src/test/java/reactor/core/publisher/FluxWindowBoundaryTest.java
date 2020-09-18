@@ -53,8 +53,8 @@ public class FluxWindowBoundaryTest {
 	public void normal() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.Many<Integer> sp2 = DirectProcessor.create();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		sp1.asFlux()
 		   .window(sp2.asFlux())
@@ -89,8 +89,8 @@ public class FluxWindowBoundaryTest {
 	public void normalOtherCompletes() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.Many<Integer> sp2 = DirectProcessor.create();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		sp1.asFlux()
 		   .window(sp2.asFlux())
@@ -125,8 +125,8 @@ public class FluxWindowBoundaryTest {
 	public void mainError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.Many<Integer> sp2 = DirectProcessor.create();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		sp1.asFlux()
 		   .window(sp2.asFlux())
@@ -167,8 +167,8 @@ public class FluxWindowBoundaryTest {
 	public void otherError() {
 		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = DirectProcessor.create();
-		Sinks.Many<Integer> sp2 = DirectProcessor.create();
+		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		sp1.asFlux()
 		   .window(sp2.asFlux())

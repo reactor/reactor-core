@@ -159,8 +159,8 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void fused() {
-		Sinks.Many<Integer> dp1 = DirectProcessor.create();
-		Sinks.Many<Integer> dp2 = DirectProcessor.create();
+		Sinks.Many<Integer> dp1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> dp2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY);

@@ -39,8 +39,8 @@ public class FluxJoinTest {
 	public void normal1() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Flux<Integer> m =
 				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), add);
@@ -66,10 +66,10 @@ public class FluxJoinTest {
 	@Test
 	public void normal1WithDuration() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
-		Sinks.Many<Integer> duration1 = DirectProcessor.create();
+		Sinks.Many<Integer> duration1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Flux<Integer> m = source1.asFlux().join(source2.asFlux(), just(duration1.asFlux()), just(Flux.never()), add);
 		m.subscribe(ts);
@@ -95,8 +95,8 @@ public class FluxJoinTest {
 	@Test
 	public void normal2() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Flux<Integer> m =
 				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), add);
@@ -121,8 +121,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Flux<Integer> m =
 				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), add);
@@ -140,8 +140,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Flux<Integer> m =
 				source1.asFlux().join(source2.asFlux(), just(Flux.never()), just(Flux.never()), add);
@@ -159,8 +159,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftDurationThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -177,8 +177,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightDurationThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -195,8 +195,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftDurationSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -215,8 +215,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightDurationSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -235,8 +235,8 @@ public class FluxJoinTest {
 	@Test
 	public void resultSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = DirectProcessor.create();
-		Sinks.Many<Integer> source2 = DirectProcessor.create();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		BiFunction<Integer, Integer, Integer> fail = (t1, t2) -> {
 			throw new RuntimeException("Forced failure");

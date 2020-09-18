@@ -143,8 +143,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsDelayEnd() {
-		Sinks.Many<Integer> main = DirectProcessor.create();
-		final Sinks.Many<Integer> inner = DirectProcessor.create();
+		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		final Sinks.Many<Integer> inner = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		AssertSubscriber<Integer> ts = main.asFlux()
 										   .flatMapSequentialDelayError(t -> inner.asFlux(), 32, 32)
@@ -170,8 +170,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsImmediate() {
-		Sinks.Many<Integer> main = DirectProcessor.create();
-		final Sinks.Many<Integer> inner = DirectProcessor.create();
+		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		final Sinks.Many<Integer> inner = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		AssertSubscriber<Integer> ts = main.asFlux().flatMapSequential(t -> inner.asFlux())
 		                                   .subscribeWith(AssertSubscriber.create());
@@ -463,7 +463,7 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void testReentrantWork() {
-		final Sinks.Many<Integer> subject = DirectProcessor.create();
+		final Sinks.Many<Integer> subject = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		final AtomicBoolean once = new AtomicBoolean();
 

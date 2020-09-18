@@ -85,7 +85,7 @@ public class MonoTimeoutTest {
 
 		NextProcessor<Integer> source = new NextProcessor<>(null);
 
-		Sinks.Many<Integer> tp = DirectProcessor.create();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		source.timeout(tp.asFlux())
 		      .subscribe(ts);

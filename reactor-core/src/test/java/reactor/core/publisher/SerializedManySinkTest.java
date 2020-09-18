@@ -89,10 +89,10 @@ public class SerializedManySinkTest {
 
 	@Test
 	public void sameThreadRecursion() throws Exception {
-		DirectProcessor<Object> processor = DirectProcessor.create();
-		SerializedManySink<Object> manySink = new SerializedManySink<>(processor, Context::empty);
+		Sinks.Many<Object> sink = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		SerializedManySink<Object> manySink = new SerializedManySink<>(sink, Context::empty);
 
-		CompletableFuture<Object> muchFuture = processor.doOnNext(o -> {
+		CompletableFuture<Object> muchFuture = sink.asFlux().doOnNext(o -> {
 			if ("first".equals(o)) {
 				assertThat(manySink.lockedAt).as("lockedAt").isEqualTo(Thread.currentThread());
 				assertThat(manySink.tryEmitNext("second")).as("second").isEqualTo(Emission.OK);
@@ -105,7 +105,7 @@ public class SerializedManySinkTest {
 
 	static class EmptyMany<T> implements Sinks.Many<T> {
 
-		final Sinks.Many<T> delegate = DirectProcessor.create();
+		final Sinks.Many<T> delegate = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
 
 		@Override
 		public Emission tryEmitNext(T o) {
