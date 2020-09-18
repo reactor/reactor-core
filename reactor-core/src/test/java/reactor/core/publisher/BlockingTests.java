@@ -81,9 +81,9 @@ public class BlockingTests {
 	@Test
 	public void blockingFirstTimeout() {
 		assertThatIllegalStateException().isThrownBy(() ->
-				Flux.just(1).delayElements(Duration.ofNanos(100))
-				.blockFirst(Duration.ofNanos(50)))
-			.withMessage("Timeout on blocking read for 50 NANOSECONDS");
+				Flux.just(1).delayElements(Duration.ofSeconds(1))
+				.blockFirst(Duration.ofMillis(1)))
+			.withMessage("Timeout on blocking read for 1000000 NANOSECONDS");
 	}
 
 	@Test
