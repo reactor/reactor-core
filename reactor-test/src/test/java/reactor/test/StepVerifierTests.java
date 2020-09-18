@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
@@ -2084,16 +2083,16 @@ public class StepVerifierTests {
 
 	//see https://github.com/reactor/reactor-core/issues/959
 	@Test
-	public void assertNextWithSubscribeOnDirectProcessor() {
+	public void assertNextWithSubscribeOnSink() {
 		Scheduler scheduler = Schedulers.newBoundedElastic(1, 100, "test");
-		Sinks.Many<Integer> processor = DirectProcessor.create();
+		Sinks.Many<Integer> sink = Sinks.many().unsafe().multicast().directBestEffort();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
-		                             .doOnNext(processor::emitNext)
+		                             .doOnNext(v -> sink.tryEmitNext(v).orThrow())
 		                             .subscribeOn(scheduler);
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(
-						StepVerifier.create(processor.asFlux())
+						StepVerifier.create(sink.asFlux())
 						            .then(doAction::subscribe)
 						            .assertNext(v -> assertThat(v).isEqualTo(23))
 						            .thenCancel()

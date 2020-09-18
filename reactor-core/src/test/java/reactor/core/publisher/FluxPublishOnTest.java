@@ -449,14 +449,15 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Assert.assertEquals(1, count.get());
 	}
 
+	@Test
 	public void diamond() {
 		@SuppressWarnings("deprecation")
-		DirectProcessor<Integer> sp = DirectProcessor.create();
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux<Integer> fork1 = sp.map(d -> d)
+		Flux<Integer> fork1 = processor.map(d -> d)
 		                        .publishOn(Schedulers.fromExecutorService(exec));
-		Flux<Integer> fork2 = sp.map(d -> d)
+		Flux<Integer> fork2 = processor.map(d -> d)
 		                        .publishOn(Schedulers.fromExecutorService(exec));
 
 		ts.request(256);
@@ -467,7 +468,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Flux.range(0, 128)
 		    .hide()
 		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
-		    .subscribe(sp);
+		    .subscribe(processor);
 
 		ts.await(Duration.ofSeconds(5))
 		  .assertTerminated()
