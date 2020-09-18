@@ -18,25 +18,29 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoSingleTest {
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void source1Null() {
-		new MonoSingle<>(null, 1, false);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new MonoSingle<>(null, 1, false);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void defaultSupplierNull() {
-		Flux.never().single(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never().single(null);
+		});
 	}
 
 

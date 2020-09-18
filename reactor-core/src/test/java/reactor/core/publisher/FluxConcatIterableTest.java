@@ -18,15 +18,19 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 public class FluxConcatIterableTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void arrayNull() {
-		Flux.concat((Iterable<? extends Publisher<?>>)null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.concat((Iterable<? extends Publisher<?>>) null);
+		});
 	}
 
 	final Publisher<Integer> source = Flux.range(1, 3);

@@ -20,14 +20,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
-import java.util.logging.Level;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.SignalType;
 import reactor.core.publisher.WorkQueueProcessor;
 
 import static org.testng.Assert.assertEquals;
@@ -51,7 +49,7 @@ public class BurstyWorkQueueProcessorTests {
 	private ExecutorService            producerExecutor;
 	private AtomicLong                 droppedCount;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		maxRingBufferPending =  new LongAccumulator(Long::max, Long.MIN_VALUE);
 		droppedCount = new AtomicLong(0);
@@ -59,7 +57,7 @@ public class BurstyWorkQueueProcessorTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void test() throws Exception {
 		processor = WorkQueueProcessor.builder().name("test-processor").bufferSize(RINGBUFFER_SIZE).build();
 

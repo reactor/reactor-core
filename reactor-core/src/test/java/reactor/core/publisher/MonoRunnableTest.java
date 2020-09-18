@@ -24,21 +24,22 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.data.Offset;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
-
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoRunnableTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullValue() {
-		new MonoRunnable(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new MonoRunnable<>(null);
+		});
 	}
 
 	@Test

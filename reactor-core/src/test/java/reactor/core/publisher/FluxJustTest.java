@@ -19,20 +19,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxJustTest {
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void nullValue() {
-        Flux.just((Integer)null);
-    }
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.just((Integer) null);
+		});
+	}
 
     @Test
     @SuppressWarnings("unchecked")

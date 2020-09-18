@@ -20,10 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -32,12 +31,11 @@ import static org.mockito.Mockito.*;
 /**
  * @author David Karnok
  */
-@RunWith(MockitoJUnitRunner.class)
 public class SwapDisposableTest {
 
 	private Disposables.SwapDisposable sequentialDisposable;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		sequentialDisposable = new Disposables.SwapDisposable();
 	}
@@ -125,7 +123,8 @@ public class SwapDisposableTest {
 		verify(underlying).dispose();
 	}
 
-	@Test(timeout = 1000)
+	@Test
+	@Timeout(1)
 	public void settingUnderlyingWhenUnsubscribedCausesImmediateUnsubscriptionConcurrently()
 			throws InterruptedException {
 		final Disposable firstSet = mock(Disposable.class);

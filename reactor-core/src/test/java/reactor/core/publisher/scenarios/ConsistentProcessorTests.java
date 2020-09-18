@@ -25,10 +25,10 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -49,7 +49,7 @@ public class ConsistentProcessorTests {
 	private Processor<String, String> workProcessor;
 
 	@Test
-	@Ignore
+	@Disabled
 	public void testMultipleConsumersMultipleTimes() throws Exception {
 		Sender sender = new Sender();
 
@@ -109,12 +109,12 @@ public class ConsistentProcessorTests {
 		assertTrue(dups.isEmpty());
 	}
 
-	@Before
+	@BeforeEach
 	public void loadEnv() {
 		setupPipeline();
 	}
 
-	@After
+	@AfterEach
 	public void clean() throws Exception {
 	}
 

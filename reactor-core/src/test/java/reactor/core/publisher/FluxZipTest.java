@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -40,6 +40,8 @@ import reactor.util.function.Tuple7;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FluxZipTest extends FluxOperatorTest<String, String> {
 
@@ -608,14 +610,18 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		assertThat(f.getPrefetch()).isEqualTo(123);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failPrefetch() {
-		Flux.zip(obj -> 0, -1, Flux.just(1), Flux.just(2));
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.zip(obj -> 0, -1, Flux.just(1), Flux.just(2));
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failPrefetchIterable() {
-		Flux.zip(Arrays.asList(Flux.just(1), Flux.just(2)), -1, obj -> 0);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.zip(Arrays.asList(Flux.just(1), Flux.just(2)), -1, obj -> 0);
+		});
 	}
 
 	@Test

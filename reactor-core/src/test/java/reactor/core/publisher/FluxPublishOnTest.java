@@ -38,11 +38,12 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -62,6 +63,7 @@ import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
@@ -172,20 +174,22 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	public static ExecutorService exec;
 
-	@BeforeClass
+	@BeforeAll
 	public static void before() {
 		exec = Executors.newSingleThreadExecutor();
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void after() {
 		exec.shutdownNow();
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failPrefetch() {
-		Flux.range(1, 10)
-		    .publishOn(Schedulers.immediate(), -1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.range(1, 10)
+					.publishOn(Schedulers.immediate(), -1);
+		});
 	}
 
 	@Test
@@ -940,7 +944,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		          .containsExactly(10L, 2L, 2L, 2L, 2L, 2L, 2L, 2L);
 	}
 
-	@Test(timeout = 5000)
+	@Test
+	@Timeout(5)
 	public void rejectedExecutionExceptionOnDataSignalExecutor()
 			throws InterruptedException {
 
@@ -993,7 +998,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	@Ignore //Fix or deprecate fromExecutor, this test might randomly hang on CI
+	@Disabled //Fix or deprecate fromExecutor, this test might randomly hang on CI
 	public void rejectedExecutionExceptionOnErrorSignalExecutor()
 			throws InterruptedException {
 
@@ -1049,8 +1054,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		}
 	}
 
-	@Test(timeout = 5000)
-	@Ignore
+	@Test
+	@Timeout(5)
+	@Disabled
 	public void rejectedExecutionExceptionOnDataSignalExecutorService()
 			throws InterruptedException {
 

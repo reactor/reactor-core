@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.awaitility.Awaitility;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.Fuseable;
 
@@ -143,7 +143,7 @@ public class LiftFunctionTest {
 				.untilAsserted(() -> assertThat(cancelSupportInvoked).isTrue());
 	}
 
-	@Ignore("GroupedFlux is always fuseable for now")
+	@Disabled("GroupedFlux is always fuseable for now")
 	@Test
 	public void liftGroupedFlux() {
 		Flux<GroupedFlux<String, Integer>> sourceGroups = Flux

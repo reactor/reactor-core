@@ -30,15 +30,14 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -55,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 public class HooksTest {
 
-	@After
+	@AfterEach
 	public void resetAllHooks() {
 		Hooks.resetOnOperatorError();
 		Hooks.resetOnNextDropped();

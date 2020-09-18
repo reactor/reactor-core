@@ -35,8 +35,9 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -54,6 +55,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static reactor.util.concurrent.WaitStrategy.liteBlocking;
@@ -209,7 +211,8 @@ public class WorkQueueProcessorTest {
 		TimeUnit.SECONDS.sleep(1);
 	}
 
-	@Test(timeout = 15000L)
+	@Test
+	@Timeout(15)
 	public void cancelDoesNotHang() throws Exception {
 		WorkQueueProcessor<String> wq = WorkQueueProcessor.create();
 
@@ -223,7 +226,8 @@ public class WorkQueueProcessorTest {
 		}
 	}
 
-	@Test(timeout = 15000L)
+	@Test
+	@Timeout(15)
 	public void completeDoesNotHang() throws Exception {
 		WorkQueueProcessor<String> wq = WorkQueueProcessor.create();
 
@@ -237,7 +241,8 @@ public class WorkQueueProcessorTest {
 		}
 	}
 
-	@Test(timeout = 15000L)
+	@Test
+	@Timeout(15)
 	public void disposeSubscribeNoThreadLeak() throws Exception {
 		WorkQueueProcessor<String> wq = WorkQueueProcessor.<String>builder().autoCancel(false).build();
 
@@ -455,7 +460,8 @@ public class WorkQueueProcessorTest {
 	}
 
 	/* see https://github.com/reactor/reactor-core/issues/199 */
-	@Test(timeout = 4000)
+	@Test
+	@Timeout(4)
 	public void singleThreadWorkQueueSucceedsWithOneSubscriber() {
 		ExecutorService executorService = Executors.newSingleThreadExecutor();
 		WorkQueueProcessor<String> bc = WorkQueueProcessor.<String>builder().executor(executorService).bufferSize(2).build();
@@ -596,19 +602,25 @@ public class WorkQueueProcessorTest {
 
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failNonPowerOfTwo() {
-		WorkQueueProcessor.builder().name("test").bufferSize(3);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			WorkQueueProcessor.builder().name("test").bufferSize(3);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failNullBufferSize() {
-		WorkQueueProcessor.builder().name("test").bufferSize(0);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			WorkQueueProcessor.builder().name("test").bufferSize(0);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failNegativeBufferSize() {
-		WorkQueueProcessor.builder().name("test").bufferSize(-1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			WorkQueueProcessor.builder().name("test").bufferSize(-1);
+		});
 	}
 
 
@@ -854,7 +866,7 @@ public class WorkQueueProcessorTest {
 	}
 
 	// This test runs ok on it's own but hangs in when running whole class!
-	@Ignore
+	@Disabled
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMapPrefetch1()
 			throws Exception {
@@ -894,7 +906,8 @@ public class WorkQueueProcessorTest {
 
 
 	//see https://github.com/reactor/reactor-core/issues/445
-	@Test(timeout = 5_000)
+	@Test
+	@Timeout(5)
 	public void testBufferSize1Shared() throws Exception {
 		WorkQueueProcessor<String> broadcast = WorkQueueProcessor.<String>builder()
 				.share(true)
@@ -923,7 +936,8 @@ public class WorkQueueProcessorTest {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/445
-	@Test(timeout = 5_000)
+	@Test
+	@Timeout(5)
 	public void testBufferSize1Created() throws Exception {
 		WorkQueueProcessor<String> broadcast = WorkQueueProcessor.<String>builder()
 				.share(true).name("share-name")
@@ -1040,13 +1054,13 @@ public class WorkQueueProcessorTest {
 	public void customRequestTaskThreadRejectsNull() {
 		ExecutorService customTaskExecutor = null;
 
-		Assertions.assertThatExceptionOfType(NullPointerException.class)
-		          .isThrownBy(() -> new WorkQueueProcessor<>(
-				          Thread::new,
-				          Executors.newCachedThreadPool(),
-				          customTaskExecutor,
-				          8, WaitStrategy.liteBlocking(), true, true)
-		          );
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new WorkQueueProcessor<>(
+					Thread::new,
+					Executors.newCachedThreadPool(),
+					customTaskExecutor,
+					8, WaitStrategy.liteBlocking(), true, true);
+		});
 	}
 
 	@Test

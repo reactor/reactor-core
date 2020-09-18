@@ -31,7 +31,7 @@ import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -50,15 +50,22 @@ import reactor.util.context.Context;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 import static reactor.core.scheduler.Schedulers.parallel;
 
 public class FluxPeekFuseableTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullSource() {
-		new FluxPeekFuseable<>(null, null, null, null, null, null, null, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxPeekFuseable<>(null, null, null, null, null, null, null, null);
+		});
 	}
 
 	@Test

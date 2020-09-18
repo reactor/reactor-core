@@ -24,10 +24,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -50,7 +49,6 @@ import reactor.util.function.Tuple2;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
-@RunWith(JUnitParamsRunner.class)
 public class FluxUsingWhenTest {
 
 	@Test
@@ -358,8 +356,8 @@ public class FluxUsingWhenTest {
 		testResource.rollbackProbe.assertWasSubscribed();
 	}
 
-	@Test
-	@Parameters(method = "sources01")
+	@ParameterizedTest
+	@MethodSource("sources01")
 	public void cancelWithHandler(Flux<String> source) {
 		TestResource testResource = new TestResource();
 
@@ -378,8 +376,8 @@ public class FluxUsingWhenTest {
 		testResource.rollbackProbe.assertWasSubscribed();
 	}
 
-	@Test
-	@Parameters(method = "sources01")
+	@ParameterizedTest
+	@MethodSource("sources01")
 	public void cancelWithHandlerFailure(Flux<String> source) {
 		TestResource testResource = new TestResource();
 		final TestLogger tl = new TestLogger();
@@ -411,8 +409,8 @@ public class FluxUsingWhenTest {
 				.contains("java.lang.IllegalStateException: rollback error");
 	}
 
-	@Test
-	@Parameters(method = "sources01")
+	@ParameterizedTest
+	@MethodSource("sources01")
 	public void cancelWithHandlerGenerationFailureLogs(Flux<String> source) throws InterruptedException {
 		TestLogger tl = new TestLogger();
 		Loggers.useCustomLoggers(name -> tl);
@@ -441,8 +439,8 @@ public class FluxUsingWhenTest {
 				.contains("java.lang.NullPointerException");
 	}
 
-	@Test
-	@Parameters(method = "sources01")
+	@ParameterizedTest
+	@MethodSource("sources01")
 	public void cancelWithoutHandlerAppliesCommit(Flux<String> source) {
 		TestResource testResource = new TestResource();
 
@@ -461,8 +459,8 @@ public class FluxUsingWhenTest {
 		testResource.rollbackProbe.assertWasNotSubscribed();
 	}
 
-	@Test
-	@Parameters(method = "sources01")
+	@ParameterizedTest
+	@MethodSource("sources01")
 	public void cancelDefaultHandlerFailure(Flux<String> source) {
 		TestResource testResource = new TestResource();
 		final TestLogger tl = new TestLogger();
@@ -493,8 +491,8 @@ public class FluxUsingWhenTest {
 				.contains("java.lang.IllegalStateException: commit error");
 	}
 
-	@Test
-	@Parameters(method = "sourcesFullTransaction")
+	@ParameterizedTest
+	@MethodSource("sourcesFullTransaction")
 	public void apiCommit(Flux<String> fullTransaction) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
 
@@ -519,8 +517,8 @@ public class FluxUsingWhenTest {
 				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback");
 	}
 
-	@Test
-	@Parameters(method = "sourcesFullTransaction")
+	@ParameterizedTest
+	@MethodSource("sourcesFullTransaction")
 	public void apiCommitFailure(Flux<String> fullTransaction) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
 
@@ -546,8 +544,8 @@ public class FluxUsingWhenTest {
 				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback");
 	}
 
-	@Test
-	@Parameters(method = "sourcesFullTransaction")
+	@ParameterizedTest
+	@MethodSource("sourcesFullTransaction")
 	public void commitGeneratingNull(Flux<String> fullTransaction) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
 
@@ -574,8 +572,8 @@ public class FluxUsingWhenTest {
 				.matches(tr -> !tr.rollbackProbe.wasSubscribed(), "no rollback");
 	}
 
-	@Test
-	@Parameters(method = "sourcesTransactionError")
+	@ParameterizedTest
+	@MethodSource("sourcesTransactionError")
 	public void apiRollback(Flux<String> transactionWithError) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
 		Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
@@ -600,8 +598,8 @@ public class FluxUsingWhenTest {
 				.matches(tr -> tr.rollbackProbe.wasSubscribed(), "rollback method used");
 	}
 
-	@Test
-	@Parameters(method = "sourcesTransactionError")
+	@ParameterizedTest
+	@MethodSource("sourcesTransactionError")
 	public void apiRollbackFailure(Flux<String> transactionWithError) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
 		Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
@@ -626,8 +624,8 @@ public class FluxUsingWhenTest {
 				.matches(tr -> tr.rollbackProbe.wasSubscribed(), "rollback method used");
 	}
 
-	@Test
-	@Parameters(method = "sourcesTransactionError")
+	@ParameterizedTest
+	@MethodSource("sourcesTransactionError")
 	public void apiRollbackGeneratingNull(Flux<String> transactionWithError) {
 		final AtomicReference<TestResource> ref = new AtomicReference<>();
 		Flux<String> flux = Flux.usingWhen(Mono.fromCallable(TestResource::new),
@@ -716,8 +714,8 @@ public class FluxUsingWhenTest {
 		assertThat(test).isNotInstanceOf(Fuseable.QueueSubscription.class);
 	}
 
-	@Test
-	@Parameters(method = "sourcesContext")
+	@ParameterizedTest
+	@MethodSource("sourcesContext")
 	public void contextPropagationOnCommit(Mono<String> source) {
 		AtomicReference<String> probeContextValue = new AtomicReference<>();
 		AtomicReference<String> resourceContextValue = new AtomicReference<>();
@@ -756,8 +754,8 @@ public class FluxUsingWhenTest {
 		assertThat(resourceContextValue).hasValue("contextual");
 	}
 
-	@Test
-	@Parameters(method = "sourcesContextError")
+	@ParameterizedTest
+	@MethodSource("sourcesContextError")
 	public void contextPropagationOnRollback(Mono<String> source) {
 		AtomicReference<String> probeContextValue = new AtomicReference<>();
 		AtomicReference<String> resourceContextValue = new AtomicReference<>();
@@ -795,8 +793,8 @@ public class FluxUsingWhenTest {
 		assertThat(resourceContextValue).hasValue("contextual");
 	}
 
-	@Test
-	@Parameters(method = "sources01")
+	@ParameterizedTest
+	@MethodSource("sources01")
 	public void contextPropagationOnCancel(Flux<String> source) {
 		TestResource testResource = new TestResource();
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
@@ -825,8 +823,8 @@ public class FluxUsingWhenTest {
 		assertThat(errorRef).hasValue(null);
 	}
 
-	@Test
-	@Parameters(method = "sources01")
+	@ParameterizedTest
+	@MethodSource("sources01")
 	public void contextPropagationOnCancelWithNoHandler(Flux<String> source) {
 		TestResource testResource = new TestResource();
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
@@ -1244,21 +1242,21 @@ public class FluxUsingWhenTest {
 
 	//unit test parameter providers
 
-	private Object[] sources01() {
+	private static Object[] sources01() {
 		return new Object[] {
 				new Object[] { Flux.interval(Duration.ofMillis(100)).map(String::valueOf) },
 				new Object[] { Flux.range(0, 2).map(String::valueOf) }
 		};
 	}
 
-	private Object[] sourcesFullTransaction() {
+	private static Object[] sourcesFullTransaction() {
 		return new Object[] {
 				new Object[] { Flux.just("Transaction started", "work in transaction", "more work in transaction").hide() },
 				new Object[] { Flux.just("Transaction started", "work in transaction", "more work in transaction") }
 		};
 	}
 
-	private Object[] sourcesTransactionError() {
+	private static Object[] sourcesTransactionError() {
 		return new Object[] {
 				new Object[] { Flux.just("Transaction started", "work in transaction")
 						.concatWith(Mono.error(new IllegalStateException("boom"))) },
@@ -1267,14 +1265,14 @@ public class FluxUsingWhenTest {
 		};
 	}
 
-	private Object[] sourcesContext() {
+	private static Object[] sourcesContext() {
 		return new Object[] {
 				new Object[] { Mono.subscriberContext().map(it -> it.get(String.class)).hide() },
 				new Object[] { Mono.subscriberContext().map(it -> it.get(String.class)) }
 		};
 	}
 
-	private Object[] sourcesContextError() {
+	private static Object[] sourcesContextError() {
 		return new Object[] {
 				new Object[] { Mono
 						.subscriberContext()

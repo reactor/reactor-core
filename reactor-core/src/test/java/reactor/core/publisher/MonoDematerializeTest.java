@@ -15,8 +15,8 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDematerializeTest {
@@ -114,7 +114,7 @@ public class MonoDematerializeTest {
 	}
 
 	@Test
-	@Ignore("use virtual time?")
+	@Disabled("use virtual time?")
 	public void neverEnding() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 

@@ -22,11 +22,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Test;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
@@ -134,35 +136,37 @@ public class BaseSubscriberTest {
 		assertThat(error.get(), is(instanceOf(IllegalStateException.class)));
 	}
 
-	@Test(expected = OutOfMemoryError.class)
+	@Test
 	public void onSubscribeFatalThrown() {
 		Flux<String> flux = Flux.just("foo");
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
 
-		flux.subscribe(new BaseSubscriber<String>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				throw new OutOfMemoryError("boom");
-			}
+		assertThatExceptionOfType(OutOfMemoryError.class).isThrownBy(() -> {
+			flux.subscribe(new BaseSubscriber<String>() {
+				@Override
+				protected void hookOnSubscribe(Subscription subscription) {
+					throw new OutOfMemoryError("boom");
+				}
 
-			@Override
-			protected void hookOnNext(String value) {
-				//NO-OP
-			}
+				@Override
+				protected void hookOnNext(String value) {
+					//NO-OP
+				}
 
-			@Override
-			protected void hookOnError(Throwable throwable) {
-				error.set(throwable);
-			}
+				@Override
+				protected void hookOnError(Throwable throwable) {
+					error.set(throwable);
+				}
 
-			@Override
-			protected void hookFinally(SignalType type) {
-				checkFinally.set(type);
-			}
+				@Override
+				protected void hookFinally(SignalType type) {
+					checkFinally.set(type);
+				}
+			});
 		});
-		assertThat(checkFinally.get(), is(SignalType.ON_ERROR));
-		assertThat(error.get(), is(nullValue()));
+		Assertions.assertThat(checkFinally.get()).isNull();
+		Assertions.assertThat(error.get()).isNull();
 	}
 
 	@Test
