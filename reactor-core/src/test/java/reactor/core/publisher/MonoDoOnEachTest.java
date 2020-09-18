@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import reactor.core.CoreSubscriber;
@@ -339,7 +339,7 @@ public class MonoDoOnEachTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1547
 	@Test
-	@Ignore("Mono doesn't trigger tryOnNext")
+	@Disabled("Mono doesn't trigger tryOnNext")
 	public void triggersCompleteSignalInMonoOnNextConditional() {
 		CopyOnWriteArrayList<String> eventOrder = new CopyOnWriteArrayList<>();
 
@@ -366,7 +366,7 @@ public class MonoDoOnEachTest {
 
 	//see https://github.com/reactor/reactor-core/issues/1547
 	@Test
-	@Ignore("Mono doesn't trigger tryOnNext")
+	@Disabled("Mono doesn't trigger tryOnNext")
 	public void triggersCompleteSignalInMonoOnNextConditionalFused() {
 		CopyOnWriteArrayList<String> eventOrder = new CopyOnWriteArrayList<>();
 

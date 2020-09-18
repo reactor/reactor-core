@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -40,6 +41,7 @@ import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.*;
 
 /**
@@ -274,23 +276,30 @@ public class TopicProcessorTest {
 
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failNullBufferSize() {
-		TopicProcessor.builder().name("test").bufferSize(0);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			TopicProcessor.builder().name("test").bufferSize(0);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failNonPowerOfTwo() {
-		TopicProcessor.builder().name("test").bufferSize(3);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			TopicProcessor.builder().name("test").bufferSize(3);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failNegativeBufferSize() {
-		TopicProcessor.builder().name("test").bufferSize(-1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			TopicProcessor.builder().name("test").bufferSize(-1);
+		});
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/445
-	@Test(timeout = 5_000)
+	@Test
+	@Timeout(5)
 	public void testBufferSize1Shared() throws Exception {
 		TopicProcessor<String> broadcast = TopicProcessor.<String>builder()
 				.name("share-name")
@@ -319,7 +328,8 @@ public class TopicProcessorTest {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/445
-	@Test(timeout = 5_000)
+	@Test
+	@Timeout(5)
 	public void testBufferSize1Created() throws Exception {
 		TopicProcessor<String> broadcast = TopicProcessor.<String>builder().name("share-name").bufferSize(1).autoCancel(true).build();
 
@@ -432,13 +442,11 @@ public class TopicProcessorTest {
 	public void customRequestTaskThreadRejectsNull() {
 		ExecutorService customTaskExecutor = null;
 
-		Assertions.assertThatExceptionOfType(NullPointerException.class)
-		          .isThrownBy(() -> new TopicProcessor<>(
-				          Thread::new,
-				          Executors.newCachedThreadPool(),
-				          customTaskExecutor,
-				          8, WaitStrategy.liteBlocking(), true, true, Object::new)
-		          );
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> new TopicProcessor<>(
+				Thread::new,
+				Executors.newCachedThreadPool(),
+				customTaskExecutor,
+				8, WaitStrategy.liteBlocking(), true, true, Object::new));
 	}
 
 

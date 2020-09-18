@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxCallableTest {

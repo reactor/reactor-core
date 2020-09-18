@@ -23,8 +23,9 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -626,7 +627,7 @@ public class FluxGroupByTest extends
 	}
 
 	@Test
-	@Ignore("temporarily disabled, see gh-1028")
+	@Disabled("temporarily disabled, see gh-1028")
 	public void twoGroupsFullAsyncFullHide() {
 		ForkJoinPool forkJoinPool = new ForkJoinPool();
 
@@ -689,7 +690,7 @@ public class FluxGroupByTest extends
 	}
 
 	@Test
-	@Ignore("temporarily disabled, see gh-1028")
+	@Disabled("temporarily disabled, see gh-1028")
 	public void twoGroupsFullAsync() {
 		ForkJoinPool forkJoinPool = new ForkJoinPool();
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
@@ -883,7 +884,8 @@ public class FluxGroupByTest extends
 		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	public void fusedGroupByParallel() {
 		int parallelism = 2;
 		Scheduler process = Schedulers.newParallel("process", parallelism, true);

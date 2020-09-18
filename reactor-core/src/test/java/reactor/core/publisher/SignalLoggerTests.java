@@ -21,11 +21,10 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 
-import reactor.core.CoreTest;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.SynchronousSubscription;
 import reactor.core.Scannable;

@@ -19,11 +19,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.Timeout;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -51,7 +52,7 @@ public abstract class AbstractSchedulerTest {
 		toCleanUp.add(resource);
 		return resource;
 	}
-	@After
+	@AfterEach
 	public void cleanupCompositeDisposable() {
 		toCleanUp.dispose();
 	}
@@ -74,12 +75,13 @@ public abstract class AbstractSchedulerTest {
 
 	protected boolean shouldCheckWorkerTimeScheduling() { return true; }
 
-	@Before
+	@BeforeEach
 	public void checkNotCached() {
 		assertThat(scheduler()).isNotInstanceOf(Schedulers.CachedScheduler.class);
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	final public void directScheduleAndDispose() throws Exception {
 		Scheduler s = scheduler();
 
@@ -153,7 +155,8 @@ public abstract class AbstractSchedulerTest {
 		}
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	final public void workerScheduleAndDispose() throws Exception {
 		Scheduler s = scheduler();
 		try {
@@ -244,7 +247,8 @@ public abstract class AbstractSchedulerTest {
 		}
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	final public void directScheduleAndDisposeDelay() throws Exception {
 		Scheduler s = scheduler();
 
@@ -253,7 +257,8 @@ public abstract class AbstractSchedulerTest {
 
 			if (!shouldCheckDirectTimeScheduling()) {
 				assertThatExceptionOfType(RejectedExecutionException.class)
-						.isThrownBy(() -> s.schedule(() -> { }, 10, TimeUnit.MILLISECONDS))
+						.isThrownBy(() -> s.schedule(() -> {
+						}, 10, TimeUnit.MILLISECONDS))
 						.as("Scheduler marked as not supporting time scheduling")
 						.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 				return;
@@ -282,15 +287,15 @@ public abstract class AbstractSchedulerTest {
 			s.dispose();
 			assertThat(s.isDisposed()).isTrue();
 
-			assertThatExceptionOfType(RejectedExecutionException.class)
-					.isThrownBy(() -> s.schedule(() -> { }));
+			assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> s.schedule(() -> { }));
 		}
 		finally {
 			s.dispose();
 		}
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	final public void workerScheduleAndDisposeDelay() throws Exception {
 		Scheduler s = scheduler();
 		Scheduler.Worker w = s.createWorker();
@@ -339,7 +344,8 @@ public abstract class AbstractSchedulerTest {
 		}
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	final public void directScheduleAndDisposePeriod() throws Exception {
 		Scheduler s = scheduler();
 
@@ -380,15 +386,15 @@ public abstract class AbstractSchedulerTest {
 			s.dispose();
 			assertThat(s.isDisposed()).isTrue();
 
-			assertThatExceptionOfType(RejectedExecutionException.class)
-					.isThrownBy(() -> s.schedule(() -> { }));
+			assertThatExceptionOfType(RejectedExecutionException.class).isThrownBy(() -> s.schedule(() -> {	}));
 		}
 		finally {
 			s.dispose();
 		}
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	final public void workerScheduleAndDisposePeriod() throws Exception {
 		Scheduler s = scheduler();
 		Scheduler.Worker w = s.createWorker();

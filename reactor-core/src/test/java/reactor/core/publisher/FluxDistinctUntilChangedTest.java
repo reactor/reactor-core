@@ -20,11 +20,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -40,9 +39,9 @@ import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
 public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, String> {
@@ -66,19 +65,25 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		);
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new FluxDistinctUntilChanged<>(null, v -> v, (k1, k2) -> true);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxDistinctUntilChanged<>(null, v -> v, (k1, k2) -> true);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void keyExtractorNull() {
-		Flux.never().distinctUntilChanged(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never().distinctUntilChanged(null);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void predicateNull() {
-		Flux.never().distinctUntilChanged(v -> v, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never().distinctUntilChanged(v -> v, null);
+		});
 	}
 
 	@Test

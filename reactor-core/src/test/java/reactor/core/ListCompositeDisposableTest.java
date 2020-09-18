@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.Disposables.ListCompositeDisposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.FakeDisposable;

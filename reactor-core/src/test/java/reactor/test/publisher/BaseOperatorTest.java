@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -40,7 +40,6 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.test.StepVerifier;
 import reactor.util.annotation.Nullable;
-import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.*;
@@ -54,13 +53,13 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	boolean defaultEmpty = false;
 
-	@After
+	@AfterEach
 	public void afterScenariosRun(){
 		resetHooks();
 		defaultEmpty = false;
 	}
 
-	@Before
+	@BeforeEach
 	public final void initDefaultScenario() {
 		defaultScenario = defaultScenarioOptions(new OperatorScenario<>(null, null));
 	}

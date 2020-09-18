@@ -22,9 +22,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.EmitterProcessor;
@@ -50,13 +50,13 @@ public class CombinationTests {
 	private FluxProcessor<SensorData, SensorData> sensorEven;
 	private FluxProcessor<SensorData, SensorData> sensorOdd;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		sensorEven();
 		sensorOdd();
 	}
 
-	@After
+	@AfterEach
 	public void then() {
 		if (sensorEven != null) {
 			sensorEven.onComplete();
@@ -297,7 +297,7 @@ public class CombinationTests {
 	ReplayProcessor<Long>  emitter1;
 	ReplayProcessor<Long>  emitter2;
 
-	@Before
+	@BeforeEach
 	public void anotherBefore() {
 		ts = AssertSubscriber.create();
 		emitter1 = ReplayProcessor.create();

@@ -19,9 +19,9 @@ package reactor.util;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,12 +34,12 @@ public class ConsoleLoggerTest {
 
 	private Logger logger;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		logger = new Loggers.ConsoleLogger("test", new PrintStream(outContent), new PrintStream(errContent), true);
 	}
 
-	@After
+	@AfterEach
 	public void cleanUp() {
 		outContent.reset();
 		errContent.reset();

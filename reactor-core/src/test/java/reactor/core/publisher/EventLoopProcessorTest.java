@@ -22,8 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Condition;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -41,7 +41,7 @@ public class EventLoopProcessorTest {
 
 	EventLoopProcessor<String> test;
 
-	@Before
+	@BeforeEach
 	public void initProcessor() {
 		test = initProcessor(Executors.newSingleThreadExecutor());
 	}

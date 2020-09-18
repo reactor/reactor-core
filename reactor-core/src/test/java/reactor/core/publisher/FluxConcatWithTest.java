@@ -15,8 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 

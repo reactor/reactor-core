@@ -19,7 +19,8 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
@@ -27,6 +28,8 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Stephane Maldini
@@ -39,14 +42,18 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		return Schedulers.newElastic("ElasticSchedulerTest");
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void unsupportedStart() {
-		Schedulers.elastic().start();
+		assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() -> {
+			Schedulers.elastic().start();
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void negativeTime() throws Exception {
-		Schedulers.newElastic("test", -1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Schedulers.newElastic("test", -1);
+		});
 	}
 
 	@Override
@@ -54,7 +61,8 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		return true;
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	public void eviction() throws Exception {
 		Scheduler s = Schedulers.newElastic("test-recycle", 2);
 		((ElasticScheduler)s).evictor.shutdownNow();
