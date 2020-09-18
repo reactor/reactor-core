@@ -355,6 +355,48 @@ public final class Sinks {
 		 * @param autoCancel should the sink fully shutdowns (not publishing anymore) when the last subscriber cancels
 		 */
 		<T> Sinks.Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel);
+
+		/**
+		 A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: fail fast on {@link Many#tryEmitNext(Object) tryEmitNext}.</li>
+		 *     <li>Backpressure : notify the caller with {@link Emission#FAIL_OVERFLOW} if any of the subscribers
+		 *     cannot process an element, failing fast and backing off from emitting the element at all.
+		 * 	   From the perspective of subscribers, data is dropped and never seen but they are not terminated.
+		 *     </li>
+		 *     <li>Replaying: No replay of elements. Only forwards to a {@link Subscriber} the elements that
+		 *     have been pushed to the sink AFTER this subscriber was subscribed, provided all of the subscribers
+		 *     have demand.</li>
+		 * </ul>
+		 * <p>
+		 *
+		 * @param <T> the type of elements to emit
+		 * @return a multicast {@link Sinks.Many} that "drops" in case any subscriber is too slow
+		 */
+		//TODO marble <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
+		<T> Sinks.Many<T> onBackpressureDropForAll();
+
+		/**
+		 A {@link Sinks.Many} with the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Without {@link Subscriber}: fail fast on {@link Many#tryEmitNext(Object) tryEmitNext}.</li>
+		 *     <li>Backpressure : notify the caller with {@link Emission#FAIL_OVERFLOW} if <strong>none</strong>
+		 *     of the subscribers can process an element. Otherwise, it ignores slow subscribers and emits the
+		 *     element to fast ones. From the perspective of slow subscribers, data is dropped and never seen,
+		 *     but they are not terminated.
+		 *     </li>
+		 *     <li>Replaying: No replay of elements. Only forwards to a {@link Subscriber} the elements that
+		 *     have been pushed to the sink AFTER this subscriber was subscribed.</li>
+		 * </ul>
+		 * <p>
+		 *
+		 * @param <T> the type of elements to emit
+		 * @return a multicast {@link Sinks.Many} that "drops" in case any subscriber is too slow
+		 */
+		//TODO marble <img class="marble" src="doc-files/marbles/sinkWarmup.svg" alt="">
+		<T> Sinks.Many<T> onBackpressureDropForSlow();
 	}
 
 
