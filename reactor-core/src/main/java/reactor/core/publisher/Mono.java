@@ -3716,12 +3716,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	public final Disposable subscribe() {
 		if(this instanceof NextProcessor){
 			NextProcessor<T> s = (NextProcessor<T>)this;
-			s.connect();
-			return s;
+			if (s.source != null) { //enables `Sinks.one().subscribe()` usecases
+				s.connect();
+				return s;
+			}
 		}
-		else{
-			return subscribeWith(new LambdaMonoSubscriber<>(null, null, null, null, null));
-		}
+		return subscribeWith(new LambdaMonoSubscriber<>(null, null, null, null, null));
 	}
 
 	/**

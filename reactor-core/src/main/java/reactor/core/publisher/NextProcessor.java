@@ -39,9 +39,11 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 	static final AtomicReferenceFieldUpdater<NextProcessor, Subscription> UPSTREAM =
 			AtomicReferenceFieldUpdater.newUpdater(NextProcessor.class, Subscription.class, "subscription");
 
+	@Nullable
 	CorePublisher<? extends O> source;
-
+	@Nullable
 	Throwable error;
+	@Nullable
 	O         value;
 
 	NextProcessor(@Nullable CorePublisher<? extends O> source) {
@@ -308,6 +310,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 		return subscribers == TERMINATED;
 	}
 
+	@Nullable
 	@Override
 	public Throwable getError() {
 		return error;
@@ -435,10 +438,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements Sinks.One<O> {
 
 		@Override
 		public void onError(Throwable t) {
-			if (isCancelled()) {
-				Operators.onOperatorError(t, currentContext());
-			}
-			else {
+			if (!isCancelled()) {
 				actual.onError(t);
 			}
 		}
