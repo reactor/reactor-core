@@ -337,6 +337,12 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test
+	public void maximumTtl() {
+		BoundedElasticScheduler s = new BoundedElasticScheduler(1, Integer.MAX_VALUE,null, Integer.MAX_VALUE);
+		assertThat(s.ttlMillis).isEqualTo(Integer.MAX_VALUE * 1000L);
+	}
+
+	@Test
 	public void negativeThreadCap() {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> new BoundedElasticScheduler(-1, Integer.MAX_VALUE, null, 1))

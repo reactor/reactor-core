@@ -148,7 +148,7 @@ final class BoundedElasticScheduler implements Scheduler, Scannable {
 	 * @param ttlSeconds the time-to-live (TTL) of idle threads, in seconds
 	 */
 	BoundedElasticScheduler(int maxThreads, int maxTaskQueuedPerThread, ThreadFactory factory, int ttlSeconds) {
-		this(maxThreads, maxTaskQueuedPerThread, factory, ttlSeconds * 1000,
+		this(maxThreads, maxTaskQueuedPerThread, factory, ttlSeconds * 1000L,
 				Clock.tickSeconds(BoundedServices.ZONE_UTC));
 	}
 
