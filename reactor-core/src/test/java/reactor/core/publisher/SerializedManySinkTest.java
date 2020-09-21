@@ -89,7 +89,7 @@ public class SerializedManySinkTest {
 
 	@Test
 	public void sameThreadRecursion() throws Exception {
-		Sinks.Many<Object> sink = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Object> sink = Sinks.many().unsafe().multicast().directBestEffort();
 		SerializedManySink<Object> manySink = new SerializedManySink<>(sink, Context::empty);
 
 		CompletableFuture<Object> muchFuture = sink.asFlux().doOnNext(o -> {
@@ -105,7 +105,7 @@ public class SerializedManySinkTest {
 
 	static class EmptyMany<T> implements Sinks.Many<T> {
 
-		final Sinks.Many<T> delegate = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		final Sinks.Many<T> delegate = Sinks.many().unsafe().multicast().directBestEffort();
 
 		@Override
 		public Emission tryEmitNext(T o) {

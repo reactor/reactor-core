@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -110,9 +109,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -135,9 +134,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -160,9 +159,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -250,9 +249,9 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		source.asFlux()
 			  .timeout(tp.asFlux(), v -> tp.asFlux())

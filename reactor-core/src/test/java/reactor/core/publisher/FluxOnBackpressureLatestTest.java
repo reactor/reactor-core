@@ -68,7 +68,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressured() {
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
@@ -107,7 +107,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void error() {
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
@@ -123,7 +123,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void backpressureWithDrop() {
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>(0) {
 			@Override

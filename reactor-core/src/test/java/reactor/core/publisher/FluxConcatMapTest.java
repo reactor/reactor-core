@@ -110,10 +110,10 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	public void singleSubscriberOnly() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
 
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
 
 		source.asFlux()
 			  .concatMap(v -> v == 1 ? source1.asFlux() : source2.asFlux())
@@ -150,10 +150,10 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 	public void singleSubscriberOnlyBoundary() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
 
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
 
 		source.asFlux()
 			  .concatMapDelayError(v -> v == 1 ? source1.asFlux() : source2.asFlux())

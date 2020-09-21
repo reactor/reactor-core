@@ -662,7 +662,7 @@ public class SchedulersTest {
 
 	public void assertRejectingScheduler(Scheduler scheduler) {
 		try {
-			Sinks.Many<String> p = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+			Sinks.Many<String> p = Sinks.many().unsafe().multicast().directBestEffort();
 
 			AtomicReference<String> r = new AtomicReference<>();
 			CountDownLatch l = new CountDownLatch(1);

@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 
 public class FluxWindowConsistencyTest {
 
-	Sinks.Many<Integer> sourceProcessor = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+	Sinks.Many<Integer> sourceProcessor = Sinks.many().unsafe().multicast().directBestEffort();
 
 	Flux<Integer> source;
 
@@ -207,7 +207,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryComplete() throws Exception {
-		Sinks.Many<Integer> boundary = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> boundary = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.window(boundary.asFlux());
 		subscribe(windows);
 		generate(0, 3);
@@ -218,9 +218,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndComplete() throws Exception {
-		Sinks.Many<Integer> start = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> end1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> start = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> end1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.windowWhen(start.asFlux(), v -> v == 1 ? end1.asFlux() : end2.asFlux());
 		subscribe(windows);
 		start.emitNext(1);
@@ -305,7 +305,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryMainCancel() throws Exception {
-		Sinks.Many<Integer> boundary = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> boundary = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.window(boundary.asFlux());
 
 		subscribe(windows);
@@ -321,9 +321,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndMainCancel() throws Exception {
-		Sinks.Many<Integer> start = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> end1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> start = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> end1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.windowWhen(start.asFlux(), v -> v == 1 ? end1.asFlux() : end2.asFlux());
 		subscribe(windows);
 		start.emitNext(1);
@@ -413,7 +413,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryMainCancelNoNewWindow() throws Exception {
-		Sinks.Many<Integer> boundary = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> boundary = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.window(boundary.asFlux());
 
 		subscribe(windows);
@@ -426,9 +426,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndMainCancelNoNewWindow() throws Exception {
-		Sinks.Many<Integer> start = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> end1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> start = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> end1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.windowWhen(start.asFlux(), v -> v == 1 ? end1.asFlux() : end2.asFlux());
 		subscribe(windows);
 		start.emitNext(1);
@@ -506,7 +506,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowBoundaryInnerCancel() throws Exception {
-		Sinks.Many<Integer> boundaryProcessor = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> boundaryProcessor = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.window(boundaryProcessor.asFlux());
 		subscribe(windows);
 		generateWithCancel(0, 6, 1);
@@ -515,9 +515,9 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowStartEndInnerCancel() throws Exception {
-		Sinks.Many<Integer> start = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> end1 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
-		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> start = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> end1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.windowWhen(start.asFlux(), v -> v == 1 ? end1.asFlux() : end2.asFlux());
 		subscribe(windows);
 		start.emitNext(1);

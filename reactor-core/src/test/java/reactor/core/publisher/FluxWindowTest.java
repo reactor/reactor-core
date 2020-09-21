@@ -427,7 +427,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void exactError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		sp.asFlux()
 		  .window(2, 2)
@@ -456,7 +456,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void skipError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		sp.asFlux()
 		  .window(2, 3)
@@ -485,7 +485,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void skipInGapError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		sp.asFlux()
 		  .window(1, 3)
@@ -511,7 +511,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	public void overlapError() {
 		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().onBackpressureDropForSlow();
+		Sinks.Many<Integer> sp = Sinks.many().unsafe().multicast().directBestEffort();
 
 		sp.asFlux()
 		  .window(2, 1)

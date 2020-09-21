@@ -81,7 +81,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the input and output value type
  * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}. Closest sink
- * is {@link Sinks.MulticastSpec#onBackpressureDropForSlow() Sinks.many().multicast().onBackpressureDropForSlow()},
+ * is {@link Sinks.MulticastSpec#directBestEffort() Sinks.many().multicast().directBestEffort()},
  * except it doesn't terminate overflowing downstreams.
  */
 @Deprecated

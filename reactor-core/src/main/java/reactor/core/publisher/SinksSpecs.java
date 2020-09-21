@@ -317,12 +317,12 @@ final class MulticastSpecImpl extends SinkSpecImpl implements Sinks.MulticastSpe
 	}
 
 	@Override
-	public <T> Many<T> onBackpressureDropForAll() {
+	public <T> Many<T> directAllOrNothing() {
 		return toSerializedSink(SinkManyBestEffort.createAllOrNothing());
 	}
 
 	@Override
-	public <T> Many<T> onBackpressureDropForSlow() {
+	public <T> Many<T> directBestEffort() {
 		return toSerializedSink(SinkManyBestEffort.createBestEffort());
 	}
 }
