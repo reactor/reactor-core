@@ -94,11 +94,14 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 			return Emission.FAIL_TERMINATED;
 		}
 
+		int expectedEmitted = subs.length;
+		int cancelledCount = 0;
 		if (allOrNothing) {
 			long commonRequest = Long.MAX_VALUE;
 			for (Inner<T> sub : subs) {
 				long subRequest = sub.requested;
 				if (sub.isCancelled()) {
+					cancelledCount++;
 					continue;
 				}
 				if (subRequest < commonRequest) {
@@ -108,11 +111,13 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 			if (commonRequest == 0) {
 				return Emission.FAIL_OVERFLOW;
 			}
+			if (cancelledCount == expectedEmitted) {
+				return Emission.FAIL_ZERO_SUBSCRIBER;
+			}
 		}
 
-		int expectedEmitted = subs.length;
 		int emittedCount = 0;
-		int cancelledCount = 0;
+		cancelledCount = 0;
 		for (Inner<T> sub : subs) {
 			if (sub.isCancelled()) {
 				cancelledCount++;
@@ -126,7 +131,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 			}
 		}
 		if (cancelledCount == expectedEmitted) {
-			return Emission.FAIL_ZERO_SUBSCRIBER; //TODO should it be FAIL_CANCELLED ? but technically the sink would still be usable
+			return Emission.FAIL_ZERO_SUBSCRIBER;
 		}
 		else if (cancelledCount + emittedCount == expectedEmitted) {
 			return Emission.OK;
@@ -204,7 +209,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 				break;
 			case OK:
 				break;
-			case FAIL_NON_SERIALIZED:
+			default:
 				throw new IllegalStateException("Unexpected return code");
 		}
 	}
