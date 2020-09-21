@@ -32,11 +32,12 @@ import reactor.util.context.Context;
 /**
  * @author Simon Baslé
  */
-final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, ContextHolder,
-                                                             Scannable {
+final class SinkManyBestEffort<T> extends Flux<T>
+		implements Sinks.Many<T>, ContextHolder, Scannable,
+		           DirectInnerContainer<T> {
 
-	private static final Inner[] EMPTY = new Inner[0];
-	private static final Inner[] TERMINATED = new Inner[0];
+	static final DirectInner[] EMPTY      = new DirectInner[0];
+	static final DirectInner[] TERMINATED = new DirectInner[0];
 
 	static final <T> SinkManyBestEffort<T> createBestEffort() {
 		return new SinkManyBestEffort<>(false);
@@ -53,10 +54,10 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 	 */
 	Throwable error;
 
-	volatile     Inner<T>[]                                               subscribers;
+	volatile     DirectInner<T>[]                                              subscribers;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkManyBestEffort, Inner[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(SinkManyBestEffort.class, Inner[].class, "subscribers");
+	static final AtomicReferenceFieldUpdater<SinkManyBestEffort, DirectInner[]>SUBSCRIBERS =
+			AtomicReferenceFieldUpdater.newUpdater(SinkManyBestEffort.class, DirectInner[].class, "subscribers");
 
 	SinkManyBestEffort(boolean allOrNothing) {
 		this.allOrNothing = allOrNothing;
@@ -85,7 +86,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 	public Emission tryEmitNext(T t) {
 		Objects.requireNonNull(t, "tryEmitNext(null) is forbidden");
 
-		Inner<T>[] subs = subscribers;
+		DirectInner<T>[] subs = subscribers;
 
 		if (subs == EMPTY) {
 			return Emission.FAIL_ZERO_SUBSCRIBER;
@@ -98,7 +99,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 		int cancelledCount = 0;
 		if (allOrNothing) {
 			long commonRequest = Long.MAX_VALUE;
-			for (Inner<T> sub : subs) {
+			for (DirectInner<T> sub : subs) {
 				long subRequest = sub.requested;
 				if (sub.isCancelled()) {
 					cancelledCount++;
@@ -118,7 +119,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 
 		int emittedCount = 0;
 		cancelledCount = 0;
-		for (Inner<T> sub : subs) {
+		for (DirectInner<T> sub : subs) {
 			if (sub.isCancelled()) {
 				cancelledCount++;
 				continue;
@@ -144,13 +145,13 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 	@Override
 	public Emission tryEmitComplete() {
 		@SuppressWarnings("unchecked")
-		Inner<T>[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
+		DirectInner<T>[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 		if (subs == TERMINATED) {
 			return Emission.FAIL_TERMINATED;
 		}
 
-		for (Inner<?> s : subs) {
+		for (DirectInner<?> s : subs) {
 			s.emitComplete();
 		}
 		return Emission.OK;
@@ -160,7 +161,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 	public Emission tryEmitError(Throwable error) {
 		Objects.requireNonNull(error, "tryEmitError(null) is forbidden");
 		@SuppressWarnings("unchecked")
-		Inner<T>[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
+		DirectInner<T>[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 		if (subs == TERMINATED) {
 			return Emission.FAIL_TERMINATED;
@@ -168,7 +169,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 
 		this.error = error;
 
-		for (Inner<?> s : subs) {
+		for (DirectInner<?> s : subs) {
 			s.emitError(error);
 		}
 		return Emission.OK;
@@ -228,7 +229,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe(null) is forbidden");
 
-		Inner<T> p = new Inner<>(actual, this);
+		DirectInner<T> p = new DirectInner<>(actual, this);
 		actual.onSubscribe(p);
 
 		if (p.isCancelled()) {
@@ -251,8 +252,9 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 		}
 	}
 
-	boolean add(Inner<T> s) {
-		Inner<T>[] a = subscribers;
+	@Override
+	public boolean add(DirectInner<T> s) {
+		DirectInner<T>[] a = subscribers;
 		if (a == TERMINATED) {
 			return false;
 		}
@@ -265,7 +267,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 			int len = a.length;
 
 			@SuppressWarnings("unchecked")
-			Inner<T>[] b = new Inner[len + 1];
+			DirectInner<T>[] b = new DirectInner[len + 1];
 			System.arraycopy(a, 0, b, 0, len);
 			b[len] = s;
 
@@ -276,8 +278,9 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 	}
 
 	@SuppressWarnings("unchecked")
-	void remove(Inner<T> s) {
-		Inner<T>[] a = subscribers;
+	@Override
+	public void remove(DirectInner<T> s) {
+		DirectInner<T>[] a = subscribers;
 		if (a == TERMINATED || a == EMPTY) {
 			return;
 		}
@@ -305,7 +308,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 				return;
 			}
 
-			Inner<T>[] b = new Inner[len - 1];
+			DirectInner<T>[] b = new DirectInner[len - 1];
 			System.arraycopy(a, 0, b, 0, j);
 			System.arraycopy(a, j + 1, b, j, len - j - 1);
 
@@ -313,16 +316,17 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 		}
 	}
 
-	static class Inner<T> extends AtomicBoolean implements InnerProducer<T> {
+	static class DirectInner<T> extends AtomicBoolean implements InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
-		final SinkManyBestEffort<T>     parent;
+		final DirectInnerContainer<T>   parent;
 
-		volatile     long                          requested;
+		volatile     long                                requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<Inner> REQUESTED = AtomicLongFieldUpdater.newUpdater(Inner.class, "requested");
+		static final AtomicLongFieldUpdater<DirectInner> REQUESTED = AtomicLongFieldUpdater.newUpdater(
+				DirectInner.class, "requested");
 
-		Inner(CoreSubscriber<? super T> actual, SinkManyBestEffort<T> parent) {
+		DirectInner(CoreSubscriber<? super T> actual, DirectInnerContainer<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -359,6 +363,11 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 			return actual;
 		}
 
+		/**
+		 * Try to emit if the downstream is not cancelled and has some demand.
+		 * @param value the value to emit
+		 * @return true if enough demand and not cancelled, false otherwise
+		 */
 		boolean tryEmitNext(T value) {
 			if (requested != 0L) {
 				if (isCancelled()) {
@@ -371,6 +380,24 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 				return true;
 			}
 			return false;
+		}
+
+		/**
+		 * Emit a value to the downstream, unless it doesn't have sufficient demand.
+		 * In that case, the downstream is terminated with an {@link Exceptions#failWithOverflow()}.
+		 *
+		 * @param value the value to emit
+		 */
+		void directEmitNext(T value) {
+			if (requested != 0L) {
+				actual.onNext(value);
+				if (requested != Long.MAX_VALUE) {
+					REQUESTED.decrementAndGet(this);
+				}
+				return;
+			}
+			parent.remove(this);
+			actual.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
 		}
 
 		void emitError(Throwable e) {
@@ -387,4 +414,25 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 			actual.onComplete();
 		}
 	}
+
+}
+
+//also used by DirectProcessor
+interface DirectInnerContainer<T> {
+
+	/**
+	 * Add a new {@link SinkManyBestEffort.DirectInner} to this publisher.
+	 *
+	 * @param s the new {@link SinkManyBestEffort.DirectInner} to add
+	 * @return {@code true} if the inner could be added, {@code false} if the publisher cannot accept new subscribers
+	 */
+	boolean add(SinkManyBestEffort.DirectInner<T> s);
+
+	/**
+	 * Remove an {@link SinkManyBestEffort.DirectInner} from this publisher. Does nothing if the inner is not currently managed
+	 * by the publisher.
+	 *
+	 * @param s the  {@link SinkManyBestEffort.DirectInner} to remove
+	 */
+	void remove(SinkManyBestEffort.DirectInner<T> s);
 }

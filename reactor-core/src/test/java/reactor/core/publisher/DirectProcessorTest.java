@@ -20,13 +20,11 @@ import java.time.Duration;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 
-import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("deprecation")
 public class DirectProcessorTest {
@@ -250,23 +248,6 @@ public class DirectProcessorTest {
         ts.assertValues(1)
           .assertNotComplete()
           .assertNoError();
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void scanInner() {
-	    InnerConsumer<? super String> actual = mock(InnerConsumer.class);
-        DirectProcessor<String> parent = new DirectProcessor<>();
-
-        DirectProcessor.DirectInner<String> test =
-                new DirectProcessor.DirectInner<>(actual, parent);
-
-        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-
-        test.cancel();
-        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
     @Test

@@ -27,6 +27,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.core.publisher.SinkManyBestEffort.DirectInner;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -34,6 +35,7 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 
 class SinkManyBestEffortTest {
 
@@ -160,6 +162,21 @@ class SinkManyBestEffortTest {
 
 		assertThat(sinkError.scan(Scannable.Attr.TERMINATED)).as("error terminated").isTrue();
 		assertThat(sinkError.scan(Scannable.Attr.ERROR)).as("error captured").isSameAs(expectedError);
+	}
+
+	@Test
+	void scanInner() {
+		InnerConsumer<? super String> actual = mock(InnerConsumer.class);
+		DirectInnerContainer<String> parent = mock(DirectInnerContainer.class);
+
+		DirectInner<String> test = new SinkManyBestEffort.DirectInner<>(actual, parent);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Nested
@@ -330,7 +347,7 @@ class SinkManyBestEffortTest {
 			sink.subscribe(sub1);
 			sink.subscribe(sub2);
 
-			SinkManyBestEffort.Inner<Integer> inner2 = sink.subscribers[1];
+			SinkManyBestEffort.DirectInner<Integer> inner2 = sink.subscribers[1];
 			inner2.set(true);
 
 			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Emission.OK);
