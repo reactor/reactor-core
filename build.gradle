@@ -144,12 +144,12 @@ configure(subprojects) { p ->
 			showExceptions true
 			exceptionFormat "FULL"
 			stackTraceFilters "ENTRY_POINT"
-			maxGranularity 3
+			maxGranularity -1
 		}
 
 		//show progress by displaying test classes, avoiding test suite timeouts
 		TestDescriptor last
-		afterTest { TestDescriptor td, TestResult tr ->
+		beforeTest { TestDescriptor td ->
 			if (last != td.getParent()) {
 				last = td.getParent()
 				println last
