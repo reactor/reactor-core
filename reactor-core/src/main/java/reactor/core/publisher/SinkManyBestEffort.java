@@ -186,7 +186,7 @@ final class SinkManyBestEffort<T> extends Flux<T> implements Sinks.Many<T>, Cont
 
 	@Override
 	public void emitNext(T value) {
-		switch(tryEmitNext(value)) {
+		switch (tryEmitNext(value)) {
 			case FAIL_ZERO_SUBSCRIBER:
 				//we want to "discard" without rendering the sink terminated.
 				// effectively NO-OP cause there's no subscriber, so no context :(
