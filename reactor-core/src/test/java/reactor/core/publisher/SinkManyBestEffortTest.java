@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
+import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -128,6 +130,36 @@ class SinkManyBestEffortTest {
 				subscription.cancel();
 			}
 		});
+	}
+
+	@Test
+	void innersReflectsSubscribers() {
+		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
+
+		assertThat(sink.inners()).as("before subscribers").isEmpty();
+
+		Disposable sub1 = sink.subscribe();
+		Disposable sub2 = sink.subscribe();
+
+		assertThat(sink.inners()).hasSize(2);
+		assertThat(sink.inners().map(inner -> inner.scanUnsafe(Scannable.Attr.ACTUAL)))
+				.containsExactly(sub1, sub2);
+	}
+
+	@Test
+	void scanSink() {
+		SinkManyBestEffort<Integer> sinkNormal = SinkManyBestEffort.createBestEffort();
+
+		assertThat(sinkNormal.scan(Scannable.Attr.TERMINATED)).as("normal not terminated").isFalse();
+		sinkNormal.tryEmitComplete().orThrow();
+		assertThat(sinkNormal.scan(Scannable.Attr.TERMINATED)).as("normal terminated").isTrue();
+
+		SinkManyBestEffort<Integer> sinkError = SinkManyBestEffort.createBestEffort();
+		Throwable expectedError = new IllegalStateException("boom");
+		sinkError.tryEmitError(expectedError).orThrow();
+
+		assertThat(sinkError.scan(Scannable.Attr.TERMINATED)).as("error terminated").isTrue();
+		assertThat(sinkError.scan(Scannable.Attr.ERROR)).as("error captured").isSameAs(expectedError);
 	}
 
 	@Nested
