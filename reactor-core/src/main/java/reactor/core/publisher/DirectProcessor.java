@@ -80,11 +80,12 @@ import reactor.util.context.Context;
  * </p>
  *
  * @param <T> the input and output value type
- * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks} with
- * {@link Sinks.MulticastSpec#onBackpressureError() Sinks.many().multicast().onBackpressureError()}.
+ * @deprecated To be removed in 3.5, prefer clear cut usage of {@link Sinks}. Closest sink
+ * is {@link Sinks.MulticastSpec#onBackpressureDropForSlow() Sinks.many().multicast().onBackpressureDropForSlow()},
+ * except it doesn't terminate overflowing downstreams.
  */
 @Deprecated
-public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {
+public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -145,15 +146,13 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 		Emission emission = tryEmitComplete();
 	}
 
-	@Override
-	public void emitComplete() {
+	private void emitComplete() {
 		//no particular error condition handling for onComplete
 		@SuppressWarnings("unused")
 		Emission emission = tryEmitComplete();
 	}
 
-	@Override
-	public Emission tryEmitComplete() {
+	private Emission tryEmitComplete() {
 		@SuppressWarnings("unchecked")
 		DirectInner<T>[] inners = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
@@ -172,16 +171,14 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 		emitError(throwable);
 	}
 
-	@Override
-	public void emitError(Throwable error) {
+	private void emitError(Throwable error) {
 		Emission result = tryEmitError(error);
 		if (result == Emission.FAIL_TERMINATED) {
 			Operators.onErrorDroppedMulticast(error, subscribers);
 		}
 	}
 
-	@Override
-	public Emission tryEmitError(Throwable t) {
+	private Emission tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t");
 
 		@SuppressWarnings("unchecked")
@@ -198,9 +195,8 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 		return Emission.OK;
 	}
 
-	@Override
-	public void emitNext(T value) {
-		switch(tryEmitNext(value)) {
+	private void emitNext(T value) {
+		switch (tryEmitNext(value)) {
 			case FAIL_ZERO_SUBSCRIBER:
 				//we want to "discard" without rendering the sink terminated.
 				// effectively NO-OP cause there's no subscriber, so no context :(
@@ -218,6 +214,8 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 				break;
 			case OK:
 				break;
+			default:
+				throw new IllegalStateException("unexpected return code");
 		}
 	}
 
@@ -226,8 +224,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 		emitNext(t);
 	}
 
-	@Override
-	public Emission tryEmitNext(T t) {
+	private Emission tryEmitNext(T t) {
 		Objects.requireNonNull(t, "t");
 
 		DirectInner<T>[] inners = subscribers;
@@ -243,16 +240,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 			s.onNext(t);
 		}
 		return Emission.OK;
-	}
-
-	@Override
-	public int currentSubscriberCount() {
-		return subscribers.length;
-	}
-
-	@Override
-	public Flux<T> asFlux() {
-		return this;
 	}
 
 	@Override

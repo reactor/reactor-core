@@ -57,7 +57,7 @@ public class DirectProcessorTest {
 
 	    StepVerifier.create(tp)
 	                .then(() -> {
-		                assertThat(tp.currentSubscriberCount()).as("has subscriber").isPositive();
+		                assertThat(tp.hasDownstreams()).as("has downstreams").isTrue();
 		                assertThat(tp.hasCompleted()).as("hasCompleted").isFalse();
 		                assertThat(tp.getError()).as("getError").isNull();
 		                assertThat(tp.hasError()).as("hasError").isFalse();
@@ -75,7 +75,7 @@ public class DirectProcessorTest {
 	                .expectComplete()
 	                .verify();
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isFalse();
 	    assertThat(tp.hasCompleted()).as("hasCompleted").isTrue();
 	    assertThat(tp.getError()).as("getError").isNull();
 	    assertThat(tp.hasError()).as("hasError").isFalse();
@@ -87,7 +87,7 @@ public class DirectProcessorTest {
 
 	    StepVerifier.create(tp, 0L)
 	                .then(() -> {
-		                assertThat(tp.currentSubscriberCount()).as("has subscriber").isPositive();
+		                assertThat(tp.hasDownstreams()).as("has downstreams").isTrue();
 		                assertThat(tp.hasCompleted()).as("hasCompleted").isFalse();
 		                assertThat(tp.getError()).as("getError").isNull();
 		                assertThat(tp.hasError()).as("hasError").isFalse();
@@ -102,7 +102,7 @@ public class DirectProcessorTest {
 	                .expectComplete()
 	                .verify();
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isFalse();
 	    assertThat(tp.hasCompleted()).as("hasCompleted").isTrue();
 	    assertThat(tp.getError()).as("getError").isNull();
 	    assertThat(tp.hasError()).as("hasError").isFalse();
@@ -131,7 +131,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isPositive();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isTrue();
 	    assertThat(tp.hasCompleted()).as("hasCompleted").isFalse();
 	    assertThat(tp.getError()).as("getError").isNull();
 	    assertThat(tp.hasError()).as("hasError").isFalse();
@@ -150,7 +150,7 @@ public class DirectProcessorTest {
         tp.onNext(3);
         tp.onError(new RuntimeException("forced failure"));
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isFalse();
 	    assertThat(tp.hasCompleted()).as("hasCompleted").isFalse();
 	    assertThat(tp.hasError()).as("hasError").isTrue();
 	    assertThat(tp.getError()).as("getError")
@@ -173,7 +173,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isFalse();
 	    assertThat(tp.hasCompleted()).as("hasCompleted").isFalse();
 	    assertThat(tp.hasError()).as("hasError").isTrue();
 	    assertThat(tp.getError()).as("getError")
@@ -196,7 +196,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isFalse();
 	    assertThat(tp.hasCompleted()).as("hasCompleted").isTrue();
 	    assertThat(tp.getError()).as("getError").isNull();
 	    assertThat(tp.hasError()).as("hasError").isFalse();
@@ -215,7 +215,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isFalse();
 
         tp.onNext(1);
 
@@ -233,7 +233,7 @@ public class DirectProcessorTest {
 
         tp.subscribe(ts);
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isPositive();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isTrue();
 
         tp.onNext(1);
 
@@ -243,7 +243,7 @@ public class DirectProcessorTest {
 
         ts.cancel();
 
-	    assertThat(tp.currentSubscriberCount()).as("has subscriber").isZero();
+	    assertThat(tp.hasDownstreams()).as("has downstreams").isFalse();
 
         tp.onNext(2);
 
@@ -284,43 +284,15 @@ public class DirectProcessorTest {
     }
 
 	@Test
-	public void tryEmitNextWithNoSubscriberFails() {
+	public void onNextWithNoSubscriberJustDiscardsWithoutTerminatingTheSink() {
 		DirectProcessor<Integer> directProcessor = DirectProcessor.create();
-
-		assertThat(directProcessor.tryEmitNext(1)).isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
-		assertThat(directProcessor.tryEmitComplete()).isEqualTo(Sinks.Emission.OK);
-
-		StepVerifier.create(directProcessor)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void tryEmitNextWithNoSubscriberFailsIfAllSubscribersCancelled() {
-		//in case of autoCancel, removing all subscribers results in TERMINATED rather than EMPTY
-		DirectProcessor<Integer> directProcessor = DirectProcessor.create();
-		AssertSubscriber<Integer> testSubscriber = AssertSubscriber.create();
-
-		directProcessor.subscribe(testSubscriber);
-
-		assertThat(directProcessor.tryEmitNext(1)).as("emit 1, with subscriber").isEqualTo(Sinks.Emission.OK);
-		assertThat(directProcessor.tryEmitNext(2)).as("emit 2, with subscriber").isEqualTo(Sinks.Emission.OK);
-		assertThat(directProcessor.tryEmitNext(3)).as("emit 3, with subscriber").isEqualTo(Sinks.Emission.OK);
-
-		testSubscriber.cancel();
-
-		assertThat(directProcessor.tryEmitNext(4)).as("emit 4, without subscriber").isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
-	}
-
-	@Test
-	public void emitNextWithNoSubscriberJustDiscardsWithoutTerminatingTheSink() {
-		DirectProcessor<Integer> directProcessor = DirectProcessor.create();
-		directProcessor.emitNext(1);
+		directProcessor.onNext(1);
 
 		StepVerifier.create(directProcessor)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(1))
-		            .then(() -> directProcessor.emitNext(2))
-		            .then(directProcessor::emitComplete)
+		            .then(() -> directProcessor.onNext(2))
+		            .then(directProcessor::onComplete)
 		            .expectNext(2)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(5));
