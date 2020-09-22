@@ -596,7 +596,7 @@ public class StepVerifierTests {
 			                            assertThat(next).isEqualTo(0L);
 		                            })
 		                            .then(() -> Schedulers.boundedElastic().schedule(() ->
-				                            publisher.next(1L)))
+				                            publisher.next(1L), 10, TimeUnit.MILLISECONDS))
 		                            .thenCancel()
 		                            .verify(Duration.ofSeconds(5));
 
@@ -653,7 +653,7 @@ public class StepVerifierTests {
 		                                .expectComplete()
 		                                .verify(Duration.ofMillis(500));
 
-		assertThat(duration.toMillis()).isGreaterThan(2 * interval);
+		assertThat(duration.toMillis()).isGreaterThanOrEqualTo(2 * interval);
 	}
 
 	@Test
