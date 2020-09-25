@@ -179,7 +179,7 @@ final class FluxConcatArray<T> extends Flux<T> implements SourceProducer<T> {
 
 		@Override
 		public void onComplete() {
-			if (WIP.getAndIncrement(this) == 0) {
+			if (WIP.compareAndSet(this, 0, 1)) {
 				Publisher<? extends T>[] a = sources;
 				do {
 
