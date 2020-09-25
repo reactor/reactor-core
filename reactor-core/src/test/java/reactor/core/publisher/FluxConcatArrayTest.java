@@ -28,6 +28,8 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
 
 public class FluxConcatArrayTest {
 
@@ -311,6 +313,15 @@ public class FluxConcatArrayTest {
 
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void iterableBatchSize() {
+		Flux<Integer> flux = Flux.concat(
+				Mono.just(0),
+				Mono.just(1).doOnSubscribe(s -> fail("batchSize did not prevent subscription")));
+		Integer first = flux.toIterable(1).iterator().next();
+		assertEquals(Integer.valueOf(0), first);
 	}
 
 }
