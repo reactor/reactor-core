@@ -171,8 +171,8 @@ class SinkManyBestEffortTest {
 
 		DirectInner<String> test = new SinkManyBestEffort.DirectInner<>(actual, parent);
 
-		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scanUnsafe(Scannable.Attr.PARENT)).isSameAs(parent); //the mock isn't scannable
+		assertThat(test.scanUnsafe(Scannable.Attr.ACTUAL)).isSameAs(actual); //the mock isn't scannable
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.cancel();
