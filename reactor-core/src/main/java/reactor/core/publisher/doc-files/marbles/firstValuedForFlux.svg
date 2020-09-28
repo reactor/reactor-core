@@ -41,8 +41,8 @@
      id="namedview280"
      showgrid="false"
      inkscape:zoom="1.3259763"
-     inkscape:cx="221.19799"
-     inkscape:cy="191.5651"
+     inkscape:cx="218.18134"
+     inkscape:cy="194.58174"
      inkscape:window-x="74"
      inkscape:window-y="92"
      inkscape:window-maximized="0"
@@ -551,7 +551,7 @@
      marker-end="url(#FilledArrow_Marker_2)" />
   <path
      id="line1181-0"
-     d="M 62,378.98913 H 567"
+     d="M 43.435375,378.98913 H 566.99998"
      fill="none"
      fill-opacity="1"
      stroke="#34302c"
@@ -579,7 +579,7 @@
        fill="#45b8de">cancel()</tspan></text>
   <path
      id="line1406"
-     d="M 70.000001,375.64349 V 153.61242"
+     d="M 57.131357,375.64349 V 153.61242"
      fill="none"
      fill-opacity="1"
      stroke="#45b8de"
@@ -589,26 +589,9 @@
      stroke-dasharray="2, 6"
      stroke-opacity="1"
      marker-end="url(#FilledArrow_Marker_3)" />
-  <text
-     y="50"
-     x="-372.9895"
-     transform="rotate(-90)"
-     id="text1410"
-     fill="#45b8de"
-     fill-opacity="1"
-     stroke="none"
-     stroke-dasharray="none"
-     stroke-opacity="1"><tspan
-       font-size="14px"
-       font-weight="400"
-       x="-372.9895"
-       y="63"
-       id="tspan1408"
-       font-family="Tahoma, 'Nimbus Sans L'"
-       fill="#45b8de">subscribe()</tspan></text>
   <path
      id="line1406-6"
-     d="m 115.30294,375.98913 v -90"
+     d="m 76.697036,375.98913 v -90"
      fill="none"
      fill-opacity="1"
      stroke="#45b8de"
@@ -618,23 +601,6 @@
      stroke-dasharray="2, 6"
      stroke-opacity="1"
      marker-end="url(#FilledArrow_Marker_3-5)" />
-  <text
-     y="73.855225"
-     x="-371.9895"
-     transform="rotate(-90)"
-     id="text1410-2"
-     fill="#45b8de"
-     fill-opacity="1"
-     stroke="none"
-     stroke-dasharray="none"
-     stroke-opacity="1"><tspan
-       font-size="14px"
-       font-weight="400"
-       x="-371.9895"
-       y="86.855225"
-       id="tspan1408-9"
-       font-family="Tahoma, 'Nimbus Sans L'"
-       fill="#45b8de">subscribe()</tspan></text>
   <path
      id="path59"
      d="m 160.73724,241.98914 h 43 l 2,2 v 41.99999 l -2,2 h -43 l -2,-2 v -41.99999 z"
@@ -872,7 +838,7 @@
      stroke="#45b8de"
      fill-opacity="1"
      fill="none"
-     d="M 47.625976,372.88561 V 89.756176"
+     d="M 47.625976,377.73814 V 89.756179"
      id="line1406-9"
      style="marker-end:url(#FilledArrow_Marker_3-1)" />
   <path
@@ -885,28 +851,9 @@
      stroke="#45b8de"
      fill-opacity="1"
      fill="none"
-     d="M 92.590604,373.53292 V 211.35699"
+     d="M 66.853316,373.53292 V 211.35699"
      id="line1406-6-7"
      style="marker-end:url(#FilledArrow_Marker_3-5-9)" />
-  <text
-     style="font-size:12px;stroke-width:1"
-     stroke-opacity="1"
-     stroke-dasharray="none"
-     stroke="none"
-     fill-opacity="1"
-     fill="#45b8de"
-     id="text1410-3"
-     transform="rotate(-90)"
-     x="-371.60056"
-     y="96.480591"><tspan
-       style="stroke-width:0.932499"
-       fill="#45b8de"
-       font-family="Tahoma, 'Nimbus Sans L'"
-       id="tspan1408-8"
-       y="109.48058"
-       x="-371.60056"
-       font-weight="400"
-       font-size="14px">subscribe()</tspan></text>
   <text
      style="font-size:12px;stroke-width:1"
      stroke-opacity="1"
