@@ -22,6 +22,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -35,6 +37,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("deprecation")
 public class ReplayProcessorTest {
+
+	@Before
+	public void virtualTime(){
+		VirtualTimeScheduler.getOrSet();
+	}
+
+	@After
+	public void teardownVirtualTime(){
+		VirtualTimeScheduler.reset();
+	}
 
 	@Test
 	public void currentSubscriberCount() {
@@ -655,13 +667,22 @@ public class ReplayProcessorTest {
 		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(Integer.MAX_VALUE);
 	}
 
-	@Before
-	public void virtualTime(){
-    	VirtualTimeScheduler.getOrSet();
-	}
+	@Test
+	public void inners() {
+		Sinks.Many<Integer> sink = ReplayProcessor.create(1);
+		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
+		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
 
-	@After
-	public void teardownVirtualTime(){
-		VirtualTimeScheduler.reset();
+		assertThat(sink.inners()).as("before subscriptions").isEmpty();
+
+		sink.asFlux().subscribe(notScannable);
+		sink.asFlux().subscribe(scannable);
+
+		assertThat(sink.inners())
+				.asList()
+				.as("after subscriptions")
+				.hasSize(2)
+				.extracting(l -> (Object) ((ReplayProcessor.ReplayInner<?>) l).actual)
+				.containsExactly(notScannable, scannable);
 	}
 }

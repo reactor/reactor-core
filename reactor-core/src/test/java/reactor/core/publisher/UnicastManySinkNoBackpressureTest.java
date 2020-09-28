@@ -19,6 +19,8 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
 
@@ -125,6 +127,50 @@ class UnicastManySinkNoBackpressureTest {
 		            })
 		            .expectNext("second")
 		            .verifyComplete();
+	}
+
+	@Test
+	void scanTerminatedCancelled() {
+		Sinks.Many<Integer> sink = UnicastManySinkNoBackpressure.create();
+		sink.asFlux().subscribe();
+
+		assertThat(sink.scan(Scannable.Attr.TERMINATED)).as("not yet terminated").isFalse();
+
+		sink.tryEmitError(new IllegalStateException("boom")).orThrow();
+
+		assertThat(sink.scan(Scannable.Attr.TERMINATED)).as("terminated with error").isTrue();
+		//this sink doesn't retain errors :(
+//		assertThat(sink.scan(Scannable.Attr.ERROR)).as("error").hasMessage("boom");
+
+		assertThat(sink.scan(Scannable.Attr.CANCELLED)).as("pre-cancellation").isFalse();
+
+		((UnicastManySinkNoBackpressure<?>) sink).cancel();
+
+		assertThat(sink.scan(Scannable.Attr.CANCELLED)).as("cancelled").isTrue();
+	}
+
+	@Test
+	void inners() {
+		Sinks.Many<Integer> sink1 = UnicastManySinkNoBackpressure.create();
+		Sinks.Many<Integer> sink2 = UnicastManySinkNoBackpressure.create();
+		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
+		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
+
+		assertThat(sink1.inners()).as("before subscription notScannable").isEmpty();
+		assertThat(sink2.inners()).as("before subscription notScannable").isEmpty();
+
+		sink1.asFlux().subscribe(notScannable);
+		sink2.asFlux().subscribe(scannable);
+
+		assertThat(sink1.inners())
+				.asList()
+				.as("after notScannable subscription")
+				.containsExactly(Scannable.from("NOT SCANNABLE"));
+
+		assertThat(sink2.inners())
+				.asList()
+				.as("after scannable subscription")
+				.containsExactly(scannable);
 	}
 
 }

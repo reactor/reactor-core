@@ -25,6 +25,8 @@ import org.openjdk.jcstress.annotations.JCStressTest;
 import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.LLI_Result;
+
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
@@ -124,6 +126,12 @@ public class SerializedManySinkStressTest {
 		@Override
 		public Flux<T> asFlux() {
 			throw new UnsupportedOperationException();
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			return null;
 		}
 	}
 }

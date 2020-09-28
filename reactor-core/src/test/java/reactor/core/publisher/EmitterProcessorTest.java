@@ -804,8 +804,8 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void scanMainCancelled() {
-		EmitterProcessor test = EmitterProcessor.create();
-		test.onSubscribe(Operators.cancelledSubscription());
+		EmitterProcessor<?> test = EmitterProcessor.create(true);
+		test.subscribe().dispose();
 
 		assertThat(test.scan(CANCELLED)).isTrue();
 		assertThat(test.isCancelled()).isTrue();
@@ -813,10 +813,30 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void scanMainError() {
-		EmitterProcessor test = EmitterProcessor.create();
+		EmitterProcessor<?> test = EmitterProcessor.create();
 		test.sink().error(new IllegalStateException("boom"));
 
+		assertThat(test.scan(TERMINATED)).as("terminated").isTrue();
 		assertThat(test.scan(Attr.ERROR)).hasMessage("boom");
+	}
+
+	@Test
+	public void inners() {
+		Sinks.Many<Integer> sink = EmitterProcessor.create();
+		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
+		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
+
+		assertThat(sink.inners()).as("before subscriptions").isEmpty();
+
+		sink.asFlux().subscribe(notScannable);
+		sink.asFlux().subscribe(scannable);
+
+		assertThat(sink.inners())
+				.asList()
+				.as("after subscriptions")
+				.hasSize(2)
+				.extracting(l -> (Object) ((EmitterProcessor.EmitterInner<?>) l).actual)
+				.containsExactly(notScannable, scannable);
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1528

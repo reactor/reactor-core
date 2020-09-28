@@ -19,13 +19,16 @@ package reactor.core.publisher;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -145,6 +148,17 @@ public class SerializedManySinkTest {
 		@Override
 		public Flux<T> asFlux() {
 			return delegate.asFlux();
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return delegate.inners();
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			return delegate.scanUnsafe(key);
 		}
 	}
 }

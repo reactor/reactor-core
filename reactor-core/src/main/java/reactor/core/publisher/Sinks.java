@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
@@ -504,7 +505,7 @@ public final class Sinks {
 	 * @author Simon Baslé
 	 * @author Stephane Maldini
 	 */
-	public interface Many<T> {
+	public interface Many<T> extends Scannable {
 
 		/**
 		 * Try emitting a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal.
@@ -629,7 +630,7 @@ public final class Sinks {
 	 * @author Simon Baslé
 	 * @author Stephane Maldini
 	 */
-	public interface Empty<T> {
+	public interface Empty<T> extends Scannable {
 
 		/**
 		 * Try to complete the {@link Mono} without a value, generating only an {@link Subscriber#onComplete() onComplete} signal.

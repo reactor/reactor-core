@@ -176,4 +176,46 @@ class VoidProcessorTest {
 		assertThat(mp.tryEmitError(new Exception("test")).hasFailed()).isTrue();
 	}
 
+	@Test
+	void scanTerminated() {
+		Sinks.Empty<Integer> sinkTerminated = new VoidProcessor<>();
+
+		assertThat(sinkTerminated.scan(Scannable.Attr.TERMINATED)).as("not yet terminated").isFalse();
+
+		sinkTerminated.tryEmitError(new IllegalStateException("boom")).orThrow();
+
+		assertThat(sinkTerminated.scan(Scannable.Attr.TERMINATED)).as("terminated with error").isTrue();
+		assertThat(sinkTerminated.scan(Scannable.Attr.ERROR)).as("error").hasMessage("boom");
+	}
+
+	@Test
+	void scanCancelled() {
+		Sinks.Empty<Integer> sinkCancelled = new VoidProcessor<>();
+
+		assertThat(sinkCancelled.scan(Scannable.Attr.CANCELLED)).as("pre-cancellation").isFalse();
+
+		((VoidProcessor<?>) sinkCancelled).dispose();
+
+		assertThat(sinkCancelled.scan(Scannable.Attr.CANCELLED)).as("cancelled").isTrue();
+	}
+
+	@Test
+	void inners() {
+		Sinks.Empty<Integer> sink = new VoidProcessor<>();
+		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
+		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
+
+		assertThat(sink.inners()).as("before subscriptions").isEmpty();
+
+		sink.asMono().subscribe(notScannable);
+		sink.asMono().subscribe(scannable);
+
+		assertThat(sink.inners())
+				.asList()
+				.as("after subscriptions")
+				.hasSize(2)
+				.extracting(l -> (Object) ((VoidProcessor.VoidInner<?>) l).actual)
+				.containsExactly(notScannable, scannable);
+	}
+
 }
