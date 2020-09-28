@@ -63,11 +63,16 @@ public class SerializedManySinkStressTest {
 		}
 	}
 
-	static class TargetSink<T> implements Sinks.Many<T> {
+	static class TargetSink<T> implements InternalManySink<T> {
 
 		final AtomicReference<StressSubscriber.Operation> guard = new AtomicReference<>(null);
 
 		final AtomicInteger onNextCalls = new AtomicInteger();
+
+		@Override
+		public Context currentContext() {
+			return Context.empty();
+		}
 
 		@Override
 		public Sinks.Emission tryEmitNext(T t) {
@@ -101,21 +106,6 @@ public class SerializedManySinkStressTest {
 			LockSupport.parkNanos(10);
 			guard.compareAndSet(StressSubscriber.Operation.ON_ERROR, null);
 			return Sinks.Emission.OK;
-		}
-
-		@Override
-		public void emitNext(T t) {
-			tryEmitNext(t).orThrow();
-		}
-
-		@Override
-		public void emitError(Throwable error) {
-			tryEmitError(error).orThrow();
-		}
-
-		@Override
-		public void emitComplete() {
-			tryEmitComplete().orThrow();
 		}
 
 		@Override

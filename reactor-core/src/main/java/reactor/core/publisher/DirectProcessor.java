@@ -84,7 +84,7 @@ import reactor.util.context.Context;
  * {@link Sinks.MulticastSpec#onBackpressureError() Sinks.many().multicast().onBackpressureError()}.
  */
 @Deprecated
-public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {
+public final class DirectProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -146,13 +146,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 	}
 
 	@Override
-	public void emitComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
-	}
-
-	@Override
 	public Emission tryEmitComplete() {
 		@SuppressWarnings("unchecked")
 		DirectInner<T>[] inners = SUBSCRIBERS.getAndSet(this, TERMINATED);
@@ -173,14 +166,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 	}
 
 	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDroppedMulticast(error, subscribers);
-		}
-	}
-
-	@Override
 	public Emission tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t");
 
@@ -196,29 +181,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> implements Sin
 			s.onError(t);
 		}
 		return Emission.OK;
-	}
-
-	@Override
-	public void emitNext(T value) {
-		switch(tryEmitNext(value)) {
-			case FAIL_ZERO_SUBSCRIBER:
-				//we want to "discard" without rendering the sink terminated.
-				// effectively NO-OP cause there's no subscriber, so no context :(
-				break;
-			case FAIL_OVERFLOW:
-				Operators.onDiscard(value, currentContext());
-				//the emitError will onErrorDropped if already terminated
-				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
-				break;
-			case FAIL_CANCELLED:
-				Operators.onDiscard(value, currentContext());
-				break;
-			case FAIL_TERMINATED:
-				Operators.onNextDroppedMulticast(value, subscribers);
-				break;
-			case OK:
-				break;
-		}
 	}
 
 	@Override

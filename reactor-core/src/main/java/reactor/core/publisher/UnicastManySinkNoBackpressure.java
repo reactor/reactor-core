@@ -29,7 +29,7 @@ import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Many<T>, Subscription, ContextHolder {
+final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements InternalManySink<T>, Subscription, ContextHolder {
 
 	public static <E> UnicastManySinkNoBackpressure<E> create() {
 		return new UnicastManySinkNoBackpressure<>();
@@ -106,29 +106,6 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Ma
 	}
 
 	@Override
-	public void emitNext(T value) {
-		switch (tryEmitNext(value)) {
-			case FAIL_ZERO_SUBSCRIBER:
-				//we want to "discard" without rendering the sink terminated.
-				// effectively NO-OP cause there's no subscriber, so no context :(
-				break;
-			case FAIL_OVERFLOW:
-				Operators.onDiscard(value, currentContext());
-				//the emitError will onErrorDropped if already terminated
-				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
-				break;
-			case FAIL_CANCELLED:
-				Operators.onDiscard(value, currentContext());
-				break;
-			case FAIL_TERMINATED:
-				Operators.onNextDropped(value, currentContext());
-				break;
-			case OK:
-				break;
-		}
-	}
-
-	@Override
 	public Emission tryEmitNext(T t) {
 		Objects.requireNonNull(t, "t");
 
@@ -149,14 +126,6 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Ma
 				return Emission.FAIL_CANCELLED;
 			default:
 				throw new IllegalStateException();
-		}
-	}
-
-	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDropped(error, currentContext());
 		}
 	}
 
@@ -183,13 +152,6 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Ma
 					throw new IllegalStateException();
 			}
 		}
-	}
-
-	@Override
-	public void emitComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
 	}
 
 	@Override

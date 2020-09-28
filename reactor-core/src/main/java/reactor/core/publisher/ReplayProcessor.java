@@ -53,7 +53,7 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  */
 @Deprecated
 public final class ReplayProcessor<T> extends FluxProcessor<T, T>
-		implements Fuseable, Sinks.Many<T> {
+		implements Fuseable, InternalManySink<T> {
 
 	/**
 	 * Create a {@link ReplayProcessor} that caches the last element it has pushed,
@@ -444,13 +444,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public void emitComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
-	}
-
-	@Override
 	public Emission tryEmitComplete() {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
@@ -474,14 +467,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDroppedMulticast(error, subscribers);
-		}
-	}
-
-	@Override
 	public Emission tryEmitError(Throwable t) {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
@@ -502,27 +487,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public void onNext(T t) {
 		emitNext(t);
-	}
-
-	@Override
-	public void emitNext(T value) {
-		switch(tryEmitNext(value)) {
-			case FAIL_OVERFLOW:
-				Operators.onDiscard(value, currentContext());
-				//the emitError will onErrorDropped if already terminated
-				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
-				break;
-			case FAIL_CANCELLED:
-				Operators.onDiscard(value, currentContext());
-				break;
-			case FAIL_TERMINATED:
-				Operators.onNextDroppedMulticast(value, subscribers);
-				break;
-			case FAIL_ZERO_SUBSCRIBER: //cannot happen in ReplayProcessor
-				throw new IllegalStateException("FAIL_ZERO_SUBSCRIBER shouldn't happen in ReplayProcessor");
-			case OK:
-				break;
-		}
 	}
 
 	@Override

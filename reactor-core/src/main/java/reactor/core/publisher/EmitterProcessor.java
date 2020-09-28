@@ -62,7 +62,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * }</pre>
  */
 @Deprecated
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Sinks.Many<T> {
+public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements InternalManySink<T> {
 
 	@SuppressWarnings("rawtypes")
 	static final FluxPublish.PubSubInner[] EMPTY = new FluxPublish.PublishInner[0];
@@ -213,13 +213,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Si
 	}
 
 	@Override
-	public void emitComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
-	}
-
-	@Override
 	public Emission tryEmitComplete() {
 		if (done) {
 			return Emission.FAIL_TERMINATED;
@@ -232,14 +225,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Si
 	@Override
 	public void onError(Throwable throwable) {
 		emitError(throwable);
-	}
-
-	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDroppedMulticast(error, subscribers);
-		}
 	}
 
 	@Override
@@ -265,29 +250,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Si
 			return;
 		}
 		emitNext(t);
-	}
-
-	@Override
-	public void emitNext(T value) {
-		switch(tryEmitNext(value)) {
-			case FAIL_ZERO_SUBSCRIBER:
-				//this case only happens if the subscriber[] is EMPTY AND there's no buffering capacity.
-				//effectively NO-OP cause there's no subscriber, so no context :(
-				break;
-			case FAIL_OVERFLOW:
-				Operators.onDiscard(value, currentContext());
-				//the emitError will onErrorDropped if already terminated
-				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
-				break;
-			case FAIL_CANCELLED:
-				Operators.onDiscard(value, currentContext());
-				break;
-			case FAIL_TERMINATED:
-				Operators.onNextDroppedMulticast(value, subscribers);
-				break;
-			case OK:
-				break;
-		}
 	}
 
 	@Override

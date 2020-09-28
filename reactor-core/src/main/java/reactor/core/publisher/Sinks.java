@@ -186,6 +186,13 @@ public final class Sinks {
 		}
 	}
 
+	public interface EmitStrategy {
+
+		EmitStrategy FAIL_FAST = emission -> false;
+
+		boolean onEmissionFailure(Emission emission);
+	}
+
 	/**
 	 * Provides {@link Sinks.Many} specs for sinks which can emit multiple elements
 	 */
@@ -563,7 +570,11 @@ public final class Sinks {
 		 *
 		 */
 		@Deprecated
-		void emitNext(T t);
+		default void emitNext(T t) {
+			emitNext(t, EmitStrategy.FAIL_FAST);
+		}
+
+		void emitNext(T t, EmitStrategy strategy);
 
 		/**
 		 * Terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
@@ -580,7 +591,11 @@ public final class Sinks {
 		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitComplete()} and handle the result.
 		 */
 		@Deprecated
-		void emitComplete();
+		default void emitComplete() {
+			emitComplete(EmitStrategy.FAIL_FAST);
+		}
+
+		void emitComplete(EmitStrategy strategy);
 
 		/**
 		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
@@ -599,7 +614,11 @@ public final class Sinks {
 		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitError(Throwable)} and handle the result.
 		 */
 		@Deprecated
-		void emitError(Throwable error);
+		default void emitError(Throwable error) {
+			emitError(error, EmitStrategy.FAIL_FAST);
+		}
+
+		void emitError(Throwable error, EmitStrategy strategy);
 
 		/**
 		 * Get how many {@link Subscriber Subscribers} are currently subscribed to the sink.

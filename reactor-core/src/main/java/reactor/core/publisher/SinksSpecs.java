@@ -29,7 +29,7 @@ final class SinksSpecs {
 
 }
 
-final class SerializedManySink<T> implements Many<T>, Scannable {
+final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 
 	final Many<T>       sink;
 	final ContextHolder contextHolder;
@@ -61,19 +61,13 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		return sink.asFlux();
 	}
 
-	Context currentContext() {
+	@Override
+	public Context currentContext() {
 		return contextHolder.currentContext();
 	}
 
 	public boolean isCancelled() {
 		return Scannable.from(sink).scanOrDefault(Attr.CANCELLED, false);
-	}
-
-	@Override
-	public void emitComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
 	}
 
 	@Override
@@ -88,17 +82,6 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 		done = true;
 		return sink.tryEmitComplete();
-	}
-
-	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		switch (result) {
-			case FAIL_TERMINATED:
-			case FAIL_NON_SERIALIZED:
-				Operators.onErrorDropped(error, currentContext());
-				break;
-		}
 	}
 
 	@Override
@@ -117,48 +100,6 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 		done = true;
 		return sink.tryEmitError(t);
-	}
-
-	@Override
-	public void emitNext(T value) {
-		switch (tryEmitNext(value)) {
-			case FAIL_ZERO_SUBSCRIBER:
-				//we want to "discard" without rendering the sink terminated.
-				// effectively NO-OP cause there's no subscriber, so no context :(
-				break;
-			case FAIL_OVERFLOW: {
-				Context ctx = currentContext();
-				IllegalStateException overflow = Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext");
-
-				Subscription s = sink instanceof Subscription ? (Subscription) sink : null;
-				Throwable ex = Operators.onOperatorError(s, overflow, value, ctx);
-				//the emitError will onErrorDropped if already terminated
-				emitError(ex);
-				Operators.onDiscard(value, ctx);
-				break;
-			}
-			case FAIL_CANCELLED:
-				Operators.onDiscard(value, currentContext());
-				break;
-			case FAIL_TERMINATED:
-				Operators.onNextDropped(value, currentContext());
-				break;
-			case FAIL_NON_SERIALIZED: {
-				Context ctx = currentContext();
-				IllegalStateException overflow = new IllegalStateException(
-						"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
-				);
-
-				Subscription s = sink instanceof Subscription ? (Subscription) sink : null;
-				Throwable ex = Operators.onOperatorError(s, overflow, value, ctx);
-				//the emitError will onErrorDropped if already terminated
-				emitError(ex);
-				Operators.onDiscard(value, currentContext());
-				break;
-			}
-			case OK:
-				break;
-		}
 	}
 
 	@Override
