@@ -19,17 +19,19 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
-public class VoidProcessorTest {
+class VoidProcessorTest {
 
 	@Test
-	public void currentSubscriberCount() {
+	void currentSubscriberCount() {
 		Sinks.Empty<Integer> sink = new VoidProcessor<>();
 
 		assertThat(sink.currentSubscriberCount()).isZero();
@@ -43,19 +45,20 @@ public class VoidProcessorTest {
 		assertThat(sink.currentSubscriberCount()).isEqualTo(2);
 	}
 
-	@Test(expected = IllegalStateException.class)
-	public void NextProcessorResultNotAvailable() {
+	@Test
+	void resultNotAvailable() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
-		mp.block(Duration.ofMillis(1));
+		assertThatIllegalStateException().isThrownBy(() -> mp.block(Duration.ofMillis(1)))
+		                                 .withMessageStartingWith("Timeout");
 	}
 
 	@SuppressWarnings("deprecation")
 	@Test
-	public void VoidProcessorRejectedDoOnSuccessOrError() {
+	void rejectedDoOnSuccessOrError() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		mp.doOnSuccessOrError((s, f) -> ref.set(f)).subscribe();
+		mp.doOnSuccessOrError((s, f) -> ref.set(f)).subscribe(v -> {}, e -> {});
 		mp.onError(new Exception("test"));
 
 		assertThat(ref.get()).hasMessage("test");
@@ -64,11 +67,11 @@ public class VoidProcessorTest {
 	}
 
 	@Test
-	public void VoidProcessorRejectedDoOnTerminate() {
+	void rejectedDoOnTerminate() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 		AtomicInteger invoked = new AtomicInteger();
 
-		mp.doOnTerminate(invoked::incrementAndGet).subscribe();
+		mp.doOnTerminate(invoked::incrementAndGet).subscribe(v -> {}, e -> {});
 		mp.onError(new Exception("test"));
 
 		assertThat(invoked.get()).isEqualTo(1);
@@ -77,7 +80,7 @@ public class VoidProcessorTest {
 	}
 
 	@Test
-	public void VoidProcessorRejectedSubscribeCallback() {
+	void rejectedSubscribeCallback() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
@@ -91,11 +94,11 @@ public class VoidProcessorTest {
 
 
 	@Test
-	public void VoidProcessorRejectedDoOnError() {
+	void rejectedDoOnError() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		mp.doOnError(ref::set).subscribe();
+		mp.doOnError(ref::set).subscribe(v -> {}, e -> {});
 		mp.onError(new Exception("test"));
 
 		assertThat(ref.get()).hasMessage("test");
@@ -103,16 +106,16 @@ public class VoidProcessorTest {
 		assertThat(mp.isError()).isTrue();
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void VoidProcessorRejectedSubscribeCallbackNull() {
+	@Test
+	void rejectedSubscribeCallbackNull() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 
-		mp.subscribe((Subscriber<Void>)null);
+		assertThatNullPointerException().isThrownBy(() -> mp.subscribe((Subscriber<Void>)null));
 	}
 
 
 	@Test
-	public void VoidProcessorSuccessChainTogether() {
+	void successChainTogether() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 		VoidProcessor<Void> mp2 = new VoidProcessor<>();
 		mp.subscribe(mp2);
@@ -124,7 +127,7 @@ public class VoidProcessorTest {
 	}
 
 	@Test
-	public void VoidProcessorRejectedChainTogether() {
+	void rejectedChainTogether() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 		VoidProcessor<Void> mp2 = new VoidProcessor<>();
 		mp.subscribe(mp2);
@@ -137,7 +140,7 @@ public class VoidProcessorTest {
 	}
 
 	@Test
-	public void VoidProcessorCancel() {
+	void cancel() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 		StepVerifier.create(mp)
 					.thenCancel()
@@ -147,7 +150,7 @@ public class VoidProcessorTest {
 	}
 
 	@Test
-	public void VoidProcessorNullFulfill() {
+	void nullFulfill() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 
 		mp.onNext(null);
@@ -158,7 +161,7 @@ public class VoidProcessorTest {
 	}
 
 	@Test
-	public void VoidProcessorDoubleError() {
+	void doubleError() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 
 		mp.onError(new Exception("test"));
@@ -166,7 +169,7 @@ public class VoidProcessorTest {
 	}
 
 	@Test
-	public void VoidProcessorDoubleSignal() {
+	void doubleSignal() {
 		VoidProcessor<Void> mp = new VoidProcessor<>();
 
 		mp.onComplete();

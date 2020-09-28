@@ -28,12 +28,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.Scannable;
 import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
-import reactor.test.util.TestLogger;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.TestLogger;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -144,18 +145,18 @@ public class NextProcessorTest {
 	}
 
 	@Test(expected = IllegalStateException.class)
-	public void NextProcessorResultNotAvailable() {
+	public void resultNotAvailable() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		mp.block(Duration.ofMillis(1));
 	}
 
 	@SuppressWarnings("deprecation")
 	@Test
-	public void MonoProcessorRejectedDoOnSuccessOrError() {
+	public void rejectedDoOnSuccessOrError() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		mp.doOnSuccessOrError((s, f) -> ref.set(f)).subscribe();
+		mp.doOnSuccessOrError((s, f) -> ref.set(f)).subscribe(v -> {}, e -> {});
 		mp.onError(new Exception("test"));
 
 		assertThat(ref.get()).hasMessage("test");
@@ -164,11 +165,11 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorRejectedDoOnTerminate() {
+	public void rejectedDoOnTerminate() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicInteger invoked = new AtomicInteger();
 
-		mp.doOnTerminate(invoked::incrementAndGet).subscribe();
+		mp.doOnTerminate(invoked::incrementAndGet).subscribe(v -> {}, e -> {});
 		mp.onError(new Exception("test"));
 
 		assertThat(invoked.get()).isEqualTo(1);
@@ -177,7 +178,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorRejectedSubscribeCallback() {
+	public void rejectedSubscribeCallback() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
@@ -191,7 +192,7 @@ public class NextProcessorTest {
 
 	@SuppressWarnings("deprecation")
 	@Test
-	public void MonoProcessorSuccessDoOnSuccessOrError() {
+	public void successDoOnSuccessOrError() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<String> ref = new AtomicReference<>();
 
@@ -204,7 +205,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorSuccessDoOnTerminate() {
+	public void successDoOnTerminate() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicInteger invoked = new AtomicInteger();
 
@@ -217,7 +218,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorSuccessSubscribeCallback() {
+	public void successSubscribeCallback() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<String> ref = new AtomicReference<>();
 
@@ -230,11 +231,11 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorRejectedDoOnError() {
+	public void rejectedDoOnError() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		mp.doOnError(ref::set).subscribe();
+		mp.doOnError(ref::set).subscribe(v -> {}, e -> {});
 		mp.onError(new Exception("test"));
 
 		assertThat(ref.get()).hasMessage("test");
@@ -243,14 +244,14 @@ public class NextProcessorTest {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void MonoProcessorRejectedSubscribeCallbackNull() {
+	public void rejectedSubscribeCallbackNull() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 
 		mp.subscribe((Subscriber<String>)null);
 	}
 
 	@Test
-	public void MonoProcessorSuccessDoOnSuccess() {
+	public void successDoOnSuccess() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		AtomicReference<String> ref = new AtomicReference<>();
 
@@ -263,7 +264,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorSuccessChainTogether() {
+	public void successChainTogether() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		NextProcessor<String> mp2 = new NextProcessor<>(null);
 		mp.subscribe(mp2);
@@ -276,7 +277,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorRejectedChainTogether() {
+	public void rejectedChainTogether() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 		NextProcessor<String> mp2 = new NextProcessor<>(null);
 		mp.subscribe(mp2);
@@ -289,7 +290,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorDoubleFulfill() {
+	public void doubleFulfill() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 
 		StepVerifier.create(mp)
@@ -304,7 +305,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorNullFulfill() {
+	public void nullFulfill() {
 		NextProcessor<String> mp = new NextProcessor<>(null);
 
 		mp.onNext(null);
@@ -315,7 +316,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorMapFulfill() {
+	public void mapFulfill() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 
 		mp.onNext(1);
@@ -331,7 +332,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorThenFulfill() {
+	public void thenFulfill() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 
 		mp.onNext(1);
@@ -346,7 +347,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorMapError() {
+	public void mapError() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
 
 		mp.onNext(1);
@@ -366,7 +367,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorDoubleError() {
+	public void doubleError() {
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
@@ -384,7 +385,7 @@ public class NextProcessorTest {
 	}
 
 	@Test
-	public void MonoProcessorDoubleSignal() {
+	public void doubleSignal() {
 		TestLogger testLogger = new TestLogger();
 		LoggerUtils.addAppender(testLogger, Operators.class);
 		try {
