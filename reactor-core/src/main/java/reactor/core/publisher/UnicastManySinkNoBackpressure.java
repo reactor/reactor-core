@@ -18,11 +18,15 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Many<T>, Subscription, ContextHolder {
@@ -210,5 +214,21 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Sinks.Ma
 					throw new IllegalStateException();
 			}
 		}
+	}
+
+	@Override
+	public Stream<? extends Scannable> inners() {
+		CoreSubscriber<? super T> a = actual;
+		return a == null ? Stream.empty() : Stream.of(Scannable.from(a));
+	}
+
+	@Nullable
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.ACTUAL) return actual;
+		if (key == Attr.TERMINATED) return state == State.TERMINATED;
+		if (key == Attr.CANCELLED) return state == State.CANCELLED;
+
+		return null;
 	}
 }

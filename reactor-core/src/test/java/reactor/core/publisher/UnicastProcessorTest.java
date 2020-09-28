@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 
 import org.junit.Test;
 
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -362,5 +363,47 @@ public class UnicastProcessorTest {
 		StepVerifier.create(unicastProcessor)
 		            .expectNext(1) //from the buffer
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanTerminatedCancelled() {
+		Sinks.Many<Integer> sink = UnicastProcessor.create();
+
+		assertThat(sink.scan(Scannable.Attr.TERMINATED)).as("not yet terminated").isFalse();
+
+		sink.tryEmitError(new IllegalStateException("boom")).orThrow();
+
+		assertThat(sink.scan(Scannable.Attr.TERMINATED)).as("terminated with error").isTrue();
+		assertThat(sink.scan(Scannable.Attr.ERROR)).as("error").hasMessage("boom");
+
+		assertThat(sink.scan(Scannable.Attr.CANCELLED)).as("pre-cancellation").isFalse();
+
+		((UnicastProcessor<?>) sink).cancel();
+
+		assertThat(sink.scan(Scannable.Attr.CANCELLED)).as("cancelled").isTrue();
+	}
+
+	@Test
+	public void inners() {
+		Sinks.Many<Integer> sink1 = UnicastProcessor.create();
+		Sinks.Many<Integer> sink2 = UnicastProcessor.create();
+		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
+		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
+
+		assertThat(sink1.inners()).as("before subscription notScannable").isEmpty();
+		assertThat(sink2.inners()).as("before subscription notScannable").isEmpty();
+
+		sink1.asFlux().subscribe(notScannable);
+		sink2.asFlux().subscribe(scannable);
+
+		assertThat(sink1.inners())
+				.asList()
+				.as("after notScannable subscription")
+				.containsExactly(Scannable.from("NOT SCANNABLE"));
+
+		assertThat(sink2.inners())
+				.asList()
+				.as("after scannable subscription")
+				.containsExactly(scannable);
 	}
 }

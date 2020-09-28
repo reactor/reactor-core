@@ -29,12 +29,13 @@ import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.LoggerUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
-import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.TestLogger;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -707,5 +708,47 @@ public class NextProcessorTest {
 		NextProcessor.NextInner<String> test = new NextProcessor.NextInner<>(subscriber, processor);
 
 	    assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
+	}
+
+	@Test
+	public void scanTerminated() {
+		Sinks.One<Integer> sinkTerminated = new NextProcessor<>(null);
+
+		assertThat(sinkTerminated.scan(Scannable.Attr.TERMINATED)).as("not yet terminated").isFalse();
+
+		sinkTerminated.tryEmitError(new IllegalStateException("boom")).orThrow();
+
+		assertThat(sinkTerminated.scan(Scannable.Attr.TERMINATED)).as("terminated with error").isTrue();
+		assertThat(sinkTerminated.scan(Scannable.Attr.ERROR)).as("error").hasMessage("boom");
+	}
+
+	@Test
+	public void scanCancelled() {
+		Sinks.One<Integer> sinkCancelled = new NextProcessor<>(null);
+
+		assertThat(sinkCancelled.scan(Scannable.Attr.CANCELLED)).as("pre-cancellation").isFalse();
+
+		((NextProcessor<?>) sinkCancelled).cancel();
+
+		assertThat(sinkCancelled.scan(Scannable.Attr.CANCELLED)).as("cancelled").isTrue();
+	}
+
+	@Test
+	public void inners() {
+		Sinks.One<Integer> sink = new NextProcessor<>(null);
+		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
+		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
+
+		assertThat(sink.inners()).as("before subscriptions").isEmpty();
+
+		sink.asMono().subscribe(notScannable);
+		sink.asMono().subscribe(scannable);
+
+		assertThat(sink.inners())
+				.asList()
+				.as("after subscriptions")
+				.hasSize(2)
+				.extracting(l -> (Object) ((NextProcessor.NextInner<?>) l).actual)
+				.containsExactly(notScannable, scannable);
 	}
 }

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Subscription;
 
@@ -28,6 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
@@ -213,10 +215,18 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public Stream<Scannable> inners() {
+		return hasDownstream ? Stream.of(Scannable.from(actual)) : Stream.empty();
+	}
+
+	@Override
 	public Object scanUnsafe(Attr key) {
 		if (Attr.ACTUAL == key) return actual();
 		if (Attr.BUFFERED == key) return queue.size();
 		if (Attr.PREFETCH == key) return Integer.MAX_VALUE;
+		if (Attr.CANCELLED == key) return cancelled;
+
+		//TERMINATED and ERROR covered in super
 		return super.scanUnsafe(key);
 	}
 
