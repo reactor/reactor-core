@@ -950,13 +950,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * emits an {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
-	 * // TODO replace the img
-	 * <p>
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
 	 * Note that like in {@link #first(Iterable)}, an infinite source can be problematic
 	 * if no other source emits onNext.
 	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstValuedForFlux.svg" alt="">
+
 	 * @param sources An {@link Iterable} of the competing source publishers
 	 * @param <I> The type of values in both source and output sequences
 	 *
@@ -972,16 +973,19 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * emits an {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
-	 * // TODO replace the img
-	 * <p>
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
 	 * Note that like in {@link #first(Publisher[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
+	 *
 	 * <p>
 	 * In case the {@code first} source is already an array-based {@link #firstValued(Publisher, Publisher[])}
 	 * instance, nesting is avoided: a single new array-based instance is created with all the
 	 * sources from {@code first} plus all the {@code others} sources at the same level.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstValuedForFlux.svg" alt="">
+
 	 *
 	 * @param first The first competing source publisher
 	 * @param others The other competing source publishers
