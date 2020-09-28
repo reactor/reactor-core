@@ -16,7 +16,7 @@ import reactor.core.publisher.Sinks.Emission;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
+final class VoidProcessor<T> extends MonoProcessor<T> implements InternalOneSink<T> {
 
 	volatile VoidInner<T>[] subscribers;
 
@@ -109,13 +109,6 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 	}
 
 	@Override
-	public void emitEmpty() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitEmpty();
-	}
-
-	@Override
 	public Emission tryEmitEmpty() {
 		VoidInner<?>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
@@ -132,15 +125,6 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 	@Override
 	public final void onError(Throwable cause) {
 		emitError(cause);
-	}
-
-
-	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDroppedMulticast(error, subscribers);
-		}
 	}
 
 	@Override
@@ -172,7 +156,7 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 			emitError(new UnsupportedOperationException("emitValue on VoidProcessor, which should only be used as a Sinks.Empty"));
 			return;
 		}
-		tryEmitEmpty();
+		InternalOneSink.super.emitEmpty();
 	}
 
 	@Override

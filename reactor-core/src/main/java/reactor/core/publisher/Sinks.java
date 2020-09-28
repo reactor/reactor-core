@@ -687,7 +687,11 @@ public final class Sinks {
 		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitEmpty()} and handle the result.
 		 */
 		@Deprecated
-		void emitEmpty();
+		default void emitEmpty() {
+			emitEmpty(EmitStrategy.FAIL_FAST);
+		}
+
+		void emitEmpty(EmitStrategy strategy);
 
 		/**
 		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
@@ -706,7 +710,11 @@ public final class Sinks {
 		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitError(Throwable)} and handle the result.
 		 */
 		@Deprecated
-		void emitError(Throwable error);
+		default void emitError(Throwable error) {
+			emitError(error, EmitStrategy.FAIL_FAST);
+		}
+
+		void emitError(Throwable error, EmitStrategy strategy);
 
 		/**
 		 * Get how many {@link Subscriber Subscribers} are currently subscribed to the sink.
@@ -779,7 +787,11 @@ public final class Sinks {
 		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitValue(Object)} and handle the result.
 		 */
 		@Deprecated
-		void emitValue(@Nullable T value);
+		default void emitValue(@Nullable T value) {
+			emitValue(value, EmitStrategy.FAIL_FAST);
+		}
+
+		void emitValue(@Nullable T value, EmitStrategy strategy);
 
 	}
 }
