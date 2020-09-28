@@ -208,6 +208,16 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 	}
 
 	@Override
+	public boolean isDisposed() {
+		return error instanceof CancellationException;
+	}
+
+	@Override
+	public boolean isCancelled() {
+		return error instanceof CancellationException;
+	}
+
+	@Override
 	public final void onSubscribe(Subscription subscription) {
 		subscription.request(Long.MAX_VALUE);
 	}
