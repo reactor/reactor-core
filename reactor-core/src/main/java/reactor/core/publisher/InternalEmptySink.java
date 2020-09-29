@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import reactor.core.publisher.Sinks.EmissionException;
+
 interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 
 	@Override
@@ -38,9 +40,9 @@ interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 				case FAIL_TERMINATED:
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new IllegalStateException("Non-serialized access");
+					throw new EmissionException(emission);
 				default:
-					throw new IllegalStateException("Unknown state: " + emission);
+					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
 			}
 		}
 	}
@@ -67,11 +69,9 @@ interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 					Operators.onErrorDropped(error, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new IllegalStateException(
-							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
-					);
+					throw new EmissionException(emission);
 				default:
-					throw new IllegalStateException("Unknown state: " + emission);
+					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
 			}
 		}
 	}

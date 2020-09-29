@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import reactor.core.Exceptions;
+import reactor.core.publisher.Sinks.EmissionException;
 
 interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 
@@ -41,7 +42,7 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 				case FAIL_OVERFLOW:
 					Operators.onDiscard(value, currentContext());
 					//the emitError will onErrorDropped if already terminated
-					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
+					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"), strategy);
 					return;
 				case FAIL_CANCELLED:
 					Operators.onDiscard(value, currentContext());
@@ -50,9 +51,9 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 					Operators.onNextDropped(value, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new IllegalStateException("Non-serialized access");
+					throw new EmissionException(emission);
 				default:
-					throw new IllegalStateException("Unknown state: " + emission);
+					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
 			}
 		}
 	}
@@ -77,9 +78,9 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 				case FAIL_TERMINATED:
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new IllegalStateException("Non-serialized access");
+					throw new EmissionException(emission);
 				default:
-					throw new IllegalStateException("Unknown state: " + emission);
+					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
 			}
 		}
 	}
@@ -106,11 +107,9 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 					Operators.onErrorDropped(error, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new IllegalStateException(
-							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
-					);
+					throw new EmissionException(emission);
 				default:
-					throw new IllegalStateException("Unknown state: " + emission);
+					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
 			}
 		}
 	}

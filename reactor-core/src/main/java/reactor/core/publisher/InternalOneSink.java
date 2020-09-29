@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import reactor.core.Exceptions;
+import reactor.core.publisher.Sinks.EmissionException;
 import reactor.util.annotation.Nullable;
 
 interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
@@ -47,7 +48,7 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 				case FAIL_OVERFLOW:
 					Operators.onDiscard(value, currentContext());
 					//the emitError will onErrorDropped if already terminated
-					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
+					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"), strategy);
 					return;
 				case FAIL_CANCELLED:
 					Operators.onDiscard(value, currentContext());
@@ -56,9 +57,9 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 					Operators.onNextDropped(value, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new IllegalStateException("Non-serialized access");
+					throw new EmissionException(emission);
 				default:
-					throw new IllegalStateException("Unknown state: " + emission);
+					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
 			}
 		}
 	}
