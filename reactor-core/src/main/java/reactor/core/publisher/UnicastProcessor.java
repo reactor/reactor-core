@@ -283,17 +283,16 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public void emitNext(T value, Sinks.EmitStrategy strategy) {
+	public void emitNext(T value, Sinks.EmitFailureHandler failureHandler) {
 		if (onOverflow == null) {
-			InternalManySink.super.emitNext(value, strategy);
+			InternalManySink.super.emitNext(value, failureHandler);
 			return;
 		}
 
 		// TODO consider deprecating onOverflow and suggesting using a strategy instead
 		InternalManySink.super.emitNext(
-				value,
-				emission -> {
-					boolean shouldRetry = strategy.onEmissionFailure(emission);
+				value, (signalType, emission) -> {
+					boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT, emission);
 					if (!shouldRetry) {
 						switch (emission) {
 							case FAIL_ZERO_SUBSCRIBER:

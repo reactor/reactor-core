@@ -22,14 +22,14 @@ import reactor.core.publisher.Sinks.EmissionException;
 interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 
 	@Override
-	default void emitNext(T value, Sinks.EmitStrategy strategy) {
+	default void emitNext(T value, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.Emission emission = tryEmitNext(value);
 			if (emission.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = strategy.onEmissionFailure(emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT, emission);
 			if (shouldRetry) {
 				continue;
 			}
@@ -42,7 +42,8 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 				case FAIL_OVERFLOW:
 					Operators.onDiscard(value, currentContext());
 					//the emitError will onErrorDropped if already terminated
-					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"), strategy);
+					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"),
+							failureHandler);
 					return;
 				case FAIL_CANCELLED:
 					Operators.onDiscard(value, currentContext());
@@ -59,14 +60,14 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 	}
 
 	@Override
-	default void emitComplete(Sinks.EmitStrategy strategy) {
+	default void emitComplete(Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.Emission emission = tryEmitComplete();
 			if (emission.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = strategy.onEmissionFailure(emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_COMPLETE, emission);
 			if (shouldRetry) {
 				continue;
 			}
@@ -86,14 +87,14 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 	}
 
 	@Override
-	default void emitError(Throwable error, Sinks.EmitStrategy strategy) {
+	default void emitError(Throwable error, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.Emission emission = tryEmitError(error);
 			if (emission.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = strategy.onEmissionFailure(emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_ERROR, emission);
 			if (shouldRetry) {
 				continue;
 			}

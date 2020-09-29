@@ -21,14 +21,14 @@ import reactor.core.publisher.Sinks.EmissionException;
 interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 
 	@Override
-	default void emitEmpty(Sinks.EmitStrategy strategy) {
+	default void emitEmpty(Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.Emission emission = tryEmitEmpty();
 			if (emission.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = strategy.onEmissionFailure(emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_COMPLETE, emission);
 			if (shouldRetry) {
 				continue;
 			}
@@ -48,14 +48,14 @@ interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 	}
 
 	@Override
-	default void emitError(Throwable error, Sinks.EmitStrategy strategy) {
+	default void emitError(Throwable error, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.Emission emission = tryEmitError(error);
 			if (emission.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = strategy.onEmissionFailure(emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_ERROR, emission);
 			if (shouldRetry) {
 				continue;
 			}

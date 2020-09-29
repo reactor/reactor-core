@@ -131,7 +131,7 @@ public class SerializedManySinkTest {
 		}
 
 		@Override
-		public void emitNext(T t, Sinks.EmitStrategy strategy) {
+		public void emitNext(T t, Sinks.EmitFailureHandler failureHandler) {
 			throw new IllegalStateException("Not expected to be called");
 		}
 
@@ -141,8 +141,8 @@ public class SerializedManySinkTest {
 		}
 
 		@Override
-		public void emitComplete(Sinks.EmitStrategy strategy) {
-			delegate.emitComplete(strategy);
+		public void emitComplete(Sinks.EmitFailureHandler failureHandler) {
+			delegate.emitComplete(failureHandler);
 		}
 
 		@Override
@@ -151,8 +151,8 @@ public class SerializedManySinkTest {
 		}
 
 		@Override
-		public void emitError(Throwable error, Sinks.EmitStrategy strategy) {
-			delegate.emitError(error, strategy);
+		public void emitError(Throwable error, Sinks.EmitFailureHandler failureHandler) {
+			delegate.emitError(error, failureHandler);
 		}
 
 		@Override

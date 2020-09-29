@@ -23,9 +23,9 @@ import reactor.util.annotation.Nullable;
 interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 
 	@Override
-	default void emitValue(@Nullable T value, Sinks.EmitStrategy strategy) {
+	default void emitValue(@Nullable T value, Sinks.EmitFailureHandler failureHandler) {
 		if (value == null) {
-			emitEmpty(strategy);
+			emitEmpty(failureHandler);
 			return;
 		}
 
@@ -35,7 +35,7 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 				return;
 			}
 
-			boolean shouldRetry = strategy.onEmissionFailure(emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT, emission);
 			if (shouldRetry) {
 				continue;
 			}
@@ -48,7 +48,8 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 				case FAIL_OVERFLOW:
 					Operators.onDiscard(value, currentContext());
 					//the emitError will onErrorDropped if already terminated
-					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"), strategy);
+					emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"),
+							failureHandler);
 					return;
 				case FAIL_CANCELLED:
 					Operators.onDiscard(value, currentContext());

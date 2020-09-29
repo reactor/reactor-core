@@ -186,11 +186,11 @@ public final class Sinks {
 		}
 	}
 
-	public interface EmitStrategy {
+	public interface EmitFailureHandler {
 
-		EmitStrategy FAIL_FAST = emission -> false;
+		EmitFailureHandler FAIL_FAST = (signalType, emission) -> false;
 
-		boolean onEmissionFailure(Emission emission);
+		boolean onEmitFailure(SignalType signalType, Emission emission);
 	}
 
 	/**
@@ -571,10 +571,10 @@ public final class Sinks {
 		 */
 		@Deprecated
 		default void emitNext(T t) {
-			emitNext(t, EmitStrategy.FAIL_FAST);
+			emitNext(t, EmitFailureHandler.FAIL_FAST);
 		}
 
-		void emitNext(T t, EmitStrategy strategy);
+		void emitNext(T t, EmitFailureHandler failureHandler);
 
 		/**
 		 * Terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
@@ -592,10 +592,10 @@ public final class Sinks {
 		 */
 		@Deprecated
 		default void emitComplete() {
-			emitComplete(EmitStrategy.FAIL_FAST);
+			emitComplete(EmitFailureHandler.FAIL_FAST);
 		}
 
-		void emitComplete(EmitStrategy strategy);
+		void emitComplete(EmitFailureHandler failureHandler);
 
 		/**
 		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
@@ -615,10 +615,10 @@ public final class Sinks {
 		 */
 		@Deprecated
 		default void emitError(Throwable error) {
-			emitError(error, EmitStrategy.FAIL_FAST);
+			emitError(error, EmitFailureHandler.FAIL_FAST);
 		}
 
-		void emitError(Throwable error, EmitStrategy strategy);
+		void emitError(Throwable error, EmitFailureHandler failureHandler);
 
 		/**
 		 * Get how many {@link Subscriber Subscribers} are currently subscribed to the sink.
@@ -688,10 +688,10 @@ public final class Sinks {
 		 */
 		@Deprecated
 		default void emitEmpty() {
-			emitEmpty(EmitStrategy.FAIL_FAST);
+			emitEmpty(EmitFailureHandler.FAIL_FAST);
 		}
 
-		void emitEmpty(EmitStrategy strategy);
+		void emitEmpty(EmitFailureHandler failureHandler);
 
 		/**
 		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
@@ -711,10 +711,10 @@ public final class Sinks {
 		 */
 		@Deprecated
 		default void emitError(Throwable error) {
-			emitError(error, EmitStrategy.FAIL_FAST);
+			emitError(error, EmitFailureHandler.FAIL_FAST);
 		}
 
-		void emitError(Throwable error, EmitStrategy strategy);
+		void emitError(Throwable error, EmitFailureHandler failureHandler);
 
 		/**
 		 * Get how many {@link Subscriber Subscribers} are currently subscribed to the sink.
@@ -788,10 +788,10 @@ public final class Sinks {
 		 */
 		@Deprecated
 		default void emitValue(@Nullable T value) {
-			emitValue(value, EmitStrategy.FAIL_FAST);
+			emitValue(value, EmitFailureHandler.FAIL_FAST);
 		}
 
-		void emitValue(@Nullable T value, EmitStrategy strategy);
+		void emitValue(@Nullable T value, EmitFailureHandler failureHandler);
 
 	}
 }
