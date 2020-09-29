@@ -16,6 +16,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import org.reactivestreams.Subscriber;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
@@ -57,10 +60,26 @@ class SinkEmptyMulticastTest {
 	}
 
 	@Test
-	void resultNotAvailable() {
+	void blockReturnsNullOnTryEmitEmpty() {
+		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
+
+		Schedulers.parallel().schedule(() -> mp.tryEmitEmpty(), 50L, TimeUnit.MILLISECONDS);
+		assertThat(mp.block(Duration.ofSeconds(1))).isNull();
+	}
+
+	@Test
+	void blockThrowsOnTryEmitError() {
+		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
+
+		Schedulers.parallel().schedule(() -> mp.tryEmitError(new IllegalStateException("boom")), 50L, TimeUnit.MILLISECONDS);
+		assertThatIllegalStateException().isThrownBy(() -> mp.block(Duration.ofSeconds(1))).withMessage("boom");
+	}
+
+	@Test
+	void blockTimeoutsOnUnusedSink() {
 		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
 		assertThatIllegalStateException().isThrownBy(() -> mp.block(Duration.ofMillis(1)))
-		                                 .withMessageStartingWith("Timeout");
+				.withMessageStartingWith("Timeout");
 	}
 
 	@Test
@@ -68,7 +87,9 @@ class SinkEmptyMulticastTest {
 		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		mp.doOnError(ref::set).subscribe(v -> {}, e -> {});
+		mp.doOnError(ref::set).subscribe(v -> {
+		}, e -> {
+		});
 		mp.tryEmitError(new Exception("test")).orThrow();
 
 		assertThat(ref.get()).hasMessage("test");
@@ -80,7 +101,7 @@ class SinkEmptyMulticastTest {
 	void cantSubscribeWithNullSubscriber() {
 		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
 
-		assertThatNullPointerException().isThrownBy(() -> mp.subscribe((Subscriber<Void>)null));
+		assertThatNullPointerException().isThrownBy(() -> mp.subscribe((Subscriber<Void>) null));
 	}
 
 	@Test
@@ -115,7 +136,8 @@ class SinkEmptyMulticastTest {
 	@Test
 	void inners() {
 		Sinks.Empty<Integer> sink = new SinkEmptyMulticast<>();
-		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {};
+		CoreSubscriber<Integer> notScannable = new BaseSubscriber<Integer>() {
+		};
 		InnerConsumer<Integer> scannable = new LambdaSubscriber<>(null, null, null, null);
 
 		assertThat(sink.inners()).as("before subscriptions").isEmpty();
