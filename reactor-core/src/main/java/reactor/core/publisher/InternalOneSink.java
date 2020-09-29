@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
 
-public interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
+interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 
 	@Override
 	default void emitValue(@Nullable T value, Sinks.EmitStrategy strategy) {

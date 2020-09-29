@@ -16,7 +16,7 @@
 
 package reactor.core.publisher;
 
-public interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
+interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 
 	@Override
 	default void emitEmpty(Sinks.EmitStrategy strategy) {
