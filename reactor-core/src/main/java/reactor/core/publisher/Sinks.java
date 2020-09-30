@@ -55,7 +55,7 @@ public final class Sinks {
 	 * Use {@link Sinks.Empty#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
 	 */
 	public static <T> Sinks.Empty<T> empty() {
-		return new VoidProcessor<T>();
+		return new SinkEmptyMulticast<T>();
 	}
 
 	/**

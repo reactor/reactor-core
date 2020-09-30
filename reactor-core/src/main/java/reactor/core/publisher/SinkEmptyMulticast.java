@@ -1,8 +1,22 @@
+/*
+ * Copyright (c) 2011-Present VMware Inc. or its affiliates, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
@@ -10,19 +24,17 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
+final class SinkEmptyMulticast<T> extends Mono<T> implements Sinks.Empty<T>, ContextHolder {
 
 	volatile VoidInner<T>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<VoidProcessor, VoidInner[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(VoidProcessor.class, VoidInner[].class, "subscribers");
+	static final AtomicReferenceFieldUpdater<SinkEmptyMulticast, VoidInner[]> SUBSCRIBERS =
+			AtomicReferenceFieldUpdater.newUpdater(SinkEmptyMulticast.class, VoidInner[].class, "subscribers");
 
 	@SuppressWarnings("rawtypes")
 	static final VoidInner[] EMPTY = new VoidInner[0];
@@ -32,7 +44,7 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 
 	Throwable error;
 
-	VoidProcessor() {
+	SinkEmptyMulticast() {
 		SUBSCRIBERS.lazySet(this, EMPTY);
 	}
 
@@ -44,68 +56,6 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 	@Override
 	public Mono<T> asMono() {
 		return this;
-	}
-
-	@Override
-	public T peek() {
-		if (!isTerminated()) {
-			return null;
-		}
-
-		if (error != null) {
-			RuntimeException re = Exceptions.propagate(error);
-			re = Exceptions.addSuppressed(re, new Exception("VoidProcessor#peek cannot return a value since this mono has terminated with an error"));
-			throw re;
-		}
-
-		return null;
-	}
-
-	@Override
-	@Nullable
-	public T block(@Nullable Duration timeout) {
-		try {
-			if (isTerminated()) {
-				return peek();
-			}
-
-			long delay;
-			if (null == timeout) {
-				delay = 0L;
-			}
-			else {
-				delay = System.nanoTime() + timeout.toNanos();
-			}
-			for (; ; ) {
-				if (isTerminated()) {
-					if (error != null) {
-						RuntimeException re = Exceptions.propagate(error);
-						re = Exceptions.addSuppressed(re, new Exception("Mono#block terminated with an error"));
-						throw re;
-					}
-					return null;
-				}
-				if (timeout != null && delay < System.nanoTime()) {
-					throw new IllegalStateException("Timeout on Mono blocking read, the operator is still waiting to observe a signal");
-				}
-
-				Thread.sleep(1);
-			}
-
-		}
-		catch (InterruptedException ie) {
-			Thread.currentThread()
-				  .interrupt();
-
-			throw new IllegalStateException("Thread Interruption on Mono blocking read");
-		}
-	}
-
-	@Override
-	public final void onComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitEmpty();
 	}
 
 	@Override
@@ -130,12 +80,6 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 	}
 
 	@Override
-	public final void onError(Throwable cause) {
-		emitError(cause);
-	}
-
-
-	@Override
 	public void emitError(Throwable error) {
 		Emission result = tryEmitError(error);
 		if (result == Emission.FAIL_TERMINATED) {
@@ -147,7 +91,7 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 	public Emission tryEmitError(Throwable cause) {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
-		if (isTerminated()) {
+		if (subscribers == TERMINATED) {
 			return Emission.FAIL_TERMINATED;
 		}
 
@@ -161,75 +105,8 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 	}
 
 	@Override
-	public final void onNext(@Nullable T value) {
-		emitValue(value);
-	}
-
-	@Override
-	public void emitValue(@Nullable T value) {
-		if (value != null) {
-			Operators.onNextDroppedMulticast(value, subscribers);
-			emitError(new UnsupportedOperationException("emitValue on VoidProcessor, which should only be used as a Sinks.Empty"));
-			return;
-		}
-		tryEmitEmpty();
-	}
-
-	@Override
-	public Emission tryEmitValue(@Nullable T value) {
-		if (value != null) {
-			throw new UnsupportedOperationException("emitValue on VoidProcessor, which should be exposed as a Sinks.Empty");
-		}
-		return tryEmitEmpty();
-	}
-
-	@Override
 	public Context currentContext() {
 		return Operators.multiSubscribersContext(subscribers);
-	}
-
-	@Override
-	public long downstreamCount() {
-		return subscribers.length;
-	}
-
-	@Override
-	public void dispose() {
-		if (isTerminated()) {
-			return;
-		}
-
-		Exception e = new CancellationException("Disposed");
-		error = e;
-
-		for (VoidInner<?> as : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
-			as.onError(e);
-		}
-	}
-
-	@Override
-	public boolean isDisposed() {
-		return error instanceof CancellationException;
-	}
-
-	@Override
-	public boolean isCancelled() {
-		return error instanceof CancellationException;
-	}
-
-	@Override
-	public final void onSubscribe(Subscription subscription) {
-		subscription.request(Long.MAX_VALUE);
-	}
-
-	@Override
-	public boolean isTerminated() {
-		return SUBSCRIBERS.get(this) == TERMINATED;
-	}
-
-	@Override
-	public Throwable getError() {
-		return error;
 	}
 
 	boolean add(VoidInner<T> ps) {
@@ -251,7 +128,6 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 			}
 		}
 	}
-
 
 	void remove(VoidInner<T> ps) {
 		for (; ; ) {
@@ -317,11 +193,19 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements Sinks.One<T> {
 		return Stream.of(subscribers);
 	}
 
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.TERMINATED) return subscribers == TERMINATED;
+		if (key == Attr.ERROR) return error;
+
+		return null;
+	}
+
 	final static class VoidInner<T> extends AtomicBoolean implements InnerOperator<Void, T> {
-		final VoidProcessor<T>          parent;
+		final SinkEmptyMulticast<T> parent;
 		final CoreSubscriber<? super T> actual;
 
-		VoidInner(CoreSubscriber<? super T> actual, VoidProcessor<T> parent) {
+		VoidInner(CoreSubscriber<? super T> actual, SinkEmptyMulticast<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
