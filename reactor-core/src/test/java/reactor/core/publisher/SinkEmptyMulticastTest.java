@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -81,6 +82,19 @@ class SinkEmptyMulticastTest {
 		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
 		assertThatIllegalStateException().isThrownBy(() -> mp.block(Duration.ofMillis(1)))
 				.withMessageStartingWith("Timeout");
+	}
+
+	@Test
+	void tryEmitEmpty(){
+		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
+		AtomicBoolean completed = new AtomicBoolean();
+
+		mp.subscribe(c ->{}, ec -> {}, () -> completed.set(true));
+		mp.tryEmitEmpty().orThrow();
+
+		assertThat(completed).isTrue();
+		assertThat(mp.scan(Scannable.Attr.ERROR)).isNull();
+		assertThat(mp.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
