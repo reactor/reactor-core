@@ -186,10 +186,25 @@ public final class Sinks {
 		}
 	}
 
+	/**
+	 * A handler for any non-successful emission result from operations
+	 * such as {@link Many#emitNext(Object, EmitFailureHandler)}
+	 * that allows retrying or failing the operation.
+	 */
 	public interface EmitFailureHandler {
 
+		/**
+		 * A pre-made handler that will not attempt at retry any failure
+		 * trigger the failure handling immediately.
+		 */
 		EmitFailureHandler FAIL_FAST = (signalType, emission) -> false;
 
+		/**
+		 *
+		 * @param signalType the signal that triggered the emission. Can be either {@link SignalType#ON_NEXT}, {@link SignalType#ON_ERROR} or {@link SignalType#ON_COMPLETE}.
+		 * @param emission the emission of the failure.
+		 * @return {@code true} if the operation should be retried, {@code false} otherwise.
+		 */
 		boolean onEmitFailure(SignalType signalType, Emission emission);
 	}
 
