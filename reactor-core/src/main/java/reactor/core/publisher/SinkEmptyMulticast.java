@@ -28,7 +28,7 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.util.context.Context;
 
-final class VoidProcessor<T> extends MonoProcessor<T> implements InternalOneSink {
+final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 
 	volatile VoidInner<T>[] subscribers;
 
@@ -87,14 +87,6 @@ final class VoidProcessor<T> extends MonoProcessor<T> implements InternalOneSink
 			as.onError(cause);
 		}
 		return Emission.OK;
-	}
-
-	@Override
-	public Emission tryEmitValue(@Nullable T value) {
-		if (value != null) {
-			throw new UnsupportedOperationException("emitValue on VoidProcessor, which should be exposed as a Sinks.Empty");
-		}
-		return tryEmitEmpty();
 	}
 
 	@Override
