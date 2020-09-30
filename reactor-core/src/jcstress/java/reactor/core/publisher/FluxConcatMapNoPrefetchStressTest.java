@@ -28,7 +28,7 @@ import static org.openjdk.jcstress.annotations.Expect.*;
 
 public abstract class FluxConcatMapNoPrefetchStressTest {
 
-	final StressSubscriber stressSubscriber = new StressSubscriber();
+	final StressSubscriber<Object> stressSubscriber = new StressSubscriber<>();
 
 	final FluxConcatMapNoPrefetchSubscriber<Object, Object> concatMapImmediate = new FluxConcatMapNoPrefetchSubscriber<>(
 			stressSubscriber,

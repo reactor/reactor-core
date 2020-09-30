@@ -356,6 +356,7 @@ check.dependsOn japicmp
 jcstress {
 	mode = 'quick'
 }
+tasks.jcstressJar.classifier("jcstress") // make sure jcstress jar doesn't override our own
 tasks.check.dependsOn(tasks.jcstress)
 
 if (JavaVersion.current().java9Compatible) {
