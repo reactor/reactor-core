@@ -52,9 +52,12 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 					Operators.onNextDropped(value, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(emission);
+					throw new EmissionException(
+							emission,
+							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
+					);
 				default:
-					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
+					throw new EmissionException(emission, "Unknown emission value");
 			}
 		}
 	}
@@ -79,9 +82,12 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 				case FAIL_TERMINATED:
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(emission);
+					throw new EmissionException(
+							emission,
+							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
+					);
 				default:
-					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
+					throw new EmissionException(emission, "Unknown emission value");
 			}
 		}
 	}
@@ -108,9 +114,12 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 					Operators.onErrorDropped(error, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(emission);
+					throw new EmissionException(
+							emission,
+							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
+					);
 				default:
-					throw new EmissionException(new IllegalStateException("Unknown state"), emission);
+					throw new EmissionException(emission, "Unknown emission value");
 			}
 		}
 	}

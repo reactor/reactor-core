@@ -167,12 +167,16 @@ public final class Sinks {
 		final Emission reason;
 
 		public EmissionException(Emission reason) {
-			super("Sink emission failed with " + reason);
-			this.reason = reason;
+			this(reason, "Sink emission failed with " + reason);
 		}
 
 		public EmissionException(Throwable cause, Emission reason) {
 			super("Sink emission failed with " + reason, cause);
+			this.reason = reason;
+		}
+
+		public EmissionException(Emission reason, String message) {
+			super(message);
 			this.reason = reason;
 		}
 
