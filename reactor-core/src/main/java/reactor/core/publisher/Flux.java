@@ -956,7 +956,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * if no other source emits onNext.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstValuedForFlux.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstWithValueForFlux.svg" alt="">
 
 	 * @param sources An {@link Iterable} of the competing source publishers
 	 * @param <I> The type of values in both source and output sequences
@@ -984,7 +984,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * sources from {@code first} plus all the {@code others} sources at the same level.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstValuedForFlux.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstWithValueForFlux.svg" alt="">
 
 	 *
 	 * @param first The first competing source publisher
