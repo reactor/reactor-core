@@ -35,19 +35,19 @@ import java.util.stream.Stream;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstValued<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFirstWithValue<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<? extends T>[] array;
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
-	private FluxFirstValued(Publisher<? extends T>[] array) {
+	private FluxFirstWithValue(Publisher<? extends T>[] array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
 	@SafeVarargs
-	FluxFirstValued(Publisher<? extends T> first, Publisher<? extends T>... others) {
+	FluxFirstWithValue(Publisher<? extends T> first, Publisher<? extends T>... others) {
 		Objects.requireNonNull(first, "first");
 		Objects.requireNonNull(others, "others");
 		@SuppressWarnings("unchecked")
@@ -58,7 +58,7 @@ final class FluxFirstValued<T> extends Flux<T> implements SourceProducer<T> {
 		this.iterable = null;
 	}
 
-	FluxFirstValued(Iterable<? extends Publisher<? extends T>> iterable) {
+	FluxFirstWithValue(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -67,15 +67,15 @@ final class FluxFirstValued<T> extends Flux<T> implements SourceProducer<T> {
 	 * Returns a new instance which has the additional sources to be flattened together with
 	 * the current array of sources.
 	 * <p>
-	 * This operation doesn't change the current {@link FluxFirstValued} instance.
+	 * This operation doesn't change the current {@link FluxFirstWithValue} instance.
 	 *
 	 * @param others the new sources to merge with the current sources
 	 *
-	 * @return the new {@link FluxFirstValued} instance or null if new sources cannot be added (backed by an Iterable)
+	 * @return the new {@link FluxFirstWithValue} instance or null if new sources cannot be added (backed by an Iterable)
 	 */
 	@SafeVarargs
 	@Nullable
-	final FluxFirstValued<T> firstValuedAdditionalSources(Publisher<? extends T>... others) {
+	final FluxFirstWithValue<T> firstValuedAdditionalSources(Publisher<? extends T>... others) {
 		Objects.requireNonNull(others, "others");
 		if (others.length == 0) {
 			return this;
@@ -91,7 +91,7 @@ final class FluxFirstValued<T> extends Flux<T> implements SourceProducer<T> {
 		System.arraycopy(array, 0, newArray, 0, currentSize);
 		System.arraycopy(others, 0, newArray, currentSize, otherSize);
 
-		return new FluxFirstValued<>(newArray);
+		return new FluxFirstWithValue<>(newArray);
 	}
 
 	@SuppressWarnings("unchecked")

@@ -159,8 +159,8 @@ final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 
-		FluxFirstValued.RaceValuesCoordinator<T> coordinator =
-				new FluxFirstValued.RaceValuesCoordinator<>(n);
+		FluxFirstWithValue.RaceValuesCoordinator<T> coordinator =
+				new FluxFirstWithValue.RaceValuesCoordinator<>(n);
 
 		coordinator.subscribe(a, actual);
 	}

@@ -950,8 +950,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * emits an {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
-	 * Valued sources always "win" over an empty source (one that only emits onComplete)
-	 * or a failing source (one that only emits onError).
+	 * Sources with values always "win" over empty sources (ones that only emit onComplete)
+	 * or failing sources (ones that only emit onError).
 	 * Note that like in {@link #first(Iterable)}, an infinite source can be problematic
 	 * if no other source emits onNext.
 	 *
@@ -963,8 +963,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
-	public static <I> Flux<I> firstValued(Iterable<? extends Publisher<? extends I>> sources) {
-		return onAssembly(new FluxFirstValued<>(sources));
+	public static <I> Flux<I> firstWithValue(Iterable<? extends Publisher<? extends I>> sources) {
+		return onAssembly(new FluxFirstWithValue<>(sources));
 	}
 
 	/**
@@ -973,13 +973,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * emits an {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
-	 * Valued sources always "win" over an empty source (one that only emits onComplete)
-	 * or a failing source (one that only emits onError).
+	 * Sources with values always "win" over an empty source (ones that only emit onComplete)
+	 * or failing sources (ones that only emit onError).
 	 * Note that like in {@link #first(Publisher[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
 	 *
 	 * <p>
-	 * In case the {@code first} source is already an array-based {@link #firstValued(Publisher, Publisher[])}
+	 * In case the {@code first} source is already an array-based {@link #firstWithValue(Publisher, Publisher[])}
 	 * instance, nesting is avoided: a single new array-based instance is created with all the
 	 * sources from {@code first} plus all the {@code others} sources at the same level.
 	 *
@@ -994,17 +994,17 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
 	@SafeVarargs
-	public static <I> Flux<I> firstValued(Publisher<? extends I> first, Publisher<? extends I>... others) {
-		if (first instanceof FluxFirstValued) {
+	public static <I> Flux<I> firstWithValue(Publisher<? extends I> first, Publisher<? extends I>... others) {
+		if (first instanceof FluxFirstWithValue) {
 			@SuppressWarnings("unchecked")
-			FluxFirstValued<I> orPublisher = (FluxFirstValued<I>) first;
+			FluxFirstWithValue<I> orPublisher = (FluxFirstWithValue<I>) first;
 
-			FluxFirstValued<I> result = orPublisher.firstValuedAdditionalSources(others);
+			FluxFirstWithValue<I> result = orPublisher.firstValuedAdditionalSources(others);
 			if (result != null) {
 				return result;
 			}
 		}
-		return onAssembly(new FluxFirstValued<>(first, others));
+		return onAssembly(new FluxFirstWithValue<>(first, others));
 	}
 
 	/**
