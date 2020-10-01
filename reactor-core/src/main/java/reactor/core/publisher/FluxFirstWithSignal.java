@@ -34,19 +34,19 @@ import reactor.util.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstSignalling<T> extends Flux<T> implements SourceProducer<T> {
+final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> {
 
 	final Publisher<? extends T>[] array;
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
 	@SafeVarargs
-	FluxFirstSignalling(Publisher<? extends T>... array) {
+	FluxFirstWithSignal(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	FluxFirstSignalling(Iterable<? extends Publisher<? extends T>> iterable) {
+	FluxFirstWithSignal(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -147,7 +147,7 @@ final class FluxFirstSignalling<T> extends Flux<T> implements SourceProducer<T> 
 	 * @return the new FluxFirstSignalling instance or null if the Amb runs with an Iterable
 	 */
 	@Nullable
-	FluxFirstSignalling<T> orAdditionalSource(Publisher<? extends T> source) {
+	FluxFirstWithSignal<T> orAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
@@ -155,7 +155,7 @@ final class FluxFirstSignalling<T> extends Flux<T> implements SourceProducer<T> 
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = source;
 
-			return new FluxFirstSignalling<>(newArray);
+			return new FluxFirstWithSignal<>(newArray);
 		}
 		return null;
 	}

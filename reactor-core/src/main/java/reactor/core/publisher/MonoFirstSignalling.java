@@ -140,8 +140,8 @@ final class MonoFirstSignalling<T> extends Mono<T> implements SourceProducer<T> 
 			return;
 		}
 
-		FluxFirstSignalling.RaceCoordinator<T> coordinator =
-				new FluxFirstSignalling.RaceCoordinator<>(n);
+		FluxFirstWithSignal.RaceCoordinator<T> coordinator =
+				new FluxFirstWithSignal.RaceCoordinator<>(n);
 
 		coordinator.subscribe(a, n, actual);
 	}

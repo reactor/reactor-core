@@ -921,10 +921,12 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 * @deprecated use {@link #firstWithSignal(Publisher[])}. To be removed in reactor 3.5.
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <I> Flux<I> first(Publisher<? extends I>... sources) {
-		return onAssembly(new FluxFirstSignalling<>(sources));
+		return firstWithSignal(sources);
 	}
 
 	/**
@@ -939,9 +941,46 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <I> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 * @deprecated use {@link #firstWithSignal(Iterable)}. To be removed in reactor 3.5.
 	 */
+	@Deprecated
 	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
-		return onAssembly(new FluxFirstSignalling<>(sources));
+		return firstWithSignal(sources);
+	}
+
+	/**
+	 * Pick the first {@link Publisher} to emit any signal (onNext/onError/onComplete) and
+	 * replay all signals from that {@link Publisher}, effectively behaving like the
+	 * fastest of these competing sources.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
+	 *
+	 * @param sources The competing source publishers
+	 * @param <I> The type of values in both source and output sequences
+	 *
+	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 */
+	@SafeVarargs
+	public static <I> Flux<I> firstWithSignal(Publisher<? extends I>... sources) {
+		return onAssembly(new FluxFirstWithSignal<>(sources));
+	}
+
+	/**
+	 * Pick the first {@link Publisher} to emit any signal (onNext/onError/onComplete) and
+	 * replay all signals from that {@link Publisher}, effectively behaving like the
+	 * fastest of these competing sources.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
+	 *
+	 * @param sources The competing source publishers
+	 * @param <I> The type of values in both source and output sequences
+	 *
+	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 */
+	public static <I> Flux<I> firstWithSignal(Iterable<? extends Publisher<? extends I>> sources) {
+		return onAssembly(new FluxFirstWithSignal<>(sources));
 	}
 
 	/**
@@ -952,7 +991,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * Sources with values always "win" over empty sources (ones that only emit onComplete)
 	 * or failing sources (ones that only emit onError).
-	 * Note that like in {@link #first(Iterable)}, an infinite source can be problematic
+	 * Note that like in {@link #firstWithSignal(Iterable)}, an infinite source can be problematic
 	 * if no other source emits onNext.
 	 *
 	 * <p>
@@ -975,7 +1014,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * Sources with values always "win" over an empty source (ones that only emit onComplete)
 	 * or failing sources (ones that only emit onError).
-	 * Note that like in {@link #first(Publisher[])}, an infinite source can be problematic
+	 * Note that like in {@link #firstWithSignal(Publisher[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
 	 *
 	 * <p>
@@ -6661,18 +6700,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param other the {@link Publisher} to race with
 	 *
 	 * @return the fastest sequence
-	 * @see #first
+	 * @see #firstWithSignal
 	 */
 	public final Flux<T> or(Publisher<? extends T> other) {
-		if (this instanceof FluxFirstSignalling) {
-			FluxFirstSignalling<T> orPublisher = (FluxFirstSignalling<T>) this;
+		if (this instanceof FluxFirstWithSignal) {
+			FluxFirstWithSignal<T> orPublisher = (FluxFirstWithSignal<T>) this;
 
-			FluxFirstSignalling<T> result = orPublisher.orAdditionalSource(other);
+			FluxFirstWithSignal<T> result = orPublisher.orAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}
 		}
-		return first(this, other);
+		return firstWithSignal(this, other);
 	}
 
 	/**

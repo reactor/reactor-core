@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxFirstSignallingWithTest {
+public class FluxFirstWithSignalOrTest {
 
 	@Test
 	public void noStackOverflow() {
@@ -49,7 +49,7 @@ public class FluxFirstSignallingWithTest {
 	public void dontBreakAmb() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
-		Flux.first(Flux.just(1), Flux.just(2)).or(Flux.just(3))
+		Flux.firstWithSignal(Flux.just(1), Flux.just(2)).or(Flux.just(3))
 		    .subscribe(ts);
 
 		
@@ -60,11 +60,11 @@ public class FluxFirstSignallingWithTest {
 
 	@Test
 	public void pairWise() {
-		Flux<Integer> f = Flux.first(Mono.just(1), Mono.just(2))
+		Flux<Integer> f = Flux.firstWithSignal(Mono.just(1), Mono.just(2))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof FluxFirstSignalling);
-		FluxFirstSignalling<Integer> s = (FluxFirstSignalling<Integer>) f;
+		Assert.assertTrue(f instanceof FluxFirstWithSignal);
+		FluxFirstWithSignal<Integer> s = (FluxFirstWithSignal<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 3);
 
@@ -75,11 +75,11 @@ public class FluxFirstSignallingWithTest {
 
 	@Test
 	public void pairWiseIterable() {
-		Flux<Integer> f = Flux.first(Arrays.asList(Mono.just(1), Mono.just(2)))
+		Flux<Integer> f = Flux.firstWithSignal(Arrays.asList(Mono.just(1), Mono.just(2)))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof FluxFirstSignalling);
-		FluxFirstSignalling<Integer> s = (FluxFirstSignalling<Integer>) f;
+		Assert.assertTrue(f instanceof FluxFirstWithSignal);
+		FluxFirstWithSignal<Integer> s = (FluxFirstWithSignal<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 2);
 
