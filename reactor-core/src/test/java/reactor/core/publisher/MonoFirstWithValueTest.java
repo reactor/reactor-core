@@ -28,11 +28,11 @@ import java.util.NoSuchElementException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-class MonoFirstValuedTest {
+class MonoFirstWithValueTest {
 
 	@Test
 	void firstSourceEmittingValueIsChosen() {
-		StepVerifier.withVirtualTime(() -> Mono.firstValued(
+		StepVerifier.withVirtualTime(() -> Mono.firstWithValue(
 				Mono.just(1).delayElement(Duration.ofMillis(500L)),
 				Mono.just(2).delayElement(Duration.ofMillis(1_000L))
 		))
@@ -43,7 +43,7 @@ class MonoFirstValuedTest {
 
 	@Test
 	void firstSourceEmittingValueIsChosenOverErrorOrCompleteEmpty() {
-		StepVerifier.withVirtualTime(() -> Mono.firstValued(
+		StepVerifier.withVirtualTime(() -> Mono.firstWithValue(
 				Mono.just(1).delayElement(Duration.ofMillis(500L)),
 				Mono.error(new RuntimeException("Boom!")),
 				Mono.empty(),
@@ -56,7 +56,7 @@ class MonoFirstValuedTest {
 
 	@Test
 	void onlyErrorOrCompleteEmptyEmitsError() {
-		StepVerifier.withVirtualTime(() -> Mono.firstValued(
+		StepVerifier.withVirtualTime(() -> Mono.firstWithValue(
 				Mono.error(new RuntimeException("Boom!")),
 				Mono.empty()
 		))
@@ -74,17 +74,17 @@ class MonoFirstValuedTest {
 
 	@Test
 	void firstNull() {
-		assertThrows(NullPointerException.class, () -> Mono.firstValued(null, Mono.just(1), Mono.just(2)));
+		assertThrows(NullPointerException.class, () -> Mono.firstWithValue(null, Mono.just(1), Mono.just(2)));
 	}
 
 	@Test
 	void arrayNull() {
-		assertThrows(NullPointerException.class, () -> Mono.firstValued(Mono.just(1),(Mono<Integer>[]) null));
+		assertThrows(NullPointerException.class, () -> Mono.firstWithValue(Mono.just(1),(Mono<Integer>[]) null));
 	}
 
 	@Test
 	void iterableNull() {
-		assertThrows(NullPointerException.class, () -> Mono.firstValued((Iterable<Mono<Integer>>) null));
+		assertThrows(NullPointerException.class, () -> Mono.firstWithValue((Iterable<Mono<Integer>>) null));
 	}
 
 	@Test
@@ -92,7 +92,7 @@ class MonoFirstValuedTest {
 		TestPublisher<Integer> pub1 = TestPublisher.create();
 		TestPublisher<Integer> pub2 = TestPublisher.create();
 
-		StepVerifier.create(Mono.firstValued(Mono.from(pub1), Mono.from(pub2)))
+		StepVerifier.create(Mono.firstWithValue(Mono.from(pub1), Mono.from(pub2)))
 				.thenRequest(1)
 				.then(() -> {
 					pub1.emit(1 ).complete();
@@ -115,7 +115,7 @@ class MonoFirstValuedTest {
 	void singleArrayNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Mono.firstValued(Mono.empty(), (Mono<Object>) null)
+		Mono.firstWithValue(Mono.empty(), (Mono<Object>) null)
 				.subscribe(ts);
 
 		ts.assertNoValues()
@@ -127,7 +127,7 @@ class MonoFirstValuedTest {
 	void arrayOneIsNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Mono.firstValued(Mono.never(), null, Mono.never())
+		Mono.firstWithValue(Mono.never(), null, Mono.never())
 				.subscribe(ts);
 
 		ts.assertNoValues()
@@ -139,7 +139,7 @@ class MonoFirstValuedTest {
 	void singleIterableNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Mono.firstValued(Arrays.asList((Mono<Object>) null))
+		Mono.firstWithValue(Arrays.asList((Mono<Object>) null))
 				.subscribe(ts);
 
 		ts.assertNoValues()
@@ -151,7 +151,7 @@ class MonoFirstValuedTest {
 	void iterableOneIsNullSource() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Mono.firstValued(Arrays.asList(Mono.never(),
+		Mono.firstWithValue(Arrays.asList(Mono.never(),
 				null,
 				Mono.never()))
 				.subscribe(ts);
@@ -163,11 +163,11 @@ class MonoFirstValuedTest {
 
 	@Test
 	void pairWise() {
-		Mono<Integer> firstValue = Mono.firstValued(Mono.just(1), Mono.just(2));
-		Mono<Integer> orValue = Mono.firstValued(firstValue, Mono.just(3));
+		Mono<Integer> firstValue = Mono.firstWithValue(Mono.just(1), Mono.just(2));
+		Mono<Integer> orValue = Mono.firstWithValue(firstValue, Mono.just(3));
 
-		assertThat(orValue).isInstanceOf(MonoFirstValued.class);
-		assertThat(((MonoFirstValued<Integer>) orValue).array)
+		assertThat(orValue).isInstanceOf(MonoFirstWithValue.class);
+		assertThat(((MonoFirstWithValue<Integer>) orValue).array)
 				.isNotNull()
 				.hasSize(3);
 
@@ -178,10 +178,10 @@ class MonoFirstValuedTest {
 
 	@Test
 	void combineMoreThanOneAdditionalSource() {
-		Mono<Integer> step1 = Mono.firstValued(Mono.just(1), Mono.just(2));
-		Mono<Integer> step2 = Mono.firstValued(step1, Mono.just(3), Mono.just(4));
+		Mono<Integer> step1 = Mono.firstWithValue(Mono.just(1), Mono.just(2));
+		Mono<Integer> step2 = Mono.firstWithValue(step1, Mono.just(3), Mono.just(4));
 
-		assertThat(step2).isInstanceOfSatisfying(MonoFirstValued.class,
+		assertThat(step2).isInstanceOfSatisfying(MonoFirstWithValue.class,
 				mfv -> assertThat(mfv.array)
 						.hasSize(4)
 						.doesNotContainNull());
@@ -190,7 +190,7 @@ class MonoFirstValuedTest {
 	@Test
 	void scanOperator() {
 		@SuppressWarnings("unchecked")
-		MonoFirstValued<Integer> test = new MonoFirstValued<>(Mono.just(1), Mono.just(2));
+		MonoFirstWithValue<Integer> test = new MonoFirstWithValue<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

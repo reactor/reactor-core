@@ -332,10 +332,12 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <T> The type of the function result.
 	 *
 	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 * @deprecated use {@link #firstWithSignal(Mono[])}. To be removed in reactor 3.5.
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <T> Mono<T> first(Mono<? extends T>... monos) {
-		return onAssembly(new MonoFirstSignalling<>(monos));
+		return firstWithSignal(monos);
 	}
 
 	/**
@@ -349,9 +351,44 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param <T> The type of the function result.
 	 *
 	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 * @deprecated use {@link #firstWithSignal(Iterable)}. To be removed in reactor 3.5.
 	 */
+	@Deprecated
 	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
-		return onAssembly(new MonoFirstSignalling<>(monos));
+		return firstWithSignal(monos);
+	}
+
+	/**
+	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
+	 * and replay that signal, effectively behaving like the fastest of these competing
+	 * sources.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
+	 * <p>
+	 * @param monos The deferred monos to use.
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 */
+	@SafeVarargs
+	public static <T> Mono<T> firstWithSignal(Mono<? extends T>... monos) {
+		return onAssembly(new MonoFirstWithSignal<>(monos));
+	}
+
+	/**
+	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
+	 * and replay that signal, effectively behaving like the fastest of these competing
+	 * sources.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
+	 * <p>
+	 * @param monos The deferred monos to use.
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 */
+	public static <T> Mono<T> firstWithSignal(Iterable<? extends Mono<? extends T>> monos) {
+		return onAssembly(new MonoFirstWithSignal<>(monos));
 	}
 
 	/**
@@ -360,20 +397,21 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
-	 * // TODO replace the img
-	 * <p>
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
-	 * Note that like in {@link #first(Iterable)}, an infinite source can be problematic
+	 * Note that like in {@link #firstWithSignal(Iterable)}, an infinite source can be problematic
 	 * if no other source emits onNext.
 	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithValueForMono.svg" alt="">
+	 * <p>
 	 * @param monos An {@link Iterable} of the competing source monos
 	 * @param <T> The type of the element in the sources and the resulting mono
 	 *
 	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
-	public static <T> Mono<T> firstValued(Iterable<? extends Mono<? extends T>> monos) {
-		return onAssembly(new MonoFirstValued<>(monos));
+	public static <T> Mono<T> firstWithValue(Iterable<? extends Mono<? extends T>> monos) {
+		return onAssembly(new MonoFirstWithValue<>(monos));
 	}
 
 	/**
@@ -382,16 +420,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * {@link Subscriber#onNext(Object) onNext}.
 	 *
 	 * <p>
-	 * // TODO replace the img
-	 * <p>
 	 * Valued sources always "win" over an empty source (one that only emits onComplete)
 	 * or a failing source (one that only emits onError).
-	 * Note that like in {@link #first(Mono[])}, an infinite source can be problematic
+	 * Note that like in {@link #firstWithSignal(Mono[])}, an infinite source can be problematic
 	 * if no other source emits onNext.
 	 * <p>
-	 * In case the {@code first} source is already an array-based {@link #firstValued(Mono, Mono[])}
+	 * In case the {@code first} source is already an array-based {@link #firstWithValue(Mono, Mono[])}
 	 * instance, nesting is avoided: a single new array-based instance is created with all the
 	 * sources from {@code first} plus all the {@code others} sources at the same level.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithValueForMono.svg" alt="">
+	 * <p>
 	 *
 	 * @param first the first competing source {@link Mono}
 	 * @param others the other competing sources {@link Mono}
@@ -400,16 +439,16 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono} behaving like the fastest of its sources
 	 */
 	@SafeVarargs
-	public static <T> Mono<T> firstValued(Mono<? extends T> first, Mono<? extends T>... others) {
-		if (first instanceof MonoFirstValued) {
+	public static <T> Mono<T> firstWithValue(Mono<? extends T> first, Mono<? extends T>... others) {
+		if (first instanceof MonoFirstWithValue) {
 			@SuppressWarnings("unchecked")
-			MonoFirstValued<T> a = (MonoFirstValued<T>) first;
+			MonoFirstWithValue<T> a = (MonoFirstWithValue<T>) first;
 			Mono<T> result =  a.firstValuedAdditionalSources(others);
 			if (result != null) {
 				return result;
 			}
 		}
-		return onAssembly(new MonoFirstValued<>(first, others));
+		return onAssembly(new MonoFirstWithValue<>(first, others));
 	}
 
 	/**
@@ -3126,17 +3165,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param other the racing other {@link Mono} to compete with for the signal
 	 *
 	 * @return a new {@link Mono}
-	 * @see #first
+	 * @see #firstWithSignal
 	 */
 	public final Mono<T> or(Mono<? extends T> other) {
-		if (this instanceof MonoFirstSignalling) {
-			MonoFirstSignalling<T> a = (MonoFirstSignalling<T>) this;
+		if (this instanceof MonoFirstWithSignal) {
+			MonoFirstWithSignal<T> a = (MonoFirstWithSignal<T>) this;
 			Mono<T> result =  a.orAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}
 		}
-		return first(this, other);
+		return firstWithSignal(this, other);
 	}
 
 	/**

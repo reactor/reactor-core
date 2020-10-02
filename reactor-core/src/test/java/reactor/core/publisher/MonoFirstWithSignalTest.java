@@ -26,11 +26,11 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MonoFirstSignallingTest {
+public class MonoFirstWithSignalTest {
 
 	@Test(timeout = 5000)
 	public void allEmpty() {
-		Assert.assertNull(Mono.first(Mono.empty(),
+		Assert.assertNull(Mono.firstWithSignal(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))
 				    .ignoreElement())
 		                      .block());
@@ -38,25 +38,25 @@ public class MonoFirstSignallingTest {
 
 	@Test(timeout = 5000)
 	public void someEmpty() {
-		Assert.assertNull(Mono.first(Mono.empty(), Mono.delay(Duration.ofMillis(250)))
+		Assert.assertNull(Mono.firstWithSignal(Mono.empty(), Mono.delay(Duration.ofMillis(250)))
 		                      .block());
 	}
 
 	@Test//(timeout = 5000)
 	public void all2NonEmpty() {
 		Assert.assertEquals(Integer.MIN_VALUE,
-				Mono.first(Mono.delay(Duration.ofMillis(150))
+				Mono.firstWithSignal(Mono.delay(Duration.ofMillis(150))
 				               .map(i -> Integer.MIN_VALUE), Mono.delay(Duration.ofMillis(250)))
 				    .block());
 	}
 
 	@Test
 	public void pairWise() {
-		Mono<Integer> f = Mono.first(Mono.just(1), Mono.just(2))
+		Mono<Integer> f = Mono.firstWithSignal(Mono.just(1), Mono.just(2))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof MonoFirstSignalling);
-		MonoFirstSignalling<Integer> s = (MonoFirstSignalling<Integer>) f;
+		Assert.assertTrue(f instanceof MonoFirstWithSignal);
+		MonoFirstWithSignal<Integer> s = (MonoFirstWithSignal<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 3);
 
@@ -67,7 +67,7 @@ public class MonoFirstSignallingTest {
 
 	@Test(timeout = 5000)
 	public void allEmptyIterable() {
-		Assert.assertNull(Mono.first(Arrays.asList(Mono.empty(),
+		Assert.assertNull(Mono.firstWithSignal(Arrays.asList(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))
 				    .ignoreElement()))
 		                      .block());
@@ -75,7 +75,7 @@ public class MonoFirstSignallingTest {
 
 	@Test(timeout = 5000)
 	public void someEmptyIterable() {
-		Assert.assertNull(Mono.first(Arrays.asList(Mono.empty(),
+		Assert.assertNull(Mono.firstWithSignal(Arrays.asList(Mono.empty(),
 				Mono.delay(Duration.ofMillis(250))))
 		                      .block());
 	}
@@ -83,18 +83,18 @@ public class MonoFirstSignallingTest {
 	@Test//(timeout = 5000)
 	public void all2NonEmptyIterable() {
 		Assert.assertEquals(Integer.MIN_VALUE,
-				Mono.first(Mono.delay(Duration.ofMillis(150))
+				Mono.firstWithSignal(Mono.delay(Duration.ofMillis(150))
 				               .map(i -> Integer.MIN_VALUE), Mono.delay(Duration.ofMillis(250)))
 				    .block());
 	}
 
 	@Test
 	public void pairWiseIterable() {
-		Mono<Integer> f = Mono.first(Arrays.asList(Mono.just(1), Mono.just(2)))
+		Mono<Integer> f = Mono.firstWithSignal(Arrays.asList(Mono.just(1), Mono.just(2)))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof MonoFirstSignalling);
-		MonoFirstSignalling<Integer> s = (MonoFirstSignalling<Integer>) f;
+		Assert.assertTrue(f instanceof MonoFirstWithSignal);
+		MonoFirstWithSignal<Integer> s = (MonoFirstWithSignal<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 2);
 
@@ -107,7 +107,7 @@ public class MonoFirstSignallingTest {
 	@Test
 	public void firstMonoJust() {
 		NextProcessor<Integer> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.first(Mono.just(1), Mono.just(2))
+		StepVerifier.create(Mono.firstWithSignal(Mono.just(1), Mono.just(2))
 		                        .subscribeWith(mp))
 		            .then(() -> assertThat(mp.isError()).isFalse())
 		            .then(() -> assertThat(mp.isSuccess()).isTrue())
@@ -117,7 +117,7 @@ public class MonoFirstSignallingTest {
 	}
 
 	Mono<Integer> scenario_fastestSource() {
-		return Mono.first(Mono.delay(Duration.ofSeconds(4))
+		return Mono.firstWithSignal(Mono.delay(Duration.ofSeconds(4))
 		                      .map(s -> 1),
 				Mono.delay(Duration.ofSeconds(3))
 				    .map(s -> 2));
@@ -133,8 +133,8 @@ public class MonoFirstSignallingTest {
 
 	@Test
 	public void scanOperator(){
-		@SuppressWarnings("unchecked") MonoFirstSignalling<Integer>
-				test = new MonoFirstSignalling<>(Mono.just(1), Mono.just(2));
+		@SuppressWarnings("unchecked") MonoFirstWithSignal<Integer>
+				test = new MonoFirstWithSignal<>(Mono.just(1), Mono.just(2));
 
 		assertThat(test.scan(Scannable.Attr.RUN_STYLE)).isSameAs(Scannable.Attr.RunStyle.SYNC);
 	}

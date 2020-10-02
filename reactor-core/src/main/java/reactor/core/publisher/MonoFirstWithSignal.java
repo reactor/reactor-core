@@ -15,72 +15,53 @@
  */
 package reactor.core.publisher;
 
+import java.util.Iterator;
+import java.util.Objects;
+
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
 
-import java.util.Iterator;
-import java.util.Objects;
-
-final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
+/**
+ * Given a set of source Publishers the values of that Publisher is forwarded to the
+ * actual which responds first with any signal.
+ *
+ * @param <T> the value type
+ *
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ */
+final class MonoFirstWithSignal<T> extends Mono<T> implements SourceProducer<T>  {
 
 	final Mono<? extends T>[] array;
 
 	final Iterable<? extends Mono<? extends T>> iterable;
 
-	private MonoFirstValued(Mono<? extends T>[] array) {
+	@SafeVarargs
+	MonoFirstWithSignal(Mono<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	@SafeVarargs
-	MonoFirstValued(Mono<? extends T> first, Mono<? extends T>... others) {
-		Objects.requireNonNull(first, "first");
-		Objects.requireNonNull(others, "others");
-		@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[others.length + 1];
-		newArray[0] = first;
-		System.arraycopy(others, 0, newArray, 1, others.length);
-		this.array = newArray;
-		this.iterable = null;
-	}
-
-	MonoFirstValued(Iterable<? extends Mono<? extends T>> iterable) {
+	MonoFirstWithSignal(Iterable<? extends Mono<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
 
-	/**
-	 * Returns a new instance which has the additional sources to be flattened together with
-	 * the current array of sources.
-	 * <p>
-	 * This operation doesn't change the current {@link MonoFirstValued} instance.
-	 *
-	 * @param others the new sources to merge with the current sources
-	 *
-	 * @return the new {@link MonoFirstValued} instance or null if new sources cannot be added (backed by an Iterable)
-	 */
 	@Nullable
-	@SafeVarargs
-	final MonoFirstValued<T> firstValuedAdditionalSources(Mono<? extends T>... others) {
-		Objects.requireNonNull(others, "others");
-		if (others.length == 0) {
-			return this;
-		}
-		if (array == null) {
-			//iterable mode, returning null to convey 2 nested operators are needed here
-			return null;
-		}
-		int currentSize = array.length;
-		int otherSize = others.length;
-		@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[currentSize + otherSize];
-		System.arraycopy(array, 0, newArray, 0, currentSize);
-		System.arraycopy(others, 0, newArray, currentSize, otherSize);
+	Mono<T> orAdditionalSource(Mono<? extends T> other) {
+		if (array != null) {
+			int n = array.length;
+			@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[n + 1];
+			System.arraycopy(array, 0, newArray, 0, n);
+			newArray[n] = other;
 
-		return new MonoFirstValued<>(newArray);
+			return new MonoFirstWithSignal<>(newArray);
+		}
+		return null;
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
+	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T>[] a = array;
 		int n;
@@ -120,7 +101,7 @@ final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
 
 				try {
 					p = Objects.requireNonNull(it.next(),
-							"The Publisher returned by the iterator is null");
+					"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
 					Operators.error(actual, Operators.onOperatorError(e,
@@ -159,10 +140,10 @@ final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
 			return;
 		}
 
-		FluxFirstWithValue.RaceValuesCoordinator<T> coordinator =
-				new FluxFirstWithValue.RaceValuesCoordinator<>(n);
+		FluxFirstWithSignal.RaceCoordinator<T> coordinator =
+				new FluxFirstWithSignal.RaceCoordinator<>(n);
 
-		coordinator.subscribe(a, actual);
+		coordinator.subscribe(a, n, actual);
 	}
 
 	@Override
@@ -170,4 +151,5 @@ final class MonoFirstValued<T> extends Mono<T> implements SourceProducer<T> {
 		if (key == Attr.RUN_STYLE) return Attr.RunStyle.SYNC;
 		return null;
 	}
+
 }
