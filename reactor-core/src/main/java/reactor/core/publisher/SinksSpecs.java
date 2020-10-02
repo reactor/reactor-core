@@ -3,6 +3,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
@@ -34,17 +35,15 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	final Many<T>       sink;
 	final ContextHolder contextHolder;
 
-	volatile     Throwable                                                  error;
+	volatile int wip;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SerializedManySink, Throwable> ERROR =
-			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Throwable.class, "error");
+	static final AtomicIntegerFieldUpdater<SerializedManySink> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(SerializedManySink.class, "wip");
 
 	volatile Thread lockedAt;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<SerializedManySink, Thread> LOCKED_AT =
 			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Thread.class, "lockedAt");
-
-	volatile boolean done;
 
 	SerializedManySink(Many<T> sink, ContextHolder contextHolder) {
 		this.sink = sink;
@@ -78,16 +77,25 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 	@Override
 	public final Emission tryEmitComplete() {
-		if (done) {
-			return Sinks.Emission.FAIL_TERMINATED;
+		Thread currentTread = Thread.currentThread();
+		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+			LOCKED_AT.lazySet(this, currentTread);
 		}
-		Thread lockedAt = this.lockedAt;
-		if (!(lockedAt == null || lockedAt == Thread.currentThread())) {
-			return Emission.FAIL_NON_SERIALIZED;
+		else {
+			if (LOCKED_AT.get(this) != currentTread) {
+				return Emission.FAIL_NON_SERIALIZED;
+			}
+			WIP.incrementAndGet(this);
 		}
 
-		done = true;
-		return sink.tryEmitComplete();
+		try {
+			return sink.tryEmitComplete();
+		}
+		finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentTread, null);
+			}
+		}
 	}
 
 	@Override
@@ -104,19 +112,26 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	@Override
 	public final Emission tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t is null in sink.error(t)");
-		if (done) {
-			return Sinks.Emission.FAIL_TERMINATED;
+
+		Thread currentTread = Thread.currentThread();
+		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+			LOCKED_AT.lazySet(this, currentTread);
 		}
-		Thread lockedAt = this.lockedAt;
-		if (!(lockedAt == null || lockedAt == Thread.currentThread())) {
-			return Emission.FAIL_NON_SERIALIZED;
-		}
-		if (!Exceptions.addThrowable(ERROR, this, t)) {
-			return Emission.FAIL_TERMINATED;
+		else {
+			if (LOCKED_AT.get(this) != currentTread) {
+				return Emission.FAIL_NON_SERIALIZED;
+			}
+			WIP.incrementAndGet(this);
 		}
 
-		done = true;
-		return sink.tryEmitError(t);
+		try {
+			return sink.tryEmitError(t);
+		}
+		finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentTread, null);
+			}
+		}
 	}
 
 	@Override
@@ -164,35 +179,31 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	@Override
 	public final Emission tryEmitNext(T t) {
 		Objects.requireNonNull(t, "t is null in sink.next(t)");
-		if (done) {
-			return Sinks.Emission.FAIL_TERMINATED;
+
+		Thread currentTread = Thread.currentThread();
+		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+			LOCKED_AT.lazySet(this, currentTread);
 		}
-		Thread currentThread = Thread.currentThread();
-		Thread lockedAt = LOCKED_AT.get(this);
-		if (lockedAt != null) {
-			if (lockedAt != currentThread) {
+		else {
+			if (LOCKED_AT.get(this) != currentTread) {
 				return Emission.FAIL_NON_SERIALIZED;
 			}
-		}
-		else if (!LOCKED_AT.compareAndSet(this, null, currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
+			WIP.incrementAndGet(this);
 		}
 
-		Emission emission = sink.tryEmitNext(t);
-		LOCKED_AT.compareAndSet(this, currentThread, null);
-		return emission;
+		try {
+			return sink.tryEmitNext(t);
+		}
+		finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentTread, null);
+			}
+		}
 	}
 
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.ERROR) {
-			return error;
-		}
-		if (key == Attr.TERMINATED) {
-			return done;
-		}
-
 		return Scannable.from(sink).scanUnsafe(key);
 	}
 
