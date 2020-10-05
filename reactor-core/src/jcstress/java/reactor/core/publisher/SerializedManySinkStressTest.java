@@ -67,7 +67,7 @@ public class SerializedManySinkStressTest {
 	@Outcome(id = {"OK, FAIL_NON_SERIALIZED, 0"}, expect = ACCEPTABLE, desc = "onNext wins")
 	@Outcome(id = {"FAIL_NON_SERIALIZED, OK, 1"}, expect = ACCEPTABLE, desc = "onComplete wins")
 	@Outcome(id = {"FAIL_TERMINATED, OK, 1"}, expect = ACCEPTABLE, desc = "onNext after onComplete")
-	@Outcome(id = {"OK, OK, 1"}, expect = ACCEPTABLE, desc = "onComplete after onComplete")
+	@Outcome(id = {"OK, OK, 1"}, expect = ACCEPTABLE, desc = "onComplete after onNext")
 	@State
 	public static class TerminatedVsOnNextStressTest extends SerializedManySinkStressTest {
 

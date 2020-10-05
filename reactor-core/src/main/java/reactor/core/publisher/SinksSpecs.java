@@ -204,7 +204,7 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		return Scannable.from(sink).scanUnsafe(key);
+		return sink.scanUnsafe(key);
 	}
 
 	@Override
