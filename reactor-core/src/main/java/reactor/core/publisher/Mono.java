@@ -3343,7 +3343,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 
 	/**
 	 * Subscribe to a fallback publisher when any error occurs, using a function to
-	 * choose the fallback depending on the error
+	 * choose the fallback depending on the error.
 	 *
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/onErrorResumeForMono.svg" alt="">

@@ -140,11 +140,11 @@ final class FluxFirstWithSignal<T> extends Flux<T> implements SourceProducer<T> 
 	 * Returns a new instance which has the additional source to be amb'd together with
 	 * the current array of sources.
 	 * <p>
-	 * This operation doesn't change the current FluxFirstSignalling instance.
+	 * This operation doesn't change the current {@link FluxFirstWithSignal} instance.
 	 *
 	 * @param source the new source to merge with the others
 	 *
-	 * @return the new FluxFirstSignalling instance or null if the Amb runs with an Iterable
+	 * @return the new {@link FluxFirstWithSignal} instance or null if the Amb runs with an Iterable
 	 */
 	@Nullable
 	FluxFirstWithSignal<T> orAdditionalSource(Publisher<? extends T> source) {
