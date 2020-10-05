@@ -326,7 +326,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * and replay that signal, effectively behaving like the fastest of these competing
 	 * sources.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
 	 * <p>
 	 * @param monos The deferred monos to use.
 	 * @param <T> The type of the function result.
@@ -345,7 +345,7 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * and replay that signal, effectively behaving like the fastest of these competing
 	 * sources.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
 	 * <p>
 	 * @param monos The deferred monos to use.
 	 * @param <T> The type of the function result.
