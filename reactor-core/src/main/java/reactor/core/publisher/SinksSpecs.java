@@ -185,10 +185,11 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 	private boolean tryAcquire(Thread currentThread) {
 		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-			// lazySet here, because:
+			// lazySet in thread A here is ok because:
 			// 1. initial state is `null`
-			// 2. `LOCKED_AT.get(this) != currentThread` from the next branch will either see null or an outdated old thread
-			// 3. The only possibility to make the condition pass is to read it from the current thread that already has the value cached
+			// 2. `LOCKED_AT.get(this) != currentThread` from a different thread B could see outdated null or an outdated old thread
+			// 3. but that old thread cannot be B: since we're in thread B, it must have executed the compareAndSet which would have loaded the update from A
+			// 4. Seeing `null` or `C` is equivalent from seeing `A` from the perspective of the condition (`!= currentThread` is still true in all three cases)
 			LOCKED_AT.lazySet(this, currentThread);
 		}
 		else {
