@@ -77,15 +77,9 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 	@Override
 	public final Emission tryEmitComplete() {
-		Thread currentTread = Thread.currentThread();
-		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-			LOCKED_AT.lazySet(this, currentTread);
-		}
-		else {
-			if (LOCKED_AT.get(this) != currentTread) {
-				return Emission.FAIL_NON_SERIALIZED;
-			}
-			WIP.incrementAndGet(this);
+		Thread currentThread = Thread.currentThread();
+		if (!tryAcquire(currentThread)) {
+			return Emission.FAIL_NON_SERIALIZED;
 		}
 
 		try {
@@ -93,7 +87,7 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		}
 		finally {
 			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentTread, null);
+				LOCKED_AT.compareAndSet(this, currentThread, null);
 			}
 		}
 	}
@@ -113,15 +107,9 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	public final Emission tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t is null in sink.error(t)");
 
-		Thread currentTread = Thread.currentThread();
-		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-			LOCKED_AT.lazySet(this, currentTread);
-		}
-		else {
-			if (LOCKED_AT.get(this) != currentTread) {
-				return Emission.FAIL_NON_SERIALIZED;
-			}
-			WIP.incrementAndGet(this);
+		Thread currentThread = Thread.currentThread();
+		if (!tryAcquire(currentThread)) {
+			return Emission.FAIL_NON_SERIALIZED;
 		}
 
 		try {
@@ -129,7 +117,7 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		}
 		finally {
 			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentTread, null);
+				LOCKED_AT.compareAndSet(this, currentThread, null);
 			}
 		}
 	}
@@ -180,15 +168,9 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	public final Emission tryEmitNext(T t) {
 		Objects.requireNonNull(t, "t is null in sink.next(t)");
 
-		Thread currentTread = Thread.currentThread();
-		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-			LOCKED_AT.lazySet(this, currentTread);
-		}
-		else {
-			if (LOCKED_AT.get(this) != currentTread) {
-				return Emission.FAIL_NON_SERIALIZED;
-			}
-			WIP.incrementAndGet(this);
+		Thread currentThread = Thread.currentThread();
+		if (!tryAcquire(currentThread)) {
+			return Emission.FAIL_NON_SERIALIZED;
 		}
 
 		try {
@@ -196,9 +178,26 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 		}
 		finally {
 			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentTread, null);
+				LOCKED_AT.compareAndSet(this, currentThread, null);
 			}
 		}
+	}
+
+	private boolean tryAcquire(Thread currentThread) {
+		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+			// lazySet here, because:
+			// 1. initial state is `null`
+			// 2. `LOCKED_AT.get(this) != currentThread` from the next branch will either see null or an outdated old thread
+			// 3. The only possibility to make the condition pass is to read it from the current thread that already has the value cached
+			LOCKED_AT.lazySet(this, currentThread);
+		}
+		else {
+			if (LOCKED_AT.get(this) != currentThread) {
+				return false;
+			}
+			WIP.incrementAndGet(this);
+		}
+		return true;
 	}
 
 	@Override
