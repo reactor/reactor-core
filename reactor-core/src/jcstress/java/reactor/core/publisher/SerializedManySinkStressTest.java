@@ -63,11 +63,37 @@ public class SerializedManySinkStressTest {
 		}
 	}
 
+	@JCStressTest
+	@Outcome(id = {"OK, FAIL_NON_SERIALIZED, 0"}, expect = ACCEPTABLE, desc = "onNext wins")
+	@Outcome(id = {"FAIL_NON_SERIALIZED, OK, 1"}, expect = ACCEPTABLE, desc = "onComplete wins")
+	@Outcome(id = {"FAIL_TERMINATED, OK, 1"}, expect = ACCEPTABLE, desc = "onNext after onComplete")
+	@Outcome(id = {"OK, OK, 1"}, expect = ACCEPTABLE, desc = "onComplete after onNext")
+	@State
+	public static class TerminatedVsOnNextStressTest extends SerializedManySinkStressTest {
+
+		@Actor
+		public void first(LLI_Result r) {
+			r.r1 = sink.tryEmitNext("Hello");
+		}
+
+		@Actor
+		public void second(LLI_Result r) {
+			r.r2 = sink.tryEmitComplete();
+		}
+
+		@Arbiter
+		public void arbiter(LLI_Result r) {
+			r.r3 = stressSink.onCompleteCalls.get();
+		}
+	}
+
 	static class TargetSink<T> implements Sinks.Many<T> {
 
 		final AtomicReference<StressSubscriber.Operation> guard = new AtomicReference<>(null);
 
 		final AtomicInteger onNextCalls = new AtomicInteger();
+
+		final AtomicInteger onCompleteCalls = new AtomicInteger();
 
 		@Override
 		public Sinks.Emission tryEmitNext(T t) {
@@ -88,6 +114,7 @@ public class SerializedManySinkStressTest {
 			}
 
 			LockSupport.parkNanos(10);
+			onCompleteCalls.incrementAndGet();
 			guard.compareAndSet(StressSubscriber.Operation.ON_COMPLETE, null);
 			return Sinks.Emission.OK;
 		}

@@ -3,6 +3,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
@@ -34,17 +35,15 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	final Many<T>       sink;
 	final ContextHolder contextHolder;
 
-	volatile     Throwable                                                  error;
+	volatile int wip;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SerializedManySink, Throwable> ERROR =
-			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Throwable.class, "error");
+	static final AtomicIntegerFieldUpdater<SerializedManySink> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(SerializedManySink.class, "wip");
 
 	volatile Thread lockedAt;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<SerializedManySink, Thread> LOCKED_AT =
 			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Thread.class, "lockedAt");
-
-	volatile boolean done;
 
 	SerializedManySink(Many<T> sink, ContextHolder contextHolder) {
 		this.sink = sink;
@@ -78,16 +77,19 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 
 	@Override
 	public final Emission tryEmitComplete() {
-		if (done) {
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
-		Thread lockedAt = this.lockedAt;
-		if (!(lockedAt == null || lockedAt == Thread.currentThread())) {
+		Thread currentThread = Thread.currentThread();
+		if (!tryAcquire(currentThread)) {
 			return Emission.FAIL_NON_SERIALIZED;
 		}
 
-		done = true;
-		return sink.tryEmitComplete();
+		try {
+			return sink.tryEmitComplete();
+		}
+		finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentThread, null);
+			}
+		}
 	}
 
 	@Override
@@ -104,19 +106,20 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	@Override
 	public final Emission tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t is null in sink.error(t)");
-		if (done) {
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
-		Thread lockedAt = this.lockedAt;
-		if (!(lockedAt == null || lockedAt == Thread.currentThread())) {
+
+		Thread currentThread = Thread.currentThread();
+		if (!tryAcquire(currentThread)) {
 			return Emission.FAIL_NON_SERIALIZED;
 		}
-		if (!Exceptions.addThrowable(ERROR, this, t)) {
-			return Emission.FAIL_TERMINATED;
-		}
 
-		done = true;
-		return sink.tryEmitError(t);
+		try {
+			return sink.tryEmitError(t);
+		}
+		finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentThread, null);
+			}
+		}
 	}
 
 	@Override
@@ -164,36 +167,44 @@ final class SerializedManySink<T> implements Many<T>, Scannable {
 	@Override
 	public final Emission tryEmitNext(T t) {
 		Objects.requireNonNull(t, "t is null in sink.next(t)");
-		if (done) {
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
+
 		Thread currentThread = Thread.currentThread();
-		Thread lockedAt = LOCKED_AT.get(this);
-		if (lockedAt != null) {
-			if (lockedAt != currentThread) {
-				return Emission.FAIL_NON_SERIALIZED;
-			}
-		}
-		else if (!LOCKED_AT.compareAndSet(this, null, currentThread)) {
+		if (!tryAcquire(currentThread)) {
 			return Emission.FAIL_NON_SERIALIZED;
 		}
 
-		Emission emission = sink.tryEmitNext(t);
-		LOCKED_AT.compareAndSet(this, currentThread, null);
-		return emission;
+		try {
+			return sink.tryEmitNext(t);
+		}
+		finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentThread, null);
+			}
+		}
+	}
+
+	private boolean tryAcquire(Thread currentThread) {
+		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+			// lazySet in thread A here is ok because:
+			// 1. initial state is `null`
+			// 2. `LOCKED_AT.get(this) != currentThread` from a different thread B could see outdated null or an outdated old thread
+			// 3. but that old thread cannot be B: since we're in thread B, it must have executed the compareAndSet which would have loaded the update from A
+			// 4. Seeing `null` or `C` is equivalent from seeing `A` from the perspective of the condition (`!= currentThread` is still true in all three cases)
+			LOCKED_AT.lazySet(this, currentThread);
+		}
+		else {
+			if (LOCKED_AT.get(this) != currentThread) {
+				return false;
+			}
+			WIP.incrementAndGet(this);
+		}
+		return true;
 	}
 
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.ERROR) {
-			return error;
-		}
-		if (key == Attr.TERMINATED) {
-			return done;
-		}
-
-		return Scannable.from(sink).scanUnsafe(key);
+		return sink.scanUnsafe(key);
 	}
 
 	@Override
