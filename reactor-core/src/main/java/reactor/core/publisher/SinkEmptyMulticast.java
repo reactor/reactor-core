@@ -28,7 +28,7 @@ import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.util.context.Context;
 
-final class SinkEmptyMulticast<T> extends Mono<T> implements Sinks.Empty<T>, ContextHolder {
+final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
 
 	volatile VoidInner<T>[] subscribers;
 
@@ -59,13 +59,6 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements Sinks.Empty<T>, Con
 	}
 
 	@Override
-	public void emitEmpty() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitEmpty();
-	}
-
-	@Override
 	public Emission tryEmitEmpty() {
 		VoidInner<?>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
@@ -77,14 +70,6 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements Sinks.Empty<T>, Con
 			as.onComplete();
 		}
 		return Emission.OK;
-	}
-
-	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDroppedMulticast(error, subscribers);
-		}
 	}
 
 	@Override

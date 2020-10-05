@@ -92,7 +92,7 @@ import reactor.util.context.Context;
 @Deprecated
 public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>,
-		           Sinks.Many<T> {
+		           InternalManySink<T> {
 
 	/**
 	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
@@ -238,13 +238,6 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public void emitComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
-	}
-
-	@Override
 	public Emission tryEmitComplete() {
 		if (done) {
 			return Emission.FAIL_TERMINATED;
@@ -264,14 +257,6 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public void onError(Throwable throwable) {
 		emitError(throwable);
-	}
-
-	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDropped(error, currentContext());
-		}
 	}
 
 	@Override
@@ -298,45 +283,33 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public void emitNext(T value) {
-		switch (tryEmitNext(value)) {
-			case FAIL_ZERO_SUBSCRIBER:
-				if (onOverflow != null) {
-					try {
-						onOverflow.accept(value);
-					}
-					catch (Throwable e) {
-						Exceptions.throwIfFatal(e);
-						emitError(e);
-					}
-				}
-				//otherwise not really any possibility of discarding here. the sink is kept open, though
-				break;
-			case FAIL_OVERFLOW:
-				Context ctx = currentContext();
-				IllegalStateException overflow = Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext");
-				Throwable ex = Operators.onOperatorError(null, overflow, value, ctx);
-				if (onOverflow != null) {
-					try {
-						onOverflow.accept(value);
-					}
-					catch (Throwable e) {
-						Exceptions.throwIfFatal(e);
-						ex.initCause(e);
-					}
-				}
-				onError(ex);
-				Operators.onDiscard(value, currentContext());
-				break;
-			case FAIL_CANCELLED:
-				Operators.onDiscard(value, currentContext());
-				break;
-			case FAIL_TERMINATED:
-				Operators.onNextDropped(value, currentContext());
-				break;
-			case OK:
-				break;
+	public void emitNext(T value, Sinks.EmitFailureHandler failureHandler) {
+		if (onOverflow == null) {
+			InternalManySink.super.emitNext(value, failureHandler);
+			return;
 		}
+
+		// TODO consider deprecating onOverflow and suggesting using a strategy instead
+		InternalManySink.super.emitNext(
+				value, (signalType, emission) -> {
+					boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT, emission);
+					if (!shouldRetry) {
+						switch (emission) {
+							case FAIL_ZERO_SUBSCRIBER:
+							case FAIL_OVERFLOW:
+								try {
+									onOverflow.accept(value);
+								}
+								catch (Throwable e) {
+									Exceptions.throwIfFatal(e);
+									emitError(e);
+								}
+								break;
+						}
+					}
+					return shouldRetry;
+				}
+		);
 	}
 
 	@Override

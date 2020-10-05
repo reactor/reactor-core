@@ -131,13 +131,28 @@ public class SerializedManySinkTest {
 		}
 
 		@Override
+		public void emitNext(T t, Sinks.EmitFailureHandler failureHandler) {
+			throw new IllegalStateException("Not expected to be called");
+		}
+
+		@Override
 		public void emitComplete() {
 			delegate.emitComplete();
 		}
 
 		@Override
+		public void emitComplete(Sinks.EmitFailureHandler failureHandler) {
+			delegate.emitComplete(failureHandler);
+		}
+
+		@Override
 		public void emitError(Throwable error) {
 			delegate.emitError(error);
+		}
+
+		@Override
+		public void emitError(Throwable error, Sinks.EmitFailureHandler failureHandler) {
+			delegate.emitError(error, failureHandler);
 		}
 
 		@Override

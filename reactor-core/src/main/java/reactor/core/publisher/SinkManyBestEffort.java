@@ -33,7 +33,7 @@ import reactor.util.context.Context;
  * @author Simon Baslé
  */
 final class SinkManyBestEffort<T> extends Flux<T>
-		implements Sinks.Many<T>, ContextHolder, Scannable,
+		implements InternalManySink<T>, Scannable,
 		           DirectInnerContainer<T> {
 
 	static final DirectInner[] EMPTY      = new DirectInner[0];
@@ -173,46 +173,6 @@ final class SinkManyBestEffort<T> extends Flux<T>
 			s.emitError(error);
 		}
 		return Emission.OK;
-	}
-
-	@Override
-	public void emitComplete() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
-	}
-
-	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
-			Operators.onErrorDroppedMulticast(error, subscribers);
-		}
-	}
-
-	@Override
-	public void emitNext(T value) {
-		switch (tryEmitNext(value)) {
-			case FAIL_ZERO_SUBSCRIBER:
-				//we want to "discard" without rendering the sink terminated.
-				// effectively NO-OP cause there's no subscriber, so no context :(
-				break;
-			case FAIL_OVERFLOW:
-				Operators.onDiscard(value, currentContext());
-				//the emitError will onErrorDropped if already terminated
-				emitError(Exceptions.failWithOverflow("Backpressure overflow during Sinks.Many#emitNext"));
-				break;
-			case FAIL_CANCELLED:
-				Operators.onDiscard(value, currentContext());
-				break;
-			case FAIL_TERMINATED:
-				Operators.onNextDroppedMulticast(value, subscribers);
-				break;
-			case OK:
-				break;
-			default:
-				throw new IllegalStateException("Unexpected return code");
-		}
 	}
 
 	@Override
