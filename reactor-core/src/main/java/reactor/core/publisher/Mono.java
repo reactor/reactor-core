@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2018 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       https://www.apache.org/licenses/LICENSE-2.0
+ *        https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package reactor.core.publisher;
 
 import java.time.Duration;
@@ -327,16 +326,18 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * and replay that signal, effectively behaving like the fastest of these competing
 	 * sources.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
 	 * <p>
 	 * @param monos The deferred monos to use.
 	 * @param <T> The type of the function result.
 	 *
 	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 * @deprecated use {@link #firstWithSignal(Mono[])}. To be removed in reactor 3.5.
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <T> Mono<T> first(Mono<? extends T>... monos) {
-		return onAssembly(new MonoFirst<>(monos));
+		return firstWithSignal(monos);
 	}
 
 	/**
@@ -344,15 +345,110 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * and replay that signal, effectively behaving like the fastest of these competing
 	 * sources.
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstForMono.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
+	 * <p>
+	 * @param monos The deferred monos to use.
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 * @deprecated use {@link #firstWithSignal(Iterable)}. To be removed in reactor 3.5.
+	 */
+	@Deprecated
+	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
+		return firstWithSignal(monos);
+	}
+
+	/**
+	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
+	 * and replay that signal, effectively behaving like the fastest of these competing
+	 * sources.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
 	 * <p>
 	 * @param monos The deferred monos to use.
 	 * @param <T> The type of the function result.
 	 *
 	 * @return a new {@link Mono} behaving like the fastest of its sources.
 	 */
-	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
-		return onAssembly(new MonoFirst<>(monos));
+	@SafeVarargs
+	public static <T> Mono<T> firstWithSignal(Mono<? extends T>... monos) {
+		return onAssembly(new MonoFirstWithSignal<>(monos));
+	}
+
+	/**
+	 * Pick the first {@link Mono} to emit any signal (value, empty completion or error)
+	 * and replay that signal, effectively behaving like the fastest of these competing
+	 * sources.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForMono.svg" alt="">
+	 * <p>
+	 * @param monos The deferred monos to use.
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources.
+	 */
+	public static <T> Mono<T> firstWithSignal(Iterable<? extends Mono<? extends T>> monos) {
+		return onAssembly(new MonoFirstWithSignal<>(monos));
+	}
+
+	/**
+	 * Pick the first {@link Mono} source to emit any value and replay that signal,
+	 * effectively behaving like the source that first emits an
+	 * {@link Subscriber#onNext(Object) onNext}.
+	 *
+	 * <p>
+	 * Valued sources always "win" over an empty source (one that only emits onComplete)
+	 * or a failing source (one that only emits onError).
+	 * Note that like in {@link #firstWithSignal(Iterable)}, an infinite source can be problematic
+	 * if no other source emits onNext.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithValueForMono.svg" alt="">
+	 * <p>
+	 * @param monos An {@link Iterable} of the competing source monos
+	 * @param <T> The type of the element in the sources and the resulting mono
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources
+	 */
+	public static <T> Mono<T> firstWithValue(Iterable<? extends Mono<? extends T>> monos) {
+		return onAssembly(new MonoFirstWithValue<>(monos));
+	}
+
+	/**
+	 * Pick the first {@link Mono} source to emit any value and replay that signal,
+	 * effectively behaving like the source that first emits an
+	 * {@link Subscriber#onNext(Object) onNext}.
+	 *
+	 * <p>
+	 * Valued sources always "win" over an empty source (one that only emits onComplete)
+	 * or a failing source (one that only emits onError).
+	 * Note that like in {@link #firstWithSignal(Mono[])}, an infinite source can be problematic
+	 * if no other source emits onNext.
+	 * <p>
+	 * In case the {@code first} source is already an array-based {@link #firstWithValue(Mono, Mono[])}
+	 * instance, nesting is avoided: a single new array-based instance is created with all the
+	 * sources from {@code first} plus all the {@code others} sources at the same level.
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithValueForMono.svg" alt="">
+	 * <p>
+	 *
+	 * @param first the first competing source {@link Mono}
+	 * @param others the other competing sources {@link Mono}
+	 * @param <T> The type of the element in the sources and the resulting mono
+	 *
+	 * @return a new {@link Mono} behaving like the fastest of its sources
+	 */
+	@SafeVarargs
+	public static <T> Mono<T> firstWithValue(Mono<? extends T> first, Mono<? extends T>... others) {
+		if (first instanceof MonoFirstWithValue) {
+			@SuppressWarnings("unchecked")
+			MonoFirstWithValue<T> a = (MonoFirstWithValue<T>) first;
+			Mono<T> result =  a.firstValuedAdditionalSources(others);
+			if (result != null) {
+				return result;
+			}
+		}
+		return onAssembly(new MonoFirstWithValue<>(first, others));
 	}
 
 	/**
@@ -3069,17 +3165,17 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * @param other the racing other {@link Mono} to compete with for the signal
 	 *
 	 * @return a new {@link Mono}
-	 * @see #first
+	 * @see #firstWithSignal
 	 */
 	public final Mono<T> or(Mono<? extends T> other) {
-		if (this instanceof MonoFirst) {
-			MonoFirst<T> a = (MonoFirst<T>) this;
+		if (this instanceof MonoFirstWithSignal) {
+			MonoFirstWithSignal<T> a = (MonoFirstWithSignal<T>) this;
 			Mono<T> result =  a.orAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}
 		}
-		return first(this, other);
+		return firstWithSignal(this, other);
 	}
 
 	/**

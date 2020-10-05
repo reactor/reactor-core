@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       https://www.apache.org/licenses/LICENSE-2.0
+ *        https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxFirstEmittingWithTest {
+public class FluxFirstWithSignalOrTest {
 
 	@Test
 	public void noStackOverflow() {
@@ -49,7 +49,7 @@ public class FluxFirstEmittingWithTest {
 	public void dontBreakAmb() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
-		Flux.first(Flux.just(1), Flux.just(2)).or(Flux.just(3))
+		Flux.firstWithSignal(Flux.just(1), Flux.just(2)).or(Flux.just(3))
 		    .subscribe(ts);
 
 		
@@ -60,11 +60,11 @@ public class FluxFirstEmittingWithTest {
 
 	@Test
 	public void pairWise() {
-		Flux<Integer> f = Flux.first(Mono.just(1), Mono.just(2))
+		Flux<Integer> f = Flux.firstWithSignal(Mono.just(1), Mono.just(2))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof FluxFirstEmitting);
-		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
+		Assert.assertTrue(f instanceof FluxFirstWithSignal);
+		FluxFirstWithSignal<Integer> s = (FluxFirstWithSignal<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 3);
 
@@ -75,11 +75,11 @@ public class FluxFirstEmittingWithTest {
 
 	@Test
 	public void pairWiseIterable() {
-		Flux<Integer> f = Flux.first(Arrays.asList(Mono.just(1), Mono.just(2)))
+		Flux<Integer> f = Flux.firstWithSignal(Arrays.asList(Mono.just(1), Mono.just(2)))
 		                      .or(Mono.just(3));
 
-		Assert.assertTrue(f instanceof FluxFirstEmitting);
-		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
+		Assert.assertTrue(f instanceof FluxFirstWithSignal);
+		FluxFirstWithSignal<Integer> s = (FluxFirstWithSignal<Integer>) f;
 		Assert.assertTrue(s.array != null);
 		Assert.assertTrue(s.array.length == 2);
 

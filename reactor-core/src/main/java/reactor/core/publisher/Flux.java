@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-Present VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       https://www.apache.org/licenses/LICENSE-2.0
+ *        https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package reactor.core.publisher;
 
 import java.time.Duration;
@@ -916,16 +915,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * fastest of these competing sources.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstForFlux.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
 	 *
 	 * @param sources The competing source publishers
 	 * @param <I> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 * @deprecated use {@link #firstWithSignal(Publisher[])}. To be removed in reactor 3.5.
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <I> Flux<I> first(Publisher<? extends I>... sources) {
-		return onAssembly(new FluxFirstEmitting<>(sources));
+		return firstWithSignal(sources);
 	}
 
 	/**
@@ -934,15 +935,115 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * fastest of these competing sources.
 	 *
 	 * <p>
-	 * <img class="marble" src="doc-files/marbles/firstForFlux.svg" alt="">
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
+	 *
+	 * @param sources The competing source publishers
+	 * @param <I> The type of values in both source and output sequences
+	 *
+	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 * @deprecated use {@link #firstWithSignal(Iterable)}. To be removed in reactor 3.5.
+	 */
+	@Deprecated
+	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
+		return firstWithSignal(sources);
+	}
+
+	/**
+	 * Pick the first {@link Publisher} to emit any signal (onNext/onError/onComplete) and
+	 * replay all signals from that {@link Publisher}, effectively behaving like the
+	 * fastest of these competing sources.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
 	 *
 	 * @param sources The competing source publishers
 	 * @param <I> The type of values in both source and output sequences
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
-	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
-		return onAssembly(new FluxFirstEmitting<>(sources));
+	@SafeVarargs
+	public static <I> Flux<I> firstWithSignal(Publisher<? extends I>... sources) {
+		return onAssembly(new FluxFirstWithSignal<>(sources));
+	}
+
+	/**
+	 * Pick the first {@link Publisher} to emit any signal (onNext/onError/onComplete) and
+	 * replay all signals from that {@link Publisher}, effectively behaving like the
+	 * fastest of these competing sources.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithSignalForFlux.svg" alt="">
+	 *
+	 * @param sources The competing source publishers
+	 * @param <I> The type of values in both source and output sequences
+	 *
+	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 */
+	public static <I> Flux<I> firstWithSignal(Iterable<? extends Publisher<? extends I>> sources) {
+		return onAssembly(new FluxFirstWithSignal<>(sources));
+	}
+
+	/**
+	 * Pick the first {@link Publisher} to emit any value and replay all values
+	 * from that {@link Publisher}, effectively behaving like the source that first
+	 * emits an {@link Subscriber#onNext(Object) onNext}.
+	 *
+	 * <p>
+	 * Sources with values always "win" over empty sources (ones that only emit onComplete)
+	 * or failing sources (ones that only emit onError).
+	 * Note that like in {@link #firstWithSignal(Iterable)}, an infinite source can be problematic
+	 * if no other source emits onNext.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithValueForFlux.svg" alt="">
+
+	 * @param sources An {@link Iterable} of the competing source publishers
+	 * @param <I> The type of values in both source and output sequences
+	 *
+	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 */
+	public static <I> Flux<I> firstWithValue(Iterable<? extends Publisher<? extends I>> sources) {
+		return onAssembly(new FluxFirstWithValue<>(sources));
+	}
+
+	/**
+	 * Pick the first {@link Publisher} to emit any value and replay all values
+	 * from that {@link Publisher}, effectively behaving like the source that first
+	 * emits an {@link Subscriber#onNext(Object) onNext}.
+	 *
+	 * <p>
+	 * Sources with values always "win" over an empty source (ones that only emit onComplete)
+	 * or failing sources (ones that only emit onError).
+	 * Note that like in {@link #firstWithSignal(Publisher[])}, an infinite source can be problematic
+	 * if no other source emits onNext.
+	 *
+	 * <p>
+	 * In case the {@code first} source is already an array-based {@link #firstWithValue(Publisher, Publisher[])}
+	 * instance, nesting is avoided: a single new array-based instance is created with all the
+	 * sources from {@code first} plus all the {@code others} sources at the same level.
+	 *
+	 * <p>
+	 * <img class="marble" src="doc-files/marbles/firstWithValueForFlux.svg" alt="">
+
+	 *
+	 * @param first The first competing source publisher
+	 * @param others The other competing source publishers
+	 * @param <I> The type of values in both source and output sequences
+	 *
+	 * @return a new {@link Flux} behaving like the fastest of its sources
+	 */
+	@SafeVarargs
+	public static <I> Flux<I> firstWithValue(Publisher<? extends I> first, Publisher<? extends I>... others) {
+		if (first instanceof FluxFirstWithValue) {
+			@SuppressWarnings("unchecked")
+			FluxFirstWithValue<I> orPublisher = (FluxFirstWithValue<I>) first;
+
+			FluxFirstWithValue<I> result = orPublisher.firstValuedAdditionalSources(others);
+			if (result != null) {
+				return result;
+			}
+		}
+		return onAssembly(new FluxFirstWithValue<>(first, others));
 	}
 
 	/**
@@ -6599,18 +6700,18 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param other the {@link Publisher} to race with
 	 *
 	 * @return the fastest sequence
-	 * @see #first
+	 * @see #firstWithSignal
 	 */
 	public final Flux<T> or(Publisher<? extends T> other) {
-		if (this instanceof FluxFirstEmitting) {
-			FluxFirstEmitting<T> publisherAmb = (FluxFirstEmitting<T>) this;
+		if (this instanceof FluxFirstWithSignal) {
+			FluxFirstWithSignal<T> orPublisher = (FluxFirstWithSignal<T>) this;
 
-			FluxFirstEmitting<T> result = publisherAmb.ambAdditionalSource(other);
+			FluxFirstWithSignal<T> result = orPublisher.orAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}
 		}
-		return first(this, other);
+		return firstWithSignal(this, other);
 	}
 
 	/**
