@@ -7,10 +7,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
-import org.reactivestreams.Subscription;
-
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.core.publisher.Sinks.Many;
