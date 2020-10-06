@@ -46,6 +46,7 @@ import reactor.util.concurrent.Queues;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxMergeSequentialTest {
 
@@ -150,19 +151,19 @@ public class FluxMergeSequentialTest {
 										   .flatMapSequentialDelayError(t -> inner.asFlux(), 32, 32)
 		                                   .subscribeWith(AssertSubscriber.create());
 
-		main.emitNext(1);
-		main.emitNext(2);
+		main.emitNext(1, FAIL_FAST);
+		main.emitNext(2, FAIL_FAST);
 
-		inner.emitNext(2);
+		inner.emitNext(2, FAIL_FAST);
 
 		ts.assertValues(2);
 
-		main.emitError(new RuntimeException("Forced failure"));
+		main.emitError(new RuntimeException("Forced failure"), FAIL_FAST);
 
 		ts.assertNoError();
 
-		inner.emitNext(3);
-		inner.emitComplete();
+		inner.emitNext(3, FAIL_FAST);
+		inner.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2, 3, 2, 3)
 		  .assertErrorMessage("Forced failure");
@@ -176,19 +177,19 @@ public class FluxMergeSequentialTest {
 		AssertSubscriber<Integer> ts = main.asFlux().flatMapSequential(t -> inner.asFlux())
 		                                   .subscribeWith(AssertSubscriber.create());
 
-		main.emitNext(1);
-		main.emitNext(2);
+		main.emitNext(1, FAIL_FAST);
+		main.emitNext(2, FAIL_FAST);
 
-		inner.emitNext(2);
+		inner.emitNext(2, FAIL_FAST);
 
 		ts.assertValues(2);
 
-		main.emitError(new RuntimeException("Forced failure"));
+		main.emitError(new RuntimeException("Forced failure"), FAIL_FAST);
 
 		assertThat(inner.currentSubscriberCount()).as("inner has subscriber").isZero();
 
-		inner.emitNext(3);
-		inner.emitComplete();
+		inner.emitNext(3, FAIL_FAST);
+		inner.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2).assertErrorMessage("Forced failure");
 	}
@@ -471,12 +472,12 @@ public class FluxMergeSequentialTest {
 			   .flatMapSequential(Flux::just)
 		       .doOnNext(t -> {
 			       if (once.compareAndSet(false, true)) {
-				       subject.emitNext(2);
+				       subject.emitNext(2, FAIL_FAST);
 			       }
 		       })
 		       .subscribe(ts);
 
-		subject.emitNext(1);
+		subject.emitNext(1, FAIL_FAST);
 
 		ts.assertNoError();
 		ts.assertNotComplete();

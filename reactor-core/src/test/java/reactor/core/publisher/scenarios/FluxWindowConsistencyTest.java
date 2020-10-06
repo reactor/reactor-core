@@ -31,6 +31,7 @@ import reactor.core.publisher.Sinks;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.junit.Assert.assertEquals;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxWindowConsistencyTest {
 
@@ -63,7 +64,7 @@ public class FluxWindowConsistencyTest {
 
 	private void generate(int start, int count) {
 		for (int i = 0; i < count; i++) {
-			sourceProcessor.emitNext(i + start);
+			sourceProcessor.emitNext(i + start, FAIL_FAST);
 		}
 	}
 
@@ -75,7 +76,7 @@ public class FluxWindowConsistencyTest {
 
 	private void generateAndComplete(int start, int count) {
 		generate(start, count);
-		sourceProcessor.emitComplete();
+		sourceProcessor.emitComplete(FAIL_FAST);
 		generate(start + count, 10);
 	}
 
@@ -211,7 +212,7 @@ public class FluxWindowConsistencyTest {
 		Flux<Flux<Integer>> windows = source.window(boundary.asFlux());
 		subscribe(windows);
 		generate(0, 3);
-		boundary.emitNext(1);
+		boundary.emitNext(1, FAIL_FAST);
 		generateAndComplete(3, 3);
 		verifyMainComplete(Arrays.asList(0, 1, 2), Arrays.asList(3, 4, 5));
 	}
@@ -223,10 +224,10 @@ public class FluxWindowConsistencyTest {
 		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.windowWhen(start.asFlux(), v -> v == 1 ? end1.asFlux() : end2.asFlux());
 		subscribe(windows);
-		start.emitNext(1);
+		start.emitNext(1, FAIL_FAST);
 		generate(0, 3);
-		end1.emitNext(1);
-		start.emitNext(2);
+		end1.emitNext(1, FAIL_FAST);
+		start.emitNext(2, FAIL_FAST);
 		generateAndComplete(3, 3);
 		verifyMainComplete(Arrays.asList(0, 1, 2), Arrays.asList(3, 4, 5));
 	}
@@ -310,11 +311,11 @@ public class FluxWindowConsistencyTest {
 
 		subscribe(windows);
 		generate(0, 3);
-		boundary.emitNext(1);
+		boundary.emitNext(1, FAIL_FAST);
 		generate(3, 1);
 		mainSubscriber.cancel();
 		generate(4, 2);
-		boundary.emitNext(1);
+		boundary.emitNext(1, FAIL_FAST);
 		generate(6, 10);
 		verifyMainCancel(true, Arrays.asList(0, 1, 2), Arrays.asList(3, 4, 5));
 	}
@@ -326,15 +327,15 @@ public class FluxWindowConsistencyTest {
 		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.windowWhen(start.asFlux(), v -> v == 1 ? end1.asFlux() : end2.asFlux());
 		subscribe(windows);
-		start.emitNext(1);
+		start.emitNext(1, FAIL_FAST);
 		generate(0, 3);
-		end1.emitNext(1);
-		start.emitNext(2);
+		end1.emitNext(1, FAIL_FAST);
+		start.emitNext(2, FAIL_FAST);
 		generate(3, 1);
 		mainSubscriber.cancel();
 		generate(4, 2);
-		end2.emitNext(1);
-		start.emitNext(3);
+		end2.emitNext(1, FAIL_FAST);
+		start.emitNext(3, FAIL_FAST);
 		generate(7, 10);
 		verifyMainCancel(true, Arrays.asList(0, 1, 2), Arrays.asList(3, 4, 5));
 	}
@@ -418,7 +419,7 @@ public class FluxWindowConsistencyTest {
 
 		subscribe(windows);
 		generate(0, 3);
-		boundary.emitNext(1);
+		boundary.emitNext(1, FAIL_FAST);
 		mainSubscriber.cancel();
 		generate(3, 1);
 		verifyMainCancelNoNewWindow(1, Arrays.asList(0, 1, 2));
@@ -431,10 +432,10 @@ public class FluxWindowConsistencyTest {
 		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.windowWhen(start.asFlux(), v -> v == 1 ? end1.asFlux() : end2.asFlux());
 		subscribe(windows);
-		start.emitNext(1);
+		start.emitNext(1, FAIL_FAST);
 		generate(0, 4);
-		end1.emitNext(1);
-		start.emitNext(2);
+		end1.emitNext(1, FAIL_FAST);
+		start.emitNext(2, FAIL_FAST);
 		mainSubscriber.cancel();
 		generate(5, 1);
 		verifyMainCancelNoNewWindow(1, Arrays.asList(0, 1, 2, 3));
@@ -520,7 +521,7 @@ public class FluxWindowConsistencyTest {
 		Sinks.Many<Integer> end2 = Sinks.many().unsafe().multicast().directBestEffort();
 		Flux<Flux<Integer>> windows = source.windowWhen(start.asFlux(), v -> v == 1 ? end1.asFlux() : end2.asFlux());
 		subscribe(windows);
-		start.emitNext(1);
+		start.emitNext(1, FAIL_FAST);
 		generateWithCancel(0, 6, 1);
 		verifyInnerCancel(0, i -> i != 2, Arrays.asList(0, 1));
 	}

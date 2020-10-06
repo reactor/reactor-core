@@ -36,6 +36,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxRefCountTest {
 
@@ -200,14 +201,14 @@ public class FluxRefCountTest {
 
 		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
-		e.emitNext(1);
-		e.emitNext(2);
+		e.emitNext(1, FAIL_FAST);
+		e.emitNext(2, FAIL_FAST);
 
 		ts1.cancel();
 
 		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
-		e.emitNext(3);
+		e.emitNext(3, FAIL_FAST);
 
 		ts2.cancel();
 
@@ -242,14 +243,14 @@ public class FluxRefCountTest {
 
 		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
-		e.emitNext(1);
-		e.emitNext(2);
+		e.emitNext(1, FAIL_FAST);
+		e.emitNext(2, FAIL_FAST);
 
 		ts1.cancel();
 
 		assertThat(e.currentSubscriberCount()).as("source connected").isPositive();
 
-		e.emitNext(3);
+		e.emitNext(3, FAIL_FAST);
 
 		ts2.cancel();
 
@@ -416,10 +417,10 @@ public class FluxRefCountTest {
 															.toFuture();
 
 		for (long i = 0; i < 10; i++) {
-			p.emitNext(i);
+			p.emitNext(i, FAIL_FAST);
 			Thread.sleep(1);
 		}
-		p.emitComplete();
+		p.emitComplete(FAIL_FAST);
 
 		assertThat(result.get(10, TimeUnit.MILLISECONDS)
 						 .size()).isEqualTo(10);

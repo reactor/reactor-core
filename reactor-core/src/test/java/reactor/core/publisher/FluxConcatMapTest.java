@@ -36,6 +36,7 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 
@@ -123,8 +124,8 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
-		source.emitNext(2);
+		source.emitNext(1, FAIL_FAST);
+		source.emitNext(2, FAIL_FAST);
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
@@ -136,7 +137,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 				.isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
 
 		source1.tryEmitComplete().orThrow();
-		source.emitComplete();
+		source.emitComplete(FAIL_FAST);
 
 		source2.tryEmitNext(2).orThrow();
 		source2.tryEmitComplete().orThrow();
@@ -163,7 +164,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
@@ -175,8 +176,8 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 				.isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
 
 		source1.tryEmitComplete().orThrow();
-		source.emitNext(2);
-		source.emitComplete();
+		source.emitNext(2, FAIL_FAST);
+		source.emitComplete(FAIL_FAST);
 
 		source2.tryEmitNext(2).orThrow();
 		source2.tryEmitComplete().orThrow();

@@ -54,6 +54,7 @@ import reactor.util.context.Context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertFalse;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxBufferPredicateTest {
 
@@ -69,21 +70,21 @@ public class FluxBufferPredicateTest {
 		StepVerifier.create(bufferUntil)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(1))
-				.then(() -> sp1.emitNext(2))
+				.then(() -> sp1.emitNext(1, FAIL_FAST))
+				.then(() -> sp1.emitNext(2, FAIL_FAST))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(3))
+				.then(() -> sp1.emitNext(3, FAIL_FAST))
 				.expectNext(Arrays.asList(1, 2, 3))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(4))
-				.then(() -> sp1.emitNext(5))
+				.then(() -> sp1.emitNext(4, FAIL_FAST))
+				.then(() -> sp1.emitNext(5, FAIL_FAST))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(6))
+				.then(() -> sp1.emitNext(6, FAIL_FAST))
 				.expectNext(Arrays.asList(4, 5, 6))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(7))
-				.then(() -> sp1.emitNext(8))
-				.then(sp1::emitComplete)
+				.then(() -> sp1.emitNext(7, FAIL_FAST))
+				.then(() -> sp1.emitNext(8, FAIL_FAST))
+				.then(sp1::tryEmitComplete)
 				.expectNext(Arrays.asList(7, 8))
 				.expectComplete()
 				.verify();
@@ -132,12 +133,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferUntil)
 		            .expectSubscription()
-		            .then(() -> sp1.emitNext(1))
-		            .then(() -> sp1.emitNext(2))
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectNext(Arrays.asList(1, 2, 3))
-		            .then(() -> sp1.emitNext(4))
-		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
+		            .then(() -> sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST))
 		            .expectErrorMessage("forced failure")
 		            .verify();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -156,12 +157,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferUntil)
 					.expectSubscription()
-					.then(() -> sp1.emitNext(1))
-					.then(() -> sp1.emitNext(2))
-					.then(() -> sp1.emitNext(3))
+					.then(() -> sp1.emitNext(1, FAIL_FAST))
+					.then(() -> sp1.emitNext(2, FAIL_FAST))
+					.then(() -> sp1.emitNext(3, FAIL_FAST))
 					.expectNext(Arrays.asList(1, 2, 3))
-					.then(() -> sp1.emitNext(4))
-					.then(() -> sp1.emitNext(5))
+					.then(() -> sp1.emitNext(4, FAIL_FAST))
+					.then(() -> sp1.emitNext(5, FAIL_FAST))
 					.expectErrorMessage("predicate failure")
 					.verify();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -177,21 +178,21 @@ public class FluxBufferPredicateTest {
 		StepVerifier.create(bufferUntilOther)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(1))
-				.then(() -> sp1.emitNext(2))
+				.then(() -> sp1.emitNext(1, FAIL_FAST))
+				.then(() -> sp1.emitNext(2, FAIL_FAST))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(3))
+				.then(() -> sp1.emitNext(3, FAIL_FAST))
 				.expectNext(Arrays.asList(1, 2))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(4))
-				.then(() -> sp1.emitNext(5))
+				.then(() -> sp1.emitNext(4, FAIL_FAST))
+				.then(() -> sp1.emitNext(5, FAIL_FAST))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(6))
+				.then(() -> sp1.emitNext(6, FAIL_FAST))
 				.expectNext(Arrays.asList(3, 4, 5))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(7))
-				.then(() -> sp1.emitNext(8))
-				.then(sp1::emitComplete)
+				.then(() -> sp1.emitNext(7, FAIL_FAST))
+				.then(() -> sp1.emitNext(8, FAIL_FAST))
+				.then(sp1::tryEmitComplete)
 				.expectNext(Arrays.asList(6, 7, 8))
 				.expectComplete()
 				.verify();
@@ -208,12 +209,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferUntilOther)
 		            .expectSubscription()
-		            .then(() -> sp1.emitNext(1))
-		            .then(() -> sp1.emitNext(2))
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectNext(Arrays.asList(1, 2))
-		            .then(() -> sp1.emitNext(4))
-		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
+		            .then(() -> sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST))
 		            .expectErrorMessage("forced failure")
 		            .verify();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -232,12 +233,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferUntilOther)
 					.expectSubscription()
-					.then(() -> sp1.emitNext(1))
-					.then(() -> sp1.emitNext(2))
-					.then(() -> sp1.emitNext(3))
+					.then(() -> sp1.emitNext(1, FAIL_FAST))
+					.then(() -> sp1.emitNext(2, FAIL_FAST))
+					.then(() -> sp1.emitNext(3, FAIL_FAST))
 					.expectNext(Arrays.asList(1, 2))
-					.then(() -> sp1.emitNext(4))
-					.then(() -> sp1.emitNext(5))
+					.then(() -> sp1.emitNext(4, FAIL_FAST))
+					.then(() -> sp1.emitNext(5, FAIL_FAST))
 					.expectErrorMessage("predicate failure")
 					.verify();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -383,21 +384,21 @@ public class FluxBufferPredicateTest {
 		StepVerifier.create(bufferWhile)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(1))
-				.then(() -> sp1.emitNext(2))
+				.then(() -> sp1.emitNext(1, FAIL_FAST))
+				.then(() -> sp1.emitNext(2, FAIL_FAST))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(3))
+				.then(() -> sp1.emitNext(3, FAIL_FAST))
 				.expectNext(Arrays.asList(1, 2))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(4))
-				.then(() -> sp1.emitNext(5))
+				.then(() -> sp1.emitNext(4, FAIL_FAST))
+				.then(() -> sp1.emitNext(5, FAIL_FAST))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(6))
+				.then(() -> sp1.emitNext(6, FAIL_FAST))
 				.expectNext(Arrays.asList(4, 5))
 				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.emitNext(7))
-				.then(() -> sp1.emitNext(8))
-				.then(sp1::emitComplete)
+				.then(() -> sp1.emitNext(7, FAIL_FAST))
+				.then(() -> sp1.emitNext(8, FAIL_FAST))
+				.then(sp1::tryEmitComplete)
 				.expectNext(Arrays.asList(7, 8))
 				.expectComplete()
 				.verify();
@@ -414,21 +415,21 @@ public class FluxBufferPredicateTest {
 		StepVerifier.create(bufferWhile)
 					.expectSubscription()
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(() -> sp1.emitNext(1))
-					.then(() -> sp1.emitNext(2))
-					.then(() -> sp1.emitNext(3))
+					.then(() -> sp1.emitNext(1, FAIL_FAST))
+					.then(() -> sp1.emitNext(2, FAIL_FAST))
+					.then(() -> sp1.emitNext(3, FAIL_FAST))
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(() -> sp1.emitNext(4))
+					.then(() -> sp1.emitNext(4, FAIL_FAST))
 					.expectNext(Arrays.asList(3)) //emission of 4 triggers the buffer emit
-					.then(() -> sp1.emitNext(5))
-					.then(() -> sp1.emitNext(6))
+					.then(() -> sp1.emitNext(5, FAIL_FAST))
+					.then(() -> sp1.emitNext(6, FAIL_FAST))
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(() -> sp1.emitNext(7)) // emission of 7 triggers the buffer emit
+					.then(() -> sp1.emitNext(7, FAIL_FAST)) // emission of 7 triggers the buffer emit
 					.expectNext(Arrays.asList(6))
-					.then(() -> sp1.emitNext(8))
-					.then(() -> sp1.emitNext(9))
+					.then(() -> sp1.emitNext(8, FAIL_FAST))
+					.then(() -> sp1.emitNext(9, FAIL_FAST))
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(sp1::emitComplete) // completion triggers the buffer emit
+					.then(sp1::tryEmitComplete) // completion triggers the buffer emit
 					.expectNext(Collections.singletonList(9))
 					.expectComplete()
 					.verify(Duration.ofSeconds(1));
@@ -445,17 +446,17 @@ public class FluxBufferPredicateTest {
 		StepVerifier.create(bufferWhile)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.emitNext(1))
-		            .then(() -> sp1.emitNext(2))
-		            .then(() -> sp1.emitNext(3))
-		            .then(() -> sp1.emitNext(4))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.emitNext(1))
-		            .then(() -> sp1.emitNext(2))
-		            .then(() -> sp1.emitNext(3))
-		            .then(() -> sp1.emitNext(4))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::emitComplete)
+		            .then(sp1::tryEmitComplete)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -470,12 +471,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferWhile)
 		            .expectSubscription()
-		            .then(() -> sp1.emitNext(1))
-		            .then(() -> sp1.emitNext(2))
-		            .then(() -> sp1.emitNext(3))
-		            .then(() -> sp1.emitNext(4))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNext(Arrays.asList(3))
-		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST))
 		            .expectErrorMessage("forced failure")
 		            .verify(Duration.ofMillis(100));
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -495,12 +496,12 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferWhile)
 					.expectSubscription()
-					.then(() -> sp1.emitNext(1)) //ignored
-					.then(() -> sp1.emitNext(2)) //ignored
-					.then(() -> sp1.emitNext(3)) //buffered
-					.then(() -> sp1.emitNext(4)) //ignored, emits buffer
+					.then(() -> sp1.emitNext(1, FAIL_FAST)) //ignored
+					.then(() -> sp1.emitNext(2, FAIL_FAST)) //ignored
+					.then(() -> sp1.emitNext(3, FAIL_FAST)) //buffered
+					.then(() -> sp1.emitNext(4, FAIL_FAST)) //ignored, emits buffer
 					.expectNext(Arrays.asList(3))
-					.then(() -> sp1.emitNext(5)) //fails
+					.then(() -> sp1.emitNext(5, FAIL_FAST)) //fails
 					.expectErrorMessage("predicate failure")
 					.verify(Duration.ofMillis(100));
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -539,10 +540,10 @@ public class FluxBufferPredicateTest {
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 
 		StepVerifier.create(bufferUntil)
-		            .then(() -> sp1.emitNext(1))
-		            .then(() -> sp1.emitNext(2))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectErrorMessage("supplier failure")
 		            .verify();
 	}
@@ -558,7 +559,7 @@ public class FluxBufferPredicateTest {
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
 
 		StepVerifier.create(bufferUntil)
-		            .then(() -> sp1.emitNext(1))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
 		            .expectErrorMatches(t -> t instanceof NullPointerException &&
 		                "The bufferSupplier returned a null initial buffer".equals(t.getMessage()))
 		            .verify();
@@ -583,14 +584,14 @@ public class FluxBufferPredicateTest {
 
 		StepVerifier.create(bufferWhile)
 		            .then(() -> assertThat(bufferCount.intValue()).isOne())
-		            .then(() -> sp1.emitNext(1))
-		            .then(() -> sp1.emitNext(2))
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .then(() -> assertThat(bufferCount.intValue()).isOne())
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.emitNext(10))
-		            .then(() -> sp1.emitNext(11))
-		            .then(sp1::emitComplete)
+		            .then(() -> sp1.emitNext(10, FAIL_FAST))
+		            .then(() -> sp1.emitNext(11, FAIL_FAST))
+		            .then(sp1::tryEmitComplete)
 		            .expectNext(Arrays.asList(10, 11))
 		            .then(() -> assertThat(bufferCount.intValue()).isOne())
 		            .expectComplete()

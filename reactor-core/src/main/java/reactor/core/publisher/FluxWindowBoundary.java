@@ -293,7 +293,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable e = Exceptions.terminate(ERROR, this);
 						if (e != Exceptions.TERMINATED) {
-							w.emitError(e);
+							w.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST);
 
 							a.onError(e);
 						}
@@ -309,7 +309,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 					if (o == DONE) {
 						q.clear();
 
-						w.emitComplete();
+						w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 
 						a.onComplete();
 						return;
@@ -318,10 +318,10 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 
 						@SuppressWarnings("unchecked")
 						T v = (T)o;
-						w.emitNext(v);
+						w.emitNext(v, Sinks.EmitFailureHandler.FAIL_FAST);
 					}
 					if (o == BOUNDARY_MARKER) {
-						w.emitComplete();
+						w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 
 						if (cancelled == 0) {
 							if (requested != 0L) {

@@ -45,6 +45,7 @@ import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 @SuppressWarnings("deprecation")
 public class UnicastProcessorTest {
@@ -284,7 +285,7 @@ public class UnicastProcessorTest {
 					            .as("emission")
 					            .isEqualTo(Sinks.Emission.FAIL_OVERFLOW);
 		            })
-		            .then(processor::emitComplete)
+		            .then(processor::tryEmitComplete)
 		            .verifyComplete();
 	}
 
@@ -294,7 +295,7 @@ public class UnicastProcessorTest {
 
 		StepVerifier.create(processor, 0)
 		            .expectSubscription()
-		            .then(() -> processor.emitNext("boom"))
+		            .then(() -> processor.emitNext("boom", FAIL_FAST))
 		            .verifyErrorMatches(Exceptions::isOverflow);
 	}
 
@@ -307,7 +308,7 @@ public class UnicastProcessorTest {
 
 		StepVerifier.create(unicastProcessor)
 		            .expectNext(1)
-		            .then(unicastProcessor::emitComplete)
+		            .then(unicastProcessor::tryEmitComplete)
 		            .verifyComplete();
 	}
 
@@ -333,13 +334,13 @@ public class UnicastProcessorTest {
 		//fill the buffer
 		unicastProcessor.tryEmitNext(1);
 		//this "overflows" but keeps the sink open. since there's no subscriber, there's no Context so no real discarding
-		unicastProcessor.emitNext(2);
+		unicastProcessor.emitNext(2, FAIL_FAST);
 
 		//let's verify we get the buffer's content
 		StepVerifier.create(unicastProcessor)
 		            .expectNext(1) //from the buffer
 		            .expectNoEvent(Duration.ofMillis(500))
-		            .then(unicastProcessor::emitComplete)
+		            .then(unicastProcessor::tryEmitComplete)
 		            .verifyComplete();
 	}
 
@@ -352,12 +353,12 @@ public class UnicastProcessorTest {
 		//fill the buffer
 		unicastProcessor.tryEmitNext(1);
 		//this "overflows" but keeps the sink open
-		unicastProcessor.emitNext(2);
+		unicastProcessor.emitNext(2, FAIL_FAST);
 
 		assertThat(discarded).containsExactly(2);
 		assertThat(sinkDisposed.isDisposed()).as("sinkDisposed").isFalse();
 
-		unicastProcessor.emitComplete();
+		unicastProcessor.emitComplete(FAIL_FAST);
 
 		//let's verify we get the buffer's content
 		StepVerifier.create(unicastProcessor)

@@ -30,6 +30,7 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Flux.just;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxOnErrorResumeTest {
 /*
@@ -170,12 +171,12 @@ public class FluxOnErrorResumeTest {
 		  .onErrorResume(v -> Flux.range(11, 10))
 		  .subscribe(ts);
 
-		tp.emitNext(1);
-		tp.emitNext(2);
-		tp.emitNext(3);
-		tp.emitNext(4);
-		tp.emitNext(5);
-		tp.emitError(new RuntimeException("forced failure"));
+		tp.emitNext(1, FAIL_FAST);
+		tp.emitNext(2, FAIL_FAST);
+		tp.emitNext(3, FAIL_FAST);
+		tp.emitNext(4, FAIL_FAST);
+		tp.emitNext(5, FAIL_FAST);
+		tp.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
 		  .assertNoError()
@@ -192,12 +193,12 @@ public class FluxOnErrorResumeTest {
 		  .onErrorResume(v -> Flux.range(11, 10))
 		  .subscribe(ts);
 
-		tp.emitNext(1);
-		tp.emitNext(2);
-		tp.emitNext(3);
-		tp.emitNext(4);
-		tp.emitNext(5);
-		tp.emitError(new RuntimeException("forced failure"));
+		tp.emitNext(1, FAIL_FAST);
+		tp.emitNext(2, FAIL_FAST);
+		tp.emitNext(3, FAIL_FAST);
+		tp.emitNext(4, FAIL_FAST);
+		tp.emitNext(5, FAIL_FAST);
+		tp.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15)
 		  .assertNotComplete()

@@ -34,6 +34,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 
@@ -168,17 +169,17 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 		Flux.combineLatest(dp1.asFlux(), dp2.asFlux(), (a, b) -> a + b)
 		    .subscribe(ts);
 
-		dp1.emitNext(1);
-		dp1.emitNext(2);
+		dp1.emitNext(1, FAIL_FAST);
+		dp1.emitNext(2, FAIL_FAST);
 
-		dp2.emitNext(10);
-		dp2.emitNext(20);
-		dp2.emitNext(30);
+		dp2.emitNext(10, FAIL_FAST);
+		dp2.emitNext(20, FAIL_FAST);
+		dp2.emitNext(30, FAIL_FAST);
 
-		dp1.emitNext(3);
+		dp1.emitNext(3, FAIL_FAST);
 
-		dp1.emitComplete();
-		dp2.emitComplete();
+		dp1.emitComplete(FAIL_FAST);
+		dp2.emitComplete(FAIL_FAST);
 
 		ts.assertFuseableSource()
 		  .assertFusionMode(Fuseable.ASYNC)

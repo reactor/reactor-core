@@ -14,6 +14,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -137,7 +138,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 
 	@Override
 	public final void onError(Throwable cause) {
-		emitError(cause);
+		emitError(cause, EmitFailureHandler.FAIL_FAST);
 	}
 
 	@Override
@@ -162,7 +163,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 
 	@Override
 	public final void onNext(@Nullable O value) {
-		emitValue(value);
+		emitValue(value, EmitFailureHandler.FAIL_FAST);
 	}
 
 	@Override

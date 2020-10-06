@@ -28,6 +28,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxSampleTest {
 
@@ -54,31 +55,31 @@ public class FluxSampleTest {
 		  .assertNotComplete()
 		  .assertNoError();
 
-		main.emitNext(1);
+		main.emitNext(1, FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertNoError();
 
-		other.emitNext("first");
+		other.emitNext("first", FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		other.emitNext("second");
+		other.emitNext("second", FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		main.emitNext(2);
+		main.emitNext(2, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		other.emitNext("third");
+		other.emitNext("third", FAIL_FAST);
 
 		ts.assertValues(1, 2)
 		  .assertNoError()
@@ -87,14 +88,14 @@ public class FluxSampleTest {
 		Sinks.Many<?> p = which ? main : other;
 
 		if (complete) {
-			p.emitComplete();
+			p.emitComplete(FAIL_FAST);
 
 			ts.assertValues(1, 2)
 			  .assertComplete()
 			  .assertNoError();
 		}
 		else {
-			p.emitError(new RuntimeException("forced failure"));
+			p.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 			ts.assertValues(1, 2)
 			  .assertNotComplete()
@@ -155,10 +156,10 @@ public class FluxSampleTest {
 		Sinks.Many<String> other = Sinks.many().unsafe().multicast().directBestEffort();
 
 		if (which) {
-			main.emitComplete();
+			main.emitComplete(FAIL_FAST);
 		}
 		else {
-			other.emitComplete();
+			other.emitComplete(FAIL_FAST);
 		}
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();

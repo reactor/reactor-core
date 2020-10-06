@@ -35,6 +35,7 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxMapTest extends FluxOperatorTest<String, String> {
 
@@ -155,9 +156,9 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 		  .subscribe(ts);
 
 		for (int i = 1; i < 11; i++) {
-			up.emitNext(i);
+			up.emitNext(i, FAIL_FAST);
 		}
-		up.emitComplete();
+		up.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 		  .assertNoError()
@@ -176,13 +177,13 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 		    .flatMap(w -> up.asFlux().map(v -> v + 1))
 		    .subscribe(ts);
 
-		up.emitNext(1);
+		up.emitNext(1, FAIL_FAST);
 
 		ts.assertValues(2)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		up.emitComplete();
+		up.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2)
 		  .assertNoError()

@@ -30,6 +30,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxOnBackpressureDropTest {
 
@@ -100,18 +101,18 @@ public class FluxOnBackpressureDropTest {
 		  .onBackpressureDrop(drops::add)
 		  .subscribe(ts);
 
-		tp.emitNext(1);
+		tp.emitNext(1, FAIL_FAST);
 
 		ts.request(2);
 
-		tp.emitNext(2);
-		tp.emitNext(3);
-		tp.emitNext(4);
+		tp.emitNext(2, FAIL_FAST);
+		tp.emitNext(3, FAIL_FAST);
+		tp.emitNext(4, FAIL_FAST);
 
 		ts.request(1);
 
-		tp.emitNext(5);
-		tp.emitComplete();
+		tp.emitNext(5, FAIL_FAST);
+		tp.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2, 3, 5)
 		  .assertComplete()

@@ -36,6 +36,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxTakeTest {
 
@@ -190,12 +191,12 @@ public class FluxTakeTest {
 		StepVerifier.create(up.asFlux()
 							  .take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.emitNext("test"))
-		            .then(() -> up.emitNext("test2"))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
+		            .then(() -> up.emitNext("test2", FAIL_FAST))
 		            .thenRequest(2)
 		            .expectNext("test", "test2")
-		            .then(() -> up.emitNext("test3"))
-		            .then(() -> up.emitNext("test4"))
+		            .then(() -> up.emitNext("test3", FAIL_FAST))
+		            .then(() -> up.emitNext("test4", FAIL_FAST))
 		            .thenRequest(1)
 		            .expectNext("test3")
 		            .thenRequest(1)
@@ -210,9 +211,9 @@ public class FluxTakeTest {
 			assertThat(((Fuseable.QueueSubscription)s).size()).isEqualTo(0);
 		}), 0)
 		            .expectFusion()
-		            .then(() -> up.emitNext("test"))
-		            .then(() -> up.emitNext("test"))
-		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenCancel()
@@ -383,8 +384,8 @@ public class FluxTakeTest {
 							  .take(2))
 		            .expectFusion(Fuseable.ASYNC)
 		            .then(() -> {
-			            up.emitNext("test");
-			            up.emitNext("test2");
+			            up.emitNext("test", FAIL_FAST);
+			            up.emitNext("test2", FAIL_FAST);
 		            })
 		            .expectNext("test", "test2")
 		            .verifyComplete();

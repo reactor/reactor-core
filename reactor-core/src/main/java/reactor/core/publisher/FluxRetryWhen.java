@@ -188,7 +188,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 			otherArbiter.request(1);
 
-			signaller.emitNext(this);
+			signaller.emitNext(this, Sinks.EmitFailureHandler.FAIL_FAST);
 		}
 
 		@Override

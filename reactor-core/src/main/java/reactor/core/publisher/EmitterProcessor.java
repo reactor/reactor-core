@@ -224,7 +224,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 
 	@Override
 	public void onError(Throwable throwable) {
-		emitError(throwable);
+		emitError(throwable, Sinks.EmitFailureHandler.FAIL_FAST);
 	}
 
 	@Override
@@ -249,7 +249,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			drain();
 			return;
 		}
-		emitNext(t);
+		emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 	}
 
 	@Override

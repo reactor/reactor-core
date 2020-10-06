@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static reactor.core.Fuseable.*;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxDoFinallyTest implements Consumer<SignalType> {
 
@@ -142,12 +143,12 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	@Test
 	public void asyncFused() {
 		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer();
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitNext(3);
-		up.emitNext(4);
-		up.emitNext(5);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitNext(3, FAIL_FAST);
+		up.emitNext(4, FAIL_FAST);
+		up.emitNext(5, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		StepVerifier.create(up.asFlux().doFinally(this))
 		            .expectFusion(ASYNC)
@@ -162,12 +163,12 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	@Test
 	public void asyncFusedThreadBarrier() {
 		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitNext(3);
-		up.emitNext(4);
-		up.emitNext(5);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitNext(3, FAIL_FAST);
+		up.emitNext(4, FAIL_FAST);
+		up.emitNext(5, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		StepVerifier.create(up.asFlux().doFinally(this))
 		            .expectFusion(ASYNC | THREAD_BARRIER, NONE)
@@ -284,12 +285,12 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	@Test
 	public void asyncFusedConditional() {
 		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitNext(3);
-		up.emitNext(4);
-		up.emitNext(5);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitNext(3, FAIL_FAST);
+		up.emitNext(4, FAIL_FAST);
+		up.emitNext(5, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		StepVerifier.create(up.asFlux().doFinally(this)
 		                      .filter(i -> true))
@@ -305,12 +306,12 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	@Test
 	public void asyncFusedThreadBarrierConditional() {
 		Sinks.Many<Object> up = Sinks.many().unicast().onBackpressureBuffer();
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitNext(3);
-		up.emitNext(4);
-		up.emitNext(5);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitNext(3, FAIL_FAST);
+		up.emitNext(4, FAIL_FAST);
+		up.emitNext(5, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		StepVerifier.create(up.asFlux().doFinally(this)
 		                      .filter(i -> true))

@@ -31,6 +31,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxTimeoutTest {
 
@@ -119,11 +120,11 @@ public class FluxTimeoutTest {
 			  .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.emitNext(0);
+		source.emitNext(0, FAIL_FAST);
 
-		tp.emitNext(1);
+		tp.emitNext(1, FAIL_FAST);
 
-		source.emitComplete();
+		source.emitComplete(FAIL_FAST);
 
 		assertThat(tp.currentSubscriberCount()).as("timeout has subscriber").isZero();
 
@@ -144,11 +145,11 @@ public class FluxTimeoutTest {
 			  .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.emitNext(0);
+		source.emitNext(0, FAIL_FAST);
 
-		tp.emitComplete();
+		tp.emitComplete(FAIL_FAST);
 
-		source.emitComplete();
+		source.emitComplete(FAIL_FAST);
 
 		assertThat(tp.currentSubscriberCount()).isZero();
 
@@ -169,11 +170,11 @@ public class FluxTimeoutTest {
 			  .timeout(tp.asFlux(), v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
 
-		source.emitNext(0);
+		source.emitNext(0, FAIL_FAST);
 
-		tp.emitError(new RuntimeException("forced failure"));
+		tp.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
-		source.emitComplete();
+		source.emitComplete(FAIL_FAST);
 
 		assertThat(tp.currentSubscriberCount()).as("timeout has subscriber").isZero();
 
@@ -257,10 +258,10 @@ public class FluxTimeoutTest {
 			  .timeout(tp.asFlux(), v -> tp.asFlux())
 		      .subscribe(ts);
 
-		tp.emitNext(1);
+		tp.emitNext(1, FAIL_FAST);
 
-		source.emitNext(2);
-		source.emitComplete();
+		source.emitNext(2, FAIL_FAST);
+		source.emitComplete(FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertError(TimeoutException.class)

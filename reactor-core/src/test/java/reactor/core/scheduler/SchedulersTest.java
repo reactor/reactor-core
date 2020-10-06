@@ -54,6 +54,7 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.fail;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class SchedulersTest {
 
@@ -674,7 +675,7 @@ public class SchedulersTest {
 
 			scheduler.dispose();
 
-			p.emitNext("reject me");
+			p.emitNext("reject me", FAIL_FAST);
 			l.await(3, TimeUnit.SECONDS);
 		}
 		catch (Exception ree) {

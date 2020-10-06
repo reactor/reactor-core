@@ -49,12 +49,12 @@ public class SerializedManySinkStressTest {
 
 		@Actor
 		public void first(LLI_Result r) {
-			r.r1 = sink.tryEmitNext("Hello");
+			r.r1 = sink.tryemitNext("Hello", FAIL_FAST);
 		}
 
 		@Actor
 		public void second(LLI_Result r) {
-			r.r2 = sink.tryEmitNext("Hello");
+			r.r2 = sink.tryemitNext("Hello", FAIL_FAST);
 		}
 
 		@Arbiter
@@ -73,12 +73,12 @@ public class SerializedManySinkStressTest {
 
 		@Actor
 		public void first(LLI_Result r) {
-			r.r1 = sink.tryEmitNext("Hello");
+			r.r1 = sink.tryemitNext("Hello", FAIL_FAST);
 		}
 
 		@Actor
 		public void second(LLI_Result r) {
-			r.r2 = sink.tryEmitComplete();
+			r.r2 = sink.tryemitComplete(FAIL_FAST);
 		}
 
 		@Arbiter
@@ -101,7 +101,7 @@ public class SerializedManySinkStressTest {
 		}
 
 		@Override
-		public Sinks.Emission tryEmitNext(T t) {
+		public Sinks.Emission tryemitNext(T t, FAIL_FAST) {
 			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_NEXT)) {
 				throw new IllegalStateException("SerializedManySink should protect from non-serialized access");
 			}
@@ -113,7 +113,7 @@ public class SerializedManySinkStressTest {
 		}
 
 		@Override
-		public Sinks.Emission tryEmitComplete() {
+		public Sinks.Emission tryemitComplete(FAIL_FAST) {
 			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_COMPLETE)) {
 				throw new IllegalStateException("SerializedManySink should protect from non-serialized access");
 			}

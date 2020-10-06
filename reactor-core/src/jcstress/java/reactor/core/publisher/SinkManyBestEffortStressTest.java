@@ -169,8 +169,8 @@ public class SinkManyBestEffortStressTest {
 		}
 
 		@Actor
-		public void tryEmitNext(LI_Result r) {
-			r.r1 = sink.tryEmitNext(1);
+		public void tryemitNext(LI_Result r, FAIL_FAST) {
+			r.r1 = sink.tryemitNext(1, FAIL_FAST);
 		}
 
 		@Actor

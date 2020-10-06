@@ -39,6 +39,7 @@ import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
@@ -210,12 +211,12 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
 		Sinks.Many<Integer> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(8).get());
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitNext(3);
-		up.emitNext(4);
-		up.emitNext(5);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitNext(3, FAIL_FAST);
+		up.emitNext(4, FAIL_FAST);
+		up.emitNext(5, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		ConnectableFlux<Integer> p = up.asFlux().publish();
 
@@ -249,12 +250,12 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
 		Sinks.Many<Integer> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(8).get());
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitNext(3);
-		up.emitNext(4);
-		up.emitNext(5);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitNext(3, FAIL_FAST);
+		up.emitNext(4, FAIL_FAST);
+		up.emitNext(5, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		ConnectableFlux<Integer> p = up.asFlux().publish();
 
@@ -420,8 +421,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 		Disposable r = p.connect();
 
-		e.emitNext(1);
-		e.emitNext(2);
+		e.emitNext(1, FAIL_FAST);
+		e.emitNext(2, FAIL_FAST);
 
 		r.dispose();
 
@@ -465,9 +466,9 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 		p.connect();
 
-		e.emitNext(1);
-		e.emitNext(2);
-		e.emitError(new RuntimeException("forced failure"));
+		e.emitNext(1, FAIL_FAST);
+		e.emitNext(2, FAIL_FAST);
+		e.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1, 2)
 		.assertError(RuntimeException.class)
@@ -506,16 +507,16 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 					}
 				}).retry())
 		            .then(() -> {
-			            dp.emitNext(1);
-			            dp.emitNext(2);
-			            dp.emitNext(3);
+			            dp.emitNext(1, FAIL_FAST);
+			            dp.emitNext(2, FAIL_FAST);
+			            dp.emitNext(3, FAIL_FAST);
 		            })
 		            .expectNext(2, 3)
 		            .thenCancel()
 		            .verify();
 
 		// Need to explicitly complete processor due to use of publish()
-		dp.emitComplete();
+		dp.emitComplete(FAIL_FAST);
 	}
 
 	@Test
@@ -533,16 +534,16 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 					}
 				}).retry())
 		            .then(() -> {
-			            dp.emitNext(1);
-			            dp.emitNext(2);
-			            dp.emitNext(3);
+			            dp.emitNext(1, FAIL_FAST);
+			            dp.emitNext(2, FAIL_FAST);
+			            dp.emitNext(3, FAIL_FAST);
 		            })
 		            .expectNext(2, 3)
 		            .thenCancel()
 		            .verify();
 
 		// Need to explicitly complete processor due to use of publish()
-		dp.emitComplete();
+		dp.emitComplete(FAIL_FAST);
 	}
 
 	@Test

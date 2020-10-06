@@ -26,6 +26,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class MonoTimeoutTest {
 
@@ -90,7 +91,7 @@ public class MonoTimeoutTest {
 		source.timeout(tp.asFlux())
 		      .subscribe(ts);
 
-		tp.emitNext(1);
+		tp.emitNext(1, FAIL_FAST);
 
 		source.onNext(2);
 		source.onComplete();

@@ -25,6 +25,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class MonoTakeLastOneTest {
 
@@ -143,11 +144,11 @@ public class MonoTakeLastOneTest {
 						)
 				)
 				.then(() -> {
-					sink2.emitNext("3");
-					sink3.emitNext("1");
-					sink1.emitComplete();
-					sink2.emitComplete();
-					sink3.emitComplete();
+					sink2.emitNext("3", FAIL_FAST);
+					sink3.emitNext("1", FAIL_FAST);
+					sink1.emitComplete(FAIL_FAST);
+					sink2.emitComplete(FAIL_FAST);
+					sink3.emitComplete(FAIL_FAST);
 				})
 				.expectNextMatches(objects -> objects.getT1().equals("Missing Value1") && objects.getT2().equals("3") && objects.getT3().equals("1"))
 				.verifyComplete();

@@ -36,6 +36,7 @@ import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
@@ -437,8 +438,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.emitNext(1);
-		sp.emitError(new RuntimeException("forced failure"));
+		sp.emitNext(1, FAIL_FAST);
+		sp.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -466,8 +467,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.emitNext(1);
-		sp.emitError(new RuntimeException("forced failure"));
+		sp.emitNext(1, FAIL_FAST);
+		sp.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -495,9 +496,9 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.emitNext(1);
-		sp.emitNext(2);
-		sp.emitError(new RuntimeException("forced failure"));
+		sp.emitNext(1, FAIL_FAST);
+		sp.emitNext(2, FAIL_FAST);
+		sp.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()
@@ -521,8 +522,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 		  .assertNotComplete()
 		  .assertNoError();
 
-		sp.emitNext(1);
-		sp.emitError(new RuntimeException("forced failure"));
+		sp.emitNext(1, FAIL_FAST);
+		sp.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValueCount(1)
 		  .assertNotComplete()

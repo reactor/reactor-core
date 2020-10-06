@@ -25,6 +25,7 @@ import reactor.core.publisher.Sinks.Emission;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 class UnicastManySinkNoBackpressureTest {
 
@@ -116,14 +117,14 @@ class UnicastManySinkNoBackpressureTest {
 	void beforeSubscriberEmitNextIsIgnoredKeepsSinkOpen() {
 		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
 
-		sink.emitNext("hi");
+		sink.emitNext("hi", FAIL_FAST);
 
 		StepVerifier.create(sink.asFlux())
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(500))
 		            .then(() -> {
-		            	sink.emitNext("second");
-		            	sink.emitComplete();
+		            	sink.emitNext("second", FAIL_FAST);
+		            	sink.emitComplete(FAIL_FAST);
 		            })
 		            .expectNext("second")
 		            .verifyComplete();

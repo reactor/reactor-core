@@ -46,6 +46,7 @@ import reactor.util.function.Tuples;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 /**
  * @author Stephane Maldini
@@ -215,7 +216,7 @@ public class MonoTests {
 	@Test
 	public void testMono() throws Exception {
 		Sinks.One<String> promise = Sinks.one();
-		promise.emitValue("test");
+		promise.emitValue("test", FAIL_FAST);
 		final CountDownLatch successCountDownLatch = new CountDownLatch(1);
 		promise.asMono().subscribe(v -> successCountDownLatch.countDown());
 		assertThat("Failed", successCountDownLatch.await(10, TimeUnit.SECONDS));
