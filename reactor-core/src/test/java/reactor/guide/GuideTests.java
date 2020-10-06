@@ -63,6 +63,7 @@ import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 /**
  * Tests mirroring snippets from the reference documentation.
@@ -207,14 +208,14 @@ public class GuideTests {
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
-		hotSource.emitNext("blue");
-		hotSource.emitNext("green");
+		hotSource.emitNext("blue", FAIL_FAST); // <1>
+		hotSource.tryEmitNext("green").orThrow(); // <2>
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
 
-		hotSource.emitNext("orange");
-		hotSource.emitNext("purple");
-		hotSource.emitComplete();
+		hotSource.emitNext("orange", FAIL_FAST);
+		hotSource.emitNext("purple", FAIL_FAST);
+		hotSource.emitComplete(FAIL_FAST);
 	}
 
 	@Test
