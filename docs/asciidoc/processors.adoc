@@ -25,9 +25,15 @@ advertise the standalone sink pattern first and foremost:
 [[sinks]]
 = Safely Produce from Multiple Threads by Using `Sinks.One` and `Sinks.Many`
 
-Flavors of `Sinks` are thread-safe by default, which under the hood means we will register
-a producer that can be called from any thread at any time.
-This is an improvement over `Processor.onNext`, which must be synchronized externally.
+Default flavors of `Sinks` exposed by reactor-core ensure that multi-threaded usage is detected
+and cannot lead to spec violations or undefined behavior from the perspective of downstream
+subscribers. When using the `tryEmit*` API, parallel calls fail fast. When using the `emit*`
+API, the provided `EmissionFailureHandler` may allow to retry on contention (eg. busy looping),
+otherwise the sink will terminate with an error.
+
+This is an improvement over `Processor.onNext`, which must be synchronized externally or
+lead to undefined behavior from the perspective of the downstream subscribers.
+
 The `Sinks` builder provide a guided API to the main supported producer types.
 You will recognize some of the behavior found in `Flux` such as `onBackpressureBuffer`.
 
@@ -44,13 +50,13 @@ Multiple producer threads may concurrently generate data on the sink by doing th
 [source,java]
 ----
 //thread1
-sink.emitNext(1);
+sink.emitNext(1, FAIL_FAST);
 
-//thread2
-sink.emitNext(2);
+//thread2, later
+sink.emitNext(2, FAIL_FAST);
 
-//thread3
-sink.emitNext(3);
+//thread3, concurrently with thread 2
+Emission result = sink.tryEmitNext(3); //would return FAIL_NON_SERIALIZED
 ----
 ====
 
@@ -108,17 +114,25 @@ un-subscribed), it clears its internal buffer and stops accepting new subscriber
 You can tune this by using the `autoCancel` parameter in the `multicast` static factory methods
 under `Sinks.many().multicast()`.
 
-== Sinks.many().multicast().onBackpressureError()
+== Sinks.many().multicast().directAllOrNothing()
 
-A multicast `Sinks.Many` failing on backpressure is the simplest multicast sink that can dispatch
-signals to zero or more `Subscribers`.
-On the other hand, *it has the limitation of not handling backpressure*.
-As a consequence, such a `Sinks.Many` signals an `IllegalStateException` to its
-subscribers if you push N elements through it but at least one of its subscribers has
-requested less than N.
+A multicast `Sinks.Many` with a simplistic handling of backpressure: if *any* of the subscribers
+is too slow (has zero demand), the `onNext` is dropped for *all* subscribers.
 
-This aspect makes it a bit niche, and so the (only) factory method to create such a sink
-is `Sinks.many().multicast().onBackpressureError()`.
+However, the slow subscribers are not terminated and once the slow subscribers have started
+requesting again, all will resume receiving elements pushed from there on.
+
+Once the `Sinks.Many` has terminated (usually through its `emitError(Throwable)` or
+`emitComplete()` methods being called), it lets more subscribers subscribe but replays the
+termination signal to them immediately.
+
+== Sinks.many().multicast().directBestEffort()
+
+A multicast `Sinks.Many` with a best effort handling of backpressure: if a subscriber
+is too slow (has zero demand), the `onNext` is dropped for *this slow subscriber only*.
+
+However, the slow subscribers are not terminated and once they have started requesting again
+they will resume receiving newly pushed elements.
 
 Once the `Sinks.Many` has terminated (usually through its `emitError(Throwable)` or
 `emitComplete()` methods being called), it lets more subscribers subscribe but replays the
@@ -141,11 +155,11 @@ as a variant that allows caching of a single element (`latest()` and `latestOrDe
 
 Advanced users and operators builders might want to consider using `Sinks.many().unsafe()`
 which will provide the same `Sinks.Many` factories _without_ the extra producer thread safety.
-As a result there will be less overhead per sink, since thread-safe sinks have to serialize
-signals using an extra container and a queue.
+As a result there will be less overhead per sink, since thread-safe sinks have to detect multi-threaded access.
+
 Library developers should not expose unsafe sinks but can use them internally in a controlled
-calling environment where they can sequentially call the `emitNext`, `emitError` and `emitComplete`
-operations and ensure external synchronization.
+calling environment where they can ensure external synchronization of the calls that lead to
+`onNext`, `onComplete` and `onError` signals, in respect of the Reactive Streams specification.
 
 == Sinks.one()
 
