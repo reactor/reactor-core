@@ -35,7 +35,7 @@ public class SerializedManySinkStressTest {
 
 	final TargetSink<Object> stressSink = new TargetSink<>();
 
-	final SerializedManySink<Object> sink = new SerializedManySink<>(
+	final SinkManySerialized<Object> sink = new SinkManySerialized<>(
 			stressSink,
 			Context::empty
 	);

@@ -1,19 +1,13 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.stream.Stream;
 
 import reactor.core.Disposable;
-import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
 
 final class SinksSpecs {
 	static final ManySpecImpl            MANY_SPEC                    = new ManySpecImpl();
@@ -25,107 +19,6 @@ final class SinksSpecs {
 	static final MulticastSpecImpl       UNSAFE_MULTICAST_SPEC        = new MulticastSpecImpl(false);
 	static final MulticastReplaySpecImpl UNSAFE_MULTICAST_REPLAY_SPEC = new MulticastReplaySpecImpl(false);
 
-}
-
-final class SerializedManySink<T> extends SerializedSink implements InternalManySink<T>, Scannable {
-
-	final Many<T>       sink;
-	final ContextHolder contextHolder;
-
-	SerializedManySink(Many<T> sink, ContextHolder contextHolder) {
-		this.sink = sink;
-		this.contextHolder = contextHolder;
-	}
-
-	@Override
-	public int currentSubscriberCount() {
-		return sink.currentSubscriberCount();
-	}
-
-	@Override
-	public Flux<T> asFlux() {
-		return sink.asFlux();
-	}
-
-	@Override
-	public Context currentContext() {
-		return contextHolder.currentContext();
-	}
-
-	public boolean isCancelled() {
-		return Scannable.from(sink).scanOrDefault(Attr.CANCELLED, false);
-	}
-
-	@Override
-	public final Emission tryEmitComplete() {
-		Thread currentThread = Thread.currentThread();
-		if (!tryAcquire(currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
-		}
-
-		try {
-			return sink.tryEmitComplete();
-		}
-		finally {
-			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentThread, null);
-			}
-		}
-	}
-
-	@Override
-	public final Emission tryEmitError(Throwable t) {
-		Objects.requireNonNull(t, "t is null in sink.error(t)");
-
-		Thread currentThread = Thread.currentThread();
-		if (!tryAcquire(currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
-		}
-
-		try {
-			return sink.tryEmitError(t);
-		}
-		finally {
-			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentThread, null);
-			}
-		}
-	}
-
-	@Override
-	public final Emission tryEmitNext(T t) {
-		Objects.requireNonNull(t, "t is null in sink.next(t)");
-
-		Thread currentThread = Thread.currentThread();
-		if (!tryAcquire(currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
-		}
-
-		try {
-			return sink.tryEmitNext(t);
-		}
-		finally {
-			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentThread, null);
-			}
-		}
-	}
-
-	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
-		return sink.scanUnsafe(key);
-	}
-
-	@Override
-	public Stream<? extends Scannable> inners() {
-		return Scannable.from(sink).inners();
-	}
-
-	@Override
-	public String toString() {
-		return sink.toString();
-	}
 }
 
 abstract class SerializedSink {
@@ -166,7 +59,7 @@ abstract class SinkSpecImpl {
 
 	final <T, SINKPROC extends Many<T> & ContextHolder> Many<T> toSerializedSink(SINKPROC sink) {
 		if (serialized) {
-			return new SerializedManySink<T>(sink, sink);
+			return new SinkManySerialized<T>(sink, sink);
 		}
 		return sink;
 	}
