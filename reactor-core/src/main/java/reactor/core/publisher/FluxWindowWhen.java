@@ -275,7 +275,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						}
 
 
-						w = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueueSupplier.get());
+						w = Sinks.unsafe().many().unicast().onBackpressureBuffer(processorQueueSupplier.get());
 
 						long r = requested();
 						if (r != 0L) {

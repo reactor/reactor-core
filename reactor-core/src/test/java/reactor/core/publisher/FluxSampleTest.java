@@ -42,9 +42,9 @@ public class FluxSampleTest {
 	}
 
 	void sample(boolean complete, boolean which) {
-		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> main = Sinks.unsafe().many().multicast().directBestEffort();
 
-		Sinks.Many<String> other = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<String> other = Sinks.unsafe().many().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -128,9 +128,9 @@ public class FluxSampleTest {
 
 	@Test
 	public void subscriberCancels() {
-		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> main = Sinks.unsafe().many().multicast().directBestEffort();
 
-		Sinks.Many<String> other = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<String> other = Sinks.unsafe().many().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -150,9 +150,9 @@ public class FluxSampleTest {
 	}
 
 	public void completeImmediately(boolean which) {
-		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> main = Sinks.unsafe().many().multicast().directBestEffort();
 
-		Sinks.Many<String> other = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<String> other = Sinks.unsafe().many().multicast().directBestEffort();
 
 		if (which) {
 			main.emitComplete();

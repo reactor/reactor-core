@@ -209,7 +209,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
-		Sinks.Many<Integer> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(8).get());
+		Sinks.Many<Integer> up = Sinks.unsafe().many().unicast().onBackpressureBuffer(Queues.<Integer>get(8).get());
 		up.emitNext(1);
 		up.emitNext(2);
 		up.emitNext(3);
@@ -248,7 +248,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
-		Sinks.Many<Integer> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(8).get());
+		Sinks.Many<Integer> up = Sinks.unsafe().many().unicast().onBackpressureBuffer(Queues.<Integer>get(8).get());
 		up.emitNext(1);
 		up.emitNext(2);
 		up.emitNext(3);
@@ -493,7 +493,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retry() {
-		Sinks.Many<Integer> dp = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> dp = Sinks.unsafe().many().multicast().directBestEffort();
 		StepVerifier.create(
 				dp.asFlux()
 				  .publish()
@@ -520,7 +520,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void retryWithPublishOn() {
-		Sinks.Many<Integer> dp = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> dp = Sinks.unsafe().many().multicast().directBestEffort();
 		StepVerifier.create(
 				dp.asFlux()
 				  .publishOn(Schedulers.parallel()).publish()

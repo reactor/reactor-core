@@ -313,7 +313,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					if (mode == LEFT_VALUE) {
 						@SuppressWarnings("unchecked") TLeft left = (TLeft) val;
 
-						Sinks.Many<TRight> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueueSupplier.get());
+						Sinks.Many<TRight> up = Sinks.unsafe().many().unicast().onBackpressureBuffer(processorQueueSupplier.get());
 						int idx = leftIndex++;
 						lefts.put(idx, up);
 

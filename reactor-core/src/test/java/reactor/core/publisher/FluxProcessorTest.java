@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("deprecation")
 public class FluxProcessorTest {
 
-	final FluxProcessor<?, ?> processor = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+	final FluxProcessor<?, ?> processor = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 
 	@Test(expected = NullPointerException.class)
 	@SuppressWarnings("unchecked")
@@ -63,7 +63,7 @@ public class FluxProcessorTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void normalBlackboxProcessor(){
-		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream.map(i -> i + 1)
 				                                     .filter(i -> i % 2 == 0));
@@ -83,7 +83,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void disconnectedBlackboxProcessor(){
-		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, Flux.just(1));
 
@@ -94,7 +94,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void symmetricBlackboxProcessor(){
-		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream);
 
@@ -106,7 +106,7 @@ public class FluxProcessorTest {
 
 	@Test
 	public void errorSymmetricBlackboxProcessor(){
-		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+		FluxProcessor<Integer, Integer> upstream = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 		FluxProcessor<Integer, Integer> processor =
 				FluxProcessor.wrap(upstream, upstream);
 

@@ -151,9 +151,9 @@ It can be created in multiple configurations:
 Additional overloads for fine tuning of the above can also be found under `Sinks.many().replay()`, as well
 as a variant that allows caching of a single element (`latest()` and `latestOrDefault(T)`).
 
-== Sinks.many().unsafe()
+== Sinks.unsafe().many()
 
-Advanced users and operators builders might want to consider using `Sinks.many().unsafe()`
+Advanced users and operators builders might want to consider using `Sinks.unsafe().many()`
 which will provide the same `Sinks.Many` factories _without_ the extra producer thread safety.
 As a result there will be less overhead per sink, since thread-safe sinks have to detect multi-threaded access.
 

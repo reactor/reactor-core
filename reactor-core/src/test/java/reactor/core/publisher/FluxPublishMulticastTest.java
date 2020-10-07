@@ -76,7 +76,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 				scenario(f -> f.publish(p -> Flux.just("test", "test1", "test2")))
 						.fusionMode(Fuseable.SYNC),
 
-				scenario(f -> f.publish(p -> p.subscribeWith(FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer())), 256))
+				scenario(f -> f.publish(p -> p.subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer())), 256))
 						.fusionMode(Fuseable.ASYNC),
 
 
@@ -95,7 +95,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		return Arrays.asList(scenario(f -> f.publish(p -> p)),
 
 				scenario(f -> f.publish(p ->
-						p.subscribeWith(FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer()))))
+						p.subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer()))))
 						.fusionMode(Fuseable.ASYNC),
 
 				scenario(f -> f.publish(p -> p))
@@ -154,7 +154,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> up =
-				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(16).get());
+				Sinks.unsafe().many().unicast().onBackpressureBuffer(Queues.<Integer>get(16).get());
 
 		up.asFlux()
 		  .publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))

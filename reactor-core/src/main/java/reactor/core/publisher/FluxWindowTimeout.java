@@ -165,7 +165,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					return;
 				}
 
-				Sinks.Many<T> w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+				Sinks.Many<T> w = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 				window = w;
 
 				long r = requested;
@@ -219,7 +219,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					long r = requested;
 
 					if (r != 0L) {
-						w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+						w = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 						window = w;
 						actual.onNext(w.asFlux());
 						if (r != Long.MAX_VALUE) {
@@ -346,7 +346,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					if (isHolder) {
 						w.emitComplete();
 						count = 0;
-						w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+						w = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 						window = w;
 
 						long r = requested;
@@ -380,7 +380,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						long r = requested;
 
 						if (r != 0L) {
-							w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+							w = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 							window = w;
 							actual.onNext(w.asFlux());
 							if (r != Long.MAX_VALUE) {

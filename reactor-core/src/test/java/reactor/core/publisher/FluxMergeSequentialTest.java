@@ -83,7 +83,7 @@ public class FluxMergeSequentialTest {
 	@SuppressWarnings("dreprecated")
 	public void normalFusedAsync() {
 		StepVerifier.create(Flux.range(1, 5)
-		                        .subscribeWith(FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer()))
+		                        .subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer()))
 		                        .flatMapSequential(t -> Flux.range(t, 2)))
 		            .expectNext(1, 2, 2, 3, 3, 4, 4, 5, 5, 6)
 		            .verifyComplete();
@@ -143,8 +143,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsDelayEnd() {
-		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().directBestEffort();
-		final Sinks.Many<Integer> inner = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> main = Sinks.unsafe().many().multicast().directBestEffort();
+		final Sinks.Many<Integer> inner = Sinks.unsafe().many().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = main.asFlux()
 										   .flatMapSequentialDelayError(t -> inner.asFlux(), 32, 32)
@@ -170,8 +170,8 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mainErrorsImmediate() {
-		Sinks.Many<Integer> main = Sinks.many().unsafe().multicast().directBestEffort();
-		final Sinks.Many<Integer> inner = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> main = Sinks.unsafe().many().multicast().directBestEffort();
+		final Sinks.Many<Integer> inner = Sinks.unsafe().many().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = main.asFlux().flatMapSequential(t -> inner.asFlux())
 		                                   .subscribeWith(AssertSubscriber.create());
@@ -463,7 +463,7 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void testReentrantWork() {
-		final Sinks.Many<Integer> subject = Sinks.many().unsafe().multicast().directBestEffort();
+		final Sinks.Many<Integer> subject = Sinks.unsafe().many().multicast().directBestEffort();
 
 		final AtomicBoolean once = new AtomicBoolean();
 

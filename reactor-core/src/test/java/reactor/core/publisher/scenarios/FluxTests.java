@@ -1236,12 +1236,12 @@ public class FluxTests extends AbstractReactorTest {
 
 		Phaser phaser = new Phaser(2);
 
-		Flux<Object> s1 = Sinks.many().unsafe()
+		Flux<Object> s1 = Sinks.unsafe().many()
 							   .replay()
 							   .latestOrDefault(new Object())
 							   .asFlux()
 							   .publishOn(asyncGroup);
-		Flux<Object> s2 = Sinks.many().unsafe()
+		Flux<Object> s2 = Sinks.unsafe().many()
 							   .replay()
 							   .latestOrDefault(new Object())
 							   .asFlux()
@@ -1372,8 +1372,8 @@ public class FluxTests extends AbstractReactorTest {
 	@Test(timeout = TIMEOUT)
 	public void multiplexUsingDispatchersAndSplit() {
 		final Sinks.Many<Integer> forkEmitterProcessor = Sinks.many().multicast().onBackpressureBuffer();
-		final Sinks.Many<Integer> computationEmitterProcessor = Sinks.many()
-																	 .unsafe()
+		final Sinks.Many<Integer> computationEmitterProcessor = Sinks.unsafe()
+		                                                             .many()
 																	 .multicast()
 																	 .onBackpressureBuffer(256, false);
 
@@ -1394,8 +1394,8 @@ public class FluxTests extends AbstractReactorTest {
 											.doOnNext(ls -> println("Computed: ", ls))
 											.log("computation");
 
-		final Sinks.Many<Integer> persistenceEmitterProcessor = Sinks.many()
-																	 .unsafe()
+		final Sinks.Many<Integer> persistenceEmitterProcessor = Sinks.unsafe()
+																	 .many()
 																	 .multicast()
 																	 .onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
 

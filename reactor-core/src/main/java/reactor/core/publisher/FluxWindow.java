@@ -165,7 +165,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			if (cancelled == 0 && i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
+				w = Sinks.unsafe().many().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
 				window = w;
 
 				actual.onNext(w.asFlux());
@@ -335,7 +335,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			if (i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
+				w = Sinks.unsafe().many().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
 				window = w;
 
 				actual.onNext(w.asFlux());
@@ -541,7 +541,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 				if (cancelled == 0) {
 					WINDOW_COUNT.getAndIncrement(this);
 
-					Sinks.Many<T> w = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
+					Sinks.Many<T> w = Sinks.unsafe().many().unicast().onBackpressureBuffer(processorQueueSupplier.get(), this);
 
 					offer(w);
 

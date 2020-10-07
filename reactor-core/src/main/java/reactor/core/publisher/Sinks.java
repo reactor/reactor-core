@@ -55,9 +55,10 @@ public final class Sinks {
 	 * Use {@link Sinks.Empty#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
 	 *
 	 * @return a new {@link Sinks.Empty}
+	 * @see RootSpec#empty()
 	 */
 	public static <T> Sinks.Empty<T> empty() {
-		return new SinkEmptyMulticast<T>();
+		return SinksSpecs.DEFAULT_ROOT_SPEC.empty();
 	}
 
 	/**
@@ -69,9 +70,10 @@ public final class Sinks {
 	 * Use {@link One#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
 	 *
 	 * @return a new {@link Sinks.One}
+	 * @see RootSpec#one()
 	 */
 	public static <T> Sinks.One<T> one() {
-		return new NextProcessor<>(null);
+		return SinksSpecs.DEFAULT_ROOT_SPEC.one();
 	}
 
 	/**
@@ -80,9 +82,21 @@ public final class Sinks {
 	 * Use {@link Many#asFlux()} to expose the {@link Flux} view of the sink to the downstream consumers.
 	 *
 	 * @return {@link ManySpec}
+	 * @see RootSpec#many()
 	 */
 	public static ManySpec many() {
-		return SinksSpecs.MANY_SPEC;
+		return SinksSpecs.DEFAULT_ROOT_SPEC.many();
+	}
+
+	/**
+	 * Return a {@link RootSpec root spec} for more advanced use cases such as building operators.
+	 * Unsafe {@link Sinks.Many}, {@link Sinks.One} and {@link Sinks.Empty} are not serialized nor thread safe,
+	 * which implies they MUST be externally synchronized so as to respect the Reactive Streams specification.
+	 *
+	 * @return {@link RootSpec}
+	 */
+	public static RootSpec unsafe() {
+		return SinksSpecs.UNSAFE_ROOT_SPEC;
 	}
 
 	/**
@@ -230,6 +244,44 @@ public final class Sinks {
 	}
 
 	/**
+	 * Provides a choice of {@link Sinks.One}/{@link Sinks.Empty} factories and
+	 * {@link Sinks.ManySpec further specs} for {@link Sinks.Many}.
+	 */
+	public interface RootSpec {
+
+		/**
+		 * A {@link Sinks.Empty} which exclusively produces one terminal signal: error or complete.
+		 * It has the following characteristics:
+		 * <ul>
+		 *     <li>Multicast</li>
+		 *     <li>Backpressure : this sink does not need any demand since it can only signal error or completion</li>
+		 *     <li>Replaying: Replay the terminal signal (error or complete).</li>
+		 * </ul>
+		 * Use {@link Sinks.Empty#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
+		 */
+		<T> Sinks.Empty<T> empty();
+
+		/**
+		 * A {@link Sinks.One} that works like a conceptual promise: it can be completed
+		 * with or without a value at any time, but only once. This completion is replayed to late subscribers.
+		 * Calling {@link One#emitValue(Object)} (or {@link One#tryEmitValue(Object)}) is enough and will
+		 * implicitly produce a {@link Subscriber#onComplete()} signal as well.
+		 * <p>
+		 * Use {@link One#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
+		 */
+		<T> Sinks.One<T> one();
+
+		/**
+		 * Help building {@link Sinks.Many} sinks that will broadcast multiple signals to one or more {@link Subscriber}.
+		 * <p>
+		 * Use {@link Many#asFlux()} to expose the {@link Flux} view of the sink to the downstream consumers.
+		 *
+		 * @return {@link ManySpec}
+		 */
+		ManySpec many();
+	}
+
+	/**
 	 * Provides {@link Sinks.Many} specs for sinks which can emit multiple elements
 	 */
 	public interface ManySpec {
@@ -254,15 +306,6 @@ public final class Sinks {
 		 * @return {@link MulticastReplaySpec}
 		 */
 		MulticastReplaySpec replay();
-
-		/**
-		 * Return a builder for more advanced use cases such as building operators.
-		 * Unsafe {@link Sinks.Many} are not serialized and expect usage to be externally synchronized to respect
-		 * the Reactive Streams specification.
-		 *
-		 * @return {@link ManySpec}
-		 */
-		ManySpec unsafe();
 	}
 
 	/**
@@ -442,7 +485,6 @@ public final class Sinks {
 		 */
 		<T> Sinks.Many<T> directBestEffort();
 	}
-
 
 	/**
 	 * Provides multicast with history/replay capacity : 1 sink, N {@link Subscriber}
@@ -988,6 +1030,5 @@ public final class Sinks {
 		 * @see Subscriber#onComplete()
 		 */
 		void emitValue(@Nullable T value, EmitFailureHandler failureHandler);
-
 	}
 }
