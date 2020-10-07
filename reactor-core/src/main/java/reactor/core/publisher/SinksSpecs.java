@@ -36,6 +36,10 @@ final class SinksSpecs {
 			return original;
 		}
 
+		@Override
+		public String toString() {
+			return "UNSAFE";
+		}
 	};
 
 	static final SinksWrapper WRAPPER_SERIALIZED_FAIL_FAST = new SinksWrapper() {
@@ -54,21 +58,27 @@ final class SinksSpecs {
 		public <T> Sinks.Empty<T> wrapEmpty(Sinks.Empty<T> original, Supplier<ContextView> contextViewSupplier) {
 			return original; //FIXME
 		}
+
+		@Override
+		public String toString() {
+			return "SERIALIZED_FAIL_FAST";
+		}
 	};
 
-	static final Sinks.RootSpec UNSAFE_ROOT_SPEC                            = new RootWrappingSpec(WRAPPER_UNSAFE);
-	static final Sinks.RootSpec DEFAULT_ROOT_SPEC                           = new RootWrappingSpec(WRAPPER_SERIALIZED_FAIL_FAST);
+	//careful: since root levels reference nested instances, these instances must be initialized in reverse order of nesting
 
-	static final Sinks.ManySpec UNSAFE_MANY_SPEC                            = new ManySpecImpl2(WRAPPER_UNSAFE);
 	static final Sinks.UnicastSpec UNSAFE_UNICAST_SPEC                      = new UnicastSpecImpl2(WRAPPER_UNSAFE);
 	static final Sinks.MulticastSpec UNSAFE_MULTICAST_SPEC                  = new MulticastSpecImpl2(WRAPPER_UNSAFE);
 	static final Sinks.MulticastReplaySpec UNSAFE_MULTICAST_REPLAY_SPEC     = new MulticastReplaySpecImpl2(WRAPPER_UNSAFE);
+	static final Sinks.ManySpec UNSAFE_MANY_SPEC                            = new ManySpecImpl2(WRAPPER_UNSAFE);
 
-	static final Sinks.ManySpec SERIALIZED_MANY_SPEC                        = new ManySpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
 	static final Sinks.UnicastSpec SERIALIZED_UNICAST_SPEC                  = new UnicastSpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
 	static final Sinks.MulticastSpec SERIALIZED_MULTICAST_SPEC              = new MulticastSpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
 	static final Sinks.MulticastReplaySpec SERIALIZED_MULTICAST_REPLAY_SPEC = new MulticastReplaySpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
+	static final Sinks.ManySpec SERIALIZED_MANY_SPEC                        = new ManySpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
 
+	static final Sinks.RootSpec UNSAFE_ROOT_SPEC                            = new RootWrappingSpec(WRAPPER_UNSAFE);
+	static final Sinks.RootSpec DEFAULT_ROOT_SPEC                           = new RootWrappingSpec(WRAPPER_SERIALIZED_FAIL_FAST);
 }
 
 final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
