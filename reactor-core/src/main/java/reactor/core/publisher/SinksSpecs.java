@@ -19,7 +19,7 @@ import reactor.util.context.ContextView;
 
 final class SinksSpecs {
 
-	static final SinksWrapper WRAPPER_UNSAFE                                       = new SinksWrapper() {
+	static final SinksWrapper WRAPPER_UNSAFE = new SinksWrapper() {
 
 		@Override
 		public <T> Sinks.Empty<T> wrapEmpty(Sinks.Empty<T> original, Supplier<ContextView> contextSupplier) {
@@ -67,15 +67,15 @@ final class SinksSpecs {
 
 	//careful: since root levels reference nested instances, these instances must be initialized in reverse order of nesting
 
-	static final Sinks.UnicastSpec UNSAFE_UNICAST_SPEC                      = new UnicastSpecImpl2(WRAPPER_UNSAFE);
-	static final Sinks.MulticastSpec UNSAFE_MULTICAST_SPEC                  = new MulticastSpecImpl2(WRAPPER_UNSAFE);
-	static final Sinks.MulticastReplaySpec UNSAFE_MULTICAST_REPLAY_SPEC     = new MulticastReplaySpecImpl2(WRAPPER_UNSAFE);
-	static final Sinks.ManySpec UNSAFE_MANY_SPEC                            = new ManySpecImpl2(WRAPPER_UNSAFE);
+	static final Sinks.UnicastSpec UNSAFE_UNICAST_SPEC                      = new UnicastSpecImpl(WRAPPER_UNSAFE);
+	static final Sinks.MulticastSpec UNSAFE_MULTICAST_SPEC                  = new MulticastSpecImpl(WRAPPER_UNSAFE);
+	static final Sinks.MulticastReplaySpec UNSAFE_MULTICAST_REPLAY_SPEC     = new MulticastReplaySpecImpl(WRAPPER_UNSAFE);
+	static final Sinks.ManySpec UNSAFE_MANY_SPEC                            = new ManySpecImpl(WRAPPER_UNSAFE);
 
-	static final Sinks.UnicastSpec SERIALIZED_UNICAST_SPEC                  = new UnicastSpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
-	static final Sinks.MulticastSpec SERIALIZED_MULTICAST_SPEC              = new MulticastSpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
-	static final Sinks.MulticastReplaySpec SERIALIZED_MULTICAST_REPLAY_SPEC = new MulticastReplaySpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
-	static final Sinks.ManySpec SERIALIZED_MANY_SPEC                        = new ManySpecImpl2(WRAPPER_SERIALIZED_FAIL_FAST);
+	static final Sinks.UnicastSpec SERIALIZED_UNICAST_SPEC                  = new UnicastSpecImpl(WRAPPER_SERIALIZED_FAIL_FAST);
+	static final Sinks.MulticastSpec SERIALIZED_MULTICAST_SPEC              = new MulticastSpecImpl(WRAPPER_SERIALIZED_FAIL_FAST);
+	static final Sinks.MulticastReplaySpec SERIALIZED_MULTICAST_REPLAY_SPEC = new MulticastReplaySpecImpl(WRAPPER_SERIALIZED_FAIL_FAST);
+	static final Sinks.ManySpec SERIALIZED_MANY_SPEC                        = new ManySpecImpl(WRAPPER_SERIALIZED_FAIL_FAST);
 
 	static final Sinks.RootSpec UNSAFE_ROOT_SPEC                            = new RootWrappingSpec(WRAPPER_UNSAFE);
 	static final Sinks.RootSpec DEFAULT_ROOT_SPEC                           = new RootWrappingSpec(WRAPPER_SERIALIZED_FAIL_FAST);
@@ -232,7 +232,7 @@ class RootWrappingSpec implements Sinks.RootSpec {
 			this.manySpec = SinksSpecs.SERIALIZED_MANY_SPEC;
 		}
 		else {
-			this.manySpec = new ManySpecImpl2(wrapper);
+			this.manySpec = new ManySpecImpl(wrapper);
 		}
 	}
 
@@ -254,14 +254,14 @@ class RootWrappingSpec implements Sinks.RootSpec {
 	}
 }
 
-class ManySpecImpl2 implements Sinks.ManySpec {
+class ManySpecImpl implements Sinks.ManySpec {
 
 	final SinksWrapper              wrapper;
 	final Sinks.UnicastSpec         unicast;
 	final Sinks.MulticastSpec       multicast;
 	final Sinks.MulticastReplaySpec multicastReplay;
 
-	ManySpecImpl2(SinksWrapper wrapper) {
+	ManySpecImpl(SinksWrapper wrapper) {
 		this.wrapper = wrapper;
 		if (wrapper == SinksSpecs.WRAPPER_UNSAFE) {
 			this.unicast = SinksSpecs.UNSAFE_UNICAST_SPEC;
@@ -274,9 +274,9 @@ class ManySpecImpl2 implements Sinks.ManySpec {
 			this.multicastReplay = SinksSpecs.SERIALIZED_MULTICAST_REPLAY_SPEC;
 		}
 		else {
-			this.unicast = new UnicastSpecImpl2(wrapper);
-			this.multicast = new MulticastSpecImpl2(wrapper);
-			this.multicastReplay = new MulticastReplaySpecImpl2(wrapper);
+			this.unicast = new UnicastSpecImpl(wrapper);
+			this.multicast = new MulticastSpecImpl(wrapper);
+			this.multicastReplay = new MulticastReplaySpecImpl(wrapper);
 		}
 	}
 
@@ -297,11 +297,11 @@ class ManySpecImpl2 implements Sinks.ManySpec {
 }
 
 @SuppressWarnings("deprecation")
-class UnicastSpecImpl2 implements Sinks.UnicastSpec {
+class UnicastSpecImpl implements Sinks.UnicastSpec {
 
 	final SinksWrapper wrapper;
 
-	UnicastSpecImpl2(SinksWrapper wrapper) {
+	UnicastSpecImpl(SinksWrapper wrapper) {
 		this.wrapper = wrapper;
 	}
 
@@ -332,11 +332,11 @@ class UnicastSpecImpl2 implements Sinks.UnicastSpec {
 }
 
 @SuppressWarnings("deprecation")
-class MulticastSpecImpl2 implements Sinks.MulticastSpec {
+class MulticastSpecImpl implements Sinks.MulticastSpec {
 
 	final SinksWrapper wrapper;
 
-	MulticastSpecImpl2(SinksWrapper wrapper) {
+	MulticastSpecImpl(SinksWrapper wrapper) {
 		this.wrapper = wrapper;
 	}
 
@@ -372,11 +372,11 @@ class MulticastSpecImpl2 implements Sinks.MulticastSpec {
 }
 
 @SuppressWarnings("deprecation")
-class MulticastReplaySpecImpl2 implements Sinks.MulticastReplaySpec {
+class MulticastReplaySpecImpl implements Sinks.MulticastReplaySpec {
 
 	final SinksWrapper wrapper;
 
-	MulticastReplaySpecImpl2(SinksWrapper wrapper) {
+	MulticastReplaySpecImpl(SinksWrapper wrapper) {
 		this.wrapper = wrapper;
 	}
 
