@@ -143,10 +143,6 @@ public class FluxIntervalTest {
 		            .verify();
 	}
 
-	Flux<Long> scenario5(){
-		return Flux.interval(Duration.ofNanos(0), Duration.ofNanos(1_000));
-	}
-
 	@Test
 	public void normal5() {
 		// Prior to gh-1734, sub millis period would round to 0 and this would fail.
