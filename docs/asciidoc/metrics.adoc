@@ -63,14 +63,14 @@ To enable the metrics for this source `Flux` (returned from `listenToEvents()`),
 [source,java]
 ----
 listenToEvents()
-    .name("events") <1> (optional)
+    .name("events") <1>
     .metrics() <2>
     .doOnNext(event -> log.info("Received {}", event))
     .delayUntil(this::processEvent)
     .retry()
     .subscribe();
 ----
-<1> Every metric at this stage will be identified as "events".
+<1> Every metric at this stage will be identified as "events" (optional).
 <2> `Flux#metrics` operator enables the reporting of metrics, using the name provided in when calling `Flux#name` operator. In case `Flux#name` operator has not been used, the default name will be `reactor`.
 ====
 
