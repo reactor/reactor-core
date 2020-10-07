@@ -7366,7 +7366,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * Reduce this {@link Flux} values with an accumulator {@link BinaryOperator} and
 	 * also emit the intermediate results of this function.
 	 * <p>
-	 * Unlike {@link #scan(Object, BinaryOperator)}, this operator doesn't take an initial value
+	 * Unlike {@link #scan(Object, BiFunction)}, this operator doesn't take an initial value
 	 * but treats the first {@link Flux} value as initial value.
 	 * <br>
 	 * The accumulation works as follows:
