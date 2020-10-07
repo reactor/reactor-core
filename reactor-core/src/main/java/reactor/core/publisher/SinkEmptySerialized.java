@@ -40,7 +40,8 @@ class SinkEmptySerialized<T> extends SerializedSink implements InternalEmptySink
 
 		try {
 			return sink.tryEmitEmpty();
-		} finally {
+		}
+		finally {
 			if (WIP.decrementAndGet(this) == 0) {
 				LOCKED_AT.compareAndSet(this, currentThread, null);
 			}
@@ -58,7 +59,8 @@ class SinkEmptySerialized<T> extends SerializedSink implements InternalEmptySink
 
 		try {
 			return sink.tryEmitError(t);
-		} finally {
+		}
+		finally {
 			if (WIP.decrementAndGet(this) == 0) {
 				LOCKED_AT.compareAndSet(this, currentThread, null);
 			}

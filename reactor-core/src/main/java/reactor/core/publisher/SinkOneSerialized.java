@@ -15,8 +15,6 @@ package reactor.core.publisher;
 
 import reactor.core.publisher.Sinks.One;
 
-import java.util.Objects;
-
 public class SinkOneSerialized<T> extends SinkEmptySerialized<T> implements InternalOneSink<T>, ContextHolder {
 
 	final One<T> sinkOne;
