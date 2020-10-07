@@ -53,6 +53,7 @@ import reactor.util.context.Context;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 
 /**
@@ -632,7 +633,7 @@ public class StepVerifierTests {
 
 		StepVerifier.create(flux, 2)
 		            .expectNext("t0", "t1")
-		            .then(p::emitEmpty)
+		            .then(p::tryEmitEmpty)
 		            .expectComplete()
 		            .verify();
 
@@ -2002,9 +2003,9 @@ public class StepVerifierTests {
 		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
 		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.emitNext("test"))
-		            .then(() -> up.emitNext("test"))
-		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenRequest(1)
@@ -2017,9 +2018,9 @@ public class StepVerifierTests {
 		Sinks.Many<String> up = Sinks.many().unicast().onBackpressureBuffer();
 		StepVerifier.create(up.asFlux().take(3), 0)
 		            .expectFusion()
-		            .then(() -> up.emitNext("test"))
-		            .then(() -> up.emitNext("test"))
-		            .then(() -> up.emitNext("test"))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
+		            .then(() -> up.emitNext("test", FAIL_FAST))
 		            .thenRequest(2)
 		            .expectNext("test", "test")
 		            .thenCancel()
@@ -2336,7 +2337,7 @@ public class StepVerifierTests {
 		Sinks.One<Integer> processor = Sinks.one();
 		StepVerifier.create(processor.asMono(), 0)
 				.expectFusion(Fuseable.ANY)
-				.then(() -> processor.emitValue(1))
+				.then(() -> processor.emitValue(1, FAIL_FAST))
 				.thenRequest(1)
 				.expectNext(1)
 				.verifyComplete();
@@ -2349,8 +2350,8 @@ public class StepVerifierTests {
 		StepVerifier.create(processor.asFlux().doOnRequest(requests::add), 0)
 				.expectFusion(Fuseable.ANY)
 				.then(() -> {
-					processor.emitNext(1);
-					processor.emitComplete();
+					processor.emitNext(1, FAIL_FAST);
+					processor.emitComplete(FAIL_FAST);
 				})
 				.thenRequest(1)
 				.thenRequest(1)
@@ -2373,10 +2374,10 @@ public class StepVerifierTests {
 
 			subscriptionWorker.schedulePeriodically(() -> {
 				if (source.size() > 0) {
-					fluxEmitter.emitNext(source.remove(0));
+					fluxEmitter.emitNext(source.remove(0), FAIL_FAST);
 				}
 				else {
-					fluxEmitter.emitComplete();
+					fluxEmitter.emitComplete(FAIL_FAST);
 				}
 			}, 0, 10, TimeUnit.MILLISECONDS);
 			return fluxEmitter.asFlux();

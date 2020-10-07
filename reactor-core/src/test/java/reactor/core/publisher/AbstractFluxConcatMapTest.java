@@ -35,6 +35,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String, String> {
 
@@ -289,20 +290,20 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
-		source1.emitNext(1);
-		source2.emitNext(10);
+		source1.emitNext(1, FAIL_FAST);
+		source2.emitNext(10, FAIL_FAST);
 
-		source1.emitComplete();
-		source.emitNext(2);
-		source.emitComplete();
+		source1.emitComplete(FAIL_FAST);
+		source.emitNext(2, FAIL_FAST);
+		source.emitComplete(FAIL_FAST);
 
-		source2.emitNext(2);
-		source2.emitComplete();
+		source2.emitNext(2, FAIL_FAST);
+		source2.emitComplete(FAIL_FAST);
 
 		ts.assertValues(1, 2)
 		  .assertNoError()
@@ -328,14 +329,14 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
-		source1.emitNext(1);
+		source1.emitNext(1, FAIL_FAST);
 
-		source.emitError(new RuntimeException("forced failure"));
+		source.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -362,21 +363,21 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
-		source1.emitNext(1);
+		source1.emitNext(1, FAIL_FAST);
 
-		source.emitError(new RuntimeException("forced failure"));
+		source.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source1.emitNext(2);
-		source1.emitComplete();
+		source1.emitNext(2, FAIL_FAST);
+		source1.emitComplete(FAIL_FAST);
 
 		ts.assertValues(1, 2)
 		  .assertError(RuntimeException.class)
@@ -403,14 +404,14 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
-		source1.emitNext(1);
+		source1.emitNext(1, FAIL_FAST);
 
-		source1.emitError(new RuntimeException("forced failure"));
+		source1.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -455,9 +456,9 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> up = Sinks.many().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		up.asFlux()
 		  .map(v -> v == 2 ? null : v)
@@ -475,9 +476,9 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 
 		Sinks.Many<Integer> up =
 				Sinks.many().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		up.asFlux()
 		  .map(v -> v == 2 ? null : v)
@@ -860,14 +861,14 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
-		source1.emitNext(1);
+		source1.emitNext(1, FAIL_FAST);
 
-		source1.emitError(new RuntimeException("forced failure"));
+		source1.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -894,23 +895,23 @@ public abstract class AbstractFluxConcatMapTest extends FluxOperatorTest<String,
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
 		assertThat(source1.currentSubscriberCount()).as("source1 has subscriber").isPositive();
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isZero();
 
-		source1.emitNext(1);
+		source1.emitNext(1, FAIL_FAST);
 
-		source1.emitError(new RuntimeException("forced failure"));
+		source1.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
-		source.emitNext(2);
+		source.emitNext(2, FAIL_FAST);
 
 		assertThat(source2.currentSubscriberCount()).as("source2 has subscriber").isPositive();
 
-		source2.emitNext(2);
-		source2.emitComplete();
+		source2.emitNext(2, FAIL_FAST);
+		source2.emitComplete(FAIL_FAST);
 
-		source.emitComplete();
+		source.emitComplete(FAIL_FAST);
 
 		ts.assertValues(1, 2)
 		  .assertError(RuntimeException.class)

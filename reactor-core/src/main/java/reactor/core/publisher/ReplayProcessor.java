@@ -463,7 +463,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public void onError(Throwable throwable) {
-		emitError(throwable);
+		emitError(throwable, Sinks.EmitFailureHandler.FAIL_FAST);
 	}
 
 	@Override
@@ -486,7 +486,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public void onNext(T t) {
-		emitNext(t);
+		emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 	}
 
 	@Override

@@ -51,6 +51,7 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.*;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 /**
  * @author Stephane Maldini
@@ -399,22 +400,20 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			case -1:
 				break;
 			case 0:
-				rp.emitComplete();
+				rp.emitComplete(FAIL_FAST);
 				break;
 			case 1:
-				rp.emitNext(scenario.producingMapper
-				                  .apply(0));
-				rp.emitComplete();
+				rp.emitNext(scenario.producingMapper.apply(0), FAIL_FAST);
+				rp.emitComplete(FAIL_FAST);
 				break;
 			default:
 				if (p > 10_000) {
 					throw new IllegalArgumentException("Should not preload async source" + " " + "more than 10000," + " was " + p);
 				}
 				for (int i = 0; i < scenario.producerCount(); i++) {
-					rp.emitNext(scenario.producingMapper
-					                  .apply(i));
+					rp.emitNext(scenario.producingMapper.apply(i), FAIL_FAST);
 				}
-				rp.emitComplete();
+				rp.emitComplete(FAIL_FAST);
 		}
 		return rp.asFlux();
 	}
@@ -910,7 +909,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	final StepVerifier.Step<O> inputFusedAsyncErrorOutputFusedAsync(OperatorScenario<I, PI, O, PO> scenario) {
 		Sinks.Many<I> up = Sinks.many().unsafe().unicast().onBackpressureBuffer();
-		up.emitNext(item(0));
+		up.emitNext(item(0), FAIL_FAST);
 		return StepVerifier.create(scenario.body()
 		                                   .apply(up.asFlux().as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
 				                                   f,

@@ -160,7 +160,7 @@ final class FluxRepeatWhen<T> extends InternalFluxOperator<T, T> {
 			}
 
 			otherArbiter.request(1);
-			signaller.emitNext(p);
+			signaller.emitNext(p, Sinks.EmitFailureHandler.FAIL_FAST);
 		}
 
 		void setWhen(Subscription w) {

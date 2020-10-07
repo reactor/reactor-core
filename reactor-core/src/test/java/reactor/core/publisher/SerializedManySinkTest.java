@@ -52,7 +52,7 @@ public class SerializedManySinkTest {
 					            .as("emission")
 					            .isEqualTo(Emission.FAIL_OVERFLOW);
 		            })
-		            .then(sink::emitComplete)
+		            .then(() -> sink.tryEmitComplete().orThrow())
 		            .verifyComplete();
 	}
 
@@ -65,7 +65,7 @@ public class SerializedManySinkTest {
 
 		StepVerifier.create(sink.asFlux(), 0)
 		            .expectSubscription()
-		            .then(() -> sink.emitNext("boom"))
+		            .then(() -> sink.emitNext("boom", Sinks.EmitFailureHandler.FAIL_FAST))
 		            .verifyErrorMatches(Exceptions::isOverflow);
 	}
 
@@ -126,28 +126,13 @@ public class SerializedManySinkTest {
 		}
 
 		@Override
-		public void emitNext(T o) {
-			throw new IllegalStateException("Not expected to be called");
-		}
-
-		@Override
 		public void emitNext(T t, Sinks.EmitFailureHandler failureHandler) {
 			throw new IllegalStateException("Not expected to be called");
 		}
 
 		@Override
-		public void emitComplete() {
-			delegate.emitComplete();
-		}
-
-		@Override
 		public void emitComplete(Sinks.EmitFailureHandler failureHandler) {
 			delegate.emitComplete(failureHandler);
-		}
-
-		@Override
-		public void emitError(Throwable error) {
-			delegate.emitError(error);
 		}
 
 		@Override

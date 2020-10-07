@@ -640,34 +640,6 @@ public final class Sinks {
 		 * failures: {@link Emission#FAIL_OVERFLOW} should lead to {@link Operators#onDiscard(Object, Context)} followed
 		 * by {@link #emitError(Throwable, EmitFailureHandler)}. {@link Emission#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
 		 * {@link Emission#FAIL_TERMINATED} should lead to {@link Operators#onNextDropped(Object, Context)}.
-		 *
-		 * @param t the value to emit, not null
-		 * @see #tryEmitNext(Object)
-		 * @see Subscriber#onNext(Object)
-		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitNext(Object)} and handle the result.
-		 *
-		 */
-		@Deprecated
-		default void emitNext(T t) {
-			emitNext(t, EmitFailureHandler.FAIL_FAST);
-		}
-
-		/**
-		 * Emit a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal,
-		 * or notifies the downstream subscriber(s) of a failure to do so via {@link #emitError(Throwable, EmitFailureHandler)}
-		 * (with an {@link Exceptions#isOverflow(Throwable) overflow exception}).
-		 * <p>
-		 * Generally, {@link #tryEmitNext(Object)} is preferable since it allows a custom handling
-		 * of error cases, although this implies checking the returned {@link Emission} and correctly
-		 * acting on it (see implementation notes).
-		 * <p>
-		 * Might throw an unchecked exception in case of a fatal error downstream which cannot
-		 * be propagated to any asynchronous handler (aka a bubbling exception).
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitNext(Object)} and act on
-		 * failures: {@link Emission#FAIL_OVERFLOW} should lead to {@link Operators#onDiscard(Object, Context)} followed
-		 * by {@link #emitError(Throwable, EmitFailureHandler)}. {@link Emission#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
-		 * {@link Emission#FAIL_TERMINATED} should lead to {@link Operators#onNextDropped(Object, Context)}.
 		 * @implNote the duality between this method and {@link #tryEmitNext(Object)} is expected.
 		 *
 		 * @param t the value to emit, not null
@@ -687,25 +659,6 @@ public final class Sinks {
 		 *
 		 * @implNote Implementors should typically delegate to {@link #tryEmitComplete()}. Failure {@link Emission}
 		 * don't need any particular handling where emitComplete is concerned.
-		 *
-		 * @see #tryEmitComplete()
-		 * @see Subscriber#onComplete()
-		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitComplete()} and handle the result.
-		 */
-		@Deprecated
-		default void emitComplete() {
-			emitComplete(EmitFailureHandler.FAIL_FAST);
-		}
-
-		/**
-		 * Terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
-		 * signal.
-		 * <p>
-		 * Generally, {@link #tryEmitComplete()} is preferable, since it allows a custom handling
-		 * of error cases.
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitComplete()}. Failure {@link Emission}
-		 * don't need any particular handling where emitComplete is concerned.
 		 * @implNote the duality between this method and {@link #tryEmitComplete()} is expected.
 		 *
 		 * @param failureHandler the failure handler that allows retrying failed {@link Emission}.
@@ -714,27 +667,6 @@ public final class Sinks {
 		 * @see Subscriber#onComplete()
 		 */
 		void emitComplete(EmitFailureHandler failureHandler);
-
-		/**
-		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
-		 * signal.
-		 * <p>
-		 * Generally, {@link #tryEmitError(Throwable)} is preferable since it allows a custom handling
-		 * of error cases, although this implies checking the returned {@link Emission} and correctly
-		 * acting on it (see implementation notes).
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitError(Throwable)} and act on
-		 * {@link Emission#FAIL_TERMINATED} by calling {@link Operators#onErrorDropped(Throwable, Context)}.
-		 *
-		 * @param error the exception to signal, not null
-		 * @see #tryEmitError(Throwable)
-		 * @see Subscriber#onError(Throwable)
-		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitError(Throwable)} and handle the result.
-		 */
-		@Deprecated
-		default void emitError(Throwable error) {
-			emitError(error, EmitFailureHandler.FAIL_FAST);
-		}
 
 		/**
 		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
@@ -817,25 +749,6 @@ public final class Sinks {
 		 *
 		 * @implNote Implementors should typically delegate to {@link #tryEmitEmpty()}. Failure {@link Emission}
 		 * don't need any particular handling where emitEmpty is concerned.
-		 *
-		 * @see #tryEmitEmpty()
-		 * @see Subscriber#onComplete()
-		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitEmpty()} and handle the result.
-		 */
-		@Deprecated
-		default void emitEmpty() {
-			emitEmpty(EmitFailureHandler.FAIL_FAST);
-		}
-
-		/**
-		 * Terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
-		 * signal.
-		 * <p>
-		 * Generally, {@link #tryEmitEmpty()} is preferable, since it allows a custom handling
-		 * of error cases.
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitEmpty()}. Failure {@link Emission}
-		 * don't need any particular handling where emitEmpty is concerned.
 		 * @implNote the duality between this method and {@link #tryEmitEmpty()} is expected.
 		 *
 		 * @param failureHandler the failure handler that allows retrying failed {@link Emission}.
@@ -844,27 +757,6 @@ public final class Sinks {
 		 * @see Subscriber#onComplete()
 		 */
 		void emitEmpty(EmitFailureHandler failureHandler);
-
-		/**
-		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
-		 * signal.
-		 * <p>
-		 * Generally, {@link #tryEmitError(Throwable)} is preferable since it allows a custom handling
-		 * of error cases, although this implies checking the returned {@link Emission} and correctly
-		 * acting on it (see implementation notes).
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitError(Throwable)} and act on
-		 * {@link Emission#FAIL_TERMINATED} by calling {@link Operators#onErrorDropped(Throwable, Context)}.
-		 *
-		 * @param error the exception to signal, not null
-		 * @see #tryEmitError(Throwable)
-		 * @see Subscriber#onError(Throwable)
-		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitError(Throwable)} and handle the result.
-		 */
-		@Deprecated
-		default void emitError(Throwable error) {
-			emitError(error, EmitFailureHandler.FAIL_FAST);
-		}
 
 		/**
 		 * Fail the sequence, generating an {@link Subscriber#onError(Throwable) onError}
@@ -931,35 +823,6 @@ public final class Sinks {
 		 * @see Subscriber#onComplete()
 		 */
 		Emission tryEmitValue(@Nullable T value);
-
-		/**
-		 * Emit a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal
-		 * immediately followed by an {@link Subscriber#onComplete() onComplete} signal,
-		 * or notifies the downstream subscriber(s) of a failure to do so via {@link #emitError(Throwable, EmitFailureHandler)}
-		 * (with an {@link Exceptions#isOverflow(Throwable) overflow exception}).
-		 * <p>
-		 * Generally, {@link #tryEmitValue(Object)} is preferable since it allows a custom handling
-		 * of error cases, although this implies checking the returned {@link Emission} and correctly
-		 * acting on it (see implementation notes).
-		 * <p>
-		 * Might throw an unchecked exception in case of a fatal error downstream which cannot
-		 * be propagated to any asynchronous handler (aka a bubbling exception).
-		 *
-		 * @implNote Implementors should typically delegate to {@link #tryEmitValue (Object)} and act on
-		 * failures: {@link Emission#FAIL_OVERFLOW} should lead to {@link Operators#onDiscard(Object, Context)} followed
-		 * by {@link #emitError(Throwable, EmitFailureHandler)}. {@link Emission#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
-		 * {@link Emission#FAIL_TERMINATED} should lead to {@link Operators#onNextDropped(Object, Context)}.
-		 *
-		 * @param value the value to emit and complete with, or {@code null} to only trigger an onComplete
-		 * @see #tryEmitValue(Object)
-		 * @see Subscriber#onNext(Object)
-		 * @see Subscriber#onComplete()
-		 * @deprecated to be removed shortly after 3.4.0-RC1. Use {@link #tryEmitValue(Object)} and handle the result.
-		 */
-		@Deprecated
-		default void emitValue(@Nullable T value) {
-			emitValue(value, EmitFailureHandler.FAIL_FAST);
-		}
 
 		/**
 		 * Emit a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal

@@ -173,12 +173,12 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			i++;
 
-			w.emitNext(t);
+			w.emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 
 			if (i == size) {
 				index = 0;
 				window = null;
-				w.emitComplete();
+				w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 			else {
 				index = i;
@@ -195,7 +195,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.emitError(t);
+				w.emitError(t, Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 
 			actual.onError(t);
@@ -210,7 +210,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.emitComplete();
+				w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 
 			actual.onComplete();
@@ -344,7 +344,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			i++;
 
 			if (w != null) {
-				w.emitNext(t);
+				w.emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 			else {
 				Operators.onDiscard(t, ctx);
@@ -353,7 +353,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			if (i == size) {
 				window = null;
 				if (w != null) {
-					w.emitComplete();
+					w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 				}
 			}
 
@@ -376,7 +376,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.emitError(t);
+				w.emitError(t, Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 
 			actual.onError(t);
@@ -392,7 +392,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			Sinks.Many<T> w = window;
 			if (w != null) {
 				window = null;
-				w.emitComplete();
+				w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 
 			actual.onComplete();
@@ -553,7 +553,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			i++;
 
 			for (Sinks.Many<T> w : this) {
-				w.emitNext(t);
+				w.emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 
 			int p = produced + 1;
@@ -562,7 +562,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 
 				Sinks.Many<T> w = poll();
 				if (w != null) {
-					w.emitComplete();
+					w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 				}
 			}
 			else {
@@ -586,7 +586,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			done = true;
 
 			for (Sinks.Many<T> w : this) {
-				w.emitError(t);
+				w.emitError(t, Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 			clear();
 
@@ -602,7 +602,7 @@ final class FluxWindow<T> extends InternalFluxOperator<T, Flux<T>> {
 			done = true;
 
 			for (Sinks.Many<T> w : this) {
-				w.emitComplete();
+				w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 			}
 			clear();
 

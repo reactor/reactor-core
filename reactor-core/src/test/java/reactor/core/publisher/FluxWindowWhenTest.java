@@ -44,6 +44,7 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxWindowWhenTest {
 
@@ -157,23 +158,23 @@ public class FluxWindowWhenTest {
 		sp1.asFlux().windowWhen(sp2.asFlux(), v -> v == 1 ? sp3.asFlux() : sp4.asFlux())
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
+		sp1.emitNext(1, FAIL_FAST);
 
-		sp2.emitNext(1);
+		sp2.emitNext(1, FAIL_FAST);
 
-		sp1.emitNext(2);
+		sp1.emitNext(2, FAIL_FAST);
 
-		sp2.emitNext(2);
+		sp2.emitNext(2, FAIL_FAST);
 
-		sp1.emitNext(3);
+		sp1.emitNext(3, FAIL_FAST);
 
-		sp3.emitNext(1);
+		sp3.emitNext(1, FAIL_FAST);
 
-		sp1.emitNext(4);
+		sp1.emitNext(4, FAIL_FAST);
 
-		sp4.emitNext(1);
+		sp4.emitNext(1, FAIL_FAST);
 
-		sp1.emitComplete();
+		sp1.emitComplete(FAIL_FAST);
 
 		ts.assertValueCount(2)
 		  .assertNoError()
@@ -200,24 +201,24 @@ public class FluxWindowWhenTest {
 		source.asFlux().windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorForOthers.asFlux())
 		      .subscribe(ts);
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
-		openSelector.emitNext(1);
+		openSelector.emitNext(1, FAIL_FAST);
 
-		source.emitNext(2);
+		source.emitNext(2, FAIL_FAST);
 
-		openSelector.emitNext(2);
+		openSelector.emitNext(2, FAIL_FAST);
 
-		source.emitNext(3);
+		source.emitNext(3, FAIL_FAST);
 
-		closeSelectorFor1.emitNext(1);
+		closeSelectorFor1.emitNext(1, FAIL_FAST);
 
-		source.emitNext(4);
+		source.emitNext(4, FAIL_FAST);
 
-		closeSelectorForOthers.emitNext(1);
+		closeSelectorForOthers.emitNext(1, FAIL_FAST);
 
-		openSelector.emitComplete();
-		source.emitComplete(); //TODO evaluate, should the open completing cause the source to lose subscriber?
+		openSelector.emitComplete(FAIL_FAST);
+		source.emitComplete(FAIL_FAST); //TODO evaluate, should the open completing cause the source to lose subscriber?
 
 		ts.assertValueCount(2)
 		  .assertNoError()
@@ -244,16 +245,16 @@ public class FluxWindowWhenTest {
 		source.asFlux().windowWhen(openSelector.asFlux(), v -> v == 1 ? closeSelectorFor1.asFlux() : closeSelectorOthers.asFlux())
 		      .subscribe(ts);
 
-		openSelector.emitNext(1);
+		openSelector.emitNext(1, FAIL_FAST);
 
-		source.emitNext(1);
-		source.emitNext(2);
-		source.emitNext(3);
+		source.emitNext(1, FAIL_FAST);
+		source.emitNext(2, FAIL_FAST);
+		source.emitNext(3, FAIL_FAST);
 
-		closeSelectorFor1.emitComplete();
+		closeSelectorFor1.emitComplete(FAIL_FAST);
 
-		source.emitNext(4);
-		source.emitComplete();
+		source.emitNext(4, FAIL_FAST);
+		source.emitComplete(FAIL_FAST);
 
 		ts.assertValueCount(1)
 		  .assertNoError()
@@ -282,16 +283,16 @@ public class FluxWindowWhenTest {
 								   .flatMap(Flux::buffer)
 								   .collectList())
 					.then(() -> {
-						numbers.emitNext(1);
-						numbers.emitNext(2);
-						bucketOpening.emitNext(1);
-						numbers.emitNext(3);
-						bucketOpening.emitNext(1);
-						numbers.emitNext(5);
-						boundaryFlux.emitNext(1);
-						bucketOpening.emitNext(1);
-						boundaryFlux.emitComplete();
-						numbers.emitComplete();
+						numbers.emitNext(1, FAIL_FAST);
+						numbers.emitNext(2, FAIL_FAST);
+						bucketOpening.emitNext(1, FAIL_FAST);
+						numbers.emitNext(3, FAIL_FAST);
+						bucketOpening.emitNext(1, FAIL_FAST);
+						numbers.emitNext(5, FAIL_FAST);
+						boundaryFlux.emitNext(1, FAIL_FAST);
+						bucketOpening.emitNext(1, FAIL_FAST);
+						boundaryFlux.emitComplete(FAIL_FAST);
+						numbers.emitComplete(FAIL_FAST);
 						//"the collected overlapping lists are available"
 					})
 					.assertNext(res -> assertThat(res).containsExactly(Arrays.asList(3, 5), Arrays.asList(5)))

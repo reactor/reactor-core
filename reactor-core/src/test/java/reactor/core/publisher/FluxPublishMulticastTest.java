@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 import static reactor.core.publisher.Flux.range;
 import static reactor.core.publisher.Flux.zip;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
@@ -160,12 +161,12 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		  .publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
 		  .subscribe(ts);
 
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitNext(3);
-		up.emitNext(4);
-		up.emitNext(5);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitNext(3, FAIL_FAST);
+		up.emitNext(4, FAIL_FAST);
+		up.emitNext(5, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		ts.assertValues(1 + 2, 2 + 3, 3 + 4, 4 + 5)
 		  .assertNoError()

@@ -29,6 +29,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxSampleTimeoutTest {
 
@@ -44,25 +45,25 @@ public class FluxSampleTimeoutTest {
 		   .sampleTimeout(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
-		sp2.emitNext(1);
+		sp1.emitNext(1, FAIL_FAST);
+		sp2.emitNext(1, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.emitNext(2);
-		sp1.emitNext(3);
-		sp1.emitNext(4);
+		sp1.emitNext(2, FAIL_FAST);
+		sp1.emitNext(3, FAIL_FAST);
+		sp1.emitNext(4, FAIL_FAST);
 
-		sp3.emitNext(2);
+		sp3.emitNext(2, FAIL_FAST);
 
 		ts.assertValues(1, 4)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.emitNext(5);
-		sp1.emitComplete();
+		sp1.emitNext(5, FAIL_FAST);
+		sp1.emitComplete(FAIL_FAST);
 
 		ts.assertValues(1, 4, 5)
 		  .assertNoError()
@@ -84,8 +85,8 @@ public class FluxSampleTimeoutTest {
 		   .sampleTimeout(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
-		sp1.emitError(new RuntimeException("forced failure"));
+		sp1.emitNext(1, FAIL_FAST);
+		sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -107,8 +108,8 @@ public class FluxSampleTimeoutTest {
 		   .sampleTimeout(v -> sp2.asFlux())
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
-		sp2.emitError(new RuntimeException("forced failure"));
+		sp1.emitNext(1, FAIL_FAST);
+		sp2.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
@@ -129,7 +130,7 @@ public class FluxSampleTimeoutTest {
 		   .sampleTimeout(v -> null)
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
+		sp1.emitNext(1, FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)

@@ -27,6 +27,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxSampleFirstTest {
 
@@ -42,31 +43,31 @@ public class FluxSampleFirstTest {
 		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
+		sp1.emitNext(1, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.emitNext(2);
+		sp1.emitNext(2, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.emitNext(1);
+		sp2.emitNext(1, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.emitNext(3);
+		sp1.emitNext(3, FAIL_FAST);
 
 		ts.assertValues(1, 3)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.emitComplete();
+		sp1.emitComplete(FAIL_FAST);
 
 		ts.assertValues(1, 3)
 		  .assertNoError()
@@ -89,8 +90,8 @@ public class FluxSampleFirstTest {
 		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
-		sp1.emitError(new RuntimeException("forced failure"));
+		sp1.emitNext(1, FAIL_FAST);
+		sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -114,8 +115,8 @@ public class FluxSampleFirstTest {
 		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
-		sp2.emitError(new RuntimeException("forced failure"));
+		sp1.emitNext(1, FAIL_FAST);
+		sp2.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -139,7 +140,7 @@ public class FluxSampleFirstTest {
 		})
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
+		sp1.emitNext(1, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertError(RuntimeException.class)
@@ -159,7 +160,7 @@ public class FluxSampleFirstTest {
 		   .sampleFirst(v -> null)
 		   .subscribe(ts);
 
-		sp1.emitNext(1);
+		sp1.emitNext(1, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertError(NullPointerException.class)

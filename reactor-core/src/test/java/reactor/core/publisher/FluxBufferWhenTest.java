@@ -53,6 +53,7 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxBufferWhenTest {
 
@@ -179,43 +180,43 @@ public class FluxBufferWhenTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.emitNext(1);
+		sp1.emitNext(1, FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.emitNext(1);
+		sp2.emitNext(1, FAIL_FAST);
 
 		Assert.assertTrue("sp3 has no subscribers?", Scannable.from(sp3)
 															  .inners()
 															  .count() != 0);
 
-		sp1.emitNext(2);
-		sp1.emitNext(3);
-		sp1.emitNext(4);
+		sp1.emitNext(2, FAIL_FAST);
+		sp1.emitNext(3, FAIL_FAST);
+		sp1.emitNext(4, FAIL_FAST);
 
-		sp3.emitComplete();
+		sp3.emitComplete(FAIL_FAST);
 
 		ts.assertValues(Arrays.asList(2, 3, 4))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.emitNext(5);
+		sp1.emitNext(5, FAIL_FAST);
 
-		sp2.emitNext(2);
+		sp2.emitNext(2, FAIL_FAST);
 
 		assertThat(sp4.currentSubscriberCount()).as("sp4 has subscriber").isPositive();
 
-		sp1.emitNext(6);
+		sp1.emitNext(6, FAIL_FAST);
 
-		sp4.emitComplete();
+		sp4.emitComplete(FAIL_FAST);
 
 		ts.assertValues(Arrays.asList(2, 3, 4), Collections.singletonList(6))
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.emitComplete();
+		sp1.emitComplete(FAIL_FAST);
 
 		ts.assertValues(Arrays.asList(2, 3, 4), Collections.singletonList(6))
 		  .assertNoError()
@@ -238,22 +239,22 @@ public class FluxBufferWhenTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		source.emitNext(1);
+		source.emitNext(1, FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		open.emitNext(1);
-		open.emitComplete();
+		open.emitNext(1, FAIL_FAST);
+		open.emitComplete(FAIL_FAST);
 
 		assertThat(close.currentSubscriberCount()).as("close has subscriber").isPositive();
 
-		source.emitNext(2);
-		source.emitNext(3);
-		source.emitNext(4);
+		source.emitNext(2, FAIL_FAST);
+		source.emitNext(3, FAIL_FAST);
+		source.emitNext(4, FAIL_FAST);
 
-		close.emitComplete();
+		close.emitComplete(FAIL_FAST);
 
 		ts.assertValues(Arrays.asList(2, 3, 4))
 		  .assertNoError()
@@ -278,16 +279,16 @@ public class FluxBufferWhenTest {
 								   .bufferWhen(bucketOpening.asFlux(), u -> boundaryFlux.asFlux())
 								   .collectList())
 					.then(() -> {
-						numbers.emitNext(1);
-						numbers.emitNext(2);
-						bucketOpening.emitNext(1);
-						numbers.emitNext(3);
-						bucketOpening.emitNext(1);
-						numbers.emitNext(5);
-						boundaryFlux.emitNext(1);
-						bucketOpening.emitNext(1);
-						boundaryFlux.emitComplete();
-						numbers.emitComplete();
+						numbers.emitNext(1, FAIL_FAST);
+						numbers.emitNext(2, FAIL_FAST);
+						bucketOpening.emitNext(1, FAIL_FAST);
+						numbers.emitNext(3, FAIL_FAST);
+						bucketOpening.emitNext(1, FAIL_FAST);
+						numbers.emitNext(5, FAIL_FAST);
+						boundaryFlux.emitNext(1, FAIL_FAST);
+						bucketOpening.emitNext(1, FAIL_FAST);
+						boundaryFlux.emitComplete(FAIL_FAST);
+						numbers.emitComplete(FAIL_FAST);
 						//"the collected overlapping lists are available"
 					})
 					.assertNext(res -> assertThat(res).containsExactly(Arrays.asList(3, 5), Collections.singletonList(5), Collections.emptyList()))

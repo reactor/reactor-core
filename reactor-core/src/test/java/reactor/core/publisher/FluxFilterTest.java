@@ -39,6 +39,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxFilterTest extends FluxOperatorTest<String, String> {
 
@@ -195,9 +196,9 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		  .subscribe(ts);
 
 		for (int i = 1; i < 11; i++) {
-			up.emitNext(i);
+			up.emitNext(i, FAIL_FAST);
 		}
-		up.emitComplete();
+		up.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2, 4, 6, 8, 10)
 		  .assertNoError()
@@ -216,14 +217,14 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		    .flatMap(w -> up.asFlux().filter(v -> (v & 1) == 0))
 		    .subscribe(ts);
 
-		up.emitNext(1);
-		up.emitNext(2);
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
 
 		ts.assertValues(2)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		up.emitComplete();
+		up.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2)
 		  .assertNoError()
@@ -242,14 +243,14 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		    .flatMap(w -> up.asFlux().filter(v -> (v & 1) == 0), false, 1, 1)
 		    .subscribe(ts);
 
-		up.emitNext(1);
-		up.emitNext(2);
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
 
 		ts.assertValues(2)
 		  .assertNoError()
 		  .assertNotComplete();
 
-		up.emitComplete();
+		up.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2)
 		  .assertNoError()

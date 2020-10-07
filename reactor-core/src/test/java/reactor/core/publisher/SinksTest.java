@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 /**
  * @author Simon Baslé
@@ -88,10 +89,10 @@ class SinksTest {
 			Flux<Integer> flux = sink.asFlux();
 			AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-			sink.emitNext(1);
-			sink.emitNext(2);
-			sink.emitNext(3);
-			sink.emitError(new IllegalStateException("boom"));
+			sink.emitNext(1, FAIL_FAST);
+			sink.emitNext(2, FAIL_FAST);
+			sink.emitNext(3, FAIL_FAST);
+			sink.emitError(new IllegalStateException("boom"), FAIL_FAST);
 			flux.subscribe(first);
 
 			first.assertNoValues()
@@ -186,8 +187,8 @@ class SinksTest {
 		void singleOrEmptyIsCompletableOnlyOnce_emptyVsValued() {
 			StepVerifier.create(mono)
 						.then(() -> {
-							singleOrEmpty.emitValue(null);
-							singleOrEmpty.emitValue(-1);
+							singleOrEmpty.emitValue(null, FAIL_FAST);
+							singleOrEmpty.emitValue(-1, FAIL_FAST);
 						})
 						.expectComplete()
 						.verifyThenAssertThat()
@@ -198,8 +199,8 @@ class SinksTest {
 		void singleOrEmptyIsCompletableOnlyOnce_emptyVsError() {
 			StepVerifier.create(mono)
 						.then(() -> {
-							singleOrEmpty.emitEmpty();
-							singleOrEmpty.emitError(new IllegalStateException("boom"));
+							singleOrEmpty.emitEmpty(FAIL_FAST);
+							singleOrEmpty.emitError(new IllegalStateException("boom"), FAIL_FAST);
 						})
 						.expectComplete()
 						.verifyThenAssertThat()
@@ -210,8 +211,8 @@ class SinksTest {
 		void singleOrEmptyIsCompletableOnlyOnce_valuedVsEmpty() {
 			StepVerifier.create(mono)
 						.then(() -> {
-							singleOrEmpty.emitValue(1);
-							singleOrEmpty.emitValue(null);
+							singleOrEmpty.emitValue(1, FAIL_FAST);
+							singleOrEmpty.emitValue(null, FAIL_FAST);
 						})
 						.expectNext(1)
 						.expectComplete()
@@ -223,8 +224,8 @@ class SinksTest {
 		void singleOrEmptyIsCompletableOnlyOnce_valuedVsError() {
 			StepVerifier.create(mono)
 						.then(() -> {
-							singleOrEmpty.emitValue(1);
-							singleOrEmpty.emitError(new IllegalStateException("boom"));
+							singleOrEmpty.emitValue(1, FAIL_FAST);
+							singleOrEmpty.emitError(new IllegalStateException("boom"), FAIL_FAST);
 						})
 						.expectNext(1)
 						.expectComplete()
@@ -236,8 +237,8 @@ class SinksTest {
 		void singleOrEmptyIsCompletableOnlyOnce_errorVsValued() {
 			StepVerifier.create(mono)
 						.then(() -> {
-							singleOrEmpty.emitError(new IllegalStateException("boom"));
-							singleOrEmpty.emitValue(-1);
+							singleOrEmpty.emitError(new IllegalStateException("boom"), FAIL_FAST);
+							singleOrEmpty.emitValue(-1, FAIL_FAST);
 						})
 						.expectErrorMessage("boom")
 						.verifyThenAssertThat()
@@ -248,8 +249,8 @@ class SinksTest {
 		void singleOrEmptyIsCompletableOnlyOnce_errorVsEmpty() {
 			StepVerifier.create(mono)
 						.then(() -> {
-							singleOrEmpty.emitError(new IllegalStateException("boom"));
-							singleOrEmpty.emitEmpty();
+							singleOrEmpty.emitError(new IllegalStateException("boom"), FAIL_FAST);
+							singleOrEmpty.emitEmpty(FAIL_FAST);
 						})
 						.expectErrorMessage("boom")
 						.verifyThenAssertThat()
@@ -259,7 +260,7 @@ class SinksTest {
 
 		@Test
 		void canBeValuedEarly() {
-			singleOrEmpty.emitValue(1);
+			singleOrEmpty.emitValue(1, FAIL_FAST);
 
 			StepVerifier.create(mono)
 						.expectNext(1)
@@ -268,7 +269,7 @@ class SinksTest {
 
 		@Test
 		void canBeCompletedEarly() {
-			singleOrEmpty.emitEmpty();
+			singleOrEmpty.emitEmpty(FAIL_FAST);
 
 			StepVerifier.create(mono)
 						.verifyComplete();
@@ -276,7 +277,7 @@ class SinksTest {
 
 		@Test
 		void canBeErroredEarly() {
-			singleOrEmpty.emitError(new IllegalStateException("boom"));
+			singleOrEmpty.emitError(new IllegalStateException("boom"), FAIL_FAST);
 
 			StepVerifier.create(mono)
 						.verifyErrorMessage("boom");
@@ -287,7 +288,7 @@ class SinksTest {
 			StepVerifier.create(mono)
 						.expectSubscription()
 						.expectNoEvent(Duration.ofMillis(100))
-						.then(() -> singleOrEmpty.emitValue(1))
+						.then(() -> singleOrEmpty.emitValue(1, FAIL_FAST))
 						.expectNext(1)
 						.verifyComplete();
 		}
@@ -297,7 +298,7 @@ class SinksTest {
 			StepVerifier.create(mono)
 						.expectSubscription()
 						.expectNoEvent(Duration.ofMillis(100))
-						.then(() -> singleOrEmpty.emitEmpty())
+						.then(() -> singleOrEmpty.emitEmpty(FAIL_FAST))
 						.verifyComplete();
 		}
 
@@ -306,13 +307,13 @@ class SinksTest {
 			StepVerifier.create(mono)
 						.expectSubscription()
 						.expectNoEvent(Duration.ofMillis(100))
-						.then(() -> singleOrEmpty.emitError(new IllegalStateException("boom")))
+						.then(() -> singleOrEmpty.emitError(new IllegalStateException("boom"), FAIL_FAST))
 						.verifyErrorMessage("boom");
 		}
 
 		@Test
 		void replaysValuedCompletionToLateSubscribersWithBackpressure() {
-			singleOrEmpty.emitValue(1);
+			singleOrEmpty.emitValue(1, FAIL_FAST);
 			mono.subscribe(); //first subscriber
 
 			StepVerifier.create(mono, StepVerifierOptions.create()
@@ -332,7 +333,7 @@ class SinksTest {
 
 		@Test
 		void replaysEmptyCompletionToLateSubscribersEvenWithoutRequest() {
-			singleOrEmpty.emitEmpty();
+			singleOrEmpty.emitEmpty(FAIL_FAST);
 			mono.subscribe(); //first subscriber
 
 			StepVerifier.create(mono, StepVerifierOptions.create()
@@ -349,7 +350,7 @@ class SinksTest {
 
 		@Test
 		void replaysErrorCompletionToLateSubscribers() {
-			singleOrEmpty.emitError(new IllegalStateException("boom"));
+			singleOrEmpty.emitError(new IllegalStateException("boom"), FAIL_FAST);
 			mono.subscribe(); //first subscriber
 
 			StepVerifier.create(mono, StepVerifierOptions.create()
@@ -431,11 +432,11 @@ class SinksTest {
 						});
 
 						requestLatch.await(1, TimeUnit.SECONDS);
-						sink.emitNext(1);
-						sink.emitNext(2);
-						sink.emitNext(3);
-						sink.emitNext(4);
-						sink.emitComplete();
+						sink.emitNext(1, FAIL_FAST);
+						sink.emitNext(2, FAIL_FAST);
+						sink.emitNext(3, FAIL_FAST);
+						sink.emitNext(4, FAIL_FAST);
+						sink.emitComplete(FAIL_FAST);
 
 						f1.get();
 						f2.get();
@@ -459,7 +460,7 @@ class SinksTest {
 				dynamicTest("acceptsOnlyOneSubscriber", () -> {
 					Sinks.Many<Integer> sink = sinkSupplier.get();
 					Flux<Integer> flux = sink.asFlux();
-					sink.emitComplete();
+					sink.emitComplete(FAIL_FAST);
 
 					assertThatCode(flux::subscribe).doesNotThrowAnyException();
 					StepVerifier.create(flux)
@@ -493,11 +494,11 @@ class SinksTest {
 						});
 
 						requestLatch.await(1, TimeUnit.SECONDS);
-						sink.emitNext(1);
-						sink.emitNext(2);
-						sink.emitNext(3);
-						sink.emitNext(4);
-						sink.emitComplete();
+						sink.emitNext(1, FAIL_FAST);
+						sink.emitNext(2, FAIL_FAST);
+						sink.emitNext(3, FAIL_FAST);
+						sink.emitNext(4, FAIL_FAST);
+						sink.emitComplete(FAIL_FAST);
 
 						future.get();
 					}
@@ -516,16 +517,16 @@ class SinksTest {
 				AssertSubscriber<Integer> s2 = AssertSubscriber.create();
 
 				flux.subscribe(s1);
-				sink.emitNext(1);
-				sink.emitNext(2);
-				sink.emitNext(3);
+				sink.emitNext(1, FAIL_FAST);
+				sink.emitNext(2, FAIL_FAST);
+				sink.emitNext(3, FAIL_FAST);
 				s1.assertValues(1, 2, 3);
 
 				flux.subscribe(s2);
 				s2.assertNoValues()
 				  .assertNotComplete();
 
-				sink.emitComplete();
+				sink.emitComplete(FAIL_FAST);
 				s1.assertValueCount(3)
 				  .assertComplete();
 				s2.assertNoValues()
@@ -539,8 +540,8 @@ class SinksTest {
 				flux.subscribe(); //first subscriber
 				AssertSubscriber<Integer> late = AssertSubscriber.create();
 
-				sink.emitNext(1);
-				sink.emitComplete();
+				sink.emitNext(1, FAIL_FAST);
+				sink.emitComplete(FAIL_FAST);
 				flux.subscribe(late);
 
 				late.assertNoValues()
@@ -555,8 +556,8 @@ class SinksTest {
 					.subscribe(); //first subscriber, ignore errors
 				AssertSubscriber<Integer> late = AssertSubscriber.create();
 
-				sink.emitNext(1);
-				sink.emitError(new IllegalStateException("boom"));
+				sink.emitNext(1, FAIL_FAST);
+				sink.emitError(new IllegalStateException("boom"), FAIL_FAST);
 				flux.subscribe(late);
 
 				late.assertNoValues()
@@ -578,16 +579,16 @@ class SinksTest {
 																 AssertSubscriber<Integer> s2 = AssertSubscriber.create();
 
 																 flux.subscribe(s1);
-																 sink.emitNext(1);
-																 sink.emitNext(2);
-																 sink.emitNext(3);
+																 sink.emitNext(1, FAIL_FAST);
+																 sink.emitNext(2, FAIL_FAST);
+																 sink.emitNext(3, FAIL_FAST);
 																 s1.assertValues(1, 2, 3);
 
 																 flux.subscribe(s2);
 																 s2.assertValues(1, 2, 3)
 																   .assertNotComplete();
 
-																 sink.emitComplete();
+																 sink.emitComplete(FAIL_FAST);
 																 s1.assertValueCount(3)
 																   .assertComplete();
 																 s2.assertValues(1, 2, 3)
@@ -617,7 +618,7 @@ class SinksTest {
 																			   flux.subscribe(s1);
 																			   List<Integer> expected = new ArrayList<>();
 																			   for (int i = 0; i < expectedReplay + 10; i++) {
-																				   sink.emitNext(i);
+																				   sink.emitNext(i, FAIL_FAST);
 																				   if (i >= 10)
 																					   expected.add(i);
 																			   }
@@ -627,7 +628,7 @@ class SinksTest {
 																			   s2.assertValueSequence(expected)
 																				 .assertNotComplete();
 
-																			   sink.emitComplete();
+																			   sink.emitComplete(FAIL_FAST);
 																			   s1.assertValueCount(expectedReplay + 10)
 																				 .assertComplete();
 																			   s2.assertValueSequence(expected)
@@ -643,11 +644,11 @@ class SinksTest {
 
 																			   List<Integer> expected = new ArrayList<>();
 																			   for (int i = 0; i < expectedReplay + 10; i++) {
-																				   sink.emitNext(i);
+																				   sink.emitNext(i, FAIL_FAST);
 																				   if (i >= 10)
 																					   expected.add(i);
 																			   }
-																			   sink.emitComplete();
+																			   sink.emitComplete(FAIL_FAST);
 																			   flux.subscribe(late);
 
 																			   late.assertValueSequence(expected)
@@ -664,11 +665,11 @@ class SinksTest {
 
 																			   List<Integer> expected = new ArrayList<>();
 																			   for (int i = 0; i < expectedReplay + 10; i++) {
-																				   sink.emitNext(i);
+																				   sink.emitNext(i, FAIL_FAST);
 																				   if (i >= 10)
 																					   expected.add(i);
 																			   }
-																			   sink.emitError(new IllegalStateException("boom"));
+																			   sink.emitError(new IllegalStateException("boom"), FAIL_FAST);
 																			   flux.subscribe(late);
 
 																			   late.assertValueSequence(expected)
@@ -684,15 +685,15 @@ class SinksTest {
 				Flux<Integer> flux = sink.asFlux();
 				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-				sink.emitNext(1);
-				sink.emitNext(2);
-				sink.emitNext(3);
+				sink.emitNext(1, FAIL_FAST);
+				sink.emitNext(2, FAIL_FAST);
+				sink.emitNext(3, FAIL_FAST);
 				flux.subscribe(first);
 
 				first.assertNoValues()
 					 .assertNotComplete();
 
-				sink.emitComplete();
+				sink.emitComplete(FAIL_FAST);
 				first.assertNoValues()
 					 .assertComplete();
 			}), dynamicTest("immediatelyCompleteFirstSubscriber", () -> {
@@ -700,8 +701,8 @@ class SinksTest {
 				Flux<Integer> flux = sink.asFlux();
 				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-				sink.emitNext(1);
-				sink.emitComplete();
+				sink.emitNext(1, FAIL_FAST);
+				sink.emitComplete(FAIL_FAST);
 				flux.subscribe(first);
 
 				first.assertNoValues()
@@ -711,8 +712,8 @@ class SinksTest {
 				Flux<Integer> flux = sink.asFlux();
 				AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-				sink.emitNext(1);
-				sink.emitError(new IllegalStateException("boom"));
+				sink.emitNext(1, FAIL_FAST);
+				sink.emitError(new IllegalStateException("boom"), FAIL_FAST);
 				flux.subscribe(first);
 
 				first.assertNoValues()
@@ -726,15 +727,15 @@ class SinksTest {
 																					   Flux<Integer> flux = sink.asFlux();
 																					   AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-																					   sink.emitNext(1);
-																					   sink.emitNext(2);
-																					   sink.emitNext(3);
+																					   sink.emitNext(1, FAIL_FAST);
+																					   sink.emitNext(2, FAIL_FAST);
+																					   sink.emitNext(3, FAIL_FAST);
 																					   flux.subscribe(first);
 
 																					   first.assertValues(1, 2, 3)
 																							.assertNotComplete();
 
-																					   sink.emitComplete();
+																					   sink.emitComplete(FAIL_FAST);
 																					   first.assertComplete();
 																				   }),
 
@@ -744,8 +745,8 @@ class SinksTest {
 																					   Flux<Integer> flux = sink.asFlux();
 																					   AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-																					   sink.emitNext(1);
-																					   sink.emitComplete();
+																					   sink.emitNext(1, FAIL_FAST);
+																					   sink.emitComplete(FAIL_FAST);
 																					   flux.subscribe(first);
 
 																					   first.assertValues(1)
@@ -758,10 +759,10 @@ class SinksTest {
 																					   Flux<Integer> flux = sink.asFlux();
 																					   AssertSubscriber<Integer> first = AssertSubscriber.create();
 
-																					   sink.emitNext(1);
-																					   sink.emitNext(2);
-																					   sink.emitNext(3);
-																					   sink.emitError(new IllegalStateException("boom"));
+																					   sink.emitNext(1, FAIL_FAST);
+																					   sink.emitNext(2, FAIL_FAST);
+																					   sink.emitNext(3, FAIL_FAST);
+																					   sink.emitError(new IllegalStateException("boom"), FAIL_FAST);
 																					   flux.subscribe(first);
 
 																					   first.assertValues(1, 2, 3)
@@ -776,7 +777,7 @@ class SinksTest {
 
 				List<Integer> expected = new ArrayList<>();
 				for (int i = 0; i < 10 + expectedBuffering; i++) {
-					sink.emitNext(i);
+					sink.emitNext(i, FAIL_FAST);
 					if (i >= 10) {
 						expected.add(i);
 					}
@@ -786,7 +787,7 @@ class SinksTest {
 				first.assertValueSequence(expected)
 					 .assertNotComplete();
 
-				sink.emitComplete();
+				sink.emitComplete(FAIL_FAST);
 				first.assertValueSequence(expected)
 					 .assertComplete();
 			}), dynamicTest("replayLimitedHistoryAndCompleteFirstSubscriber", () -> {
@@ -796,12 +797,12 @@ class SinksTest {
 
 				List<Integer> expected = new ArrayList<>();
 				for (int i = 0; i < 10 + expectedBuffering; i++) {
-					sink.emitNext(i);
+					sink.emitNext(i, FAIL_FAST);
 					if (i >= 10) {
 						expected.add(i);
 					}
 				}
-				sink.emitComplete();
+				sink.emitComplete(FAIL_FAST);
 				flux.subscribe(first);
 
 				first.assertValueSequence(expected)
@@ -813,12 +814,12 @@ class SinksTest {
 
 				List<Integer> expected = new ArrayList<>();
 				for (int i = 0; i < 10 + expectedBuffering; i++) {
-					sink.emitNext(i);
+					sink.emitNext(i, FAIL_FAST);
 					if (i >= 10) {
 						expected.add(i);
 					}
 				}
-				sink.emitError(new IllegalStateException("boom"));
+				sink.emitError(new IllegalStateException("boom"), FAIL_FAST);
 				flux.subscribe(first);
 
 				first.assertValueSequence(expected)

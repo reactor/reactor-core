@@ -44,6 +44,7 @@ import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Scannable.from;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxBufferTimeoutTest {
 
@@ -227,7 +228,7 @@ public class FluxBufferTimeoutTest {
 		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(0))
 		            .thenRequest(2)
 		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(10))
-		            .then(() -> sink.emitNext("a"))
+		            .then(() -> sink.emitNext("a", FAIL_FAST))
 		            .thenAwait(Duration.ofMillis(100))
 		            .assertNext(s -> assertThat(s).containsExactly("a"))
 		            .then(() -> assertThat(requestedOutstanding.get()).isEqualTo(9))

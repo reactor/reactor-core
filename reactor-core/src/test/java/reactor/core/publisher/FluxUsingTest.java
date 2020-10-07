@@ -37,6 +37,7 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
@@ -270,7 +271,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		assertThat(tp.currentSubscriberCount()).as("tp has subscriber").isPositive();
 
-		tp.emitNext(1);
+		tp.emitNext(1, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNotComplete()
@@ -278,7 +279,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 		ts.cancel();
 
-		tp.emitNext(2);
+		tp.emitNext(2, FAIL_FAST);
 
 		ts.assertValues(1)
 		  .assertNotComplete()

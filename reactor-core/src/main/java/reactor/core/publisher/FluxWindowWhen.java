@@ -146,7 +146,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 			}
 			if (fastEnter()) {
 				for (Sinks.Many<T> w : windows) {
-					w.emitNext(t);
+					w.emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 				}
 				if (leave(-1) == 0) {
 					return;
@@ -237,12 +237,12 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						if (e != null) {
 							actual.onError(e);
 							for (Sinks.Many<T> w : ws) {
-								w.emitError(e);
+								w.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST);
 							}
 						} else {
 							actual.onComplete();
 							for (Sinks.Many<T> w : ws) {
-								w.emitComplete();
+								w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 							}
 						}
 						ws.clear();
@@ -260,7 +260,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 						Sinks.Many<T> w = wo.w;
 						if (w != null) {
 							if (ws.remove(wo.w)) {
-								wo.w.emitComplete();
+								wo.w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 
 								if (OPEN_WINDOW_COUNT.decrementAndGet(this) == 0) {
 									dispose();
@@ -314,7 +314,7 @@ final class FluxWindowWhen<T, U, V> extends InternalFluxOperator<T, Flux<T>> {
 					for (Sinks.Many<T> w : ws) {
 						@SuppressWarnings("unchecked")
 						T t = (T) o;
-						w.emitNext(t);
+						w.emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 					}
 				}
 

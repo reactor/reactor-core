@@ -84,6 +84,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxTests extends AbstractReactorTest {
 
@@ -432,9 +433,9 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	public void promiseAcceptCountCannotExceedOne() {
 		Sinks.One<Object> deferred = Sinks.one();
-		deferred.emitValue("alpha");
+		deferred.emitValue("alpha", FAIL_FAST);
 		try {
-			deferred.emitValue("bravo");
+			deferred.emitValue("bravo", FAIL_FAST);
 		}
 		catch (Exception e) {
 			if(!Exceptions.isCancel(e)) {
@@ -451,8 +452,8 @@ public class FluxTests extends AbstractReactorTest {
 
 		StepVerifier.create(deferred.asMono())
 		            .then(() -> {
-			            deferred.emitError(error);
-			            deferred.emitValue(error);
+			            deferred.emitError(error, FAIL_FAST);
+			            deferred.emitValue(error, FAIL_FAST);
 		            })
 		            .expectErrorMessage("foo")
 		            .verifyThenAssertThat()
@@ -468,8 +469,8 @@ public class FluxTests extends AbstractReactorTest {
 
 		StepVerifier.create(deferred.asMono())
 		            .then(() -> {
-			            deferred.emitError(error);
-			            deferred.emitValue("alpha");
+			            deferred.emitError(error, FAIL_FAST);
+			            deferred.emitValue("alpha", FAIL_FAST);
 		            })
 		            .expectErrorMessage("foo")
 		            .verifyThenAssertThat()
@@ -544,9 +545,9 @@ public class FluxTests extends AbstractReactorTest {
 			  .subscribe();
 
 		for (int j = 0; j < 10; j++) {
-			source.emitNext(1);
+			source.emitNext(1, FAIL_FAST);
 		}
-		source.emitComplete();
+		source.emitComplete(FAIL_FAST);
 
 		Assert.assertTrue(result.block(Duration.ofSeconds(5)) >= avgTime * 0.6);
 	}
@@ -903,8 +904,8 @@ public class FluxTests extends AbstractReactorTest {
 
 		afterSubscribe.await(5, TimeUnit.SECONDS);
 
-		globalFeed.emitNext(2223);
-		globalFeed.emitNext(2224);
+		globalFeed.emitNext(2223, FAIL_FAST);
+		globalFeed.emitNext(2224, FAIL_FAST);
 
 		latch.await(5, TimeUnit.SECONDS);
 		assertEquals("Must have counted 4 elements", 0, latch.getCount());
@@ -1108,10 +1109,10 @@ public class FluxTests extends AbstractReactorTest {
 		                                                .doOnError(Throwable::printStackTrace)
 		                                                .subscribe(i -> latch.countDown()));
 
-		streamBatcher.emitNext(12);
-		streamBatcher.emitNext(123);
-		streamBatcher.emitNext(42);
-		streamBatcher.emitNext(666);
+		streamBatcher.emitNext(12, FAIL_FAST);
+		streamBatcher.emitNext(123, FAIL_FAST);
+		streamBatcher.emitNext(42, FAIL_FAST);
+		streamBatcher.emitNext(666, FAIL_FAST);
 
 		boolean finished = latch.await(2, TimeUnit.SECONDS);
 		if (!finished) {
@@ -1430,10 +1431,10 @@ public class FluxTests extends AbstractReactorTest {
 		                                                 .collectList()
 		                                                 .doOnTerminate(doneSemaphore::release))
 					.then(() -> {
-						forkEmitterProcessor.emitNext(1);
-						forkEmitterProcessor.emitNext(2);
-						forkEmitterProcessor.emitNext(3);
-						forkEmitterProcessor.emitComplete();
+						forkEmitterProcessor.emitNext(1, FAIL_FAST);
+						forkEmitterProcessor.emitNext(2, FAIL_FAST);
+						forkEmitterProcessor.emitNext(3, FAIL_FAST);
+						forkEmitterProcessor.emitComplete(FAIL_FAST);
 					})
 					.assertNext(res -> assertEquals(Arrays.asList("i0", "done1", "i0", "i1", "done2", "i0", "i1", "i2", "done3"), res))
 					.verifyComplete();

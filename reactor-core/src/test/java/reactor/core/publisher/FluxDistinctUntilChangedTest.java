@@ -43,6 +43,7 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, String> {
 
@@ -235,10 +236,10 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		                                 .filter(v -> true)
 		                                 .subscribeWith(AssertSubscriber.create());
 
-		dp.emitNext(1);
-		dp.emitNext(2);
-		dp.emitNext(3);
-		dp.emitComplete();
+		dp.emitNext(1, FAIL_FAST);
+		dp.emitNext(2, FAIL_FAST);
+		dp.emitNext(3, FAIL_FAST);
+		dp.emitComplete(FAIL_FAST);
 
 		ts.assertValues(1, 2, 3).assertComplete();
 	}

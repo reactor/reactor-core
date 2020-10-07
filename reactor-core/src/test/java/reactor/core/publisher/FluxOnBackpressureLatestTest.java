@@ -25,6 +25,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxOnBackpressureLatestTest {
 
@@ -74,13 +75,13 @@ public class FluxOnBackpressureLatestTest {
 
 		tp.asFlux().onBackpressureLatest().subscribe(ts);
 
-		tp.emitNext(1);
+		tp.emitNext(1, FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.emitNext(2);
+		tp.emitNext(2, FAIL_FAST);
 
 		ts.request(1);
 
@@ -88,8 +89,8 @@ public class FluxOnBackpressureLatestTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.emitNext(3);
-		tp.emitNext(4);
+		tp.emitNext(3, FAIL_FAST);
+		tp.emitNext(4, FAIL_FAST);
 
 		ts.request(2);
 
@@ -97,8 +98,8 @@ public class FluxOnBackpressureLatestTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		tp.emitNext(5);
-		tp.emitComplete();
+		tp.emitNext(5, FAIL_FAST);
+		tp.emitComplete(FAIL_FAST);
 
 		ts.assertValues(2, 4, 5)
 		  .assertNoError()
@@ -113,7 +114,7 @@ public class FluxOnBackpressureLatestTest {
 
 		tp.asFlux().onBackpressureLatest().subscribe(ts);
 
-		tp.emitError(new RuntimeException("forced failure"));
+		tp.emitError(new RuntimeException("forced failure"), FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -130,7 +131,7 @@ public class FluxOnBackpressureLatestTest {
 			public void onNext(Integer t) {
 				super.onNext(t);
 				if (t == 2) {
-					tp.emitNext(3);
+					tp.emitNext(3, FAIL_FAST);
 				}
 			}
 		};
@@ -139,8 +140,8 @@ public class FluxOnBackpressureLatestTest {
 		  .onBackpressureLatest()
 		  .subscribe(ts);
 
-		tp.emitNext(1);
-		tp.emitNext(2);
+		tp.emitNext(1, FAIL_FAST);
+		tp.emitNext(2, FAIL_FAST);
 
 		ts.request(1);
 

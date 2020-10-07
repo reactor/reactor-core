@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static reactor.core.Scannable.Attr;
 import static reactor.core.Scannable.Attr.*;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 /**
  * @author Stephane Maldini
@@ -137,7 +138,7 @@ public class EmitterProcessorTest {
 		assertThat(processor.sourceMode).as("sourceMode").isEqualTo(Fuseable.ASYNC);
 
 		processor.onNext(null);
-		assertThatThrownBy(() -> processor.emitNext(null)).isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> processor.emitNext(null, FAIL_FAST)).isInstanceOf(NullPointerException.class);
 	}
 
 	@Test
@@ -906,7 +907,7 @@ public class EmitterProcessorTest {
 
 		StepVerifier.create(emitterProcessor)
 		            .expectNext(1)
-		            .then(emitterProcessor::emitComplete)
+		            .then(() -> emitterProcessor.tryEmitComplete().orThrow())
 		            .verifyComplete();
 	}
 
@@ -935,7 +936,7 @@ public class EmitterProcessorTest {
 		assertThat(emitterProcessor.tryEmitNext(1)).as("filling buffer").isEqualTo(Sinks.Emission.OK);
 		//test proper
 		//this is "discarded" but no hook can be invoked, so effectively dropped on the floor
-		emitterProcessor.emitNext(2);
+		emitterProcessor.emitNext(2, FAIL_FAST);
 
 		StepVerifier.create(emitterProcessor)
 		            .expectNext(1)

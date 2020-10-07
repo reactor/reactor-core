@@ -56,6 +56,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxSwitchOnFirstTest {
 
@@ -1095,21 +1096,21 @@ public class FluxSwitchOnFirstTest {
     public void checkHotSource() {
         Sinks.Many<Long> processor = Sinks.many().replay().limit(1);
 
-        processor.emitNext(1L);
-        processor.emitNext(2L);
-        processor.emitNext(3L);
+        processor.emitNext(1L, FAIL_FAST);
+        processor.emitNext(2L, FAIL_FAST);
+        processor.emitNext(3L, FAIL_FAST);
 
 
         StepVerifier.create(processor.asFlux().switchOnFirst((s, f) -> f.filter(v -> v % s.get() == 0)))
                     .expectNext(3L)
                     .then(() -> {
-                        processor.emitNext(4L);
-                        processor.emitNext(5L);
-                        processor.emitNext(6L);
-                        processor.emitNext(7L);
-                        processor.emitNext(8L);
-                        processor.emitNext(9L);
-                        processor.emitComplete();
+                        processor.emitNext(4L, FAIL_FAST);
+                        processor.emitNext(5L, FAIL_FAST);
+                        processor.emitNext(6L, FAIL_FAST);
+                        processor.emitNext(7L, FAIL_FAST);
+                        processor.emitNext(8L, FAIL_FAST);
+                        processor.emitNext(9L, FAIL_FAST);
+                        processor.emitComplete(FAIL_FAST);
                     })
                     .expectNext(6L, 9L)
                     .expectComplete()
@@ -1120,7 +1121,7 @@ public class FluxSwitchOnFirstTest {
     public void shouldCancelSourceOnUnrelatedPublisherComplete() {
         Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.emitNext(1L);
+        testPublisher.emitNext(1L, FAIL_FAST);
 
         StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.empty()))
                     .expectSubscription()
@@ -1134,7 +1135,7 @@ public class FluxSwitchOnFirstTest {
     public void shouldNotCancelSourceOnUnrelatedPublisherComplete() {
         Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.emitNext(1L);
+        testPublisher.emitNext(1L, FAIL_FAST);
 
         StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.empty(), false))
                 .expectSubscription()
@@ -1148,7 +1149,7 @@ public class FluxSwitchOnFirstTest {
     public void shouldCancelSourceOnUnrelatedPublisherError() {
         Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.emitNext(1L);
+        testPublisher.emitNext(1L, FAIL_FAST);
 
         StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.error(new RuntimeException("test"))))
                     .expectSubscription()
@@ -1178,7 +1179,7 @@ public class FluxSwitchOnFirstTest {
     public void shouldCancelSourceOnUnrelatedPublisherCompleteConditional() {
         Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.emitNext(1L);
+        testPublisher.emitNext(1L, FAIL_FAST);
 
         StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
                     .then(() -> {
@@ -1199,7 +1200,7 @@ public class FluxSwitchOnFirstTest {
     public void shouldNotCancelSourceOnUnrelatedPublisherCompleteConditional() {
         Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.emitNext(1L);
+        testPublisher.emitNext(1L, FAIL_FAST);
 
         StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.empty().delaySubscription(Duration.ofMillis(10)), false).filter(__ -> true))
                 .then(() -> {
@@ -1295,7 +1296,7 @@ public class FluxSwitchOnFirstTest {
     public void shouldCancelSourceOnUnrelatedPublisherErrorConditional() {
         Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.emitNext(1L);
+        testPublisher.emitNext(1L, FAIL_FAST);
 
         StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
                     .then(() -> {
@@ -1320,7 +1321,7 @@ public class FluxSwitchOnFirstTest {
     public void shouldCancelSourceOnUnrelatedPublisherCancelConditional() {
         Sinks.Many<Long> testPublisher = Sinks.many().multicast().onBackpressureBuffer();
 
-        testPublisher.emitNext(1L);
+        testPublisher.emitNext(1L, FAIL_FAST);
 
         StepVerifier.create(testPublisher.asFlux().switchOnFirst((s, f) -> Flux.error(new RuntimeException("test")).delaySubscription(Duration.ofMillis(10))).filter(__ -> true))
                     .then(() -> {

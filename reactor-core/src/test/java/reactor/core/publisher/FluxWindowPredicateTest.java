@@ -50,6 +50,7 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 public class FluxWindowPredicateTest extends
                                      FluxOperatorTest<String, Flux<String>> {
@@ -441,23 +442,23 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.emitNext(1))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
 		            .expectNext(Signal.next(1))
-				    .then(() -> sp1.emitNext(2))
+				    .then(() -> sp1.emitNext(2, FAIL_FAST))
 		            .expectNext(Signal.next(2))
-				    .then(() -> sp1.emitNext(3))
+				    .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectNext(Signal.next(3), Signal.complete())
-				    .then(() -> sp1.emitNext(4))
+				    .then(() -> sp1.emitNext(4, FAIL_FAST))
 				    .expectNext(Signal.next(4))
-				    .then(() -> sp1.emitNext(5))
+				    .then(() -> sp1.emitNext(5, FAIL_FAST))
 				    .expectNext(Signal.next(5))
-				    .then(() -> sp1.emitNext(6))
+				    .then(() -> sp1.emitNext(6, FAIL_FAST))
 				    .expectNext(Signal.next(6), Signal.complete())
-				    .then(() -> sp1.emitNext(7))
+				    .then(() -> sp1.emitNext(7, FAIL_FAST))
 				    .expectNext(Signal.next(7))
-				    .then(() -> sp1.emitNext(8))
+				    .then(() -> sp1.emitNext(8, FAIL_FAST))
 				    .expectNext(Signal.next(8))
-				    .then(sp1::emitComplete)
+				    .then(() -> sp1.emitComplete(FAIL_FAST))
 		            .expectNext(Signal.complete())
 				    .verifyComplete();
 
@@ -505,15 +506,15 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.emitNext(1))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.emitNext(2))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectNext(Signal.next(3), Signal.complete())
-		            .then(() -> sp1.emitNext(4))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST))
 		            //this is the error in the window:
 		            .expectNextMatches(signalErrorMessage("forced failure"))
 		            //this is the error in the main:
@@ -534,15 +535,15 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.emitNext(1))
+					.then(() -> sp1.emitNext(1, FAIL_FAST))
 					.expectNext(Signal.next(1))
-					.then(() -> sp1.emitNext(2))
+					.then(() -> sp1.emitNext(2, FAIL_FAST))
 					.expectNext(Signal.next(2))
-					.then(() -> sp1.emitNext(3))
+					.then(() -> sp1.emitNext(3, FAIL_FAST))
 					.expectNext(Signal.next(3), Signal.complete())
-					.then(() -> sp1.emitNext(4))
+					.then(() -> sp1.emitNext(4, FAIL_FAST))
 					.expectNext(Signal.next(4))
-					.then(() -> sp1.emitNext(5))
+					.then(() -> sp1.emitNext(5, FAIL_FAST))
 					//error in the window:
 					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
@@ -559,23 +560,23 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 				.expectSubscription()
-				    .then(() -> sp1.emitNext(1))
+				    .then(() -> sp1.emitNext(1, FAIL_FAST))
 				    .expectNext(Signal.next(1))
-				    .then(() -> sp1.emitNext(2))
+				    .then(() -> sp1.emitNext(2, FAIL_FAST))
 				    .expectNext(Signal.next(2))
-				    .then(() -> sp1.emitNext(3))
+				    .then(() -> sp1.emitNext(3, FAIL_FAST))
 				    .expectNext(Signal.complete(), Signal.next(3))
-				    .then(() -> sp1.emitNext(4))
+				    .then(() -> sp1.emitNext(4, FAIL_FAST))
 				    .expectNext(Signal.next(4))
-				    .then(() -> sp1.emitNext(5))
+				    .then(() -> sp1.emitNext(5, FAIL_FAST))
 				    .expectNext(Signal.next(5))
-				    .then(() -> sp1.emitNext(6))
+				    .then(() -> sp1.emitNext(6, FAIL_FAST))
 				    .expectNext(Signal.complete(), Signal.next(6))
-				    .then(() -> sp1.emitNext(7))
+				    .then(() -> sp1.emitNext(7, FAIL_FAST))
 				    .expectNext(Signal.next(7))
-				    .then(() -> sp1.emitNext(8))
+				    .then(() -> sp1.emitNext(8, FAIL_FAST))
 				    .expectNext(Signal.next(8))
-				    .then(sp1::emitComplete)
+				    .then(() -> sp1.emitComplete(FAIL_FAST))
 				    .expectNext(Signal.complete())
 				    .verifyComplete();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -590,16 +591,16 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.emitNext(1))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.emitNext(2))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectNext(Signal.complete())
 		            .expectNext(Signal.next(3))
-		            .then(() -> sp1.emitNext(4))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.emitError(new RuntimeException("forced failure")))
+		            .then(() -> sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST))
 		            //this is the error in the window:
 		            .expectNextMatches(signalErrorMessage("forced failure"))
 		            //this is the error in the main:
@@ -620,15 +621,15 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.emitNext(1))
+					.then(() -> sp1.emitNext(1, FAIL_FAST))
 					.expectNext(Signal.next(1))
-					.then(() -> sp1.emitNext(2))
+					.then(() -> sp1.emitNext(2, FAIL_FAST))
 					.expectNext(Signal.next(2))
-					.then(() -> sp1.emitNext(3))
+					.then(() -> sp1.emitNext(3, FAIL_FAST))
 					.expectNext(Signal.complete(), Signal.next(3))
-					.then(() -> sp1.emitNext(4))
+					.then(() -> sp1.emitNext(4, FAIL_FAST))
 					.expectNext(Signal.next(4))
-					.then(() -> sp1.emitNext(5))
+					.then(() -> sp1.emitNext(5, FAIL_FAST))
 					//error in the window:
 					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
@@ -651,23 +652,23 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
-		            .then(() -> sp1.emitNext(1))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
 		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.emitNext(2))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
 		            .expectNext(Signal.next(2))
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.emitNext(4))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNext(Signal.next(4))
-		            .then(() -> sp1.emitNext(5))
+		            .then(() -> sp1.emitNext(5, FAIL_FAST))
 		            .expectNext(Signal.next(5))
-		            .then(() -> sp1.emitNext(6))
+		            .then(() -> sp1.emitNext(6, FAIL_FAST))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.emitNext(7))
+		            .then(() -> sp1.emitNext(7, FAIL_FAST))
 		            .expectNext(Signal.next(7))
-		            .then(() -> sp1.emitNext(8))
+		            .then(() -> sp1.emitNext(8, FAIL_FAST))
 		            .expectNext(Signal.next(8))
-		            .then(sp1::emitComplete)
+		            .then(() -> sp1.emitComplete(FAIL_FAST))
 		            .expectNext(Signal.complete())
 		            .verifyComplete();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -683,28 +684,28 @@ public class FluxWindowPredicateTest extends
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 					.expectSubscription()
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(() -> sp1.emitNext(1)) //closes initial, open 2nd
+					.then(() -> sp1.emitNext(1, FAIL_FAST)) //closes initial, open 2nd
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(2)) //closes second, open 3rd
+					.then(() -> sp1.emitNext(2, FAIL_FAST)) //closes second, open 3rd
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(3)) //emits 3
+					.then(() -> sp1.emitNext(3, FAIL_FAST)) //emits 3
 					.expectNext(Signal.next(3))
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(() -> sp1.emitNext(4)) //closes 3rd, open 4th
+					.then(() -> sp1.emitNext(4, FAIL_FAST)) //closes 3rd, open 4th
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(5)) //closes 4th, open 5th
+					.then(() -> sp1.emitNext(5, FAIL_FAST)) //closes 4th, open 5th
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(6)) //emits 6
+					.then(() -> sp1.emitNext(6, FAIL_FAST)) //emits 6
 					.expectNext(Signal.next(6))
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(() -> sp1.emitNext(7)) //closes 5th, open 6th
+					.then(() -> sp1.emitNext(7, FAIL_FAST)) //closes 5th, open 6th
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(8)) //closes 6th, open 7th
+					.then(() -> sp1.emitNext(8, FAIL_FAST)) //closes 6th, open 7th
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(9)) //emits 9
+					.then(() -> sp1.emitNext(9, FAIL_FAST)) //emits 9
 					.expectNext(Signal.next(9))
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(sp1::emitComplete) // completion triggers completion of the last window (7th)
+					.then(() -> sp1.emitComplete(FAIL_FAST)) // completion triggers completion of the last window (7th)
 					.expectNext(Signal.complete())
 					.expectComplete()
 					.verify(Duration.ofSeconds(1));
@@ -721,25 +722,25 @@ public class FluxWindowPredicateTest extends
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.emitNext(1))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.emitNext(2))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.emitNext(4))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNext(Signal.complete())
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.emitNext(1))
+		            .then(() -> sp1.emitNext(1, FAIL_FAST))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.emitNext(2))
+		            .then(() -> sp1.emitNext(2, FAIL_FAST))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.emitNext(3))
+		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .expectNext(Signal.complete())
-		            .then(() -> sp1.emitNext(4))
+		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNext(Signal.complete()) //closing window opened by 3
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::emitComplete)
+		            .then(() -> sp1.emitComplete(FAIL_FAST))
 		            //remainder window, not emitted
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
@@ -755,14 +756,14 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.emitNext(1))
+					.then(() -> sp1.emitNext(1, FAIL_FAST))
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(2))
+					.then(() -> sp1.emitNext(2, FAIL_FAST))
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(3)) //at this point, new window, need another data to close it
-					.then(() -> sp1.emitNext(4))
+					.then(() -> sp1.emitNext(3, FAIL_FAST)) //at this point, new window, need another data to close it
+					.then(() -> sp1.emitNext(4, FAIL_FAST))
 					.expectNext(Signal.next(3), Signal.complete())
-					.then(() -> sp1.emitError(new RuntimeException("forced failure")))
+					.then(() -> sp1.emitError(new RuntimeException("forced failure"), FAIL_FAST))
 					//this is the error in the main:
 					.expectErrorMessage("forced failure")
 					.verify(Duration.ofMillis(100));
@@ -806,15 +807,15 @@ public class FluxWindowPredicateTest extends
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.emitNext(1)) //empty window
+					.then(() -> sp1.emitNext(1, FAIL_FAST)) //empty window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(2)) //empty window
+					.then(() -> sp1.emitNext(2, FAIL_FAST)) //empty window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(3)) //window opens
+					.then(() -> sp1.emitNext(3, FAIL_FAST)) //window opens
 					.expectNext(Signal.next(3))
-					.then(() -> sp1.emitNext(4)) //previous window closes, new (empty) window
+					.then(() -> sp1.emitNext(4, FAIL_FAST)) //previous window closes, new (empty) window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.emitNext(5)) //fails, the empty window receives onError
+					.then(() -> sp1.emitNext(5, FAIL_FAST)) //fails, the empty window receives onError
 					//error in the window:
 					.expectErrorMessage("predicate failure")
 					.verify(Duration.ofMillis(100));

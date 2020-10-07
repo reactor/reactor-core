@@ -206,7 +206,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
 				Sinks.Many<T> w = window;
-				w.emitNext(t);
+				w.emitNext(t, Sinks.EmitFailureHandler.FAIL_FAST);
 
 				int c = count + 1;
 
@@ -214,7 +214,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					producerIndex++;
 					count = 0;
 
-					w.emitComplete();
+					w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 
 					long r = requested;
 
@@ -329,10 +329,10 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						q.clear();
 						Throwable err = error;
 						if (err != null) {
-							w.emitError(err);
+							w.emitError(err, Sinks.EmitFailureHandler.FAIL_FAST);
 						}
 						else {
-							w.emitComplete();
+							w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 						}
 						timer.dispose();
 						worker.dispose();
@@ -344,7 +344,7 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 					}
 
 					if (isHolder) {
-						w.emitComplete();
+						w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 						count = 0;
 						w = Sinks.many().unsafe().unicast().onBackpressureBuffer();
 						window = w;
@@ -368,14 +368,14 @@ final class FluxWindowTimeout<T> extends InternalFluxOperator<T, Flux<T>> {
 						continue;
 					}
 
-					w.emitNext((T) o);
+					w.emitNext((T) o, Sinks.EmitFailureHandler.FAIL_FAST);
 					int c = count + 1;
 
 					if (c >= maxSize) {
 						producerIndex++;
 						count = 0;
 
-						w.emitComplete();
+						w.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
 
 						long r = requested;
 

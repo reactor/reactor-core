@@ -64,6 +64,7 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static reactor.core.Scannable.Attr.*;
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
@@ -246,9 +247,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 				Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
 		for (int i = 0; i < 1_000_000; i++) {
-			up.emitNext(i);
+			up.emitNext(i, FAIL_FAST);
 		}
-		up.emitComplete();
+		up.emitComplete(FAIL_FAST);
 
 		up.asFlux()
 		  .publishOn(Schedulers.fromExecutorService(exec))
@@ -267,9 +268,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>unbounded(1024).get());
 
 		for (int i = 0; i < 1_000_000; i++) {
-			up.emitNext(0);
+			up.emitNext(0, FAIL_FAST);
 		}
-		up.emitComplete();
+		up.emitComplete(FAIL_FAST);
 
 		StepVerifier.create(up.asFlux().publishOn(Schedulers.fromExecutorService(exec)), 0)
 		            .expectSubscription()
@@ -697,9 +698,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Sinks.Many<Integer> up =
 				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		up.asFlux().map(v -> v == 2 ? null : v)
 		  .publishOn(Schedulers.fromExecutorService(exec))
@@ -717,9 +718,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Sinks.Many<Integer> up =
 				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
-		up.emitNext(1);
-		up.emitNext(2);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitNext(2, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		up.asFlux().map(v -> v == 2 ? null : v)
 		  .publishOn(Schedulers.fromExecutorService(exec))
@@ -807,8 +808,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
-		up.emitNext(1);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		ts.await(Duration.ofSeconds(5));
 
@@ -833,8 +834,8 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		  .publishOn(Schedulers.fromExecutorService(exec))
 		  .subscribe(ts);
 
-		up.emitNext(1);
-		up.emitComplete();
+		up.emitNext(1, FAIL_FAST);
+		up.emitComplete(FAIL_FAST);
 
 		ts.await(Duration.ofSeconds(5));
 
