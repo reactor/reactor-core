@@ -52,7 +52,7 @@ public class SerializedManySinkTest {
 					            .as("emission")
 					            .isEqualTo(Emission.FAIL_OVERFLOW);
 		            })
-		            .then(sink::tryEmitComplete)
+		            .then(() -> sink.tryEmitComplete().orThrow())
 		            .verifyComplete();
 	}
 

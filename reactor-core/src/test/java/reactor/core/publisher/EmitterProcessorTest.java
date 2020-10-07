@@ -907,7 +907,7 @@ public class EmitterProcessorTest {
 
 		StepVerifier.create(emitterProcessor)
 		            .expectNext(1)
-		            .then(emitterProcessor::tryEmitComplete)
+		            .then(() -> emitterProcessor.tryEmitComplete().orThrow())
 		            .verifyComplete();
 	}
 

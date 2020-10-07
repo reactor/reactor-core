@@ -84,7 +84,7 @@ public class FluxBufferPredicateTest {
 				.expectNoEvent(Duration.ofMillis(10))
 				.then(() -> sp1.emitNext(7, FAIL_FAST))
 				.then(() -> sp1.emitNext(8, FAIL_FAST))
-				.then(sp1::tryEmitComplete)
+				.then(() -> sp1.emitComplete(FAIL_FAST))
 				.expectNext(Arrays.asList(7, 8))
 				.expectComplete()
 				.verify();
@@ -192,7 +192,7 @@ public class FluxBufferPredicateTest {
 				.expectNoEvent(Duration.ofMillis(10))
 				.then(() -> sp1.emitNext(7, FAIL_FAST))
 				.then(() -> sp1.emitNext(8, FAIL_FAST))
-				.then(sp1::tryEmitComplete)
+				.then(() -> sp1.emitComplete(FAIL_FAST))
 				.expectNext(Arrays.asList(6, 7, 8))
 				.expectComplete()
 				.verify();
@@ -398,7 +398,7 @@ public class FluxBufferPredicateTest {
 				.expectNoEvent(Duration.ofMillis(10))
 				.then(() -> sp1.emitNext(7, FAIL_FAST))
 				.then(() -> sp1.emitNext(8, FAIL_FAST))
-				.then(sp1::tryEmitComplete)
+				.then(() -> sp1.emitComplete(FAIL_FAST))
 				.expectNext(Arrays.asList(7, 8))
 				.expectComplete()
 				.verify();
@@ -429,7 +429,7 @@ public class FluxBufferPredicateTest {
 					.then(() -> sp1.emitNext(8, FAIL_FAST))
 					.then(() -> sp1.emitNext(9, FAIL_FAST))
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(sp1::tryEmitComplete) // completion triggers the buffer emit
+					.then(() -> sp1.emitComplete(FAIL_FAST)) // completion triggers the buffer emit
 					.expectNext(Collections.singletonList(9))
 					.expectComplete()
 					.verify(Duration.ofSeconds(1));
@@ -456,7 +456,7 @@ public class FluxBufferPredicateTest {
 		            .then(() -> sp1.emitNext(3, FAIL_FAST))
 		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::tryEmitComplete)
+		            .then(() -> sp1.emitComplete(FAIL_FAST))
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -591,7 +591,7 @@ public class FluxBufferPredicateTest {
 		            .expectNoEvent(Duration.ofMillis(10))
 		            .then(() -> sp1.emitNext(10, FAIL_FAST))
 		            .then(() -> sp1.emitNext(11, FAIL_FAST))
-		            .then(sp1::tryEmitComplete)
+		            .then(() -> sp1.emitComplete(FAIL_FAST))
 		            .expectNext(Arrays.asList(10, 11))
 		            .then(() -> assertThat(bufferCount.intValue()).isOne())
 		            .expectComplete()

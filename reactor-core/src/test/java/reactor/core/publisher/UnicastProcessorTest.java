@@ -285,7 +285,7 @@ public class UnicastProcessorTest {
 					            .as("emission")
 					            .isEqualTo(Sinks.Emission.FAIL_OVERFLOW);
 		            })
-		            .then(processor::tryEmitComplete)
+		            .then(() -> processor.tryEmitComplete().orThrow())
 		            .verifyComplete();
 	}
 
@@ -308,7 +308,7 @@ public class UnicastProcessorTest {
 
 		StepVerifier.create(unicastProcessor)
 		            .expectNext(1)
-		            .then(unicastProcessor::tryEmitComplete)
+		            .then(() -> unicastProcessor.tryEmitComplete().orThrow())
 		            .verifyComplete();
 	}
 
@@ -340,7 +340,7 @@ public class UnicastProcessorTest {
 		StepVerifier.create(unicastProcessor)
 		            .expectNext(1) //from the buffer
 		            .expectNoEvent(Duration.ofMillis(500))
-		            .then(unicastProcessor::tryEmitComplete)
+		            .then(() -> unicastProcessor.tryEmitComplete().orThrow())
 		            .verifyComplete();
 	}
 

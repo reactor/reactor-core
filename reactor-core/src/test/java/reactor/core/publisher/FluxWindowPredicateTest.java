@@ -458,7 +458,7 @@ public class FluxWindowPredicateTest extends
 				    .expectNext(Signal.next(7))
 				    .then(() -> sp1.emitNext(8, FAIL_FAST))
 				    .expectNext(Signal.next(8))
-				    .then(sp1::tryEmitComplete)
+				    .then(() -> sp1.emitComplete(FAIL_FAST))
 		            .expectNext(Signal.complete())
 				    .verifyComplete();
 
@@ -576,7 +576,7 @@ public class FluxWindowPredicateTest extends
 				    .expectNext(Signal.next(7))
 				    .then(() -> sp1.emitNext(8, FAIL_FAST))
 				    .expectNext(Signal.next(8))
-				    .then(sp1::tryEmitComplete)
+				    .then(() -> sp1.emitComplete(FAIL_FAST))
 				    .expectNext(Signal.complete())
 				    .verifyComplete();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -668,7 +668,7 @@ public class FluxWindowPredicateTest extends
 		            .expectNext(Signal.next(7))
 		            .then(() -> sp1.emitNext(8, FAIL_FAST))
 		            .expectNext(Signal.next(8))
-		            .then(sp1::tryEmitComplete)
+		            .then(() -> sp1.emitComplete(FAIL_FAST))
 		            .expectNext(Signal.complete())
 		            .verifyComplete();
 		assertThat(sp1.currentSubscriberCount()).as("sp1 has subscriber").isZero();
@@ -705,7 +705,7 @@ public class FluxWindowPredicateTest extends
 					.then(() -> sp1.emitNext(9, FAIL_FAST)) //emits 9
 					.expectNext(Signal.next(9))
 					.expectNoEvent(Duration.ofMillis(10))
-					.then(sp1::tryEmitComplete) // completion triggers completion of the last window (7th)
+					.then(() -> sp1.emitComplete(FAIL_FAST)) // completion triggers completion of the last window (7th)
 					.expectNext(Signal.complete())
 					.expectComplete()
 					.verify(Duration.ofSeconds(1));
@@ -740,7 +740,7 @@ public class FluxWindowPredicateTest extends
 		            .then(() -> sp1.emitNext(4, FAIL_FAST))
 		            .expectNext(Signal.complete()) //closing window opened by 3
 		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(sp1::tryEmitComplete)
+		            .then(() -> sp1.emitComplete(FAIL_FAST))
 		            //remainder window, not emitted
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
