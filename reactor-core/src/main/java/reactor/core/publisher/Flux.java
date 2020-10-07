@@ -7363,10 +7363,10 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Reduce this {@link Flux} values with an accumulator {@link BiFunction} and
+	 * Reduce this {@link Flux} values with an accumulator {@link BinaryOperator} and
 	 * also emit the intermediate results of this function.
 	 * <p>
-	 * Unlike {@link #scan(Object, BiFunction)}, this operator doesn't take an initial value
+	 * Unlike {@link #scan(Object, BinaryOperator)}, this operator doesn't take an initial value
 	 * but treats the first {@link Flux} value as initial value.
 	 * <br>
 	 * The accumulation works as follows:
@@ -7381,11 +7381,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/scanWithSameReturnType.svg" alt="">
 	 *
-	 * @param accumulator the accumulating {@link BiFunction}
+	 * @param accumulator the accumulating {@link BinaryOperator}
 	 *
 	 * @return an accumulating {@link Flux}
 	 */
-	public final Flux<T> scan(BiFunction<T, T, T> accumulator) {
+	public final Flux<T> scan(BinaryOperator<T> accumulator) {
 		return onAssembly(new FluxScan<>(this, accumulator));
 	}
 

@@ -16,7 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -42,9 +42,9 @@ import reactor.util.annotation.Nullable;
  */
 final class FluxScan<T> extends InternalFluxOperator<T, T> {
 
-	final BiFunction<T, ? super T, T> accumulator;
+	final BinaryOperator<T> accumulator;
 
-	FluxScan(Flux<? extends T> source, BiFunction<T, ? super T, T> accumulator) {
+	FluxScan(Flux<? extends T> source, BinaryOperator<T> accumulator) {
 		super(source);
 		this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
 	}
@@ -65,7 +65,7 @@ final class FluxScan<T> extends InternalFluxOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
 
-		final BiFunction<T, ? super T, T> accumulator;
+		final BinaryOperator<T> accumulator;
 
 		Subscription s;
 
@@ -73,7 +73,7 @@ final class FluxScan<T> extends InternalFluxOperator<T, T> {
 
 		boolean done;
 
-		ScanSubscriber(CoreSubscriber<? super T> actual, BiFunction<T, ? super T, T> accumulator) {
+		ScanSubscriber(CoreSubscriber<? super T> actual, BinaryOperator<T> accumulator) {
 			this.actual = actual;
 			this.accumulator = accumulator;
 		}
