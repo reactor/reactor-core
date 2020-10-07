@@ -279,11 +279,10 @@ gradle.taskGraph.afterTask { task, state ->
 
 //complements the javadoc.gradle common configuration
 javadoc {
-	options.addBooleanOption('nodeprecated', true)
 	options.overview = "$rootDir/docs/api/overview.html"
 	excludes = [
-		// Must be public due to the ServiceLoader's requirements
-		"reactor/core/scheduler/ReactorBlockHoundIntegration.java"
+			// Must be public due to the ServiceLoader's requirements
+			"reactor/core/scheduler/ReactorBlockHoundIntegration.java",
 	]
 	doLast {
 		// work around https://github.com/gradle/gradle/issues/4046
