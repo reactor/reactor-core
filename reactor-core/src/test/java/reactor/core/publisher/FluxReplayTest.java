@@ -229,7 +229,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void cacheFluxTTLNanos() {
 		Flux<Integer> source = Flux.just(1, 2, 3)
-		                                         .delayElements(Duration.ofNanos(1000))
+		                                         .delayElements(Duration.ofNanos(1000), vts)
 		                                         .replay(Duration.ofNanos(2000), vts)
 		                                         .hide()
 		                                         .autoConnect()
@@ -248,7 +248,6 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		            .expectNext(2)
 		            .expectNext(3)
 		            .verifyComplete();
-
 	}
 
 	@Test
