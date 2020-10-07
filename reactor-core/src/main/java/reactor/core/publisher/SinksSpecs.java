@@ -19,72 +19,14 @@ import reactor.util.context.ContextView;
 
 final class SinksSpecs {
 
-	static final SinksWrapper WRAPPER_UNSAFE = new SinksWrapper() {
-
-		@Override
-		public <T> Sinks.Empty<T> wrapEmpty(Sinks.Empty<T> original, Supplier<ContextView> contextSupplier) {
-			return original;
-		}
-
-		@Override
-		public <T> Many<T> wrapMany(Sinks.Many<T> original, Supplier<ContextView> contextViewSupplier) {
-			return original;
-		}
-
-		@Override
-		public <T> Sinks.One<T> wrapOne(Sinks.One<T> original, Supplier<ContextView> contextViewSupplier) {
-			return original;
-		}
-
-		@Override
-		public String toString() {
-			return "UNSAFE";
-		}
-	};
-
-	static final SinksWrapper WRAPPER_SERIALIZED_FAIL_FAST = new SinksWrapper() {
-
-		@Override
-		public <T> Many<T> wrapMany(Many<T> original, Supplier<ContextView> contextViewSupplier) {
-			return new SerializedManySink<>(original, contextViewSupplier);
-		}
-
-		@Override
-		public <T> Sinks.One<T> wrapOne(Sinks.One<T> original, Supplier<ContextView> contextViewSupplier) {
-			return original; //FIXME
-		}
-
-		@Override
-		public <T> Sinks.Empty<T> wrapEmpty(Sinks.Empty<T> original, Supplier<ContextView> contextViewSupplier) {
-			return original; //FIXME
-		}
-
-		@Override
-		public String toString() {
-			return "SERIALIZED_FAIL_FAST";
-		}
-	};
-
-	//careful: since root levels reference nested instances, these instances must be initialized in reverse order of nesting
-
-	static final Sinks.UnicastSpec UNSAFE_UNICAST_SPEC                      = new UnicastSpecImpl(WRAPPER_UNSAFE);
-	static final Sinks.MulticastSpec UNSAFE_MULTICAST_SPEC                  = new MulticastSpecImpl(WRAPPER_UNSAFE);
-	static final Sinks.MulticastReplaySpec UNSAFE_MULTICAST_REPLAY_SPEC     = new MulticastReplaySpecImpl(WRAPPER_UNSAFE);
-	static final Sinks.ManySpec UNSAFE_MANY_SPEC                            = new ManySpecImpl(WRAPPER_UNSAFE);
-
-	static final Sinks.UnicastSpec SERIALIZED_UNICAST_SPEC                  = new UnicastSpecImpl(WRAPPER_SERIALIZED_FAIL_FAST);
-	static final Sinks.MulticastSpec SERIALIZED_MULTICAST_SPEC              = new MulticastSpecImpl(WRAPPER_SERIALIZED_FAIL_FAST);
-	static final Sinks.MulticastReplaySpec SERIALIZED_MULTICAST_REPLAY_SPEC = new MulticastReplaySpecImpl(WRAPPER_SERIALIZED_FAIL_FAST);
-	static final Sinks.ManySpec SERIALIZED_MANY_SPEC                        = new ManySpecImpl(WRAPPER_SERIALIZED_FAIL_FAST);
-
-	static final Sinks.RootSpec UNSAFE_ROOT_SPEC                            = new RootWrappingSpec(WRAPPER_UNSAFE);
-	static final Sinks.RootSpec DEFAULT_ROOT_SPEC                           = new RootWrappingSpec(WRAPPER_SERIALIZED_FAIL_FAST);
+	static final Sinks.RootSpec UNSAFE_ROOT_SPEC  = new RootSpecImpl(false);
+	static final Sinks.RootSpec DEFAULT_ROOT_SPEC = new RootSpecImpl(true);
 }
 
 final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 
-	final Many<T>               sink;
-	final Supplier<ContextView> contextHolder;
+	final Many<T>       sink;
+	final ContextHolder contextHolder;
 
 	volatile int wip;
 	@SuppressWarnings("rawtypes")
@@ -96,7 +38,7 @@ final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 	static final AtomicReferenceFieldUpdater<SerializedManySink, Thread> LOCKED_AT =
 			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Thread.class, "lockedAt");
 
-	SerializedManySink(Many<T> sink, Supplier<ContextView> contextHolder) {
+	SerializedManySink(Many<T> sink, ContextHolder contextHolder) {
 		this.sink = sink;
 		this.contextHolder = contextHolder;
 	}
@@ -113,8 +55,7 @@ final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 
 	@Override
 	public Context currentContext() {
-		ContextView contextView = contextHolder.get();
-		return Context.of(contextView);
+		return contextHolder.currentContext();
 	}
 
 	public boolean isCancelled() {
@@ -211,228 +152,210 @@ final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 	}
 }
 
-interface SinksWrapper {
+class RootSpecImpl implements Sinks.RootSpec,
+                              Sinks.ManySpec,
+                              Sinks.MulticastSpec,
+                              Sinks.MulticastReplaySpec {
 
-	<T> Sinks.Many<T> wrapMany(Sinks.Many<T> original, Supplier<ContextView> contextSupplier);
-	<T> Sinks.One<T> wrapOne(Sinks.One<T> original, Supplier<ContextView> contextSupplier);
-	<T> Sinks.Empty<T> wrapEmpty(Sinks.Empty<T> original, Supplier<ContextView> contextSupplier);
-}
+	final boolean serialized;
+	final Sinks.UnicastSpec unicastSpec; //needed because UnicastSpec method names overlap with MulticastSpec
 
-class RootWrappingSpec implements Sinks.RootSpec {
-
-	final SinksWrapper wrapper;
-	final Sinks.ManySpec manySpec;
-
-	RootWrappingSpec(SinksWrapper wrapper) {
-		this.wrapper = wrapper;
-		if (wrapper == SinksSpecs.WRAPPER_UNSAFE) {
-			this.manySpec = SinksSpecs.UNSAFE_MANY_SPEC;
-		}
-		else if (wrapper == SinksSpecs.WRAPPER_SERIALIZED_FAIL_FAST) {
-			this.manySpec = SinksSpecs.SERIALIZED_MANY_SPEC;
-		}
-		else {
-			this.manySpec = new ManySpecImpl(wrapper);
-		}
+	RootSpecImpl(boolean serialized) {
+		this.serialized = serialized;
+		//there will only be as many instances of UnicastSpecImpl as there are RootSpecImpl instances (2)
+		this.unicastSpec = new UnicastSpecImpl(serialized);
 	}
 
-	@Override
-	public <T> Sinks.Empty<T> empty() {
-		final SinkEmptyMulticast<T> original = new SinkEmptyMulticast<>();
-		return wrapper.wrapEmpty(original, original::currentContext);
+	<T> Sinks.Empty<T> wrapEmpty(Sinks.Empty<T> original) {
+		if (serialized) {
+			//FIXME return wrapped
+			return original;
+		}
+		return original;
 	}
 
-	@Override
-	public <T> Sinks.One<T> one() {
-		final NextProcessor<T> original = new NextProcessor<>(null);
-		return wrapper.wrapOne(original, original::currentContext);
+	<T> Sinks.One<T> wrapOne(Sinks.One<T> original) {
+		if (serialized) {
+			//FIXME return wrapped
+			return original;
+		}
+		return original;
+	}
+
+	<T> Many<T> wrapMany(Many<T> original, Supplier<ContextView> contextViewSupplier) {
+		if (serialized) {
+			return new SerializedManySink<>(original, contextViewSupplier);
+		}
+		return original;
 	}
 
 	@Override
 	public Sinks.ManySpec many() {
-		return this.manySpec;
+		return this;
 	}
-}
 
-class ManySpecImpl implements Sinks.ManySpec {
+	@Override
+	public <T> Sinks.Empty<T> empty() {
+		return wrapEmpty(new SinkEmptyMulticast<>());
+	}
 
-	final SinksWrapper              wrapper;
-	final Sinks.UnicastSpec         unicast;
-	final Sinks.MulticastSpec       multicast;
-	final Sinks.MulticastReplaySpec multicastReplay;
-
-	ManySpecImpl(SinksWrapper wrapper) {
-		this.wrapper = wrapper;
-		if (wrapper == SinksSpecs.WRAPPER_UNSAFE) {
-			this.unicast = SinksSpecs.UNSAFE_UNICAST_SPEC;
-			this.multicast = SinksSpecs.UNSAFE_MULTICAST_SPEC;
-			this.multicastReplay = SinksSpecs.UNSAFE_MULTICAST_REPLAY_SPEC;
-		}
-		else if (wrapper == SinksSpecs.WRAPPER_SERIALIZED_FAIL_FAST) {
-			this.unicast = SinksSpecs.SERIALIZED_UNICAST_SPEC;
-			this.multicast = SinksSpecs.SERIALIZED_MULTICAST_SPEC;
-			this.multicastReplay = SinksSpecs.SERIALIZED_MULTICAST_REPLAY_SPEC;
-		}
-		else {
-			this.unicast = new UnicastSpecImpl(wrapper);
-			this.multicast = new MulticastSpecImpl(wrapper);
-			this.multicastReplay = new MulticastReplaySpecImpl(wrapper);
-		}
+	@Override
+	public <T> Sinks.One<T> one() {
+		return wrapOne(new NextProcessor<>(null));
 	}
 
 	@Override
 	public Sinks.UnicastSpec unicast() {
-		return this.unicast;
+		return this.unicastSpec;
 	}
 
 	@Override
 	public Sinks.MulticastSpec multicast() {
-		return this.multicast;
+		return this;
 	}
 
 	@Override
 	public Sinks.MulticastReplaySpec replay() {
-		return this.multicastReplay;
-	}
-}
-
-@SuppressWarnings("deprecation")
-class UnicastSpecImpl implements Sinks.UnicastSpec {
-
-	final SinksWrapper wrapper;
-
-	UnicastSpecImpl(SinksWrapper wrapper) {
-		this.wrapper = wrapper;
+		return this;
 	}
 
 	@Override
 	public <T> Many<T> onBackpressureBuffer() {
-		final UnicastProcessor<T> original = UnicastProcessor.create();
-		return wrapper.wrapMany(original, original::currentContext);
-	}
-
-	@Override
-	public <T> Many<T> onBackpressureBuffer(Queue<T> queue) {
-		final UnicastProcessor<T> original = UnicastProcessor.create(queue);
-		return wrapper.wrapMany(original, original::currentContext);
-	}
-
-	@Override
-	public <T> Many<T> onBackpressureBuffer(Queue<T> queue, Disposable endCallback) {
-		final UnicastProcessor<T> original = UnicastProcessor.create(queue, endCallback);
-		return wrapper.wrapMany(original, original::currentContext);
-	}
-
-	@Override
-	public <T> Many<T> onBackpressureError() {
-		final UnicastManySinkNoBackpressure<T> original =
-				UnicastManySinkNoBackpressure.create();
-		return wrapper.wrapMany(original, original::currentContext);
-	}
-}
-
-@SuppressWarnings("deprecation")
-class MulticastSpecImpl implements Sinks.MulticastSpec {
-
-	final SinksWrapper wrapper;
-
-	MulticastSpecImpl(SinksWrapper wrapper) {
-		this.wrapper = wrapper;
-	}
-
-	@Override
-	public <T> Many<T> onBackpressureBuffer() {
+		@SuppressWarnings("deprecation")
 		final EmitterProcessor<T> original = EmitterProcessor.create();
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> onBackpressureBuffer(int bufferSize) {
+		@SuppressWarnings("deprecation")
 		final EmitterProcessor<T> original = EmitterProcessor.create(bufferSize);
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> onBackpressureBuffer(int bufferSize, boolean autoCancel) {
+		@SuppressWarnings("deprecation")
 		final EmitterProcessor<T> original = EmitterProcessor.create(bufferSize, autoCancel);
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> directAllOrNothing() {
 		final SinkManyBestEffort<T> original = SinkManyBestEffort.createAllOrNothing();
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> directBestEffort() {
 		final SinkManyBestEffort<T> original = SinkManyBestEffort.createBestEffort();
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
-}
 
-@SuppressWarnings("deprecation")
-class MulticastReplaySpecImpl implements Sinks.MulticastReplaySpec {
-
-	final SinksWrapper wrapper;
-
-	MulticastReplaySpecImpl(SinksWrapper wrapper) {
-		this.wrapper = wrapper;
-	}
 
 	@Override
 	public <T> Many<T> all() {
+		@SuppressWarnings("deprecation")
 		final ReplayProcessor<T> original = ReplayProcessor.create();
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> all(int batchSize) {
+		@SuppressWarnings("deprecation")
 		final ReplayProcessor<T> original = ReplayProcessor.create(batchSize, true);
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> latest() {
+		@SuppressWarnings("deprecation")
 		final ReplayProcessor<T> original = ReplayProcessor.cacheLast();
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> latestOrDefault(T value) {
+		@SuppressWarnings("deprecation")
 		final ReplayProcessor<T> original = ReplayProcessor.cacheLastOrDefault(value);
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> limit(int historySize) {
+		@SuppressWarnings("deprecation")
 		final ReplayProcessor<T> original = ReplayProcessor.create(historySize);
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> limit(Duration maxAge) {
+		@SuppressWarnings("deprecation")
 		final ReplayProcessor<T> original = ReplayProcessor.createTimeout(maxAge);
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> limit(Duration maxAge, Scheduler scheduler) {
-		final ReplayProcessor<T> original =
-				ReplayProcessor.createTimeout(maxAge, scheduler);
-		return wrapper.wrapMany(original, original::currentContext);
+		@SuppressWarnings("deprecation")
+		final ReplayProcessor<T> original = ReplayProcessor.createTimeout(maxAge, scheduler);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> limit(int historySize, Duration maxAge) {
-		final ReplayProcessor<T> original =
-				ReplayProcessor.createSizeAndTimeout(historySize, maxAge);
-		return wrapper.wrapMany(original, original::currentContext);
+		@SuppressWarnings("deprecation")
+		final ReplayProcessor<T> original = ReplayProcessor.createSizeAndTimeout(historySize, maxAge);
+		return wrapMany(original, original::currentContext);
 	}
 
 	@Override
 	public <T> Many<T> limit(int historySize, Duration maxAge, Scheduler scheduler) {
+		@SuppressWarnings("deprecation")
 		final ReplayProcessor<T> original = ReplayProcessor.createSizeAndTimeout(historySize, maxAge, scheduler);
-		return wrapper.wrapMany(original, original::currentContext);
+		return wrapMany(original, original::currentContext);
+	}
+}
+
+class UnicastSpecImpl implements Sinks.UnicastSpec {
+
+	final boolean serialized;
+
+	UnicastSpecImpl(boolean serialized) {
+		this.serialized = serialized;
+	}
+
+	<T> Many<T> wrapMany(Many<T> original, Supplier<ContextView> contextViewSupplier) {
+		if (serialized) {
+			return new SerializedManySink<>(original, contextViewSupplier);
+		}
+		return original;
+	}
+
+	@Override
+	public <T> Many<T> onBackpressureBuffer() {
+		@SuppressWarnings("deprecation")
+		final UnicastProcessor<T> original = UnicastProcessor.create();
+		return wrapMany(original, original::currentContext);
+	}
+
+	@Override
+	public <T> Many<T> onBackpressureBuffer(Queue<T> queue) {
+		@SuppressWarnings("deprecation")
+		final UnicastProcessor<T> original = UnicastProcessor.create(queue);
+		return wrapMany(original, original::currentContext);
+	}
+
+	@Override
+	public <T> Many<T> onBackpressureBuffer(Queue<T> queue, Disposable endCallback) {
+		@SuppressWarnings("deprecation")
+		final UnicastProcessor<T> original = UnicastProcessor.create(queue, endCallback);
+		return wrapMany(original, original::currentContext);
+	}
+
+	@Override
+	public <T> Many<T> onBackpressureError() {
+		final UnicastManySinkNoBackpressure<T> original = UnicastManySinkNoBackpressure.create();
+		return wrapMany(original, original::currentContext);
 	}
 }
