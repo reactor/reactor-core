@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -38,10 +38,10 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 	final ParallelFlux<? extends T> source;
 
-	final BiFunction<T, T, T> reducer;
+	final BinaryOperator<T> reducer;
 
 	ParallelMergeReduce(ParallelFlux<? extends T> source,
-			BiFunction<T, T, T> reducer) {
+			BinaryOperator<T> reducer) {
 		this.source = source;
 		this.reducer = reducer;
 	}
@@ -69,7 +69,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		final MergeReduceInner<T>[] subscribers;
 
-		final BiFunction<T, T, T> reducer;
+		final BinaryOperator<T> reducer;
 
 		volatile SlotPair<T> current;
 		@SuppressWarnings("rawtypes")
@@ -96,7 +96,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		MergeReduceMain(CoreSubscriber<? super T> subscriber,
 				int n,
-				BiFunction<T, T, T> reducer) {
+				BinaryOperator<T> reducer) {
 			super(subscriber);
 			@SuppressWarnings("unchecked") MergeReduceInner<T>[] a =
 					new MergeReduceInner[n];
@@ -209,7 +209,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		final MergeReduceMain<T> parent;
 
-		final BiFunction<T, T, T> reducer;
+		final BinaryOperator<T> reducer;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
@@ -224,7 +224,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		boolean done;
 
 		MergeReduceInner(MergeReduceMain<T> parent,
-				BiFunction<T, T, T> reducer) {
+				BinaryOperator<T> reducer) {
 			this.parent = parent;
 			this.reducer = reducer;
 		}

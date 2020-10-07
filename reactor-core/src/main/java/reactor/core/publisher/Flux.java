@@ -36,6 +36,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.BinaryOperator;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -6851,9 +6852,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 
 	/**
 	 * Reduce the values from this {@link Flux} sequence into a single object of the same
-	 * type than the emitted items. Reduction is performed using a {@link BiFunction} that
+	 * type than the emitted items. Reduction is performed using a {@link BinaryOperator} that
 	 * takes the intermediate result of the reduction and the current value and returns
-	 * the next intermediate value of the reduction. Note, {@link BiFunction} will not
+	 * the next intermediate value of the reduction. Note, {@link BinaryOperator} will not
 	 * be invoked for a sequence with 0 or 1 elements. In case of one element's
 	 * sequence, the result will be directly sent to the subscriber.
 	 *
@@ -6862,11 +6863,11 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * <p><strong>Discard Support:</strong> This operator discards the internally accumulated value upon cancellation or error.
 	 *
-	 * @param aggregator the reducing {@link BiFunction}
+	 * @param aggregator the reducing {@link BinaryOperator}
 	 *
 	 * @return a reduced {@link Flux}
 	 */
-	public final Mono<T> reduce(BiFunction<T, T, T> aggregator) {
+	public final Mono<T> reduce(BinaryOperator<T> aggregator) {
 		if (this instanceof Callable){
 			@SuppressWarnings("unchecked")
 			Callable<T> thiz = (Callable<T>)this;

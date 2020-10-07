@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
@@ -1117,7 +1117,7 @@ public class FluxSpecTests {
 		Assert.assertTrue(sum.get() == length);
 	}
 
-	static class Reduction implements BiFunction<Integer, Integer, Integer> {
+	static class Reduction implements BinaryOperator<Integer> {
 		@Override
 		public Integer apply(Integer left, Integer right) {
 			Integer result = right == null ? 1 : left * right;

@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -35,9 +35,9 @@ import reactor.util.context.Context;
 final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		implements Fuseable {
 
-	final BiFunction<T, T, T> aggregator;
+	final BinaryOperator<T> aggregator;
 
-	MonoReduce(Flux<? extends T> source, BiFunction<T, T, T> aggregator) {
+	MonoReduce(Flux<? extends T> source, BinaryOperator<T> aggregator) {
 		super(source);
 		this.aggregator = Objects.requireNonNull(aggregator, "aggregator");
 	}
@@ -55,14 +55,14 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 
 	static final class ReduceSubscriber<T> extends Operators.MonoSubscriber<T, T> {
 
-		final BiFunction<T, T, T> aggregator;
+		final BinaryOperator<T> aggregator;
 
 		Subscription s;
 
 		boolean done;
 
 		ReduceSubscriber(CoreSubscriber<? super T> actual,
-				BiFunction<T, T, T> aggregator) {
+				BinaryOperator<T> aggregator) {
 			super(actual);
 			this.aggregator = aggregator;
 		}

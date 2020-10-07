@@ -25,6 +25,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -792,7 +793,7 @@ public abstract class ParallelFlux<T> implements CorePublisher<T> {
 	 * @return the new Mono instance emitting the reduced value or empty if the
 	 * {@link ParallelFlux} was empty
 	 */
-	public final Mono<T> reduce(BiFunction<T, T, T> reducer) {
+	public final Mono<T> reduce(BinaryOperator<T> reducer) {
 		Objects.requireNonNull(reducer, "reducer");
 		return Mono.onAssembly(new ParallelMergeReduce<>(this, reducer));
 	}
