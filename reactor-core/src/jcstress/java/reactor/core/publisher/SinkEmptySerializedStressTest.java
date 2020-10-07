@@ -13,6 +13,7 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -35,8 +36,8 @@ public class SinkEmptySerializedStressTest {
 	@JCStressTest
 	@Outcome(id = {"OK, FAIL_NON_SERIALIZED, 1"}, expect = ACCEPTABLE, desc = "first wins")
 	@Outcome(id = {"FAIL_NON_SERIALIZED, OK, 1"}, expect = ACCEPTABLE, desc = "second wins")
-	@Outcome(id = {"OK, FAIL_TERMINATED, 1"}, expect = ACCEPTABLE, desc = "first wins")
-	@Outcome(id = {"FAIL_TERMINATED, OK, 1"}, expect = ACCEPTABLE, desc = "second wins")
+	@Outcome(id = {"OK, FAIL_TERMINATED, 2"}, expect = ACCEPTABLE, desc = "second after first")
+	@Outcome(id = {"FAIL_TERMINATED, OK, 2"}, expect = ACCEPTABLE, desc = "first after second")
 	@State
 	public static class TryEmitEmptyStressTest extends SinkEmptySerializedStressTest {
 
@@ -56,11 +57,13 @@ public class SinkEmptySerializedStressTest {
 		}
 	}
 
-	static class TargetSink<T> implements Sinks.Empty<T> {
+	static class TargetSink<T> implements InternalEmptySink<T> {
 
 		final AtomicReference<StressSubscriber.Operation> guard = new AtomicReference<>(null);
 
 		final AtomicInteger onEmptyCall = new AtomicInteger();
+
+		final AtomicBoolean done = new AtomicBoolean(false);
 
 		@Override
 		public Sinks.Emission tryEmitEmpty() {
@@ -71,7 +74,7 @@ public class SinkEmptySerializedStressTest {
 			LockSupport.parkNanos(10);
 			onEmptyCall.incrementAndGet();
 			guard.compareAndSet(StressSubscriber.Operation.ON_COMPLETE, null);
-			return Sinks.Emission.OK;
+			return done.compareAndSet(false, true) ? Sinks.Emission.OK : Sinks.Emission.FAIL_TERMINATED;
 		}
 
 		@Override
@@ -82,17 +85,7 @@ public class SinkEmptySerializedStressTest {
 
 			LockSupport.parkNanos(10);
 			guard.compareAndSet(StressSubscriber.Operation.ON_ERROR, null);
-			return Sinks.Emission.OK;
-		}
-
-		@Override
-		public void emitEmpty() {
-			tryEmitEmpty().orThrow();
-		}
-
-		@Override
-		public void emitError(Throwable error) {
-			tryEmitError(error).orThrowWithCause(error);
+			return done.compareAndSet(false, true) ? Sinks.Emission.OK : Sinks.Emission.FAIL_TERMINATED;
 		}
 
 		@Override
@@ -108,6 +101,11 @@ public class SinkEmptySerializedStressTest {
 		@Override
 		public Object scanUnsafe(Attr key) {
 			return null;
+		}
+
+		@Override
+		public Context currentContext() {
+			return Context.empty();
 		}
 	}
 

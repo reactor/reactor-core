@@ -27,20 +27,10 @@ final class SinksSpecs {
 
 }
 
-final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
+final class SerializedManySink<T> extends SerializedSink implements InternalManySink<T>, Scannable {
 
 	final Many<T>       sink;
 	final ContextHolder contextHolder;
-
-	volatile int wip;
-	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<SerializedManySink> WIP =
-			AtomicIntegerFieldUpdater.newUpdater(SerializedManySink.class, "wip");
-
-	volatile Thread lockedAt;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SerializedManySink, Thread> LOCKED_AT =
-			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Thread.class, "lockedAt");
 
 	SerializedManySink(Many<T> sink, ContextHolder contextHolder) {
 		this.sink = sink;
@@ -121,7 +111,34 @@ final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 		}
 	}
 
-	private boolean tryAcquire(Thread currentThread) {
+	@Override
+	@Nullable
+	public Object scanUnsafe(Attr key) {
+		return sink.scanUnsafe(key);
+	}
+
+	@Override
+	public Stream<? extends Scannable> inners() {
+		return Scannable.from(sink).inners();
+	}
+
+	@Override
+	public String toString() {
+		return sink.toString();
+	}
+}
+
+abstract class SerializedSink {
+
+	volatile int wip;
+	static final AtomicIntegerFieldUpdater<SerializedSink> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(SerializedSink.class, "wip");
+
+	volatile Thread lockedAt;
+	static final AtomicReferenceFieldUpdater<SerializedSink, Thread> LOCKED_AT =
+			AtomicReferenceFieldUpdater.newUpdater(SerializedSink.class, Thread.class, "lockedAt");
+
+	boolean tryAcquire(Thread currentThread) {
 		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
 			// lazySet in thread A here is ok because:
 			// 1. initial state is `null`
@@ -137,22 +154,6 @@ final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 			WIP.incrementAndGet(this);
 		}
 		return true;
-	}
-
-	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
-		return sink.scanUnsafe(key);
-	}
-
-	@Override
-	public Stream<? extends Scannable> inners() {
-		return Scannable.from(sink).inners();
-	}
-
-	@Override
-	public String toString() {
-		return sink.toString();
 	}
 }
 

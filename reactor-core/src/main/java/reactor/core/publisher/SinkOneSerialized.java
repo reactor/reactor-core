@@ -13,135 +13,33 @@
 
 package reactor.core.publisher;
 
-import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks.One;
-import reactor.util.context.Context;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-public class SinkOneSerialized<T> implements One<T>, ContextHolder {
+public class SinkOneSerialized<T> extends SinkEmptySerialized<T> implements InternalOneSink<T>, ContextHolder {
 
-	final One<T> sink;
-	final ContextHolder contextHolder;
+	final One<T> sinkOne;
 
-	volatile Throwable error;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkOneSerialized, Throwable> ERROR =
-			AtomicReferenceFieldUpdater.newUpdater(SinkOneSerialized.class, Throwable.class, "error");
-
-	volatile Thread lockedAt;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkOneSerialized, Thread> LOCKED_AT =
-			AtomicReferenceFieldUpdater.newUpdater(SinkOneSerialized.class, Thread.class, "lockedAt");
-
-	volatile AtomicBoolean done = new AtomicBoolean(false);
-
-	public SinkOneSerialized(One<T> sink, ContextHolder contextHolder) {
-		this.sink = sink;
-		this.contextHolder = contextHolder;
+	public SinkOneSerialized(One<T> sinkOne, ContextHolder contextHolder) {
+		super(sinkOne, contextHolder);
+		this.sinkOne = sinkOne;
 	}
 
 	@Override
-	public Sinks.Emission tryEmitEmpty() {
-		return tryEmitValue(null);
-	}
-
-	@Override
-	public Sinks.Emission tryEmitError(Throwable t) {
-		Objects.requireNonNull(t, "t is null in sink.error(t)");
-		if (done.get()) {
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
-		Thread lockedAt = this.lockedAt;
-		if (!(lockedAt == null || lockedAt == Thread.currentThread())) {
+	public Sinks.Emission tryEmitValue(T t) {
+		Thread currentThread = Thread.currentThread();
+		if (!tryAcquire(currentThread)) {
 			return Sinks.Emission.FAIL_NON_SERIALIZED;
 		}
-		if (!Exceptions.addThrowable(ERROR, this, t)) {
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
 
-		if (!done.compareAndSet(false, true)) {
-			return Sinks.Emission.FAIL_TERMINATED;
+		try {
+			return sinkOne.tryEmitValue(t);
 		}
-		return sink.tryEmitError(t);
-	}
-
-	@Override
-	public Sinks.Emission tryEmitValue(T value) {
-		if (done.get()) {
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
-
-		Thread currentThread = Thread.currentThread();
-		Thread lockedAt = LOCKED_AT.get(this);
-		if (lockedAt != null) {
-			if (lockedAt != currentThread) {
-				return Sinks.Emission.FAIL_NON_SERIALIZED;
+		finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentThread, null);
 			}
 		}
-		else if (!LOCKED_AT.compareAndSet(this, null, currentThread)) {
-			return Sinks.Emission.FAIL_NON_SERIALIZED;
-		}
-
-		if (!done.compareAndSet(false, true)){
-			LOCKED_AT.compareAndSet(this, currentThread, null);
-			return Sinks.Emission.FAIL_TERMINATED;
-		}
-
-		Sinks.Emission emission = sink.tryEmitValue(value);
-		LOCKED_AT.compareAndSet(this, currentThread, null);
-		return emission;
-	}
-
-	@Override
-	public void emitEmpty() {
-		//no particular error condition handling for emitEmpty
-		emitValue(null);
-	}
-
-	@Override
-	public void emitError(Throwable error) {
-		Sinks.Emission result = tryEmitError(error);
-		switch (result) {
-			case FAIL_TERMINATED:
-			case FAIL_NON_SERIALIZED:
-				Operators.onErrorDropped(error, currentContext());
-				break;
-		}
-	}
-
-	@Override
-	public void emitValue(T value) {
-		//no particular error condition handling for emitValue
-		tryEmitValue(value);
-	}
-
-	@Override
-	public int currentSubscriberCount() {
-		return sink.currentSubscriberCount();
-	}
-
-	@Override
-	public Mono<T> asMono() {
-		return sink.asMono();
-	}
-
-	@Override
-	public Object scanUnsafe(Attr key) {
-		if (key == Attr.ERROR) {
-			return error;
-		}
-		if (key == Attr.TERMINATED) {
-			return done;
-		}
-
-		return sink.scanUnsafe(key);
-	}
-
-	@Override
-	public Context currentContext() {
-		return contextHolder.currentContext();
 	}
 }

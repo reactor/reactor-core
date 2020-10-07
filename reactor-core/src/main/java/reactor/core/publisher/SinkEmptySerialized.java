@@ -13,33 +13,18 @@
 
 package reactor.core.publisher;
 
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.Sinks.Emission;
 import reactor.core.publisher.Sinks.Empty;
 import reactor.util.context.Context;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
-final class SinkEmptySerialized<T> implements Empty<T>, ContextHolder {
+class SinkEmptySerialized<T> extends SerializedSink implements InternalEmptySink<T>, ContextHolder {
 
 	final Empty<T> sink;
 	final ContextHolder contextHolder;
-
-	volatile     Throwable                                                  error;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkEmptySerialized, Throwable> ERROR =
-			AtomicReferenceFieldUpdater.newUpdater(SinkEmptySerialized.class, Throwable.class, "error");
-
-	volatile Thread lockedAt;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SinkEmptySerialized, Thread> LOCKED_AT =
-			AtomicReferenceFieldUpdater.newUpdater(SinkEmptySerialized.class, Thread.class, "lockedAt");
-
-	volatile AtomicBoolean done = new AtomicBoolean(false);
 
 	SinkEmptySerialized(Empty<T> sink, ContextHolder contextHolder) {
 		this.sink = sink;
@@ -48,66 +33,35 @@ final class SinkEmptySerialized<T> implements Empty<T>, ContextHolder {
 
 	@Override
 	public final Emission tryEmitEmpty() {
-		if (done.get()) {
-			return Emission.FAIL_TERMINATED;
-		}
-
 		Thread currentThread = Thread.currentThread();
-		Thread lockedAt = LOCKED_AT.get(this);
-		if (lockedAt != null) {
-			if (lockedAt != currentThread) {
-				return Emission.FAIL_NON_SERIALIZED;
-			}
-		}
-		else if (!LOCKED_AT.compareAndSet(this, null, currentThread)) {
+		if (!tryAcquire(currentThread)) {
 			return Emission.FAIL_NON_SERIALIZED;
 		}
 
-		if (!done.compareAndSet(false, true)){
-			LOCKED_AT.compareAndSet(this, currentThread, null);
-			return Emission.FAIL_TERMINATED;
+		try {
+			return sink.tryEmitEmpty();
+		} finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentThread, null);
+			}
 		}
-
-		Emission emission = sink.tryEmitEmpty();
-		LOCKED_AT.compareAndSet(this, currentThread, null);
-		return emission;
 	}
 
 	@Override
 	public final Emission tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t is null in sink.error(t)");
-		if (done.get()) {
-			return Emission.FAIL_TERMINATED;
-		}
-		Thread lockedAt = this.lockedAt;
-		if (!(lockedAt == null || lockedAt == Thread.currentThread())) {
+
+		Thread currentThread = Thread.currentThread();
+		if (!tryAcquire(currentThread)) {
 			return Emission.FAIL_NON_SERIALIZED;
 		}
-		if (!Exceptions.addThrowable(ERROR, this, t)) {
-			return Emission.FAIL_TERMINATED;
-		}
 
-		if (!done.compareAndSet(false, true)){
-			return Emission.FAIL_TERMINATED;
-		}
-		return sink.tryEmitError(t);
-	}
-
-	@Override
-	public void emitEmpty() {
-		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitEmpty();
-	}
-
-	@Override
-	public void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		switch (result) {
-			case FAIL_TERMINATED:
-			case FAIL_NON_SERIALIZED:
-				Operators.onErrorDropped(error, currentContext());
-				break;
+		try {
+			return sink.tryEmitError(t);
+		} finally {
+			if (WIP.decrementAndGet(this) == 0) {
+				LOCKED_AT.compareAndSet(this, currentThread, null);
+			}
 		}
 	}
 
@@ -128,13 +82,6 @@ final class SinkEmptySerialized<T> implements Empty<T>, ContextHolder {
 
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.ERROR) {
-			return error;
-		}
-		if (key == Attr.TERMINATED) {
-			return done;
-		}
-
 		return sink.scanUnsafe(key);
 	}
 

@@ -18,7 +18,6 @@ import org.openjdk.jcstress.infra.results.LLI_Result;
 import reactor.util.context.Context;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
@@ -35,8 +34,8 @@ public class SinkOneSerializedStressTest {
 	@JCStressTest
 	@Outcome(id = {"OK, FAIL_NON_SERIALIZED, 1"}, expect = ACCEPTABLE, desc = "first wins")
 	@Outcome(id = {"FAIL_NON_SERIALIZED, OK, 1"}, expect = ACCEPTABLE, desc = "second wins")
-	@Outcome(id = {"OK, FAIL_TERMINATED, 1"}, expect = ACCEPTABLE, desc = "first wins")
-	@Outcome(id = {"FAIL_TERMINATED, OK, 1"}, expect = ACCEPTABLE, desc = "second wins")
+	@Outcome(id = {"OK, FAIL_TERMINATED, 2"}, expect = ACCEPTABLE, desc = "second after first")
+	@Outcome(id = {"FAIL_TERMINATED, OK, 2"}, expect = ACCEPTABLE, desc = "first after second")
 	@State
 	public static class TryEmitValueStressTest extends SinkOneSerializedStressTest {
 
@@ -56,27 +55,9 @@ public class SinkOneSerializedStressTest {
 		}
 	}
 
-	static class TargetSink<T> implements Sinks.One<T> {
-
-		final AtomicReference<StressSubscriber.Operation> guard = new AtomicReference<>(null);
+	static class TargetSink<T> extends SinkEmptySerializedStressTest.TargetSink<T> implements InternalOneSink<T> {
 
 		final AtomicInteger onValueCall = new AtomicInteger();
-
-		@Override
-		public Sinks.Emission tryEmitEmpty() {
-			return tryEmitValue(null);
-		}
-
-		@Override
-		public Sinks.Emission tryEmitError(Throwable error) {
-			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_ERROR)) {
-				throw new IllegalStateException("SinkOneSerialized should protect from non-serialized access");
-			}
-
-			LockSupport.parkNanos(10);
-			guard.compareAndSet(StressSubscriber.Operation.ON_ERROR, null);
-			return Sinks.Emission.OK;
-		}
 
 		@Override
 		public Sinks.Emission tryEmitValue(T value) {
@@ -87,38 +68,7 @@ public class SinkOneSerializedStressTest {
 			LockSupport.parkNanos(10);
 			onValueCall.incrementAndGet();
 			guard.compareAndSet(StressSubscriber.Operation.ON_COMPLETE, null);
-			return Sinks.Emission.OK;
+			return done.compareAndSet(false, true) ? Sinks.Emission.OK : Sinks.Emission.FAIL_TERMINATED;
 		}
-
-		@Override
-		public void emitEmpty() {
-			tryEmitValue(null).orThrow();
-		}
-
-		@Override
-		public void emitError(Throwable error) {
-			tryEmitError(error).orThrowWithCause(error);
-		}
-
-		@Override
-		public void emitValue(T value) {
-			tryEmitValue(value).orThrow();
-		}
-
-		@Override
-		public int currentSubscriberCount() {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public Mono<T> asMono() {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public Object scanUnsafe(Attr key) {
-			return null;
-		}
-
 	}
 }
