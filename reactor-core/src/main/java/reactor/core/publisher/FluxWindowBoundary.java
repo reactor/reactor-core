@@ -139,7 +139,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 				Queue<T> processorQueue) {
 			this.actual = actual;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.window = Sinks.many().unsafe().unicast().onBackpressureBuffer(processorQueue, this);
+			this.window = Sinks.unsafe().many().unicast().onBackpressureBuffer(processorQueue, this);
 			WINDOW_COUNT.lazySet(this, 2);
 			this.boundary = new WindowBoundaryOther<>(this);
 			this.queue = Queues.unboundedMultiproducer().get();
@@ -329,7 +329,7 @@ final class FluxWindowBoundary<T, U> extends InternalFluxOperator<T, Flux<T>> {
 
 								WINDOW_COUNT.getAndIncrement(this);
 
-								w = Sinks.many().unsafe().unicast().onBackpressureBuffer(pq, this);
+								w = Sinks.unsafe().many().unicast().onBackpressureBuffer(pq, this);
 								window = w;
 
 								a.onNext(w.asFlux());

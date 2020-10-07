@@ -489,7 +489,7 @@ public class FluxPeekFuseableTest {
 	public void asyncFusionAvailable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many().unsafe()
+		Sinks.unsafe().many()
 			 .unicast()
 			 .onBackpressureBuffer(Queues.<Integer>get(2).get())
 			 .asFlux()

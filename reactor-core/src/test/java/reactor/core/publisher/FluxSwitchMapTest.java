@@ -36,8 +36,8 @@ public class FluxSwitchMapTest {
 	public void noswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .switchMap(v -> sp2.asFlux())
@@ -67,8 +67,8 @@ public class FluxSwitchMapTest {
 	public void noswitchBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .switchMap(v -> sp2.asFlux())
@@ -110,9 +110,9 @@ public class FluxSwitchMapTest {
 	public void doswitch() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp3 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .switchMap(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
@@ -161,8 +161,8 @@ public class FluxSwitchMapTest {
 	public void mainCompletesBefore() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -190,8 +190,8 @@ public class FluxSwitchMapTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -215,8 +215,8 @@ public class FluxSwitchMapTest {
 	public void innerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux().switchMap(v -> sp2.asFlux())
 		   .subscribe(ts);
@@ -242,7 +242,7 @@ public class FluxSwitchMapTest {
 	public void mapperThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .switchMap(v -> {
@@ -262,7 +262,7 @@ public class FluxSwitchMapTest {
 	public void mapperReturnsNull() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .switchMap(v -> null)

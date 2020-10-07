@@ -202,7 +202,7 @@ public class GuideTests {
 
 	@Test
 	public void advancedHot() {
-		Sinks.Many<String> hotSource = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<String> hotSource = Sinks.unsafe().many().multicast().directBestEffort();
 
 		Flux<String> hotFlux = hotSource.asFlux().map(String::toUpperCase);
 

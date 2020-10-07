@@ -2086,7 +2086,7 @@ public class StepVerifierTests {
 	@Test
 	public void assertNextWithSubscribeOnSink() {
 		Scheduler scheduler = Schedulers.newBoundedElastic(1, 100, "test");
-		Sinks.Many<Integer> sink = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sink = Sinks.unsafe().many().multicast().directBestEffort();
 		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
 		                             .doOnNext(v -> sink.tryEmitNext(v).orThrow())
 		                             .subscribeOn(scheduler);

@@ -244,7 +244,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Sinks.Many<Integer> up =
-				Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
+				Sinks.unsafe().many().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.emitNext(i, FAIL_FAST);
@@ -265,7 +265,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void normalAsyncFusedBackpressured() throws Exception {
 		Sinks.Many<Integer> up =
-				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>unbounded(1024).get());
+				Sinks.unsafe().many().unicast().onBackpressureBuffer(Queues.<Integer>unbounded(1024).get());
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.emitNext(0, FAIL_FAST);
@@ -697,7 +697,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void mappedAsyncSourceWithNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Sinks.Many<Integer> up =
-				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
+				Sinks.unsafe().many().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
 		up.emitNext(1, FAIL_FAST);
 		up.emitNext(2, FAIL_FAST);
 		up.emitComplete(FAIL_FAST);
@@ -717,7 +717,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void mappedAsyncSourceWithNullPostFilter() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Sinks.Many<Integer> up =
-				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
+				Sinks.unsafe().many().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
 		up.emitNext(1, FAIL_FAST);
 		up.emitNext(2, FAIL_FAST);
 		up.emitComplete(FAIL_FAST);
@@ -799,7 +799,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void threadBoundaryPreventsInvalidFusionMap() {
 		Sinks.Many<Integer> up =
-				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
+				Sinks.unsafe().many().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -822,7 +822,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void threadBoundaryPreventsInvalidFusionFilter() {
 		Sinks.Many<Integer> up =
-				Sinks.many().unsafe().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
+				Sinks.unsafe().many().unicast().onBackpressureBuffer(Queues.<Integer>get(2).get());
 
 		String s = Thread.currentThread()
 		                 .getName();

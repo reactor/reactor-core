@@ -35,9 +35,9 @@ public class FluxSampleFirstTest {
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp3 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
@@ -82,9 +82,9 @@ public class FluxSampleFirstTest {
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp3 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
@@ -107,9 +107,9 @@ public class FluxSampleFirstTest {
 	public void throttlerError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp2 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> sp3 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp2 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> sp3 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .sampleFirst(v -> v == 1 ? sp2.asFlux() : sp3.asFlux())
@@ -132,7 +132,7 @@ public class FluxSampleFirstTest {
 	public void throttlerThrows() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .sampleFirst(v -> {
@@ -154,7 +154,7 @@ public class FluxSampleFirstTest {
 	public void throttlerReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> sp1 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> sp1 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		sp1.asFlux()
 		   .sampleFirst(v -> null)

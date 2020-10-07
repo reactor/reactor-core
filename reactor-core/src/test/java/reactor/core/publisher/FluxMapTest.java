@@ -149,7 +149,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusion() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> up = Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
+		Sinks.Many<Integer> up = Sinks.unsafe().many().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
 		up.asFlux()
 		  .map(v -> v + 1)
@@ -170,7 +170,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
 		Sinks.Many<Integer> up =
-				Sinks.many().unsafe().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
+				Sinks.unsafe().many().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
 
 		Flux.just(1)
 		    .hide()
