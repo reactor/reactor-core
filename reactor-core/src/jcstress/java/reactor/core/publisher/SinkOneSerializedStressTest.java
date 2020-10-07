@@ -24,7 +24,7 @@ import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
 public class SinkOneSerializedStressTest {
 
-	final SinkOneSerializedStressTest.TargetSink<Object> stressSink = new SinkOneSerializedStressTest.TargetSink<>();
+	final TargetSink<Object> stressSink = new TargetSink<>();
 
 	final SinkOneSerialized<Object> sink = new SinkOneSerialized<>(
 			stressSink,
