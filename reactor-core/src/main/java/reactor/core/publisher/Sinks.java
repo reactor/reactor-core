@@ -44,6 +44,90 @@ public final class Sinks {
 	private Sinks() {
 	}
 
+	public static <T> Many<T> unsafe(Many<T> target) {
+		if (target instanceof SinkWrapper) {
+			//if a Many<T> is a SinkWrapper it should be a SinkWrapper<Many<T>>
+			@SuppressWarnings("unchecked")
+			SinkWrapper<Many<T>> wrapped = (SinkWrapper<Many<T>>) target;
+			return wrapped.unwrap();
+		}
+		return target;
+	}
+
+	public static <T> Many<T> serialized(Many<T> target) {
+		if (target instanceof SinkWrapper) {
+			//if a Many<T> is a SinkWrapper it should be a SinkWrapper<Many<T>>
+			@SuppressWarnings("unchecked")
+			SinkWrapper<Many<T>> wrapped = (SinkWrapper<Many<T>>) target;
+			Many<T> original = wrapped.unwrap();
+			ContextHolder contextHolder = wrapped.contextHolder();
+			return new SerializedManySink<>(original, contextHolder);
+		}
+		if (target instanceof ContextHolder) {
+			ContextHolder contextHolder = (ContextHolder) target;
+			return new SerializedManySink<>(target, contextHolder);
+		}
+		return new SerializedManySink<>(target, Context::empty); //TODO is that a sane default, really?
+	}
+
+	public static <T> One<T> unsafe(One<T> target) {
+		if (target instanceof SinkWrapper) {
+			//if a One<T> is a SinkWrapper it should be a SinkWrapper<One<T>>
+			@SuppressWarnings("unchecked")
+			SinkWrapper<One<T>> wrapped = (SinkWrapper<One<T>>) target;
+			return wrapped.unwrap();
+		}
+		return target;
+	}
+
+	public static <T> One<T> serialized(One<T> target) {
+		if (target instanceof SinkWrapper) {
+			//if a One<T> is a SinkWrapper it should be a SinkWrapper<One<T>>
+			@SuppressWarnings("unchecked")
+			SinkWrapper<One<T>> wrapped = (SinkWrapper<One<T>>) target;
+			One<T> original = wrapped.unwrap();
+			ContextHolder contextHolder = wrapped.contextHolder();
+			//FIXME serialize
+			return target;
+		}
+		if (target instanceof ContextHolder) {
+			ContextHolder contextHolder = (ContextHolder) target;
+			//FIXME serialize
+			return target;
+		}
+		//FIXME serialize
+		return target;
+	}
+
+	public static <T> Empty<T> unsafe(Empty<T> target) {
+		if (target instanceof SinkWrapper) {
+			//if a Empty<T> is a SinkWrapper it should be a SinkWrapper<Empty<T>>
+			@SuppressWarnings("unchecked")
+			SinkWrapper<Empty<T>> wrapped = (SinkWrapper<Empty<T>>) target;
+			return wrapped.unwrap();
+		}
+		return target;
+	}
+
+	public static <T> Empty<T> serialized(Empty<T> target) {
+		if (target instanceof SinkWrapper) {
+			//if a Empty<T> is a SinkWrapper it should be a SinkWrapper<Empty<T>>
+			@SuppressWarnings("unchecked")
+			SinkWrapper<Empty<T>> wrapped = (SinkWrapper<Empty<T>>) target;
+			Empty<T> original = wrapped.unwrap();
+			ContextHolder contextHolder = wrapped.contextHolder();
+			//FIXME serialize
+			return target;
+		}
+		if (target instanceof ContextHolder) {
+			ContextHolder contextHolder = (ContextHolder) target;
+			//FIXME serialize
+			return target;
+		}
+		//FIXME serialize
+		return target;
+	}
+
 	/**
 	 * A {@link Sinks.Empty} which exclusively produces one terminal signal: error or complete.
 	 * It has the following characteristics:

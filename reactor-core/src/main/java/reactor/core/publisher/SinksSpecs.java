@@ -23,7 +23,14 @@ final class SinksSpecs {
 	static final Sinks.RootSpec DEFAULT_ROOT_SPEC = new RootSpecImpl(true);
 }
 
-final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
+interface SinkWrapper<WRAPPED> {
+
+	WRAPPED unwrap();
+
+	ContextHolder contextHolder();
+}
+
+final class SerializedManySink<T> implements InternalManySink<T>, Scannable, SinkWrapper<Sinks.Many<T>> {
 
 	final Many<T>       sink;
 	final ContextHolder contextHolder;
@@ -51,6 +58,16 @@ final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 	@Override
 	public Flux<T> asFlux() {
 		return sink.asFlux();
+	}
+
+	@Override
+	public Many<T> unwrap() {
+		return sink;
+	}
+
+	@Override
+	public ContextHolder contextHolder() {
+		return contextHolder;
 	}
 
 	@Override
