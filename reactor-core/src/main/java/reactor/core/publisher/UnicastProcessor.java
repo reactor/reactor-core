@@ -30,7 +30,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -233,17 +233,16 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public void onComplete() {
 		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
+		@SuppressWarnings("unused") EmitResult emitResult = tryEmitComplete();
 	}
 
 	@Override
-	public Emission tryEmitComplete() {
+	public EmitResult tryEmitComplete() {
 		if (done) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 		if (cancelled) {
-			return Emission.FAIL_CANCELLED;
+			return EmitResult.FAIL_CANCELLED;
 		}
 
 		done = true;
@@ -251,7 +250,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 		doTerminate();
 
 		drain(null);
-		return Emission.OK;
+		return Sinks.EmitResult.OK;
 	}
 
 	@Override
@@ -260,12 +259,12 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Emission tryEmitError(Throwable t) {
+	public Sinks.EmitResult tryEmitError(Throwable t) {
 		if (done) {
-			return Emission.FAIL_TERMINATED;
+			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 		if (cancelled) {
-			return Emission.FAIL_CANCELLED;
+			return EmitResult.FAIL_CANCELLED;
 		}
 
 		error = t;
@@ -274,7 +273,7 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 		doTerminate();
 
 		drain(null);
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
@@ -313,19 +312,19 @@ public final class UnicastProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Emission tryEmitNext(T t) {
+	public EmitResult tryEmitNext(T t) {
 		if (done) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 		if (cancelled) {
-			return Emission.FAIL_CANCELLED;
+			return EmitResult.FAIL_CANCELLED;
 		}
 
 		if (!queue.offer(t)) {
-			return (once > 0) ? Emission.FAIL_OVERFLOW : Emission.FAIL_ZERO_SUBSCRIBER;
+			return (once > 0) ? EmitResult.FAIL_OVERFLOW : EmitResult.FAIL_ZERO_SUBSCRIBER;
 		}
 		drain(t);
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override

@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import reactor.core.Exceptions;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.publisher.Sinks.EmissionException;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.util.context.Context;
@@ -35,28 +35,28 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 class InternalManySinkTest {
 
 	@ParameterizedTest
-	@EnumSource(value = Emission.class)
-	void shouldDelegateToHandler(Emission emission) {
-		assumeThat(emission.hasFailed()).isTrue();
+	@EnumSource(value = Sinks.EmitResult.class)
+	void shouldDelegateToHandler(Sinks.EmitResult emitResult) {
+		assumeThat(emitResult.hasFailed()).isTrue();
 		Sinks.Many<Object> sink = new InternalManySinkAdapter<Object>() {
 			@Override
-			public Emission tryEmitNext(Object o) {
-				return emission;
+			public EmitResult tryEmitNext(Object o) {
+				return emitResult;
 			}
 
 			@Override
-			public Emission tryEmitError(Throwable error) {
-				return emission;
+			public Sinks.EmitResult tryEmitError(Throwable error) {
+				return emitResult;
 			}
 
 			@Override
-			public Emission tryEmitComplete() {
-				return emission;
+			public EmitResult tryEmitComplete() {
+				return emitResult;
 			}
 		};
 
 		for (SignalType signalType : new SignalType[] {SignalType.ON_NEXT, SignalType.ON_ERROR, SignalType.ON_COMPLETE}) {
-			AtomicReference<Emission> emissionRef = new AtomicReference<>();
+			AtomicReference<EmitResult> emissionRef = new AtomicReference<>();
 			try {
 				EmitFailureHandler handler = (failedSignalType, failedEmission) -> {
 					emissionRef.set(failedEmission);
@@ -77,35 +77,35 @@ class InternalManySinkTest {
 				}
 			}
 			catch (EmissionException e) {
-				assertThat(e.getReason()).isEqualTo(Emission.FAIL_NON_SERIALIZED);
+				assertThat(e.getReason()).isEqualTo(EmitResult.FAIL_NON_SERIALIZED);
 			}
-			assertThat(emissionRef).as("emission").hasValue(emission);
+			assertThat(emissionRef).as("emitResult").hasValue(emitResult);
 		}
 	}
 
 	@Test
 	void shouldRetry() {
-		AtomicReference<Emission> nextEmission = new AtomicReference<>(Emission.FAIL_NON_SERIALIZED);
+		AtomicReference<EmitResult> nextEmission = new AtomicReference<>(Sinks.EmitResult.FAIL_NON_SERIALIZED);
 
 		Sinks.Many<Object> sink = new InternalManySinkAdapter<Object>() {
 			@Override
-			public Emission tryEmitNext(Object o) {
+			public EmitResult tryEmitNext(Object o) {
 				return nextEmission.get();
 			}
 
 			@Override
-			public Emission tryEmitComplete() {
+			public EmitResult tryEmitComplete() {
 				throw new IllegalStateException();
 			}
 
 			@Override
-			public Emission tryEmitError(Throwable error) {
+			public EmitResult tryEmitError(Throwable error) {
 				throw new IllegalStateException();
 			}
 		};
 
 		sink.emitNext("Hello", (signalType, emission) -> {
-			nextEmission.set(Emission.OK);
+			nextEmission.set(EmitResult.OK);
 			return true;
 		});
 	}
@@ -114,8 +114,8 @@ class InternalManySinkTest {
 	void shouldRethrowNonSerializedEmission() {
 		Sinks.Many<Object> sink = new InternalManySinkAdapter<Object>() {
 			@Override
-			public Emission tryEmitNext(Object o) {
-				return Emission.FAIL_NON_SERIALIZED;
+			public EmitResult tryEmitNext(Object o) {
+				return EmitResult.FAIL_NON_SERIALIZED;
 			}
 		};
 
@@ -129,14 +129,14 @@ class InternalManySinkTest {
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
 		Sinks.Many<Object> sink = new InternalManySinkAdapter<Object>() {
 			@Override
-			public Emission tryEmitNext(Object o) {
-				return Emission.FAIL_OVERFLOW;
+			public Sinks.EmitResult tryEmitNext(Object o) {
+				return EmitResult.FAIL_OVERFLOW;
 			}
 
 			@Override
-			public Emission tryEmitError(Throwable error) {
+			public EmitResult tryEmitError(Throwable error) {
 				errorRef.set(error);
-				return Emission.OK;
+				return EmitResult.OK;
 			}
 		};
 
@@ -150,17 +150,17 @@ class InternalManySinkTest {
 		Sinks.Many<Object> sink = new InternalManySinkAdapter<Object>() {
 
 			@Override
-			public Emission tryEmitNext(Object o) {
-				return i.incrementAndGet() == 5 ? Emission.OK : Emission.FAIL_NON_SERIALIZED;
+			public EmitResult tryEmitNext(Object o) {
+				return i.incrementAndGet() == 5 ? Sinks.EmitResult.OK : EmitResult.FAIL_NON_SERIALIZED;
 			}
 
 			@Override
-			public Emission tryEmitComplete() {
+			public EmitResult tryEmitComplete() {
 				throw new IllegalStateException();
 			}
 
 			@Override
-			public Emission tryEmitError(Throwable error) {
+			public EmitResult tryEmitError(Throwable error) {
 				throw new IllegalStateException();
 			}
 		};
@@ -183,18 +183,18 @@ class InternalManySinkTest {
 		}
 
 		@Override
-		public Emission tryEmitNext(T t) {
-			return Emission.OK;
+		public EmitResult tryEmitNext(T t) {
+			return Sinks.EmitResult.OK;
 		}
 
 		@Override
-		public Emission tryEmitComplete() {
-			return Emission.OK;
+		public EmitResult tryEmitComplete() {
+			return EmitResult.OK;
 		}
 
 		@Override
-		public Emission tryEmitError(Throwable error) {
-			return Emission.OK;
+		public EmitResult tryEmitError(Throwable error) {
+			return EmitResult.OK;
 		}
 
 		@Override

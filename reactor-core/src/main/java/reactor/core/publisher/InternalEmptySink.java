@@ -23,29 +23,29 @@ interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 	@Override
 	default void emitEmpty(Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
-			Sinks.Emission emission = tryEmitEmpty();
-			if (emission.hasSucceeded()) {
+			Sinks.EmitResult emitResult = tryEmitEmpty();
+			if (emitResult.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_COMPLETE, emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_COMPLETE,
+					emitResult);
 			if (shouldRetry) {
 				continue;
 			}
 
-			switch (emission) {
+			switch (emitResult) {
 				case FAIL_ZERO_SUBSCRIBER:
 				case FAIL_OVERFLOW:
 				case FAIL_CANCELLED:
 				case FAIL_TERMINATED:
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(
-							emission,
+					throw new EmissionException(emitResult,
 							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
 					);
 				default:
-					throw new EmissionException(emission, "Unknown emission value");
+					throw new EmissionException(emitResult, "Unknown emitResult value");
 			}
 		}
 	}
@@ -53,17 +53,18 @@ interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 	@Override
 	default void emitError(Throwable error, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
-			Sinks.Emission emission = tryEmitError(error);
-			if (emission.hasSucceeded()) {
+			Sinks.EmitResult emitResult = tryEmitError(error);
+			if (emitResult.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_ERROR, emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_ERROR,
+					emitResult);
 			if (shouldRetry) {
 				continue;
 			}
 
-			switch (emission) {
+			switch (emitResult) {
 				case FAIL_ZERO_SUBSCRIBER:
 				case FAIL_OVERFLOW:
 				case FAIL_CANCELLED:
@@ -72,12 +73,11 @@ interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 					Operators.onErrorDropped(error, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(
-							emission,
+					throw new EmissionException(emitResult,
 							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
 					);
 				default:
-					throw new EmissionException(emission, "Unknown emission value");
+					throw new EmissionException(emitResult, "Unknown emitResult value");
 			}
 		}
 	}

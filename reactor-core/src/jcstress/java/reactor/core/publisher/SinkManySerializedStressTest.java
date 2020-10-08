@@ -101,7 +101,7 @@ public class SinkManySerializedStressTest {
 		}
 
 		@Override
-		public Sinks.Emission tryEmitNext(T t) {
+		public Sinks.EmitResult tryEmitNext(T t) {
 			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_NEXT)) {
 				throw new IllegalStateException("SerializedManySink should protect from non-serialized access");
 			}
@@ -109,11 +109,11 @@ public class SinkManySerializedStressTest {
 			LockSupport.parkNanos(10);
 			onNextCalls.incrementAndGet();
 			guard.compareAndSet(StressSubscriber.Operation.ON_NEXT, null);
-			return Sinks.Emission.OK;
+			return Sinks.EmitResult.OK;
 		}
 
 		@Override
-		public Sinks.Emission tryEmitComplete() {
+		public Sinks.EmitResult tryEmitComplete() {
 			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_COMPLETE)) {
 				throw new IllegalStateException("SerializedManySink should protect from non-serialized access");
 			}
@@ -121,18 +121,18 @@ public class SinkManySerializedStressTest {
 			LockSupport.parkNanos(10);
 			onCompleteCalls.incrementAndGet();
 			guard.compareAndSet(StressSubscriber.Operation.ON_COMPLETE, null);
-			return Sinks.Emission.OK;
+			return Sinks.EmitResult.OK;
 		}
 
 		@Override
-		public Sinks.Emission tryEmitError(Throwable error) {
+		public Sinks.EmitResult tryEmitError(Throwable error) {
 			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_ERROR)) {
 				throw new IllegalStateException("SerializedManySink should protect from non-serialized access");
 			}
 
 			LockSupport.parkNanos(10);
 			guard.compareAndSet(StressSubscriber.Operation.ON_ERROR, null);
-			return Sinks.Emission.OK;
+			return Sinks.EmitResult.OK;
 		}
 
 		@Override

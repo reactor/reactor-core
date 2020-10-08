@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.test.StepVerifier;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -50,7 +50,7 @@ public class SinkManySerializedTest {
 		            .then(() -> {
 			            assertThat(sink.tryEmitNext("boom"))
 					            .as("emission")
-					            .isEqualTo(Emission.FAIL_OVERFLOW);
+					            .isEqualTo(EmitResult.FAIL_OVERFLOW);
 		            })
 		            .then(() -> sink.tryEmitComplete().orThrow())
 		            .verifyComplete();
@@ -76,7 +76,7 @@ public class SinkManySerializedTest {
 				new SinkManySerialized<>(
 						new EmptyMany<Object>() {
 							@Override
-							public Emission tryEmitNext(Object o) {
+							public EmitResult tryEmitNext(Object o) {
 								SinkManySerialized.LOCKED_AT.set(sink.get(), new Thread());
 								return super.tryEmitNext(o);
 							}
@@ -87,7 +87,7 @@ public class SinkManySerializedTest {
 
 		assertThat(sink.get().tryEmitNext("boom"))
 				.as("emission")
-				.isEqualTo(Emission.FAIL_OVERFLOW);
+				.isEqualTo(Sinks.EmitResult.FAIL_OVERFLOW);
 	}
 
 	@Test
@@ -98,11 +98,12 @@ public class SinkManySerializedTest {
 		CompletableFuture<Object> muchFuture = sink.asFlux().doOnNext(o -> {
 			if ("first".equals(o)) {
 				assertThat(manySink.lockedAt).as("lockedAt").isEqualTo(Thread.currentThread());
-				assertThat(manySink.tryEmitNext("second")).as("second").isEqualTo(Emission.OK);
+				assertThat(manySink.tryEmitNext("second")).as("second").isEqualTo(
+						EmitResult.OK);
 			}
 		}).next().toFuture();
 
-		assertThat(manySink.tryEmitNext("first")).as("first").isEqualTo(Emission.OK);
+		assertThat(manySink.tryEmitNext("first")).as("first").isEqualTo(EmitResult.OK);
 		muchFuture.get(5, TimeUnit.SECONDS);
 	}
 
@@ -111,17 +112,17 @@ public class SinkManySerializedTest {
 		final Sinks.Many<T> delegate = Sinks.many().unsafe().multicast().directBestEffort();
 
 		@Override
-		public Emission tryEmitNext(T o) {
-			return Emission.FAIL_OVERFLOW;
+		public EmitResult tryEmitNext(T o) {
+			return EmitResult.FAIL_OVERFLOW;
 		}
 
 		@Override
-		public Emission tryEmitComplete() {
+		public EmitResult tryEmitComplete() {
 			return delegate.tryEmitComplete();
 		}
 
 		@Override
-		public Emission tryEmitError(Throwable error) {
+		public EmitResult tryEmitError(Throwable error) {
 			return delegate.tryEmitError(error);
 		}
 

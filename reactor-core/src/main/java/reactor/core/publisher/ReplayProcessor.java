@@ -27,10 +27,9 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
@@ -439,15 +438,14 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public void onComplete() {
 		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
+		@SuppressWarnings("unused") Sinks.EmitResult emitResult = tryEmitComplete();
 	}
 
 	@Override
-	public Emission tryEmitComplete() {
+	public Sinks.EmitResult tryEmitComplete() {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
-			return Emission.FAIL_TERMINATED;
+			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
 		b.onComplete();
@@ -458,7 +456,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		for (FluxReplay.ReplaySubscription<T> rs : a) {
 			b.replay(rs);
 		}
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
@@ -467,10 +465,10 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Emission tryEmitError(Throwable t) {
+	public EmitResult tryEmitError(Throwable t) {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 
 		b.onError(t);
@@ -481,7 +479,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		for (FluxReplay.ReplaySubscription<T> rs : a) {
 			b.replay(rs);
 		}
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
@@ -490,10 +488,10 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Emission tryEmitNext(T t) {
+	public Sinks.EmitResult tryEmitNext(T t) {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
-			return Emission.FAIL_TERMINATED;
+			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
 		//note: ReplayProcessor can so far ALWAYS buffer the element, no FAIL_ZERO_SUBSCRIBER here
@@ -501,7 +499,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		for (FluxReplay.ReplaySubscription<T> rs : subscribers) {
 			b.replay(rs);
 		}
-		return Emission.OK;
+		return Sinks.EmitResult.OK;
 	}
 
 	@Override

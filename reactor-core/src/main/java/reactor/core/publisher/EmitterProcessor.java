@@ -29,7 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -208,18 +208,17 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	@Override
 	public void onComplete() {
 		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
+		@SuppressWarnings("unused") EmitResult emitResult = tryEmitComplete();
 	}
 
 	@Override
-	public Emission tryEmitComplete() {
+	public EmitResult tryEmitComplete() {
 		if (done) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 		done = true;
 		drain();
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
@@ -228,18 +227,18 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	}
 
 	@Override
-	public Emission tryEmitError(Throwable t) {
+	public EmitResult tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "onError");
 		if (done) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 		if (Exceptions.addThrowable(ERROR, this, t)) {
 			done = true;
 			drain();
-			return Emission.OK;
+			return EmitResult.OK;
 		}
 		else {
-			return Emission.FAIL_TERMINATED;
+			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 	}
 
@@ -253,9 +252,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 	}
 
 	@Override
-	public Emission tryEmitNext(T t) {
+	public EmitResult tryEmitNext(T t) {
 		if (done) {
-			return Emission.FAIL_TERMINATED;
+			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
 		Objects.requireNonNull(t, "onNext");
@@ -270,7 +269,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 			else {
 				for (; ; ) {
 					if (isCancelled()) {
-						return Emission.FAIL_CANCELLED;
+						return EmitResult.FAIL_CANCELLED;
 					}
 					q = queue;
 					if (q != null) {
@@ -281,10 +280,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements In
 		}
 
 		if (!q.offer(t)) {
-			return subscribers == EMPTY ? Emission.FAIL_ZERO_SUBSCRIBER : Emission.FAIL_OVERFLOW;
+			return subscribers == EMPTY ? EmitResult.FAIL_ZERO_SUBSCRIBER : EmitResult.FAIL_OVERFLOW;
 		}
 		drain();
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override

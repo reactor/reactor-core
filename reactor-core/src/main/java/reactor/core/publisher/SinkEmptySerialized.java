@@ -14,7 +14,7 @@
 package reactor.core.publisher;
 
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.publisher.Sinks.Empty;
 import reactor.util.context.Context;
 
@@ -32,10 +32,10 @@ class SinkEmptySerialized<T> extends SerializedSink implements InternalEmptySink
 	}
 
 	@Override
-	public final Emission tryEmitEmpty() {
+	public final EmitResult tryEmitEmpty() {
 		Thread currentThread = Thread.currentThread();
 		if (!tryAcquire(currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
+			return EmitResult.FAIL_NON_SERIALIZED;
 		}
 
 		try {
@@ -49,12 +49,12 @@ class SinkEmptySerialized<T> extends SerializedSink implements InternalEmptySink
 	}
 
 	@Override
-	public final Emission tryEmitError(Throwable t) {
+	public final EmitResult tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t is null in sink.error(t)");
 
 		Thread currentThread = Thread.currentThread();
 		if (!tryAcquire(currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
+			return EmitResult.FAIL_NON_SERIALIZED;
 		}
 
 		try {

@@ -902,8 +902,8 @@ public class EmitterProcessorTest {
 	public void tryEmitNextWithNoSubscriberFailsOnlyIfNoCapacity() {
 		EmitterProcessor<Integer> emitterProcessor = EmitterProcessor.create(1);
 
-		assertThat(emitterProcessor.tryEmitNext(1)).isEqualTo(Sinks.Emission.OK);
-		assertThat(emitterProcessor.tryEmitNext(2)).isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
+		assertThat(emitterProcessor.tryEmitNext(1)).isEqualTo(Sinks.EmitResult.OK);
+		assertThat(emitterProcessor.tryEmitNext(2)).isEqualTo(Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER);
 
 		StepVerifier.create(emitterProcessor)
 		            .expectNext(1)
@@ -919,21 +919,26 @@ public class EmitterProcessorTest {
 
 		emitterProcessor.subscribe(testSubscriber);
 
-		assertThat(emitterProcessor.tryEmitNext(1)).as("emit 1, with subscriber").isEqualTo(Sinks.Emission.OK);
-		assertThat(emitterProcessor.tryEmitNext(2)).as("emit 2, with subscriber").isEqualTo(Sinks.Emission.OK);
-		assertThat(emitterProcessor.tryEmitNext(3)).as("emit 3, with subscriber").isEqualTo(Sinks.Emission.OK);
+		assertThat(emitterProcessor.tryEmitNext(1)).as("emit 1, with subscriber").isEqualTo(
+				Sinks.EmitResult.OK);
+		assertThat(emitterProcessor.tryEmitNext(2)).as("emit 2, with subscriber").isEqualTo(
+				Sinks.EmitResult.OK);
+		assertThat(emitterProcessor.tryEmitNext(3)).as("emit 3, with subscriber").isEqualTo(
+				Sinks.EmitResult.OK);
 
 		testSubscriber.cancel();
 
-		assertThat(emitterProcessor.tryEmitNext(4)).as("emit 4, without subscriber, buffered").isEqualTo(Sinks.Emission.OK);
-		assertThat(emitterProcessor.tryEmitNext(5)).as("emit 5, without subscriber").isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
+		assertThat(emitterProcessor.tryEmitNext(4)).as("emit 4, without subscriber, buffered").isEqualTo(
+				Sinks.EmitResult.OK);
+		assertThat(emitterProcessor.tryEmitNext(5)).as("emit 5, without subscriber").isEqualTo(
+				Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
 	public void emitNextWithNoSubscriberNoCapacityKeepsSinkOpenWithBuffer() {
 		EmitterProcessor<Integer> emitterProcessor = EmitterProcessor.create(1, false);
 		//fill the buffer
-		assertThat(emitterProcessor.tryEmitNext(1)).as("filling buffer").isEqualTo(Sinks.Emission.OK);
+		assertThat(emitterProcessor.tryEmitNext(1)).as("filling buffer").isEqualTo(Sinks.EmitResult.OK);
 		//test proper
 		//this is "discarded" but no hook can be invoked, so effectively dropped on the floor
 		emitterProcessor.emitNext(2, FAIL_FAST);

@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -83,16 +83,16 @@ final class SinkManyBestEffort<T> extends Flux<T>
 	}
 
 	@Override
-	public Emission tryEmitNext(T t) {
+	public EmitResult tryEmitNext(T t) {
 		Objects.requireNonNull(t, "tryEmitNext(null) is forbidden");
 
 		DirectInner<T>[] subs = subscribers;
 
 		if (subs == EMPTY) {
-			return Emission.FAIL_ZERO_SUBSCRIBER;
+			return EmitResult.FAIL_ZERO_SUBSCRIBER;
 		}
 		if (subs == TERMINATED) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 
 		int expectedEmitted = subs.length;
@@ -110,10 +110,10 @@ final class SinkManyBestEffort<T> extends Flux<T>
 				}
 			}
 			if (commonRequest == 0) {
-				return Emission.FAIL_OVERFLOW;
+				return EmitResult.FAIL_OVERFLOW;
 			}
 			if (cancelledCount == expectedEmitted) {
-				return Emission.FAIL_ZERO_SUBSCRIBER;
+				return EmitResult.FAIL_ZERO_SUBSCRIBER;
 			}
 		}
 
@@ -132,39 +132,39 @@ final class SinkManyBestEffort<T> extends Flux<T>
 			}
 		}
 		if (cancelledCount == expectedEmitted) {
-			return Emission.FAIL_ZERO_SUBSCRIBER;
+			return EmitResult.FAIL_ZERO_SUBSCRIBER;
 		}
 		else if (cancelledCount + emittedCount == expectedEmitted) {
-			return Emission.OK;
+			return EmitResult.OK;
 		}
 		else {
-			return Emission.FAIL_OVERFLOW;
+			return EmitResult.FAIL_OVERFLOW;
 		}
 	}
 
 	@Override
-	public Emission tryEmitComplete() {
+	public EmitResult tryEmitComplete() {
 		@SuppressWarnings("unchecked")
 		DirectInner<T>[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 		if (subs == TERMINATED) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 
 		for (DirectInner<?> s : subs) {
 			s.emitComplete();
 		}
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
-	public Emission tryEmitError(Throwable error) {
+	public EmitResult tryEmitError(Throwable error) {
 		Objects.requireNonNull(error, "tryEmitError(null) is forbidden");
 		@SuppressWarnings("unchecked")
 		DirectInner<T>[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 		if (subs == TERMINATED) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 
 		this.error = error;
@@ -172,7 +172,7 @@ final class SinkManyBestEffort<T> extends Flux<T>
 		for (DirectInner<?> s : subs) {
 			s.emitError(error);
 		}
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override

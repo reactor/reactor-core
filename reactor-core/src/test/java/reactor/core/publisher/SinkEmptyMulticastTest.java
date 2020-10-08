@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,8 +30,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.*;
-import static reactor.core.Scannable.Attr.RUN_STYLE;
-import static reactor.core.Scannable.Attr.RunStyle.SYNC;
 
 class SinkEmptyMulticastTest {
 
@@ -124,7 +121,7 @@ class SinkEmptyMulticastTest {
 		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
 
 		mp.tryEmitError(new Exception("test")).orThrow();
-		assertThat(mp.tryEmitError(new Exception("test"))).isEqualTo(Sinks.Emission.FAIL_TERMINATED);
+		assertThat(mp.tryEmitError(new Exception("test"))).isEqualTo(Sinks.EmitResult.FAIL_TERMINATED);
 	}
 
 	@Test
@@ -132,7 +129,7 @@ class SinkEmptyMulticastTest {
 		SinkEmptyMulticast<Void> mp = new SinkEmptyMulticast<>();
 
 		mp.tryEmitEmpty().orThrow();
-		assertThat(mp.tryEmitError(new Exception("test"))).isEqualTo(Sinks.Emission.FAIL_TERMINATED);
+		assertThat(mp.tryEmitError(new Exception("test"))).isEqualTo(Sinks.EmitResult.FAIL_TERMINATED);
 	}
 
 	@Test

@@ -24,17 +24,18 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 	@Override
 	default void emitNext(T value, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
-			Sinks.Emission emission = tryEmitNext(value);
-			if (emission.hasSucceeded()) {
+			Sinks.EmitResult emitResult = tryEmitNext(value);
+			if (emitResult.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT, emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT,
+					emitResult);
 			if (shouldRetry) {
 				continue;
 			}
 
-			switch (emission) {
+			switch (emitResult) {
 				case FAIL_ZERO_SUBSCRIBER:
 					//we want to "discard" without rendering the sink terminated.
 					// effectively NO-OP cause there's no subscriber, so no context :(
@@ -52,12 +53,11 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 					Operators.onNextDropped(value, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(
-							emission,
+					throw new EmissionException(emitResult,
 							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
 					);
 				default:
-					throw new EmissionException(emission, "Unknown emission value");
+					throw new EmissionException(emitResult, "Unknown emitResult value");
 			}
 		}
 	}
@@ -65,29 +65,29 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 	@Override
 	default void emitComplete(Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
-			Sinks.Emission emission = tryEmitComplete();
-			if (emission.hasSucceeded()) {
+			Sinks.EmitResult emitResult = tryEmitComplete();
+			if (emitResult.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_COMPLETE, emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_COMPLETE,
+					emitResult);
 			if (shouldRetry) {
 				continue;
 			}
 
-			switch (emission) {
+			switch (emitResult) {
 				case FAIL_ZERO_SUBSCRIBER:
 				case FAIL_OVERFLOW:
 				case FAIL_CANCELLED:
 				case FAIL_TERMINATED:
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(
-							emission,
+					throw new EmissionException(emitResult,
 							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
 					);
 				default:
-					throw new EmissionException(emission, "Unknown emission value");
+					throw new EmissionException(emitResult, "Unknown emitResult value");
 			}
 		}
 	}
@@ -95,17 +95,18 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 	@Override
 	default void emitError(Throwable error, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
-			Sinks.Emission emission = tryEmitError(error);
-			if (emission.hasSucceeded()) {
+			Sinks.EmitResult emitResult = tryEmitError(error);
+			if (emitResult.hasSucceeded()) {
 				return;
 			}
 
-			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_ERROR, emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_ERROR,
+					emitResult);
 			if (shouldRetry) {
 				continue;
 			}
 
-			switch (emission) {
+			switch (emitResult) {
 				case FAIL_ZERO_SUBSCRIBER:
 				case FAIL_OVERFLOW:
 				case FAIL_CANCELLED:
@@ -114,12 +115,11 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 					Operators.onErrorDropped(error, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(
-							emission,
+					throw new EmissionException(emitResult,
 							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
 					);
 				default:
-					throw new EmissionException(emission, "Unknown emission value");
+					throw new EmissionException(emitResult, "Unknown emitResult value");
 			}
 		}
 	}
