@@ -56,7 +56,7 @@ sink.emitNext(1, FAIL_FAST);
 sink.emitNext(2, FAIL_FAST);
 
 //thread3, concurrently with thread 2
-Emission result = sink.tryEmitNext(3); //would return FAIL_NON_SERIALIZED
+EmitResult result = sink.tryEmitNext(3); //would return FAIL_NON_SERIALIZED
 ----
 ====
 
