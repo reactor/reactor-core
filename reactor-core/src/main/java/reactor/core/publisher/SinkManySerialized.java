@@ -51,10 +51,10 @@ final class SinkManySerialized<T> extends SinksSpecs.AbstractSerializedSink
 	}
 
 	@Override
-	public final Sinks.Emission tryEmitComplete() {
+	public final Sinks.EmitResult tryEmitComplete() {
 		Thread currentThread = Thread.currentThread();
 		if (!tryAcquire(currentThread)) {
-			return Sinks.Emission.FAIL_NON_SERIALIZED;
+			return Sinks.EmitResult.FAIL_NON_SERIALIZED;
 		}
 
 		try {
@@ -67,12 +67,12 @@ final class SinkManySerialized<T> extends SinksSpecs.AbstractSerializedSink
 	}
 
 	@Override
-	public final Sinks.Emission tryEmitError(Throwable t) {
+	public final Sinks.EmitResult tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t is null in sink.error(t)");
 
 		Thread currentThread = Thread.currentThread();
 		if (!tryAcquire(currentThread)) {
-			return Sinks.Emission.FAIL_NON_SERIALIZED;
+			return Sinks.EmitResult.FAIL_NON_SERIALIZED;
 		}
 
 		try {
@@ -85,12 +85,12 @@ final class SinkManySerialized<T> extends SinksSpecs.AbstractSerializedSink
 	}
 
 	@Override
-	public final Sinks.Emission tryEmitNext(T t) {
+	public final Sinks.EmitResult tryEmitNext(T t) {
 		Objects.requireNonNull(t, "t is null in sink.next(t)");
 
 		Thread currentThread = Thread.currentThread();
 		if (!tryAcquire(currentThread)) {
-			return Sinks.Emission.FAIL_NON_SERIALIZED;
+			return Sinks.EmitResult.FAIL_NON_SERIALIZED;
 		}
 
 		try {

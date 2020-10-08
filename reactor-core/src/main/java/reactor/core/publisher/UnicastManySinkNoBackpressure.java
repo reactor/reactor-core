@@ -23,9 +23,8 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -106,48 +105,48 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Internal
 	}
 
 	@Override
-	public Emission tryEmitNext(T t) {
+	public Sinks.EmitResult tryEmitNext(T t) {
 		Objects.requireNonNull(t, "t");
 
 		switch (state) {
 			case INITIAL:
-				return Emission.FAIL_ZERO_SUBSCRIBER;
+				return Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER;
 			case SUBSCRIBED:
 				if (requested == 0L) {
-					return Emission.FAIL_OVERFLOW;
+					return Sinks.EmitResult.FAIL_OVERFLOW;
 				}
 
 				actual.onNext(t);
 				Operators.produced(REQUESTED, this, 1);
-				return Emission.OK;
+				return Sinks.EmitResult.OK;
 			case TERMINATED:
-				return Emission.FAIL_TERMINATED;
+				return Sinks.EmitResult.FAIL_TERMINATED;
 			case CANCELLED:
-				return Emission.FAIL_CANCELLED;
+				return Sinks.EmitResult.FAIL_CANCELLED;
 			default:
 				throw new IllegalStateException();
 		}
 	}
 
 	@Override
-	public Emission tryEmitError(Throwable t) {
+	public EmitResult tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t");
 		for(;;) { //for the benefit of retrying SUBSCRIBED
 			State s = this.state;
 			switch (s) {
 				case INITIAL:
-					return Emission.FAIL_ZERO_SUBSCRIBER;
+					return Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER;
 				case SUBSCRIBED:
 					if (STATE.compareAndSet(this, s, State.TERMINATED)) {
 						actual.onError(t);
 						actual = null;
-						return Emission.OK;
+						return Sinks.EmitResult.OK;
 					}
 					continue;
 				case TERMINATED:
-					return Emission.FAIL_TERMINATED;
+					return Sinks.EmitResult.FAIL_TERMINATED;
 				case CANCELLED:
-					return Emission.FAIL_CANCELLED;
+					return Sinks.EmitResult.FAIL_CANCELLED;
 				default:
 					throw new IllegalStateException();
 			}
@@ -155,23 +154,23 @@ final class UnicastManySinkNoBackpressure<T> extends Flux<T> implements Internal
 	}
 
 	@Override
-	public Emission tryEmitComplete() {
+	public EmitResult tryEmitComplete() {
 		for (;;) { //for the benefit of retrying SUBSCRIBED
 			State s = this.state;
 			switch (s) {
 				case INITIAL:
-					return Emission.FAIL_ZERO_SUBSCRIBER;
+					return Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER;
 				case SUBSCRIBED:
 					if (STATE.compareAndSet(this, s, State.TERMINATED)) {
 						actual.onComplete();
 						actual = null;
-						return Emission.OK;
+						return EmitResult.OK;
 					}
 					continue;
 				case TERMINATED:
-					return Emission.FAIL_TERMINATED;
+					return Sinks.EmitResult.FAIL_TERMINATED;
 				case CANCELLED:
-					return Emission.FAIL_CANCELLED;
+					return Sinks.EmitResult.FAIL_CANCELLED;
 				default:
 					throw new IllegalStateException();
 			}

@@ -60,7 +60,7 @@ public class SinkOneSerializedStressTest {
 		final AtomicInteger onValueCall = new AtomicInteger();
 
 		@Override
-		public Sinks.Emission tryEmitValue(T value) {
+		public Sinks.EmitResult tryEmitValue(T value) {
 			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_COMPLETE)) {
 				throw new IllegalStateException("SinkOneSerialized should protect from non-serialized access");
 			}
@@ -68,7 +68,7 @@ public class SinkOneSerializedStressTest {
 			LockSupport.parkNanos(10);
 			onValueCall.incrementAndGet();
 			guard.compareAndSet(StressSubscriber.Operation.ON_COMPLETE, null);
-			return done.compareAndSet(false, true) ? Sinks.Emission.OK : Sinks.Emission.FAIL_TERMINATED;
+			return done.compareAndSet(false, true) ? Sinks.EmitResult.OK : Sinks.EmitResult.FAIL_TERMINATED;
 		}
 	}
 }

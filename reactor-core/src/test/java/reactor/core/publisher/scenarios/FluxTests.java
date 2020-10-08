@@ -591,7 +591,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		for (String i : data) {
 			long busyLoops = 0;
-			while (deferred.tryEmitNext(i).hasFailed()) {
+			while (deferred.tryEmitNext(i).isFailure()) {
 				busyLoops++;
 				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
 					throw new RuntimeException("Busy loop timed out");
@@ -651,7 +651,7 @@ public class FluxTests extends AbstractReactorTest {
 		long start = System.currentTimeMillis();
 		for (int i : data) {
 			long busyLoops = 0;
-			while (deferred.tryEmitNext(i).hasFailed()) {
+			while (deferred.tryEmitNext(i).isFailure()) {
 				busyLoops++;
 				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
 					throw new RuntimeException("Busy loop timed out");
@@ -706,7 +706,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		for (int i : data) {
 			long busyLoops = 0;
-			while (mapManydeferred.tryEmitNext(i).hasFailed()) {
+			while (mapManydeferred.tryEmitNext(i).isFailure()) {
 				busyLoops++;
 				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
 					throw new RuntimeException("Busy loop timed out");
@@ -796,7 +796,7 @@ public class FluxTests extends AbstractReactorTest {
 		final long start = System.currentTimeMillis();
 		testDataset.forEach(data -> {
 			long busyLoops = 0;
-			while (batchingStreamDef.tryEmitNext(data).hasFailed()) {
+			while (batchingStreamDef.tryEmitNext(data).isFailure()) {
 				busyLoops++;
 				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
 					throw new RuntimeException("Busy loop timed out");

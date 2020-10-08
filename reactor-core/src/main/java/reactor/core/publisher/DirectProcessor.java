@@ -26,7 +26,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.SinkManyBestEffort.DirectInner;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
@@ -133,28 +133,26 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public void onComplete() {
 		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
+		@SuppressWarnings("unused") Sinks.EmitResult emitResult = tryEmitComplete();
 	}
 
 	private void emitComplete() {
 		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitComplete();
+		@SuppressWarnings("unused") EmitResult emitResult = tryEmitComplete();
 	}
 
-	private Emission tryEmitComplete() {
+	private EmitResult tryEmitComplete() {
 		@SuppressWarnings("unchecked")
 		DirectInner<T>[] inners = SUBSCRIBERS.getAndSet(this, SinkManyBestEffort.TERMINATED);
 
 		if (inners == SinkManyBestEffort.TERMINATED) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 
 		for (DirectInner<?> s : inners) {
 			s.emitComplete();
 		}
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
@@ -163,27 +161,27 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	private void emitError(Throwable error) {
-		Emission result = tryEmitError(error);
-		if (result == Emission.FAIL_TERMINATED) {
+		Sinks.EmitResult result = tryEmitError(error);
+		if (result == EmitResult.FAIL_TERMINATED) {
 			Operators.onErrorDroppedMulticast(error, subscribers);
 		}
 	}
 
-	private Emission tryEmitError(Throwable t) {
+	private Sinks.EmitResult tryEmitError(Throwable t) {
 		Objects.requireNonNull(t, "t");
 
 		@SuppressWarnings("unchecked")
 		DirectInner<T>[] inners = SUBSCRIBERS.getAndSet(this, SinkManyBestEffort.TERMINATED);
 
 		if (inners == SinkManyBestEffort.TERMINATED) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 
 		error = t;
 		for (DirectInner<?> s : inners) {
 			s.emitError(t);
 		}
-		return Emission.OK;
+		return Sinks.EmitResult.OK;
 	}
 
 	private void emitNext(T value) {
@@ -215,22 +213,22 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 		emitNext(t);
 	}
 
-	private Emission tryEmitNext(T t) {
+	private EmitResult tryEmitNext(T t) {
 		Objects.requireNonNull(t, "t");
 
 		DirectInner<T>[] inners = subscribers;
 
 		if (inners == SinkManyBestEffort.TERMINATED) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 		if (inners == SinkManyBestEffort.EMPTY) {
-			return Emission.FAIL_ZERO_SUBSCRIBER;
+			return Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER;
 		}
 
 		for (DirectInner<T> s : inners) {
 			s.directEmitNext(t);
 		}
-		return Emission.OK;
+		return Sinks.EmitResult.OK;
 	}
 
 	@Override

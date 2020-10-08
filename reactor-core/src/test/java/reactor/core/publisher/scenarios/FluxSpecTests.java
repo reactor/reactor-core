@@ -1107,7 +1107,7 @@ public class FluxSpecTests {
 		final long start = System.currentTimeMillis();
 		Flux.range(1, 1000).subscribe(data -> {
 			long busyLoops = 0;
-			while(head.tryEmitNext(data).hasFailed()) {
+			while(head.tryEmitNext(data).isFailure()) {
 				busyLoops++;
 				if (busyLoops % 5000 == 0 && System.currentTimeMillis() - start >= 10_0000) {
 					throw new RuntimeException("Busy loop timed out");

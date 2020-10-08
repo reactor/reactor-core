@@ -25,7 +25,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.util.context.Context;
 
 final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T> {
@@ -59,25 +59,25 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 	}
 
 	@Override
-	public Emission tryEmitEmpty() {
+	public EmitResult tryEmitEmpty() {
 		VoidInner<?>[] array = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 		if (array == TERMINATED) {
-			return Emission.FAIL_TERMINATED;
+			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
 		for (VoidInner<?> as : array) {
 			as.onComplete();
 		}
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
-	public Emission tryEmitError(Throwable cause) {
+	public Sinks.EmitResult tryEmitError(Throwable cause) {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
 		if (subscribers == TERMINATED) {
-			return Emission.FAIL_TERMINATED;
+			return Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
 		//guarded by a read memory barrier (isTerminated) and a subsequent write with getAndSet
@@ -86,7 +86,7 @@ final class SinkEmptyMulticast<T> extends Mono<T> implements InternalEmptySink<T
 		for (VoidInner<?> as : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
 			as.onError(cause);
 		}
-		return Emission.OK;
+		return Sinks.EmitResult.OK;
 	}
 
 	@Override

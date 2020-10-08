@@ -23,7 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.publisher.SinkManyBestEffort.DirectInner;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
@@ -51,7 +51,7 @@ class SinkManyBestEffortTest {
 	void tryEmitNextNoSubscribers() {
 		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
 
-		assertThat(sink.tryEmitNext(1)).as("tryEmitNext").isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+		assertThat(sink.tryEmitNext(1)).as("tryEmitNext").isEqualTo(Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
@@ -59,14 +59,14 @@ class SinkManyBestEffortTest {
 		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
 		sink.tryEmitComplete().orThrow();
 
-		assertThat(sink.tryEmitNext(1)).as("tryEmitNext").isEqualTo(Emission.FAIL_TERMINATED);
+		assertThat(sink.tryEmitNext(1)).as("tryEmitNext").isEqualTo(Sinks.EmitResult.FAIL_TERMINATED);
 	}
 
 	@Test
 	void tryEmitCompleteNoSubscribersRetains() {
 		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
 
-		assertThat(sink.tryEmitComplete()).as("tryEmitComplete").isEqualTo(Emission.OK);
+		assertThat(sink.tryEmitComplete()).as("tryEmitComplete").isEqualTo(EmitResult.OK);
 
 		StepVerifier.create(sink.asFlux())
 		            .verifyComplete();
@@ -77,14 +77,15 @@ class SinkManyBestEffortTest {
 		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
 		sink.tryEmitComplete().orThrow();
 
-		assertThat(sink.tryEmitComplete()).as("tryEmitComplete").isEqualTo(Emission.FAIL_TERMINATED);
+		assertThat(sink.tryEmitComplete()).as("tryEmitComplete").isEqualTo(EmitResult.FAIL_TERMINATED);
 	}
 
 	@Test
 	void tryEmitErrorNoSubscribersRetains() {
 		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
 
-		assertThat(sink.tryEmitError(new IllegalStateException("boom"))).as("tryEmitError").isEqualTo(Emission.OK);
+		assertThat(sink.tryEmitError(new IllegalStateException("boom"))).as("tryEmitError").isEqualTo(
+				Sinks.EmitResult.OK);
 
 		StepVerifier.create(sink.asFlux())
 		            .verifyErrorMessage("boom");
@@ -95,7 +96,8 @@ class SinkManyBestEffortTest {
 		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
 		sink.tryEmitError(new IllegalStateException("boom")).orThrow();
 
-		assertThat(sink.tryEmitError(new IllegalStateException("boom ignored"))).as("tryEmitError").isEqualTo(Emission.FAIL_TERMINATED);
+		assertThat(sink.tryEmitError(new IllegalStateException("boom ignored"))).as("tryEmitError").isEqualTo(
+				Sinks.EmitResult.FAIL_TERMINATED);
 
 		StepVerifier.create(sink.asFlux())
 		            .verifyErrorMessage("boom");
@@ -110,7 +112,8 @@ class SinkManyBestEffortTest {
 		sink.subscribe(sub1);
 		sink.subscribe(sub2);
 
-		assertThat(sink.tryEmitError(new IllegalStateException("boom"))).as("tryEmitError").isEqualTo(Emission.OK);
+		assertThat(sink.tryEmitError(new IllegalStateException("boom"))).as("tryEmitError").isEqualTo(
+				Sinks.EmitResult.OK);
 
 		sub1.assertErrorMessage("boom");
 		sub2.assertErrorMessage("boom");
@@ -188,14 +191,14 @@ class SinkManyBestEffortTest {
 			sink.subscribe(sub1);
 			sink.subscribe(sub2);
 
-			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Emission.FAIL_OVERFLOW);
+			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(EmitResult.FAIL_OVERFLOW);
 
 			sub1.assertValues(1).assertNotTerminated();
 			sub2.assertNoValues().assertNotTerminated();
 
 			sub2.request(1);
 
-			assertThat(sink.tryEmitNext(2)).as("tryEmitNext(2)").isEqualTo(Emission.OK);
+			assertThat(sink.tryEmitNext(2)).as("tryEmitNext(2)").isEqualTo(Sinks.EmitResult.OK);
 			sub1.assertValues(1, 2);
 			sub2.assertValues(2);
 
@@ -217,7 +220,7 @@ class SinkManyBestEffortTest {
 			sink.subscribers[0].set(true); //mark as cancelled
 			sink.subscribers[1].set(true);
 
-			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(EmitResult.FAIL_ZERO_SUBSCRIBER);
 
 			sub1.assertNoValues().assertNotTerminated();
 			sub2.assertNoValues().assertNotTerminated();
@@ -237,14 +240,14 @@ class SinkManyBestEffortTest {
 			sink.subscribe(sub1);
 			sink.subscribe(sub2);
 
-			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Emission.FAIL_OVERFLOW);
+			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(EmitResult.FAIL_OVERFLOW);
 
 			sub1.assertNoValues().assertNotTerminated();
 			sub2.assertNoValues().assertNotTerminated();
 
 			sub2.request(1);
 
-			assertThat(sink.tryEmitNext(2)).as("tryEmitNext(2)").isEqualTo(Emission.OK);
+			assertThat(sink.tryEmitNext(2)).as("tryEmitNext(2)").isEqualTo(Sinks.EmitResult.OK);
 			sub1.assertValues(2);
 			sub2.assertValues(2);
 
@@ -266,7 +269,7 @@ class SinkManyBestEffortTest {
 			SinkManyBestEffort.DirectInner<Integer> inner2 = sink.subscribers[1];
 			inner2.set(true);
 
-			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Emission.OK);
+			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Sinks.EmitResult.OK);
 
 			sub1.assertValues(1).assertNotTerminated();
 			sub2.assertNoValues().assertNotTerminated();
@@ -274,8 +277,8 @@ class SinkManyBestEffortTest {
 			//now properly remove / cancel the subscriber
 			sink.remove(inner2);
 
-			assertThat(sink.tryEmitNext(2)).as("tryEmitNext(2)").isEqualTo(Emission.OK);
-			assertThat(sink.tryEmitComplete()).as("tryEmitComplete").isEqualTo(Emission.OK);
+			assertThat(sink.tryEmitNext(2)).as("tryEmitNext(2)").isEqualTo(Sinks.EmitResult.OK);
+			assertThat(sink.tryEmitComplete()).as("tryEmitComplete").isEqualTo(EmitResult.OK);
 			sub1.assertValues(1, 2).assertComplete();
 			sub2.assertNoValues().assertNotTerminated();
 		}
@@ -293,7 +296,7 @@ class SinkManyBestEffortTest {
 			sink.subscribers[0].set(true);
 			sink.subscribers[1].set(true);
 
-			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+			assertThat(sink.tryEmitNext(1)).as("tryEmitNext(1)").isEqualTo(Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER);
 
 			sub1.assertNoValues().assertNotTerminated();
 			sub2.assertNoValues().assertNotTerminated();

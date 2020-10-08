@@ -25,10 +25,10 @@ public class SinkOneSerialized<T> extends SinkEmptySerialized<T> implements Inte
 	}
 
 	@Override
-	public Sinks.Emission tryEmitValue(T t) {
+	public Sinks.EmitResult tryEmitValue(T t) {
 		Thread currentThread = Thread.currentThread();
 		if (!tryAcquire(currentThread)) {
-			return Sinks.Emission.FAIL_NON_SERIALIZED;
+			return Sinks.EmitResult.FAIL_NON_SERIALIZED;
 		}
 
 		try {

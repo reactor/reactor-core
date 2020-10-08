@@ -66,7 +66,7 @@ public class SinkEmptySerializedStressTest {
 		final AtomicBoolean done = new AtomicBoolean(false);
 
 		@Override
-		public Sinks.Emission tryEmitEmpty() {
+		public Sinks.EmitResult tryEmitEmpty() {
 			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_COMPLETE)) {
 				throw new IllegalStateException("SinkEmptySerialized should protect from non-serialized access");
 			}
@@ -74,18 +74,18 @@ public class SinkEmptySerializedStressTest {
 			LockSupport.parkNanos(10);
 			onEmptyCall.incrementAndGet();
 			guard.compareAndSet(StressSubscriber.Operation.ON_COMPLETE, null);
-			return done.compareAndSet(false, true) ? Sinks.Emission.OK : Sinks.Emission.FAIL_TERMINATED;
+			return done.compareAndSet(false, true) ? Sinks.EmitResult.OK : Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
 		@Override
-		public Sinks.Emission tryEmitError(Throwable error) {
+		public Sinks.EmitResult tryEmitError(Throwable error) {
 			if (!guard.compareAndSet(null, StressSubscriber.Operation.ON_ERROR)) {
 				throw new IllegalStateException("SinkEmptySerialized should protect from non-serialized access");
 			}
 
 			LockSupport.parkNanos(10);
 			guard.compareAndSet(StressSubscriber.Operation.ON_ERROR, null);
-			return done.compareAndSet(false, true) ? Sinks.Emission.OK : Sinks.Emission.FAIL_TERMINATED;
+			return done.compareAndSet(false, true) ? Sinks.EmitResult.OK : Sinks.EmitResult.FAIL_TERMINATED;
 		}
 
 		@Override

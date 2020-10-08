@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import reactor.core.Exceptions;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.publisher.Sinks.EmissionException;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.util.context.Context;
@@ -35,28 +35,28 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 class InternalOneSinkTest {
 
 	@ParameterizedTest
-	@EnumSource(value = Emission.class)
-	void shouldDelegateToHandler(Emission emission) {
-		assumeThat(emission.hasFailed()).isTrue();
+	@EnumSource(value = Sinks.EmitResult.class)
+	void shouldDelegateToHandler(EmitResult emitResult) {
+		assumeThat(emitResult.isFailure()).isTrue();
 		Sinks.One<Object> sink = new InternalOneSinkAdapter<Object>() {
 			@Override
-			public Emission tryEmitValue(Object value) {
-				return emission;
+			public Sinks.EmitResult tryEmitValue(Object value) {
+				return emitResult;
 			}
 
 			@Override
-			public Emission tryEmitError(Throwable error) {
-				return emission;
+			public Sinks.EmitResult tryEmitError(Throwable error) {
+				return emitResult;
 			}
 
 			@Override
-			public Emission tryEmitEmpty() {
-				return emission;
+			public Sinks.EmitResult tryEmitEmpty() {
+				return emitResult;
 			}
 		};
 
 		for (SignalType signalType : new SignalType[] {SignalType.ON_NEXT, SignalType.ON_ERROR, SignalType.ON_COMPLETE}) {
-			AtomicReference<Emission> emissionRef = new AtomicReference<>();
+			AtomicReference<Sinks.EmitResult> emissionRef = new AtomicReference<>();
 			try {
 				EmitFailureHandler handler = (failedSignalType, failedEmission) -> {
 					emissionRef.set(failedEmission);
@@ -77,44 +77,44 @@ class InternalOneSinkTest {
 				}
 			}
 			catch (EmissionException e) {
-				assertThat(e.getReason()).isEqualTo(Emission.FAIL_NON_SERIALIZED);
+				assertThat(e.getReason()).isEqualTo(Sinks.EmitResult.FAIL_NON_SERIALIZED);
 			}
-			assertThat(emissionRef).as("emission").hasValue(emission);
+			assertThat(emissionRef).as("emitResult").hasValue(emitResult);
 		}
 	}
 
 	@Test
 	void shouldRetry() {
-		AtomicReference<Emission> nextEmission = new AtomicReference<>(Emission.FAIL_NON_SERIALIZED);
+		AtomicReference<Sinks.EmitResult> nextEmission = new AtomicReference<>(EmitResult.FAIL_NON_SERIALIZED);
 
 		Sinks.One<Object> sink = new InternalOneSinkAdapter<Object>() {
 
 			@Override
-			public Emission tryEmitValue(Object value) {
+			public EmitResult tryEmitValue(Object value) {
 				return nextEmission.get();
 			}
 
 			@Override
-			public Emission tryEmitEmpty() {
+			public Sinks.EmitResult tryEmitEmpty() {
 				throw new IllegalStateException();
 			}
 
 			@Override
-			public Emission tryEmitError(Throwable error) {
+			public Sinks.EmitResult tryEmitError(Throwable error) {
 				throw new IllegalStateException();
 			}
 		};
 
 		assertThatExceptionOfType(EmissionException.class).isThrownBy(() -> {
 			sink.emitValue("Hello", (signalType, emission) -> {
-				nextEmission.set(Emission.OK);
+				nextEmission.set(Sinks.EmitResult.OK);
 				return false;
 			});
 		});
 
-		nextEmission.set(Emission.FAIL_NON_SERIALIZED);
+		nextEmission.set(EmitResult.FAIL_NON_SERIALIZED);
 		sink.emitValue("Hello", (signalType, emission) -> {
-			nextEmission.set(Emission.OK);
+			nextEmission.set(Sinks.EmitResult.OK);
 			return true;
 		});
 	}
@@ -124,8 +124,8 @@ class InternalOneSinkTest {
 	void shouldRethrowNonSerializedEmission() {
 		Sinks.One<Object> sink = new InternalOneSinkAdapter<Object>() {
 			@Override
-			public Emission tryEmitValue(Object o) {
-				return Emission.FAIL_NON_SERIALIZED;
+			public EmitResult tryEmitValue(Object o) {
+				return Sinks.EmitResult.FAIL_NON_SERIALIZED;
 			}
 		};
 
@@ -139,14 +139,14 @@ class InternalOneSinkTest {
 		AtomicReference<Throwable> errorRef = new AtomicReference<>();
 		Sinks.One<Object> sink = new InternalOneSinkAdapter<Object>() {
 			@Override
-			public Emission tryEmitValue(Object o) {
-				return Emission.FAIL_OVERFLOW;
+			public Sinks.EmitResult tryEmitValue(Object o) {
+				return Sinks.EmitResult.FAIL_OVERFLOW;
 			}
 
 			@Override
-			public Emission tryEmitError(Throwable error) {
+			public EmitResult tryEmitError(Throwable error) {
 				errorRef.set(error);
-				return Emission.OK;
+				return Sinks.EmitResult.OK;
 			}
 		};
 
@@ -160,17 +160,17 @@ class InternalOneSinkTest {
 		Sinks.One<Object> sink = new InternalOneSinkAdapter<Object>() {
 
 			@Override
-			public Emission tryEmitValue(Object o) {
-				return i.incrementAndGet() == 5 ? Emission.OK : Emission.FAIL_NON_SERIALIZED;
+			public Sinks.EmitResult tryEmitValue(Object o) {
+				return i.incrementAndGet() == 5 ? Sinks.EmitResult.OK : Sinks.EmitResult.FAIL_NON_SERIALIZED;
 			}
 
 			@Override
-			public Emission tryEmitEmpty() {
+			public Sinks.EmitResult tryEmitEmpty() {
 				throw new IllegalStateException();
 			}
 
 			@Override
-			public Emission tryEmitError(Throwable error) {
+			public EmitResult tryEmitError(Throwable error) {
 				throw new IllegalStateException();
 			}
 		};
@@ -192,18 +192,18 @@ class InternalOneSinkTest {
 		}
 
 		@Override
-		public Emission tryEmitValue(T value) {
-			return Emission.OK;
+		public Sinks.EmitResult tryEmitValue(T value) {
+			return Sinks.EmitResult.OK;
 		}
 
 		@Override
-		public Emission tryEmitError(Throwable error) {
-			return Emission.OK;
+		public Sinks.EmitResult tryEmitError(Throwable error) {
+			return Sinks.EmitResult.OK;
 		}
 
 		@Override
-		public Emission tryEmitEmpty() {
-			return Emission.OK;
+		public Sinks.EmitResult tryEmitEmpty() {
+			return Sinks.EmitResult.OK;
 		}
 
 		@Override

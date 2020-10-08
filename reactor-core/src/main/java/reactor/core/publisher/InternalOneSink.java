@@ -30,17 +30,18 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 		}
 
 		for (;;) {
-			Sinks.Emission emission = tryEmitValue(value);
-			if (emission.hasSucceeded()) {
+			Sinks.EmitResult emitResult = tryEmitValue(value);
+			if (emitResult.isSuccess()) {
 				return;
 			}
 
-			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT, emission);
+			boolean shouldRetry = failureHandler.onEmitFailure(SignalType.ON_NEXT,
+					emitResult);
 			if (shouldRetry) {
 				continue;
 			}
 
-			switch (emission) {
+			switch (emitResult) {
 				case FAIL_ZERO_SUBSCRIBER:
 					//we want to "discard" without rendering the sink terminated.
 					// effectively NO-OP cause there's no subscriber, so no context :(
@@ -58,12 +59,11 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 					Operators.onNextDropped(value, currentContext());
 					return;
 				case FAIL_NON_SERIALIZED:
-					throw new EmissionException(
-							emission,
+					throw new EmissionException(emitResult,
 							"Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially."
 					);
 				default:
-					throw new EmissionException(emission, "Unknown emission value");
+					throw new EmissionException(emitResult, "Unknown emitResult value");
 			}
 		}
 	}

@@ -87,7 +87,7 @@ public class UnicastProcessorTest {
 		for (int i = 0; i < 5; i++) {
 			Runnable generator = () -> {
 				for (int j = 0; j < countPerThread; j++) {
-					while (sink.tryEmitNext(j).hasFailed()) {
+					while (sink.tryEmitNext(j).isFailure()) {
 						LockSupport.parkNanos(10);
 					}
 				}
@@ -283,7 +283,7 @@ public class UnicastProcessorTest {
 		            .then(() -> {
 			            assertThat(processor.tryEmitNext("boom"))
 					            .as("emission")
-					            .isEqualTo(Sinks.Emission.FAIL_OVERFLOW);
+					            .isEqualTo(Sinks.EmitResult.FAIL_OVERFLOW);
 		            })
 		            .then(() -> processor.tryEmitComplete().orThrow())
 		            .verifyComplete();
@@ -303,8 +303,8 @@ public class UnicastProcessorTest {
 	public void tryEmitNextWithNoSubscriberAndBoundedQueueFailsZeroSubscriber() {
 		UnicastProcessor<Integer> unicastProcessor = UnicastProcessor.create(Queues.<Integer>one().get());
 
-		assertThat(unicastProcessor.tryEmitNext(1)).isEqualTo(Sinks.Emission.OK);
-		assertThat(unicastProcessor.tryEmitNext(2)).isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
+		assertThat(unicastProcessor.tryEmitNext(1)).isEqualTo(Sinks.EmitResult.OK);
+		assertThat(unicastProcessor.tryEmitNext(2)).isEqualTo(Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER);
 
 		StepVerifier.create(unicastProcessor)
 		            .expectNext(1)
@@ -319,9 +319,9 @@ public class UnicastProcessorTest {
 		StepVerifier.create(unicastProcessor, 0) //important to make no initial request
 		            .expectSubscription()
 		            .then(() -> {
-			            assertThat(unicastProcessor.tryEmitNext(1)).isEqualTo(Sinks.Emission.OK);
-			            assertThat(unicastProcessor.tryEmitNext(2)).isEqualTo(Sinks.Emission.FAIL_OVERFLOW);
-			            assertThat(unicastProcessor.tryEmitComplete()).isEqualTo(Sinks.Emission.OK);
+			            assertThat(unicastProcessor.tryEmitNext(1)).isEqualTo(Sinks.EmitResult.OK);
+			            assertThat(unicastProcessor.tryEmitNext(2)).isEqualTo(Sinks.EmitResult.FAIL_OVERFLOW);
+			            assertThat(unicastProcessor.tryEmitComplete()).isEqualTo(Sinks.EmitResult.OK);
 		            })
 		            .thenRequest(1)
 		            .expectNext(1)

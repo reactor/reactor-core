@@ -134,7 +134,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		//using an emit below would terminate the sink with an error
 		assertThat(source2.tryEmitNext(10))
 				.as("early emit in source2")
-				.isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
+				.isEqualTo(Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER);
 
 		source1.tryEmitComplete().orThrow();
 		source.emitComplete(FAIL_FAST);
@@ -173,7 +173,7 @@ public class  FluxConcatMapTest extends AbstractFluxConcatMapTest {
 		//using an emit below would terminate the sink with an error
 		assertThat(source2.tryEmitNext(10))
 				.as("early emit in source2")
-				.isEqualTo(Sinks.Emission.FAIL_ZERO_SUBSCRIBER);
+				.isEqualTo(Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER);
 
 		source1.tryEmitComplete().orThrow();
 		source.emitNext(2, FAIL_FAST);

@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,19 +43,19 @@ class UnicastManySinkNoBackpressureTest {
 	@Test
 	void noSubscribers() {
 		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
-		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+		assertThat(sink.tryEmitNext("hi")).isEqualTo(EmitResult.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
 	void noSubscribersTryError() {
 		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
-		assertThat(sink.tryEmitError(new NullPointerException())).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+		assertThat(sink.tryEmitError(new NullPointerException())).isEqualTo(EmitResult.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
 	void noSubscribersTryComplete() {
 		Sinks.Many<Object> sink = UnicastManySinkNoBackpressure.create();
-		assertThat(sink.tryEmitComplete()).isEqualTo(Emission.FAIL_ZERO_SUBSCRIBER);
+		assertThat(sink.tryEmitComplete()).isEqualTo(EmitResult.FAIL_ZERO_SUBSCRIBER);
 	}
 
 	@Test
@@ -64,7 +64,7 @@ class UnicastManySinkNoBackpressureTest {
 
 		StepVerifier.create(sink.asFlux(), 0)
 		            .then(() -> {
-			            assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_OVERFLOW);
+			            assertThat(sink.tryEmitNext("hi")).isEqualTo(Sinks.EmitResult.FAIL_OVERFLOW);
 		            })
 		            .thenCancel()
 		            .verify();
@@ -76,11 +76,12 @@ class UnicastManySinkNoBackpressureTest {
 
 		StepVerifier.create(sink.asFlux(), 1)
 		            .then(() -> {
-			            assertThat(sink.tryEmitNext("hi")).as("requested").isEqualTo(Emission.OK);
+			            assertThat(sink.tryEmitNext("hi")).as("requested").isEqualTo(Sinks.EmitResult.OK);
 		            })
 		            .expectNextCount(1)
 		            .then(() -> {
-			            assertThat(sink.tryEmitNext("hi")).as("overflow").isEqualTo(Emission.FAIL_OVERFLOW);
+			            assertThat(sink.tryEmitNext("hi")).as("overflow").isEqualTo(
+					            EmitResult.FAIL_OVERFLOW);
 		            })
 		            .thenCancel()
 		            .verify();
@@ -92,7 +93,7 @@ class UnicastManySinkNoBackpressureTest {
 
 		StepVerifier.create(sink.asFlux(), 0).thenCancel().verify();
 
-		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_CANCELLED);
+		assertThat(sink.tryEmitNext("hi")).isEqualTo(Sinks.EmitResult.FAIL_CANCELLED);
 	}
 
 	@Test
@@ -101,7 +102,7 @@ class UnicastManySinkNoBackpressureTest {
 		sink.asFlux().subscribe();
 		sink.tryEmitComplete().orThrow();
 
-		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_TERMINATED);
+		assertThat(sink.tryEmitNext("hi")).isEqualTo(EmitResult.FAIL_TERMINATED);
 	}
 
 	@Test
@@ -110,7 +111,7 @@ class UnicastManySinkNoBackpressureTest {
 		sink.asFlux().subscribe(v -> {}, e -> {});
 		sink.tryEmitError(new IllegalArgumentException("boom")).orThrow();
 
-		assertThat(sink.tryEmitNext("hi")).isEqualTo(Emission.FAIL_TERMINATED);
+		assertThat(sink.tryEmitNext("hi")).isEqualTo(EmitResult.FAIL_TERMINATED);
 	}
 
 	@Test

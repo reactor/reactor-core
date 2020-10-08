@@ -13,7 +13,7 @@ import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
@@ -127,12 +127,11 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 	@Override
 	public final void onComplete() {
 		//no particular error condition handling for onComplete
-		@SuppressWarnings("unused")
-		Emission emission = tryEmitEmpty();
+		@SuppressWarnings("unused") EmitResult emitResult = tryEmitEmpty();
 	}
 
 	@Override
-	public Emission tryEmitEmpty() {
+	public EmitResult tryEmitEmpty() {
 		return tryEmitValue(null);
 	}
 
@@ -143,11 +142,11 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public Emission tryEmitError(Throwable cause) {
+	public Sinks.EmitResult tryEmitError(Throwable cause) {
 		Objects.requireNonNull(cause, "onError cannot be null");
 
 		if (UPSTREAM.getAndSet(this, Operators.cancelledSubscription()) == Operators.cancelledSubscription()) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 
 		error = cause;
@@ -158,7 +157,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 		for (NextInner<O> as : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
 			as.onError(cause);
 		}
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
@@ -167,10 +166,10 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 	}
 
 	@Override
-	public Emission tryEmitValue(@Nullable O value) {
+	public EmitResult tryEmitValue(@Nullable O value) {
 		Subscription s;
 		if ((s = UPSTREAM.getAndSet(this, Operators.cancelledSubscription())) == Operators.cancelledSubscription()) {
-			return Emission.FAIL_TERMINATED;
+			return EmitResult.FAIL_TERMINATED;
 		}
 
 		this.value = value;
@@ -193,7 +192,7 @@ class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 				as.complete(value);
 			}
 		}
-		return Emission.OK;
+		return EmitResult.OK;
 	}
 
 	@Override
