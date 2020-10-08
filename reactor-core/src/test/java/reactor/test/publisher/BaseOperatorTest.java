@@ -392,7 +392,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	final Flux<I> fluxFuseableAsync(OperatorScenario<I, PI, O, PO> scenario) {
 		int p = scenario.producerCount();
-		Sinks.Many<I> rp = Sinks.many().unsafe()
+		Sinks.Many<I> rp = Sinks.unsafe().many()
 		                        .replay()
 		                        .all();
 
@@ -580,7 +580,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncOutputFusedAsync(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+		FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 		return StepVerifier.create(scenario.body()
 		                                   .apply(withFluxSource(up)))
 		                   .expectFusion(Fuseable.ASYNC)
@@ -588,7 +588,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncOutputFusedAsyncConditional(OperatorScenario<I, PI, O, PO> scenario) {
-		FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+		FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 		return StepVerifier.create(scenario.body()
 		                                   .andThen(this::conditional)
 		                                   .apply(withFluxSource(up)))
@@ -598,7 +598,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	final void inputFusedAsyncOutputFusedAsyncCancel(OperatorScenario<I, PI, O, PO> scenario) {
 		if ((scenario.fusionMode() & Fuseable.ASYNC) != 0) {
-			FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+			FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 			testUnicastSource(scenario, up);
 			StepVerifier.create(scenario.body()
 			                            .apply(withFluxSource(up)), 0)
@@ -642,7 +642,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			            .thenCancel()
 			            .verify();
 
-			Sinks.Many<I> up2 = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+			Sinks.Many<I> up2 = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 			StepVerifier.create(scenario.body()
 			                            .apply(withFluxSource(up2.asFlux())), 0)
 			            .consumeSubscriptionWith(s -> {
@@ -661,7 +661,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	@SuppressWarnings({"unchecked", "deprecated"})
 	final void inputFusedAsyncOutputFusedAsyncConditionalCancel(OperatorScenario<I, PI, O, PO> scenario) {
 		if ((scenario.fusionMode() & Fuseable.ASYNC) != 0) {
-			FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.many().unsafe().unicast().onBackpressureBuffer());
+			FluxProcessor<I, I> up = FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer());
 			testUnicastSource(scenario, up);
 			StepVerifier.create(scenario.body()
 			                            .andThen(f -> doOnSubscribe(f, s -> {
@@ -698,7 +698,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			            .thenCancel()
 			            .verify();
 
-			Sinks.Many<I> up2 = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+			Sinks.Many<I> up2 = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 			StepVerifier.create(scenario.body()
 			                            .andThen(f -> doOnSubscribe(f, s -> {
 				                            if (s instanceof Fuseable.QueueSubscription) {
@@ -848,7 +848,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	@SuppressWarnings("unchecked")
 	final StepVerifier.Step<O> inputFusedError(OperatorScenario<I, PI, O, PO> scenario) {
-		Sinks.Many<I> up = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+		Sinks.Many<I> up = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 
 		return StepVerifier.create(scenario.body()
 		                                   .apply(up.asFlux().as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
@@ -908,7 +908,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	final StepVerifier.Step<O> inputFusedAsyncErrorOutputFusedAsync(OperatorScenario<I, PI, O, PO> scenario) {
-		Sinks.Many<I> up = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+		Sinks.Many<I> up = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 		up.emitNext(item(0), FAIL_FAST);
 		return StepVerifier.create(scenario.body()
 		                                   .apply(up.asFlux().as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(
@@ -919,7 +919,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	@SuppressWarnings("unchecked")
 	final StepVerifier.Step<O> inputFusedErrorOutputFusedConditional(OperatorScenario<I, PI, O, PO> scenario) {
-		Sinks.Many<I> up = Sinks.many().unsafe().unicast().onBackpressureBuffer();
+		Sinks.Many<I> up = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 		return StepVerifier.create(scenario.body()
 		                                   .andThen(this::conditional)
 		                                   .apply(up.asFlux().as(f -> withFluxSource(new FluxFuseableExceptionOnPoll<>(

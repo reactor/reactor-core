@@ -21,7 +21,8 @@ import reactor.util.context.Context;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-class SinkEmptySerialized<T> extends SerializedSink implements InternalEmptySink<T>, ContextHolder {
+class SinkEmptySerialized<T> extends SinksSpecs.AbstractSerializedSink
+		implements InternalEmptySink<T>, ContextHolder {
 
 	final Empty<T> sink;
 	final ContextHolder contextHolder;

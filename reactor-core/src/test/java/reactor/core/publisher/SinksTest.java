@@ -50,6 +50,30 @@ import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
  */
 class SinksTest {
 
+	@Test
+	void oneIsSerialized() {
+		assertThat(Sinks.one())
+				.isInstanceOf(SinksSpecs.AbstractSerializedSink.class)
+				.isExactlyInstanceOf(SinkOneSerialized.class);
+	}
+
+	@Test
+	void emptyIsSerialized() {
+		assertThat(Sinks.empty())
+				.isInstanceOf(SinksSpecs.AbstractSerializedSink.class)
+				.isExactlyInstanceOf(SinkEmptySerialized.class);
+	}
+
+	@Test
+	void unsafeOneIsNotSerialized() {
+		assertThat(Sinks.unsafe().one()).isNotInstanceOf(SinksSpecs.AbstractSerializedSink.class);
+	}
+
+	@Test
+	void unsafeEmptyIsNotSerialized() {
+		assertThat(Sinks.unsafe().empty()).isNotInstanceOf(SinksSpecs.AbstractSerializedSink.class);
+	}
+
 	@Nested
 	class MulticastNoWarmup {
 

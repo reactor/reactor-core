@@ -47,8 +47,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void behaveAsJoin() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		Flux<Integer> m =
 				source1.asFlux().groupJoin(source2.asFlux(), just(Flux.never()), just(Flux.never()), add2)
@@ -139,8 +139,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void leftThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		Flux<Flux<Integer>> m =
 				source1.asFlux().groupJoin(source2.asFlux(), just(Flux.never()), just(Flux.never()), add2);
@@ -158,8 +158,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void rightThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		Flux<Flux<Integer>> m =
 				source1.asFlux().groupJoin(source2.asFlux(), just(Flux.never()), just(Flux.never()), add2);
@@ -177,8 +177,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void leftDurationThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -196,8 +196,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void rightDurationThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -215,8 +215,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void leftDurationSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -236,8 +236,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void rightDurationSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -257,8 +257,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void resultSelectorThrows() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
-		Sinks.Many<Integer> source1 = Sinks.many().unsafe().multicast().directBestEffort();
-		Sinks.Many<Integer> source2 = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source1 = Sinks.unsafe().many().multicast().directBestEffort();
+		Sinks.Many<Integer> source2 = Sinks.unsafe().many().multicast().directBestEffort();
 
 		BiFunction<Integer, Flux<Integer>, Integer> fail = (t1, t2) -> {
 			throw new RuntimeException("Forced failure");

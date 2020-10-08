@@ -664,7 +664,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionAvailable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.many().unsafe()
+		Sinks.unsafe().many()
 			 .unicast()
 			 .onBackpressureBuffer(Queues.<Integer>get(2).get())
 			 .asFlux()

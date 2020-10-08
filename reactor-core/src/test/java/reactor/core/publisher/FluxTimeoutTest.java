@@ -110,9 +110,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source = Sinks.unsafe().many().multicast().directBestEffort();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> tp = Sinks.unsafe().many().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -135,9 +135,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutCompleteHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source = Sinks.unsafe().many().multicast().directBestEffort();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> tp = Sinks.unsafe().many().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -160,9 +160,9 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void oldTimeoutErrorHasNoEffect() {
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source = Sinks.unsafe().many().multicast().directBestEffort();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> tp = Sinks.unsafe().many().multicast().directBestEffort();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -250,9 +250,9 @@ public class FluxTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Sinks.Many<Integer> source = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> source = Sinks.unsafe().many().multicast().directBestEffort();
 
-		Sinks.Many<Integer> tp = Sinks.many().unsafe().multicast().directBestEffort();
+		Sinks.Many<Integer> tp = Sinks.unsafe().many().multicast().directBestEffort();
 
 		source.asFlux()
 			  .timeout(tp.asFlux(), v -> tp.asFlux())
