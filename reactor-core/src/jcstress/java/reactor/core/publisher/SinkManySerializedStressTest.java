@@ -45,7 +45,7 @@ public class SinkManySerializedStressTest {
 	@Outcome(id = {"FAIL_NON_SERIALIZED, OK, 1"}, expect = ACCEPTABLE, desc = "second wins")
 	@Outcome(id = {"OK, OK, 2"}, expect = ACCEPTABLE, desc = "one after another")
 	@State
-	public static class TryEmitNextManySerializedStressTest extends SinkManySerializedStressTest {
+	public static class TryEmitNextStressTest extends SinkManySerializedStressTest {
 
 		@Actor
 		public void first(LLI_Result r) {
@@ -69,7 +69,7 @@ public class SinkManySerializedStressTest {
 	@Outcome(id = {"FAIL_TERMINATED, OK, 1"}, expect = ACCEPTABLE, desc = "onNext after onComplete")
 	@Outcome(id = {"OK, OK, 1"}, expect = ACCEPTABLE, desc = "onComplete after onNext")
 	@State
-	public static class TerminatedVsOnNextManySerializedStressTest extends SinkManySerializedStressTest {
+	public static class TerminatedVsOnNextStressTest extends SinkManySerializedStressTest {
 
 		@Actor
 		public void first(LLI_Result r) {
