@@ -20,7 +20,8 @@ import reactor.util.context.Context;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class SinkManySerialized<T> extends SerializedSink implements InternalManySink<T>, Scannable {
+final class SinkManySerialized<T> extends SinksSpecs.AbstractSerializedSink
+		implements InternalManySink<T>, Scannable {
 
 	final Sinks.Many<T> sink;
 	final ContextHolder contextHolder;

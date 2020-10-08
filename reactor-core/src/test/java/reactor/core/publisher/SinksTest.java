@@ -53,25 +53,25 @@ class SinksTest {
 	@Test
 	void oneIsSerialized() {
 		assertThat(Sinks.one())
-				.isInstanceOf(SerializedSink.class)
+				.isInstanceOf(SinksSpecs.AbstractSerializedSink.class)
 				.isExactlyInstanceOf(SinkOneSerialized.class);
 	}
 
 	@Test
 	void emptyIsSerialized() {
 		assertThat(Sinks.empty())
-				.isInstanceOf(SerializedSink.class)
+				.isInstanceOf(SinksSpecs.AbstractSerializedSink.class)
 				.isExactlyInstanceOf(SinkEmptySerialized.class);
 	}
 
 	@Test
 	void unsafeOneIsNotSerialized() {
-		assertThat(Sinks.unsafe().one()).isNotInstanceOf(SerializedSink.class);
+		assertThat(Sinks.unsafe().one()).isNotInstanceOf(SinksSpecs.AbstractSerializedSink.class);
 	}
 
 	@Test
 	void unsafeEmptyIsNotSerialized() {
-		assertThat(Sinks.unsafe().empty()).isNotInstanceOf(SerializedSink.class);
+		assertThat(Sinks.unsafe().empty()).isNotInstanceOf(SinksSpecs.AbstractSerializedSink.class);
 	}
 
 	@Nested
