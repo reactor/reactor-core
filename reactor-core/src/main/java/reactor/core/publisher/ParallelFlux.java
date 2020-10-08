@@ -61,9 +61,9 @@ import reactor.util.context.Context;
  * <p>
  * Use {@link #runOn} to introduce where each 'rail' should run on thread-wise.
  * <p>
- * Use {@link #sequential)} to merge the sources back into a single {@link Flux}.
+ * Use {@link #sequential} to merge the sources back into a single {@link Flux}.
  * <p>
- * Use {@link #then)} to listen for all rails termination in the produced {@link Mono}
+ * Use {@link #then} to listen for all rails termination in the produced {@link Mono}
  * <p>
  * {@link #subscribe(Subscriber)} if you simply want to subscribe to the merged sequence.
  * Note that other variants like {@link #subscribe(Consumer)} instead do multiple
