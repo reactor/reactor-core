@@ -6,7 +6,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Disposable;
+import reactor.core.publisher.Sinks.Empty;
 import reactor.core.publisher.Sinks.Many;
+import reactor.core.publisher.Sinks.One;
 import reactor.core.scheduler.Scheduler;
 
 final class SinksSpecs {
@@ -58,18 +60,16 @@ class RootSpecImpl implements Sinks.RootSpec,
 		this.unicastSpec = new UnicastSpecImpl(serialized);
 	}
 
-	<T> Sinks.Empty<T> wrapEmpty(Sinks.Empty<T> original) {
+	<T, EMPTY extends Empty<T> & ContextHolder> Empty<T> wrapEmpty(EMPTY original) {
 		if (serialized) {
-			//FIXME return wrapped
-			return original;
+			return new SinkEmptySerialized<>(original, original);
 		}
 		return original;
 	}
 
-	<T> Sinks.One<T> wrapOne(Sinks.One<T> original) {
+	<T, ONE extends One<T> & ContextHolder> One<T> wrapOne(ONE original) {
 		if (serialized) {
-			//FIXME return wrapped
-			return original;
+			return new SinkOneSerialized<>(original, original);
 		}
 		return original;
 	}
@@ -87,12 +87,12 @@ class RootSpecImpl implements Sinks.RootSpec,
 	}
 
 	@Override
-	public <T> Sinks.Empty<T> empty() {
+	public <T> Empty<T> empty() {
 		return wrapEmpty(new SinkEmptyMulticast<>());
 	}
 
 	@Override
-	public <T> Sinks.One<T> one() {
+	public <T> One<T> one() {
 		return wrapOne(new NextProcessor<>(null));
 	}
 
