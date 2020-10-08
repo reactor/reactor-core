@@ -1286,15 +1286,16 @@ public abstract class Operators {
 	}
 
 	/**
-	 * If the actual {@link CoreSubscriber} is not {@link Fuseable.ConditionalSubscriber},
+	 * If the actual {@link CoreSubscriber} is not {@link reactor.core.Fuseable.ConditionalSubscriber},
 	 * it will apply an adapter which directly maps all
-	 * {@link Fuseable.ConditionalSubscriber#tryOnNext(T)} to {@link CoreSubscriber#onNext(T)}
+	 * {@link reactor.core.Fuseable.ConditionalSubscriber#tryOnNext(Object)} to
+	 * {@link Subscriber#onNext(Object)}
 	 * and always returns true as the result
 	 *
 	 * @param <T> passed subscriber type
 	 *
 	 * @param actual the {@link Subscriber} to adapt
-	 * @return a potentially adapted {@link Fuseable.ConditionalSubscriber}
+	 * @return a potentially adapted {@link reactor.core.Fuseable.ConditionalSubscriber}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Fuseable.ConditionalSubscriber<? super  T> toConditionalSubscriber(CoreSubscriber<? super T> actual) {
