@@ -88,7 +88,7 @@ public final class Sinks {
 	/**
 	 * Represents the immediate result of an emit attempt (eg. in {@link Sinks.Many#tryEmitNext(Object)}.
 	 * This does not guarantee that a signal is consumed, it simply refers to the sink state when an emit method is invoked.
-	 * This is a particularly important distinction with regards to {@link #FAIL_CANCELLED} which means the sink is -now-
+	 * This is a particularly important distinction with regard to {@link #FAIL_CANCELLED} which means the sink is -now-
 	 * interrupted and emission can't proceed. Consequently, it is possible to emit a signal and obtain an "OK" status even
 	 * if an in-flight cancellation is happening. This is due to the async nature of these actions: producer emits while
 	 * consumer can interrupt independently.
@@ -601,7 +601,7 @@ public final class Sinks {
 		 * be propagated to any asynchronous handler (aka a bubbling exception).
 		 *
 		 * @param t the value to emit, not null
-		 * @return {@link EmitResult}
+		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
 		 * @see Subscriber#onNext(Object)
 		 */
 		EmitResult tryEmitNext(T t);
@@ -610,7 +610,7 @@ public final class Sinks {
 		 * Try to terminate the sequence successfully, generating an {@link Subscriber#onComplete() onComplete}
 		 * signal. The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
 		 *
-		 * @return {@link EmitResult}
+		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
 		 * @see Subscriber#onComplete()
 		 */
 		EmitResult tryEmitComplete();
@@ -620,7 +620,7 @@ public final class Sinks {
 		 * signal. The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
 		 *
 		 * @param error the exception to signal, not null
-		 * @return {@link EmitResult}
+		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
 		 * @see Subscriber#onError(Throwable)
 		 */
 		EmitResult tryEmitError(Throwable error);
@@ -724,7 +724,7 @@ public final class Sinks {
 		 * Try to complete the {@link Mono} without a value, generating only an {@link Subscriber#onComplete() onComplete} signal.
 		 * The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
 		 *
-		 * @return {@link EmitResult}
+		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
 		 * @see #emitEmpty(EmitFailureHandler)
 		 * @see Subscriber#onComplete()
 		 */
@@ -735,7 +735,7 @@ public final class Sinks {
 		 * The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
 		 *
 		 * @param error the exception to signal, not null
-		 * @return {@link EmitResult}
+		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
 		 * @see #emitError(Throwable, EmitFailureHandler)
 		 * @see Subscriber#onError(Throwable)
 		 */
@@ -818,7 +818,7 @@ public final class Sinks {
 		 * be propagated to any asynchronous handler (aka a bubbling exception).
 		 *
 		 * @param value the value to emit and complete with, or {@code null} to only trigger an onComplete
-		 * @return {@link EmitResult}
+		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
 		 * @see #emitValue(Object, EmitFailureHandler)
 		 * @see Subscriber#onNext(Object)
 		 * @see Subscriber#onComplete()
