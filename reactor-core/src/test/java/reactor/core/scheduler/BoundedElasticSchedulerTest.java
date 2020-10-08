@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1024,43 +1025,55 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void publishOnDisposesWorkerWhenCancelled() {
 		AtomicInteger taskExecuted = new AtomicInteger();
+		Function<String, Integer> sleepAndIncrement = v -> {
+			try {
+				Thread.sleep(1000);
+				return taskExecuted.incrementAndGet();
+			}
+			catch (InterruptedException ie) {
+				//swallow interruptions since these are expected as part of the worker cancelling.
+				//propagating through onError triggers unnecessary logging: the subscriber is cancelled
+				//and this results in onErrorDropped
+				return 0;
+			}
+		};
 
 		BoundedElasticScheduler bounded = afterTest.autoDispose(
 				new BoundedElasticScheduler(1, 100, new ReactorThreadFactory("disposeMonoSubscribeOn", new AtomicLong(), false, false, null), 60));
 		Disposable.Composite tasks = Disposables.composite();
 
 		tasks.add(
-				Mono.fromCallable(() -> "init")
+				Mono.fromCallable(() -> "fromCallable fused")
 				    .publishOn(bounded)
-				    .map(v -> ThrowingRunnable.sneaky(() -> { Thread.sleep(1000); taskExecuted.incrementAndGet(); }))
+				    .map(sleepAndIncrement)
 				    .subscribe()
 		);
 		tasks.add(
-				Mono.fromCallable(() -> "init")
+				Mono.fromCallable(() -> "fromCallable")
 				    .hide()
 				    .publishOn(bounded)
-				    .map(v -> ThrowingRunnable.sneaky(() -> { Thread.sleep(1000); taskExecuted.incrementAndGet(); }))
+				    .map(sleepAndIncrement)
 				    .subscribe()
 		);
 		tasks.add(
-				Flux.just("foo")
+				Flux.just("just fused")
 				    .publishOn(bounded)
-				    .map(v -> ThrowingRunnable.sneaky(() -> { Thread.sleep(1000); taskExecuted.incrementAndGet(); }))
+				    .map(sleepAndIncrement)
 				    .subscribe()
 		);
 		tasks.add(
-				Flux.just("foo")
+				Flux.just("just")
 				    .hide()
 				    .publishOn(bounded)
-				    .map(v -> ThrowingRunnable.sneaky(() -> { Thread.sleep(1000); taskExecuted.incrementAndGet(); }))
+				    .map(sleepAndIncrement)
 				    .subscribe()
 		);
 		tasks.add(
 				//test the FluxCallable (not ScalarCallable) case
-				Mono.fromCallable(() -> "init")
+				Mono.fromCallable(() -> "FluxCallable, not ScalarCallable")
 				    .flux()
 				    .publishOn(bounded)
-				    .map(v -> ThrowingRunnable.sneaky(() -> { Thread.sleep(1000); taskExecuted.incrementAndGet(); }))
+				    .map(sleepAndIncrement)
 				    .subscribe()
 		);
 
@@ -1068,7 +1081,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 
 		tasks.dispose();
 
-		Awaitility.waitAtMost(150, TimeUnit.MILLISECONDS).untilAsserted(() ->
+		Awaitility.waitAtMost(200, TimeUnit.MILLISECONDS).untilAsserted(() ->
 				assertThat(bounded.estimateBusy()).isZero());
 		assertThat(taskExecuted).hasValue(0);
 	}
