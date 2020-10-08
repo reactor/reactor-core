@@ -33,14 +33,14 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SerializedManySinkTest {
+public class SinkManySerializedTest {
 
 	@Rule
 	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	@Test
 	public void shouldNotThrowFromTryEmitNext() {
-		SerializedManySink<Object> sink = new SerializedManySink<>(
+		SinkManySerialized<Object> sink = new SinkManySerialized<>(
 				new EmptyMany<>(),
 				Context::empty
 		);
@@ -58,7 +58,7 @@ public class SerializedManySinkTest {
 
 	@Test
 	public void shouldSignalErrorOnOverflow() {
-		SerializedManySink<Object> sink = new SerializedManySink<>(
+		SinkManySerialized<Object> sink = new SinkManySerialized<>(
 				new EmptyMany<>(),
 				Context::empty
 		);
@@ -71,13 +71,13 @@ public class SerializedManySinkTest {
 
 	@Test
 	public void shouldReturnTheEmission() {
-		AtomicReference<SerializedManySink<Object>> sink = new AtomicReference<>();
+		AtomicReference<SinkManySerialized<Object>> sink = new AtomicReference<>();
 		sink.set(
-				new SerializedManySink<>(
+				new SinkManySerialized<>(
 						new EmptyMany<Object>() {
 							@Override
 							public Emission tryEmitNext(Object o) {
-								SerializedManySink.LOCKED_AT.set(sink.get(), new Thread());
+								SinkManySerialized.LOCKED_AT.set(sink.get(), new Thread());
 								return super.tryEmitNext(o);
 							}
 						},
@@ -93,7 +93,7 @@ public class SerializedManySinkTest {
 	@Test
 	public void sameThreadRecursion() throws Exception {
 		Sinks.Many<Object> sink = Sinks.many().unsafe().multicast().directBestEffort();
-		SerializedManySink<Object> manySink = new SerializedManySink<>(sink, Context::empty);
+		SinkManySerialized<Object> manySink = new SinkManySerialized<>(sink, Context::empty);
 
 		CompletableFuture<Object> muchFuture = sink.asFlux().doOnNext(o -> {
 			if ("first".equals(o)) {

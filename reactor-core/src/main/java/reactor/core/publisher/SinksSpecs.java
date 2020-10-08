@@ -1,19 +1,13 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.stream.Stream;
 
 import reactor.core.Disposable;
-import reactor.core.Scannable;
-import reactor.core.publisher.Sinks.Emission;
 import reactor.core.publisher.Sinks.Many;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
 
 final class SinksSpecs {
 	static final ManySpecImpl            MANY_SPEC                    = new ManySpecImpl();
@@ -27,101 +21,17 @@ final class SinksSpecs {
 
 }
 
-final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
-
-	final Many<T>       sink;
-	final ContextHolder contextHolder;
+abstract class SerializedSink {
 
 	volatile int wip;
-	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<SerializedManySink> WIP =
-			AtomicIntegerFieldUpdater.newUpdater(SerializedManySink.class, "wip");
+	static final AtomicIntegerFieldUpdater<SerializedSink> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(SerializedSink.class, "wip");
 
 	volatile Thread lockedAt;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SerializedManySink, Thread> LOCKED_AT =
-			AtomicReferenceFieldUpdater.newUpdater(SerializedManySink.class, Thread.class, "lockedAt");
+	static final AtomicReferenceFieldUpdater<SerializedSink, Thread> LOCKED_AT =
+			AtomicReferenceFieldUpdater.newUpdater(SerializedSink.class, Thread.class, "lockedAt");
 
-	SerializedManySink(Many<T> sink, ContextHolder contextHolder) {
-		this.sink = sink;
-		this.contextHolder = contextHolder;
-	}
-
-	@Override
-	public int currentSubscriberCount() {
-		return sink.currentSubscriberCount();
-	}
-
-	@Override
-	public Flux<T> asFlux() {
-		return sink.asFlux();
-	}
-
-	@Override
-	public Context currentContext() {
-		return contextHolder.currentContext();
-	}
-
-	public boolean isCancelled() {
-		return Scannable.from(sink).scanOrDefault(Attr.CANCELLED, false);
-	}
-
-	@Override
-	public final Emission tryEmitComplete() {
-		Thread currentThread = Thread.currentThread();
-		if (!tryAcquire(currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
-		}
-
-		try {
-			return sink.tryEmitComplete();
-		}
-		finally {
-			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentThread, null);
-			}
-		}
-	}
-
-	@Override
-	public final Emission tryEmitError(Throwable t) {
-		Objects.requireNonNull(t, "t is null in sink.error(t)");
-
-		Thread currentThread = Thread.currentThread();
-		if (!tryAcquire(currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
-		}
-
-		try {
-			return sink.tryEmitError(t);
-		}
-		finally {
-			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentThread, null);
-			}
-		}
-	}
-
-	@Override
-	public final Emission tryEmitNext(T t) {
-		Objects.requireNonNull(t, "t is null in sink.next(t)");
-
-		Thread currentThread = Thread.currentThread();
-		if (!tryAcquire(currentThread)) {
-			return Emission.FAIL_NON_SERIALIZED;
-		}
-
-		try {
-			return sink.tryEmitNext(t);
-		}
-		finally {
-			if (WIP.decrementAndGet(this) == 0) {
-				LOCKED_AT.compareAndSet(this, currentThread, null);
-			}
-		}
-	}
-
-	private boolean tryAcquire(Thread currentThread) {
+	boolean tryAcquire(Thread currentThread) {
 		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
 			// lazySet in thread A here is ok because:
 			// 1. initial state is `null`
@@ -138,22 +48,6 @@ final class SerializedManySink<T> implements InternalManySink<T>, Scannable {
 		}
 		return true;
 	}
-
-	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
-		return sink.scanUnsafe(key);
-	}
-
-	@Override
-	public Stream<? extends Scannable> inners() {
-		return Scannable.from(sink).inners();
-	}
-
-	@Override
-	public String toString() {
-		return sink.toString();
-	}
 }
 
 abstract class SinkSpecImpl {
@@ -165,7 +59,7 @@ abstract class SinkSpecImpl {
 
 	final <T, SINKPROC extends Many<T> & ContextHolder> Many<T> toSerializedSink(SINKPROC sink) {
 		if (serialized) {
-			return new SerializedManySink<T>(sink, sink);
+			return new SinkManySerialized<T>(sink, sink);
 		}
 		return sink;
 	}

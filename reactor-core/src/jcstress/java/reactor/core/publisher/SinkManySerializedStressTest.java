@@ -31,11 +31,11 @@ import reactor.util.context.Context;
 
 import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 
-public class SerializedManySinkStressTest {
+public class SinkManySerializedStressTest {
 
 	final TargetSink<Object> stressSink = new TargetSink<>();
 
-	final SerializedManySink<Object> sink = new SerializedManySink<>(
+	final SinkManySerialized<Object> sink = new SinkManySerialized<>(
 			stressSink,
 			Context::empty
 	);
@@ -45,7 +45,7 @@ public class SerializedManySinkStressTest {
 	@Outcome(id = {"FAIL_NON_SERIALIZED, OK, 1"}, expect = ACCEPTABLE, desc = "second wins")
 	@Outcome(id = {"OK, OK, 2"}, expect = ACCEPTABLE, desc = "one after another")
 	@State
-	public static class TryEmitNextStressTest extends SerializedManySinkStressTest {
+	public static class TryEmitNextStressTest extends SinkManySerializedStressTest {
 
 		@Actor
 		public void first(LLI_Result r) {
@@ -69,7 +69,7 @@ public class SerializedManySinkStressTest {
 	@Outcome(id = {"FAIL_TERMINATED, OK, 1"}, expect = ACCEPTABLE, desc = "onNext after onComplete")
 	@Outcome(id = {"OK, OK, 1"}, expect = ACCEPTABLE, desc = "onComplete after onNext")
 	@State
-	public static class TerminatedVsOnNextStressTest extends SerializedManySinkStressTest {
+	public static class TerminatedVsOnNextStressTest extends SinkManySerializedStressTest {
 
 		@Actor
 		public void first(LLI_Result r) {

@@ -74,7 +74,7 @@ final class DelegateSinkFluxProcessor<IN> extends FluxProcessor<IN, IN> {
 
 	@Override
 	public boolean isSerialized() {
-		return sink instanceof SerializedManySink;
+		return sink instanceof SinkManySerialized;
 	}
 
 	@Override
