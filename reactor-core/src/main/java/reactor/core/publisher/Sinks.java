@@ -121,21 +121,24 @@ public final class Sinks {
 		FAIL_ZERO_SUBSCRIBER;
 
 		/**
-		 * Has successfully emitted the signal
+		 * Represents a successful emission of a signal.
+		 * <p>
+		 * This is more future-proof than checking for equality with {@code OK} since
+		 * new OK-like codes could be introduced later.
 		 */
-		public boolean hasSucceeded() {
+		public boolean isSuccess() {
 			return this == OK;
 		}
 
 		/**
-		 * Has failed to emit the signal.
+		 * Represents a failure to emit a signal.
 		 */
-		public boolean hasFailed() {
+		public boolean isFailure() {
 			return this != OK;
 		}
 
 		/**
-		 * Easily convert from an {@link EmitResult} to throwing an exception on {@link #hasFailed() failure cases}.
+		 * Easily convert from an {@link EmitResult} to throwing an exception on {@link #isFailure() failure cases}.
 		 * This is useful if throwing is the most relevant way of dealing with a failed emission attempt.
 		 * Note however that generally Reactor code doesn't favor throwing exceptions but rather propagating
 		 * them through onError signals.
@@ -151,7 +154,7 @@ public final class Sinks {
 		}
 
 		/**
-		 * Easily convert from an {@link EmitResult} to throwing an exception on {@link #hasFailed() failure cases}.
+		 * Easily convert from an {@link EmitResult} to throwing an exception on {@link #isFailure() failure cases}.
 		 * This is useful if throwing is the most relevant way of dealing with failed {@link One#tryEmitError(Throwable) tryEmitError}
 		 * attempt, in which case you probably wants to propagate the originally pushed {@link Exception}.
 		 * Note however that generally Reactor code doesn't favor throwing exceptions but rather propagating
@@ -167,7 +170,7 @@ public final class Sinks {
 	}
 
 	/**
-	 * An exception representing a {@link EmitResult#hasFailed() failed} {@link EmitResult}.
+	 * An exception representing a {@link EmitResult#isFailure() failed} {@link EmitResult}.
 	 * The exact type of failure can be found via {@link #getReason()}.
 	 */
 	public static final class EmissionException extends IllegalStateException {

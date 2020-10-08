@@ -37,7 +37,7 @@ class InternalManySinkTest {
 	@ParameterizedTest
 	@EnumSource(value = Sinks.EmitResult.class)
 	void shouldDelegateToHandler(Sinks.EmitResult emitResult) {
-		assumeThat(emitResult.hasFailed()).isTrue();
+		assumeThat(emitResult.isFailure()).isTrue();
 		Sinks.Many<Object> sink = new InternalManySinkAdapter<Object>() {
 			@Override
 			public EmitResult tryEmitNext(Object o) {

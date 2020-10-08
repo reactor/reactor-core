@@ -37,7 +37,7 @@ class InternalOneSinkTest {
 	@ParameterizedTest
 	@EnumSource(value = Sinks.EmitResult.class)
 	void shouldDelegateToHandler(EmitResult emitResult) {
-		assumeThat(emitResult.hasFailed()).isTrue();
+		assumeThat(emitResult.isFailure()).isTrue();
 		Sinks.One<Object> sink = new InternalOneSinkAdapter<Object>() {
 			@Override
 			public Sinks.EmitResult tryEmitValue(Object value) {

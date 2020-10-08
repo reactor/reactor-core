@@ -87,7 +87,7 @@ public class UnicastProcessorTest {
 		for (int i = 0; i < 5; i++) {
 			Runnable generator = () -> {
 				for (int j = 0; j < countPerThread; j++) {
-					while (sink.tryEmitNext(j).hasFailed()) {
+					while (sink.tryEmitNext(j).isFailure()) {
 						LockSupport.parkNanos(10);
 					}
 				}

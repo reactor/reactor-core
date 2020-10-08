@@ -31,7 +31,7 @@ interface InternalOneSink<T> extends Sinks.One<T>, InternalEmptySink<T> {
 
 		for (;;) {
 			Sinks.EmitResult emitResult = tryEmitValue(value);
-			if (emitResult.hasSucceeded()) {
+			if (emitResult.isSuccess()) {
 				return;
 			}
 

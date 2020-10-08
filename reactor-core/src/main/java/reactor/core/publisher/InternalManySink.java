@@ -25,7 +25,7 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 	default void emitNext(T value, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.EmitResult emitResult = tryEmitNext(value);
-			if (emitResult.hasSucceeded()) {
+			if (emitResult.isSuccess()) {
 				return;
 			}
 
@@ -66,7 +66,7 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 	default void emitComplete(Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.EmitResult emitResult = tryEmitComplete();
-			if (emitResult.hasSucceeded()) {
+			if (emitResult.isSuccess()) {
 				return;
 			}
 
@@ -96,7 +96,7 @@ interface InternalManySink<T> extends Sinks.Many<T>, ContextHolder {
 	default void emitError(Throwable error, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.EmitResult emitResult = tryEmitError(error);
-			if (emitResult.hasSucceeded()) {
+			if (emitResult.isSuccess()) {
 				return;
 			}
 

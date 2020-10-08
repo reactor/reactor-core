@@ -24,7 +24,7 @@ interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 	default void emitEmpty(Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.EmitResult emitResult = tryEmitEmpty();
-			if (emitResult.hasSucceeded()) {
+			if (emitResult.isSuccess()) {
 				return;
 			}
 
@@ -54,7 +54,7 @@ interface InternalEmptySink<T> extends Sinks.Empty<T>, ContextHolder {
 	default void emitError(Throwable error, Sinks.EmitFailureHandler failureHandler) {
 		for (;;) {
 			Sinks.EmitResult emitResult = tryEmitError(error);
-			if (emitResult.hasSucceeded()) {
+			if (emitResult.isSuccess()) {
 				return;
 			}
 
