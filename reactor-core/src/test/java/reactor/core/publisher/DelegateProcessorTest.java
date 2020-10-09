@@ -24,6 +24,7 @@ import reactor.core.Scannable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("deprecation")
 public class DelegateProcessorTest {
 
 	@Test

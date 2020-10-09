@@ -84,17 +84,17 @@ public class MonoTimeoutTest {
 	public void timeoutRequested() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		NextProcessor<Integer> source = new NextProcessor<>(null);
+		Sinks.One<Integer> source = Sinks.unsafe().one();
 
 		Sinks.Many<Integer> tp = Sinks.unsafe().many().multicast().directBestEffort();
 
-		source.timeout(tp.asFlux())
+		source.asMono()
+		      .timeout(tp.asFlux())
 		      .subscribe(ts);
 
 		tp.emitNext(1, FAIL_FAST);
 
-		source.onNext(2);
-		source.onComplete();
+		source.emitValue(2, FAIL_FAST);
 
 		ts.assertNoValues()
 		  .assertError(TimeoutException.class)

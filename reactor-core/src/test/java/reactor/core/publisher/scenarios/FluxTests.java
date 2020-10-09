@@ -60,7 +60,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
@@ -1412,8 +1411,12 @@ public class FluxTests extends AbstractReactorTest {
 													   .log("fork");
 
 		//from(sink) calls below should return same instance since both processor and standalone sink
-		forkStream.subscribe(FluxProcessor.fromSink(computationEmitterProcessor));
-		forkStream.subscribe(FluxProcessor.fromSink(persistenceEmitterProcessor));
+		forkStream.subscribe(v -> computationEmitterProcessor.emitNext(v, FAIL_FAST),
+				e -> computationEmitterProcessor.emitError(e, FAIL_FAST),
+				() -> computationEmitterProcessor.emitComplete(FAIL_FAST));
+		forkStream.subscribe(v -> persistenceEmitterProcessor.emitNext(v, FAIL_FAST),
+				e -> persistenceEmitterProcessor.emitError(e, FAIL_FAST),
+				() -> persistenceEmitterProcessor.emitComplete(FAIL_FAST));
 
 		final Flux<List<String>> joinStream = Flux.zip(computationStream, persistenceStream, (a, b) -> Arrays.asList(a, b))
 		                                                .publishOn(forkJoin)

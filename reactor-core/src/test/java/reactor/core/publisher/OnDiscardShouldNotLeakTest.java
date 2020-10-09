@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.assertj.core.api.Assumptions;
 import org.junit.After;
@@ -40,7 +41,10 @@ import reactor.test.MemoryUtils.Tracked;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
+
+import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 @RunWith(Parameterized.class)
 @SuppressWarnings("deprecated")
@@ -73,10 +77,9 @@ public class OnDiscardShouldNotLeakTest {
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer()))),
-			DiscardScenario.fluxSource("unicastProcessorAndPublishOn", 1, f -> f
-					.subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer()))
-					.publishOn(Schedulers.immediate())),
+			DiscardScenario.sinkSource("unicastSink", 1, Sinks.unsafe().many().unicast()::onBackpressureBuffer, null),
+			DiscardScenario.sinkSource("unicastSinkAndPublishOn", 1, Sinks.unsafe().many().unicast()::onBackpressureBuffer,
+					f -> f.publishOn(Schedulers.immediate())),
 	};
 
 	private static final boolean[][] CONDITIONAL_AND_FUSED = new boolean[][] {
@@ -541,6 +544,24 @@ public class OnDiscardShouldNotLeakTest {
 
 		static DiscardScenario fluxSource(String desc, int subs, Function<Flux<Tracked>, Publisher<Tracked>> fluxToPublisherProducer) {
 			return new DiscardScenario(desc, subs, (main, others) -> fluxToPublisherProducer.apply(main.flux()));
+		}
+
+		static DiscardScenario sinkSource(String desc, int subs,
+				Supplier<Sinks.Many<Tracked>> sinksManySupplier,
+				@Nullable Function<Flux<Tracked>, Flux<Tracked>> furtherTransformation) {
+			return new DiscardScenario(desc, subs, (main, others) -> {
+				Sinks.Many<Tracked> sink = sinksManySupplier.get();
+				//noinspection CallingSubscribeInNonBlockingScope
+				main.flux().subscribe(
+						v -> sink.emitNext(v, FAIL_FAST),
+						e -> sink.emitError(e, FAIL_FAST),
+						() -> sink.emitComplete(FAIL_FAST));
+				Flux<Tracked> finalFlux = sink.asFlux();
+				if (furtherTransformation != null) {
+					finalFlux = furtherTransformation.apply(finalFlux);
+				}
+				return finalFlux;
+			});
 		}
 
 		static DiscardScenario allFluxSourceArray(String desc, int subs,

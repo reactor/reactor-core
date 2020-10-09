@@ -29,12 +29,6 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuple3;
-import reactor.util.function.Tuple4;
-import reactor.util.function.Tuple5;
-import reactor.util.function.Tuple6;
-import reactor.util.function.Tuple7;
-import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -201,83 +195,59 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void whenMonoJust() {
-		NextProcessor<Tuple2<Integer, Integer>> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.zip(Mono.just(1), Mono.just(2))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+	public void zipMonoJust() {
+		StepVerifier.create(Mono.zip(Mono.just(1), Mono.just(2)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenMonoJust3() {
-		NextProcessor<Tuple3<Integer, Integer, Integer>> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.zip(Mono.just(1), Mono.just(2), Mono.just(3))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+	public void zipMonoJust3() {
+		StepVerifier.create(Mono.zip(Mono.just(1), Mono.just(2), Mono.just(3)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenMonoJust4() {
-		NextProcessor<Tuple4<Integer, Integer, Integer, Integer>> mp =
-				new NextProcessor<>(null);
-		StepVerifier.create(Mono.zip(Mono.just(1),
+	public void zipMonoJust4() {
+		StepVerifier.create(Mono.zip(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
-				Mono.just(4))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				Mono.just(4)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenMonoJust5() {
-		NextProcessor<Tuple5<Integer, Integer, Integer, Integer, Integer>> mp =
-				new NextProcessor<>(null);
-		StepVerifier.create(Mono.zip(Mono.just(1),
+	public void zipMonoJust5() {
+		StepVerifier.create(Mono.zip(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
 				Mono.just(4),
-				Mono.just(5))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				Mono.just(5)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenMonoJust6() {
-		NextProcessor<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> mp =
-				new NextProcessor<>(null);
-		StepVerifier.create(Mono.zip(Mono.just(1),
+	public void zipMonoJust6() {
+		StepVerifier.create(Mono.zip(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
 				Mono.just(4),
 				Mono.just(5),
-				Mono.just(6))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				Mono.just(6)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5 && v.getT6() == 6).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenMonoJust7() {
-		StepVerifier.create(Mono.zip(Mono.just(1),
+	public void zipMonoJust7() {
+		StepVerifier.create(Mono.zip(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
 				Mono.just(4),
@@ -289,8 +259,9 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void whenMonoJust8() {
-		StepVerifier.create(Mono.zip(Mono.just(1),
+	public void zipMonoJust8() {
+		StepVerifier.create(Mono.zip(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
 				Mono.just(4),
@@ -303,110 +274,73 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void whenMonoError() {
-		NextProcessor<Tuple2<Integer, Integer>> mp = new NextProcessor<>(null);
+	public void zipMonoError() {
 		StepVerifier.create(Mono.zip(Mono.<Integer>error(new Exception("test1")),
-				Mono.<Integer>error(new Exception("test2")))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isSuccess()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				Mono.<Integer>error(new Exception("test2"))))
 		            .verifyErrorSatisfies(e -> assertThat(e).hasMessage("test1"));
 	}
 
 	@Test
-	public void whenMonoCallable() {
-		NextProcessor<Tuple2<Integer, Integer>> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.zip(Mono.fromCallable(() -> 1),
-				Mono.fromCallable(() -> 2))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+	public void zipMonoCallable() {
+		StepVerifier.create(Mono.zip(Mono.fromCallable(() -> 1), Mono.fromCallable(() -> 2)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenDelayJustMono() {
-		NextProcessor<Tuple2<Integer, Integer>> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.zipDelayError(Mono.just(1), Mono.just(2))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+	public void zipDelayErrorJustMono() {
+		StepVerifier.create(Mono.zipDelayError(Mono.just(1), Mono.just(2)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenDelayJustMono3() {
-		NextProcessor<Tuple3<Integer, Integer, Integer>> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.zipDelayError(Mono.just(1), Mono.just(2), Mono.just(3))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+	public void zipDelayErrorJustMono3() {
+		StepVerifier.create(Mono.zipDelayError(Mono.just(1), Mono.just(2), Mono.just(3)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenDelayMonoJust4() {
-		NextProcessor<Tuple4<Integer, Integer, Integer, Integer>> mp =
-				new NextProcessor<>(null);
-		StepVerifier.create(Mono.zipDelayError(Mono.just(1),
+	public void zipDelayErrorMonoJust4() {
+		StepVerifier.create(Mono.zipDelayError(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
-				Mono.just(4))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				Mono.just(4)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenDelayMonoJust5() {
-		NextProcessor<Tuple5<Integer, Integer, Integer, Integer, Integer>> mp =
-				new NextProcessor<>(null);
-		StepVerifier.create(Mono.zipDelayError(Mono.just(1),
+	public void zipDelayErrorMonoJust5() {
+		StepVerifier.create(Mono.zipDelayError(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
 				Mono.just(4),
-				Mono.just(5))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				Mono.just(5)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenDelayMonoJust6() {
-		NextProcessor<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> mp =
-				new NextProcessor<>(null);
-		StepVerifier.create(Mono.zipDelayError(Mono.just(1),
+	public void zipDelayErrorMonoJust6() {
+		StepVerifier.create(Mono.zipDelayError(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
 				Mono.just(4),
 				Mono.just(5),
-				Mono.just(6))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+				Mono.just(6)))
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5 && v.getT6() == 6).isTrue())
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whenDelayMonoJust7() {
-		NextProcessor<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>> mp =
-				new NextProcessor<>(null);
-		StepVerifier.create(Mono.zipDelayError(Mono.just(1),
+	public void zipDelayErrorMonoJust7() {
+		StepVerifier.create(Mono.zipDelayError(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
 				Mono.just(4),
@@ -418,8 +352,9 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void whenDelayMonoJust8() {
-		StepVerifier.create(Mono.zipDelayError(Mono.just(1),
+	public void zipDelayErrorMonoJust8() {
+		StepVerifier.create(Mono.zipDelayError(
+				Mono.just(1),
 				Mono.just(2),
 				Mono.just(3),
 				Mono.just(4),
@@ -432,7 +367,7 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void whenIterableDelayErrorCombinesErrors() {
+	public void zipIterableDelayErrorCombinesErrors() {
 		Exception boom1 = new NullPointerException("boom1");
 		Exception boom2 = new IllegalArgumentException("boom2");
 
@@ -445,7 +380,7 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void whenIterableDoesntCombineErrors() {
+	public void zipIterableDoesntCombineErrors() {
 		Exception boom1 = new NullPointerException("boom1");
 		Exception boom2 = new IllegalArgumentException("boom2");
 

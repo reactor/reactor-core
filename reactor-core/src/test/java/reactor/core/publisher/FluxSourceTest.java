@@ -28,11 +28,15 @@ import static org.junit.Assert.assertTrue;
 public class FluxSourceTest {
 
 	@Test
-	public void wrapToFlux(){
+	public void monoProcessor() {
+		@SuppressWarnings("deprecation")
 		NextProcessor<String> mp = new NextProcessor<>(null);
-
 		mp.onNext("test");
-		StepVerifier.create(Flux.from(mp))
+
+		Flux<String> fromMonoProcessor = Flux.from(mp);
+		assertThat(fromMonoProcessor).isExactlyInstanceOf(FluxSourceMono.class);
+
+		StepVerifier.create(fromMonoProcessor)
 		            .expectNext("test")
 		            .verifyComplete();
 	}

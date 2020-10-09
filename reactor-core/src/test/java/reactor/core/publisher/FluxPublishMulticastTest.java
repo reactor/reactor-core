@@ -77,10 +77,15 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 				scenario(f -> f.publish(p -> Flux.just("test", "test1", "test2")))
 						.fusionMode(Fuseable.SYNC),
 
-				scenario(f -> f.publish(p -> p.subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer())), 256))
+				scenario(f -> f.publish(p -> {
+					//TODO double check this Sink usage
+					Sinks.Many<String> sink = Sinks.unsafe().many().unicast().onBackpressureBuffer();
+					p.subscribe(v -> sink.emitNext(v, FAIL_FAST),
+							e -> sink.emitError(e, FAIL_FAST),
+							() -> sink.emitComplete(FAIL_FAST));
+					return sink.asFlux();
+				}, 256))
 						.fusionMode(Fuseable.ASYNC),
-
-
 
 				scenario(f -> f.publish(p -> p, 1))
 						.prefetch(1),
@@ -95,8 +100,14 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(scenario(f -> f.publish(p -> p)),
 
-				scenario(f -> f.publish(p ->
-						p.subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer()))))
+				scenario(f -> f.publish(p -> {
+					//TODO double check this Sink usage
+					Sinks.Many<String> sink = Sinks.unsafe().many().unicast().onBackpressureBuffer();
+					p.subscribe(v -> sink.emitNext(v, FAIL_FAST),
+							e -> sink.emitError(e, FAIL_FAST),
+							() -> sink.emitComplete(FAIL_FAST));
+					return sink.asFlux();
+				}))
 						.fusionMode(Fuseable.ASYNC),
 
 				scenario(f -> f.publish(p -> p))

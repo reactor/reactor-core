@@ -41,30 +41,12 @@ import static reactor.core.publisher.Sinks.Many;
  *
  * @param <IN> the input value type
  * @param <OUT> the output value type
+ * @deprecated Processors will be removed in 3.5. Prefer using {@link Sinks.Many} instead,
+ *  * or see https://github.com/reactor/reactor-core/issues/2431 for alternatives
  */
+@Deprecated
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, CoreSubscriber<IN>, Scannable, Disposable, ContextHolder {
-
-	/**
-	 * Convert a {@link Sinks.Many} to a {@link FluxProcessor} : subscribing to the processor
-	 * will be akin to subscribing to the {@link Many#asFlux()}, and having the processor
-	 * subscribed to an upstream {@link org.reactivestreams.Publisher} will pass signals from
-	 * said {@link org.reactivestreams.Publisher} as calls to the sink's {@link Sinks.Many#tryEmitNext(Object) emit methods}.
-	 *
-	 * @param sink the {@link Sinks.Many} to convert
-	 * @param <IN> the type of values that can be emitted by the sink
-	 * @return a {@link FluxProcessor} with the same semantics as the {@link Sinks.Many}
-	 */
-	public static <IN> FluxProcessor<IN, IN> fromSink(Many<IN> sink) {
-		if (sink instanceof FluxProcessor) {
-			@SuppressWarnings("unchecked")
-			FluxProcessor<IN, IN> processor = (FluxProcessor<IN, IN>) sink;
-			if (processor.isIdentityProcessor()) {
-				return processor;
-			}
-		}
-		return new DelegateSinkFluxProcessor<>(sink);
-	}
 
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.

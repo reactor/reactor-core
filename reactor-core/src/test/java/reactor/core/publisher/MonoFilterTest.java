@@ -126,6 +126,7 @@ public class MonoFilterTest {
 	public void asyncFusion() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
+		@SuppressWarnings("deprecation") //TODO find a suitable source that can be async fused (MonoProcessor was never fuseable)
 		NextProcessor<Integer> up = new NextProcessor<>(null);
 
 		up.filter(v -> (v & 1) == 0)
@@ -142,6 +143,7 @@ public class MonoFilterTest {
 	public void asyncFusionBackpressured() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
+		@SuppressWarnings("deprecation") //TODO find a suitable source that can be async fused (MonoProcessor was never fuseable)
 		NextProcessor<Integer> up = new NextProcessor<>(null);
 
 		Mono.just(1)
@@ -169,12 +171,7 @@ public class MonoFilterTest {
 
 	@Test
 	public void filterMono() {
-		NextProcessor<Integer> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.just(2).filter(s -> s % 2 == 0).subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.peek()).isEqualTo(2))
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		StepVerifier.create(Mono.just(2).filter(s -> s % 2 == 0))
 		            .expectNext(2)
 		            .verifyComplete();
 	}
@@ -182,12 +179,7 @@ public class MonoFilterTest {
 
 	@Test
 	public void filterMonoNot() {
-		NextProcessor<Integer> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.just(1).filter(s -> s % 2 == 0).subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.peek()).isNull())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		StepVerifier.create(Mono.just(1).filter(s -> s % 2 == 0))
 		            .verifyComplete();
 	}
 

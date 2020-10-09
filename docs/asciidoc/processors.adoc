@@ -15,12 +15,13 @@ Sinks are usually a better alternative.
 In Reactor a sink is a class that allows safe manual triggering of signals. It can either
 be associated to a subscription (from inside an operator) or completely standalone.
 
-Since `3.4.0`, an effort has been started to hide concrete processor implementations and
-advertise the standalone sink pattern first and foremost:
+Since `3.4.0`, sinks become the first class citizen and `Processor` are being phased out entirely:
 
- - concrete processor implementations are deprecated and slated for removal in 3.5.0
+ - both abstract and concrete `FluxProcessor` and `MonoProcessor` are deprecated and slated for removal in 3.5.0
  - sinks which are not produced by an operator are constructed through factory methods in the `Sinks` class.
- - processors can still be obtained through the `FluxProcessor.fromSink` and `MonoProcessor.fromSink` factories
+ - we expect all processor usages to be replaceable with either an existing operator or a new sink from `Sinks`.
+ Users have time until 3.5 to surface situations where that isn't the case, while falling back to using the deprecated APIs
+ in the meantime.
 
 [[sinks]]
 = Safely Produce from Multiple Threads by Using `Sinks.One` and `Sinks.Many`
@@ -183,4 +184,3 @@ As a result, it can only generates a `Mono` that completes empty or fails.
 
 The sink is still typed with a generic `<T>` despite being unable to trigger an `onNext`,
 because it allows easy composition and inclusion in chains of operators that require a specific type.
-

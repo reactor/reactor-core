@@ -7575,7 +7575,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> shareNext() {
-		return Mono.onAssembly(new NextProcessor<>(this));
+		@SuppressWarnings("deprecation") //TODO NextProcessor will be turned into an internal class only in 3.5
+		final NextProcessor<T> nextProcessor = new NextProcessor<>(this);
+		return Mono.onAssembly(nextProcessor);
 	}
 
 	/**
