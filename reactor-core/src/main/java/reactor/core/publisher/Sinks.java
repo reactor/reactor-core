@@ -64,7 +64,7 @@ public final class Sinks {
 	/**
 	 * A {@link Sinks.One} that works like a conceptual promise: it can be completed
 	 * with or without a value at any time, but only once. This completion is replayed to late subscribers.
-	 * Calling {@link One#tryEmitValue(Object)} (or {@link One#emitValue(Object, EmitFailureHandler)}) is enough and will
+	 * Calling {@link One#tryEmitValue(Object)} (or {@link One#emitValue(Object, Sinks.EmitFailureHandler)}) is enough and will
 	 * implicitly produce a {@link Subscriber#onComplete()} signal as well.
 	 * <p>
 	 * Use {@link One#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
@@ -216,7 +216,7 @@ public final class Sinks {
 	}
 
 	/**
-	 * A handler supporting the emit API (eg. {@link Many#emitNext(Object, EmitFailureHandler)}),
+	 * A handler supporting the emit API (eg. {@link Many#emitNext(Object, Sinks.EmitFailureHandler)}),
 	 * checking non-successful emission results from underlying {@link Many#tryEmitNext(Object) tryEmit}
 	 * API calls to decide whether or not such calls should be retried.
 	 * Other than instructing to retry, the handlers are allowed to have side effects
@@ -268,7 +268,9 @@ public final class Sinks {
 		/**
 		 * A {@link Sinks.One} that works like a conceptual promise: it can be completed
 		 * with or without a value at any time, but only once. This completion is replayed to late subscribers.
-		 * Calling {@link One#emitValue(Object)} (or {@link One#tryEmitValue(Object)}) is enough and will
+		 * Calling {@link One#emitValue(Object, Sinks.EmitFailureHandler)} (or
+		 * {@link One#tryEmitValue(Object)})
+		 * is enough and will
 		 * implicitly produce a {@link Subscriber#onComplete()} signal as well.
 		 * <p>
 		 * Use {@link One#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
@@ -388,7 +390,7 @@ public final class Sinks {
 		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
 		 *     of multiple subscribers.<br>If the difference between multiple subscribers is greater than {@link Queues#SMALL_BUFFER_SIZE}:
 		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
-		 * 	        <li>{@link Many#emitNext(Object, EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, EmitFailureHandler) emitting}
+		 * 	        <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
 		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
 		 * 	   </li>
 		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
@@ -409,7 +411,7 @@ public final class Sinks {
 		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
 		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
 		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
-		 *          <li>{@link Many#emitNext(Object, EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, EmitFailureHandler) emitting}
+		 *          <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
 		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
 		 *     </li>
 		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
@@ -432,7 +434,7 @@ public final class Sinks {
 		 *     <li>Backpressure : this sink honors downstream demand by conforming to the lowest demand in case
 		 *     of multiple subscribers.<br>If the difference between multiple subscribers is too high compared to {@code bufferSize}:
 		 *          <ul><li>{@link Many#tryEmitNext(Object) tryEmitNext} will return {@link EmitResult#FAIL_OVERFLOW}</li>
-		 *          <li>{@link Many#emitNext(Object, EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, EmitFailureHandler) emitting}
+		 *          <li>{@link Many#emitNext(Object, Sinks.EmitFailureHandler) emitNext} will terminate the sink by {@link Many#emitError(Throwable, Sinks.EmitFailureHandler) emitting}
 		 *          an {@link Exceptions#failWithOverflow() overflow error}.</li></ul>
 		 *     </li>
 		 *     <li>Replaying: No replay of values seen by earlier subscribers. Only forwards to a {@link Subscriber}
@@ -549,10 +551,10 @@ public final class Sinks {
 		 * A {@link Sinks.Many} with the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: up to {@param historySize} elements pushed to this sink are remembered,
+		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
 		 *     even when there is no subscriber. Older elements are discarded</li>
 		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
-		 *     <li>Replaying:  up to {@param historySize} elements pushed to this sink are replayed to new subscribers.
+		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 *
@@ -564,10 +566,10 @@ public final class Sinks {
 		 * A {@link Sinks.Many} with the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: up to {@param historySize} elements pushed to this sink are remembered,
+		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
 		 *     even when there is no subscriber. Older elements are discarded</li>
 		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
-		 *     <li>Replaying:  up to {@param historySize} elements pushed to this sink are replayed to new subscribers.
+		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 *
@@ -579,10 +581,10 @@ public final class Sinks {
 		 * A {@link Sinks.Many} with the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: all elements pushed to this sink are remembered until their {@param maxAge} is reached,
+		 *     <li>Without {@link Subscriber}: all elements pushed to this sink are remembered until their {@code maxAge} is reached,
 		 *     even when there is no subscriber. Older elements are discarded</li>
 		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
-		 *     <li>Replaying:  up to {@param historySize} elements pushed to this sink are replayed to new subscribers.
+		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 * Note: Age is checked when a signal occurs, not using a background task.
@@ -596,10 +598,10 @@ public final class Sinks {
 		 * A {@link Sinks.Many} with the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: up to {@param historySize} elements pushed to this sink are remembered,
-		 *     until their {@param maxAge} is reached, even when there is no subscriber. Older elements are discarded</li>
+		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
+		 *     until their {@code maxAge} is reached, even when there is no subscriber. Older elements are discarded</li>
 		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
-		 *     <li>Replaying:  up to {@param historySize} elements pushed to this sink are replayed to new subscribers.
+		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 * Note: Age is checked when a signal occurs, not using a background task.
@@ -613,10 +615,10 @@ public final class Sinks {
 		 * A {@link Sinks.Many} with the following characteristics:
 		 * <ul>
 		 *     <li>Multicast</li>
-		 *     <li>Without {@link Subscriber}: up to {@param historySize} elements pushed to this sink are remembered,
-		 *     until their {@param maxAge} is reached, even when there is no subscriber. Older elements are discarded.</li>
+		 *     <li>Without {@link Subscriber}: up to {@code historySize} elements pushed to this sink are remembered,
+		 *     until their {@code maxAge} is reached, even when there is no subscriber. Older elements are discarded.</li>
 		 *     <li>Backpressure : this sink honors downstream demand of individual subscribers.</li>
-		 *     <li>Replaying:  up to {@param historySize} elements pushed to this sink are replayed to new subscribers.
+		 *     <li>Replaying:  up to {@code historySize} elements pushed to this sink are replayed to new subscribers.
 		 *     Older elements are discarded.</li>
 		 * </ul>
 		 * Note: Age is checked when a signal occurs, not using a background task.
@@ -672,7 +674,7 @@ public final class Sinks {
 
 		/**
 		 * Emit a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal,
-		 * or notifies the downstream subscriber(s) of a failure to do so via {@link #emitError(Throwable, EmitFailureHandler)}
+		 * or notifies the downstream subscriber(s) of a failure to do so via {@link #emitError(Throwable, Sinks.EmitFailureHandler)}
 		 * (with an {@link Exceptions#isOverflow(Throwable) overflow exception}).
 		 * <p>
 		 * Generally, {@link #tryEmitNext(Object)} is preferable since it allows a custom handling
@@ -684,7 +686,7 @@ public final class Sinks {
 		 *
 		 * @implNote Implementors should typically delegate to {@link #tryEmitNext(Object)} and act on
 		 * failures: {@link EmitResult#FAIL_OVERFLOW} should lead to {@link Operators#onDiscard(Object, Context)} followed
-		 * by {@link #emitError(Throwable, EmitFailureHandler)}. {@link EmitResult#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
+		 * by {@link #emitError(Throwable, Sinks.EmitFailureHandler)}. {@link EmitResult#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
 		 * {@link EmitResult#FAIL_TERMINATED} should lead to {@link Operators#onNextDropped(Object, Context)}.
 		 * @implNote the duality between this method and {@link #tryEmitNext(Object)} is expected.
 		 *
@@ -770,7 +772,7 @@ public final class Sinks {
 		 * The result of the attempt is represented as an {@link EmitResult}, which possibly indicates error cases.
 		 *
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
-		 * @see #emitEmpty(EmitFailureHandler)
+		 * @see #emitEmpty(Sinks.EmitFailureHandler)
 		 * @see Subscriber#onComplete()
 		 */
 		EmitResult tryEmitEmpty();
@@ -781,7 +783,7 @@ public final class Sinks {
 		 *
 		 * @param error the exception to signal, not null
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
-		 * @see #emitError(Throwable, EmitFailureHandler)
+		 * @see #emitError(Throwable, Sinks.EmitFailureHandler)
 		 * @see Subscriber#onError(Throwable)
 		 */
 		EmitResult tryEmitError(Throwable error);
@@ -864,7 +866,7 @@ public final class Sinks {
 		 *
 		 * @param value the value to emit and complete with, or {@code null} to only trigger an onComplete
 		 * @return an {@link EmitResult}, which should be checked to distinguish different possible failures
-		 * @see #emitValue(Object, EmitFailureHandler)
+		 * @see #emitValue(Object, Sinks.EmitFailureHandler)
 		 * @see Subscriber#onNext(Object)
 		 * @see Subscriber#onComplete()
 		 */
@@ -873,7 +875,8 @@ public final class Sinks {
 		/**
 		 * Emit a non-null element, generating an {@link Subscriber#onNext(Object) onNext} signal
 		 * immediately followed by an {@link Subscriber#onComplete() onComplete} signal,
-		 * or notifies the downstream subscriber(s) of a failure to do so via {@link #emitError(Throwable, EmitFailureHandler)}
+		 * or notifies the downstream subscriber(s) of a failure to do so via
+		 * {@link #emitError(Throwable, Sinks.EmitFailureHandler)}
 		 * (with an {@link Exceptions#isOverflow(Throwable) overflow exception}).
 		 * <p>
 		 * Generally, {@link #tryEmitValue(Object)} is preferable since it allows a custom handling
@@ -885,7 +888,7 @@ public final class Sinks {
 		 *
 		 * @implNote Implementors should typically delegate to {@link #tryEmitValue (Object)} and act on
 		 * failures: {@link EmitResult#FAIL_OVERFLOW} should lead to {@link Operators#onDiscard(Object, Context)} followed
-		 * by {@link #emitError(Throwable, EmitFailureHandler)}. {@link EmitResult#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
+		 * by {@link #emitError(Throwable, Sinks.EmitFailureHandler)}. {@link EmitResult#FAIL_CANCELLED} should lead to {@link Operators#onDiscard(Object, Context)}.
 		 * {@link EmitResult#FAIL_TERMINATED} should lead to {@link Operators#onNextDropped(Object, Context)}.
 		 * @implNote the duality between this method and {@link #tryEmitValue(Object)} is expected.
 		 *
