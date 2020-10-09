@@ -46,31 +46,14 @@ import reactor.util.context.Context;
  * @param <O> the type of the value that will be made available
  *
  * @author Stephane Maldini
+ * @deprecated Processors will be removed in 3.5. Prefer using {@link Sinks.One} or {@link Sinks.Empty} instead,
+ * or see https://github.com/reactor/reactor-core/issues/2431 for alternatives
  */
+@Deprecated
 public abstract class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, CoreSubscriber<O>, Disposable,
-		           Subscription, //TODO remove Subscription in 3.5
+		           Subscription,
 		           Scannable {
-
-	/**
-	 * Convert a {@link Sinks.One} to a {@link MonoProcessor} : subscribing to the processor
-	 * will be akin to subscribing to the {@link Sinks.One#asMono()}, and having the processor
-	 * subscribed to an upstream {@link org.reactivestreams.Publisher} will pass signals from
-	 * said {@link org.reactivestreams.Publisher} as calls to the sink's
-	 * {@link Sinks.One#tryEmitValue(Object) emit methods}.
-	 *
-	 * @param sink the {@link Sinks.One} to convert
-	 * @param <IN> the type of values that can be emitted by the sink
-	 * @return a {@link MonoProcessor} with the same semantics as the {@link Sinks.One}
-	 */
-	public static <IN> MonoProcessor<IN> fromSink(Sinks.One<IN> sink) {
-		if (sink instanceof MonoProcessor) {
-			@SuppressWarnings("unchecked")
-			final MonoProcessor<IN> processor = (MonoProcessor<IN>) sink;
-			return processor;
-		}
-		return new DelegateSinkOneMonoProcessor<>(sink);
-	}
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -198,8 +181,10 @@ public abstract class MonoProcessor<O> extends Mono<O>
 	 * @return the value that completed the {@link MonoProcessor}, or {@code null} if it has not been completed
 	 *
 	 * @throws RuntimeException if the {@link MonoProcessor} was completed with an error
+	 * @deprecated this method is discouraged, consider peeking into a MonoProcessor by {@link Mono#toFuture() turning it into a CompletableFuture}
 	 */
 	@Nullable
+	@Deprecated
 	public O peek() {
 		return null;
 	}

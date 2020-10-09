@@ -234,12 +234,12 @@ Consider the following example:
 ====
 [source,java]
 ----
-EmitterProcessor<Integer> processor = EmitterProcessor.create();
-processor.publishOn(scheduler1)
-         .map(i -> transform(i))
-         .publishOn(scheduler2)
-         .doOnNext(i -> processNext(i))
-         .subscribe();
+Flux<Integer> source = Sinks.many().unicast().onBackpressureBuffer().asFlux();
+source.publishOn(scheduler1)
+	  .map(i -> transform(i))
+	  .publishOn(scheduler2)
+	  .doOnNext(i -> processNext(i))
+	  .subscribe();
 ----
 ====
 

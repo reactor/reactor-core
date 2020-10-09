@@ -18,6 +18,7 @@ import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
+@Deprecated
 class NextProcessor<O> extends MonoProcessor<O> implements InternalOneSink<O> {
 
 	volatile NextInner<O>[] subscribers;
