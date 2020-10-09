@@ -73,9 +73,10 @@ public class OnDiscardShouldNotLeakTest {
 					.map(Function.identity())
 					.map(Function.identity())
 					.publishOn(Schedulers.immediate())),
-			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer()))),
+			//FIXME replace with Sinks.unsafe().many().unicast().onBackpressureBuffer() + subscriber??
+			DiscardScenario.fluxSource("unicastProcessor", 1, f -> f.subscribeWith(UnicastProcessor.create())),
 			DiscardScenario.fluxSource("unicastProcessorAndPublishOn", 1, f -> f
-					.subscribeWith(FluxProcessor.fromSink(Sinks.unsafe().many().unicast().onBackpressureBuffer()))
+					.subscribeWith(UnicastProcessor.create())
 					.publishOn(Schedulers.immediate())),
 	};
 
