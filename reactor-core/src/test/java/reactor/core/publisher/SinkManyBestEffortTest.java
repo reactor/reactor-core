@@ -165,7 +165,9 @@ class SinkManyBestEffortTest {
 
 	@Test
 	void scanInner() {
+		@SuppressWarnings("unchecked")
 		InnerConsumer<? super String> actual = mock(InnerConsumer.class);
+		@SuppressWarnings("unchecked")
 		DirectInnerContainer<String> parent = mock(DirectInnerContainer.class);
 
 		DirectInner<String> test = new SinkManyBestEffort.DirectInner<>(actual, parent);

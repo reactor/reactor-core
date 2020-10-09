@@ -99,9 +99,10 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T>
 		return new DirectProcessor<>();
 	}
 
-	private volatile     DirectInner<T>[] subscribers = SinkManyBestEffort.EMPTY;
+	@SuppressWarnings("unchecked")
+	private volatile     DirectInner<T>[]                                           subscribers = SinkManyBestEffort.EMPTY;
 	@SuppressWarnings("rawtypes")
-	private static final AtomicReferenceFieldUpdater<DirectProcessor, DirectInner[]> SUBSCRIBERS =
+	private static final AtomicReferenceFieldUpdater<DirectProcessor, DirectInner[]>SUBSCRIBERS =
 			AtomicReferenceFieldUpdater.newUpdater(DirectProcessor.class, DirectInner[].class, "subscribers");
 
 	Throwable error;
