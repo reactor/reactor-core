@@ -95,8 +95,8 @@ public class MonoPublishMulticastTest {
 		             .publish(o -> Mono.<Integer>empty())
 		             .subscribe(ts);
 
-		testPublisher.assertNotCancelled()
-		             .assertSubscribers();
+		testPublisher.assertCancelled()
+		             .assertNoSubscribers();
 	}
 
 	@Test
