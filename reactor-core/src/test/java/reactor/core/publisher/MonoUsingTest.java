@@ -213,14 +213,14 @@ public class MonoUsingTest {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		NextProcessor<Integer> tp = new NextProcessor<>(null);
+		Sinks.One<Integer> tp = Sinks.unsafe().one();
 
-		Mono.using(() -> 1, r -> tp, cleanup::set, true)
+		Mono.using(() -> 1, r -> tp.asMono(), cleanup::set, true)
 		    .subscribe(ts);
 
 		assertThat(tp.currentSubscriberCount()).as("tp has subscriber").isPositive();
 
-		tp.onNext(1);
+		tp.tryEmitValue(1).orThrow();
 
 		ts.assertValues(1)
 		  .assertComplete()

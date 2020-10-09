@@ -106,12 +106,7 @@ public class MonoFirstWithSignalTest {
 
 	@Test
 	public void firstMonoJust() {
-		NextProcessor<Integer> mp = new NextProcessor<>(null);
-		StepVerifier.create(Mono.firstWithSignal(Mono.just(1), Mono.just(2))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		StepVerifier.create(Mono.firstWithSignal(Mono.just(1), Mono.just(2)))
 		            .expectNext(1)
 		            .verifyComplete();
 	}

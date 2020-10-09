@@ -81,7 +81,7 @@ public class FluxMergeSequentialTest {
 	}
 
 	@Test
-	@SuppressWarnings("dreprecated")
+	@SuppressWarnings("deprecation")
 	public void normalFusedAsync() {
 		StepVerifier.create(Flux.range(1, 5)
 		                        //FIXME replace with a suitable construct that triggers ASYNC fusion

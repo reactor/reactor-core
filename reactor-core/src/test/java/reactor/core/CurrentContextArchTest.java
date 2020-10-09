@@ -26,8 +26,6 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.junit.Test;
 
-import reactor.core.publisher.FluxProcessor;
-
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 public class CurrentContextArchTest {
@@ -37,10 +35,11 @@ public class CurrentContextArchTest {
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
 			.importPackagesOf(CoreSubscriber.class);
 
+	@SuppressWarnings("deprecation")
 	static JavaClasses FLUXPROCESSOR_CLASSES = new ClassFileImporter()
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
 			.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
-			.importPackagesOf(FluxProcessor.class);
+			.importPackagesOf(reactor.core.publisher.FluxProcessor.class);
 
 	@Test
 	public void corePublishersShouldNotUseDefaultCurrentContext() {
@@ -69,9 +68,10 @@ public class CurrentContextArchTest {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void fluxProcessorsShouldNotUseDefaultCurrentContext() {
 		classes()
-				.that().areAssignableTo(FluxProcessor.class)
+				.that().areAssignableTo(reactor.core.publisher.FluxProcessor.class)
 				.and().doNotHaveModifier(JavaModifier.ABSTRACT)
 				.should(new ArchCondition<JavaClass>("not use the default currentContext()") {
 					@Override
@@ -82,8 +82,8 @@ public class CurrentContextArchTest {
 								.filter(it -> "currentContext".equals(it.getName()))
 								.filter(it -> it.getRawParameterTypes().isEmpty())
 								//method declared in a class derived from FluxProcessor but NOT FluxProcessor itself !
-								.anyMatch(it -> it.getOwner().isAssignableTo(FluxProcessor.class)
-										&& !it.getOwner().isEquivalentTo(FluxProcessor.class));
+								.anyMatch(it -> it.getOwner().isAssignableTo(reactor.core.publisher.FluxProcessor.class)
+										&& !it.getOwner().isEquivalentTo(reactor.core.publisher.FluxProcessor.class));
 
 
 						if (!overridesMethod) {

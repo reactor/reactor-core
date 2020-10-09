@@ -29,6 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
@@ -69,28 +70,33 @@ public class MonoPublishMulticastTest {
 	public void cancelComposes() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		NextProcessor<Integer> sp = new NextProcessor<>(null);
+		TestPublisher<Integer> testPublisher = TestPublisher.create();
 
-		sp.publish(o -> Mono.<Integer>never())
-		  .subscribe(ts);
+		testPublisher.mono()
+		             .publish(o -> Mono.<Integer>never())
+		             .subscribe(ts);
 
-		assertThat(sp.currentSubscriberCount()).as("sp has subscriber").isPositive();
+		testPublisher.assertNotCancelled()
+		             .assertSubscribers();
 
 		ts.cancel();
 
-		Assert.assertFalse("Still subscribed?", sp.isCancelled());
+		testPublisher.assertNoSubscribers()
+		             .assertCancelled();
 	}
 
 	@Test
 	public void cancelComposes2() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		NextProcessor<Integer> sp = new NextProcessor<>(null);
+		TestPublisher<Integer> testPublisher = TestPublisher.create();
 
-		sp.publish(o -> Mono.<Integer>empty())
-		  .subscribe(ts);
+		testPublisher.mono()
+		             .publish(o -> Mono.<Integer>empty())
+		             .subscribe(ts);
 
-		Assert.assertFalse("Still subscribed?", sp.isCancelled());
+		testPublisher.assertNotCancelled()
+		             .assertSubscribers();
 	}
 
 	@Test
