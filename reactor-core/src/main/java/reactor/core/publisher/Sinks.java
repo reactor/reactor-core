@@ -269,9 +269,8 @@ public final class Sinks {
 		 * A {@link Sinks.One} that works like a conceptual promise: it can be completed
 		 * with or without a value at any time, but only once. This completion is replayed to late subscribers.
 		 * Calling {@link One#emitValue(Object, Sinks.EmitFailureHandler)} (or
-		 * {@link One#tryEmitValue(Object)})
-		 * is enough and will
-		 * implicitly produce a {@link Subscriber#onComplete()} signal as well.
+		 * {@link One#tryEmitValue(Object)}) is enough and will implicitly produce
+		 * a {@link Subscriber#onComplete()} signal as well.
 		 * <p>
 		 * Use {@link One#asMono()} to expose the {@link Mono} view of the sink to downstream consumers.
 		 */

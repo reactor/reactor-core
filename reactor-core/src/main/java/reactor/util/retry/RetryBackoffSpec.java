@@ -372,8 +372,7 @@ public final class RetryBackoffSpec extends Retry {
 	 * is exhausted. By default, throws an {@link Exceptions#retryExhausted(String, Throwable)} with the
 	 * message reflecting the total attempt index, transient attempt index and maximum retry count.
 	 * The cause of the last {@link reactor.util.retry.Retry.RetrySignal} is also added
-	 * as
-	 * the exception's cause.
+	 * as the exception's cause.
 	 *
 	 *
 	 * @param retryExhaustedGenerator the {@link Function} that generates the {@link Throwable} for the last
