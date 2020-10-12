@@ -355,6 +355,7 @@ check.dependsOn japicmp
 jcstress {
 	mode = 'quick'
 }
+tasks.jcstress.setStandardOutput(new FileOutputStream(new File(buildDir, "reports/jcstress-stdout.txt")))
 tasks.check.dependsOn(tasks.jcstress)
 
 if (JavaVersion.current().java9Compatible) {
