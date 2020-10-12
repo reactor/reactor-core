@@ -3119,14 +3119,15 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * The name serves as a prefix in the reported metrics names. In case no name has been provided, the default name "reactor" will be applied.
 	 * <p>
 	 * The {@link MeterRegistry} used by reactor can be configured via
-	 * {@link Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)} prior to using this operator, the default being
+	 * {@link reactor.util.Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)}
+	 * prior to using this operator, the default being
 	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 * </p>
 	 *
 	 * @return an instrumented {@link Flux}
 	 *
-	 * @see {@link #name(String)}
-	 * @see {@link #tag(String, String)}
+	 * @see #name(String)
+	 * @see #tag(String, String)
 	 */
 	public final Mono<T> metrics() {
 		if (!Metrics.isInstrumentationAvailable()) {
@@ -3149,8 +3150,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return the same sequence, but bearing a name
 	 *
-	 * @see {@link #metrics()}
-	 * @see {@link #tag(String, String)}
+	 * @see #metrics()
+	 * @see #tag(String, String)
 	 */
 	public final Mono<T> name(String name) {
 		return MonoName.createOrAppend(this, name);
@@ -3696,11 +3697,11 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/retryWhenSpecForMono.svg" alt="">
 	 * <p>
-	 * Note that the {@link Retry.RetrySignal} state can be transient and change between each source
+	 * Note that the {@link reactor.util.retry.Retry.RetrySignal} state can be transient and change between each source
 	 * {@link org.reactivestreams.Subscriber#onError(Throwable) onError} or
 	 * {@link org.reactivestreams.Subscriber#onNext(Object) onNext}. If processed with a delay,
 	 * this could lead to the represented state being out of sync with the state at which the retry
-	 * was evaluated. Map it to {@link Retry.RetrySignal#copy()} right away to mediate this.
+	 * was evaluated. Map it to {@link reactor.util.retry.Retry.RetrySignal#copy()} right away to mediate this.
 	 * <p>
 	 * Note that if the companion {@link Publisher} created by the {@code whenFactory}
 	 * emits {@link Context} as trigger objects, these {@link Context} will be merged with
@@ -4131,8 +4132,8 @@ public abstract class Mono<T> implements CorePublisher<T> {
 	 *
 	 * @return the same sequence, but bearing tags
 	 *
-	 * @see {@link #name(String)}
-	 * @see {@link #metrics()}
+	 * @see #name(String)
+	 * @see #metrics()
 	 */
 	public final Mono<T> tag(String key, String value) {
 		return MonoName.createOrAppend(this, key, value);

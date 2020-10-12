@@ -655,7 +655,8 @@ public abstract class Schedulers {
 	 *
 	 * <p>
 	 * The {@link MeterRegistry} used by reactor can be configured via
-	 * {@link Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)} prior to using this method, the default being
+	 * {@link reactor.util.Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)}
+	 * prior to using this method, the default being
 	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 * </p>
 	 *
@@ -685,12 +686,12 @@ public abstract class Schedulers {
 	/**
 	 * Replace {@link Schedulers} factories ({@link #newParallel(String) newParallel},
 	 * {@link #newSingle(String) newSingle} and {@link #newBoundedElastic(int, int, String) newBoundedElastic}).
-	 * Unlike {@link #setFactory(Factory}), doesn't shutdown previous Schedulers but capture
-	 * them in a {@link Snapshot} that can be later restored via {@link #resetFrom(Snapshot)}.
+	 * Unlike {@link #setFactory(Factory)}, doesn't shutdown previous Schedulers but
+	 * capture them in a {@link Snapshot} that can be later restored via {@link #resetFrom(Snapshot)}.
 	 * <p>
 	 * This method should be called safely and with caution, typically on app startup.
 	 *
-	 * @param factoryInstance an arbitrary {@link Factory} instance
+	 * @param newFactory an arbitrary {@link Factory} instance
 	 * @return a {@link Snapshot} representing a restorable snapshot of {@link Schedulers}
 	 */
 	public static Snapshot setFactoryWithSnapshot(Factory newFactory) {

@@ -220,7 +220,8 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	/**
-	 * Re-activate the global {@link Schedulers} and potentially customized {@link Schedulers.Factory} that were
+	 * Re-activate the global {@link Schedulers} and potentially customized
+	 * {@link reactor.core.scheduler.Schedulers.Factory} that were
 	 * active prior to last activation of {@link VirtualTimeScheduler} factories. (ie the
 	 * last {@link #set(VirtualTimeScheduler) set} or {@link #getOrSet() getOrSet}).
 	 * <p>

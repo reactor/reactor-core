@@ -1959,7 +1959,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @param <D> the type of the resource object
 	 * @return a new {@link Flux} built around a "transactional" resource, with several
 	 * termination path triggering asynchronous cleanup sequences
-	 * @see #usingWhen(Publisher, Function, Function, Function)
+	 * @see #usingWhen(Publisher, Function, Function)
 	 */
 	public static <T, D> Flux<T> usingWhen(Publisher<D> resourceSupplier,
 			Function<? super D, ? extends Publisher<? extends T>> resourceClosure,
@@ -6105,13 +6105,14 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * The name serves as a prefix in the reported metrics names. In case no name has been provided, the default name "reactor" will be applied.
 	 * <p>
 	 * The {@link MeterRegistry} used by reactor can be configured via
-	 * {@link Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)} prior to using this operator, the default being
+	 * {@link reactor.util.Metrics.MicrometerConfiguration#useRegistry(MeterRegistry)}
+	 * prior to using this operator, the default being
 	 * {@link io.micrometer.core.instrument.Metrics#globalRegistry}.
 	 *
 	 * @return an instrumented {@link Flux}
 	 *
-	 * @see {@link #name(String)}
-	 * @see {@link #tag(String, String)}
+	 * @see #name(String)
+	 * @see #tag(String, String)
 	 */
 	public final Flux<T> metrics() {
 		if (!Metrics.isInstrumentationAvailable()) {
@@ -6134,8 +6135,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return the same sequence, but bearing a name
 	 *
-	 * @see {@link #metrics()}
-	 * @see {@link #tag(String, String)}
+	 *@see #metrics()
+	 *@see #tag(String, String)
 	 */
 	public final Flux<T> name(String name) {
 		return FluxName.createOrAppend(this, name);
@@ -7286,11 +7287,13 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * <p>
 	 * <img class="marble" src="doc-files/marbles/retryWhenSpecForFlux.svg" alt="">
 	 * <p>
-	 * Note that the {@link Retry.RetrySignal} state can be transient and change between each source
+	 * Note that the {@link reactor.util.retry.Retry.RetrySignal} state can be
+	 * transient and change between each source
 	 * {@link org.reactivestreams.Subscriber#onError(Throwable) onError} or
 	 * {@link org.reactivestreams.Subscriber#onNext(Object) onNext}. If processed with a delay,
 	 * this could lead to the represented state being out of sync with the state at which the retry
-	 * was evaluated. Map it to {@link Retry.RetrySignal#copy()} right away to mediate this.
+	 * was evaluated. Map it to {@link reactor.util.retry.Retry.RetrySignal#copy()}
+	 * right away to mediate this.
 	 * <p>
 	 * Note that if the companion {@link Publisher} created by the {@code whenFactory}
 	 * emits {@link Context} as trigger objects, these {@link Context} will be merged with
@@ -7317,9 +7320,9 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * given a {@link Flux} that signals each onError as a {@link reactor.util.retry.Retry.RetrySignal}.
 	 *
 	 * @return a {@link Flux} that retries on onError when a companion {@link Publisher} produces an onNext signal
-	 * @see Retry#max(long)
-	 * @see Retry#maxInARow(long)
-	 * @see Retry#backoff(long, Duration)
+	 * @see reactor.util.retry.Retry#max(long)
+	 * @see reactor.util.retry.Retry#maxInARow(long)
+	 * @see reactor.util.retry.Retry#backoff(long, Duration)
 	 */
 	public final Flux<T> retryWhen(Retry retrySpec) {
 		return onAssembly(new FluxRetryWhen<>(this, retrySpec));
@@ -8267,7 +8270,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Transform the current {@link Flux<T>} once it emits its first element, making a
+	 * Transform the current {@link Flux} once it emits its first element, making a
 	 * conditional transformation possible. This operator first requests one element
 	 * from the source then applies a transformation derived from the first {@link Signal}
 	 * and the source. The whole source (including the first signal) is passed as second
@@ -8315,7 +8318,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	}
 
 	/**
-	 * Transform the current {@link Flux<T>} once it emits its first element, making a
+	 * Transform the current {@link Flux} once it emits its first element, making a
 	 * conditional transformation possible. This operator first requests one element
 	 * from the source then applies a transformation derived from the first {@link Signal}
 	 * and the source. The whole source (including the first signal) is passed as second
@@ -8429,8 +8432,8 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 *
 	 * @return the same sequence, but bearing tags
 	 *
-	 * @see {@link #name(String)}
-	 * @see {@link #metrics()}
+	 *@see #name(String)
+	 *@see #metrics()
 	 */
 	public final Flux<T> tag(String key, String value) {
 		return FluxName.createOrAppend(this, key, value);

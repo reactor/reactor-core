@@ -302,10 +302,10 @@ public final class RetrySpec extends Retry {
 	 * Set the generator for the {@link Exception} to be propagated when the maximum amount of retries
 	 * is exhausted. By default, throws an {@link Exceptions#retryExhausted(String, Throwable)} with the
 	 * message reflecting the total attempt index, transient attempt index and maximum retry count.
-	 * The cause of the last {@link RetrySignal} is also added as the exception's cause.
+	 * The cause of the last {@link reactor.util.retry.Retry.RetrySignal} is also added as the exception's cause.
 	 *
 	 * @param retryExhaustedGenerator the {@link Function} that generates the {@link Throwable} for the last
-	 * {@link RetrySignal}
+	 * {@link reactor.util.retry.Retry.RetrySignal}
 	 * @return a new copy of the {@link RetrySpec} which can either be further configured or used as {@link Retry}
 	 */
 	public RetrySpec onRetryExhaustedThrow(BiFunction<RetrySpec, RetrySignal, Throwable> retryExhaustedGenerator) {
@@ -323,7 +323,8 @@ public final class RetrySpec extends Retry {
 
 	/**
 	 * Set the transient error mode, indicating that the strategy being built should use
-	 * {@link RetrySignal#totalRetriesInARow()} rather than {@link RetrySignal#totalRetries()}.
+	 * {@link reactor.util.retry.Retry.RetrySignal#totalRetriesInARow()} rather than
+	 * {@link reactor.util.retry.Retry.RetrySignal#totalRetries()}.
 	 * Transient errors are errors that could occur in bursts but are then recovered from by
 	 * a retry (with one or more onNext signals) before another error occurs.
 	 * <p>
