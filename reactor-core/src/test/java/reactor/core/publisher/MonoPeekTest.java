@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Exceptions;
@@ -153,11 +153,13 @@ public class MonoPeekTest {
 		assertThat(ref.get()).isNull();
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void onMonoSuccessNullDoOnSuccess() {
 		Mono<String> mp = Mono.just("test");
-		mp.doOnSuccess(null)
-		  .subscribe();
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			mp.doOnSuccess(null)
+					.subscribe();
+		});
 	}
 
 	@Test

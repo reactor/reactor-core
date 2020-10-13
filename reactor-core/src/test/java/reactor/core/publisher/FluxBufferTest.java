@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -32,6 +32,7 @@ import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
@@ -96,24 +97,32 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 		);
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new FluxBuffer<>(null, 1, ArrayList::new);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxBuffer<>(null, 1, ArrayList::new);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void supplierNull() {
-		Flux.never().buffer(1, 1, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never().buffer(1, 1, null);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void sizeZero() {
-		Flux.never().buffer(0, 1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.never().buffer(0, 1);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void skipZero() {
-		Flux.never().buffer(1, 0);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.never().buffer(1, 0);
+		});
 	}
 
 	@Test

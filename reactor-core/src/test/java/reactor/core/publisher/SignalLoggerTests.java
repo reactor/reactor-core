@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 

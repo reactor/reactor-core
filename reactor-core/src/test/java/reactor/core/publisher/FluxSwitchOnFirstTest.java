@@ -30,8 +30,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.assertj.core.api.Assumptions;
-import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;

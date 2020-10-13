@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -56,7 +56,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 		return throwable;
 	}
 
-	@Before
+	@BeforeEach
 	public void before() {
 		this.droppedValue = null;
 		this.hookCapturedError = null;
@@ -64,7 +64,7 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 		Hooks.onOperatorError(this);
 	}
 
-	@After
+	@AfterEach
 	public void after() {
 		Hooks.resetOnOperatorError();
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-Present Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2020-Present VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,32 @@
 
 package reactor.test;
 
-import org.junit.rules.ExternalResource;
-
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.Extension;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 
 /**
- * A JUnit {@link org.junit.Rule} that exposes a way to automatically cleanup arbitrary
+ * A JUnit {@link Extension} that exposes a way to automatically cleanup arbitrary
  * {@link Disposable} instances after a test, in a fluent fashion.
  *
  * @author Simon Baslé
+ * @author Eric Bottard
  */
-public class AutoDisposingRule extends ExternalResource {
+public class AutoDisposingExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
 	private Disposable.Composite toDispose;
 
 	@Override
-	protected void before() throws Throwable {
+	public void beforeTestExecution(ExtensionContext context) throws Exception {
+		System.out.println("HELLO  " + context.getRequiredTestClass());
 		toDispose = Disposables.composite();
 	}
 
 	@Override
-	protected void after() {
+	public void afterTestExecution(ExtensionContext context) throws Exception {
 		toDispose.dispose();
 	}
 

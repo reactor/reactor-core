@@ -18,15 +18,15 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.FutureTask;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import reactor.blockhound.BlockHound;
 import reactor.core.Disposable;
 
 public class BoundedElasticSchedulerBlockhoundTest {
 
-	@BeforeClass
+	@BeforeAll
 	public static void setup() {
 		BlockHound.install();
 	}

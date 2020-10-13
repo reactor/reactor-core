@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -39,7 +39,11 @@ import reactor.util.concurrent.Queues;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static reactor.core.scheduler.Schedulers.parallel;
 
 public class FluxPeekTest extends FluxOperatorTest<String, String> {
@@ -258,9 +262,11 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		return combinedScenarios;
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullSource() {
-		new FluxPeek<>(null, null, null, null, null, null, null, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxPeek<>(null, null, null, null, null, null, null, null);
+		});
 	}
 
 	@Test

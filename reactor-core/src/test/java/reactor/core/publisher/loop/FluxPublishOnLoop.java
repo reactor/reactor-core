@@ -17,9 +17,9 @@ package reactor.core.publisher.loop;
 
 import java.util.concurrent.Executors;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxPublishOnTest;
 import reactor.core.scheduler.Scheduler;
@@ -33,12 +33,12 @@ public class FluxPublishOnLoop {
 
 	final FluxPublishOnTest publishOnTest = new FluxPublishOnTest();
 
-	@BeforeClass
+	@BeforeAll
 	public static void before() {
 		FluxPublishOnTest.exec = Executors.newSingleThreadExecutor();
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void after() {
 		FluxPublishOnTest.exec.shutdownNow();
 	}

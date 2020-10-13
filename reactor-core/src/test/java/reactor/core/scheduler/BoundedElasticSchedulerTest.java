@@ -46,9 +46,9 @@ import java.util.stream.Stream;
 import com.pivovarit.function.ThrowingRunnable;
 import com.pivovarit.function.ThrowingSupplier;
 import org.awaitility.Awaitility;
-import org.junit.AfterClass;
-import org.junit.Test;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Scannable;
@@ -92,7 +92,7 @@ public class BoundedElasticSchedulerTest extends AbstractSchedulerTest {
 		return true;
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void dumpThreads() {
 		LOGGER.debug("Remaining threads after test class:");
 		LOGGER.debug(dumpThreadNames().collect(Collectors.joining(", ")));

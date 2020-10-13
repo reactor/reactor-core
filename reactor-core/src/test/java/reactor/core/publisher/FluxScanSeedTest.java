@@ -16,23 +16,21 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.test.util.RaceTestUtils;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 
@@ -78,21 +76,27 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new FluxScanSeed<>(null, () -> 1, (a, b) -> a);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxScanSeed<>(null, () -> 1, (a, b) -> a);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void initialValueNull() {
-		Flux.never()
-		    .scan(null, (a, b) -> a);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.scan(null, (a, b) -> a);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void accumulatorNull() {
-		Flux.never()
-		    .scan(1, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never()
+					.scan(1, null);
+		});
 	}
 
 	@Test

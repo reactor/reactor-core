@@ -22,12 +22,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static reactor.core.Fuseable.SYNC;
@@ -42,7 +43,7 @@ public class MonoDoFinallyTest implements Consumer<SignalType> {
 	volatile SignalType signalType;
 	volatile int calls;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		signalType = null;
 		calls = 0;
@@ -144,9 +145,11 @@ public class MonoDoFinallyTest implements Consumer<SignalType> {
 	}
 
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullCallback() {
-		Mono.just(1).doFinally(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Mono.just(1).doFinally(null);
+		});
 	}
 
 	@Test

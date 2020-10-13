@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.reactivestreams.Subscription;
-
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -38,6 +38,7 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
@@ -55,10 +56,12 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void failPrefetch(){
-		Flux.never()
-		    .publish( -1);
+	@Test
+	public void failPrefetch() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.never()
+					.publish(-1);
+		});
 	}
 
 	@Test
@@ -642,7 +645,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1528
-	@Test(timeout = 4000)
+	@Test
+	@Timeout(4)
 	public void syncFusionFromInfiniteStream() {
 		final ConnectableFlux<Integer> publish =
 				Flux.fromStream(Stream.iterate(0, i -> i + 1))
@@ -657,7 +661,8 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1528
-	@Test(timeout = 4000)
+	@Test
+	@Timeout(4)
 	public void syncFusionFromInfiniteStreamAndTake() {
 		final Flux<Integer> publish =
 				Flux.fromStream(Stream.iterate(0, i -> i + 1))

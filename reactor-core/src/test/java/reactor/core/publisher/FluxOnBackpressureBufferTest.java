@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -37,6 +37,7 @@ import reactor.test.publisher.TestPublisher;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 public class FluxOnBackpressureBufferTest
@@ -73,9 +74,11 @@ public class FluxOnBackpressureBufferTest
 		            .verify(Duration.ofSeconds(5));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void failNegativeHistory(){
-		Flux.never().onBackpressureBuffer(-1);
+	@Test
+	public void failNegativeHistory() {
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			Flux.never().onBackpressureBuffer(-1);
+		});
 	}
 
 	@Override

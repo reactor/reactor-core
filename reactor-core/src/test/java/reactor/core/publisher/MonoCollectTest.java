@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -39,26 +39,34 @@ import reactor.util.Loggers;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoCollectTest {
 
 	static final Logger LOGGER = Loggers.getLogger(MonoCollectListTest.class);
 
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullSource() {
-		new MonoCollect<>(null, () -> 1, (a, b) -> {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new MonoCollect<>(null, () -> 1, (a, b) -> {
+			});
 		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullSupplier() {
-		Flux.never().collect(null, (a, b) -> {});
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never().collect(null, (a, b) -> {
+			});
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullAction() {
-		Flux.never().collect(() -> 1, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never().collect(() -> 1, null);
+		});
 	}
 
 	@Test

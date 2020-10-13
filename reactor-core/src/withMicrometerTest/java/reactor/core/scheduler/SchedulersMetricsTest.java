@@ -5,9 +5,9 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -19,13 +19,13 @@ public class SchedulersMetricsTest {
 	final SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
 	final Disposable.Composite toCleanUp = Disposables.composite();
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		Metrics.addRegistry(simpleMeterRegistry);
 		Schedulers.enableMetrics();
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		Schedulers.disableMetrics();
 		Metrics.globalRegistry.forEachMeter(Metrics.globalRegistry::remove);

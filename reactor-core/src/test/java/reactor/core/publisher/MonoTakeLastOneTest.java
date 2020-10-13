@@ -16,14 +16,12 @@
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
-import java.util.function.Predicate;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
-import reactor.util.function.Tuple3;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

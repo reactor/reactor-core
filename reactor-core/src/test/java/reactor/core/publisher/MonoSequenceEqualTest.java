@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -144,7 +143,7 @@ public class MonoSequenceEqualTest {
 		            .verify(Duration.ofSeconds(5));
 	}
 
-		@Test
+	@Test
 	public void syncFusedCrash() {
 		Flux<Integer> source = Flux.range(1, 10).map(i -> { throw new IllegalArgumentException("boom"); });
 

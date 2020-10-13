@@ -25,12 +25,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -38,7 +36,6 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxDistinct.DistinctConditionalSubscriber;
 import reactor.core.publisher.FluxDistinct.DistinctSubscriber;
-import reactor.test.MemoryUtils;
 import reactor.test.MemoryUtils.RetainedDetector;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
@@ -48,9 +45,12 @@ import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
@@ -89,34 +89,48 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceNull() {
-		new FluxDistinct<>(null, k -> k, HashSet::new, HashSet::add, HashSet::clear);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxDistinct<>(null, k -> k, HashSet::new, HashSet::add, HashSet::clear);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void keyExtractorNull() {
-		Flux.never().distinct(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.never().distinct(null);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void collectionSupplierNull() {
-		new FluxDistinct<>(Flux.never(), k -> k, null, (c, k) -> true, c -> {});
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxDistinct<>(Flux.never(), k -> k, null, (c, k) -> true, c -> {
+			});
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void collectionSupplierNullFuseable() {
-		new FluxDistinctFuseable<>(Flux.never(), k -> k, null, (c,k) -> true, c -> {});
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxDistinctFuseable<>(Flux.never(), k -> k, null, (c, k) -> true, c -> {
+			});
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void distinctPredicateNull() {
-		new FluxDistinct<>(Flux.never(), k -> k, HashSet::new, null, HashSet::clear);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxDistinct<>(Flux.never(), k -> k, HashSet::new, null, HashSet::clear);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void cleanupNull() {
-		new FluxDistinct<>(Flux.never(), k -> k, HashSet::new, HashSet::add, null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			new FluxDistinct<>(Flux.never(), k -> k, HashSet::new, HashSet::add, null);
+		});
 	}
 
 	@Test

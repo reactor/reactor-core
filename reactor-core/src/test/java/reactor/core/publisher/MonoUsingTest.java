@@ -23,31 +23,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Condition;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
 public class MonoUsingTest {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void resourceSupplierNull() {
-		Mono.using(null, r -> Mono.empty(), r -> {
-		}, false);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Mono.using(null, r -> Mono.empty(), r -> {
+			}, false);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void sourceFactoryNull() {
-		Mono.using(() -> 1, null, r -> {
-		}, false);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Mono.using(() -> 1, null, r -> {
+			}, false);
+		});
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void resourceCleanupNull() {
-		Mono.using(() -> 1, r -> Mono.empty(), null, false);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Mono.using(() -> 1, r -> Mono.empty(), null, false);
+		});
 	}
 
 	@Test

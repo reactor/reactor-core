@@ -17,10 +17,10 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -31,6 +31,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class ReplayProcessorTest {
 
@@ -600,14 +601,18 @@ public class ReplayProcessorTest {
 		}
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failNegativeBufferSizeBounded() {
-		ReplayProcessor.create(-1);
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			ReplayProcessor.create(-1);
+		});
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void failNegativeBufferBoundedAndTimed() {
-		ReplayProcessor.createSizeAndTimeout(-1, Duration.ofSeconds(1));
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> {
+			ReplayProcessor.createSizeAndTimeout(-1, Duration.ofSeconds(1));
+		});
 	}
 
 	@Test
@@ -633,12 +638,12 @@ public class ReplayProcessorTest {
 		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(Integer.MAX_VALUE);
 	}
 
-	@Before
+	@BeforeEach
 	public void virtualTime(){
     	VirtualTimeScheduler.getOrSet();
 	}
 
-	@After
+	@AfterEach
 	public void teardownVirtualTime(){
 		VirtualTimeScheduler.reset();
 	}

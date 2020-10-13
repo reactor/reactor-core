@@ -23,8 +23,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
@@ -32,6 +32,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
@@ -42,7 +43,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	volatile SignalType signalType;
 	volatile int calls;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		signalType = null;
 		calls = 0;
@@ -321,9 +322,11 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		assertEquals(SignalType.ON_COMPLETE, signalType);
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void nullCallback() {
-		Flux.just(1).doFinally(null);
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			Flux.just(1).doFinally(null);
+		});
 	}
 
 	@Test
@@ -476,7 +479,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	public void gh951_withoutDoOnError() {
 		List<String> events = new ArrayList<>();
 
-		Assertions.assertThatExceptionOfType(UnsupportedOperationException.class)
+		assertThatExceptionOfType(UnsupportedOperationException.class)
 		          .isThrownBy(Mono.just(true)
 		                          .map(this::throwError)
 		                          .doFinally(any -> events.add("doFinally " + any.toString()))

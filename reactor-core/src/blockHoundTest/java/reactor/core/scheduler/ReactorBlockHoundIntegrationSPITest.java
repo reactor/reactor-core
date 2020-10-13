@@ -2,7 +2,7 @@ package reactor.core.scheduler;
 
 import java.util.ServiceLoader;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.blockhound.integration.BlockHoundIntegration;
 
 import static org.assertj.core.api.Assertions.assertThat;

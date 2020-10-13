@@ -24,8 +24,8 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-import org.junit.Test;
 
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.FluxProcessor;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;

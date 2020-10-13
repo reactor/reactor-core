@@ -16,7 +16,7 @@
 package reactor.core.publisher;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -24,33 +24,42 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 
 public class DirectProcessorTest {
 
-    @Test(expected = NullPointerException.class)
-    public void onNextNull() {
-	    DirectProcessor.create().onNext(null);
-    }
+	@Test
+	public void onNextNull() {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			DirectProcessor.create().onNext(null);
+		});
+	}
 
-    @Test(expected = NullPointerException.class)
-    public void onErrorNull() {
-	    DirectProcessor.create().onError(null);
-    }
+	@Test
+	public void onErrorNull() {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			DirectProcessor.create().onError(null);
+		});
+	}
 
-    @Test(expected = NullPointerException.class)
-    public void onSubscribeNull() {
-        DirectProcessor.create().onSubscribe(null);
-    }
+	@Test
+	public void onSubscribeNull() {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			DirectProcessor.create().onSubscribe(null);
+		});
+	}
 
-    @Test(expected = NullPointerException.class)
-    public void subscribeNull() {
-	    DirectProcessor.create().subscribe((Subscriber<Object>)null);
-    }
+	@Test
+	public void subscribeNull() {
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> {
+			DirectProcessor.create().subscribe((Subscriber<Object>) null);
+		});
+	}
 
-    @Test
-    public void normal() {
-        DirectProcessor<Integer> tp = DirectProcessor.create();
+	@Test
+	public void normal() {
+		DirectProcessor<Integer> tp = DirectProcessor.create();
 
 	    StepVerifier.create(tp)
 	                .then(() -> {
